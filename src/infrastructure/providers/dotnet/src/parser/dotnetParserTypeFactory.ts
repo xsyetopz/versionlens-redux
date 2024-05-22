@@ -56,9 +56,10 @@ export function createVersionDescFromXmlAttr(keyNode: XmlNode): TPackageVersionD
 }
 
 export function createBlankVersionDescFromXmlAttr(node: XmlNode): TPackageVersionDescriptor {
+  const start = node.isSelfClosing ? node.tagCloseStart : node.tagOpenEnd - 1;
   const versionRange = {
-    start: node.tagCloseStart,
-    end: node.tagCloseStart,
+    start,
+    end: start,
   };
 
   return {

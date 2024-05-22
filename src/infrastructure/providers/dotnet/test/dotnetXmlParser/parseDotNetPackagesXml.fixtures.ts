@@ -14,6 +14,10 @@ export default {
             <GlobalPackageReference Include="Microsoft.Azure.ServiceBus" Version="(3.0,)" />
             <PackageVersion Update="AngularJS.Core" Version="1.0.*" />
             <PackageReference Include="NoVersionAttribute" />
+            <PackageReference Include="ChildVersionNoAttribute">
+              <!-- should ignore -->
+              <Version></Version>
+            </PackageReference>
         </ItemGroup>
       </Project>
     `,
@@ -119,6 +123,27 @@ export default {
             "versionRange": {
               "start": 821,
               "end": 821
+            }
+          }
+        },
+        "typeCount": 2
+      },
+      {
+        "types": {
+          "name": {
+            "type": "name",
+            "name": "ChildVersionNoAttribute",
+            "nameRange": {
+              "start": 836,
+              "end": 836
+            }
+          },
+          "version": {
+            "type": "version",
+            "version": ">=*.*.*",
+            "versionRange": {
+              "start": 887,
+              "end": 887
             }
           }
         },
