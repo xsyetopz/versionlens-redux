@@ -1,13 +1,14 @@
-import { AST } from "toml-eslint-parser";
-import { TOMLTable } from "toml-eslint-parser/lib/ast";
-import { PackageDescriptorType } from "../definitions/ePackageDescriptorType";
 import {
+  PackageDescriptorType,
   TPackageGitDescriptor,
   TPackageNameDescriptor,
   TPackageParentDescriptor,
   TPackagePathDescriptor,
-  TPackageVersionDescriptor
-} from "../definitions/tPackageTypeDescriptors";
+  TPackageVersionDescriptor,
+  createPackageVersionDesc
+} from "domain/packages";
+import { AST } from "toml-eslint-parser";
+import { TOMLTable } from "toml-eslint-parser/lib/ast";
 
 export function createNameDescFromTomlNode(keyNode: AST.TOMLKey, isNameFromTable: boolean): TPackageNameDescriptor {
   const nameNode = isNameFromTable
@@ -38,11 +39,7 @@ export function createVersionDescFromTomlNode(
     end: valueNode.range[1] - 1,
   };
 
-  return {
-    type: PackageDescriptorType.version,
-    version,
-    versionRange
-  }
+  return createPackageVersionDesc(version, versionRange);
 }
 
 export function createParentDesc(path: string): TPackageParentDescriptor {

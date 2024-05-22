@@ -51,6 +51,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "^2.0.4",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 382,
               end: 388
@@ -76,6 +78,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "#",
+            versionAppend: " ",
+            versionPrepend: "",
             versionRange: {
               start: 397,
               end: 397
@@ -101,6 +105,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "^0.4.0",
+            versionAppend: " ",
+            versionPrepend: "",
             versionRange: {
               start: 448,
               end: 454
@@ -126,6 +132,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: ">=0.5.0 <0.12.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 496,
               end: 511
@@ -151,6 +159,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "^1.1.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 528,
               end: 534
@@ -371,6 +381,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "1.0.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 40,
               end: 45
@@ -401,6 +413,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "2.0.0",
+            versionAppend: " ",
+            versionPrepend: "",
             versionRange: {
               start: 116,
               end: 121
@@ -431,6 +445,8 @@ dependencies:
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "3.0.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 203,
               end: 208

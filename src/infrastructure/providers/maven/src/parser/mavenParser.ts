@@ -47,8 +47,6 @@ export function mapChildrenToDescriptor(
   propertyNodes: XmlNode[]
 ): PackageDescriptor {
 
-  const packageDesc = new PackageDescriptor();
-
   // get the name descriptor
   const nameDesc = createNameDescFromXmlNodes(parentNode, childNodes, propertyNodes);
   if (!nameDesc) return;
@@ -57,10 +55,9 @@ export function mapChildrenToDescriptor(
   const versionDesc = createVersionDescFromXmlNodes(childNodes, propertyNodes);
   if (!versionDesc) return;
 
-  // add the descriptors
-  packageDesc.addType(nameDesc);
-  packageDesc.addType(versionDesc);
+  // create the package descriptor
+  const packageDesc = new PackageDescriptor([nameDesc, versionDesc]);
 
-  // retirn the package descriptor
+  // return the package descriptor
   return packageDesc;
 }

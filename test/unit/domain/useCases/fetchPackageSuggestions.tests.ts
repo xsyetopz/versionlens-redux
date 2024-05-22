@@ -4,6 +4,7 @@ import { ILogger } from 'domain/logging';
 import {
   IPackageClient,
   PackageDependency,
+  PackageDescriptor,
   PackageResponse,
   PackageSourceType,
   PackageVersionType,
@@ -92,7 +93,8 @@ export const fetchPackageSuggestionsTests = <any>{
         //nameRange
         createDependencyRange(1, 20),
         //versionRange
-        createDependencyRange(25, 30)
+        createDependencyRange(25, 30),
+        new PackageDescriptor([])
       )
     } as TPackageClientRequest<any>
   },
@@ -123,6 +125,7 @@ export const fetchPackageSuggestionsTests = <any>{
         type: testRespDoc.type,
         packageSource: testRespDoc.source,
         fetchedPackage: testRespDoc.resolved,
+        packageDesc: new PackageDescriptor([]),
         parsedPackage: this.testPackageRes,
         suggestion: testRespDoc.suggestions[0],
         nameRange: <TPackageTextRange>{ start: 1, end: 20 },

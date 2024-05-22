@@ -4,7 +4,8 @@ import {
   TPackageHostedDescriptor,
   TPackageNameDescriptor,
   TPackagePathDescriptor,
-  TPackageVersionDescriptor
+  TPackageVersionDescriptor,
+  createPackageVersionDesc
 } from "domain/packages";
 import { Undefinable } from 'domain/utils';
 import { YAMLMap } from 'yaml';
@@ -43,12 +44,9 @@ export function createVersionDescFromYamlNode(
 
   const hasComment = valueNode.comment !== undefined && valueNode.comment.length > 0;
   const fallbackValue = hasComment ? "#" : "";
+  const version = valueNode.value || fallbackValue;
 
-  return {
-    type: PackageDescriptorType.version,
-    version: valueNode.value || fallbackValue,
-    versionRange
-  }
+  return createPackageVersionDesc(version, versionRange, "", hasComment ? " " : "");
 }
 
 export function createPathDescFromYamlNode(

@@ -50,6 +50,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "1.0.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 29,
               end: 34
@@ -75,6 +77,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "github:repo/project#semver:1.2.3",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 48,
               end: 80
@@ -100,6 +104,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: "version",
             version: "*",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 94,
               end: 95
@@ -125,6 +131,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: "version",
             version: "1.2.3",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 127,
               end: 132
@@ -150,6 +158,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: "version",
             version: "1.0.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               end: 159,
               start: 154
@@ -239,6 +249,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: "version",
             version: "2.0.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 49,
               end: 54
@@ -264,6 +276,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: "version",
             version: "3.0.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 73,
               end: 78
@@ -289,6 +303,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: "version",
             version: "4.0.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 116,
               end: 121

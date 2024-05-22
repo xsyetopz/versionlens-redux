@@ -20,7 +20,7 @@ export function npmReplaceVersion(suggestionUpdate: TSuggestionUpdate): string {
   }
 
   // fallback to default
-  return VersionUtils.formatWithExistingLeading(
+  return VersionUtils.preserveLeadingRange(
     suggestionUpdate.parsedVersion,
     suggestionUpdate.suggestionVersion
   );
@@ -35,7 +35,7 @@ function replaceGitVersion(suggestionUpdate: TSuggestionUpdate): string {
 
 function replaceAliasVersion(suggestionUpdate: TSuggestionUpdate): string {
   // preserve the leading symbol from the existing version
-  const preservedLeadingVersion = VersionUtils.formatWithExistingLeading(
+  const preservedLeadingVersion = VersionUtils.preserveLeadingRange(
     suggestionUpdate.fetchedVersion,
     suggestionUpdate.suggestionVersion
   );

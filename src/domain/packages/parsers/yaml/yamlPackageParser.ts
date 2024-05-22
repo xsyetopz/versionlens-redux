@@ -58,23 +58,20 @@ function descendChildNodes(
     // parse string properties
     if (isStringType) {
 
-      // create the package descriptor
-      const packageDesc = new PackageDescriptor();
-
-      // add the name descriptor
+      // create the name descriptor
       const nameDesc = createNameDescFromYamlNode(keyNode);
-      packageDesc.addType(nameDesc);
 
-      // add the version descriptor
+      // create the version descriptor
       const versionDesc = createVersionDescFromYamlNode(
         valueNode,
         isQuotedType
       );
 
-      packageDesc.addType(versionDesc);
+      // create the parent path desc
+      const parentDesc = createParentDesc(path);
 
-      // add the parent path desc
-      packageDesc.addType(createParentDesc(path));
+      // create the package descriptor
+      const packageDesc = new PackageDescriptor([nameDesc, versionDesc, parentDesc]);
 
       // add the package desc to the matched array
       matchedDependencies.push(packageDesc);
@@ -88,7 +85,7 @@ function descendChildNodes(
       const isQuotedType = isNodeQuoted(valueNode);
 
       // create the package descriptor
-      const packageDesc = new PackageDescriptor();
+      const packageDesc = new PackageDescriptor([]);
 
       for (const typeName in complexTypeHandlers) {
         if (map.has(typeName)) {

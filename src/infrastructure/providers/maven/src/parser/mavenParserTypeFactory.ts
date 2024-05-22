@@ -2,7 +2,8 @@ import {
   PackageDescriptorType,
   TPackageNameDescriptor,
   TPackageVersionDescriptor,
-  XmlNode
+  XmlNode,
+  createPackageVersionDesc
 } from "domain/packages";
 
 export function createNameDescFromXmlNodes(
@@ -48,11 +49,7 @@ export function createVersionDescFromXmlNodes(
 
   const version = versionNode.text;
 
-  return {
-    type: PackageDescriptorType.version,
-    version,
-    versionRange
-  }
+  return createPackageVersionDesc(version, versionRange);
 }
 
 function nodeOrPropertyNode(node: XmlNode, propertyNodes: XmlNode[]) {

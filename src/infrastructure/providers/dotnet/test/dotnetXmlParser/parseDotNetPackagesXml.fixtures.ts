@@ -1,3 +1,5 @@
+import { PackageDescriptorType, TPackageVersionDescriptor } from "domain/packages";
+
 export default {
 
   parseDotNetPackagesXml: {
@@ -33,13 +35,15 @@ export default {
               "end": 25
             }
           },
-          "version": {
-            "type": "version",
-            "version": "2.1.3",
-            "versionRange": {
-              "start": 85,
-              "end": 90
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "2.1.3",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 85,
+              end: 90
+            },
           }
         },
         "typeCount": 2
@@ -54,13 +58,15 @@ export default {
               "end": 610
             }
           },
-          "version": {
-            "type": "version",
-            "version": "(3.0,)",
-            "versionRange": {
-              "start": 680,
-              "end": 686
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "(3.0,)",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 680,
+              end: 686
+            },
           }
         },
         "typeCount": 2
@@ -75,13 +81,15 @@ export default {
               "end": 127
             }
           },
-          "version": {
-            "type": "version",
-            "version": "2.0.0",
-            "versionRange": {
-              "start": 218,
-              "end": 223
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "2.0.0",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 218,
+              end: 223
+            },
           }
         },
         "typeCount": 2
@@ -96,13 +104,15 @@ export default {
               "end": 240
             }
           },
-          "version": {
-            "type": "version",
-            "version": "2.0.1",
-            "versionRange": {
-              "start": 319,
-              "end": 324
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "2.0.1",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 319,
+              end: 324
+            },
           }
         },
         "typeCount": 2
@@ -117,13 +127,15 @@ export default {
               "end": 774
             }
           },
-          "version": {
-            "type": "version",
-            "version": ">=*.*.*",
-            "versionRange": {
-              "start": 821,
-              "end": 821
-            }
+          "version": <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "*",
+            versionAppend: '" ',
+            versionPrepend: 'Version="',
+            versionRange: {
+              start: 821,
+              end: 821
+            },
           }
         },
         "typeCount": 2
@@ -138,13 +150,15 @@ export default {
               "end": 836
             }
           },
-          "version": {
-            "type": "version",
-            "version": ">=*.*.*",
-            "versionRange": {
-              "start": 887,
-              "end": 887
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "*",
+            versionAppend: '"',
+            versionPrepend: ' Version="',
+            versionRange: {
+              start: 887,
+              end: 887
+            },
           }
         },
         "typeCount": 2
@@ -159,13 +173,15 @@ export default {
               "end": 341
             }
           },
-          "version": {
-            "type": "version",
-            "version": "4.7.2",
-            "versionRange": {
-              "start": 393,
-              "end": 398
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "4.7.2",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 393,
+              end: 398
+            },
           }
         },
         "typeCount": 2
@@ -180,13 +196,15 @@ export default {
               "end": 415
             }
           },
-          "version": {
-            "type": "version",
-            "version": "1.2.3",
-            "versionRange": {
-              "start": 487,
-              "end": 492
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "1.2.3",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 487,
+              end: 492
+            },
           }
         },
         "typeCount": 2
@@ -201,13 +219,15 @@ export default {
               "end": 703
             }
           },
-          "version": {
-            "type": "version",
-            "version": "1.0.*",
-            "versionRange": {
-              "start": 752,
-              "end": 757
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "1.0.*",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 752,
+              end: 757
+            },
           }
         },
         "typeCount": 2
@@ -222,13 +242,15 @@ export default {
               "end": 509
             }
           },
-          "version": {
-            "type": "version",
-            "version": "6.0.7",
-            "versionRange": {
-              "start": 588,
-              "end": 593
-            }
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "6.0.7",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 588,
+              end: 593
+            },
           }
         },
         "typeCount": 2

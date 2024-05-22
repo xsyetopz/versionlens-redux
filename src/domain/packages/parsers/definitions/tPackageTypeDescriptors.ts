@@ -5,18 +5,20 @@ export type TPackageType = {
 }
 
 export type TPackageNameDescriptor = TPackageType & {
-  name: string,
-  nameRange: TPackageTextRange;
+  name: string
+  nameRange: TPackageTextRange
 }
 
 export type TPackageVersionDescriptor = TPackageType & {
-  version: string,
-  versionRange: TPackageTextRange;
+  version: string
+  versionRange: TPackageTextRange
+  versionPrepend: string
+  versionAppend: string
 }
 
 export type TPackagePathDescriptor = TPackageType & {
   path: string
-  pathRange: TPackageTextRange;
+  pathRange: TPackageTextRange
 }
 
 export type TPackageHostedDescriptor = TPackageType & {

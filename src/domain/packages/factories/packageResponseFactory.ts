@@ -16,6 +16,7 @@ export function createSuccess<TClientData>(
         nameRange: request.dependency.nameRange,
         versionRange: request.dependency.versionRange,
         parsedPackage: request.dependency.package,
+        packageDesc: request.dependency.packageDesc,
         fetchedPackage: response.resolved,
         packageSource: response.source,
         type: response.type,

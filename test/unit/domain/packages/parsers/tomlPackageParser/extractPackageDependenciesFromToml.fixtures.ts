@@ -42,6 +42,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "1.0.97",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 37,
               end: 43
@@ -63,6 +65,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "1.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 75,
               end: 78
@@ -84,6 +88,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "1.3.5",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 146,
               end: 151
@@ -105,6 +111,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "1.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 201,
               end: 204
@@ -126,6 +134,8 @@ export default {
           version: <TPackageVersionDescriptor>{
             type: PackageDescriptorType.version,
             version: "1.0",
+            versionAppend: "",
+            versionPrepend: "",
             versionRange: {
               start: 226,
               end: 229

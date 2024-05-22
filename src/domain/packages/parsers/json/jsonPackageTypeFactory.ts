@@ -4,7 +4,8 @@ import {
   TPackageNameDescriptor,
   TPackageParentDescriptor,
   TPackagePathDescriptor,
-  TPackageVersionDescriptor
+  TPackageVersionDescriptor,
+  createPackageVersionDesc
 } from 'domain/packages';
 import * as JsonC from 'jsonc-parser';
 
@@ -23,21 +24,14 @@ export function createNameDescFromJsonNode(keyNode: JsonC.Node): TPackageNameDes
   };
 }
 
-export function createVersionDescFromJsonNode(
-  valueNode: any
-): TPackageVersionDescriptor {
-
+export function createVersionDescFromJsonNode(valueNode: any): TPackageVersionDescriptor {
   // +1 and -1 to be inside quotes
   const versionRange = {
     start: valueNode.offset + 1,
     end: valueNode.offset + valueNode.length - 1,
   };
 
-  return {
-    type: PackageDescriptorType.version,
-    version: valueNode.value,
-    versionRange
-  }
+  return createPackageVersionDesc(valueNode.value, versionRange);
 }
 
 export function createPathDescFromJsonNode(

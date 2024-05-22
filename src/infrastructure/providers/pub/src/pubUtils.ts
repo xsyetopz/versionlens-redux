@@ -6,7 +6,7 @@ export function pubReplaceVersion(suggestionUpdate: TSuggestionUpdate, newVersio
     suggestionUpdate,
     // handle cases with blank entries and # comments
     suggestionUpdate.parsedVersion === '#' ?
-      newVersion + ' ' :
+      `${suggestionUpdate.parsedVersionPrepend}${newVersion}${suggestionUpdate.parsedVersionAppend}` :
       newVersion
   );
 

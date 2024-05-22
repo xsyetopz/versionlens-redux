@@ -7,9 +7,16 @@
 
   <ItemGroup>
 
+    <!-- No version attribute with spacing -->
     <PackageReference Include="jQuery" />
 
-    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
+    <!-- No version attribute with no end spacing -->
+    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all"/>
+
+    <!-- Should ignore <Version> elements -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk">
+      <Version>15.6.2</Version>
+    </PackageReference>
 
   </ItemGroup>
 

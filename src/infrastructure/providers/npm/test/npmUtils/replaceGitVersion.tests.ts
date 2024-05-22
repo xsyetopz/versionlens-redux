@@ -1,5 +1,6 @@
 import assert from 'assert';
 import {
+  PackageDescriptor,
   PackageResponse,
   PackageSourceType,
   SuggestionCategory,
@@ -26,6 +27,7 @@ export const npmReplaceVersionTests = {
         name: 'packagename',
         version: 'github:someRepo/someProject#semver:^2',
       },
+      packageDesc: new PackageDescriptor([]),
       fetchedPackage: {
         name: 'packagename',
         version: '^2'

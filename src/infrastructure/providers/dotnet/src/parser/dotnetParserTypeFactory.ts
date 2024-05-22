@@ -2,10 +2,9 @@ import {
   PackageDescriptorType,
   TPackageNameDescriptor,
   TPackageVersionDescriptor,
-  XmlNode
+  XmlNode,
+  createPackageVersionDesc
 } from "domain/packages";
-
-export const noVersionAttr = '>=*.*.*';
 
 export function createNameDescFromXmlAttr(node: XmlNode): TPackageNameDescriptor {
   const includeAttr = node.attributes.include || node.attributes.update;
@@ -48,23 +47,33 @@ export function createVersionDescFromXmlAttr(keyNode: XmlNode): TPackageVersionD
     end: versionAttr.end,
   };
 
-  return {
-    type: PackageDescriptorType.version,
-    version: versionAttr.value,
-    versionRange
-  };
+  return createPackageVersionDesc(versionAttr.value, versionRange);
 }
 
 export function createBlankVersionDescFromXmlAttr(node: XmlNode): TPackageVersionDescriptor {
-  const start = node.isSelfClosing ? node.tagCloseStart : node.tagOpenEnd - 1;
+  const end = node.isSelfClosing ? node.tagCloseStart : node.tagOpenEnd - 1;
   const versionRange = {
-    start,
-    end: start,
+    start: end,
+    end,
   };
 
-  return {
-    type: PackageDescriptorType.version,
-    version: noVersionAttr,
-    versionRange
-  };
+  let versionPrepend = "";
+  let versionAppend = '"';
+
+  const attrKeys = Object.keys(node.attributes);
+  if (attrKeys.length > 0) {
+    const lastAttrKey = attrKeys[attrKeys.length - 1];
+    const prependSpace = end - node.attributes[lastAttrKey].end == 1
+    versionPrepend = prependSpace ? " " : ""
+    versionPrepend += 'Version="'
+  }
+
+  if (node.isSelfClosing) versionAppend += ' ';
+
+  return createPackageVersionDesc(
+    "*",
+    versionRange,
+    versionPrepend,
+    versionAppend
+  );
 }

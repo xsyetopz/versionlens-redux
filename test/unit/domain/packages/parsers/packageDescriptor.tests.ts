@@ -5,7 +5,7 @@ import {
   TPackageNameDescriptor,
   TPackagePathDescriptor,
   TPackageTypeDescriptor,
-  TPackageVersionDescriptor
+  createPackageVersionDesc
 } from 'domain/packages';
 import { test } from 'mocha-ui-esm';
 
@@ -15,11 +15,10 @@ const testNameDesc: TPackageNameDescriptor = {
   nameRange: { start: 1, end: 1 }
 };
 
-const testVersionDesc: TPackageVersionDescriptor = {
-  type: "version",
-  version: "1.0.0",
-  versionRange: { start: 2, end: 2 }
-}
+const testVersionDesc = createPackageVersionDesc(
+  "1.0.0",
+  { start: 2, end: 2 }
+);
 
 const testPathDesc: TPackagePathDescriptor = {
   type: "path",
@@ -38,7 +37,7 @@ export const PackageDescriptorTests = {
       ["multiple", [testNameDesc, testVersionDesc, testPathDesc]],
       (testTitle: string, testDescriptors: Array<TPackageTypeDescriptor>) => {
         // setup
-        const testPackageDesc = new PackageDescriptor();
+        const testPackageDesc = new PackageDescriptor([]);
 
         // test
         testDescriptors.forEach(x => testPackageDesc.addType(x));
@@ -61,7 +60,7 @@ export const PackageDescriptorTests = {
       ["multiple", [testNameDesc, testVersionDesc, testPathDesc]],
       (testTitle: string, testDescriptors: Array<TPackageTypeDescriptor>) => {
         // setup
-        const testPackageDesc = new PackageDescriptor();
+        const testPackageDesc = new PackageDescriptor([]);
 
         // test
         testDescriptors.forEach(x => testPackageDesc.addType(x));

@@ -20,7 +20,7 @@ export const parsePackagesXmlTests = {
       // test
       const actual = parseDotNetPackagesXml(expected, testIncludeNames);
 
-      //assert
+      // assert
       assert.equal(actual.length, 0);
     }
   ],

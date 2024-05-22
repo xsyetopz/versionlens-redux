@@ -29,9 +29,6 @@ export function parsePackageNodes(
   const includeNodes = includePropNames.map(n => doc.findExactPaths(n)).flat();
 
   for (const node of includeNodes) {
-
-    const packageDesc = new PackageDescriptor();
-
     // get the name descriptor
     const nameDesc = node.name === "Sdk"
       ? createSdkNameDescFromXmlAttr(node)
@@ -44,9 +41,8 @@ export function parsePackageNodes(
 
     if (!versionDesc) continue;
 
-    // add the descriptors
-    packageDesc.addType(nameDesc);
-    packageDesc.addType(versionDesc);
+    // create the package descriptor
+    const packageDesc = new PackageDescriptor([nameDesc, versionDesc]);
 
     // add the package desc to the matched array
     matchedDependencies.push(packageDesc);

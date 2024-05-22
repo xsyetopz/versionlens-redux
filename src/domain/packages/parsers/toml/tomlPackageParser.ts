@@ -58,17 +58,12 @@ function parsePackageNodes(
 }
 
 function parseSimpleNode(node: AST.TOMLKeyValue, isNameFromTable: boolean): PackageDescriptor {
-  const packageDesc = new PackageDescriptor();
-
   // add the name descriptor
   const nameDesc = createNameDescFromTomlNode(node.key, isNameFromTable);
-  packageDesc.addType(nameDesc);
-
   // add the version descriptor
   const versionDesc = createVersionDescFromTomlNode(node.value as AST.TOMLValue);
-  packageDesc.addType(versionDesc);
 
-  return packageDesc;
+  return new PackageDescriptor([nameDesc, versionDesc]);
 }
 
 const complexTypeHandlers = {
@@ -78,7 +73,7 @@ const complexTypeHandlers = {
 }
 
 function parseComplexNode(nameNode: AST.TOMLKeyValue, valueNode: AST.TOMLInlineTable): PackageDescriptor {
-  const packageDesc = new PackageDescriptor();
+  const packageDesc = new PackageDescriptor([]);
   for (const cNode of valueNode.body) {
 
     for (const typeName in complexTypeHandlers) {

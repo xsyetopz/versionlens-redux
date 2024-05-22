@@ -24,6 +24,7 @@ export * from './parsers/json/jsonPackageTypeFactory';
 export * from './parsers/json/tJsonPackageParserOptions';
 export * from './parsers/json/tJsonPackageTypeHandler';
 export * from './parsers/packageDescriptor';
+export * from './parsers/packageDescriptorTypeUtils';
 export * from './parsers/toml/tTomlPackageParserOptions';
 export * from './parsers/toml/tomlPackageParser';
 export * from './parsers/xml/xmlParser';

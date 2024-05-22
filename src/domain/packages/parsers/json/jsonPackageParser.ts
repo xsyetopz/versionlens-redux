@@ -67,19 +67,14 @@ function descendChildNodes(
 
     // parse string properties
     if (valueNode.type == "string") {
-      const packageDesc = new PackageDescriptor();
-
-      // add the name descriptor
+      // create the name descriptor
       const nameDesc = createNameDescFromJsonNode(keyNode);
-      packageDesc.addType(nameDesc)
-
-      // add the version descriptor
+      // create the version descriptor
       const versionDesc = createVersionDescFromJsonNode(valueNode);
-      packageDesc.addType(versionDesc);
-
-      // add the parent descriptor
+      // create the parent descriptor
       const parentDesc = createParentDesc(path);
-      packageDesc.addType(parentDesc);
+      // create the package descriptor
+      const packageDesc = new PackageDescriptor([nameDesc, versionDesc, parentDesc]);
 
       // add the package desc to the matched array
       matchedDependencies.push(packageDesc);
@@ -90,7 +85,7 @@ function descendChildNodes(
     // parse complex properties
     if (valueNode.type == "object") {
 
-      const packageDesc = new PackageDescriptor();
+      const packageDesc = new PackageDescriptor([]);
 
       for (const typeName in complexTypeHandlers) {
 

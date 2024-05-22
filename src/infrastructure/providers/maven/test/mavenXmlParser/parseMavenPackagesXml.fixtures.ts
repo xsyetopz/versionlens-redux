@@ -55,10 +55,12 @@ export default {
           "version": {
             "type": "version",
             "version": "1.5.16.RELEASE",
+            "versionAppend": "",
+            "versionPrepend": "",
             "versionRange": {
               "start": 625,
               "end": 639
-            }
+            },
           }
         },
         "typeCount": 2
@@ -76,10 +78,12 @@ export default {
           "version": {
             "type": "version",
             "version": "5.0.7.RELEASE",
+            "versionAppend": "",
+            "versionPrepend": "",
             "versionRange": {
               "start": 835,
               "end": 848
-            }
+            },
           }
         },
         "typeCount": 2
@@ -97,10 +101,12 @@ export default {
           "version": {
             "type": "version",
             "version": "9.0.12",
+            "versionAppend": "",
+            "versionPrepend": "",
             "versionRange": {
               "start": 427,
               "end": 433
-            }
+            },
           }
         },
         "typeCount": 2

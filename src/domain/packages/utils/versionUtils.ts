@@ -215,7 +215,7 @@ export function filterSemverVersions(versions: Array<string>): Array<string> {
 
 export const extractSymbolFromVersionRegex = /^([^0-9]*)?.*$/;
 export const semverLeadingChars = ['^', '~', '<', '<=', '>', '>=', '~>'];
-export function formatWithExistingLeading(existingVersion, newVersion) {
+export function preserveLeadingRange(existingVersion, newVersion) {
   const regExResult = extractSymbolFromVersionRegex.exec(existingVersion);
   const leading = regExResult && regExResult[1];
   if (!leading || !semverLeadingChars.includes(leading))
