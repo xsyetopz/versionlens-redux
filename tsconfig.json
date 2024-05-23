@@ -6,14 +6,15 @@
   ],
   "compilerOptions": {
     "strict": false,
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "outDir": "./out/",
     "noUnusedLocals": true,
     "noUnusedParameters": false,
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
       "test/*": [
@@ -29,8 +30,14 @@
       "infrastructure/providers/*": [
         "./src/infrastructure/providers/*/index"
       ],
-      "presentation.*": [
-        "./src/presentation.*/index"
+      "infrastructure/*": [
+        "./src/infrastructure/*/index"
+      ],
+      "domain/*": [
+        "./src/domain/*/index"
+      ],
+      "presentation.extension": [
+        "./src/presentation.extension/index"
       ]
     }
   }

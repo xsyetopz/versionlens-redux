@@ -1,14 +1,16 @@
-import { FileSystemWatcher, Uri, workspace } from 'vscode';
+import { FileSystemWatcher, Uri } from 'vscode';
 import { IWorkspaceAdapter } from './iWorkspaceAdapter';
 
 export class WorkspaceAdapter implements IWorkspaceAdapter {
 
+  constructor(private workspace: any) { }
+
   findFiles(include: string, exclude: string): Promise<Uri[]> {
-    return <any>workspace.findFiles(include, exclude);
+    return this.workspace.findFiles(include, exclude);
   }
 
   createFileSystemWatcher(pattern: string): FileSystemWatcher {
-    return workspace.createFileSystemWatcher(pattern);
+    return this.workspace.createFileSystemWatcher(pattern);
   }
 
 }

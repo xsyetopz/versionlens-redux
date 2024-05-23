@@ -3,14 +3,14 @@ import { ILoggingOptions } from "domain/logging";
 import { IDomainServices } from "domain/services";
 import { nameOf } from "domain/utils";
 import { OutputChannelTransport, createWinstonLogger } from "infrastructure/logging";
-import { PackageFileWatcher } from "infrastructure/watcher";
-import { WorkspaceAdapter } from "infrastructure/watcher/workspaceAdapter";
+import { PackageFileWatcher, WorkspaceAdapter } from "infrastructure/watcher";
+import { workspace } from "vscode";
 import { IInfrastructureServices } from "./infrastructureServices";
 
 export function addWorkspaceAdapter(services: IServiceCollection) {
   services.addSingleton(
     nameOf<IInfrastructureServices>().workspaceAdapter,
-    () => new WorkspaceAdapter()
+    () => new WorkspaceAdapter(workspace)
   );
 }
 

@@ -1,8 +1,9 @@
 import assert from 'assert';
-import { ClientResponseSource } from 'domain/clients/index';
+import { ClientResponseSource } from 'domain/clients';
 import { ILogger } from 'domain/logging';
 import {
   IPackageClient,
+  PackageCache,
   PackageDependency,
   PackageDescriptor,
   PackageResponse,
@@ -19,7 +20,6 @@ import {
   createPackageNameVersion,
   createPackageResource
 } from 'domain/packages';
-import { PackageCache } from 'domain/packages/packageCache';
 import { IProviderConfig, ISuggestionProvider } from 'domain/providers';
 import { FetchPackageSuggestions } from 'domain/useCases';
 import { test } from 'mocha-ui-esm';

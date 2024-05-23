@@ -2,6 +2,7 @@
   "name": "vscode-versionlens",
   "preview": false,
   "private": true,
+  "main": "./dist/extension.bundle.js",
   "description": "Shows the latest version for each package using code lens",
   "repository": {
     "type": "git",
@@ -33,7 +34,6 @@
     "onLanguage:toml",
     "onLanguage:yaml"
   ],
-  "main": "./dist/extension.bundle.js",
   "scripts": {
     "fresh": "npm run -s clean && rimraf ./node_modules test/**/node_modules && rm -f ./package-lock.json",
     "clean": "rimraf ./out ./dist",
