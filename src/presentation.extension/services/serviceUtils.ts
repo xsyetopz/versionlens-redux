@@ -100,6 +100,7 @@ export function addProviderNames(services: IServiceCollection) {
       'maven',
       'npm',
       'pub',
+      'pypi'
     ]
   )
 }

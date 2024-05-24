@@ -1,0 +1,5 @@
+[tool.poetry.dependencies]
+mysqlclient = "2.1"
+
+[tool.poetry.group.dev.dependencies]
+pip = { version = "24.0", source = "private" }

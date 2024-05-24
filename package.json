@@ -502,7 +502,7 @@
         },
         "versionlens.cargo.apiUrl": {
           "type": "string",
-          "default": "https://crates.io//api/v1/crates",
+          "default": "https://crates.io/api/v1/crates",
           "description": "Defines the api to use for crate package searching."
         },
         "versionlens.cargo.dependencyProperties": {
@@ -629,6 +629,58 @@
           "description": "Defines which properties in pom.xml should be parsed by this extension"
         },
         "versionlens.maven.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prereleases' icon is activated."
+        },
+        "versionlens.pypi.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.pypi.files": {
+          "type": "string",
+          "default": "**/pyproject.toml",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.pypi.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.pypi.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.pypi.apiUrl": {
+          "type": "string",
+          "default": "https://pypi.org/rss/project/{name}/releases.xml",
+          "description": "Defines the api to use for pypi package searching."
+        },
+        "versionlens.pypi.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "tool.poetry.dependencies",
+            "tool.poetry.group.*.dependencies"
+          ],
+          "description": "Defines which properties in pyproject.toml should be parsed by this extension"
+        },
+        "versionlens.pypi.prereleaseTagFilter": {
           "type": "array",
           "items": {
             "type": "string"

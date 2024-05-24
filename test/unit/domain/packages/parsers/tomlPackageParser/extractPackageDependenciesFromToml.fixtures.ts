@@ -26,6 +26,9 @@ export default {
       serde_json = "1.0"
       smallvec = { git = "https://github.com/servo/rust-smallvec.git" }
       bitflags = { path = "my-bitflags" }
+
+      [tool.poetry.group.dev.dependencies]
+      serde = "1.0.97"
     `,
     expected: [
       <PackageDescriptor>{
@@ -182,7 +185,30 @@ export default {
             }
           }
         }
-      }
+      },
+      <PackageDescriptor>{
+        typeCount: 2,
+        types: <KeyDictionary<TPackageTypeDescriptor>>{
+          name: <TPackageNameDescriptor>{
+            type: PackageDescriptorType.name,
+            name: "serde",
+            nameRange: {
+              start: 395,
+              end: 395
+            },
+          },
+          version: <TPackageVersionDescriptor>{
+            type: PackageDescriptorType.version,
+            version: "1.0.97",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 404,
+              end: 410
+            },
+          }
+        }
+      },
     ]
   },
 

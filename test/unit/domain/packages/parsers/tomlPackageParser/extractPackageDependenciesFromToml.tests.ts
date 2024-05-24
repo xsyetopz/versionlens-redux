@@ -28,6 +28,7 @@ export const extractPackageDependenciesFromTomlTests = {
         'dependencies',
         'dependencies.*',
         'dev-dependencies',
+        'tool.poetry.group.*.dependencies',
       ]
     }
 
