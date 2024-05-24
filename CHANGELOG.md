@@ -1,10 +1,11 @@
 # 1.10.0
 
-## Python (poetry)
+## Python (pip, poetry)
 
   - Added poetry support to pyproject.toml files
+  - Added Pipfile support
 
-    Relates to [#57](https://gitlab.com/versionlens/vscode-versionlens/-/issues/57)
+  Relates to [#57](https://gitlab.com/versionlens/vscode-versionlens/-/issues/57)
 
 ## Rust (cargo)
 

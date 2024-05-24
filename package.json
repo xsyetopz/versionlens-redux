@@ -645,7 +645,7 @@
         },
         "versionlens.pypi.files": {
           "type": "string",
-          "default": "**/pyproject.toml",
+          "default": "**/{Pipfile,pyproject.toml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.pypi.caching.duration": {
@@ -675,6 +675,8 @@
           "uniqueItems": true,
           "minItems": 1,
           "default": [
+            "packages",
+            "dev-packages",
             "tool.poetry.dependencies",
             "tool.poetry.group.*.dependencies"
           ],

@@ -1,0 +1,6 @@
+[packages]
+Sphinx = "7.3.0"
+
+[dev-packages]
+pip = { version = "24.0", source = "private" }
+my-script = "0.1.0"
