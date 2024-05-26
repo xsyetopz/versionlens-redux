@@ -1,3 +1,11 @@
+# 1.11.0
+
+## GoLang
+
+  - Added support for go.mod files
+
+    Relates to [#353](https://gitlab.com/versionlens/vscode-versionlens/-/issues/353)
+
 # 1.10.0
 
 ## Python (pip, poetry)
