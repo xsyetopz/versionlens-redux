@@ -30,6 +30,13 @@ export default {
         github.com/spf13/cobra v1.8.0
         gopkg.in/yaml.v3 v3.0.1
       )
+
+      // should ignore pseudo versions
+      k8s.io/utils v0.0.0-20230726121419-3b25d923346b
+
+      // should ignore retract versions
+      retract v1.1.0 // Published accidentally.
+      retract [v1.0.0, v1.0.5] // Build broken on some platforms.
     `,
     expected: [
       <PackageDescriptor>{

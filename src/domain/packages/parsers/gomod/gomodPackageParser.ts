@@ -8,7 +8,7 @@ const PREPEND_V = "v";
 
 export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
   const matchedDependencies: Array<PackageDescriptor> = [];
-  const re = /(\S+)\s*(\sv\S+)/gd
+  const re = /(\S+(?<!retract))\s*(\s(?=v\d+\.\d+\.\d+).*)/gd
   let match
 
   while ((match = re.exec(text)) !== null) {
@@ -17,6 +17,14 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
 
     const version = match[2];
     const [versionStart, versionEnd] = match.indices[2];
+
+    const skip =
+      // pseudo module
+      version.split("-").length === 3
+      // retract [,]
+      || packageName.indexOf("[") !== -1;
+
+    if (skip) continue;
 
     // create the package descriptor
     const nameDesc = createNameDesc(packageName, packageStart);
