@@ -82,6 +82,24 @@ export const extractPackageDependenciesFromJsonTests = {
     );
 
     assert.deepEqual(results, Fixtures.matchesPathExpressions.expected);
-  }
+  },
 
-}
+  "matches json packageManager": () => {
+    const includePropNames = ["packageManager"];
+
+    const testOptions: TJsonPackageParserOptions = {
+      includePropNames,
+      complexTypeHandlers,
+    };
+
+    const results = parsePackagesJson(
+      JSON.stringify(Fixtures.matchesPackageManagerExpressions.test),
+      testOptions
+    );
+
+    assert.deepEqual(
+      results,
+      Fixtures.matchesPackageManagerExpressions.expected
+    );
+  },
+};

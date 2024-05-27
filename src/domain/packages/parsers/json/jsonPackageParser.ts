@@ -48,6 +48,21 @@ function parsePackageNodes(
       matchedDependencies.push.apply(matchedDependencies, matched);
       continue;
     }
+
+    if (
+      foundAtLocation.node.type === "string" &&
+      foundAtLocation.node.value?.includes("@")
+    ) {
+      const nameDesc = createNameDescFromJsonNode(foundAtLocation.node);
+      const versionDesc = createVersionDescFromJsonNode(foundAtLocation.node);
+      const parentDesc = createParentDesc(foundAtLocation.path);
+      const packageDesc = new PackageDescriptor([
+        nameDesc,
+        versionDesc,
+        parentDesc,
+      ]);
+      matchedDependencies.push(packageDesc);
+    }
   }
 
   return matchedDependencies

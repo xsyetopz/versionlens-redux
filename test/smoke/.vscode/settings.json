@@ -18,6 +18,7 @@
     "jspm.optionalDependencies",
     "pnpm.overrides",
     "pnpm.overrides.*",
+    "packageManager",
     "customDependencies"
   ],
   "versionlens.npm.files": "**/{package.json,web-module.json}",

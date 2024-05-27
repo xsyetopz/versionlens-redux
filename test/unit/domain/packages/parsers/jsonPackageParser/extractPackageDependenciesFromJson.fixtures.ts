@@ -317,5 +317,40 @@ export default {
         }
       },
     ]
+  },
+
+  matchesPackageManagerExpressions: {
+    test: {
+      packageManager: "pnpm@9.1.2",
+    },
+    expected: [
+      <PackageDescriptor>{
+        typeCount: 3,
+        types: <KeyDictionary<TPackageTypeDescriptor>>{
+          name: <TPackageNameDescriptor>{
+            type: PackageDescriptorType.name,
+            name: "pnpm@9.1.2",
+            nameRange: {
+              start: 18,
+              end: 18
+            },
+          },
+          version: <TPackageVersionDescriptor>{
+            type: "version",
+            version: "9.1.2",
+            versionAppend: "",
+            versionPrepend: "",
+            versionRange: {
+              start: 24,
+              end: 29
+            },
+          },
+          parent: <TPackageParentDescriptor>{
+            type: "parent",
+            path: "packageManager"
+          }
+        }
+      }
+    ]
   }
-}
+};

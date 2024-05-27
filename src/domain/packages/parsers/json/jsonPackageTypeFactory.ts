@@ -31,7 +31,17 @@ export function createVersionDescFromJsonNode(valueNode: any): TPackageVersionDe
     end: valueNode.offset + valueNode.length - 1,
   };
 
-  return createPackageVersionDesc(valueNode.value, versionRange);
+  // Handle packageManager field (packageManager@version)
+  let { value: version } = valueNode;
+  if (/^[\w]+@[\w-.]+$/.test(version)) {
+    const versionSplitIndex = version.indexOf("@");
+    if (versionSplitIndex !== -1) {
+      version = version.substring(versionSplitIndex + 1);
+      versionRange.start += versionSplitIndex + 1;
+    }
+  }
+
+  return createPackageVersionDesc(version, versionRange);
 }
 
 export function createPathDescFromJsonNode(
