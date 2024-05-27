@@ -1,5 +1,6 @@
 import {
   PackageDependency,
+  PackageDescriptorType,
   TPackageNameVersion,
   TPackageResource,
   TPackageTextRange
@@ -44,6 +45,9 @@ export function hasPackageDepsChanged(
   if (original.length !== changed.length) return true;
 
   for (const dep of original) {
+
+    if (dep.packageDesc.hasType(PackageDescriptorType.ignoreChanges)) continue;
+
     const noChange = changed.some(
       other => other.packageEquals(dep)
     );

@@ -1,7 +1,9 @@
 import {
   createDependencyRange,
+  createIgnoreChangesDesc,
   createPackageResource,
-  PackageDependency
+  PackageDependency,
+  PackageDescriptor
 } from "domain/packages";
 
 export default {
@@ -15,7 +17,8 @@ export default {
       //nameRange
       createDependencyRange(0, 1),
       // versionRange
-      createDependencyRange(2, 3)
+      createDependencyRange(2, 3),
+      new PackageDescriptor([])
     )
   ],
   singleWithDiffVersion: [
@@ -28,7 +31,8 @@ export default {
       //nameRange
       createDependencyRange(0, 1),
       // versionRange
-      createDependencyRange(2, 3)
+      createDependencyRange(2, 3),
+      new PackageDescriptor([])
     )
   ],
   singleWithDiffNameRange: [
@@ -41,7 +45,8 @@ export default {
       //nameRange
       createDependencyRange(4, 5),
       // versionRange
-      createDependencyRange(2, 3)
+      createDependencyRange(2, 3),
+      new PackageDescriptor([])
     )
   ],
   singleWithDiffVersionRange: [
@@ -54,7 +59,8 @@ export default {
       //nameRange
       createDependencyRange(0, 1),
       // versionRange
-      createDependencyRange(4, 5)
+      createDependencyRange(4, 5),
+      new PackageDescriptor([])
     )
   ],
   multiple: [
@@ -67,7 +73,8 @@ export default {
       //nameRange
       createDependencyRange(4, 5),
       // versionRange
-      createDependencyRange(6, 7)
+      createDependencyRange(6, 7),
+      new PackageDescriptor([])
     ),
     new PackageDependency(
       createPackageResource(
@@ -78,7 +85,8 @@ export default {
       //nameRange
       createDependencyRange(8, 9),
       // versionRange
-      createDependencyRange(10, 11)
+      createDependencyRange(10, 11),
+      new PackageDescriptor([])
     )
   ],
   multipleWithDiffVersion: [
@@ -91,7 +99,8 @@ export default {
       //nameRange
       createDependencyRange(4, 5),
       // versionRange
-      createDependencyRange(6, 7)
+      createDependencyRange(6, 7),
+      new PackageDescriptor([])
     ),
     new PackageDependency(
       createPackageResource(
@@ -102,7 +111,8 @@ export default {
       //nameRange
       createDependencyRange(8, 9),
       // versionRange
-      createDependencyRange(10, 11)
+      createDependencyRange(10, 11),
+      new PackageDescriptor([])
     )
   ],
   multipleWithDiffNameRange: [
@@ -115,7 +125,8 @@ export default {
       //nameRange
       createDependencyRange(4, 5),
       // versionRange
-      createDependencyRange(6, 7)
+      createDependencyRange(6, 7),
+      new PackageDescriptor([])
     ),
     new PackageDependency(
       createPackageResource(
@@ -126,9 +137,10 @@ export default {
       //nameRange
       createDependencyRange(12, 13),
       // versionRange
-      createDependencyRange(10, 11)
+      createDependencyRange(10, 11),
+      new PackageDescriptor([])
     )
-  ],  
+  ],
   multipleWithDiffVersionRange: [
     new PackageDependency(
       createPackageResource(
@@ -139,7 +151,8 @@ export default {
       //nameRange
       createDependencyRange(4, 5),
       // versionRange
-      createDependencyRange(12, 13)
+      createDependencyRange(12, 13),
+      new PackageDescriptor([])
     ),
     new PackageDependency(
       createPackageResource(
@@ -150,7 +163,38 @@ export default {
       //nameRange
       createDependencyRange(8, 9),
       // versionRange
-      createDependencyRange(10, 11)
+      createDependencyRange(10, 11),
+      new PackageDescriptor([])
+    )
+  ],
+  ignoresChanges: [
+    new PackageDependency(
+      createPackageResource(
+        "testPackage1",
+        "10.0.0",
+        "test/path"
+      ),
+      //nameRange
+      createDependencyRange(4, 5),
+      // versionRange
+      createDependencyRange(12, 13),
+      new PackageDescriptor([
+        createIgnoreChangesDesc()
+      ])
+    ),
+    new PackageDependency(
+      createPackageResource(
+        "testPackage2",
+        "20.0.0",
+        "test/path"
+      ),
+      //nameRange
+      createDependencyRange(8, 9),
+      // versionRange
+      createDependencyRange(10, 11),
+      new PackageDescriptor([
+        createIgnoreChangesDesc()
+      ])
     )
   ],
 }

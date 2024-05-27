@@ -1,6 +1,7 @@
 import {
   PackageDescriptorType,
   TPackageGitDescriptor,
+  TPackageIgnoreChangesDescriptor,
   TPackageNameDescriptor,
   TPackageParentDescriptor,
   TPackagePathDescriptor,
@@ -78,4 +79,8 @@ export function createParentDesc(path: string): TPackageParentDescriptor {
     type: PackageDescriptorType.parent,
     path
   }
+}
+
+export function createIgnoreChangesDesc(): TPackageIgnoreChangesDescriptor {
+  return { type: PackageDescriptorType.ignoreChanges }
 }

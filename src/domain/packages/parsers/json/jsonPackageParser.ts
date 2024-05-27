@@ -1,4 +1,4 @@
-import { PackageDescriptor } from 'domain/packages';
+import { PackageDescriptor, createSpecialDesc } from 'domain/packages';
 import { KeyDictionary, Undefinable } from 'domain/utils';
 import * as JsonC from 'jsonc-parser';
 import {
@@ -49,18 +49,8 @@ function parsePackageNodes(
       continue;
     }
 
-    if (
-      foundAtLocation.node.type === "string" &&
-      foundAtLocation.node.value?.includes("@")
-    ) {
-      const nameDesc = createNameDescFromJsonNode(foundAtLocation.node);
-      const versionDesc = createVersionDescFromJsonNode(foundAtLocation.node);
-      const parentDesc = createParentDesc(foundAtLocation.path);
-      const packageDesc = new PackageDescriptor([
-        nameDesc,
-        versionDesc,
-        parentDesc,
-      ]);
+    if (foundAtLocation.node.type === "string" && foundAtLocation.node.value?.includes("@")) {
+      const packageDesc = createSpecialDesc(foundAtLocation.node, foundAtLocation.path)
       matchedDependencies.push(packageDesc);
     }
   }

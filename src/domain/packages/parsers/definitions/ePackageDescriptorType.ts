@@ -4,5 +4,6 @@ export enum PackageDescriptorType {
   path = "path",
   git = "git",
   hosted = "hosted",
-  parent = "parent"
+  parent = "parent",
+  ignoreChanges = "ignoreChanges"
 }

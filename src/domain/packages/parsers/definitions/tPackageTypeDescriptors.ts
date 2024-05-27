@@ -36,9 +36,12 @@ export type TPackageParentDescriptor = TPackageType & {
   path: string
 }
 
+export type TPackageIgnoreChangesDescriptor = TPackageType & {}
+
 export type TPackageTypeDescriptor = TPackageNameDescriptor
   | TPackageVersionDescriptor
   | TPackagePathDescriptor
   | TPackageHostedDescriptor
   | TPackageGitDescriptor
   | TPackageParentDescriptor
+  | TPackageIgnoreChangesDescriptor

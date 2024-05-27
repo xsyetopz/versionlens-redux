@@ -57,6 +57,11 @@ export const hasPackageDepsChangedTests = {
       const actual = hasPackageDepsChanged(testOriginal, multipleWithDiffVersionRange);
       assert.equal(actual, true);
     }
-  ]
+  ],
+
+  "returns false when has ignoresChanges descriptors": function () {
+    const actual = hasPackageDepsChanged(Fixtures.ignoresChanges, Fixtures.multiple);
+    assert.equal(actual, false);
+  }
 
 };

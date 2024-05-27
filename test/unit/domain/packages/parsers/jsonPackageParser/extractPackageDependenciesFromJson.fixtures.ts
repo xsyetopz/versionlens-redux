@@ -325,8 +325,11 @@ export default {
     },
     expected: [
       <PackageDescriptor>{
-        typeCount: 3,
+        typeCount: 4,
         types: <KeyDictionary<TPackageTypeDescriptor>>{
+          ignoreChanges: {
+            type: 'ignoreChanges'
+          },
           name: <TPackageNameDescriptor>{
             type: PackageDescriptorType.name,
             name: "pnpm@9.1.2",
