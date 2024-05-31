@@ -7,6 +7,7 @@
     Examples:
 
     ![image](/uploads/c10bed509673e368184d9ab546186029/image.png)
+    
     ![image](/uploads/411ad32f58e37cc64b40a757796829aa/image.png)
 
     Thanks to https://gitlab.com/ST-DDT
