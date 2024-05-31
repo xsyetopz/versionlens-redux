@@ -1,249 +1,68 @@
 import {
-  SuggestionCategory,
+  SuggestionFactory,
   SuggestionStatusText,
-  SuggestionTypes,
   TPackageSuggestion
 } from 'domain/packages';
 
 export default {
   fixedNoMatchWithLatestSuggestions: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.NoMatch,
-      name: SuggestionStatusText.NoMatch,
-      version: ''
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '1.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.prerelease,
-      category: SuggestionCategory.Updateable,
-      name: 'alpha',
-      version: '1.1.0-alpha.1'
-    }
+    SuggestionFactory.createNoMatchStatus(),
+    SuggestionFactory.createLatestUpdateable('1.0.0'),
+    SuggestionFactory.createTaggedPreleaseUpdateable('alpha', '1.1.0-alpha.1')
   ],
   fixedIsLatestNoSuggestions: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Latest,
-      name: SuggestionStatusText.Latest,
-      version: '3.0.0'
-    }
+    SuggestionFactory.createMatchesLatestStatus('3.0.0')
   ],
   fixedWithSuggestions: [
-    {
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Match,
-      name: SuggestionStatusText.Fixed,
-      version: '1.1.1',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '2.2.2',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateMinor,
-      version: '1.2.2',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdatePatch,
-      version: '1.1.2',
-    },
+    SuggestionFactory.createFixedStatus('1.1.1'),
+    SuggestionFactory.createLatestUpdateable('2.2.2'),
+    SuggestionFactory.createNextMaxUpdateable('1.2.2', SuggestionStatusText.UpdateMinor),
+    SuggestionFactory.createNextMaxUpdateable('1.1.2', SuggestionStatusText.UpdatePatch),
   ],
   fixedIsLatestWithPrereleaseSuggestions: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Latest,
-      name: SuggestionStatusText.Latest,
-      version: '3.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.prerelease,
-      category: SuggestionCategory.Updateable,
-      name: 'next',
-      version: '4.0.0-next'
-    }
+    SuggestionFactory.createMatchesLatestStatus('3.0.0'),
+    SuggestionFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
   ],
   fixedNoMatchWithNextSuggestions: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.NoMatch,
-      name: SuggestionStatusText.NoMatch,
-      version: ''
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '1.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateMinor,
-      version: '0.6.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdatePatch,
-      version: '0.5.1'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.prerelease,
-      category: SuggestionCategory.Updateable,
-      name: 'alpha',
-      version: '1.1.0-alpha.1'
-    }
+    SuggestionFactory.createNoMatchStatus(),
+    SuggestionFactory.createLatestUpdateable('1.0.0'),
+    SuggestionFactory.createNextMaxUpdateable('0.6.0', SuggestionStatusText.UpdateMinor),
+    SuggestionFactory.createNextMaxUpdateable('0.5.1', SuggestionStatusText.UpdatePatch),
+    SuggestionFactory.createTaggedPreleaseUpdateable('alpha', '1.1.0-alpha.1')
   ],
   rangeNoMatchWithLatestSuggestions: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.NoMatch,
-      name: SuggestionStatusText.NoMatch,
-      version: ''
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '2.0.0'
-    }
+    SuggestionFactory.createNoMatchStatus(),
+    SuggestionFactory.createLatestUpdateable('2.0.0')
   ],
   rangeSatisfiesLatest: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Latest,
-      name: SuggestionStatusText.Latest,
-      version: '3.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.prerelease,
-      category: SuggestionCategory.Updateable,
-      name: 'next',
-      version: '4.0.0-next'
-    }
+    SuggestionFactory.createMatchesLatestStatus('3.0.0'),
+    SuggestionFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
   ],
   latestWithinRange: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Match,
-      name: SuggestionStatusText.SatisfiesLatest,
-      version: '3.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.Latest,
-      version: '3.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.prerelease,
-      category: SuggestionCategory.Updateable,
-      name: 'next',
-      version: '4.0.0-next'
-    }
+    SuggestionFactory.createSatisifiesLatestStatus('3.0.0'),
+    SuggestionFactory.createLatestUpdateable('3.0.0'),
+    SuggestionFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
   ],
   rangeSatisfiesUpdateAndSuggestsLatest: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Match,
-      name: SuggestionStatusText.Satisfies,
-      version: '2.1.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '3.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateRange,
-      version: '2.1.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.prerelease,
-      category: SuggestionCategory.Updateable,
-      name: 'next',
-      version: '4.0.0-next'
-    }
+    SuggestionFactory.createSatisifiesStatus('2.1.0'),
+    SuggestionFactory.createLatestUpdateable('3.0.0'),
+    SuggestionFactory.createNextMaxUpdateable('2.1.0', SuggestionStatusText.UpdateRange),
+    SuggestionFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
   ],
   rangeSatisfiesTildeRangeWithUpdateSuggestions: [
-    {
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Match,
-      name: SuggestionStatusText.Satisfies,
-      version: '1.1.2',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '2.2.2',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateRange,
-      version: '1.1.2',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateMinor,
-      version: '1.2.2',
-    },
+    SuggestionFactory.createSatisifiesStatus('1.1.2'),
+    SuggestionFactory.createLatestUpdateable('2.2.2'),
+    SuggestionFactory.createNextMaxUpdateable('1.1.2', SuggestionStatusText.UpdateRange),
+    SuggestionFactory.createNextMaxUpdateable('1.2.2', SuggestionStatusText.UpdateMinor)
   ],
   rangeSatisfiesCaretRangeWithUpdateSuggestions: [
-    {
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Match,
-      name: SuggestionStatusText.Satisfies,
-      version: '1.2.2',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '2.2.2',
-    },
-    {
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateRange,
-      version: '1.2.2',
-    },
+    SuggestionFactory.createSatisifiesStatus('1.2.2'),
+    SuggestionFactory.createLatestUpdateable('2.2.2'),
+    SuggestionFactory.createNextMaxUpdateable('1.2.2', SuggestionStatusText.UpdateRange),
   ],
   rangeSatisfiesMaxAndSuggestsLatest: [
-    <TPackageSuggestion>{
-      type: SuggestionTypes.status,
-      category: SuggestionCategory.Match,
-      name: SuggestionStatusText.Satisfies,
-      version: '2.1.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.release,
-      category: SuggestionCategory.Updateable,
-      name: SuggestionStatusText.UpdateLatest,
-      version: '3.0.0'
-    },
-    <TPackageSuggestion>{
-      type: SuggestionTypes.prerelease,
-      category: SuggestionCategory.Updateable,
-      name: 'next',
-      version: '4.0.0-next'
-    }
+    SuggestionFactory.createSatisifiesStatus('2.1.0'),
+    SuggestionFactory.createLatestUpdateable('3.0.0'),
+    SuggestionFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
   ]
 } satisfies Record<string, TPackageSuggestion[]>;

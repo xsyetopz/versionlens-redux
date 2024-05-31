@@ -155,12 +155,24 @@ export function createLatestUpdateable(
   };
 }
 
-export function createRangeUpdateable(rangeVersion: string): TPackageSuggestion {
+export function createNextMaxUpdateable(
+  requestedVersion: string,
+  name: string
+): TPackageSuggestion {
+  return {
+    name,
+    category: SuggestionCategory.Updateable,
+    version: requestedVersion,
+    type: SuggestionTypes.release
+  };
+}
+
+export function createTaggedPreleaseUpdateable(name: string, version: string): TPackageSuggestion {
   return createSuggestion(
-    SuggestionStatusText.UpdateRange,
+    name,
     SuggestionCategory.Updateable,
-    rangeVersion,
-    SuggestionTypes.release
+    version,
+    SuggestionTypes.prerelease
   );
 }
 

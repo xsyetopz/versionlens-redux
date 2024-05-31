@@ -1,8 +1,6 @@
 import {
-  SuggestionCategory,
   SuggestionFactory,
   SuggestionStatusText,
-  SuggestionTypes,
   TPackageSuggestion,
   VersionUtils,
 } from 'domain/packages';
@@ -16,6 +14,7 @@ import {
   valid,
   validRange,
 } from 'semver';
+import { createTaggedPreleaseUpdateable } from '../factories/packageSuggestionFactory';
 
 export function createSuggestions(
   versionRange: string,
@@ -108,7 +107,7 @@ export function createSuggestions(
       // Only suggest if the version is not already suggested
       if (version && !suggestions.some((s) => s.version === version)) {
         suggestions.push(
-          SuggestionFactory.createLatestUpdateable(version, name)
+          SuggestionFactory.createNextMaxUpdateable(version, name)
         );
       }
     }
@@ -136,12 +135,9 @@ export function createSuggestions(
     if (tv.version === latestVersion) break;
     if (versionRange.includes(tv.version)) break;
 
-    results.push({
-      name: tv.name,
-      category: SuggestionCategory.Updateable,
-      version: tv.version,
-      type: SuggestionTypes.prerelease
-    });
+    results.push(
+      createTaggedPreleaseUpdateable(tv.name, tv.version)
+    );
   }
 
   return results;
