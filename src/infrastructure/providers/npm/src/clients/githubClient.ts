@@ -4,8 +4,8 @@ import { ILogger } from 'domain/logging';
 import {
   ClientResponseFactory,
   PackageSourceType,
+  PackageStatusFactory,
   PackageVersionType,
-  SuggestionFactory,
   TPackageClientResponse,
   UpdateableFactory,
   VersionUtils,
@@ -139,7 +139,7 @@ export class GitHubClient {
       return ClientResponseFactory.create(
         PackageSourceType.Github,
         clientResponse,
-        [SuggestionFactory.createNotFoundStatus()]
+        [PackageStatusFactory.createNotFoundStatus()]
       )
     }
 
@@ -162,16 +162,16 @@ export class GitHubClient {
 
     if (noMatch) {
       suggestions.push(
-        SuggestionFactory.createNoMatchStatus(),
+        PackageStatusFactory.createNoMatchStatus(),
         UpdateableFactory.createLatestUpdateable(latestCommit)
       );
     } else if (isLatest) {
       suggestions.push(
-        SuggestionFactory.createMatchesLatestStatus(versionRange)
+        PackageStatusFactory.createMatchesLatestStatus(versionRange)
       );
     } else if (commitIndex > 0) {
       suggestions.push(
-        SuggestionFactory.createFixedStatus(versionRange),
+        PackageStatusFactory.createFixedStatus(versionRange),
         UpdateableFactory.createLatestUpdateable(latestCommit)
       );
     }

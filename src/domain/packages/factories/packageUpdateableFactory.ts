@@ -1,9 +1,9 @@
 import {
   SuggestionCategory,
-  SuggestionFactory,
   SuggestionStatusText,
   SuggestionTypes,
-  TPackageSuggestion
+  TPackageSuggestion,
+  createSuggestion
 } from 'domain/packages';
 import { prerelease } from 'semver';
 
@@ -37,7 +37,7 @@ export function createNextMaxUpdateable(requestedVersion: string, name: string):
 }
 
 export function createTaggedPreleaseUpdateable(name: string, version: string): TPackageSuggestion {
-  return SuggestionFactory.createSuggestion(
+  return createSuggestion(
     name,
     SuggestionCategory.Updateable,
     version,

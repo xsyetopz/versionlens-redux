@@ -9,7 +9,7 @@ import {
   ClientResponseFactory,
   IPackageClient,
   PackageSourceType,
-  SuggestionFactory,
+  PackageStatusFactory,
   SuggestionStatusText,
   TPackageClientRequest,
   TPackageClientResponse,
@@ -49,7 +49,7 @@ export class DubClient implements IPackageClient<null> {
         errorResponse
       );
 
-      const suggestion = SuggestionFactory.createFromHttpStatus(errorResponse.status);
+      const suggestion = PackageStatusFactory.createFromHttpStatus(errorResponse.status);
       if (suggestion != null) {
         return ClientResponseFactory.create(
           PackageSourceType.Registry,
@@ -139,7 +139,7 @@ export function parseSuggestions(
     const latestRelease = releases[releases.length - 1];
 
     if (latestRelease === versionRange) {
-      suggestions[0] = SuggestionFactory.createMatchesLatestStatus(versionRange);
+      suggestions[0] = PackageStatusFactory.createMatchesLatestStatus(versionRange);
       suggestions.pop();
     } else {
       // suggest

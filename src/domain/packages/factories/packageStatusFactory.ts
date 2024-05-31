@@ -1,9 +1,10 @@
 import {
+  PackageStatusFactory,
   SuggestionCategory,
-  SuggestionFactory,
   SuggestionStatusText,
   SuggestionTypes,
-  TPackageSuggestion
+  TPackageSuggestion,
+  createSuggestion
 } from 'domain/packages';
 import { Nullable } from 'domain/utils';
 import semver from 'semver';
@@ -11,15 +12,15 @@ import semver from 'semver';
 export function createFromHttpStatus(status: number | string): Nullable<TPackageSuggestion> {
 
   if (status == 400)
-    return SuggestionFactory.createBadRequestStatus();
+    return PackageStatusFactory.createBadRequestStatus();
   else if (status == 401)
-    return SuggestionFactory.createNotAuthorizedStatus();
+    return PackageStatusFactory.createNotAuthorizedStatus();
   else if (status == 403)
-    return SuggestionFactory.createForbiddenStatus();
+    return PackageStatusFactory.createForbiddenStatus();
   else if (status == 404)
-    return SuggestionFactory.createNotFoundStatus();
+    return PackageStatusFactory.createNotFoundStatus();
   else if (status == 500)
-    return SuggestionFactory.createInternalServerErrorStatus();
+    return PackageStatusFactory.createInternalServerErrorStatus();
 
   return null;
 }
@@ -172,13 +173,4 @@ export function createFixedStatus(version: string): TPackageSuggestion {
     version,
     SuggestionTypes.status
   );
-}
-
-export function createSuggestion(
-  name: string,
-  category: SuggestionCategory,
-  version: string,
-  type: SuggestionTypes
-): TPackageSuggestion {
-  return { name, category, version, type };
 }

@@ -10,7 +10,7 @@ import {
   IPackageClient,
   PackageDescriptorType,
   PackageSourceType,
-  SuggestionFactory,
+  PackageStatusFactory,
   TPackageClientRequest,
   TPackageClientResponse,
   TPackageGitDescriptor,
@@ -71,7 +71,7 @@ export class PypiClient implements IPackageClient<null> {
         errorResponse
       );
 
-      const suggestion = SuggestionFactory.createFromHttpStatus(errorResponse.status);
+      const suggestion = PackageStatusFactory.createFromHttpStatus(errorResponse.status);
       if (suggestion != null) {
         return ClientResponseFactory.create(
           PackageSourceType.Registry,

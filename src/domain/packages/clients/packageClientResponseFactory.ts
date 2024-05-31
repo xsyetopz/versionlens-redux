@@ -1,8 +1,8 @@
 import { ClientResponseSource } from 'domain/clients';
 import {
   PackageSourceType,
+  PackageStatusFactory,
   PackageVersionType,
-  SuggestionFactory,
   TPackageClientResponse,
   TPackageClientResponseStatus,
   TPackageResource,
@@ -34,7 +34,7 @@ export function createInvalidVersion(
 ): TPackageClientResponse {
   const source: PackageSourceType = PackageSourceType.Registry;
   const suggestions: Array<TPackageSuggestion> = [
-    SuggestionFactory.createInvalidStatus(''),
+    PackageStatusFactory.createInvalidStatus(''),
     UpdateableFactory.createLatestUpdateable(),
   ];
 
@@ -55,7 +55,7 @@ export function createNoMatch(
 ): TPackageClientResponse {
 
   const suggestions: Array<TPackageSuggestion> = [
-    SuggestionFactory.createNoMatchStatus(),
+    PackageStatusFactory.createNoMatchStatus(),
     UpdateableFactory.createLatestUpdateable(latestVersion),
   ];
 
@@ -76,7 +76,7 @@ export function createFixed(
 ): TPackageClientResponse {
 
   const suggestions: Array<TPackageSuggestion> = [
-    SuggestionFactory.createFixedStatus(fixedVersion)
+    PackageStatusFactory.createFixedStatus(fixedVersion)
   ];
 
   return {
@@ -100,8 +100,8 @@ export function createDirectory(
 
   const suggestions: Array<TPackageSuggestion> = [
     exists
-      ? SuggestionFactory.createDirectoryStatus(path)
-      : SuggestionFactory.createDirectoryNotFoundStatus(path)
+      ? PackageStatusFactory.createDirectoryStatus(path)
+      : PackageStatusFactory.createDirectoryNotFoundStatus(path)
   ];
 
   const responseStatus = createResponseStatus(

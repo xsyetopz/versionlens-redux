@@ -1,8 +1,11 @@
 import {
   PackageDependency,
   PackageDescriptorType,
+  SuggestionCategory,
+  SuggestionTypes,
   TPackageNameVersion,
   TPackageResource,
+  TPackageSuggestion,
   TPackageTextRange
 } from "domain/packages";
 
@@ -36,6 +39,15 @@ export function createPackageResource(
     version,
     path
   }
+}
+
+export function createSuggestion(
+  name: string,
+  category: SuggestionCategory,
+  version: string,
+  type: SuggestionTypes
+): TPackageSuggestion {
+  return { name, category, version, type };
 }
 
 export function hasPackageDepsChanged(

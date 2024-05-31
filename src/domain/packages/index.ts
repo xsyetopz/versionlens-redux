@@ -13,7 +13,7 @@ export * from './definitions/tPackageVersions';
 export * from './definitions/tSemverSpec';
 export * from "./dependencyCache";
 export * as ResponseFactory from './factories/packageResponseFactory';
-export * as SuggestionFactory from './factories/packageSuggestionFactory';
+export * as PackageStatusFactory from './factories/packageStatusFactory';
 export * as UpdateableFactory from './factories/packageUpdateableFactory';
 export * from './models/packageDependency';
 export * from './packageCache';

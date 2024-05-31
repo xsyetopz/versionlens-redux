@@ -10,8 +10,8 @@ import {
   ClientResponseFactory,
   IPackageClient,
   PackageSourceType,
+  PackageStatusFactory,
   PackageVersionType,
-  SuggestionFactory,
   TPackageClientRequest,
   TPackageClientResponse,
   VersionUtils,
@@ -66,7 +66,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
       }
 
       // attempt to create a suggestion from the http status
-      const suggestion = SuggestionFactory.createFromHttpStatus(errorResponse.status);
+      const suggestion = PackageStatusFactory.createFromHttpStatus(errorResponse.status);
       if (suggestion != null) {
         return ClientResponseFactory.create(
           PackageSourceType.Registry,

@@ -1,5 +1,5 @@
 import {
-  SuggestionFactory,
+  PackageStatusFactory,
   SuggestionStatusText,
   TPackageSuggestion,
   UpdateableFactory,
@@ -24,7 +24,7 @@ export function createSuggestions(
 ): Array<TPackageSuggestion> {
   if (releases.length === 0 && prereleases.length === 0) {
     // No versions available -> nothing to suggest/do
-    return [SuggestionFactory.createNoMatchStatus()];
+    return [PackageStatusFactory.createNoMatchStatus()];
   }
 
   const isFixedVersion = valid(versionRange) != null;
@@ -58,22 +58,22 @@ export function createSuggestions(
   // determine the current status
   if (!satisfiesVersion) {
     // Cannot find a version that satisfies the range -> suggest only latest
-    status = SuggestionFactory.createNoMatchStatus();
+    status = PackageStatusFactory.createNoMatchStatus();
   } else if (isLatest) {
     if (hasRangeUpdate) {
       // Theoretically up to date,
       // but it could still be using an older version in the range
-      status = SuggestionFactory.createSatisifiesLatestStatus(satisfiesVersion);
+      status = PackageStatusFactory.createSatisifiesLatestStatus(satisfiesVersion);
     } else {
       // Already up to date -> nothing to do
-      status = SuggestionFactory.createMatchesLatestStatus(satisfiesVersion);
+      status = PackageStatusFactory.createMatchesLatestStatus(satisfiesVersion);
     }
   } else if (isFixedVersion) {
     // Not up to date (fixed) -> display the current version
-    status = SuggestionFactory.createFixedStatus(satisfiesVersion);
+    status = PackageStatusFactory.createFixedStatus(satisfiesVersion);
   } else {
     // Not up to date (range) -> display the max satisfying version
-    status = SuggestionFactory.createSatisifiesStatus(satisfiesVersion);
+    status = PackageStatusFactory.createSatisifiesStatus(satisfiesVersion);
   }
 
   // determine suggestions

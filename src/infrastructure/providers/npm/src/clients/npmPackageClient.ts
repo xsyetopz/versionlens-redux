@@ -5,7 +5,7 @@ import {
   ClientResponseFactory,
   IPackageClient,
   PackageSourceType,
-  SuggestionFactory,
+  PackageStatusFactory,
   TPackageClientRequest,
   TPackageClientResponse,
   TPackageSuggestion,
@@ -109,24 +109,24 @@ export class NpmPackageClient implements IPackageClient<null> {
       let suggestions: Array<TPackageSuggestion>;
 
       if (status == 'CONNREFUSED')
-        suggestions = [SuggestionFactory.createConnectionRefusedStatus()];
+        suggestions = [PackageStatusFactory.createConnectionRefusedStatus()];
       else if (status == 'CONNRESET')
-        suggestions = [SuggestionFactory.createConnectionResetStatus()];
+        suggestions = [PackageStatusFactory.createConnectionResetStatus()];
       else if (status == 'UNSUPPORTEDPROTOCOL' || response.data == 'Not implemented yet')
-        suggestions = [SuggestionFactory.createNotSupportedStatus()];
+        suggestions = [PackageStatusFactory.createNotSupportedStatus()];
       else if (status == 'INVALIDTAGNAME' || response.data.includes('Invalid comparator:'))
         suggestions = [
-          SuggestionFactory.createInvalidStatus(''),
+          PackageStatusFactory.createInvalidStatus(''),
           UpdateableFactory.createLatestUpdateable('latest')
         ];
       else if (status == 'INVALIDPACKAGENAME')
         suggestions = [
-          SuggestionFactory.createInvalidStatus('')
+          PackageStatusFactory.createInvalidStatus('')
         ];
       else if (status == 128)
-        suggestions = [SuggestionFactory.createNotFoundStatus()]
+        suggestions = [PackageStatusFactory.createNotFoundStatus()]
       else
-        suggestions = [SuggestionFactory.createFromHttpStatus(status)];
+        suggestions = [PackageStatusFactory.createFromHttpStatus(status)];
 
       if (suggestions === null) throw response;
 

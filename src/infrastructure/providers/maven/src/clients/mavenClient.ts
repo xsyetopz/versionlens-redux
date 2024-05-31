@@ -9,7 +9,7 @@ import {
   ClientResponseFactory,
   IPackageClient,
   PackageSourceType,
-  SuggestionFactory,
+  PackageStatusFactory,
   TPackageClientRequest,
   TPackageClientResponse,
   TSemverSpec,
@@ -55,7 +55,7 @@ export class MavenClient implements IPackageClient<MavenClientData> {
         errorResponse
       );
 
-      const suggestion = SuggestionFactory.createFromHttpStatus(errorResponse.status);
+      const suggestion = PackageStatusFactory.createFromHttpStatus(errorResponse.status);
       if (suggestion != null) {
         return ClientResponseFactory.create(
           PackageSourceType.Registry,
