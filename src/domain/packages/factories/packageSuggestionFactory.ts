@@ -132,10 +132,13 @@ export function createNoMatchStatus(): TPackageSuggestion {
   };
 }
 
-export function createLatestUpdateable(requestedVersion?: string): TPackageSuggestion {
+export function createLatestUpdateable(
+  requestedVersion?: string,
+  name?: string
+): TPackageSuggestion {
   const isPrerelease = semver.prerelease(requestedVersion);
 
-  const name = isPrerelease
+  name ??= isPrerelease
     ? SuggestionStatusText.UpdateLatestPrerelease
     : SuggestionStatusText.UpdateLatest;
 

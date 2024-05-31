@@ -192,6 +192,38 @@ export const CreateSuggestionsTests = {
       }
     }
   },
+
+  'fixed with latest, minor and patch': {
+    "$i: returns 'fixed' with latest, minor and patch suggestions": [
+      ['1.1.1'],
+      (testRange: string) => {
+        // setup
+        const fixedVersion = '1.1.1';
+        const testReleases = [
+          '1.1.0',
+          '1.1.1',
+          '1.1.2',
+          '1.2.0',
+          '1.2.2',
+          '2.0.0',
+          '2.2.2',
+        ];
+        const testPrereleases = [];
+
+        // test
+        const results = createSuggestions(
+          testRange,
+          testReleases,
+          testPrereleases
+        );
+
+        // assert
+        assert.deepEqual(results, Fixtures.fixedWithSuggestions);
+        assert.equal(results[0].version, fixedVersion);
+      },
+    ],
+  },
+
   "when version is a range": {
     "has no match": {
       "returns 'no match' with latest suggestion": () => {
@@ -283,6 +315,76 @@ export const CreateSuggestionsTests = {
           assert.deepEqual(results, Fixtures.rangeSatisfiesUpdateAndSuggestsLatest);
           assert.equal(results[0].version, satisfiesVersion);
         }
+      ],
+    },
+
+    'satisfies ~ range with update suggestions': {
+      "$i: returns 'satisfies' with update, latest, minor suggestions": [
+        ['~1.1'],
+        ['~1.1.1'],
+        (testRange: string) => {
+          // setup
+          const satisfiesVersion = '1.1.2';
+          const testReleases = [
+            '1.1.0',
+            '1.1.1',
+            '1.1.2',
+            '1.2.0',
+            '1.2.2',
+            '2.0.0',
+            '2.2.2',
+          ];
+          const testPrereleases = [];
+
+          // test
+          const results = createSuggestions(
+            testRange,
+            testReleases,
+            testPrereleases
+          );
+
+          // assert
+          assert.deepEqual(
+            results,
+            Fixtures.rangeSatisfiesTildeRangeWithUpdateSuggestions
+          );
+          assert.equal(results[0].version, satisfiesVersion);
+        },
+      ],
+    },
+
+    'satisfies ^ range with update suggestions': {
+      "$i: returns 'satisfies' with update, latest suggestions": [
+        ['^1.1'],
+        ['^1.1.1'],
+        (testRange: string) => {
+          // setup
+          const satisfiesVersion = '1.2.2';
+          const testReleases = [
+            '1.1.0',
+            '1.1.1',
+            '1.1.2',
+            '1.2.0',
+            '1.2.2',
+            '2.0.0',
+            '2.2.2',
+          ];
+          const testPrereleases = [];
+
+          // test
+          const results = createSuggestions(
+            testRange,
+            testReleases,
+            testPrereleases
+          );
+
+          // assert
+          assert.deepEqual(
+            results,
+            Fixtures.rangeSatisfiesCaretRangeWithUpdateSuggestions
+          );
+          assert.equal(results[0].version, satisfiesVersion);
+        },
       ],
     },
 

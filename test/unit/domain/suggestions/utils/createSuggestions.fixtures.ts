@@ -34,6 +34,32 @@ export default {
       version: '3.0.0'
     }
   ],
+  fixedWithSuggestions: [
+    {
+      type: SuggestionTypes.status,
+      category: SuggestionCategory.Match,
+      name: SuggestionStatusText.Fixed,
+      version: '1.1.1',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateLatest,
+      version: '2.2.2',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateMinor,
+      version: '1.2.2',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdatePatch,
+      version: '1.1.2',
+    },
+  ],
   fixedIsLatestWithPrereleaseSuggestions: [
     <TPackageSuggestion>{
       type: SuggestionTypes.status,
@@ -110,11 +136,63 @@ export default {
       version: '2.1.0'
     },
     <TPackageSuggestion>{
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateLatest,
+      version: '3.0.0'
+    },
+    <TPackageSuggestion>{
       type: SuggestionTypes.prerelease,
       category: SuggestionCategory.Updateable,
       name: 'next',
       version: '4.0.0-next'
     }
+  ],
+  rangeSatisfiesTildeRangeWithUpdateSuggestions: [
+    {
+      type: SuggestionTypes.status,
+      category: SuggestionCategory.Match,
+      name: SuggestionStatusText.Satisfies,
+      version: '1.1.2',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateRange,
+      version: '1.1.2',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateLatest,
+      version: '2.2.2',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateMinor,
+      version: '1.2.2',
+    },
+  ],
+  rangeSatisfiesCaretRangeWithUpdateSuggestions: [
+    {
+      type: SuggestionTypes.status,
+      category: SuggestionCategory.Match,
+      name: SuggestionStatusText.Satisfies,
+      version: '1.2.2',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateRange,
+      version: '1.2.2',
+    },
+    {
+      type: SuggestionTypes.release,
+      category: SuggestionCategory.Updateable,
+      name: SuggestionStatusText.UpdateLatest,
+      version: '2.2.2',
+    },
   ],
   rangeSatisfiesMaxAndSuggestsLatest: [
     <TPackageSuggestion>{
@@ -136,4 +214,4 @@ export default {
       version: '4.0.0-next'
     }
   ]
-}
+} satisfies Record<string, TPackageSuggestion[]>;

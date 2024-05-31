@@ -16,6 +16,8 @@ export enum SuggestionStatusText {
   LatestIsPrerelease = 'latest prerelease',
   Fixed = 'fixed',
   UpdateLatest = 'latest',
+  UpdateMinor = 'minor',
+  UpdatePatch = 'patch',
   UpdateLatestPrerelease = 'latest prerelease',
   UpdateRange = 'bump'
 }
