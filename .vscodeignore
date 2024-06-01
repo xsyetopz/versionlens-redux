@@ -1,18 +1,13 @@
 **/*.*
-!node_modules/**/*.json
-!node_modules/**/*.js
-!node_modules/**/*.cjs
-!node_modules/**/*.mjs
-node_modules/**/node_modules
-node_modules/**/test
-test/**/node_modules
+node_modules/
+test/
 !images/**/*.*
 !dist/**/*.js
 # adding a * to the end of a single file name is a workaround 
 # for a vsce bug where it appends `/**` to filenames and then scans sub folders for the filename.
-!AUTHORS.md*
-!README.md*
-!LICENSE*
-!CHANGELOG.md*
-!package.json*
-!package-lock.json*
+!AUTHORS.md
+!README.md
+!LICENSE
+!CHANGELOG.md
+!package.json
+!package-lock.json

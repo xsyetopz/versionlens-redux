@@ -43,13 +43,13 @@
       ]
     },
     {
-      "name": "Debug webpack",
+      "name": "Debug esbuild",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "run-script",
-        "pack:src"
+        "bundle"
       ],
       "sourceMaps": true,
       "internalConsoleOptions": "openOnSessionStart",

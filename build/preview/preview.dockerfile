@@ -14,7 +14,7 @@ RUN npm install
 RUN npm run test:unit
 
 # bundle
-RUN npm run pack -- --mode=production
+RUN npm run bundle
 
 # remove all node modules
 RUN rimraf ./node_modules

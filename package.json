@@ -38,22 +38,23 @@
   "scripts": {
     "fresh": "npm run -s clean && rimraf ./node_modules test/**/node_modules && rm -f ./package-lock.json",
     "clean": "rimraf ./out ./dist",
+    "prebundle": "npm run -s clean",
+    "bundle": "node ./build/esbuild.js",
+    "bundle:test": "env BUNDLE_TEST=true npm run -s bundle",
     "precompile": "npm run -s clean && npm run -s lint:src",
-    "compile": "npm run -s pack:src",
-    "compile:src": "tsc -p ./tsconfig.json",
+    "compile": "npm run -s bundle",
+    "compile:dev": "tsc -p ./tsconfig.json",
     "compile:test": "tsc -p ./tsconfig.json",
-    "lint:src": "npm run -s compile:src -- --noEmit",
+    "lint:src": "npm run -s compile:dev -- --noEmit",
     "lint:test": "npm run -s compile:test -- --noEmit",
-    "pack": "webpack --config=./build/webpack.config.js --env logging=true",
-    "pack:src": "npm run -s pack -- --mode=development",
-    "pack:test": "npm run -s pack -- --env test=true --mode=development",
-    "pretest": "npm run -s clean && npm run -s lint:test && npm run -s pack:test",
+    "pretest": "npm run -s clean && npm run -s lint:test && npm run -s bundle:test",
     "test": "node ./test/run.vscode.tests",
     "test:unit": "npm run pretest && env TEST=unit node ./dist/extension.test.js",
     "trace": "npm run -s clean && tsc --explainFiles --project ./tsconfig.json > trace.log"
   },
   "devDependencies": {
     "@esm-test/guards": "1.0.0-beta.9",
+    "@types/eslint": "8.56.10",
     "@types/mocha": "10.0.6",
     "@types/node": "20.13.0",
     "@types/npm-package-arg": "6.1.4",
@@ -61,17 +62,13 @@
     "@types/source-map-support": "0.5.10",
     "@types/vscode": "1.89.0",
     "@vscode/test-electron": "2.4.0",
+    "esbuild": "0.21.4",
     "mocha": "10.4.0",
     "mocha-ui-esm": "1.0.0-beta.14",
     "rimraf": "5.0.7",
     "source-map-support": "0.5.21",
-    "terser-webpack-plugin": "5.3.10",
-    "ts-loader": "9.5.1",
     "ts-mockito": "2.6.1",
-    "tsconfig-paths-webpack-plugin": "4.1.0",
-    "typescript": "5.4.5",
-    "webpack": "5.91.0",
-    "webpack-cli": "5.1.4"
+    "typescript": "5.4.5"
   },
   "dependencies": {
     "@npmcli/config": "8.3.3",
@@ -90,8 +87,8 @@
     "yaml": "2.4.2"
   },
   "overrides": {
-		"@npmcli/agent": "2.0.0"
-	},
+    "@npmcli/agent": "2.0.0"
+  },
   "contributes": {
     "commands": [
       {
