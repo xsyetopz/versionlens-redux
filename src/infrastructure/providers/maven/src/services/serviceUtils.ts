@@ -56,7 +56,7 @@ export function addProcessClient(services: IServiceCollection) {
       createProcessClient(
         container.processesCache,
         container.mavenCachingOpts,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -69,7 +69,7 @@ export function addCliClient(services: IServiceCollection) {
       new MvnCli(
         container.mavenConfig,
         container.mvnProcess,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -84,7 +84,7 @@ export function addHttpClient(services: IServiceCollection) {
           caching: container.mavenCachingOpts,
           http: container.mavenHttpOpts
         },
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -97,7 +97,7 @@ export function addMavenClient(services: IServiceCollection) {
       new MavenClient(
         container.mavenConfig,
         container.mavenHttpClient,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -110,7 +110,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
         container.mavenClient,
         container.mvnCli,
         container.mavenConfig,
-        container.logger.child({ namespace: 'mavenSuggestionProvider' })
+        container.logger.child({ logGroup: 'mavenSuggestionProvider' })
       )
   );
 }

@@ -27,11 +27,11 @@ export function addWinstonChannelLogger(services: IServiceCollection) {
   );
 }
 
-export function addWinstonLogger(services: IServiceCollection, namespace: string) {
+export function addWinstonLogger(services: IServiceCollection, defaultLogGroup: string) {
   services.addSingleton(
     nameOf<IDomainServices>().logger,
     (container: IDomainServices) =>
-      createWinstonLogger(container.loggerChannel, { namespace })
+      createWinstonLogger(container.loggerChannel, defaultLogGroup)
   );
 }
 
@@ -45,7 +45,7 @@ export function addPackageFileWatcher(services: IServiceCollection) {
         container.workspaceAdapter,
         container.suggestionProviders,
         container.fileWatcherDependencyCache,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       ),
     true
   );

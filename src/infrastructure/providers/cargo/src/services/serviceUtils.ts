@@ -56,7 +56,7 @@ export function addJsonClient(services: IServiceCollection) {
           caching: container.cargoCachingOpts,
           http: container.cargoHttpOpts
         },
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -69,7 +69,7 @@ export function addCratesClient(services: IServiceCollection) {
       new CratesClient(
         container.cargoConfig,
         container.cargoJsonClient,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -81,7 +81,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new CargoSuggestionProvider(
         container.cratesClient,
         container.cargoConfig,
-        container.logger.child({ namespace: 'cargoSuggestionProvider' })
+        container.logger.child({ logGroup: 'cargoSuggestionProvider' })
       )
   );
 }

@@ -6,13 +6,13 @@ import {
   addWorkspaceAdapter
 } from ".";
 
-export function addInfrastructureServices(services: IServiceCollection, namespace: string) {
+export function addInfrastructureServices(services: IServiceCollection, defaultLogGroup: string) {
 
   addWorkspaceAdapter(services);
 
   addWinstonChannelLogger(services);
 
-  addWinstonLogger(services, namespace);
+  addWinstonLogger(services, defaultLogGroup);
 
   addPackageFileWatcher(services);
 

@@ -56,7 +56,7 @@ export function addHttpClient(services: IServiceCollection) {
           caching: container.pypiCachingOpts,
           http: container.pypiHttpOpts
         },
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -69,7 +69,7 @@ export function addPypiClient(services: IServiceCollection) {
       new PypiClient(
         container.pypiConfig,
         container.pypiHttpClient,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -81,7 +81,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new PypiSuggestionProvider(
         container.pypiClient,
         container.pypiConfig,
-        container.logger.child({ namespace: 'pypiSuggestionProvider' })
+        container.logger.child({ logGroup: 'pypiSuggestionProvider' })
       )
   );
 }

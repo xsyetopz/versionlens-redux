@@ -56,7 +56,7 @@ export function addJsonClient(services: IServiceCollection) {
           caching: container.composerCachingOpts,
           http: container.composerHttpOpts
         },
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -69,7 +69,7 @@ export function addComposerClient(services: IServiceCollection) {
       new ComposerClient(
         container.composerConfig,
         container.composerJsonClient,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -81,7 +81,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new ComposerSuggestionProvider(
         container.composerClient,
         container.composerConfig,
-        container.logger.child({ namespace: 'composerSuggestionProvider' })
+        container.logger.child({ logGroup: 'composerSuggestionProvider' })
       )
   );
 }

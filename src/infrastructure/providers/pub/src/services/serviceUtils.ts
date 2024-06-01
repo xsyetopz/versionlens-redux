@@ -56,7 +56,7 @@ export function addJsonClient(services: IServiceCollection) {
           caching: container.pubCachingOpts,
           http: container.pubHttpOpts
         },
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -69,7 +69,7 @@ export function addPubClient(services: IServiceCollection) {
       new PubClient(
         container.pubConfig,
         container.pubJsonClient,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -81,7 +81,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new PubSuggestionProvider(
         container.pubClient,
         container.pubConfig,
-        container.logger.child({ namespace: 'pubSuggestionProvider' })
+        container.logger.child({ logGroup: 'pubSuggestionProvider' })
       )
   );
 }

@@ -100,7 +100,7 @@ export function addGetDependencyChangesUseCase(services: IServiceCollection) {
       new GetDependencyChanges(
         container.storage,
         container.fileWatcherDependencyCache,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -112,7 +112,7 @@ export function addFetchProjectSuggestionsUseCase(services: IServiceCollection) 
     (container: IDomainServices) =>
       new FetchProjectSuggestions(
         container.fetchPackageSuggestions,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -124,7 +124,7 @@ export function addFetchPackageSuggestionsUseCase(services: IServiceCollection) 
     (container: IDomainServices) =>
       new FetchPackageSuggestions(
         container.packageCache,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }

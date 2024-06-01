@@ -56,7 +56,7 @@ export function addJsonClient(services: IServiceCollection) {
           caching: container.dubCachingOpts,
           http: container.dubHttpOpts
         },
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -69,7 +69,7 @@ export function addDubClient(services: IServiceCollection) {
       new DubClient(
         container.dubConfig,
         container.dubJsonClient,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -81,7 +81,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new DubSuggestionProvider(
         container.dubClient,
         container.dubConfig,
-        container.logger.child({ namespace: 'dubSuggestionProvider' })
+        container.logger.child({ logGroup: 'dubSuggestionProvider' })
       )
   );
 }

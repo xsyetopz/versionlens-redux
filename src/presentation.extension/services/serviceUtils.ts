@@ -81,7 +81,7 @@ export function addVersionLensProviders(services: IServiceCollection) {
             container.extension,
             suggestionProvider,
             container.getSuggestions,
-            container.logger.child({ namespace: `${suggestionProvider.name}CodeLensProvider` })
+            container.logger.child({ logGroup: `${suggestionProvider.name}CodeLensProvider` })
           )
         )
       ),
@@ -125,7 +125,7 @@ export function addGetSuggestionsUseCase(services: IServiceCollection) {
           container.editorDependencyCache,
           container.fileWatcherDependencyCache
         ],
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -138,7 +138,7 @@ export function addOnActiveTextEditorChange(services: IServiceCollection) {
       new OnActiveTextEditorChange(
         container.extension.state,
         container.GetSuggestionProvider,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       ),
     true
   )
@@ -152,7 +152,7 @@ export function addOnTextDocumentChange(services: IServiceCollection) {
       new OnTextDocumentChange(
         container.GetSuggestionProvider,
         container.versionLensState,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       ),
     true
   )
@@ -165,7 +165,7 @@ export function addOnTextDocumentClosed(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) =>
       new OnTextDocumentClose(
         container.GetSuggestionProvider,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       ),
     true
   )
@@ -179,7 +179,7 @@ export function addOnTextDocumentSave(services: IServiceCollection) {
       new OnTextDocumentSave(
         container.GetSuggestionProvider,
         container.extension.state,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       ),
     true
   )
@@ -192,7 +192,7 @@ export function addOnProviderEditorActivated(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) => {
       const listener = new OnProviderEditorActivated(
         container.loggerChannel,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
 
       // register listener
@@ -212,7 +212,7 @@ export function addOnProviderTextDocumentChange(services: IServiceCollection) {
         container.extension.state,
         container.getDependencyChanges,
         container.editorDependencyCache,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
 
       // register listener
@@ -231,7 +231,7 @@ export function addOnClearCache(services: IServiceCollection) {
       return new OnClearCache(
         container.packageCache,
         container.processesCache,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
     },
     true
@@ -246,7 +246,7 @@ export function addOnPreSaveChanges(services: IServiceCollection) {
       const event = new OnPreSaveChanges(
         container.fileWatcherDependencyCache,
         container.editorDependencyCache,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
 
       // register listener
@@ -263,7 +263,7 @@ export function addOnSaveChanges(services: IServiceCollection) {
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
       const event = new OnSaveChanges(
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
 
       // register listener
@@ -280,7 +280,7 @@ export function addOnFileLinkClick(services: IServiceCollection) {
     serviceName,
     (container: IDomainServices) => {
       return new OnFileLinkClick(
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
     },
     true
@@ -293,7 +293,7 @@ export function addOnUpdateDependencyClick(services: IServiceCollection) {
     serviceName,
     (container: IDomainServices) => {
       return new OnUpdateDependencyClick(
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
     },
     true
@@ -308,7 +308,7 @@ export function addOnToggleReleases(services: IServiceCollection) {
       return new OnToggleReleases(
         container.versionLensProviders,
         container.extension.state,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
     },
     true
@@ -323,7 +323,7 @@ export function addOnTogglePrereleases(services: IServiceCollection) {
       return new OnTogglePrereleases(
         container.versionLensProviders,
         container.extension.state,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
     },
     true
@@ -338,7 +338,7 @@ export function addOnShowError(services: IServiceCollection) {
       return new OnErrorClick(
         container.extension.state,
         container.outputChannel,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
     },
     true
@@ -352,7 +352,7 @@ export function addOnPackageDependenciesChanged(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) => {
       const event = new OnPackageDependenciesChanged(
         container.extension.state,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
 
       // register listener
@@ -370,7 +370,7 @@ export function addOnProviderTextDocumentClose(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) => {
       const event = new OnProviderTextDocumentClose(
         container.editorDependencyCache,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       );
 
       // register listener

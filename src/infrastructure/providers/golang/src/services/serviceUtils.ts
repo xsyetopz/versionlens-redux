@@ -56,7 +56,7 @@ export function addHttpClient(services: IServiceCollection) {
           caching: container.goCachingOpts,
           http: container.goHttpOpts
         },
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -69,7 +69,7 @@ export function addGoClient(services: IServiceCollection) {
       new GoClient(
         container.goConfig,
         container.goHttpClient,
-        container.logger.child({ namespace: serviceName })
+        container.logger.child({ logGroup: serviceName })
       )
   );
 }
@@ -81,7 +81,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new GoSuggestionProvider(
         container.goClient,
         container.goConfig,
-        container.logger.child({ namespace: 'goSuggestionProvider' })
+        container.logger.child({ logGroup: 'goSuggestionProvider' })
       )
   );
 }

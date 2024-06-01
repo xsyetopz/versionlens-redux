@@ -1,5 +1,5 @@
 export type TChildLoggerOptions = {
 
-  namespace: string;
+  logGroup: string;
 
 };

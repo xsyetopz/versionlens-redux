@@ -5,7 +5,7 @@ import { loggingLevels } from './logLevels';
 
 export function createWinstonLogger(
   loggerChannel: ILoggerChannel,
-  defaultMeta: object
+  defaultLogGroup: string
 ): ILogger {
 
   const logTransports: any[] = [
@@ -23,7 +23,9 @@ export function createWinstonLogger(
     format.printf(loggerFormatter)
   );
 
-  return loggers.add(
+  const defaultMeta = { defaultLogGroup };
+
+  const logger = loggers.add(
     loggerChannel.name,
     {
       format: logFormat,
@@ -32,8 +34,10 @@ export function createWinstonLogger(
       levels: loggingLevels
     }
   );
+
+  return logger;
 }
 
 function loggerFormatter(entry: TransformableInfo) {
-  return `[${entry.timestamp}] [${entry.level}] [${entry.namespace}] ${entry.message}`
+  return `[${entry.timestamp}] [${entry.level}] [${entry.logGroup || entry.defaultLogGroup}] ${entry.message}`
 }
