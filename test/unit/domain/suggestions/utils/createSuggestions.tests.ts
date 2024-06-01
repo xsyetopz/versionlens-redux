@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import {
   SuggestionCategory,
   SuggestionStatusText,
@@ -7,6 +6,7 @@ import {
   createSuggestions
 } from 'domain/packages';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 import Fixtures from './createSuggestions.fixtures';
 
 export const CreateSuggestionsTests = {
@@ -361,9 +361,9 @@ export const CreateSuggestionsTests = {
 
     "satisfies an update within the range": {
       "$i: returns 'satisfies' with update suggestion": [
-        ['>=2 <3'],
-        ['>=1.2 <2.2.*'],
-        (testRange: string) => {
+        ['>=2 <3', '2.1.0', SuggestionStatusText.UpdateMinor],
+        ['>=1.2 <2.2.*', '2.1.0', SuggestionStatusText.UpdateRange],
+        (testRange: string, expectedVersion: string, expectedNextMaxName: string) => {
           // setup
           const satisfiesVersion = '2.1.0';
           const testReleases = ['1.0.0', '2.0.0', '2.1.0', '3.0.0']
@@ -377,7 +377,13 @@ export const CreateSuggestionsTests = {
           );
 
           // assert
-          assert.deepEqual(results, Fixtures.rangeSatisfiesUpdateAndSuggestsLatest);
+          assert.deepEqual(
+            results,
+            Fixtures.rangeSatisfiesUpdateAndSuggestsLatest(
+              expectedVersion,
+              expectedNextMaxName
+            )
+          );
           assert.equal(results[0].version, satisfiesVersion);
         }
       ],

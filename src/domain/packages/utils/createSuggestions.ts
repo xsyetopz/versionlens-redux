@@ -7,13 +7,15 @@ import {
 } from 'domain/packages';
 import { Nullable } from 'domain/utils';
 import {
+  compare,
   compareLoose,
+  diff,
   inc,
   maxSatisfying,
-  minVersion,
+  minVersion as getMinVersion,
   prerelease,
   valid,
-  validRange,
+  validRange
 } from 'semver';
 
 export function createSuggestions(
@@ -49,10 +51,11 @@ export function createSuggestions(
   // get the latest release
   const latestVersion = distTagVersion || releases[releases.length - 1];
   const isLatest = latestVersion === satisfiesVersion;
+  const minVersion = getMinVersion(versionRange).version;
   const hasRangeUpdate =
     isRangeVersion &&
     satisfiesVersion &&
-    satisfiesVersion !== minVersion(versionRange).version;
+    satisfiesVersion !== minVersion;
   let status: TPackageSuggestion;
 
   // determine the current status
@@ -88,7 +91,13 @@ export function createSuggestions(
 
   // suggest ranged?
   if (!isLatest && hasRangeUpdate) {
-    potentialSuggestions.push([SuggestionStatusText.UpdateRange, satisfiesVersion]);
+    const diffNextMaxName = diff(minVersion, satisfiesVersion);
+    if (diffNextMaxName === 'minor' || diffNextMaxName === 'patch')
+      // prefer the minor or patch text
+      potentialSuggestions.push([diffNextMaxName, satisfiesVersion]);
+    else
+      // special range that isn't the next max minor or patch
+      potentialSuggestions.push([SuggestionStatusText.UpdateRange, satisfiesVersion]);
   }
 
   // suggest minor and\or patch?
@@ -118,7 +127,10 @@ export function createSuggestions(
     suggestions.push(UpdateableFactory.createLatestUpdateable(latestVersion));
   }
 
-  const results = [status, ...suggestions];
+  // ensure ranged versions are sorted again minor and\or patch versions
+  const orderedSuggestions = suggestions.sort((a, b) => compare(b.version, a.version));
+
+  const results = [status, ...orderedSuggestions];
 
   // roll up prereleases
   const maxSatisfyingPrereleases = VersionUtils.filterPrereleasesGtMinRange(
