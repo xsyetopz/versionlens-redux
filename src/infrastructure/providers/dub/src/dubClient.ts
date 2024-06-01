@@ -10,15 +10,14 @@ import {
   IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  SuggestionStatusText,
   TPackageClientRequest,
   TPackageClientResponse,
   TPackageSuggestion,
   TSemverSpec,
-  UpdateableFactory,
   VersionUtils,
   createSuggestions
 } from 'domain/packages';
+import { valid } from 'semver';
 import { DubConfig } from './dubConfig';
 
 export class DubClient implements IPackageClient<null> {
@@ -123,30 +122,21 @@ export function parseSuggestions(
   releases: string[],
   prereleases: string[]
 ): Array<TPackageSuggestion> {
+  if (releases.length === 0) {
+    return [PackageStatusFactory.createNoMatchStatus()]
+  }
 
-  const suggestions = createSuggestions(
+  const latestRelease = releases[releases.length - 1];
+  const isValid = valid(versionRange.replace('~>', ''));
+
+  // checks if this is a repo version
+  if (!isValid && versionRange.startsWith('~') && latestRelease === versionRange) {
+    return [PackageStatusFactory.createMatchesLatestStatus(versionRange)]
+  }
+
+  return createSuggestions(
     versionRange,
     releases,
     prereleases
   );
-
-  // check for ~{name} suggestion if no matches found
-  const firstSuggestion = suggestions[0];
-  const hasNoMatch = firstSuggestion.name === SuggestionStatusText.NoMatch;
-  const isTildeVersion = versionRange.charAt(0) === '~';
-
-  if (hasNoMatch && isTildeVersion && releases.length > 0) {
-    const latestRelease = releases[releases.length - 1];
-
-    if (latestRelease === versionRange) {
-      suggestions[0] = PackageStatusFactory.createMatchesLatestStatus(versionRange);
-      suggestions.pop();
-    } else {
-      // suggest
-      suggestions[1] = UpdateableFactory.createLatestUpdateable(latestRelease);
-    }
-
-  }
-
-  return suggestions;
 }
