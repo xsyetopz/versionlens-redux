@@ -74,7 +74,7 @@
     "webpack-cli": "5.1.4"
   },
   "dependencies": {
-    "@npmcli/config": "8.3.2",
+    "@npmcli/config": "8.3.3",
     "@npmcli/promise-spawn": "7.0.2",
     "awilix": "10.0.2",
     "dotenv": "16.4.5",
