@@ -9,10 +9,9 @@ import { Nullable } from 'domain/utils';
 import {
   compare,
   compareLoose,
-  diff,
+  minVersion as getMinVersion,
   inc,
   maxSatisfying,
-  minVersion as getMinVersion,
   prerelease,
   valid,
   validRange
@@ -93,17 +92,6 @@ export function createSuggestions(
     potentialSuggestions.push([SuggestionStatusText.UpdateLatest, latestVersion]);
   }
 
-  // suggest ranged?
-  if (!isLatest && hasRangeUpdate) {
-    const diffNextMaxName = diff(minVersion, satisfiesVersion);
-    if (diffNextMaxName === 'minor' || diffNextMaxName === 'patch')
-      // prefer the minor or patch text
-      potentialSuggestions.push([diffNextMaxName, satisfiesVersion]);
-    else
-      // special range that isn't the next max minor or patch
-      potentialSuggestions.push([SuggestionStatusText.UpdateRange, satisfiesVersion]);
-  }
-
   // suggest minor and\or patch?
   if (satisfiesVersion || isFixedVersion) {
     const nextMaxMajor = inc(satisfiesVersion ?? versionRange, 'major');
@@ -114,15 +102,21 @@ export function createSuggestions(
       [SuggestionStatusText.UpdateMinor, `>=${nextMaxMinor} <${nextMaxMajor}`],
       [SuggestionStatusText.UpdatePatch, `>=${nextMaxPatch} <${nextMaxMinor}`],
     );
+  }
 
-    for (const [name, range] of potentialSuggestions) {
-      const version = maxSatisfying(releases, range);
-      // Only suggest if the version is not already suggested
-      if (version && !suggestions.some((s) => s.version === version)) {
-        suggestions.push(
-          UpdateableFactory.createNextMaxUpdateable(version, name)
-        );
-      }
+  // suggest ranged?
+  if (!isLatest && hasRangeUpdate) {
+    potentialSuggestions.push([SuggestionStatusText.UpdateRange, satisfiesVersion]);
+  }
+
+  // reduce the potential suggestions
+  for (const [name, range] of potentialSuggestions) {
+    const version = maxSatisfying(releases, range);
+    // Only suggest if the version is not already suggested
+    if (version && !suggestions.some((s) => s.version === version)) {
+      suggestions.push(
+        UpdateableFactory.createNextMaxUpdateable(version, name)
+      );
     }
   }
 
@@ -131,7 +125,7 @@ export function createSuggestions(
     suggestions.push(UpdateableFactory.createLatestUpdateable(latestVersion));
   }
 
-  // ensure ranged versions are sorted again minor and\or patch versions
+  // sort the suggested versions (latest first)
   const orderedSuggestions = suggestions.sort((a, b) => compare(b.version, a.version));
 
   const results = [status, ...orderedSuggestions];

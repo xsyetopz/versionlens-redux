@@ -43,22 +43,22 @@ export default {
     UpdateableFactory.createLatestUpdateable('3.0.0'),
     UpdateableFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
   ],
-  rangeSatisfiesUpdateAndSuggestsLatest: (version: string, nextMaxName: string) => ([
+  rangeSatisfiesUpdateAndSuggestsLatest: [
     PackageStatusFactory.createSatisifiesStatus('2.1.0'),
     UpdateableFactory.createLatestUpdateable('3.0.0'),
-    UpdateableFactory.createNextMaxUpdateable(version, nextMaxName),
+    UpdateableFactory.createNextMaxUpdateable('2.1.0', SuggestionStatusText.UpdateRange),
     UpdateableFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
-  ]),
+  ],
   rangeSatisfiesTildeRangeWithUpdateSuggestions: [
     PackageStatusFactory.createSatisifiesStatus('1.1.2'),
     UpdateableFactory.createLatestUpdateable('2.2.2'),
     UpdateableFactory.createNextMaxUpdateable('1.2.2', SuggestionStatusText.UpdateMinor),
-    UpdateableFactory.createNextMaxUpdateable('1.1.2', SuggestionStatusText.UpdatePatch)
+    UpdateableFactory.createNextMaxUpdateable('1.1.2', SuggestionStatusText.UpdateRange)
   ],
   rangeSatisfiesCaretRangeWithUpdateSuggestions: [
     PackageStatusFactory.createSatisifiesStatus('1.2.2'),
     UpdateableFactory.createLatestUpdateable('2.2.2'),
-    UpdateableFactory.createNextMaxUpdateable('1.2.2', SuggestionStatusText.UpdateMinor),
+    UpdateableFactory.createNextMaxUpdateable('1.2.2', SuggestionStatusText.UpdateRange),
   ],
   rangeSatisfiesMaxAndSuggestsLatest: [
     PackageStatusFactory.createSatisifiesStatus('2.1.0'),

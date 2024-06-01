@@ -361,9 +361,9 @@ export const CreateSuggestionsTests = {
 
     "satisfies an update within the range": {
       "$i: returns 'satisfies' with update suggestion": [
-        ['>=2 <3', '2.1.0', SuggestionStatusText.UpdateMinor],
-        ['>=1.2 <2.2.*', '2.1.0', SuggestionStatusText.UpdateRange],
-        (testRange: string, expectedVersion: string, expectedNextMaxName: string) => {
+        ['>=2 <3'],
+        ['>=1.2 <2.2.*'],
+        (testRange: string) => {
           // setup
           const satisfiesVersion = '2.1.0';
           const testReleases = ['1.0.0', '2.0.0', '2.1.0', '3.0.0']
@@ -379,11 +379,9 @@ export const CreateSuggestionsTests = {
           // assert
           assert.deepEqual(
             results,
-            Fixtures.rangeSatisfiesUpdateAndSuggestsLatest(
-              expectedVersion,
-              expectedNextMaxName
-            )
+            Fixtures.rangeSatisfiesUpdateAndSuggestsLatest
           );
+
           assert.equal(results[0].version, satisfiesVersion);
         }
       ],
