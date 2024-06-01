@@ -16,6 +16,8 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
     const [packageStart] = match.indices[1];
 
     const version = match[2];
+    const commentPos = version.indexOf('//');
+    const hasComment = commentPos !== -1;
     const [versionStart, versionEnd] = match.indices[2];
 
     const skip =
@@ -28,7 +30,16 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
 
     // create the package descriptor
     const nameDesc = createNameDesc(packageName, packageStart);
-    const versionDesc = createVersionDesc(version.trim(), versionStart + 1, versionEnd);
+    const v = hasComment ? version.substring(0, commentPos) : version;
+
+    const versionDesc = createVersionDesc(
+      v.trim(),
+      versionStart + 1,
+      !hasComment ?
+        versionEnd :
+        versionEnd - commentPos - 3
+    );
+
     const packageDesc = new PackageDescriptor([nameDesc, versionDesc]);
     matchedDependencies.push(packageDesc);
   }
