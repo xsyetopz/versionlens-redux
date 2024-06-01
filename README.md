@@ -5,46 +5,43 @@
 [![Rating](https://vsmarketplacebadges.dev/rating/pflannery.vscode-versionlens.png?color=blue&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
 [![The ISC license](https://img.shields.io/badge/license-ISC-orange.png?color=blue&style=flat-square)](http://opensource.org/licenses/ISC)
 
-This project is `active`, not sponsored and not funded.
+This project is `active`, not sponsored or funded.
 
 [![BuyMeACoffee](https://www.buymeacoffee.com/assets/img/custom_images/purple_img.png)](https://www.buymeacoffee.com/peterf)
 
-This extension shows __version__ information when opening a package or project for one of the following:
+This extension shows __version__ information when opening a package or project file in version lens. <br> It abides to [semver rules](https://semver.org/) and uses the [Node Semver](https://github.com/npm/node-semver) package to compare and sort versions.
 
-- cargo https://doc.rust-lang.org/cargo/ 
-- composer https://getcomposer.org/
+![Show releases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-releases.gif)
+
+The following languages are supported:
+
+- cargo (rust) https://doc.rust-lang.org/cargo/ 
+- composer (php) https://getcomposer.org/
 - dotnet https://www.dotnetfoundation.org/
 - dub https://code.dlang.org/
-- maven https://maven.apache.org/
-- npm https://www.npmjs.com/
+- maven (java) https://maven.apache.org/
+- npm (node) https://www.npmjs.com/
   - jspm https://jspm.org/
   - pnpm https://pnpm.io/
-- pub https://pub.dev/
+- pub (dart) https://pub.dev/
 - python https://pypi.org/
-
-Version lens abides to [semver rules](https://semver.org/) and uses the [Node Semver](https://github.com/npm/node-semver) package to compare and sort versions.
 
 ## Contents
 
-- [How do I install this extension?](#how-do-i-install-this-extension)
-- [How do I see version information?](#how-do-i-see-version-information)
+- [How do I see version information for a package?](#how-do-i-see-version-information-for-a-package)
 - [Can I see pre-release versions?](#can-i-see-pre-release-versions)
-- [Will this extension install packages?](#will-this-extension-install-packages)
+- [What do the suggestion links mean?](./docs/suggestion-overview.md)
+- [Will this extension install packages for me?](#will-this-extension-install-packages-for-me)
+- [How do I install this extension?](#how-do-i-install-this-extension)
 - [Can I install this extension manually?](#can-i-install-this-extension-manually)
 - [I'm not able to install this extention](#im-not-able-to-install-this-extention)
 - [How do I troubleshoot this extension?](#how-do-i-troubleshoot-this-extension)
 
-## How do I install this extension?
-
-Follow this link on [how to install vscode extensions](https://code.visualstudio.com/docs/editor/extension-gallery)
-
-## How do I see version information?
+## How do I see version information for a package?
 
 Click the V icon in the package\project file toolbar.
 
 You can also choose the default startup state by setting `versionlens.suggestions.showOnStartup`
-
-![Show releases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-releases.gif)
 
 ## Can I see pre-release versions?
 
@@ -54,50 +51,15 @@ You can also choose the default startup state by setting `versionlens.suggestion
 
 ![Show prereleases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-prereleases.gif)
 
-## Will this extension install packages?
+## Will this extension install packages for me?
 
-You can define a task that will run when you save a package document. (runs only when there are dependency changes)
+Yes, you can define a task that will run when you save a package document.
 
-The install task needs to be defined in your tasks.json.
+To set this up follow the [custom task install guide](./docs/custom-install-task.md)
 
-You then set the `versionlens.{provider}.onSaveChanges` setting to the your install task label.
+## How do I install this extension?
 
-**Example**
-
-```js
-// in your settings.json snippet
-{ "versionlens.npm.onSaveChanges": "versionlens npm install" }
-```
-
-```js
-// tasks.json
-{
-  "label": "versionlens npm install",
-  "command": "npm",
-  "type": "shell",
-  "args": ["install"],
-  "options": {
-    // sets the cwd to the current file dir
-    "cwd": "${fileDirname}"
-  },
-  // customizable settings
-  "presentation": {
-    "echo": true,
-    "reveal": "always",
-    "panel": "shared",
-    "clear": true,
-  },
-}
-```
-
-> **NOTE**
->
-> - If your provider already detects changes then installs packages (i.e. dotnet [c# extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)) then you won't need to have a custom install task
-> - Versionlens will need to be enabled before **making and saving changes**
-> - Will not run anything when the `onSaveChanges` setting is set to the default value of `null`
-> - Optionally you can add the task to your user `tasks.json` file if you dont want to define the task for every project. This is done by pressing `ctrl+p` then selecting `Tasks: Open User Tasks`. 
-> - If the specified task is not found then vscode (by default) will prompt which task you want to run (this will never be saved in to your versionlens settings).
-> - Ensure to set the `task.options.cwd` to the [built-in predefined variable](https://code.visualstudio.com/docs/editor/variables-reference) called `${fileDirname}` when running an install task
+Follow this link on [how to install vscode extensions](https://code.visualstudio.com/docs/editor/extension-gallery)
 
 ## Can I install this extension manually?
 
@@ -111,7 +73,7 @@ Try a clean install:
 - Delete the extension folder `{home}/.vscode/extensions/pflannery.vscode-versionlens*`
 - Open vscode and try reinstalling the extension again
 
-If that fails then have a look in the `Log (Extension Host)` channel. Report it here if that doesn't help.
+If that fails then have a look in the output channel and choose the `Log (Extension Host)` in thedrop down. Report the problem here if this doesn't help.
 
 ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-host-log.png)
 
