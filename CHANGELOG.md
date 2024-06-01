@@ -1,3 +1,9 @@
+# 1.12.1-preview
+
+## All Providers
+
+  - Fixed cases where `minor` or `patch` suggestions could be presented twice
+
 # 1.12.0-preview
 
 ## All Providers
