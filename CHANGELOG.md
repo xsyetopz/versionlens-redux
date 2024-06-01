@@ -1,3 +1,9 @@
+# 1.12.2-preview
+
+## All Providers
+
+  - Replaced webpack with esbuild for better extension start-up time
+
 # 1.12.1-preview
 
 ## All Providers
