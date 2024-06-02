@@ -27,9 +27,9 @@ export class OnUpdateDependencyClick {
     if (codeLens.preventExtraClicks) return;
     codeLens.preventExtraClicks = true;
 
-    const { version, type } = codeLens.package.suggestion;
+    const { version, type } = codeLens.packageResponse.suggestion;
     const isTag = type & SuggestionTypes.tag;
-    const suggestionUpdate = mapToSuggestionUpdate(codeLens.package);
+    const suggestionUpdate = mapToSuggestionUpdate(codeLens.packageResponse);
     const replaceWithVersion: string = isTag
       ? version
       : codeLens.replaceVersionFn(suggestionUpdate, version);

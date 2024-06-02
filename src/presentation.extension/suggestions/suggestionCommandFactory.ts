@@ -37,9 +37,9 @@ export function createSuggestedVersionCommand(
   codeLens: SuggestionCodeLens,
   indicators: KeyDictionary<string>
 ) {
-  if (!codeLens.package.suggestion) return createInvalidCommand(codeLens);
+  if (!codeLens.packageResponse.suggestion) return createInvalidCommand(codeLens);
 
-  const { name, version, category, type } = codeLens.package.suggestion;
+  const { name, version, category, type } = codeLens.packageResponse.suggestion;
 
   // get the category indicator
   const indicator = indicators[category] + (isWindows ? '' : ' ');

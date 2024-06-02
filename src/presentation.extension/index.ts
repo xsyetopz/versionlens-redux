@@ -1,15 +1,14 @@
 export * from './events';
 export * from './extensionContainer';
+export * from './features/eIconCommandFeatures';
+export * from './features/eSuggestionCommandFeatures';
+export * from './features/eSuggestionFeatures';
 export * from './services/iExtensionServices';
 export * from './services/serviceUtils';
 export * from './state/contextState';
 export * from './state/versionLensState';
 export * from './suggestions/codeLens/suggestionCodeLens';
-export * as SuggestionCodeLensFactory from './suggestions/codeLens/suggestionCodeLensFactory';
 export * from './suggestions/codeLens/suggestionCodeLensProvider';
-export * from './features/eIconCommandFeatures';
-export * from './features/eSuggestionCommandFeatures';
-export * from './features/eSuggestionFeatures';
 export * as CommandFactory from './suggestions/suggestionCommandFactory';
 export * from './suggestions/suggestionsOptions';
 export * from './versionLensExtension';

@@ -23,7 +23,7 @@ export class OnFileLinkClick {
    * @param codeLens
    */
   async execute(codeLens: SuggestionCodeLens): Promise<void> {
-    const filePath = codeLens.package.fetchedPackage.version;
+    const filePath = codeLens.packageResponse.fetchedPackage.version;
     await env.openExternal(<any>('file:///' + filePath));
   }
 

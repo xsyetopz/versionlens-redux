@@ -8,7 +8,6 @@ import { dirname } from 'node:path';
 import {
   CommandFactory,
   SuggestionCodeLens,
-  SuggestionCodeLensFactory,
   VersionLensExtension,
   VersionLensState
 } from 'presentation.extension';
@@ -103,7 +102,7 @@ export class SuggestionCodeLensProvider implements CodeLensProvider, IDisposable
     await this.state.decreaseBusyState();
 
     // convert suggestions in to code lenses
-    return SuggestionCodeLensFactory.createFromPackageResponses(
+    return SuggestionCodeLens.createFromPackageResponses(
       document,
       suggestions,
       this.suggestionProvider.suggestionReplaceFn || defaultReplaceFn
