@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@faker-js/faker": "> 7.0.0 < 7.6.0"
+    "@faker-js/faker": "> 7.0.0 < 7.6.0",
+    "typescript": "> 7.0.0 < 7.0.1"
   }
 }

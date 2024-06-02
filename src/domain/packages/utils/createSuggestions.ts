@@ -52,7 +52,7 @@ export function createSuggestions(
   const isLatest = latestVersion === satisfiesVersion;
 
   let minVersion = null;
-  if (isRangeVersion) minVersion = getMinVersion(versionRange).version;
+  if (isRangeVersion) minVersion = getMinVersion(versionRange)?.version;
 
   const hasRangeUpdate =
     isRangeVersion &&
@@ -62,18 +62,20 @@ export function createSuggestions(
   let status: TPackageSuggestion;
 
   // determine the current status
-  if (!satisfiesVersion) {
+  if (isRangeVersion && !minVersion) {
+    // has a invalid range
+    status = PackageStatusFactory.createInvalidRangeStatus();
+  }
+  else if (!satisfiesVersion) {
     // Cannot find a version that satisfies the range -> suggest only latest
     status = PackageStatusFactory.createNoMatchStatus();
   } else if (isLatest) {
-    if (hasRangeUpdate) {
+    status = hasRangeUpdate
       // Theoretically up to date,
       // but it could still be using an older version in the range
-      status = PackageStatusFactory.createSatisifiesLatestStatus(satisfiesVersion);
-    } else {
+      ? PackageStatusFactory.createSatisifiesLatestStatus(satisfiesVersion)
       // Already up to date -> nothing to do
-      status = PackageStatusFactory.createMatchesLatestStatus(satisfiesVersion);
-    }
+      : PackageStatusFactory.createMatchesLatestStatus(satisfiesVersion);
   } else if (isFixedVersion) {
     // Not up to date (fixed) -> display the current version
     status = PackageStatusFactory.createFixedStatus(satisfiesVersion);

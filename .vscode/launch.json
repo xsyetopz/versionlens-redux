@@ -30,7 +30,7 @@
       "args": [
         // "--disable-extensions",
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "${workspaceFolder}/package.json"
+        "${workspaceFolder}/test/smoke/npm/typical/package.json"
       ],
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"

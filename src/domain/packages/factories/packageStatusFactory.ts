@@ -108,11 +108,15 @@ export function createDirectoryStatus(path: string): TPackageSuggestion {
 
 export function createInvalidStatus(requestedVersion: string): TPackageSuggestion {
   return {
-    name: SuggestionStatusText.Invalid,
+    name: SuggestionStatusText.InvalidVersion,
     category: SuggestionCategory.Error,
     version: requestedVersion,
     type: SuggestionTypes.status
   };
+}
+
+export function createInvalidRangeStatus(): TPackageSuggestion {
+  return createInvalidStatus('range')
 }
 
 export function createNotSupportedStatus(): TPackageSuggestion {

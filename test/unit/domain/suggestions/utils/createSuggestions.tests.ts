@@ -308,7 +308,30 @@ export const CreateSuggestionsTests = {
         assert.deepEqual(results, Fixtures.rangeNoMatchWithLatestSuggestions);
       }
     },
+    "has an invalid range": {
+      "$i: returns 'Invalid range' status with latest suggestion": [
+        ['>1 <1'],
+        ['>1.0.0 <1.0.1'],
+        ['>2 <1'],
+        (testRange: string) => {
+          // setup
+          const latestVersion = '5.0.0';
+          const testReleases = ['1.0.0', '2.0.0', '3.0.0', '4.0.0', latestVersion]
+          const testPrereleases = []
 
+          // test
+          const results = createSuggestions(
+            testRange,
+            testReleases,
+            testPrereleases
+          );
+
+          // assert
+          assert.deepEqual(results, Fixtures.rangeInvalid);
+          assert.equal(results[1].version, latestVersion);
+        }
+      ],
+    },
     "matches the latest release": {
       "$i: returns 'latest' with latest prerelease suggestions": [
         ['>=3'],
@@ -358,7 +381,6 @@ export const CreateSuggestionsTests = {
         }
       ],
     },
-
     "satisfies an update within the range": {
       "$i: returns 'satisfies' with update suggestion": [
         ['>=2 <3'],
@@ -386,7 +408,6 @@ export const CreateSuggestionsTests = {
         }
       ],
     },
-
     'satisfies ~ range with update suggestions': {
       "$i: returns 'satisfies' with update, latest, minor suggestions": [
         ['~1.1'],
@@ -421,7 +442,6 @@ export const CreateSuggestionsTests = {
         },
       ],
     },
-
     'satisfies ^ range with update suggestions': {
       "$i: returns 'satisfies' with update, latest suggestions": [
         ['^1.1'],
@@ -456,7 +476,6 @@ export const CreateSuggestionsTests = {
         },
       ],
     },
-
     "satisfies maximum range": {
       "$i: returns 'satisfies' with latest suggestion": [
         ['^2.1.0'],
@@ -478,6 +497,6 @@ export const CreateSuggestionsTests = {
           assert.equal(results[0].version, satisfiesVersion);
         }
       ],
-    }
+    },
   }
 }

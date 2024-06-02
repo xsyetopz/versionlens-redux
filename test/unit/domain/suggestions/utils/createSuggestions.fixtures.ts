@@ -64,5 +64,9 @@ export default {
     PackageStatusFactory.createSatisifiesStatus('2.1.0'),
     UpdateableFactory.createLatestUpdateable('3.0.0'),
     UpdateableFactory.createTaggedPreleaseUpdateable('next', '4.0.0-next')
+  ],
+  rangeInvalid: [
+    PackageStatusFactory.createInvalidRangeStatus(),
+    UpdateableFactory.createLatestUpdateable('5.0.0')
   ]
 };
