@@ -1,15 +1,22 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger, ILoggerChannel } from 'domain/logging';
+import { IPackageFileWatcher } from 'domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
+import { dirname } from 'node:path';
+import { VersionLensExtension } from 'presentation.extension';
 import { TextDocument } from 'vscode';
 
 export class OnProviderEditorActivated {
 
   constructor(
     readonly loggerChannel: ILoggerChannel,
+    readonly extension: VersionLensExtension,
+    readonly packageFileWatcher: IPackageFileWatcher,
     readonly logger: ILogger,
   ) {
     throwUndefinedOrNull("loggerChannel", loggerChannel);
+    throwUndefinedOrNull("extension", VersionLensExtension);
+    throwUndefinedOrNull("packageFileWatcher", packageFileWatcher);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -18,6 +25,17 @@ export class OnProviderEditorActivated {
 
     // ensure the latest logging level is set
     this.loggerChannel.refreshLoggingLevel();
+
+    // get the package file path
+    const packageFilePath = document.uri.fsPath;
+    const packagePath = dirname(packageFilePath);
+
+    // check if the file is in the workspace
+    const packageFileInWorkspace = packagePath.startsWith(this.extension.projectPath);
+    if (packageFileInWorkspace === false) {
+      // add the outside package file to the watcher
+      await this.packageFileWatcher.watchFile(document.uri);
+    }
   }
 
 }

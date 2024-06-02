@@ -73,7 +73,7 @@ export class SuggestionCodeLensProvider implements CodeLensProvider, IDisposable
     const packagePath = dirname(packageFilePath);
 
     // get the project path from workspace path otherwise the current file
-    const projectPath = this.extension.isWorkspaceMode
+    const projectPath = this.extension.isWorkspaceMode && packagePath.startsWith(this.extension.projectPath)
       ? this.extension.projectPath
       : packagePath;
 

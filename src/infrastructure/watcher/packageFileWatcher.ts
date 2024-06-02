@@ -58,7 +58,7 @@ export class PackageFileWatcher
 
   async watchFile(file: Uri): Promise<void> {
     const matched = this.providers.filter(
-      provider => isMatch(file.fsPath, provider.config.fileMatcher.pattern)
+      provider => isMatch(file.fsPath, provider.config.fileMatcher.pattern, { dot: true })
     );
 
     if (matched.length === 0) {

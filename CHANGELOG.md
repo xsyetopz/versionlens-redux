@@ -4,6 +4,8 @@
 
   - Fixed cases when a version range is invalid (e.g. `>1 <1`) and wasn't showing a status or suggestions
 
+  - Fixed an error when opening an external package file in a workspace
+
 # 1.12.5
 
 ## All Providers
