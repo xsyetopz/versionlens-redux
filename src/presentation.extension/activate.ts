@@ -7,18 +7,6 @@ import { join } from 'node:path';
 import {
   IExtensionServices,
   OnActiveTextEditorChange,
-  OnClearCache,
-  OnErrorClick,
-  OnFileLinkClick,
-  OnPackageDependenciesChanged,
-  OnPreSaveChanges,
-  OnProviderEditorActivated,
-  OnProviderTextDocumentChange,
-  OnProviderTextDocumentClose,
-  OnSaveChanges,
-  OnTogglePrereleases,
-  OnToggleReleases,
-  OnUpdateDependencyClick,
   VersionLensExtension,
   configureContainer
 } from 'presentation.extension';
@@ -32,14 +20,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const serviceNames = nameOf<IDomainServices & IExtensionServices>();
 
+  // get the logger
   const logger = serviceProvider.getService<ILogger>(serviceNames.logger);
-
   const loggingOptions = serviceProvider.getService<ILoggingOptions>(
     serviceNames.loggingOptions
-  );
-
-  const extension = serviceProvider.getService<VersionLensExtension>(
-    serviceNames.extension
   );
 
   // check editor.codeLens is enabled
@@ -51,6 +35,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
   }
 
   // get the extension info
+  const extension = serviceProvider.getService<VersionLensExtension>(
+    serviceNames.extension
+  );
   const extensionPath = context.asAbsolutePath("");
   const packageJsonPath = context.asAbsolutePath("package.json");
   const { version } = await readJsonFile<any>(packageJsonPath);
@@ -75,21 +62,30 @@ export async function activate(context: ExtensionContext): Promise<void> {
     // watch single project file
     await watcher.watchFile(window.activeTextEditor.document.uri)
 
-  // instantiate events
-  serviceProvider.getService<OnErrorClick>(serviceNames.onErrorClick);
-  serviceProvider.getService<OnToggleReleases>(serviceNames.onToggleReleases);
-  serviceProvider.getService<OnTogglePrereleases>(serviceNames.onTogglePrereleases);
-  serviceProvider.getService<OnUpdateDependencyClick>(serviceNames.onUpdateDependencyClick);
-  serviceProvider.getService<OnFileLinkClick>(serviceNames.onFileLinkClick);
-  serviceProvider.getService<OnClearCache>(serviceNames.onClearCache);
-  serviceProvider.getService<OnPreSaveChanges>(serviceNames.onPreSaveChanges);
-  serviceProvider.getService<OnSaveChanges>(serviceNames.onSaveChanges);
-  serviceProvider.getService<OnPackageDependenciesChanged>(serviceNames.onPackageDependenciesChanged);
-  serviceProvider.getService<OnProviderEditorActivated>(serviceNames.onProviderEditorActivated);
-  serviceProvider.getService<OnProviderTextDocumentChange>(serviceNames.onProviderTextDocumentChange);
-  serviceProvider.getService<OnProviderTextDocumentClose>(serviceNames.onProviderTextDocumentClose);
+  // instantiate dependencies that aren't referenced
+  const instantiateDeps = [
+    // commands
+    serviceNames.onClearCache,
+    serviceNames.onFileLinkClick,
+    serviceNames.onUpdateDependencyClick,
+    // editorTitleBar
+    serviceNames.onErrorClick,
+    serviceNames.onToggleReleases,
+    serviceNames.onTogglePrereleases,
+    // install
+    serviceNames.onPreSaveChanges, // will instantiate onTextDocumentSave
+    serviceNames.onSaveChanges,
+    // provider documents
+    serviceNames.onProviderEditorActivated, // will instantiate onActiveTextEditorChange
+    serviceNames.onProviderTextDocumentChange, // will instantiate onTextDocumentChange
+    serviceNames.onProviderTextDocumentClose, // will instantiate onTextDocumentClose
+    // watcher
+    serviceNames.onPackageDependenciesChanged
+  ];
 
-  // ensures this is run when the extension is first loaded
+  instantiateDeps.forEach(x => serviceProvider.getService(x));
+
+  // ensure this is run when the extension is first loaded
   serviceProvider.getService<OnActiveTextEditorChange>(serviceNames.onActiveTextEditorChange)
     .execute(window.activeTextEditor)
 }
