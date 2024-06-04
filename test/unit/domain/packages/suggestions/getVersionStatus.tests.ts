@@ -17,7 +17,7 @@ export const getVersionStatusTests = {
     deepEqual(actual, PackageStatusFactory.createInvalidRangeStatus());
   },
 
-  "returns NoMatchStatus when no match found in releases or prereleases": [
+  "case $i: returns NoMatchStatus when no match found in releases or prereleases": [
     '1.1.*',
     '5.0.0',
     '6',
@@ -29,7 +29,7 @@ export const getVersionStatusTests = {
     }
   ],
 
-  "returns SatisifiesLatestStatus when satisfies latest release": [
+  "case $i: returns SatisifiesLatestStatus when satisfies latest release": [
     '5.4.*',
     '5',
     function (this: any, testVersion: string) {
@@ -44,7 +44,7 @@ export const getVersionStatusTests = {
     }
   ],
 
-  "returns MatchesLatestStatus when is latest release": [
+  "case $i: returns MatchesLatestStatus when is latest release": [
     '5.4.5',
     '~5.4.5',
     function (this: any, testVersion: string) {
@@ -59,7 +59,7 @@ export const getVersionStatusTests = {
     }
   ],
 
-  "returns MatchesLatestStatus when is latest prerelease": [
+  "case $i: returns MatchesLatestStatus when is latest prerelease": [
     '5.5.0-dev.123',
     '^5.5.0-dev.123',
     function (this: any, testVersion: string) {
@@ -74,7 +74,7 @@ export const getVersionStatusTests = {
     }
   ],
 
-  "returns FixedStatus when matches a release or prerelease": [
+  "case $i: returns FixedStatus when matches a release or prerelease": [
     '5.1.1',
     '5.3.3',
     '5.3.3-dev.123',
