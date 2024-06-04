@@ -46,6 +46,5 @@ This is done by setting the install task label in `versionlens.{provider}.onSave
 
 > **TROUBLESHOOTING**
 >
-> - Versionlens needs to be enabled before **making and saving changes**
 > - Will not run anything when the `onSaveChanges` setting is set to the default value of `null`
 > - If the specified task is not found then vscode (by default) will prompt which task you want to run (this will never be saved in to your versionlens settings).
