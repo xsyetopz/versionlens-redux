@@ -221,7 +221,7 @@ export const parseVersionTests = {
       equal(actual.minVersion, undefined);
       ok(actual.hasInvalidRange);
     },
-    'is true when isRangeVersion and minVersion is set': function (this: any) {
+    'is false when isRangeVersion and minVersion is set': function (this: any) {
       const testVersion = '>1 <3';
       const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
       ok(actual.isRangeVersion);
