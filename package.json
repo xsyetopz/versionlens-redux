@@ -10,7 +10,7 @@
   },
   "author": "Peter Flannery",
   "license": "ISC",
-  "version": "1.13.0",
+  "version": "1.13.1-next.1",
   "publisher": "pflannery",
   "displayName": "Version Lens",
   "icon": "images/logo.png",

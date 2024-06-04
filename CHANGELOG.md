@@ -1,6 +1,9 @@
-# next
+# 1.13.1-next.1
 
-  - Fixed case when using a prerelease range version (e.g. `^1.0.0-pre`) where no match was found and the latest suggestion would not update the version text
+## All Providers
+
+  - Fixed a case when using prerelease range versions (e.g. `^1.0.0-pre`), 
+    it would show 'no match' and clicking the latest suggestion would not update the version text
 
 # 1.13.0
 
