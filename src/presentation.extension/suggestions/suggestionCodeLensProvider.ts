@@ -139,7 +139,7 @@ export class SuggestionCodeLensProvider implements CodeLensProvider, IDisposable
   }
 
   async dispose() {
-    this.disposable.dispose();
+    await this.disposable.dispose();
     const providerName = this.suggestionProvider.name;
     this.logger.debug(`disposed ${providerName} ${SuggestionCodeLensProvider.name}`);
   }

@@ -2,17 +2,15 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
 import { ISuggestionProvider } from 'domain/providers';
 import { GetSuggestionProvider } from 'domain/useCases';
-import { AsyncEmitter, IDisposable } from 'domain/utils';
-import { Disposable, TextDocument, workspace } from 'vscode';
+import { AsyncEmitter } from 'domain/utils';
+import { TextDocument, workspace } from 'vscode';
 
 export type ProviderTextDocumentClosedEvent = (
   provider: ISuggestionProvider,
   packageFilePath: string
 ) => Promise<void>;
 
-export class OnTextDocumentClose
-  extends AsyncEmitter<ProviderTextDocumentClosedEvent>
-  implements IDisposable {
+export class OnTextDocumentClose extends AsyncEmitter<ProviderTextDocumentClosedEvent> {
 
   constructor(
     readonly getSuggestionProvider: GetSuggestionProvider,
@@ -25,9 +23,6 @@ export class OnTextDocumentClose
     // register the vscode workspace event
     this.disposable = workspace.onDidCloseTextDocument(this.execute, this);
   }
-
-  disposable: Disposable;
-
   async execute(document: TextDocument): Promise<void> {
     // we can't check for an active provider here
     // because its already been de-activated before this event is called
@@ -41,11 +36,6 @@ export class OnTextDocumentClose
 
     // execute the listener
     await this.fire(provider, document.uri.fsPath);
-  }
-
-  async dispose() {
-    this.disposable.dispose();
-    this.logger.debug(`disposed ${OnTextDocumentClose.name}`);
   }
 
 }

@@ -2,9 +2,9 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
 import { ISuggestionProvider } from 'domain/providers';
 import { GetSuggestionProvider } from 'domain/useCases';
-import { AsyncEmitter, IDisposable } from 'domain/utils';
+import { AsyncEmitter } from 'domain/utils';
 import { VersionLensState } from 'presentation.extension';
-import { Disposable, TextDocumentChangeEvent, TextDocumentChangeReason, workspace } from 'vscode';
+import { TextDocumentChangeEvent, TextDocumentChangeReason, workspace } from 'vscode';
 
 export type ProviderTextDocumentChangeEvent = (
   provider: ISuggestionProvider,
@@ -12,9 +12,7 @@ export type ProviderTextDocumentChangeEvent = (
   newContent: string
 ) => Promise<void>;
 
-export class OnTextDocumentChange
-  extends AsyncEmitter<ProviderTextDocumentChangeEvent>
-  implements IDisposable {
+export class OnTextDocumentChange extends AsyncEmitter<ProviderTextDocumentChangeEvent> {
 
   constructor(
     readonly getSuggestionProvider: GetSuggestionProvider,
@@ -29,8 +27,6 @@ export class OnTextDocumentChange
     // register the vscode workspace event
     this.disposable = workspace.onDidChangeTextDocument(this.execute, this);
   }
-
-  disposable: Disposable;
 
   async execute(e: TextDocumentChangeEvent): Promise<void> {
     // ensure we have an active provider
@@ -53,11 +49,6 @@ export class OnTextDocumentChange
       e.document.uri.fsPath,
       e.document.getText()
     );
-  }
-
-  async dispose() {
-    this.disposable.dispose();
-    this.logger.debug(`disposed ${OnTextDocumentChange.name}`);
   }
 
 }

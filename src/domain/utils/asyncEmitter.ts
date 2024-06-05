@@ -1,3 +1,6 @@
+import { Disposable } from "./dispose/disposable";
+import { IDisposable } from "./dispose/disposableArray";
+
 type EmitterMap<T> = Map<T, AsyncEventData>;
 
 type AsyncEventData = {
@@ -7,7 +10,13 @@ type AsyncEventData = {
 
 export type AsyncEvent = (...args: any[]) => Promise<void>;
 
-export class AsyncEmitter<T extends AsyncEvent> {
+export class AsyncEmitter<T extends AsyncEvent> extends Disposable {
+
+  constructor();
+  constructor(disposables: IDisposable[]);
+  constructor(disposables: IDisposable[] = []) {
+    super(disposables)
+  }
 
   private listeners: EmitterMap<T> = new Map();
 

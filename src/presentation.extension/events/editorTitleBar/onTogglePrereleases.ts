@@ -1,20 +1,22 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
+import { Disposable } from 'domain/utils';
 import {
   IconCommandFeatures,
   SuggestionCodeLensProvider,
   VersionLensState
 } from 'presentation.extension';
-import { Disposable, commands } from 'vscode';
+import { commands } from 'vscode';
 
-export class OnTogglePrereleases {
+export class OnTogglePrereleases extends Disposable {
 
   constructor(
-    readonly suggestionCodeLensProvider: SuggestionCodeLensProvider[],
+    readonly suggestionCodeLensProviders: SuggestionCodeLensProvider[],
     readonly state: VersionLensState,
     readonly logger: ILogger
   ) {
-    throwUndefinedOrNull("suggestionCodeLensProvider", suggestionCodeLensProvider);
+    super();
+    throwUndefinedOrNull("suggestionCodeLensProviders", suggestionCodeLensProviders);
     throwUndefinedOrNull("state", state);
     throwUndefinedOrNull("logger", logger);
 
@@ -31,23 +33,16 @@ export class OnTogglePrereleases {
     );
   }
 
-  disposables: Disposable[] = [];
-
   async execute(toggle: boolean): Promise<void> {
     await this.state.showPrereleases.change(toggle);
 
     // refresh the active code lenses
     const providerName = this.state.providerActive.value;
-    const codelensProvider = this.suggestionCodeLensProvider.find(
+    const codelensProvider = this.suggestionCodeLensProviders.find(
       x => x.providerName === providerName
     );
 
     codelensProvider && codelensProvider.reloadCodeLenses();
-  }
-
-  async dispose() {
-    this.disposables.forEach(x => x.dispose());
-    this.logger.debug(`disposed ${OnTogglePrereleases.name}`);
   }
 
 }

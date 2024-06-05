@@ -1,11 +1,13 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
+import { Disposable } from 'domain/utils';
 import { SuggestionCodeLens, SuggestionCommandFeatures } from 'presentation.extension';
-import { Disposable, commands, env } from 'vscode';
+import { commands, env } from 'vscode';
 
-export class OnFileLinkClick {
+export class OnFileLinkClick extends Disposable {
 
   constructor(readonly logger: ILogger) {
+    super();
     throwUndefinedOrNull("logger", logger);
 
     // register the vscode command
@@ -16,8 +18,6 @@ export class OnFileLinkClick {
     );
   }
 
-  disposable: Disposable;
-
   /**
    * Executes when a codelens file link suggestion is clicked
    * @param codeLens
@@ -25,11 +25,6 @@ export class OnFileLinkClick {
   async execute(codeLens: SuggestionCodeLens): Promise<void> {
     const filePath = codeLens.packageResponse.fetchedPackage.version;
     await env.openExternal(<any>('file:///' + filePath));
-  }
-
-  async dispose() {
-    this.disposable.dispose();
-    this.logger.debug("disposed");
   }
 
 }

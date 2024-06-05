@@ -7,14 +7,14 @@ import {
 } from 'domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { DependencyChangesResult, GetDependencyChanges } from 'domain/useCases';
-import { AsyncEmitter, IDisposable } from 'domain/utils';
+import { AsyncEmitter } from 'domain/utils';
 import { isMatch } from 'micromatch';
 import { Uri } from 'vscode';
 import { IWorkspaceAdapter } from '.';
 
 export class PackageFileWatcher
   extends AsyncEmitter<OnPackageDependenciesChangedEvent>
-  implements IPackageFileWatcher, IDisposable {
+  implements IPackageFileWatcher {
 
   constructor(
     readonly getDependencyChanges: GetDependencyChanges,
@@ -29,11 +29,7 @@ export class PackageFileWatcher
     throwUndefinedOrNull("providers", providers);
     throwUndefinedOrNull("dependencyCache", dependencyCache);
     throwUndefinedOrNull("logger", logger);
-
-    this.disposables = [];
   }
-
-  private disposables: IDisposable[];
 
   async watchFolder(): Promise<void> {
     const startedAt = performance.now();
@@ -100,10 +96,6 @@ export class PackageFileWatcher
         watcher
       );
     });
-  }
-
-  async dispose(): Promise<void> {
-    this.disposables.forEach(async disposable => await disposable.dispose());
   }
 
   async onFileAdd(provider: ISuggestionProvider, uri: Uri) {

@@ -1,12 +1,14 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
 import { SuggestionTypes, mapToSuggestionUpdate } from 'domain/packages';
+import { Disposable } from 'domain/utils';
 import { SuggestionCodeLens, SuggestionCommandFeatures } from 'presentation.extension';
-import { Disposable, WorkspaceEdit, commands, workspace } from 'vscode';
+import { WorkspaceEdit, commands, workspace } from 'vscode';
 
-export class OnUpdateDependencyClick {
+export class OnUpdateDependencyClick extends Disposable {
 
   constructor(readonly logger: ILogger) {
+    super();
     throwUndefinedOrNull("logger", logger);
 
     // register the vscode command
@@ -16,8 +18,6 @@ export class OnUpdateDependencyClick {
       this
     );
   }
-
-  disposable: Disposable;
 
   /**
    * Executes when a codelens update suggestion is clicked
@@ -38,11 +38,6 @@ export class OnUpdateDependencyClick {
     const edit = new WorkspaceEdit();
     edit.replace(codeLens.documentUrl, codeLens.replaceRange, replaceWithVersion);
     await workspace.applyEdit(edit);
-  }
-
-  async dispose() {
-    this.disposable.dispose();
-    this.logger.debug("disposed");
   }
 
 }

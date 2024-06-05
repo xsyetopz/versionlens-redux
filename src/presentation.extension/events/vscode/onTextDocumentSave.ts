@@ -2,18 +2,16 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
 import { ISuggestionProvider } from 'domain/providers';
 import { GetSuggestionProvider } from 'domain/useCases';
-import { AsyncEmitter, IDisposable } from 'domain/utils';
+import { AsyncEmitter } from 'domain/utils';
 import { VersionLensState } from 'presentation.extension';
-import { Disposable, TextDocument, workspace } from 'vscode';
+import { TextDocument, workspace } from 'vscode';
 
 export type ProviderTextDocumentSaveEvent = (
   provider: ISuggestionProvider,
   packageFilePath: string,
 ) => Promise<void>;
 
-export class OnTextDocumentSave
-  extends AsyncEmitter<ProviderTextDocumentSaveEvent>
-  implements IDisposable {
+export class OnTextDocumentSave extends AsyncEmitter<ProviderTextDocumentSaveEvent> {
 
   constructor(
     readonly getSuggestionProvider: GetSuggestionProvider,
@@ -29,8 +27,6 @@ export class OnTextDocumentSave
     this.disposable = workspace.onDidSaveTextDocument(this.execute, this);
   }
 
-  disposable: Disposable;
-
   async execute(document: TextDocument): Promise<void> {
     // ensure we have an active provider
     if (!this.state.providerActive.value) return;
@@ -45,11 +41,6 @@ export class OnTextDocumentSave
       // reset outdated flag
       await this.state.showOutdated.change(false);
     }
-  }
-
-  async dispose() {
-    this.disposable.dispose();
-    this.logger.debug(`disposed ${OnTextDocumentSave.name}`);
   }
 
 }

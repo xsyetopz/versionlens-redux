@@ -2,8 +2,8 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
 import { ISuggestionProvider } from 'domain/providers';
 import { GetSuggestionProvider } from 'domain/useCases';
-import { AsyncEmitter, IDisposable } from 'domain/utils';
-import { Disposable, TextDocument, TextEditor, window } from 'vscode';
+import { AsyncEmitter } from 'domain/utils';
+import { TextDocument, TextEditor, window } from 'vscode';
 import { VersionLensState } from '../../state/versionLensState';
 
 export type ProviderEditorActivatedEvent = (
@@ -11,9 +11,7 @@ export type ProviderEditorActivatedEvent = (
   document: TextDocument,
 ) => Promise<void>;
 
-export class OnActiveTextEditorChange
-  extends AsyncEmitter<ProviderEditorActivatedEvent>
-  implements IDisposable {
+export class OnActiveTextEditorChange extends AsyncEmitter<ProviderEditorActivatedEvent> {
 
   constructor(
     readonly state: VersionLensState,
@@ -28,8 +26,6 @@ export class OnActiveTextEditorChange
     // register the vscode editor event
     this.disposable = window.onDidChangeActiveTextEditor(this.execute, this);
   }
-
-  disposable: Disposable;
 
   /**
   * Maintains the versionLens.providerActive state
@@ -57,11 +53,6 @@ export class OnActiveTextEditorChange
 
     // fire activated event
     await this.fire(activeProvider, textEditor.document);
-  }
-
-  async dispose() {
-    this.disposable.dispose();
-    this.logger.debug(`disposed ${OnActiveTextEditorChange.name}`);
   }
 
 }

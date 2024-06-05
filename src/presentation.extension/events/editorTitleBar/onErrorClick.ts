@@ -1,15 +1,17 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
+import { Disposable } from 'domain/utils';
 import { IconCommandFeatures, VersionLensState } from 'presentation.extension';
-import { Disposable, OutputChannel, commands, window } from 'vscode';
+import { OutputChannel, commands, window } from 'vscode';
 
-export class OnErrorClick {
+export class OnErrorClick extends Disposable {
 
   constructor(
     readonly state: VersionLensState,
     readonly outputChannel: OutputChannel,
     readonly logger: ILogger
   ) {
+    super();
     throwUndefinedOrNull("state", state);
     throwUndefinedOrNull("outputChannel", outputChannel);
     throwUndefinedOrNull("logger", logger);
@@ -22,8 +24,6 @@ export class OnErrorClick {
     );
   }
 
-  disposable: Disposable;
-
   async execute(): Promise<void> {
     // show the version lens log window
     this.outputChannel.show();
@@ -34,11 +34,6 @@ export class OnErrorClick {
 
     // focus on the document unhide icons
     window.showTextDocument(window.activeTextEditor.document);
-  }
-
-  async dispose() {
-    this.disposable.dispose();
-    this.logger.debug(`${OnErrorClick.name} disposed`);
   }
 
 }

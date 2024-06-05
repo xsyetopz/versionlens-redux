@@ -1,6 +1,6 @@
-import assert from "node:assert";
-import { AsyncEmitter, AsyncEvent } from "domain/utils";
+import { AsyncEmitter, AsyncEvent, IDisposable } from "domain/utils";
 import { test } from "mocha-ui-esm";
+import assert from "node:assert";
 import { instance, mock, verify, when } from "ts-mockito";
 
 export const asyncEmitterTests = {
@@ -57,5 +57,31 @@ export const asyncEmitterTests = {
       assert.equal(order[0], testPriority2);
       assert.equal(order[1], testPriority1);
     }
+  },
+  dispose: {
+    "single dispose": async function () {
+      const mockDisposable = mock<IDisposable>();
+      const emitter = new AsyncEmitter();
+      emitter.disposable = instance(mockDisposable);
+
+      // test
+      await emitter.dispose();
+
+      // assert
+      verify(mockDisposable.dispose()).once()
+    },
+    "multi dispose": async function () {
+      const mockDisposables = [
+        mock<IDisposable>(),
+        mock<IDisposable>()
+      ];
+      const emitter = new AsyncEmitter(mockDisposables.map(x => instance(x)));
+
+      // test
+      await emitter.dispose();
+
+      // assert
+      for (const x of mockDisposables) verify(x.dispose()).once()
+    },
   }
 }
