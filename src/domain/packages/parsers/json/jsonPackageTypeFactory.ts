@@ -10,6 +10,13 @@ import {
 } from 'domain/packages';
 import * as JsonC from 'jsonc-parser';
 
+/**
+ * A regex to match the `package.json`'s `packageManager` value.
+ *
+ * @example packageManager@version
+ */
+export const packageManagerVersionRegex = /^([\w]+)@(.+)$/;
+
 export function createNameDescFromJsonNode(keyNode: JsonC.Node): TPackageNameDescriptor {
   const name = keyNode.value;
 
@@ -32,14 +39,15 @@ export function createVersionDescFromJsonNode(valueNode: any): TPackageVersionDe
     end: valueNode.offset + valueNode.length - 1,
   };
 
-  // Handle packageManager field (packageManager@version)
   let { value: version } = valueNode;
-  if (/^[\w]+@[\w-.]+$/.test(version)) {
-    const versionSplitIndex = version.indexOf("@");
-    if (versionSplitIndex !== -1) {
-      version = version.substring(versionSplitIndex + 1);
-      versionRange.start += versionSplitIndex + 1;
-    }
+
+  // Handle packageManager field
+  const [_, packageName, packageVersion] =
+    packageManagerVersionRegex.exec(valueNode.value) ?? [];
+
+  if (packageVersion != null) {
+    version = packageVersion;
+    versionRange.start += packageName.length + 1;
   }
 
   return createPackageVersionDesc(version, versionRange);

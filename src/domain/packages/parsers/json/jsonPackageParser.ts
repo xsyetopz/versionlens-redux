@@ -4,7 +4,8 @@ import * as JsonC from 'jsonc-parser';
 import {
   createNameDescFromJsonNode,
   createParentDesc,
-  createVersionDescFromJsonNode
+  createVersionDescFromJsonNode,
+  packageManagerVersionRegex,
 } from './jsonPackageTypeFactory';
 import { TJsonPackageParserOptions } from './tJsonPackageParserOptions';
 import { TJsonPackageTypeHandler } from './tJsonPackageTypeHandler';
@@ -49,13 +50,16 @@ function parsePackageNodes(
       continue;
     }
 
-    if (foundAtLocation.node.type === "string" && foundAtLocation.node.value?.includes("@")) {
-      const packageDesc = createSpecialDesc(foundAtLocation.node, foundAtLocation.path)
+    if (
+      foundAtLocation.node.type === 'string' &&
+      packageManagerVersionRegex.test(foundAtLocation.node.value)
+    ) {
+      const packageDesc = createSpecialDesc(foundAtLocation.node, foundAtLocation.path);
       matchedDependencies.push(packageDesc);
     }
   }
 
-  return matchedDependencies
+  return matchedDependencies;
 }
 
 function descendChildNodes(
