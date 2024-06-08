@@ -1,0 +1,9 @@
+**/node_modules
+build
+out
+dist
+coverage
+.git
+.vscode
+.env
+.npmrc

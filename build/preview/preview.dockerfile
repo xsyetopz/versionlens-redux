@@ -7,7 +7,8 @@ COPY / $TARGET_PATH
 WORKDIR $TARGET_PATH
 
 # install deps
-RUN npm install -g npm @vscode/vsce rimraf
+RUN npm install -g npm @vscode/vsce
+
 RUN npm install
 
 # run tests
@@ -16,14 +17,8 @@ RUN npm run test:unit
 # bundle
 RUN npm run bundle
 
-# remove all node modules
-RUN rimraf ./node_modules
-
-# install prod dependencies only
-RUN npm install --omit dev
-
 # set preview=true in package.json
-RUN node -e node -e "const {readFileSync, writeFileSync} = require('fs'); const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')); pkg.preview=true; pkg.version = pkg.version.replace('-preview', ''); writeFileSync('./package.json', JSON.stringify(pkg,null,'  '))"
+RUN node -e "const {readFileSync, writeFileSync} = require('fs'); const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')); pkg.preview=true; pkg.version = pkg.version.replace('-preview', ''); writeFileSync('./package.json', JSON.stringify(pkg,null,'  '))"
 
 # package the extension
 RUN vsce package --pre-release
@@ -32,5 +27,5 @@ RUN vsce package --pre-release
 RUN mkdir ./artifacts
 RUN mv *.vsix ./artifacts
 
-# publish
-CMD vsce publish --pre-release
+# publish the package
+CMD vsce publish --pre-release --packagePath ./artifacts

@@ -56,7 +56,7 @@
         "${workspaceFolder}/dist/**/*.js"
       ],
       "sourceMaps": true,
-      "preLaunchTask": "pretest",
+      "preLaunchTask": "bundle:test",
       "internalConsoleOptions": "openOnSessionStart",
       "skipFiles": [
         "<node_internals>/**"

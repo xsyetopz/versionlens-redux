@@ -37,22 +37,14 @@
     "onLanguage:go.mod"
   ],
   "scripts": {
-    "fresh": "npm run -s clean && rimraf ./node_modules test/**/node_modules && rm -f ./package-lock.json",
-    "clean": "rimraf ./out ./dist",
-    "prebundle": "npm run -s clean",
-    "bundle": "node ./build/esbuild.js",
-    "bundle:dev": "env BUNDLE_DEV=true npm run -s bundle",
-    "bundle:test": "env BUNDLE_TEST=true npm run -s bundle",
-    "precompile": "npm run -s clean && npm run -s lint:src",
-    "compile": "npm run -s bundle",
-    "compile:dev": "tsc -p ./tsconfig.json",
-    "compile:test": "tsc -p ./tsconfig.json",
-    "lint:src": "npm run -s compile:dev -- --noEmit",
-    "lint:test": "npm run -s compile:test -- --noEmit",
-    "pretest": "npm run -s clean && npm run -s lint:test && npm run -s bundle:test",
-    "test": "node ./test/run.vscode.tests",
-    "test:unit": "npm run pretest && env TEST=unit node ./dist/extension.test.js",
-    "trace": "npm run -s clean && tsc --explainFiles --project ./tsconfig.json > trace.log"
+    "fresh": "task",
+    "clean": "task",
+    "bundle": "task",
+    "bundle:dev": "task",
+    "bundle:test": "task",
+    "test": "task",
+    "test:unit": "task",
+    "trace": "task"
   },
   "devDependencies": {
     "@types/eslint": "8.56.10",
@@ -78,6 +70,7 @@
     "@npmcli/promise-spawn": "7.0.2",
     "awilix": "10.0.2",
     "dotenv": "16.4.5",
+    "js-build-tasks": "^1.0.0-beta.10",
     "jsonc-parser": "3.2.1",
     "micromatch": "4.0.7",
     "npm-package-arg": "11.0.2",
