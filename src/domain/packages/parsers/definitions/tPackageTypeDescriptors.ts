@@ -28,8 +28,8 @@ export type TPackageHostedDescriptor = TPackageType & {
 
 export type TPackageGitDescriptor = TPackageType & {
   gitUrl: string
-  gitRef: string
-  gitPath: string
+  gitRef?: string
+  gitPath?: string
 }
 
 export type TPackageParentDescriptor = TPackageType & {

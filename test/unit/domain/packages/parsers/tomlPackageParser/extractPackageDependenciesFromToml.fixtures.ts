@@ -1,18 +1,16 @@
 import {
   PackageDescriptor,
-  PackageDescriptorType,
-  TPackageGitDescriptor,
-  TPackageNameDescriptor,
-  TPackagePathDescriptor,
-  TPackageTypeDescriptor,
-  TPackageVersionDescriptor
+  createDependencyRange,
+  createPackageGitDescType,
+  createPackageNameDesc,
+  createPackagePathDescType,
+  createPackageVersionDesc,
+  createProjectVersionTypeDesc
 } from "domain/packages";
-import { KeyDictionary } from "domain/utils";
 
 export default {
 
-  extractDependencyEntries: {
-
+  parsesDependencyEntries: {
     test: `
       [dependencies]
       serde = "1.0.97"
@@ -31,185 +29,85 @@ export default {
       serde = "1.0.97"
     `,
     expected: [
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "serde",
-            nameRange: {
-              start: 28,
-              end: 28
-            },
-          },
-          version: <TPackageVersionDescriptor>{
-            type: PackageDescriptorType.version,
-            version: "1.0.97",
-            versionAppend: "",
-            versionPrepend: "",
-            versionRange: {
-              start: 37,
-              end: 43
-            },
-          }
-        }
-      },
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "indexmap",
-            nameRange: {
-              start: 51,
-              end: 51
-            },
-          },
-          version: <TPackageVersionDescriptor>{
-            type: PackageDescriptorType.version,
-            version: "1.0",
-            versionAppend: "",
-            versionPrepend: "",
-            versionRange: {
-              start: 75,
-              end: 78
-            },
-          }
-        }
-      },
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "awesome",
-            nameRange: {
-              start: 120,
-              end: 120
-            },
-          },
-          version: <TPackageVersionDescriptor>{
-            type: PackageDescriptorType.version,
-            version: "1.3.5",
-            versionAppend: "",
-            versionPrepend: "",
-            versionRange: {
-              start: 146,
-              end: 151
-            },
-          }
-        }
-      },
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "serde_derive",
-            nameRange: {
-              start: 185,
-              end: 185
-            },
-          },
-          version: <TPackageVersionDescriptor>{
-            type: PackageDescriptorType.version,
-            version: "1.0",
-            versionAppend: "",
-            versionPrepend: "",
-            versionRange: {
-              start: 201,
-              end: 204
-            },
-          }
-        }
-      },
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "serde_json",
-            nameRange: {
-              start: 212,
-              end: 212
-            },
-          },
-          version: <TPackageVersionDescriptor>{
-            type: PackageDescriptorType.version,
-            version: "1.0",
-            versionAppend: "",
-            versionPrepend: "",
-            versionRange: {
-              start: 226,
-              end: 229
-            },
-          }
-        }
-      },
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "smallvec",
-            nameRange: {
-              start: 237,
-              end: 237
-            },
-          },
-          git: <TPackageGitDescriptor>{
-            type: PackageDescriptorType.git,
-            gitUrl: "https://github.com/servo/rust-smallvec.git",
-            gitPath: "",
-            gitRef: ""
-          }
-        }
-      },
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "bitflags",
-            nameRange: {
-              start: 309,
-              end: 309
-            },
-          },
-          path: <TPackagePathDescriptor>{
-            type: PackageDescriptorType.path,
-            path: "my-bitflags",
-            pathRange: {
-              start: 330,
-              end: 341
-            }
-          }
-        }
-      },
-      <PackageDescriptor>{
-        typeCount: 2,
-        types: <KeyDictionary<TPackageTypeDescriptor>>{
-          name: <TPackageNameDescriptor>{
-            type: PackageDescriptorType.name,
-            name: "serde",
-            nameRange: {
-              start: 395,
-              end: 395
-            },
-          },
-          version: <TPackageVersionDescriptor>{
-            type: PackageDescriptorType.version,
-            version: "1.0.97",
-            versionAppend: "",
-            versionPrepend: "",
-            versionRange: {
-              start: 404,
-              end: 410
-            },
-          }
-        }
-      },
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "serde",
+          createDependencyRange(28, 28)
+        ),
+        createPackageVersionDesc("1.0.97", createDependencyRange(37, 43))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "indexmap",
+          createDependencyRange(51, 51)
+        ),
+        createPackageVersionDesc("1.0", createDependencyRange(75, 78))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "awesome",
+          createDependencyRange(120, 120)
+        ),
+        createPackageVersionDesc("1.3.5", createDependencyRange(146, 151))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "serde_derive",
+          createDependencyRange(185, 185)
+        ),
+        createPackageVersionDesc("1.0", createDependencyRange(201, 204))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "serde_json",
+          createDependencyRange(212, 212)
+        ),
+        createPackageVersionDesc("1.0", createDependencyRange(226, 229))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "smallvec",
+          createDependencyRange(237, 237)
+        ),
+        createPackageGitDescType("https://github.com/servo/rust-smallvec.git")
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "bitflags",
+          createDependencyRange(309, 309)
+        ),
+        createPackagePathDescType("my-bitflags", createDependencyRange(330, 341))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "serde",
+          createDependencyRange(395, 395)
+        ),
+        createPackageVersionDesc("1.0.97", createDependencyRange(404, 410))
+      ]),
     ]
   },
+
+  parsesProjectVersionEntries: {
+    test: `
+      [package]
+      version = "1.0.97"
+
+      [project]
+      version = "1.3.5"
+    `,
+    expected: [
+      new PackageDescriptor([
+        createPackageNameDesc("version", createDependencyRange(23, 23)),
+        createPackageVersionDesc("1.0.97", createDependencyRange(34, 40)),
+        createProjectVersionTypeDesc()
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc("version", createDependencyRange(65, 65)),
+        createPackageVersionDesc("1.3.5", createDependencyRange(76, 81)),
+        createProjectVersionTypeDesc()
+      ]),
+    ]
+  }
 
 }

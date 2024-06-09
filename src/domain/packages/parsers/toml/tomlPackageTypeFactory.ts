@@ -1,14 +1,18 @@
 import {
+  PackageDescriptor,
   PackageDescriptorType,
   TPackageGitDescriptor,
   TPackageNameDescriptor,
   TPackageParentDescriptor,
   TPackagePathDescriptor,
   TPackageVersionDescriptor,
-  createPackageVersionDesc
+  createPackageGitDescType,
+  createPackagePathDescType,
+  createPackageVersionDesc,
+  createProjectVersionTypeDesc
 } from "domain/packages";
 import { AST } from "toml-eslint-parser";
-import { TOMLTable } from "toml-eslint-parser/lib/ast";
+import { TOMLKeyValue, TOMLTable } from "toml-eslint-parser/lib/ast";
 
 export function createNameDescFromTomlNode(keyNode: AST.TOMLKey, isNameFromTable: boolean): TPackageNameDescriptor {
   const nameNode = isNameFromTable
@@ -50,7 +54,6 @@ export function createParentDesc(path: string): TPackageParentDescriptor {
 }
 
 export function createPathDescFromTomlNode(valueNode: any): TPackagePathDescriptor {
-
   const path = valueNode.value as string;
 
   // +1 and -1 to be inside quotes
@@ -59,18 +62,17 @@ export function createPathDescFromTomlNode(valueNode: any): TPackagePathDescript
     end: valueNode.range[1] - 1,
   };
 
-  return {
-    type: PackageDescriptorType.path,
-    path,
-    pathRange
-  }
+  return createPackagePathDescType(path, pathRange);
 }
 
 export function createGitDescFromTomlNode(valueNode: any): TPackageGitDescriptor {
-  return {
-    type: PackageDescriptorType.git,
-    gitUrl: valueNode.value,
-    gitPath: "",
-    gitRef: ""
-  }
+  return createPackageGitDescType(valueNode.value);
+}
+
+export function createProjectVersionDescFromTomlNode(keyValue: TOMLKeyValue): PackageDescriptor {
+  return new PackageDescriptor([
+    createNameDescFromTomlNode(keyValue.key, false),
+    createVersionDescFromTomlNode(keyValue.value as AST.TOMLValue),
+    createProjectVersionTypeDesc()
+  ])
 }

@@ -6,9 +6,12 @@ import {
   createGitDescFromTomlNode,
   createNameDescFromTomlNode,
   createPathDescFromTomlNode,
+  createProjectVersionDescFromTomlNode,
   createVersionDescFromTomlNode
 } from "./tomlPackageTypeFactory";
 import { complexHasProperty, matchesTableExpression } from "./tomlParserUtils";
+
+const projectVersionParentKeys = ['project', 'package'];
 
 export function parsePackagesToml(
   toml: string,
@@ -46,14 +49,25 @@ function parsePackageNodes(
     const isPkgNameInTableName = matchedTable.match.endsWith('*');
 
     for (const tableRow of tableRows) {
+      // check project versions
+      const bareKey = tableRow.key.keys[0] as AST.TOMLBare;
+      const bareParentKey = (tableRow.parent as AST.TOMLTable).key.keys[0] as AST.TOMLBare;
+      if (projectVersionParentKeys.includes(bareParentKey.name) && bareKey.name === 'version') {
+        matchedDependencies.push(createProjectVersionDescFromTomlNode(tableRow));
+        continue;
+      }
+
+      // complex or simple
       const isComplexNode = tableRow.value.type === 'TOMLInlineTable';
       const packageDesc = isComplexNode
         ? parseComplexNode(tableRow, tableRow.value as AST.TOMLInlineTable)
         : parseSimpleNode(tableRow, isPkgNameInTableName);
 
       // add the package desc to the matched array
-      if (packageDesc) matchedDependencies.push(packageDesc);
-
+      if (packageDesc) {
+        matchedDependencies.push(packageDesc);
+        continue;
+      }
     }
   }
 

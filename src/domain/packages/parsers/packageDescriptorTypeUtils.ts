@@ -1,6 +1,8 @@
 import {
   PackageDescriptorType,
+  TPackageGitDescriptor,
   TPackageNameDescriptor,
+  TPackagePathDescriptor,
   TPackageTextRange,
   TPackageVersionDescriptor
 } from "domain/packages";
@@ -26,4 +28,28 @@ export function createPackageVersionDesc(
     versionPrepend,
     versionAppend
   };
+}
+
+export function createPackageGitDescType(
+  gitUrl: string,
+  gitPath?: string,
+  gitRef?: string
+): TPackageGitDescriptor {
+  return {
+    type: PackageDescriptorType.git,
+    gitUrl,
+    gitPath,
+    gitRef
+  }
+}
+
+export function createPackagePathDescType(
+  path: string,
+  pathRange: TPackageTextRange
+): TPackagePathDescriptor {
+  return {
+    type: PackageDescriptorType.path,
+    path,
+    pathRange
+  }
 }
