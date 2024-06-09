@@ -29,10 +29,10 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
     if (skip) continue;
 
     // create the package descriptor
-    const nameDesc = createNameDesc(packageName, packageStart);
+    const nameDesc = createGoNameDescType(packageName, packageStart);
     const v = hasComment ? version.substring(0, commentPos) : version;
 
-    const versionDesc = createVersionDesc(
+    const versionDesc = createGoVersionDescType(
       v.trim(),
       versionStart + 1,
       !hasComment ?
@@ -47,7 +47,7 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
   return matchedDependencies;
 }
 
-export function createNameDesc(name: string, start: number): TPackageNameDescriptor {
+function createGoNameDescType(name: string, start: number): TPackageNameDescriptor {
   const nameRange: TPackageTextRange = {
     start,
     end: start
@@ -56,7 +56,7 @@ export function createNameDesc(name: string, start: number): TPackageNameDescrip
   return createPackageNameDesc(name, nameRange);
 }
 
-export function createVersionDesc(version: string, start: number, end: number): TPackageVersionDescriptor {
+function createGoVersionDescType(version: string, start: number, end: number): TPackageVersionDescriptor {
   const versionRange = {
     start,
     end
