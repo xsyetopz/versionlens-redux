@@ -22,13 +22,13 @@
         "./test/*/index.test"
       ],
       "test/unit/infrastructure/providers/*": [
-        "./src/infrastructure/providers/*/index.test",
+        "./src/infrastructure/providers/*/test/index.test"
       ],
       "*": [
         "./src/*"
       ],
       "infrastructure/providers/*": [
-        "./src/infrastructure/providers/*/index"
+        "./src/infrastructure/providers/*/src/index"
       ],
       "infrastructure/*": [
         "./src/infrastructure/*/index"

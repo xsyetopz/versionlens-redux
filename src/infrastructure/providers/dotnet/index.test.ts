@@ -1,1 +1,0 @@
-export * as DotNet from './test/all.tests';

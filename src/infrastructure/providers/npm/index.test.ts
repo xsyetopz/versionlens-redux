@@ -1,1 +1,0 @@
-export * as Npm from './test/all.tests';

@@ -1,1 +1,0 @@
-export * as Maven from './test/all.tests';

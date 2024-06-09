@@ -20,7 +20,9 @@ export async function importSuggestionProvider(
     );
 
     // import the provider
-    const module: IProviderModule = await import(`../../infrastructure/providers/${providerName}/index.ts`);
+    const module: IProviderModule = await import(
+      `../../infrastructure/providers/${providerName}/src/index.ts`
+    );
 
     // register the provider
     const childServiceProvider = await module.configureContainer(

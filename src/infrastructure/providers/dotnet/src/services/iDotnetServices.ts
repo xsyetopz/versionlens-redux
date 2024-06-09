@@ -6,7 +6,7 @@ import {
   NuGetPackageClient,
   NuGetResourceClient,
   NugetOptions
-} from "../..";
+} from "..";
 import { DotNetConfig } from "../dotnetConfig";
 
 export interface IDotNetServices {
