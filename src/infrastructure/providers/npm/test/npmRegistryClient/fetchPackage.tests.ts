@@ -1,8 +1,8 @@
-import assert from 'node:assert';
 import { CachingOptions, ICachingOptions } from 'domain/caching';
 import { ILogger } from 'domain/logging';
 import {
   PackageDependency,
+  PackageDescriptor,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes,
@@ -19,6 +19,7 @@ import {
   NpmRegistryClient
 } from 'infrastructure/providers/npm';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import npa from 'npm-package-arg';
@@ -75,6 +76,7 @@ export const fetchPackageTests = {
         testPackageRes,
         createDependencyRange(0, 0),
         createDependencyRange(1, 1),
+        new PackageDescriptor([]),
       ),
       attempt: 1
     }
@@ -127,6 +129,7 @@ export const fetchPackageTests = {
         testPackageRes,
         createDependencyRange(0, 0),
         createDependencyRange(1, 1),
+        new PackageDescriptor([]),
       ),
       attempt: 1
     }
@@ -178,6 +181,7 @@ export const fetchPackageTests = {
         testPackageRes,
         createDependencyRange(0, 0),
         createDependencyRange(1, 1),
+        new PackageDescriptor([]),
       ),
       attempt: 1
     }
@@ -237,6 +241,7 @@ export const fetchPackageTests = {
         testPackageRes,
         createDependencyRange(0, 0),
         createDependencyRange(1, 1),
+        new PackageDescriptor([]),
       ),
       attempt: 1
     }

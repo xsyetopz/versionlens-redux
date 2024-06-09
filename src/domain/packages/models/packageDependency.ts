@@ -6,7 +6,7 @@ export class PackageDependency {
     packageRes: TPackageResource,
     nameRange: TPackageTextRange,
     versionRange: TPackageTextRange,
-    descriptors?: PackageDescriptor
+    descriptors: PackageDescriptor
   ) {
     this.package = packageRes;
     this.nameRange = nameRange;

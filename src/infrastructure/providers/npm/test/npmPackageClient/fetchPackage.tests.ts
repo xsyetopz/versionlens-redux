@@ -1,7 +1,7 @@
-import assert from 'node:assert';
 import { ClientResponseSource } from 'domain/clients';
 import {
   PackageDependency,
+  PackageDescriptor,
   PackageSourceType,
   SuggestionCategory,
   SuggestionStatusText,
@@ -17,6 +17,7 @@ import {
   NpmPackageClient,
   NpmRegistryClient
 } from 'infrastructure/providers/npm';
+import assert from 'node:assert';
 import { LoggerStub } from 'test/unit/domain/logging';
 import { fileDir } from 'test/unit/utils';
 import { anything, instance, mock, when } from 'ts-mockito';
@@ -58,6 +59,7 @@ export const fetchPackageTests = {
         testPackageRes,
         createDependencyRange(0, 0),
         createDependencyRange(1, 1),
+        new PackageDescriptor([]),
       ),
       attempt: 1
     };
@@ -94,6 +96,7 @@ export const fetchPackageTests = {
         testPackageRes,
         createDependencyRange(0, 0),
         createDependencyRange(1, 1),
+        new PackageDescriptor([]),
       ),
       attempt: 1
     };
@@ -151,6 +154,7 @@ export const fetchPackageTests = {
         testPackageRes,
         createDependencyRange(0, 0),
         createDependencyRange(1, 1),
+        new PackageDescriptor([]),
       ),
       attempt: 1
     };
@@ -201,6 +205,7 @@ export const fetchPackageTests = {
           testPackageRes,
           createDependencyRange(0, 0),
           createDependencyRange(1, 1),
+          new PackageDescriptor([]),
         ),
         attempt: 1
       };
