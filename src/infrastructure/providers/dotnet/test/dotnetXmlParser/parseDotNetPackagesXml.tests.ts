@@ -1,6 +1,6 @@
-import assert from 'node:assert';
 import { parseDotNetPackagesXml } from 'infrastructure/providers/dotnet';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 import Fixtures from './parseDotNetPackagesXml.fixtures';
 
 type TestContext = {
@@ -15,7 +15,7 @@ export const parsePackagesXmlTests = {
 
   'returns empty when no matches found with "$1"': [
     [[], ''],
-    [["non-dependencies"], Fixtures.parseDotNetPackagesXml.test],
+    [["non-dependencies"], Fixtures.parsesItemGroupPackages.test],
     function (this: TestContext, testIncludeNames: Array<string>, expected: string) {
       // test
       const actual = parseDotNetPackagesXml(expected, testIncludeNames);
@@ -25,24 +25,30 @@ export const parsePackagesXmlTests = {
     }
   ],
 
-  "extracts packages from dotnet xml": () => {
-    // setup
-    const includeNames = [
-      "Project.Sdk",
-      "Project.ItemGroup.GlobalPackageReference",
-      "Project.ItemGroup.PackageReference",
-      "Project.ItemGroup.PackageVersion",
-      "Project.ItemGroup.DotNetCliToolReference"
-    ];
+  "case $i: extracts packages from dotnet xml": [
+    Fixtures.parsesItemGroupPackages,
+    Fixtures.parsesPropertyGroupVersions,
+    (fixutre: any) => {
+      // setup
+      const includeNames = [
+        "Project.PropertyGroup.AssemblyVersion",
+        "Project.PropertyGroup.Version",
+        "Project.Sdk",
+        "Project.ItemGroup.GlobalPackageReference",
+        "Project.ItemGroup.PackageReference",
+        "Project.ItemGroup.PackageVersion",
+        "Project.ItemGroup.DotNetCliToolReference"
+      ];
 
-    // test
-    const actual = parseDotNetPackagesXml(
-      Fixtures.parseDotNetPackagesXml.test,
-      includeNames
-    );
+      // test
+      const actual = parseDotNetPackagesXml(
+        fixutre.test,
+        includeNames
+      );
 
-    // assert
-    assert.deepEqual(actual, Fixtures.parseDotNetPackagesXml.expected);
-  }
+      // assert
+      assert.deepEqual(actual, fixutre.expected);
+    }
+  ]
 
 }

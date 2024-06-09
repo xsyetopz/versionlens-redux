@@ -395,6 +395,8 @@
           "minItems": 1,
           "default": [
             "Project.Sdk",
+            "Project.PropertyGroup.Version",
+            "Project.PropertyGroup.AssemblyVersion",
             "Project.ItemGroup.GlobalPackageReference",
             "Project.ItemGroup.PackageReference",
             "Project.ItemGroup.PackageVersion",
@@ -570,6 +572,7 @@
           "uniqueItems": true,
           "minItems": 1,
           "default": [
+            "version",
             "require",
             "require-dev"
           ],

@@ -2,6 +2,7 @@ import { PackageDescriptor, XmlDoc } from "domain/packages";
 import {
   createBlankVersionDescFromXmlAttr,
   createNameDescFromXmlAttr,
+  createProjectVersionDescFromXmlElem,
   createSdkNameDescFromXmlAttr,
   createVersionDescFromXmlAttr
 } from "./dotnetParserTypeFactory";
@@ -29,6 +30,15 @@ export function parsePackageNodes(
   const includeNodes = includePropNames.map(n => doc.findExactPaths(n)).flat();
 
   for (const node of includeNodes) {
+    // check for project version entries
+    switch (node.name) {
+      case 'Version':
+      case 'AssemblyVersion':
+        // add the package desc to the matched array
+        matchedDependencies.push(createProjectVersionDescFromXmlElem(node));
+        continue;
+    }
+
     // get the name descriptor
     const nameDesc = node.name === "Sdk"
       ? createSdkNameDescFromXmlAttr(node)
