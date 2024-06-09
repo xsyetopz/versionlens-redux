@@ -3,10 +3,12 @@ import { ILogger } from 'domain/logging';
 import {
   IPackageClient,
   PackageCache,
+  PackageDescriptorType,
   PackageResponse,
   ResponseFactory,
   TPackageClientRequest,
-  TPackageClientResponse
+  TPackageClientResponse,
+  getProjectVersionSuggestions
 } from 'domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 
@@ -25,10 +27,21 @@ export class FetchPackageSuggestions {
     request: TPackageClientRequest<any>
   ): Promise<Array<PackageResponse>> {
     const providerName = provider.name;
-    const requestedPackage = request.parsedDependency.package;
+    const parsedDependency = request.parsedDependency;
+    const requestedPackage = parsedDependency.package;
 
     // capture start time
     const startedAt = performance.now();
+
+    // check if this a project version
+    if (parsedDependency.descriptors.hasType(PackageDescriptorType.projectVersion)) {
+      return getProjectVersionSuggestions(parsedDependency.package.version)
+        .map(
+          suggestion => ResponseFactory.createProjectVersionPackageResponse(
+            providerName, request, suggestion
+          )
+        );
+    }
 
     // get the package from the client or the cache
     let source = "cache";

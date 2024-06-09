@@ -3,8 +3,8 @@ import {
   TPackageVersionDescriptor,
   createIgnoreChangesDesc,
   createNameDescFromJsonNode,
-  createPackageVersionDesc,
-  createParentDesc
+  createParentDesc,
+  createVersionDescFromJsonNode
 } from "domain/packages";
 import * as JsonC from 'jsonc-parser';
 
@@ -20,34 +20,25 @@ export function createPackageManagerDesc(path: string, node: JsonC.Node): Packag
   const versionDesc = createPackageManagerVersionFromJsonNode(node);
   const parentDesc = createParentDesc(path);
   const ignoreChangesDesc = createIgnoreChangesDesc();
-
-  const packageDesc = new PackageDescriptor([
+  return new PackageDescriptor([
     nameDesc,
     versionDesc,
     parentDesc,
     ignoreChangesDesc
   ]);
-
-  return packageDesc;
 }
 
 function createPackageManagerVersionFromJsonNode(valueNode: any): TPackageVersionDescriptor {
-  // +1 and -1 to be inside quotes
-  const versionRange = {
-    start: valueNode.offset + 1,
-    end: valueNode.offset + valueNode.length - 1,
-  };
-
-  let { value: version } = valueNode;
+  const versionDesc = createVersionDescFromJsonNode(valueNode);
 
   // Handle packageManager field
   const [_, packageName, packageVersion] =
     packageManagerVersionRegex.exec(valueNode.value) ?? [];
 
   if (packageVersion != null) {
-    version = packageVersion;
-    versionRange.start += packageName.length + 1;
+    versionDesc.version = packageVersion;
+    versionDesc.versionRange.start += packageName.length + 1;
   }
 
-  return createPackageVersionDesc(version, versionRange);
+  return versionDesc;
 }

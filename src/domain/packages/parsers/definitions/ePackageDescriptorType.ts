@@ -5,5 +5,6 @@ export enum PackageDescriptorType {
   git = "git",
   hosted = "hosted",
   parent = "parent",
-  ignoreChanges = "ignoreChanges"
+  ignoreChanges = "ignoreChanges",
+  projectVersion = "projectVersion"
 }

@@ -1,10 +1,12 @@
 import {
+  PackageDescriptor,
   PackageDescriptorType,
   TPackageGitDescriptor,
   TPackageIgnoreChangesDescriptor,
   TPackageNameDescriptor,
   TPackageParentDescriptor,
   TPackagePathDescriptor,
+  TPackageProjectVersionDescriptor,
   TPackageVersionDescriptor,
   createPackageVersionDesc
 } from 'domain/packages';
@@ -75,4 +77,21 @@ export function createParentDesc(path: string): TPackageParentDescriptor {
 
 export function createIgnoreChangesDesc(): TPackageIgnoreChangesDescriptor {
   return { type: PackageDescriptorType.ignoreChanges }
+}
+
+export function createProjectVersionTypeDesc(): TPackageProjectVersionDescriptor {
+  return { type: PackageDescriptorType.projectVersion }
+}
+
+export function createProjectVersionDesc(path: string, node: JsonC.Node): PackageDescriptor {
+  const nameDesc = createNameDescFromJsonNode(node);
+  const versionDesc = createVersionDescFromJsonNode(node);
+  const parentDesc = createParentDesc(path);
+  const projectVersionDesc = createProjectVersionTypeDesc();
+  return new PackageDescriptor([
+    nameDesc,
+    versionDesc,
+    parentDesc,
+    projectVersionDesc
+  ]);
 }

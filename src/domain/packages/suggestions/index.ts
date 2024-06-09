@@ -1,5 +1,6 @@
 export * from './createSuggestions';
 export * from './definitions/eSuggestionCategory';
+export * from './definitions/eSuggestionIncrements';
 export * from './definitions/eSuggestionStatusText';
 export * from './definitions/eSuggestionTypes';
 export * from './definitions/tPackageSuggestion';
@@ -10,6 +11,7 @@ export * from './definitions/tSuggestionUpdate';
 export * from './filterPrereleasesGtMinRange';
 export * from './friendlifyPrereleaseName';
 export * from './getPreReleaseSuggestions';
+export * from './getProjectVersionSuggestions';
 export * from './getReleaseSuggestions';
 export * from './getVersionStatus';
 export * from './parseVersion';

@@ -1,5 +1,7 @@
 import {
   PackageResponse,
+  PackageSourceType,
+  PackageVersionType,
   TPackageClientRequest,
   TPackageClientResponse,
   TPackageSuggestion
@@ -24,4 +26,19 @@ export function createSuccess<TClientData>(
       };
     }
   );
+}
+
+export function createProjectVersionPackageResponse(
+  providerName: string,
+  request: TPackageClientRequest<any>,
+  suggestion: TPackageSuggestion
+) {
+  return {
+    order: 0,
+    providerName,
+    suggestion,
+    parsedDependency: request.parsedDependency,
+    type: PackageVersionType.Version,
+    packageSource: PackageSourceType.File,
+  }
 }

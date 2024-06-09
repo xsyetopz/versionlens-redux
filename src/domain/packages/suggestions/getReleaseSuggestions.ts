@@ -1,4 +1,5 @@
 import {
+  SuggestionIncrements,
   SuggestionStatusText,
   TPackageSuggestion,
   TParsedVersion,
@@ -23,9 +24,9 @@ export function getReleaseSuggestions(
   // suggest minor and\or patch?
   if (parsed.satisfiesVersion || parsed.isFixedVersion) {
     const testVersion = parsed.satisfiesVersion ?? fixedOrRangedVersion;
-    const nextMaxMajor = inc(testVersion, 'major');
-    const nextMaxMinor = inc(testVersion, 'minor');
-    const nextMaxPatch = inc(testVersion, 'patch');
+    const nextMaxMajor = inc(testVersion, SuggestionIncrements.major);
+    const nextMaxMinor = inc(testVersion, SuggestionIncrements.minor);
+    const nextMaxPatch = inc(testVersion, SuggestionIncrements.patch);
 
     potentialSuggestions.push(
       [SuggestionStatusText.UpdateMinor, `>=${nextMaxMinor} <${nextMaxMajor}`],

@@ -38,6 +38,8 @@ export type TPackageParentDescriptor = TPackageType & {
 
 export type TPackageIgnoreChangesDescriptor = TPackageType & {}
 
+export type TPackageProjectVersionDescriptor = TPackageType & {}
+
 export type TPackageTypeDescriptor = TPackageNameDescriptor
   | TPackageVersionDescriptor
   | TPackagePathDescriptor
@@ -45,3 +47,4 @@ export type TPackageTypeDescriptor = TPackageNameDescriptor
   | TPackageGitDescriptor
   | TPackageParentDescriptor
   | TPackageIgnoreChangesDescriptor
+  | TPackageProjectVersionDescriptor
