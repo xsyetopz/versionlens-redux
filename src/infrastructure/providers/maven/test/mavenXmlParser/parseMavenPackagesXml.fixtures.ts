@@ -1,3 +1,5 @@
+import { PackageDescriptor, createDependencyRange, createPackageNameDesc, createPackageVersionDesc, createProjectVersionTypeDesc } from "domain/packages";
+
 export default {
 
   parseMavenPackagesXml: {
@@ -42,75 +44,32 @@ export default {
     `,
 
     expected: [
-      {
-        "types": {
-          "name": {
-            "type": "name",
-            "name": "org.springframework.boot:spring-boot-starter-parent",
-            "nameRange": {
-              "start": 481,
-              "end": 481
-            }
-          },
-          "version": {
-            "type": "version",
-            "version": "1.5.16.RELEASE",
-            "versionAppend": "",
-            "versionPrepend": "",
-            "versionRange": {
-              "start": 625,
-              "end": 639
-            },
-          }
-        },
-        "typeCount": 2
-      },
-      {
-        "types": {
-          "name": {
-            "type": "name",
-            "name": "org.springframework:spring-core",
-            "nameRange": {
-              "start": 701,
-              "end": 701
-            }
-          },
-          "version": {
-            "type": "version",
-            "version": "5.0.7.RELEASE",
-            "versionAppend": "",
-            "versionPrepend": "",
-            "versionRange": {
-              "start": 835,
-              "end": 848
-            },
-          }
-        },
-        "typeCount": 2
-      },
-      {
-        "types": {
-          "name": {
-            "type": "name",
-            "name": "org.apache.tomcat:tomcat",
-            "nameRange": {
-              "start": 893,
-              "end": 893
-            }
-          },
-          "version": {
-            "type": "version",
-            "version": "9.0.12",
-            "versionAppend": "",
-            "versionPrepend": "",
-            "versionRange": {
-              "start": 427,
-              "end": 433
-            },
-          }
-        },
-        "typeCount": 2
-      }
+      new PackageDescriptor([
+        createPackageNameDesc("version", createDependencyRange(197, 197)),
+        createPackageVersionDesc("1.3.6-SNAPSHOT", createDependencyRange(206, 220)),
+        createProjectVersionTypeDesc()
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "org.springframework.boot:spring-boot-starter-parent",
+          createDependencyRange(481, 481)
+        ),
+        createPackageVersionDesc("1.5.16.RELEASE", createDependencyRange(625, 639))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "org.springframework:spring-core",
+          createDependencyRange(701, 701)
+        ),
+        createPackageVersionDesc("5.0.7.RELEASE", createDependencyRange(835, 848))
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc(
+          "org.apache.tomcat:tomcat",
+          createDependencyRange(893, 893)
+        ),
+        createPackageVersionDesc("9.0.12", createDependencyRange(427, 433))
+      ]),
     ]
   },
 

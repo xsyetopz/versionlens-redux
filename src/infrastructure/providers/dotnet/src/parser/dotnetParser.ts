@@ -1,8 +1,11 @@
-import { PackageDescriptor, XmlDoc } from "domain/packages";
+import {
+  PackageDescriptor,
+  XmlDoc,
+  createProjectVersionDescFromXmlElem
+} from "domain/packages";
 import {
   createBlankVersionDescFromXmlAttr,
   createNameDescFromXmlAttr,
-  createProjectVersionDescFromXmlElem,
   createSdkNameDescFromXmlAttr,
   createVersionDescFromXmlAttr
 } from "./dotnetParserTypeFactory";

@@ -1,4 +1,9 @@
-import { PackageDescriptor, XmlDoc, XmlNode } from "domain/packages";
+import {
+  PackageDescriptor,
+  XmlDoc,
+  XmlNode,
+  createProjectVersionDescFromXmlElem
+} from "domain/packages";
 import { createNameDescFromXmlNodes, createVersionDescFromXmlNodes } from "./mavenParserTypeFactory";
 
 export function parseMavenPackagesXml(
@@ -28,6 +33,12 @@ export function extractDependenciesFromNodes(
   const includeNodes = includePropNames.map(n => doc.findExactPaths(n)).flat();
 
   for (const node of includeNodes) {
+    // check for project version entries
+    if (node.name === 'version') {
+        // add the package desc to the matched array
+        matchedDependencies.push(createProjectVersionDescFromXmlElem(node));
+        continue;
+    }
 
     const childNodes = doc.getChildren(node)
     if (childNodes.length === 0) continue;
@@ -46,7 +57,6 @@ export function mapChildrenToDescriptor(
   childNodes: XmlNode[],
   propertyNodes: XmlNode[]
 ): PackageDescriptor {
-
   // get the name descriptor
   const nameDesc = createNameDescFromXmlNodes(parentNode, childNodes, propertyNodes);
   if (!nameDesc) return;

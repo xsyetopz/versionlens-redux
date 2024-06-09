@@ -28,6 +28,7 @@ export * from './parsers/packageDescriptor';
 export * from './parsers/packageDescriptorTypeUtils';
 export * from './parsers/toml/tTomlPackageParserOptions';
 export * from './parsers/toml/tomlPackageParser';
+export * from './parsers/xml/xmlDescriptorFactory';
 export * from './parsers/xml/xmlParser';
 export * from './parsers/yaml/tYamlPackageParserOptions';
 export * from './parsers/yaml/tYamlPackageTypeHandler';

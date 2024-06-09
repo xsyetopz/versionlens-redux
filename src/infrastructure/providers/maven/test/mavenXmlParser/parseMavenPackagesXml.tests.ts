@@ -1,6 +1,10 @@
-import assert from 'node:assert';
-import { extractReposUrlsFromXml, getVersionsFromPackageXml, parseMavenPackagesXml } from 'infrastructure/providers/maven';
+import {
+  extractReposUrlsFromXml,
+  getVersionsFromPackageXml,
+  parseMavenPackagesXml
+} from 'infrastructure/providers/maven';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 import Fixtures from './parseMavenPackagesXml.fixtures';
 
 type TestContext = {
@@ -28,6 +32,7 @@ export const parseMavenPackagesXmlTests = {
   "extracts packages from maven xml": () => {
     // setup
     const includeNames = [
+      "project.version",
       "project.parent",
       "project.dependencies.dependency",
     ];
