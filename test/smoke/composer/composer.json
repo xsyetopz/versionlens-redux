@@ -1,6 +1,7 @@
 {
   "name": "cerzat43/smoke-test",
   "description": "smoke tests for vscode-versionlens extension",
+  "version": "1.0.0",
   "require": {
     "php": "^7.1.3",
     "allocine/twigcs": "^3.0.0",

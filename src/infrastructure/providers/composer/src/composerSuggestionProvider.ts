@@ -14,6 +14,7 @@ import { ISuggestionProvider } from 'domain/providers';
 import { KeyDictionary } from 'domain/utils';
 import { ComposerClient } from './composerClient';
 import { ComposerConfig } from './composerConfig';
+import { customDescriptorHandler } from './parser/customDescriptorHandler';
 
 const complexTypeHandlers: KeyDictionary<TJsonPackageTypeHandler> = {
   [PackageDescriptorType.version]: createVersionDescFromJsonNode
@@ -37,6 +38,7 @@ export class ComposerSuggestionProvider implements ISuggestionProvider {
 
     const options: TJsonPackageParserOptions = {
       includePropNames: this.config.dependencyProperties,
+      customDescriptorHandler,
       complexTypeHandlers
     };
 
