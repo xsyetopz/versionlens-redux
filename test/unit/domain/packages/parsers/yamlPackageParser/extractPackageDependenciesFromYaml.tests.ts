@@ -61,6 +61,8 @@ export const extractPackageDependenciesFromYamlTests = {
     Fixtures.parsesHostedDependencies,
     Fixtures.parsesProjectVersionNoQuotes,
     Fixtures.parsesProjectVersionWithQuotes,
+    Fixtures.parsesProjectVersionWithComment,
+    Fixtures.parsesEmptyProjectVersionWithComment,
     (fixture: any) => {
       const includePropNames = [
         "version",

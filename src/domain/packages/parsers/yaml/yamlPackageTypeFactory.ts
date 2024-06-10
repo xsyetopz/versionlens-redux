@@ -45,9 +45,16 @@ export function createVersionDescFromYamlNode(
 
   const hasComment = valueNode.comment !== undefined && valueNode.comment.length > 0;
   const fallbackValue = hasComment ? "*" : "";
-  const version = valueNode.value || fallbackValue;
+  const hasVersion = !!valueNode.value;
+  const version = hasVersion ? valueNode.value : fallbackValue;
+  const append = hasVersion === false && hasComment;
 
-  return createPackageVersionDesc(version, versionRange, "", hasComment ? " " : "");
+  return createPackageVersionDesc(
+    version,
+    versionRange,
+    "",
+    append ? " " : ""
+  );
 }
 
 export function createPathDescFromYamlNode(

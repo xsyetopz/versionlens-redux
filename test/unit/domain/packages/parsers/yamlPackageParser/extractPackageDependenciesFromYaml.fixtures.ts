@@ -53,7 +53,7 @@ dependencies:
       ]),
       new PackageDescriptor([
         createPackageNameDesc("transmogrify", createDependencyRange(421, 421)),
-        createPackageVersionDesc("^0.4.0", createDependencyRange(448, 454), "", " "),
+        createPackageVersionDesc("^0.4.0", createDependencyRange(448, 454), "", ""),
         createPackageParentDescType("dependencies")
       ]),
       new PackageDescriptor([
@@ -157,7 +157,7 @@ dependencies:
       ]),
       new PackageDescriptor([
         createPackageNameDesc("hostify2", createDependencyRange(93, 93)),
-        createPackageVersionDesc("2.0.0", createDependencyRange(116, 121), "", " "),
+        createPackageVersionDesc("2.0.0", createDependencyRange(116, 121), "", ""),
         createPackageHostedDescType("https://some-package-server.com"),
         createPackageParentDescType("dependencies")
       ]),
@@ -187,6 +187,28 @@ dependencies:
       new PackageDescriptor([
         createPackageNameDesc("version", createDependencyRange(0, 0)),
         createPackageVersionDesc("1.0.0", createDependencyRange(10, 15)),
+        createProjectVersionTypeDesc()
+      ])
+    ]
+  },
+
+  parsesProjectVersionWithComment: {
+    test: `version: '1.0.0' # hello`,
+    expected: [
+      new PackageDescriptor([
+        createPackageNameDesc("version", createDependencyRange(0, 0)),
+        createPackageVersionDesc("1.0.0", createDependencyRange(10, 15), "", ""),
+        createProjectVersionTypeDesc()
+      ])
+    ]
+  },
+
+  parsesEmptyProjectVersionWithComment: {
+    test: `version: # hello`,
+    expected: [
+      new PackageDescriptor([
+        createPackageNameDesc("version", createDependencyRange(0, 0)),
+        createPackageVersionDesc("*", createDependencyRange(9, 9), "", " "),
         createProjectVersionTypeDesc()
       ])
     ]

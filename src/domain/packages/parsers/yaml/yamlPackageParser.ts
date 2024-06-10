@@ -33,13 +33,15 @@ function parsePackageNodes(
   for (const incPropName of includePropNames) {
     const segments = incPropName.split(".");
 
-    const node = rootNode.getIn(segments) as YAMLMap;
-    if (!node) continue;
+    if (rootNode.has(incPropName) === false) continue;
 
     if (incPropName === 'version') {
       matchedDependencies.push(getPackageProjectVersionDesc(rootNode.contents as YAMLMap))
       continue;
     }
+
+    const node = rootNode.getIn(segments) as YAMLMap;
+    if (!node) continue;
 
     const children = node instanceof Array
       ? descendChildNodes(incPropName, node, complexTypeHandlers)
