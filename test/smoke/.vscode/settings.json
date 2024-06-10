@@ -6,6 +6,8 @@
   "versionlens.suggestions.showPrereleasesOnStartup": false,
   "versionlens.dotnet.nuget.sources": [],
   "versionlens.npm.dependencyProperties": [
+    "version",
+    "packageManager",
     "dependencies",
     "devDependencies",
     "peerDependencies",
@@ -18,7 +20,6 @@
     "jspm.optionalDependencies",
     "pnpm.overrides",
     "pnpm.overrides.*",
-    "packageManager",
     "customDependencies"
   ],
   "versionlens.npm.files": "**/{package.json,web-module.json}",
