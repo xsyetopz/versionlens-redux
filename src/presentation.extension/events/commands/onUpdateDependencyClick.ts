@@ -2,12 +2,19 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from 'domain/logging';
 import { SuggestionTypes, mapToSuggestionUpdate } from 'domain/packages';
 import { Disposable } from 'domain/utils';
-import { SuggestionCodeLens, SuggestionCommandFeatures } from 'presentation.extension';
+import {
+  SuggestionCodeLens,
+  SuggestionCommandFeatures,
+  VersionLensState
+} from 'presentation.extension';
 import { WorkspaceEdit, commands, workspace } from 'vscode';
 
 export class OnUpdateDependencyClick extends Disposable {
 
-  constructor(readonly logger: ILogger) {
+  constructor(
+    readonly state: VersionLensState,
+    readonly logger: ILogger
+  ) {
     super();
     throwUndefinedOrNull("logger", logger);
 
@@ -24,8 +31,10 @@ export class OnUpdateDependencyClick extends Disposable {
    * @param codeLens
    */
   async execute(codeLens: SuggestionCodeLens): Promise<void> {
-    if (codeLens.preventExtraClicks) return;
-    codeLens.preventExtraClicks = true;
+    if (this.state.codeLensReplace.value === false) return;
+
+    // disable codelens replace to prevent suggestion race condition
+    await this.state.enableCodeLensReplace(false);
 
     const { version, type } = codeLens.packageResponse.suggestion;
     const isTag = type & SuggestionTypes.tag;

@@ -3,8 +3,6 @@ import { CodeLens, Range, TextDocument, Uri } from 'vscode';
 
 export class SuggestionCodeLens extends CodeLens {
 
-  preventExtraClicks: boolean;
-
   constructor(
     commandRange: Range,
     readonly replaceRange: Range,

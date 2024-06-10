@@ -4,5 +4,6 @@ export enum StateFeatures {
   ShowOutdated = 'versionlens.showOutdated',
   ProviderActive = 'versionlens.providerActive',
   ProviderBusy = 'versionlens.providerBusy',
-  ProviderError = 'versionlens.providerError'
+  ProviderError = 'versionlens.providerError',
+  CodeLenReplace = 'versionlens.codeLensReplace'
 }

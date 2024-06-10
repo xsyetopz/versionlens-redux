@@ -17,6 +17,8 @@ export class VersionLensState {
 
   providerError: ContextState<boolean>;
 
+  codeLensReplace: ContextState<boolean>;
+
   constructor(private readonly suggestionOptions: SuggestionsOptions) {
     throwUndefinedOrNull("suggestionOptions", this.suggestionOptions);
 
@@ -26,6 +28,7 @@ export class VersionLensState {
     this.providerActive = new ContextState(StateFeatures.ProviderActive);
     this.providerBusy = new ContextState(StateFeatures.ProviderBusy);
     this.providerError = new ContextState(StateFeatures.ProviderError);
+    this.codeLensReplace = new ContextState(StateFeatures.CodeLenReplace);
   }
 
   async applyDefaults(): Promise<void> {
@@ -35,6 +38,7 @@ export class VersionLensState {
     await this.providerActive.change(null);
     await this.providerBusy.change(0);
     await this.providerError.change(false);
+    await this.codeLensReplace.change(true);
   }
 
   async increaseBusyState(): Promise<void> {
@@ -55,6 +59,10 @@ export class VersionLensState {
 
   async clearErrorState(): Promise<void> {
     await this.providerError.change(false);
+  }
+
+  async enableCodeLensReplace(state: boolean): Promise<void> {
+    await this.codeLensReplace.change(state);
   }
 
 }

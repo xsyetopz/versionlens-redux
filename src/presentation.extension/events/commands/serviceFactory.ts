@@ -40,8 +40,9 @@ export function addOnUpdateDependencyClick(services: IServiceCollection) {
   const serviceName = nameOf<IExtensionServices>().onUpdateDependencyClick;
   services.addSingleton(
     serviceName,
-    (container: IDomainServices) => {
+    (container: IDomainServices & IExtensionServices) => {
       return new OnUpdateDependencyClick(
+        container.versionLensState,
         container.logger.child({ logGroup: serviceName })
       );
     },

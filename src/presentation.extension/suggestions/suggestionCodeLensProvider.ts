@@ -119,10 +119,13 @@ export class SuggestionCodeLensProvider implements CodeLensProvider, IDisposable
     );
   }
 
-  resolveCodeLens(codeLens: CodeLens, token: CancellationToken): CodeLens {
+  async resolveCodeLens(codeLens: CodeLens, token: CancellationToken): Promise<CodeLens> {
     if (codeLens instanceof SuggestionCodeLens) {
       // evaluate the code lens
       const evaluated = this.evaluateCodeLens(codeLens);
+
+      // enable codelens replace
+      await this.state.enableCodeLensReplace(true);
 
       // update the progress
       return evaluated;
