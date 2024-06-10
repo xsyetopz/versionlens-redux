@@ -3,7 +3,9 @@ build
 out
 dist
 coverage
+.artifacts
 .git
 .vscode
+.vs
 .env
 .npmrc

@@ -7,15 +7,15 @@ COPY / $TARGET_PATH
 WORKDIR $TARGET_PATH
 
 # install deps
-RUN npm install -g npm @vscode/vsce
+RUN npm install -g npm @vscode/vsce js-build-tasks
 
 RUN npm install
 
 # run tests
-RUN npm run test
+RUN task test
 
 # bundle
-RUN npm run bundle
+RUN task bundle
 
 # set preview=true in package.json
 RUN node -e "const {readFileSync, writeFileSync} = require('fs'); const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')); pkg.preview=true; pkg.version = pkg.version.replace('-preview', ''); writeFileSync('./package.json', JSON.stringify(pkg,null,'  '))"

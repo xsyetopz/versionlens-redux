@@ -6,8 +6,8 @@ COPY / $TARGET_PATH
 
 WORKDIR $TARGET_PATH
 
-RUN npm install -g npm
+RUN npm install -g npm js-build-tasks
 
 RUN npm install
 
-CMD npm test
+CMD task test
