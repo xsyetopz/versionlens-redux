@@ -25,4 +25,4 @@ RUN mkdir ./artifacts
 RUN mv *.vsix ./artifacts
 
 # publish the package
-CMD vsce publish --packagePath ./artifacts
+CMD vsce publish

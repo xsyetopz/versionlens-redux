@@ -28,7 +28,7 @@
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 "Publish preview trigger":
-  stage: build
+  stage: deploy
   trigger:
     strategy: depend
     include:
