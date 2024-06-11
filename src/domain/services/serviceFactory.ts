@@ -4,6 +4,7 @@ import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { LoggingOptions } from '#domain/logging';
 import { DependencyCache, PackageCache } from '#domain/packages';
+import { IDomainServices } from '#domain/services';
 import { FileSystemStorage } from "domain/storage";
 import {
   FetchPackageSuggestions,
@@ -13,7 +14,6 @@ import {
   importSuggestionProviders
 } from "domain/useCases";
 import { nameOf } from "domain/utils";
-import { IDomainServices } from "./iDomainServices";
 
 export function addAppConfig(
   services: IServiceCollection,

@@ -1,5 +1,5 @@
 import { IServiceCollection } from '#domain/di';
-import { IDomainServices } from 'domain/services';
+import { IDomainServices } from '#domain/services';
 import { nameOf } from 'domain/utils';
 import { IExtensionServices } from 'presentation.extension';
 import { OnProviderEditorActivated } from './onProviderEditorActivated';

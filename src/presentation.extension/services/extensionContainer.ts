@@ -4,7 +4,7 @@ import {
   addDomainServices,
   addFetchPackageSuggestionsUseCase,
   addFetchProjectSuggestionsUseCase
-} from 'domain/services';
+} from '#domain/services';
 import { nameOf } from 'domain/utils';
 import { AwilixServiceCollectionFactory } from 'infrastructure/di';
 import { addInfrastructureServices } from 'infrastructure/services';

@@ -14,7 +14,7 @@ import {
   addProcessesCache,
   addSuggestionPackageCache,
   addSuggestionProviders
-} from ".";
+} from '#domain/services';
 
 export function addDomainServices(
   services: IServiceCollection,
