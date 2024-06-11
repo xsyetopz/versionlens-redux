@@ -5,7 +5,7 @@ import { HttpOptions } from '#domain/http';
 import { ILogger, ILoggerChannel, LoggingOptions } from '#domain/logging';
 import { DependencyCache, IPackageFileWatcher, PackageCache } from '#domain/packages';
 import { ISuggestionProvider } from '#domain/providers';
-import { IStorage } from 'domain/storage';
+import { IStorage } from '#domain/storage';
 import {
   FetchPackageSuggestions,
   FetchProjectSuggestions,

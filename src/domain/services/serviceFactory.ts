@@ -5,7 +5,7 @@ import { HttpOptions } from '#domain/http';
 import { LoggingOptions } from '#domain/logging';
 import { DependencyCache, PackageCache } from '#domain/packages';
 import { IDomainServices } from '#domain/services';
-import { FileSystemStorage } from "domain/storage";
+import { FileSystemStorage } from '#domain/storage';
 import {
   FetchPackageSuggestions,
   FetchProjectSuggestions,

@@ -2,7 +2,7 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { DependencyCache, PackageDependency, hasPackageDepsChanged } from '#domain/packages';
 import { ISuggestionProvider } from '#domain/providers';
-import { IStorage } from 'domain/storage';
+import { IStorage } from '#domain/storage';
 
 export type DependencyChangesResult = {
   hasChanged: boolean,

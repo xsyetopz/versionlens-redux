@@ -1,4 +1,4 @@
-import { IStorage } from 'domain/storage';
+import { IStorage } from '#domain/storage';
 import { readFile } from 'node:fs/promises';
 import { TextDecoder } from 'node:util';
 
