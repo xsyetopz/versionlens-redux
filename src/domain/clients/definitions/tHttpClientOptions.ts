@@ -1,5 +1,5 @@
 import { ICachingOptions } from '#domain/caching';
-import { IHttpOptions } from "domain/http";
+import { IHttpOptions } from '#domain/http';
 
 export type HttpClientOptions = {
 

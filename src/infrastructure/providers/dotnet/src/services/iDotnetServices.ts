@@ -1,6 +1,6 @@
 import { CachingOptions } from '#domain/caching';
 import { IJsonHttpClient, IProcessClient } from '#domain/clients';
-import { HttpOptions } from "domain/http";
+import { HttpOptions } from '#domain/http';
 import {
   DotNetCli,
   NuGetPackageClient,

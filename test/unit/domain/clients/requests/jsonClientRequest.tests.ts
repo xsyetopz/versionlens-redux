@@ -6,7 +6,7 @@ import {
   IHttpClient,
   JsonHttpClient,
 } from '#domain/clients';
-import { HttpOptions, IHttpOptions } from 'domain/http';
+import { HttpOptions, IHttpOptions } from '#domain/http';
 import { anything, instance, mock, when } from 'ts-mockito';
 
 let cachingOptsMock: ICachingOptions;
