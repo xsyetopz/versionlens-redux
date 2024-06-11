@@ -12,7 +12,7 @@ RUN npm install -g npm @vscode/vsce js-build-tasks
 RUN npm install
 
 # run tests
-RUN task test
+RUN task build:test
 
 # bundle
 RUN task bundle

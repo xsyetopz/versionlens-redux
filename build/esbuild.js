@@ -20,7 +20,7 @@ const external = isTestEnv
   : ['vscode']
 
 const outputFile = isTestEnv
-  ? 'extension.test.js'
+  ? 'bundled.test.js'
   : 'activate.js';
 
 const minify = !isDevEnv && !isTestEnv;

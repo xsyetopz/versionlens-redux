@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import {
   ClientResponseSource,
   HttpClientRequestMethods,
@@ -8,7 +7,7 @@ import {
 } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import { NuGetResourceClient } from '#providers/dotnet';
-import { LoggerStub } from 'test/unit/domain/logging';
+import assert from 'node:assert';
 import { anything, capture, instance, mock, when } from 'ts-mockito';
 import Fixtures from './fixtures/nugetResources';
 
@@ -21,7 +20,7 @@ export const NuGetResourceClientTests = {
 
   beforeEach: () => {
     jsonClientMock = mock(JsonHttpClient);
-    loggerMock = mock(LoggerStub);
+    loggerMock = mock<ILogger>();
   },
 
   "fetchResource": {

@@ -4,7 +4,6 @@ import { ClientResponseSource, ProcessClientResponse } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import { PromiseSpawnClient } from '#infrastructure/process';
 import { test } from 'mocha-ui-esm';
-import { LoggerStub } from 'test/unit/domain/logging';
 import { anything, instance, mock, when } from 'ts-mockito';
 import { ProcessSpawnStub } from './processSpawnStub';
 
@@ -18,7 +17,7 @@ export const ProcessClientRequestTests = {
 
   beforeEach: () => {
     cachingOptionsMock = mock(CachingOptions)
-    loggerMock = mock(LoggerStub)
+    loggerMock = mock<ILogger>()
     psMock = mock(ProcessSpawnStub)
   },
 

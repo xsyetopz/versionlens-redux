@@ -6,8 +6,10 @@ tasks:
   bundle:test: [env: { BUNDLE_TEST: true }, bundle]
   compile: [clean, tsc]
   lint: tsc --noEmit
-  test: [bundle:test, env: { TEST_HEADLESS: true }, node ./dist/extension.test.js]
-  test:insiders: [bundle:test, node ./test/run.insiders.tests]
+  test: [compile, env: { TEST_HEADLESS: true }, node ./dist/test/runner.js]
+  test:vscode: [bundle:test, node ./test/vscode.runner.js]
+  test:insiders: [bundle:test, env: { TEST_INSIDERS: true }, node ./test/vscode.runner.js]
+  build:test: [bundle:test, env: { TEST_HEADLESS: true }, node ./dist/bundled.test.js]
   trace: [clean, tsc --explainFiles --project ./tsconfig.json > trace.log]
   docker:test:
     - docker build -t versionlens:tests -f ./build/test/test.dockerfile .

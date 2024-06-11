@@ -1,18 +1,17 @@
-import assert from 'node:assert';
 import { CachingOptions, ICachingOptions } from '#domain/caching';
 import {
   ClientResponseSource,
+  HttpClientOptions,
   HttpClientRequestMethods,
   HttpClientResponse,
-  HttpClientOptions,
   UrlUtils
 } from '#domain/clients';
-import { KeyStringDictionary } from '#domain/utils';
 import { HttpOptions, IHttpOptions } from '#domain/http';
 import { ILogger } from '#domain/logging';
+import { KeyStringDictionary } from '#domain/utils';
 import { RequestLightClient } from '#infrastructure/http';
 import { test } from 'mocha-ui-esm';
-import { LoggerStub } from 'test/unit/domain/logging';
+import assert from 'node:assert';
 import {
   anything,
   capture,
@@ -36,7 +35,7 @@ export const RequestLightClientTests = {
   beforeEach: () => {
     cachingOptsMock = mock(CachingOptions);
     httpOptsMock = mock(HttpOptions);
-    loggerMock = mock(LoggerStub);
+    loggerMock = mock<ILogger>();
     requestLightMock = mock(RequestLightStub);
 
     rut = new RequestLightClient(

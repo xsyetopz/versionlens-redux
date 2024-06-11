@@ -24,7 +24,6 @@ import assert from 'node:assert';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import npa from 'npm-package-arg';
-import { LoggerStub } from 'test/unit/domain/logging';
 import { anything, instance, mock, when } from 'ts-mockito';
 import Fixtures from './npmRegistryClient.fixtures';
 
@@ -42,7 +41,7 @@ export const fetchPackageTests = {
     githubOptsMock = mock(GitHubOptions);
     cachingOptsMock = mock(CachingOptions)
     configMock = mock(NpmConfig)
-    loggerMock = mock(LoggerStub)
+    loggerMock = mock<ILogger>()
     npmRegistryMock = mock<INpmRegistry>()
 
     when(configMock.caching).thenReturn(instance(cachingOptsMock))

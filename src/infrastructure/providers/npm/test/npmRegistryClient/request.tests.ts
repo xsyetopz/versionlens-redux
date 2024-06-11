@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import { CachingOptions, ICachingOptions } from '#domain/caching';
 import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from '#domain/logging';
@@ -11,8 +10,8 @@ import {
   NpmRegistryClient
 } from '#providers/npm';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 import npa from 'npm-package-arg';
-import { LoggerStub } from 'test/unit/domain/logging';
 import { anything, instance, mock, when } from 'ts-mockito';
 
 let cachingOptsMock: ICachingOptions;
@@ -29,7 +28,7 @@ export const RequestsTests = {
     githubOptsMock = mock(GitHubOptions);
     cachingOptsMock = mock(CachingOptions)
     configMock = mock(NpmConfig)
-    loggerMock = mock(LoggerStub)
+    loggerMock = mock<ILogger>()
     npmRegistryMock = mock<INpmRegistry>()
 
     when(cachingOptsMock.duration).thenReturn(30000);

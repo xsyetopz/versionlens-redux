@@ -1,4 +1,5 @@
 import { ClientResponseSource } from '#domain/clients';
+import { ILogger } from '#domain/logging';
 import {
   PackageDependency,
   PackageDescriptor,
@@ -17,9 +18,8 @@ import {
   NpmPackageClient,
   NpmRegistryClient
 } from '#providers/npm';
+import { fileDir } from '#test/utils';
 import assert from 'node:assert';
-import { LoggerStub } from 'test/unit/domain/logging';
-import { fileDir } from 'test/unit/utils';
 import { anything, instance, mock, when } from 'ts-mockito';
 
 const testDir = fileDir();
@@ -27,7 +27,7 @@ const testDir = fileDir();
 let configMock: NpmConfig;
 let npmRegistryClientMock: NpmRegistryClient;
 let githubClientMock: GitHubClient;
-let loggerMock: LoggerStub;
+let loggerMock: ILogger;
 
 export const fetchPackageTests = {
 
@@ -37,7 +37,7 @@ export const fetchPackageTests = {
     configMock = mock(NpmConfig);
     npmRegistryClientMock = mock(NpmRegistryClient);
     githubClientMock = mock(GitHubClient);
-    loggerMock = mock(LoggerStub);
+    loggerMock = mock<ILogger>();
   },
 
   'returns a file:// directory package': async () => {

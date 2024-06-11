@@ -1,9 +1,9 @@
 import { fileExists } from '#domain/utils';
 import { resolveDotFilePath } from '#providers/npm';
+import { createDir, createFile, fileDir, removeDir, removeFile } from '#test/utils';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import path from 'node:path';
-import { createDir, createFile, fileDir, removeDir, removeFile } from 'test/unit/utils';
 
 const testDir = fileDir();
 

@@ -17,11 +17,10 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "test/*": [
-        "./test/*",
-        "./test/*/index.test"
+      "#test/utils": [
+        "./test/unit/utils.ts",
       ],
-      "test/unit/infrastructure/providers/*": [
+      "#test/unit/providers/*": [
         "./src/infrastructure/providers/*/test/index.test"
       ],
       "#domain/*": [

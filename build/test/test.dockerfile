@@ -10,4 +10,4 @@ RUN npm install -g npm js-build-tasks
 
 RUN npm install
 
-CMD task test
+CMD task build:test

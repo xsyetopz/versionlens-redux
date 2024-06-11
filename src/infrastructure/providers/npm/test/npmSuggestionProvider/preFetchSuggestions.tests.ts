@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import { ILogger } from '#domain/logging';
 import { fileExists } from '#domain/utils';
 import {
@@ -7,10 +6,11 @@ import {
   NpmPackageClient,
   NpmSuggestionProvider
 } from '#providers/npm';
+import { createDir, createFile, fileDir, removeDir, removeFile } from '#test/utils';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 import { homedir } from 'node:os';
 import path, { resolve } from 'node:path';
-import { createDir, createFile, fileDir, removeDir, removeFile } from 'test/unit/utils';
 import { instance, mock, verify, when } from 'ts-mockito';
 import Fixtures from './npmSuggestionProvider.fixtures';
 

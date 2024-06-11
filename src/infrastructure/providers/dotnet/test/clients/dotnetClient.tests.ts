@@ -9,7 +9,6 @@ import {
   NugetOptions
 } from '#providers/dotnet';
 import assert from 'node:assert';
-import { LoggerStub } from 'test/unit/domain/logging';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
 import Fixtures from './fixtures/dotnetSources';
 
@@ -29,7 +28,7 @@ export const DotNetCliTests = {
     httpOptsMock = mock(HttpOptions);
     nugetOptsMock = mock(NugetOptions);
     configMock = mock(DotNetConfig);
-    loggerMock = mock(LoggerStub)
+    loggerMock = mock<ILogger>()
     clientMock = mock()
 
     when(configMock.caching).thenReturn(instance(cacheOptsMock))

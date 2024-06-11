@@ -1,9 +1,9 @@
-import assert from 'node:assert';
 import {
   ClientResponseSource,
   IJsonHttpClient,
   JsonHttpClient
 } from '#domain/clients';
+import { ILogger } from '#domain/logging';
 import {
   SuggestionCategory,
   SuggestionStatusText,
@@ -16,14 +16,14 @@ import {
   NpaSpec,
   NpmConfig
 } from '#providers/npm';
+import assert from 'node:assert';
 import npa from 'npm-package-arg';
-import { LoggerStub } from 'test/unit/domain/logging/index.test';
 import { anything, capture, instance, mock, when } from 'ts-mockito';
 import { githubFixtures } from './fetchGitHub.fixtures';
 
 let githubOptsMock: GitHubOptions;
 let configMock: NpmConfig;
-let loggerMock: LoggerStub;
+let loggerMock: ILogger;
 let jsonClientMock: IJsonHttpClient;
 
 export const fetchGithubTests = {
@@ -34,7 +34,7 @@ export const fetchGithubTests = {
     githubOptsMock = mock(GitHubOptions);
     configMock = mock(NpmConfig);
     jsonClientMock = mock(JsonHttpClient);
-    loggerMock = mock(LoggerStub);
+    loggerMock = mock<ILogger>();
 
     when(configMock.github).thenReturn(instance(githubOptsMock))
     when(configMock.prereleaseTagFilter).thenReturn([])
