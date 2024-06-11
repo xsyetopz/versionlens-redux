@@ -1,4 +1,4 @@
-import { KeyDictionary, Nullable } from 'domain/utils';
+import { KeyDictionary, Nullable } from '#domain/utils';
 import { QualifiedTag, SAXParser, Tag, parser as saxParser } from 'sax';
 
 export type XmlAttribute = {

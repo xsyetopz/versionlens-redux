@@ -1,6 +1,6 @@
 import { throwNotStringOrEmpty, throwUndefinedOrNull } from '@esm-test/guards';
 import { IConfig, IFrozenOptions, TConfigSectionResolver } from '#domain/configuration';
-import { Nullable, Undefinable } from 'domain/utils';
+import { Nullable, Undefinable } from '#domain/utils';
 
 /**
  * Configuration container.

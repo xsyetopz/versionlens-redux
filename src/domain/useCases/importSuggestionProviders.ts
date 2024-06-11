@@ -1,7 +1,7 @@
 import { IServiceProvider } from '#domain/di';
 import { ILogger } from '#domain/logging';
 import { ISuggestionProvider } from '#domain/providers';
-import { importSuggestionProvider } from './importSuggestionProvider';
+import { importSuggestionProvider } from '#domain/useCases';
 
 export function importSuggestionProviders(
   serviceProvider: IServiceProvider,

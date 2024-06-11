@@ -19,7 +19,7 @@ import {
   createPackageResource
 } from '#domain/packages';
 import { IProviderConfig, ISuggestionProvider } from '#domain/providers';
-import { FetchPackageSuggestions } from 'domain/useCases';
+import { FetchPackageSuggestions } from '#domain/useCases';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import { anything, instance, mock, verify, when } from 'ts-mockito';

@@ -1,6 +1,6 @@
 import { IServiceCollection } from '#domain/di';
 import { IDomainServices } from '#domain/services';
-import { nameOf } from 'domain/utils';
+import { nameOf } from '#domain/utils';
 import { IExtensionServices } from 'presentation.extension';
 import { OnPreSaveChanges } from './onPreSaveChanges';
 import { OnSaveChanges } from './onSaveChanges';

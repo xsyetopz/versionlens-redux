@@ -6,7 +6,7 @@ import {
   IJsonHttpClient,
   JsonClientResponse
 } from '#domain/clients';
-import { KeyStringDictionary } from 'domain/utils';
+import { KeyStringDictionary } from '#domain/utils';
 
 export class JsonHttpClient implements IJsonHttpClient {
 

@@ -1,5 +1,4 @@
-import { Disposable } from "./dispose/disposable";
-import { IDisposable } from "./dispose/disposableArray";
+import { Disposable, IDisposable } from '#domain/utils';
 
 type EmitterMap<T> = Map<T, AsyncEventData>;
 

@@ -11,7 +11,7 @@ import {
   parsePackagesJson
 } from '#domain/packages';
 import { ISuggestionProvider } from '#domain/providers';
-import { KeyDictionary } from 'domain/utils';
+import { KeyDictionary } from '#domain/utils';
 import { ComposerClient } from './composerClient';
 import { ComposerConfig } from './composerConfig';
 import { customDescriptorHandler } from './parser/customDescriptorHandler';

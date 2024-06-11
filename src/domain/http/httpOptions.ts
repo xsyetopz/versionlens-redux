@@ -1,6 +1,6 @@
 import { IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
 import { HttpContributions, IHttpOptions } from '#domain/http';
-import { Nullable } from 'domain/utils';
+import { Nullable } from '#domain/utils';
 
 export class HttpOptions extends OptionsWithFallback implements IHttpOptions {
 

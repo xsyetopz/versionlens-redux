@@ -7,7 +7,7 @@ import {
   HttpClientOptions,
   UrlUtils
 } from '#domain/clients';
-import { KeyStringDictionary } from 'domain/utils';
+import { KeyStringDictionary } from '#domain/utils';
 import { HttpOptions, IHttpOptions } from '#domain/http';
 import { ILogger } from '#domain/logging';
 import { RequestLightClient } from 'infrastructure/http';

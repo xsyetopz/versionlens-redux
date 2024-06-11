@@ -3,7 +3,7 @@ import { ICachingOptions } from '#domain/caching';
 import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
-import { nameOf } from 'domain/utils';
+import { nameOf } from '#domain/utils';
 import { DotNetContributions } from './definitions/eDotNetContributions';
 import { INugetOptions } from "./definitions/iNugetOptions";
 

@@ -1,7 +1,7 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { IProcessClient, UrlUtils } from '#domain/clients';
 import { ILogger } from '#domain/logging';
-import { CrLf, Lf } from 'domain/utils';
+import { CrLf, Lf } from '#domain/utils';
 import { DotNetSource } from '../definitions/dotnet';
 import { DotNetConfig } from '../dotnetConfig';
 

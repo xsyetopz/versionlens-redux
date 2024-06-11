@@ -3,7 +3,7 @@ import {
   SuggestionStatusText,
   SuggestionTypes
 } from '#domain/packages';
-import { KeyDictionary } from 'domain/utils';
+import { KeyDictionary } from '#domain/utils';
 import * as os from 'node:os';
 import {
   SuggestionCodeLens,

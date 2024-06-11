@@ -12,7 +12,7 @@ import {
   createPackageVersionDesc,
   createProjectVersionTypeDesc
 } from '#domain/packages';
-import { Undefinable } from 'domain/utils';
+import { Undefinable } from '#domain/utils';
 import { YAMLMap } from 'yaml';
 import { findPair } from 'yaml/util';
 

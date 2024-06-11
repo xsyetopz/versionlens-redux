@@ -2,7 +2,7 @@ import { IServiceCollectionFactory, IServiceProvider } from '#domain/di';
 import { ILogger } from '#domain/logging';
 import { IProviderModule, ISuggestionProvider } from '#domain/providers';
 import { IDomainServices, IProviderServices } from '#domain/services';
-import { nameOf } from 'domain/utils';
+import { nameOf } from '#domain/utils';
 
 export async function importSuggestionProvider(
   serviceProvider: IServiceProvider,

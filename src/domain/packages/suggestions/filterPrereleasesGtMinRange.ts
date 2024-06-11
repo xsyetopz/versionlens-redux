@@ -1,5 +1,5 @@
 import { TPreReleaseGroup, VersionUtils, friendlifyPrereleaseName } from '#domain/packages';
-import { KeyDictionary } from 'domain/utils';
+import { KeyDictionary } from '#domain/utils';
 import {
   SemVer,
   gt,

@@ -1,6 +1,6 @@
 import { throwNotStringOrEmpty, throwUndefinedOrNull } from '@esm-test/guards';
 import { ICache } from '#domain/caching';
-import { TAsyncFunction } from 'domain/utils';
+import { TAsyncFunction } from '#domain/utils';
 
 type CacheMap = {
   [key: string]: any;

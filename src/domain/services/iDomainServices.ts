@@ -12,7 +12,7 @@ import {
   GetDependencyChanges,
   GetSuggestionProvider,
   GetSuggestions
-} from 'domain/useCases';
+} from '#domain/useCases';
 
 export interface IDomainServices {
 

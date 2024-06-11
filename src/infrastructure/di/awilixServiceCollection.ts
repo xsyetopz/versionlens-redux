@@ -12,7 +12,7 @@ import {
   TServiceResolver
 } from '#domain/di';
 import { IDomainServices } from '#domain/services';
-import { AsyncFunction, IDisposable, KeyDictionary, nameOf } from 'domain/utils';
+import { AsyncFunction, IDisposable, KeyDictionary, nameOf } from '#domain/utils';
 import { AwilixServiceProvider } from './awilixServiceProvider';
 import { registerAsyncSingletons } from './awillixUtils';
 

@@ -1,4 +1,4 @@
-import { IDisposable } from 'domain/utils';
+import { IDisposable } from '#domain/utils';
 
 export interface IServiceProvider extends IDisposable {
 

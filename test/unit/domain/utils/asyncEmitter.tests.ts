@@ -1,4 +1,4 @@
-import { AsyncEmitter, AsyncEvent, IDisposable } from "domain/utils";
+import { AsyncEmitter, AsyncEvent, IDisposable } from '#domain/utils';
 import { test } from "mocha-ui-esm";
 import assert from "node:assert";
 import { instance, mock, verify, when } from "ts-mockito";

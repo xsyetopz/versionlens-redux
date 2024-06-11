@@ -1,4 +1,4 @@
-import { IDisposable } from "domain/utils";
+import { IDisposable } from '#domain/utils';
 
 export class Disposable implements IDisposable {
 

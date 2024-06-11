@@ -1,7 +1,7 @@
 import { IServiceCollection, ServiceInjectionMode } from '#domain/di';
 import { ILoggingOptions } from '#domain/logging';
 import { IDomainServices } from '#domain/services';
-import { nameOf } from "domain/utils";
+import { nameOf } from '#domain/utils';
 import { OutputChannelTransport, createWinstonLogger } from "infrastructure/logging";
 import { PackageFileWatcher, WorkspaceAdapter } from "infrastructure/watcher";
 import { workspace } from "vscode";

@@ -4,7 +4,7 @@ import { UrlUtils } from '#domain/clients';
 import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
-import { nameOf } from 'domain/utils';
+import { nameOf } from '#domain/utils';
 import { PubContributions } from './definitions/ePubContributions';
 
 const ctorParam = nameOf<PubConfig>();

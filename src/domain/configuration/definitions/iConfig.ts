@@ -1,4 +1,4 @@
-import { Undefinable } from 'domain/utils';
+import { Undefinable } from '#domain/utils';
 
 export interface IConfig {
 

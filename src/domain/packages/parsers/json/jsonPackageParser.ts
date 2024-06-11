@@ -6,7 +6,7 @@ import {
   createPackageParentDescType,
   createVersionDescFromJsonNode
 } from '#domain/packages';
-import { KeyDictionary, Undefinable } from 'domain/utils';
+import { KeyDictionary, Undefinable } from '#domain/utils';
 import * as JsonC from 'jsonc-parser';
 
 export function parsePackagesJson(

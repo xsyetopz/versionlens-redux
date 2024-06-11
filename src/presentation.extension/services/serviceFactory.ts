@@ -1,8 +1,8 @@
 import { IServiceCollection } from '#domain/di';
 import { DependencyCache } from '#domain/packages';
 import { IDomainServices } from '#domain/services';
-import { GetSuggestions } from 'domain/useCases';
-import { DisposableArray, nameOf } from 'domain/utils';
+import { GetSuggestions } from '#domain/useCases';
+import { DisposableArray, nameOf } from '#domain/utils';
 import {
   IExtensionServices,
   SuggestionCodeLensProvider,

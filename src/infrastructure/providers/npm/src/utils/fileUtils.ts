@@ -1,4 +1,4 @@
-import { KeyStringDictionary, fileExists, readFile } from 'domain/utils';
+import { KeyStringDictionary, fileExists, readFile } from '#domain/utils';
 import dotenv from 'dotenv';
 import { resolve } from 'node:path';
 

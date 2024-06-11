@@ -6,7 +6,7 @@ import {
   TJsonPackageParserOptions,
   TJsonPackageTypeHandler
 } from '#domain/packages';
-import { KeyDictionary } from 'domain/utils';
+import { KeyDictionary } from '#domain/utils';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import { customDescriptorHandler } from '../../src/parser/customDescriptorHandler';

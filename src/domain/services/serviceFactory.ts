@@ -12,8 +12,8 @@ import {
   GetDependencyChanges,
   GetSuggestionProvider,
   importSuggestionProviders
-} from "domain/useCases";
-import { nameOf } from "domain/utils";
+} from '#domain/useCases';
+import { nameOf } from '#domain/utils';
 
 export function addAppConfig(
   services: IServiceCollection,

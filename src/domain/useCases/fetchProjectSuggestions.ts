@@ -2,7 +2,7 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { PackageDependency, PackageResponse, TPackageClientRequest } from '#domain/packages';
 import { ISuggestionProvider } from '#domain/providers';
-import { FetchPackageSuggestions } from 'domain/useCases';
+import { FetchPackageSuggestions } from '#domain/useCases';
 
 export class FetchProjectSuggestions {
 

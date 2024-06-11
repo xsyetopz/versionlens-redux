@@ -6,7 +6,7 @@ import {
   TPackageSuggestion,
   createSuggestion
 } from '#domain/packages';
-import { Nullable } from 'domain/utils';
+import { Nullable } from '#domain/utils';
 import semver from 'semver';
 
 export function createFromHttpStatus(status: number | string): Nullable<TPackageSuggestion> {

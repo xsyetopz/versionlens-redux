@@ -1,5 +1,5 @@
 import { ILogger, LogLevelTypes, TChildLoggerOptions } from '#domain/logging';
-import { KeyDictionary } from 'domain/utils';
+import { KeyDictionary } from '#domain/utils';
 
 export class LoggerStub implements ILogger {
 

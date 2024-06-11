@@ -1,6 +1,6 @@
 import { throwNotStringOrEmpty } from "@esm-test/guards";
 import { ExpiryCacheEntry, IExpiryCache, MemoryCache } from "#domain/caching";
-import { TAsyncFunction } from 'domain/utils';
+import { TAsyncFunction } from '#domain/utils';
 
 export class MemoryExpiryCache implements IExpiryCache {
 

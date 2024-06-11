@@ -1,5 +1,5 @@
 import { asValue, AwilixContainer, Resolver } from "awilix";
-import { KeyDictionary } from 'domain/utils';
+import { KeyDictionary } from '#domain/utils';
 
 /**
  * Resolves async services using proxy injection mode
