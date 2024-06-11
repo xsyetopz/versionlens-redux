@@ -1,5 +1,5 @@
 import { PackageVersionType } from 'domain/packages';
-import { UrlUtils } from 'domain/clients';
+import { UrlUtils } from '#domain/clients';
 import { NugetVersionSpec } from './nuget';
 
 export type DotNetVersionSpec = {

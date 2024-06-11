@@ -1,5 +1,5 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { HttpClientRequestMethods, IJsonHttpClient } from 'domain/clients';
+import { HttpClientRequestMethods, IJsonHttpClient } from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import {
   ClientResponseFactory,

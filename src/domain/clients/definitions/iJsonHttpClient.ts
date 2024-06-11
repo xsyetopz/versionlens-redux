@@ -1,7 +1,5 @@
+import { HttpClientRequestMethods, IHttpClient, JsonClientResponse } from '#domain/clients';
 import { KeyStringDictionary } from 'domain/utils';
-import { JsonClientResponse } from './clientResponses';
-import { HttpClientRequestMethods } from "./eHttpClientRequestMethods";
-import { IHttpClient } from './iHttpClient';
 
 export interface IJsonHttpClient {
 

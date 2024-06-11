@@ -1,6 +1,6 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ICachingOptions, IExpiryCache } from '#domain/caching';
-import { ClientResponseSource, IProcessClient, ProcessClientResponse } from 'domain/clients';
+import { ClientResponseSource, IProcessClient, ProcessClientResponse } from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import { IPromiseSpawnFn } from './iPromiseSpawn';
 

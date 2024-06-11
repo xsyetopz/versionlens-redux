@@ -1,4 +1,4 @@
-import { TClientResponse } from 'domain/clients';
+import { TClientResponse } from '#domain/clients';
 
 export interface NugetServiceResource {
   '@id': string;

@@ -3,7 +3,7 @@ import {
   HttpClientRequestMethods,
   HttpClientResponse,
   IHttpClient
-} from 'domain/clients';
+} from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import {
   ClientResponseFactory,

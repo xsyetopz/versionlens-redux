@@ -3,7 +3,7 @@ import {
   HttpClientRequestMethods,
   HttpClientResponse,
   IJsonHttpClient
-} from 'domain/clients';
+} from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import { DotNetSource } from '../definitions/dotnet';
 import { NugetServiceIndexResponse } from '../definitions/nuget';

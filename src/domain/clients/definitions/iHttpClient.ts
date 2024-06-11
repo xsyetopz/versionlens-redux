@@ -1,6 +1,5 @@
+import { HttpClientRequestMethods, HttpClientResponse } from '#domain/clients';
 import { KeyStringDictionary } from 'domain/utils';
-import { HttpClientResponse } from "./clientResponses";
-import { HttpClientRequestMethods } from "./eHttpClientRequestMethods";
 
 export interface THttpClientRequestFn {
   (

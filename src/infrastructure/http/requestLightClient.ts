@@ -6,7 +6,7 @@ import {
   HttpClientResponse,
   IHttpClient,
   UrlUtils
-} from 'domain/clients';
+} from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import { KeyStringDictionary } from 'domain/utils';
 import { XHRRequest } from 'request-light';

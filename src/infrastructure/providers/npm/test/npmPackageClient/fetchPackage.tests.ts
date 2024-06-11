@@ -1,4 +1,4 @@
-import { ClientResponseSource } from 'domain/clients';
+import { ClientResponseSource } from '#domain/clients';
 import {
   PackageDependency,
   PackageDescriptor,

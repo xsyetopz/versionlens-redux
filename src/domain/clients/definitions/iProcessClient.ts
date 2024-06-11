@@ -1,4 +1,4 @@
-import { ProcessClientResponse } from "./clientResponses";
+import { ProcessClientResponse } from '#domain/clients';
 
 export interface ProcessClientRequestFn {
   (

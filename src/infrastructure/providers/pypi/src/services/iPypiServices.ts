@@ -1,5 +1,5 @@
 import { CachingOptions } from '#domain/caching';
-import { IHttpClient } from "domain/clients";
+import { IHttpClient } from '#domain/clients';
 import { HttpOptions } from "domain/http";
 import { PypiClient } from "../pypiClient";
 import { PypiConfig } from "../pypiConfig";

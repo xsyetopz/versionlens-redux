@@ -5,7 +5,7 @@ import {
   HttpClientRequestMethods,
   IHttpClient,
   JsonHttpClient,
-} from 'domain/clients';
+} from '#domain/clients';
 import { HttpOptions, IHttpOptions } from 'domain/http';
 import { anything, instance, mock, when } from 'ts-mockito';
 

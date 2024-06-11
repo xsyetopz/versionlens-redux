@@ -1,4 +1,4 @@
-import { ClientResponseSource, HttpClientResponse } from 'domain/clients';
+import { ClientResponseSource, HttpClientResponse } from '#domain/clients';
 
 export function convertNpmErrorToResponse(
   error,

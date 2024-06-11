@@ -1,4 +1,4 @@
-import { TClientResponse } from "domain/clients";
+import { TClientResponse } from '#domain/clients';
 import { KeyDictionary } from 'domain/utils';
 
 export type TNpmRegistryData = {

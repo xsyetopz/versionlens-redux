@@ -1,4 +1,4 @@
-import { UrlUtils } from "domain/clients"
+import { UrlUtils } from '#domain/clients'
 
 export type MavenRepository = {
   url: string,

@@ -1,5 +1,5 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { ClientResponseSource } from 'domain/clients';
+import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import {
   ClientResponseFactory,

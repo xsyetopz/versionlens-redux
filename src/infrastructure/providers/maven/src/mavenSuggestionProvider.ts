@@ -1,5 +1,5 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { UrlUtils } from 'domain/clients';
+import { UrlUtils } from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import {
   createPackageResource,

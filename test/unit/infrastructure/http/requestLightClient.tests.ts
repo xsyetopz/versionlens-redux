@@ -6,7 +6,7 @@ import {
   HttpClientResponse,
   HttpClientOptions,
   UrlUtils
-} from 'domain/clients';
+} from '#domain/clients';
 import { KeyStringDictionary } from 'domain/utils';
 import { HttpOptions, IHttpOptions } from 'domain/http';
 import { ILogger } from 'domain/logging';

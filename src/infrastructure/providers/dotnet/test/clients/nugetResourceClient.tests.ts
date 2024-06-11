@@ -5,7 +5,7 @@ import {
   IJsonHttpClient,
   JsonHttpClient,
   UrlUtils
-} from 'domain/clients';
+} from '#domain/clients';
 import { ILogger } from 'domain/logging';
 import { NuGetResourceClient } from 'infrastructure/providers/dotnet';
 import { LoggerStub } from 'test/unit/domain/logging';

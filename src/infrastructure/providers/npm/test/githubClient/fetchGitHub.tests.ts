@@ -3,7 +3,7 @@ import {
   ClientResponseSource,
   IJsonHttpClient,
   JsonHttpClient
-} from 'domain/clients';
+} from '#domain/clients';
 import {
   SuggestionCategory,
   SuggestionStatusText,
