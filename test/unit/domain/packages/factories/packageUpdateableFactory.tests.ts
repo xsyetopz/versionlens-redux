@@ -4,7 +4,7 @@ import {
   SuggestionTypes,
   TPackageSuggestion,
   UpdateableFactory
-} from 'domain/packages';
+} from '#domain/packages';
 import assert from 'node:assert';
 
 export const PackageUpdateableFactoryTests = {

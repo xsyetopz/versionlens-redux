@@ -9,7 +9,7 @@ import {
   createPackageResource,
   createVersionDescFromJsonNode,
   parsePackagesJson
-} from 'domain/packages';
+} from '#domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { KeyDictionary } from 'domain/utils';
 import { ComposerClient } from './composerClient';

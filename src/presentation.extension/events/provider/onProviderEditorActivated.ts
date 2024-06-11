@@ -1,6 +1,6 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger, ILoggerChannel } from '#domain/logging';
-import { IPackageFileWatcher } from 'domain/packages';
+import { IPackageFileWatcher } from '#domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { dirname } from 'node:path';
 import { VersionLensExtension } from 'presentation.extension';

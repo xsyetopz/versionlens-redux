@@ -1,4 +1,4 @@
-import { UpdateableFactory, getReleaseSuggestions, parseVersion } from 'domain/packages';
+import { UpdateableFactory, getReleaseSuggestions, parseVersion } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import { deepEqual, ok } from 'node:assert';
 

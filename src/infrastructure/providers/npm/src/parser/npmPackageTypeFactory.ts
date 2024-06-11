@@ -5,7 +5,7 @@ import {
   createNameDescFromJsonNode,
   createPackageParentDescType,
   createVersionDescFromJsonNode
-} from 'domain/packages';
+} from '#domain/packages';
 import * as JsonC from 'jsonc-parser';
 
 /**

@@ -19,7 +19,7 @@ import {
   VersionUtils,
   XmlDoc,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import semver from 'semver';
 import { PypiConfig } from './pypiConfig';
 export class PypiClient implements IPackageClient<null> {

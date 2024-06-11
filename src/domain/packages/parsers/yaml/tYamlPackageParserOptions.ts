@@ -1,5 +1,5 @@
+import { TYamlPackageTypeHandler } from "#domain/packages";
 import { KeyDictionary } from 'domain/utils';
-import { TYamlPackageTypeHandler } from "./tYamlPackageTypeHandler";
 
 export type TYamlPackageParserOptions = {
   includePropNames: Array<string>,

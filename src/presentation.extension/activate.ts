@@ -1,6 +1,6 @@
 import { IServiceProvider } from '#domain/di';
 import { ILogger, ILoggingOptions } from '#domain/logging';
-import { IPackageFileWatcher } from 'domain/packages';
+import { IPackageFileWatcher } from '#domain/packages';
 import { IDomainServices } from 'domain/services';
 import { nameOf, readJsonFile } from 'domain/utils';
 import { join } from 'node:path';

@@ -9,7 +9,7 @@ import {
   SuggestionStatusText,
   SuggestionTypes,
   TPackageSuggestion
-} from 'domain/packages';
+} from '#domain/packages';
 import {
   GitHubClient,
   GitHubOptions,

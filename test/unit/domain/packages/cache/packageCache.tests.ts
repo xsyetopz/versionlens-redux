@@ -5,7 +5,7 @@ import {
   PackageVersionType,
   TPackageClientResponse,
   TPackageResource
-} from "domain/packages";
+} from '#domain/packages';
 import { test } from "mocha-ui-esm";
 
 type TestContext = {

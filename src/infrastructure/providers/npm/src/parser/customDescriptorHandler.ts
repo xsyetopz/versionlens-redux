@@ -1,4 +1,4 @@
-import { createProjectVersionDesc } from 'domain/packages';
+import { createProjectVersionDesc } from '#domain/packages';
 import * as JsonC from 'jsonc-parser';
 import { createPackageManagerDesc } from './npmPackageTypeFactory';
 

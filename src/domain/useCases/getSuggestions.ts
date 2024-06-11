@@ -5,7 +5,7 @@ import {
   PackageResponse,
   SuggestionStatusText,
   SuggestionTypes
-} from 'domain/packages';
+} from '#domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { dirname } from 'node:path';
 import { FetchProjectSuggestions } from './fetchProjectSuggestions';

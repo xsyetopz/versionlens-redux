@@ -1,7 +1,10 @@
-import { PackageDependency, TPackageSuggestion } from 'domain/packages';
-import { PackageSourceType } from '../clients/ePackageSource';
-import { PackageVersionType } from '../definitions/ePackageVersionType';
-import { TPackageNameVersion } from '../definitions/tPackageNameVersion';
+import {
+  PackageDependency,
+  PackageSourceType,
+  PackageVersionType,
+  TPackageNameVersion,
+  TPackageSuggestion
+} from '#domain/packages';
 
 export type PackageResponse = {
   providerName: string;

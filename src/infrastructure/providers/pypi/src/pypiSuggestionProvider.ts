@@ -10,7 +10,7 @@ import {
   TTomlPackageParserOptions,
   createPackageResource,
   parsePackagesToml
-} from 'domain/packages';
+} from '#domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { PypiClient } from './pypiClient';
 import { PypiConfig } from './pypiConfig';

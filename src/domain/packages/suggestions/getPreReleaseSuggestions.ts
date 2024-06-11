@@ -3,7 +3,7 @@ import {
   UpdateableFactory,
   VersionUtils,
   filterPrereleasesGtMinRange
-} from "domain/packages";
+} from '#domain/packages';
 
 export function getPreReleaseSuggestions(
   fixedOrRangedVersion: string,

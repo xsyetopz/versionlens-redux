@@ -1,4 +1,4 @@
-import { friendlifyPrereleaseName } from 'domain/packages';
+import { friendlifyPrereleaseName } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 

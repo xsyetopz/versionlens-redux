@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { VersionUtils } from 'domain/packages';
+import { VersionUtils } from '#domain/packages';
 
 const testVersions = [
   "2.0.0-preview.1",

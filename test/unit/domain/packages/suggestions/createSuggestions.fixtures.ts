@@ -2,7 +2,7 @@ import {
   PackageStatusFactory,
   SuggestionStatusText,
   UpdateableFactory
-} from 'domain/packages';
+} from '#domain/packages';
 
 export default {
   fixedNoMatchWithLatestSuggestions: [

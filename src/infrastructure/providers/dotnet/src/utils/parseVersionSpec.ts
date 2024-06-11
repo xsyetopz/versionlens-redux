@@ -1,4 +1,4 @@
-import { PackageVersionType, VersionUtils } from "domain/packages";
+import { PackageVersionType, VersionUtils } from '#domain/packages';
 import semver from 'semver';
 import { DotNetVersionSpec } from "../definitions/dotnet";
 import { NugetVersionSpec } from "../definitions/nuget";

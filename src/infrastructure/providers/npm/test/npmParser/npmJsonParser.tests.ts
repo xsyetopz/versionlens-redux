@@ -5,7 +5,7 @@ import {
   parsePackagesJson,
   TJsonPackageParserOptions,
   TJsonPackageTypeHandler
-} from 'domain/packages';
+} from '#domain/packages';
 import { KeyDictionary } from 'domain/utils';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';

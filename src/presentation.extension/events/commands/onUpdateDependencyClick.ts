@@ -1,6 +1,6 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
-import { SuggestionTypes, mapToSuggestionUpdate } from 'domain/packages';
+import { SuggestionTypes, mapToSuggestionUpdate } from '#domain/packages';
 import { Disposable } from 'domain/utils';
 import {
   SuggestionCodeLens,

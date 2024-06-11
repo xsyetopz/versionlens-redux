@@ -15,7 +15,7 @@ import {
   TSemverSpec,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import { ComposerConfig } from './composerConfig';
 import { IPackagistApiItem } from './definitions/iPackagistApiItem';
 

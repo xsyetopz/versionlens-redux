@@ -1,4 +1,4 @@
-import { PackageVersionType } from "./ePackageVersionType";
+import { PackageVersionType } from "#domain/packages";
 
 export type TSemverSpec = {
 

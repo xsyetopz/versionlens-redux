@@ -1,15 +1,16 @@
-import { AST, parseTOML } from "toml-eslint-parser";
-import { PackageDescriptorType } from "../definitions/ePackageDescriptorType";
-import { PackageDescriptor } from "../packageDescriptor";
-import { TTomlPackageParserOptions } from "./tTomlPackageParserOptions";
 import {
+  PackageDescriptor,
+  PackageDescriptorType,
+  TTomlPackageParserOptions,
+  complexHasProperty,
   createGitDescFromTomlNode,
   createNameDescFromTomlNode,
   createPathDescFromTomlNode,
   createProjectVersionDescFromTomlNode,
-  createVersionDescFromTomlNode
-} from "./tomlPackageTypeFactory";
-import { complexHasProperty, matchesTableExpression } from "./tomlParserUtils";
+  createVersionDescFromTomlNode,
+  matchesTableExpression
+} from "#domain/packages";
+import { AST, parseTOML } from "toml-eslint-parser";
 
 const projectVersionParentKeys = ['project', 'package'];
 

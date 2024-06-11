@@ -18,7 +18,7 @@ import {
   TSemverSpec,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import { CargoConfig } from './cargoConfig';
 import { ICratesApiItem } from './definitions/iCratesApiItem';
 

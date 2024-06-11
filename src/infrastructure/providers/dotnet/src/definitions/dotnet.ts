@@ -1,4 +1,4 @@
-import { PackageVersionType } from 'domain/packages';
+import { PackageVersionType } from '#domain/packages';
 import { UrlUtils } from '#domain/clients';
 import { NugetVersionSpec } from './nuget';
 

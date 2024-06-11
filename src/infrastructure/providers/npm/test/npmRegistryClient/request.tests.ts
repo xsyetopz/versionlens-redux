@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { CachingOptions, ICachingOptions } from '#domain/caching';
 import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from '#domain/logging';
-import { createPackageResource } from 'domain/packages';
+import { createPackageResource } from '#domain/packages';
 import {
   GitHubOptions,
   INpmRegistry,

@@ -15,7 +15,7 @@ import {
   TSemverSpec,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import { MavenClientData } from '../definitions/mavenClientData';
 import { MavenConfig } from '../mavenConfig';
 import { getVersionsFromPackageXml } from '../parser/mavenXmlUtils';

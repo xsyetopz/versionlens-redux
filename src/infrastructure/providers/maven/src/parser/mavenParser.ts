@@ -3,7 +3,7 @@ import {
   XmlDoc,
   XmlNode,
   createProjectVersionDescFromXmlElem
-} from "domain/packages";
+} from '#domain/packages';
 import { createNameDescFromXmlNodes, createVersionDescFromXmlNodes } from "./mavenParserTypeFactory";
 
 export function parseMavenPackagesXml(

@@ -1,4 +1,4 @@
-import { TParsedVersion, VersionUtils } from 'domain/packages';
+import { TParsedVersion, VersionUtils } from '#domain/packages';
 import {
   minVersion as getMinVersion,
   maxSatisfying,

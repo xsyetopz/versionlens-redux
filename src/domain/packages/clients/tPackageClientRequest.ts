@@ -1,4 +1,4 @@
-import { PackageDependency } from '../models/packageDependency';
+import { PackageDependency } from '#domain/packages';
 
 export type TPackageClientRequest<TClientData> = {
   // provider descriptor

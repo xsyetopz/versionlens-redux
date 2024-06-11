@@ -1,4 +1,4 @@
-import { parseVersion } from 'domain/packages';
+import { parseVersion } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import { equal, notEqual, ok } from 'node:assert';
 

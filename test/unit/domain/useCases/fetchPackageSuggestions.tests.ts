@@ -17,7 +17,7 @@ import {
   createDependencyRange,
   createPackageNameVersion,
   createPackageResource
-} from 'domain/packages';
+} from '#domain/packages';
 import { IProviderConfig, ISuggestionProvider } from 'domain/providers';
 import { FetchPackageSuggestions } from 'domain/useCases';
 import { test } from 'mocha-ui-esm';

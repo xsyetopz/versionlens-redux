@@ -10,7 +10,7 @@ import {
   TPackageSuggestion,
   createDependencyRange,
   createPackageResource
-} from 'domain/packages';
+} from '#domain/packages';
 import {
   GitHubOptions,
   INpmRegistry,

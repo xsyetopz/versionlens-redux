@@ -5,7 +5,7 @@ import {
   SuggestionTypes,
   TPackageSuggestion,
   createSuggestion
-} from 'domain/packages';
+} from '#domain/packages';
 import { Nullable } from 'domain/utils';
 import semver from 'semver';
 

@@ -3,7 +3,7 @@ import {
   PackageVersionType,
   TSuggestionUpdate,
   VersionUtils
-} from 'domain/packages';
+} from '#domain/packages';
 
 export function npmReplaceVersion(suggestionUpdate: TSuggestionUpdate): string {
   if (suggestionUpdate.packageSource === PackageSourceType.Github) {

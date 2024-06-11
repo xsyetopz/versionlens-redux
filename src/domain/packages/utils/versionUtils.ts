@@ -1,8 +1,10 @@
+import {
+  PackageVersionType,
+  TPackageNameVersion,
+  TPackageVersions,
+  TSemverSpec
+} from '#domain/packages';
 import { Range, lte, prerelease, valid, validRange } from 'semver';
-import { PackageVersionType } from '../definitions/ePackageVersionType';
-import { TPackageNameVersion } from '../definitions/tPackageNameVersion';
-import { TPackageVersions } from '../definitions/tPackageVersions';
-import { TSemverSpec } from '../definitions/tSemverSpec';
 
 export const formatTagNameRegex = /^[^0-9\-]*/;
 export const loosePrereleases = { loose: true, includePrerelease: true };

@@ -1,4 +1,4 @@
-import { SuggestionIncrements, UpdateableFactory, getProjectVersionSuggestions } from 'domain/packages';
+import { SuggestionIncrements, UpdateableFactory, getProjectVersionSuggestions } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import { deepEqual, ok } from 'node:assert';
 

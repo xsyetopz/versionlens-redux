@@ -4,7 +4,7 @@ import {
   TPackageSuggestion,
   TParsedVersion,
   UpdateableFactory
-} from 'domain/packages';
+} from '#domain/packages';
 import { compare, inc, maxSatisfying } from 'semver';
 
 export function getReleaseSuggestions(

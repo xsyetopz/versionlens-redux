@@ -16,7 +16,7 @@ import {
   TPackageClientResponse,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import { NuGetClientData } from '../definitions/nuget';
 import { DotNetConfig } from '../dotnetConfig';
 import { parseVersionSpec } from '../utils/parseVersionSpec';

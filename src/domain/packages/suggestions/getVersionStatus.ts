@@ -1,4 +1,4 @@
-import { PackageStatusFactory, TParsedVersion } from "domain/packages";
+import { PackageStatusFactory, TParsedVersion } from '#domain/packages';
 
 export function getVersionStatus(parsed: TParsedVersion) {
   if (parsed.hasInvalidRange) {

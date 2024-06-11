@@ -3,7 +3,7 @@ import { Config, TConfigSectionResolver } from '#domain/configuration';
 import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { LoggingOptions } from '#domain/logging';
-import { DependencyCache, PackageCache } from "domain/packages";
+import { DependencyCache, PackageCache } from '#domain/packages';
 import { FileSystemStorage } from "domain/storage";
 import {
   FetchPackageSuggestions,

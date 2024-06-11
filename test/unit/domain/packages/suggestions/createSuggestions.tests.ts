@@ -4,7 +4,7 @@ import {
   SuggestionTypes,
   TPackageSuggestion,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import Fixtures from './createSuggestions.fixtures';

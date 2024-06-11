@@ -1,4 +1,4 @@
-import { PackageStatusFactory, getVersionStatus, parseVersion } from 'domain/packages';
+import { PackageStatusFactory, getVersionStatus, parseVersion } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import { deepEqual } from 'node:assert';
 

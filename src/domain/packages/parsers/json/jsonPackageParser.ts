@@ -5,7 +5,7 @@ import {
   createNameDescFromJsonNode,
   createPackageParentDescType,
   createVersionDescFromJsonNode
-} from 'domain/packages';
+} from '#domain/packages';
 import { KeyDictionary, Undefinable } from 'domain/utils';
 import * as JsonC from 'jsonc-parser';
 

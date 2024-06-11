@@ -3,7 +3,7 @@ import {
   PackageVersionType,
   SuggestionTypes,
   TPackageTextRange
-} from "domain/packages";
+} from '#domain/packages';
 
 export type TSuggestionUpdate = {
   packageSource: PackageSourceType,

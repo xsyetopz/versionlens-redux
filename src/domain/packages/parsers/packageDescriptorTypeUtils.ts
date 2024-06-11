@@ -9,7 +9,7 @@ import {
   TPackageProjectVersionDescriptor,
   TPackageTextRange,
   TPackageVersionDescriptor
-} from "domain/packages";
+} from '#domain/packages';
 
 export function createPackageNameDesc(name: string, nameRange: TPackageTextRange): TPackageNameDescriptor {
   return {

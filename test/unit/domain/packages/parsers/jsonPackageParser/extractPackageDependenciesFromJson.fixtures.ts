@@ -6,7 +6,7 @@ import {
   createPackageParentDescType,
   createPackagePathDescType,
   createPackageVersionDesc
-} from 'domain/packages';
+} from '#domain/packages';
 
 export default {
 

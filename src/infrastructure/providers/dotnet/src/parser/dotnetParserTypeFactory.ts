@@ -4,7 +4,7 @@ import {
   XmlNode,
   createPackageNameDesc,
   createPackageVersionDesc
-} from 'domain/packages';
+} from '#domain/packages';
 
 export function createNameDescFromXmlAttr(node: XmlNode): TPackageNameDescriptor {
   const includeAttr = node.attributes.include || node.attributes.update;

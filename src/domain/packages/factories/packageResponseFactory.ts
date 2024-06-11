@@ -5,7 +5,7 @@ import {
   TPackageClientRequest,
   TPackageClientResponse,
   TPackageSuggestion
-} from "domain/packages";
+} from '#domain/packages';
 
 export function createSuccess<TClientData>(
   providerName: string,

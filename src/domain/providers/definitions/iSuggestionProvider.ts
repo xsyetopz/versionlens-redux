@@ -1,5 +1,5 @@
 import { ILogger } from '#domain/logging';
-import { IPackageClient, PackageDependency, TSuggestionReplaceFunction } from 'domain/packages';
+import { IPackageClient, PackageDependency, TSuggestionReplaceFunction } from '#domain/packages';
 import { IProviderConfig } from 'domain/providers';
 
 export interface ISuggestionProvider {

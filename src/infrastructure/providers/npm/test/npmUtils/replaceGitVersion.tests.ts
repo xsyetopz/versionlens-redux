@@ -7,7 +7,7 @@ import {
   SuggestionTypes,
   createDependencyRange,
   mapToSuggestionUpdate
-} from 'domain/packages';
+} from '#domain/packages';
 import { npmReplaceVersion } from 'infrastructure/providers/npm';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';

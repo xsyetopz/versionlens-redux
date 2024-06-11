@@ -1,7 +1,6 @@
 import { ILogger } from '#domain/logging';
+import { TPackageClientRequest, TPackageClientResponse } from "#domain/packages";
 import { IProviderConfig } from 'domain/providers';
-import { TPackageClientRequest } from "./tPackageClientRequest";
-import { TPackageClientResponse } from "./tPackageClientResponse";
 
 export interface IPackageClient<TClientData> {
 

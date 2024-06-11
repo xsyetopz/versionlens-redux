@@ -8,7 +8,7 @@ import {
   TPackageVersionDescriptor,
   TSuggestionReplaceFunction,
   createPackageResource
-} from 'domain/packages';
+} from '#domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { DotNetCli } from './clients/dotnetCli';
 import { NuGetPackageClient } from './clients/nugetPackageClient';

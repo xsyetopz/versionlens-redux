@@ -9,7 +9,7 @@ import {
   TPackageClientResponse,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import semver from 'semver';
 import { INpmRegistry } from '../definitions/iNpmRegistry.js';
 import { TNpmRegistryClientResponse } from '../definitions/tNpmRegistryClientResponse';

@@ -1,4 +1,4 @@
-import { DependencyCache } from 'domain/packages';
+import { DependencyCache } from '#domain/packages';
 import {
   IEventServices,
   SuggestionCodeLensProvider,

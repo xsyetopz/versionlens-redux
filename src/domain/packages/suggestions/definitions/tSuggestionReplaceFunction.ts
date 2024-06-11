@@ -1,4 +1,4 @@
-import { TSuggestionUpdate } from "domain/packages";
+import { TSuggestionUpdate } from '#domain/packages';
 
 export type TSuggestionReplaceFunction = (
 

@@ -7,7 +7,7 @@ import {
   PackageDescriptor,
   TYamlPackageParserOptions,
   TYamlPackageTypeHandler
-} from 'domain/packages';
+} from '#domain/packages';
 import { KeyDictionary } from 'domain/utils';
 import { Document, isMap, Pair, ParsedNode, parseDocument, YAMLMap } from 'yaml';
 import { findPair } from 'yaml/util';

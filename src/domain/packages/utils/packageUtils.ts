@@ -7,7 +7,7 @@ import {
   TPackageResource,
   TPackageSuggestion,
   TPackageTextRange
-} from "domain/packages";
+} from '#domain/packages';
 
 export function createDependencyRange(
   start: number,

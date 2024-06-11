@@ -15,7 +15,7 @@ import {
   TSemverSpec,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import semver from 'semver';
 import { PubConfig } from './pubConfig';
 

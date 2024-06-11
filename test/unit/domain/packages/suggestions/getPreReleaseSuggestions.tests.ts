@@ -1,4 +1,4 @@
-import { UpdateableFactory, getPreReleaseSuggestions } from 'domain/packages';
+import { UpdateableFactory, getPreReleaseSuggestions } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import { deepEqual, ok } from 'node:assert';
 

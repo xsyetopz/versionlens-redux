@@ -1,5 +1,5 @@
+import { TPackageTypeDescriptor } from "#domain/packages";
 import { KeyDictionary } from 'domain/utils';
-import { TPackageTypeDescriptor } from "./definitions/tPackageTypeDescriptors";
 
 export class PackageDescriptor {
 

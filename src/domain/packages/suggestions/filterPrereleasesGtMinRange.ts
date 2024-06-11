@@ -1,3 +1,4 @@
+import { TPreReleaseGroup, VersionUtils, friendlifyPrereleaseName } from '#domain/packages';
 import { KeyDictionary } from 'domain/utils';
 import {
   SemVer,
@@ -6,18 +7,15 @@ import {
   minVersion,
   validRange
 } from 'semver';
-import { TPreReleaseGroup } from './definitions/tPreReleaseGroup';
-import { loosePrereleases } from '../utils/versionUtils';
-import { friendlifyPrereleaseName } from './friendlifyPrereleaseName';
 
 export function filterPrereleasesGtMinRange(
   versionRange: string,
   prereleases: Array<string>
 ): Array<string> {
   // check we have a valid range (handles non-semver errors)
-  const isValidRange = validRange(versionRange, loosePrereleases) !== null;
+  const isValidRange = validRange(versionRange, VersionUtils.loosePrereleases) !== null;
   const minVersionFromRange = isValidRange ?
-    minVersion(versionRange, loosePrereleases) :
+    minVersion(versionRange, VersionUtils.loosePrereleases) :
     versionRange;
   if (!minVersionFromRange) return [];
 
@@ -26,7 +24,7 @@ export function filterPrereleasesGtMinRange(
   // for each prerelease version;
   // group prereleases by x.x.x-{name}*.x
   prereleases.forEach(function (prereleaseVersion, order) {
-    const spec = new SemVer(prereleaseVersion, loosePrereleases);
+    const spec = new SemVer(prereleaseVersion, VersionUtils.loosePrereleases);
     const prereleaseTag = friendlifyPrereleaseName(prereleaseVersion) ?? spec.prerelease[0];
 
     // get or create the group
@@ -60,7 +58,7 @@ export function filterPrereleasesGtMinRange(
     const isPrereleaseGt = gtfn(
       testMaxVersion,
       minVersionFromRange,
-      loosePrereleases
+      VersionUtils.loosePrereleases
     );
     if (isPrereleaseGt) satisfiedPrereleases.push(testMaxVersion)
   });

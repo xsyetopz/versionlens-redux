@@ -4,7 +4,7 @@ import {
   createPackageResource,
   PackageDependency,
   PackageDescriptor
-} from "domain/packages";
+} from '#domain/packages';
 
 export default {
   single: [

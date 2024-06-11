@@ -4,7 +4,7 @@ import {
   TPackageClientResponseStatus,
   TPackageNameVersion,
   TPackageSuggestion
-} from 'domain/packages';
+} from '#domain/packages';
 
 export type TPackageClientResponse = {
 

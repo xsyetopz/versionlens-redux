@@ -1,4 +1,4 @@
-import { PackageDependency } from "domain/packages";
+import { PackageDependency } from '#domain/packages';
 import { ISuggestionProvider } from "domain/providers";
 import { Uri } from "vscode";
 

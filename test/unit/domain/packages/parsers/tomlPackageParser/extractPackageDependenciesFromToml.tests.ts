@@ -1,4 +1,4 @@
-import { TTomlPackageParserOptions, parsePackagesToml } from 'domain/packages';
+import { TTomlPackageParserOptions, parsePackagesToml } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import Fixtures from './extractPackageDependenciesFromToml.fixtures';

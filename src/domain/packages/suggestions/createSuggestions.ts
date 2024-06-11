@@ -5,7 +5,7 @@ import {
   getReleaseSuggestions,
   getVersionStatus,
   parseVersion
-} from 'domain/packages';
+} from '#domain/packages';
 
 export function createSuggestions(
   requestedVersion: string,

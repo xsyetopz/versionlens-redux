@@ -5,7 +5,7 @@ import {
   SuggestionStatusText,
   SuggestionTypes,
   TPackageSuggestion
-} from 'domain/packages';
+} from '#domain/packages';
 
 export const PackageStatusFactoryTests = {
 

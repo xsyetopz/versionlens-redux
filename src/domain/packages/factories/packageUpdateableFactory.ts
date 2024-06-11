@@ -4,7 +4,7 @@ import {
   SuggestionTypes,
   TPackageSuggestion,
   createSuggestion
-} from 'domain/packages';
+} from '#domain/packages';
 import { prerelease } from 'semver';
 
 export function createLatestUpdateable(requestedVersion?: string, name?: string): TPackageSuggestion {

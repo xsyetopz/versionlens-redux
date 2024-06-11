@@ -4,7 +4,7 @@ import {
   TPackageNameDescriptor,
   TPackageTypeDescriptor,
   TPackageVersionDescriptor
-} from "domain/packages";
+} from '#domain/packages';
 import { KeyDictionary } from "domain/utils";
 
 export default {

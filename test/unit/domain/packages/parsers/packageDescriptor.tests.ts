@@ -6,7 +6,7 @@ import {
   TPackagePathDescriptor,
   TPackageTypeDescriptor,
   createPackageVersionDesc
-} from 'domain/packages';
+} from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 
 const testNameDesc: TPackageNameDescriptor = {

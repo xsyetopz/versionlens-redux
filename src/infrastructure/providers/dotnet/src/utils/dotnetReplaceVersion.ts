@@ -1,4 +1,4 @@
-import { TSuggestionUpdate, defaultReplaceFn } from 'domain/packages';
+import { TSuggestionUpdate, defaultReplaceFn } from '#domain/packages';
 // import { noVersionAttr } from '../parser/dotnetParserTypeFactory';
 
 export function dotnetReplaceVersion(suggestionUpdate: TSuggestionUpdate, newVersion: string): string {

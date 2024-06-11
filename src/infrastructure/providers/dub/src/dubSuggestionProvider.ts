@@ -12,7 +12,7 @@ import {
   createRepoDescFromJsonNode,
   createVersionDescFromJsonNode,
   parsePackagesJson
-} from 'domain/packages';
+} from '#domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { KeyDictionary } from 'domain/utils';
 import { DubClient } from './dubClient';

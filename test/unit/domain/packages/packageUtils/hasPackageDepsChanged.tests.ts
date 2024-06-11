@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { PackageDependency, hasPackageDepsChanged } from 'domain/packages';
+import { PackageDependency, hasPackageDepsChanged } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import Fixtures from './hasPackageDepsChanged.fixtures';
 

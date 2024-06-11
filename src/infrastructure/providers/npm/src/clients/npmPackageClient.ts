@@ -10,7 +10,7 @@ import {
   TPackageClientResponse,
   TPackageSuggestion,
   UpdateableFactory
-} from 'domain/packages';
+} from '#domain/packages';
 import npa from 'npm-package-arg';
 import { NpaSpec, NpaTypes } from '../models/npaSpec';
 import { NpmConfig } from '../npmConfig';

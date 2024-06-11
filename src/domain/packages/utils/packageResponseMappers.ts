@@ -1,4 +1,9 @@
-import { PackageDescriptorType, PackageResponse, TPackageVersionDescriptor, TSuggestionUpdate } from 'domain/packages';
+import {
+  PackageDescriptorType,
+  PackageResponse,
+  TPackageVersionDescriptor,
+  TSuggestionUpdate
+} from '#domain/packages';
 
 export function mapToSuggestionUpdate(packageResponse: PackageResponse): TSuggestionUpdate {
   let parsedVersionPrepend = "";

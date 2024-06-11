@@ -10,7 +10,7 @@ import {
   UpdateableFactory,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import semver from 'semver';
 import { NpaSpec } from '../models/npaSpec';
 import { NpmConfig } from '../npmConfig';

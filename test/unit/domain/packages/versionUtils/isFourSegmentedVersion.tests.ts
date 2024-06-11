@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { VersionUtils } from 'domain/packages';
+import { VersionUtils } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 
 export const isFourSegmentedVersionTests = {

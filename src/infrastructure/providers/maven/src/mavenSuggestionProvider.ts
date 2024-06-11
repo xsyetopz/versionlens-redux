@@ -7,7 +7,7 @@ import {
   PackageDescriptorType,
   TPackageNameDescriptor,
   TPackageVersionDescriptor
-} from 'domain/packages';
+} from '#domain/packages';
 import { ISuggestionProvider } from 'domain/providers';
 import { MavenClient } from './clients/mavenClient';
 import { MvnCli } from './clients/mvnCli';

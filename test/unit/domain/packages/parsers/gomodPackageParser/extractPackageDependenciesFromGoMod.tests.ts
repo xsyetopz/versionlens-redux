@@ -1,4 +1,4 @@
-import { parsePackagesGoMod } from 'domain/packages';
+import { parsePackagesGoMod } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import Fixtures from './extractPackageDependenciesFromGoMod.fixtures';

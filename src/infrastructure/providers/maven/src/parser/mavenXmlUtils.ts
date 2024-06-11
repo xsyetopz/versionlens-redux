@@ -1,4 +1,4 @@
-import { XmlDoc } from "domain/packages";
+import { XmlDoc } from '#domain/packages';
 
 export function getVersionsFromPackageXml(packageXml: string): Array<string> {
   const document = new XmlDoc();

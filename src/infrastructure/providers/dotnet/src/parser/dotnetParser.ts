@@ -2,7 +2,7 @@ import {
   PackageDescriptor,
   XmlDoc,
   createProjectVersionDescFromXmlElem
-} from 'domain/packages';
+} from '#domain/packages';
 import {
   createBlankVersionDescFromXmlAttr,
   createNameDescFromXmlAttr,

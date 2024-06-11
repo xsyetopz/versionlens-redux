@@ -8,7 +8,7 @@ import {
   TPackageResource,
   TPackageSuggestion,
   UpdateableFactory
-} from 'domain/packages';
+} from '#domain/packages';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 

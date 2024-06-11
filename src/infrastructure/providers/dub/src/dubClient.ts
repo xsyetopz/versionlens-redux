@@ -16,7 +16,7 @@ import {
   TSemverSpec,
   VersionUtils,
   createSuggestions
-} from 'domain/packages';
+} from '#domain/packages';
 import { valid } from 'semver';
 import { DubConfig } from './dubConfig';
 
