@@ -1,5 +1,5 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { IConfig } from 'domain/configuration';
+import { IConfig } from '#domain/configuration';
 import { KeyDictionary } from 'domain/utils';
 import { SuggestionFeatures } from '../features/eSuggestionFeatures';
 

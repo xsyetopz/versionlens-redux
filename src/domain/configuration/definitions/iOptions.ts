@@ -1,4 +1,4 @@
-import { IConfig } from "./iConfig";
+import { IConfig } from '#domain/configuration';
 
 export interface IFrozenOptions extends IConfig {
 

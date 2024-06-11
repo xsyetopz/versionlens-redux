@@ -1,6 +1,6 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ICachingOptions } from '#domain/caching';
-import { IFrozenOptions } from 'domain/configuration';
+import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from 'domain/http';
 import { IProviderConfig, TProviderFileMatcher } from 'domain/providers';
 import { nameOf } from 'domain/utils';

@@ -1,4 +1,4 @@
-import { IConfig } from 'domain/configuration';
+import { IConfig } from '#domain/configuration';
 
 export class ConfigResolverStub {
   getConfiguration(section: string): IConfig {

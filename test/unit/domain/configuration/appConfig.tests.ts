@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { Config, IConfig } from 'domain/configuration';
+import { Config, IConfig } from '#domain/configuration';
 import { test } from 'mocha-ui-esm';
 import { instance, mock, when } from 'ts-mockito';
 import { ConfigResolverStub } from './stubs/configResolverStub';

@@ -1,4 +1,4 @@
-import { IFrozenOptions, OptionsWithFallback } from 'domain/configuration';
+import { IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
 import { Nullable } from 'domain/utils';
 import { GitHubContributions } from '../definitions/eGitHubContributions';
 

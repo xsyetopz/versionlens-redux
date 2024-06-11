@@ -1,4 +1,4 @@
-import { IFrozenOptions, Options } from 'domain/configuration';
+import { IFrozenOptions, Options } from '#domain/configuration';
 import { NugetContributions } from '../definitions/eNugetContributions';
 import { INugetOptions } from '../definitions/iNugetOptions';
 

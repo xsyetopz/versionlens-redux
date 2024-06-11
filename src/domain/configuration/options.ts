@@ -1,6 +1,6 @@
 import { throwUndefinedOrNull } from '@esm-test/guards';
+import { IFrozenOptions, IOptions } from '#domain/configuration';
 import { Undefinable } from 'domain/utils';
-import { IFrozenOptions, IOptions } from '.';
 
 export abstract class Options implements IOptions {
 

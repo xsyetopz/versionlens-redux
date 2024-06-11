@@ -1,4 +1,4 @@
-import { IFrozenOptions } from "domain/configuration";
+import { IFrozenOptions } from '#domain/configuration';
 
 import { LogLevelTypes } from "./eLogLevelTypes";
 

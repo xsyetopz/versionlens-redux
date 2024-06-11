@@ -1,4 +1,4 @@
-import { TConfigSectionResolver } from "domain/configuration";
+import { TConfigSectionResolver } from '#domain/configuration';
 import { IServiceCollection } from "domain/di";
 import {
   addAppConfig,

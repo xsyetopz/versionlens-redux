@@ -1,4 +1,4 @@
-import { IOptions } from 'domain/configuration';
+import { IOptions } from '#domain/configuration';
 
 export interface INugetOptions extends IOptions {
 
