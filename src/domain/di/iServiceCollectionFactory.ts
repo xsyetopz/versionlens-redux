@@ -1,4 +1,4 @@
-import { IServiceCollection } from "./iServiceCollection";
+import { IServiceCollection } from "#domain/di";
 
 export interface IServiceCollectionFactory {
 

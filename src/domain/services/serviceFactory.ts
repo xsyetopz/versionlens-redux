@@ -1,6 +1,6 @@
 import { CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { Config, TConfigSectionResolver } from '#domain/configuration';
-import { IServiceCollection } from "domain/di";
+import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from "domain/http";
 import { LoggingOptions } from "domain/logging";
 import { DependencyCache, PackageCache } from "domain/packages";

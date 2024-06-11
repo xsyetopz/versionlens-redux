@@ -1,4 +1,4 @@
-import { IServiceProvider } from 'domain/di';
+import { IServiceProvider } from '#domain/di';
 import { ILogger, ILoggingOptions } from 'domain/logging';
 import { IPackageFileWatcher } from 'domain/packages';
 import { IDomainServices } from 'domain/services';

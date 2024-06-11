@@ -1,6 +1,6 @@
 import { throwNotStringOrEmpty, throwUndefinedOrNull } from '@esm-test/guards';
 import { AwilixContainer } from 'awilix';
-import { IServiceProvider } from 'domain/di';
+import { IServiceProvider } from '#domain/di';
 
 export class AwilixServiceProvider implements IServiceProvider {
 

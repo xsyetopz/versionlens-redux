@@ -10,7 +10,7 @@ import {
   ServiceInjectionMode,
   ServiceLifetime,
   TServiceResolver
-} from 'domain/di';
+} from '#domain/di';
 import { IDomainServices } from 'domain/services';
 import { AsyncFunction, IDisposable, KeyDictionary, nameOf } from 'domain/utils';
 import { AwilixServiceProvider } from './awilixServiceProvider';

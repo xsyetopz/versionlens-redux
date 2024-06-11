@@ -1,4 +1,4 @@
-import { IServiceCollection, IServiceProvider } from "domain/di";
+import { IServiceCollection, IServiceProvider } from '#domain/di';
 
 export interface IProviderModule {
 

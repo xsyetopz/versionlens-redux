@@ -1,4 +1,4 @@
-import { IServiceCollection } from "domain/di";
+import { IServiceCollection } from '#domain/di';
 import {
   addPackageFileWatcher,
   addWinstonChannelLogger,

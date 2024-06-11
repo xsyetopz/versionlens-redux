@@ -1,5 +1,5 @@
 import { TConfigSectionResolver } from '#domain/configuration';
-import { IServiceCollection } from "domain/di";
+import { IServiceCollection } from '#domain/di';
 import {
   addAppConfig,
   addCachingOptions,

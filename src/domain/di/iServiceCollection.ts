@@ -1,4 +1,4 @@
-import { IServiceProvider } from "./iServiceProvider";
+import { IServiceProvider } from "#domain/di";
 
 type TServiceResolverFunction<T> = (...args: Array<any>) => T;
 
