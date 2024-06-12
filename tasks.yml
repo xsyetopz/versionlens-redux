@@ -1,10 +1,11 @@
 tasks:
-  clean: rimraf ./dist
-  fresh: [clean -- ./node_modules test/**/node_modules ./package-lock.json]
+  clean: rimraf ./dist test/smoke/**/node_modules
+  fresh: clean -- ./node_modules ./package-lock.json
   bundle: [clean, lint, node ./build/esbuild.js]
   bundle:dev: [env: { BUNDLE_DEV: true }, bundle]
   bundle:test: [env: { BUNDLE_TEST: true }, bundle]
   compile: [clean, tsc]
+  coverage: c8 -r=text -r=cobertura -r=text-summary -o .coverage task test
   lint: tsc --noEmit
   test: [compile, env: { TEST_HEADLESS: true }, node ./dist/test/runner.js]
   test:vscode: [bundle:test, node ./test/vscode.runner.js]
