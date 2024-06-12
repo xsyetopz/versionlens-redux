@@ -30,7 +30,7 @@ export const getProjectVersionSuggestionsTests = {
 
       // assert
       ok(actual.length === expected.length);
-      deepEqual(actual, expected)
+      deepEqual(actual, expected);
     }
   ],
 
@@ -56,6 +56,28 @@ export const getProjectVersionSuggestionsTests = {
 
     // assert
     ok(actual.length === expected.length);
-    deepEqual(actual, expected)
+    deepEqual(actual, expected);
   },
+
+  'returns prerelease increment suggestions': () => {
+    const testVersion = '1.0.0-pre';
+    const expected = [
+      UpdateableFactory.createNextMaxUpdateable(
+        '1.0.0',
+        SuggestionIncrements.release
+      ),
+      UpdateableFactory.createNextMaxUpdateable(
+        '1.0.0-pre.0',
+        SuggestionIncrements.prerelease
+      )
+    ];
+
+    // test
+    const actual = getProjectVersionSuggestions(testVersion);
+
+    // assert
+    ok(actual.length === expected.length);
+    deepEqual(actual, expected);
+  },
+
 }
