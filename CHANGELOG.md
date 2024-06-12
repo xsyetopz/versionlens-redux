@@ -1,12 +1,21 @@
-# 1.14.1-preview
+# 1.14.2
 
 ### All Providers
 
   - Added the ability to update the package\project version
 
-    Suggestions available are 
-    - `↑ major`, `↑ minor`, `↑ patch` for release versions; and
+    Suggestions available:
+    - `↑ major`, `↑ minor`, `↑ patch` for release versions
     - `↑ release` and `↑ pre-release` for pre-release versions
+
+    Fields:
+    - cargo = `[packages] version` property
+    - composer = `version` property
+    - dotnet = `<Version>` and `<AssemblyVersion>` elements
+    - maven: `<version>` element
+    - node = `version` property
+    - pub = `version` property
+    - python = `[project] version` property
 
     > **NOTE**
     >
