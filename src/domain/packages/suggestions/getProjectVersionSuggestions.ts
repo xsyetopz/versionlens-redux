@@ -2,7 +2,7 @@ import {
   SuggestionIncrements,
   TPackageSuggestion,
   UpdateableFactory
-} from 'domain/packages';
+} from '#domain/packages';
 import { inc, valid, prerelease } from 'semver';
 
 export function getProjectVersionSuggestions(projectVersion: string): TPackageSuggestion[] {
