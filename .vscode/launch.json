@@ -66,9 +66,8 @@
       "name": "Debug esbuild",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "task",
       "runtimeArgs": [
-        "run-script",
         "bundle:dev"
       ],
       "sourceMaps": true,
