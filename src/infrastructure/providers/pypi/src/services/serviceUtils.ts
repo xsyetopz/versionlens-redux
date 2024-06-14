@@ -8,7 +8,7 @@ import {
   IPypiService,
   PypiClient,
   PypiConfig,
-  PypiContributions,
+  PypiFeatures,
   PypiSuggestionProvider
 } from '#providers/pypi';
 
@@ -18,7 +18,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        PypiContributions.Caching,
+        PypiFeatures.Caching,
         'caching'
       )
   );
@@ -30,7 +30,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        PypiContributions.Http,
+        PypiFeatures.Http,
         'http'
       )
   );

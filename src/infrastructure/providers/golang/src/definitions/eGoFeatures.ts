@@ -1,4 +1,4 @@
-export enum GoContributions {
+export enum GoFeatures {
   Caching = 'golang.caching',
   Http = 'golang.http',
   ApiUrl = 'golang.apiUrl',

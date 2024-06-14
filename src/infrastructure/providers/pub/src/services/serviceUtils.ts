@@ -8,7 +8,7 @@ import {
   IPubServices,
   PubClient,
   PubConfig,
-  PubContributions,
+  PubFeatures,
   PubSuggestionProvider
 } from '#providers/pub';
 
@@ -18,7 +18,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        PubContributions.Caching,
+        PubFeatures.Caching,
         'caching'
       )
   );
@@ -30,7 +30,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        PubContributions.Http,
+        PubFeatures.Http,
         'http'
       )
   );

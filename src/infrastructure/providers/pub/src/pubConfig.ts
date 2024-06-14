@@ -4,7 +4,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { PubContributions } from '#providers/pub';
+import { PubFeatures } from '#providers/pub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<PubConfig>();
@@ -31,23 +31,23 @@ export class PubConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(PubContributions.FilePatterns);
+    return this.config.get(PubFeatures.FilePatterns);
   }
 
   get dependencyProperties(): Array<string> {
-    return this.config.get(PubContributions.DependencyProperties);
+    return this.config.get(PubFeatures.DependencyProperties);
   }
 
   get apiUrl(): string {
-    return UrlUtils.ensureEndSlash(this.config.get(PubContributions.ApiUrl));
+    return UrlUtils.ensureEndSlash(this.config.get(PubFeatures.ApiUrl));
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(PubContributions.OnSaveChangesTask);
+    return this.config.get(PubFeatures.OnSaveChangesTask);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(PubContributions.PrereleaseTagFilter);
+    return this.config.get(PubFeatures.PrereleaseTagFilter);
   }
 
 }

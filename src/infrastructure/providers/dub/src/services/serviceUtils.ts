@@ -7,7 +7,7 @@ import { createJsonClient } from '#infrastructure/http';
 import {
   DubClient,
   DubConfig,
-  DubContributions,
+  DubFeatures,
   DubSuggestionProvider,
   IDubServices
 } from '#providers/dub';
@@ -18,7 +18,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        DubContributions.Caching,
+        DubFeatures.Caching,
         'caching'
       )
   );
@@ -30,7 +30,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        DubContributions.Http,
+        DubFeatures.Http,
         'http'
       )
   );

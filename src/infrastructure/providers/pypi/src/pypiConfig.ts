@@ -3,7 +3,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { PypiContributions } from '#providers/pypi';
+import { PypiFeatures } from '#providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<PypiConfig>();
@@ -30,23 +30,23 @@ export class PypiConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(PypiContributions.FilePatterns);
+    return this.config.get(PypiFeatures.FilePatterns);
   }
 
   get dependencyProperties(): Array<string> {
-    return this.config.get(PypiContributions.DependencyProperties);
+    return this.config.get(PypiFeatures.DependencyProperties);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(PypiContributions.PrereleaseTagFilter);
+    return this.config.get(PypiFeatures.PrereleaseTagFilter);
   }
 
   get apiUrl(): string {
-    return this.config.get(PypiContributions.ApiUrl);
+    return this.config.get(PypiFeatures.ApiUrl);
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(PypiContributions.OnSaveChangesTask);
+    return this.config.get(PypiFeatures.OnSaveChangesTask);
   }
 
 }

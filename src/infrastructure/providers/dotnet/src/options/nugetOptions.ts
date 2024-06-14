@@ -1,5 +1,5 @@
 import { IFrozenOptions, Options } from '#domain/configuration';
-import { INugetOptions, NugetContributions } from '#providers/dotnet';
+import { INugetOptions, NugetFeatures } from '#providers/dotnet';
 
 export class NugetOptions extends Options implements INugetOptions {
 
@@ -8,7 +8,7 @@ export class NugetOptions extends Options implements INugetOptions {
   }
 
   get sources(): Array<string> {
-    return this.get<Array<string>>(NugetContributions.Sources);
+    return this.get<Array<string>>(NugetFeatures.Sources);
   }
 
 }

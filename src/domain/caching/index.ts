@@ -1,4 +1,4 @@
-export * from './definitions/eCachingContributions';
+export * from './definitions/eCachingFeatures';
 export * from './definitions/iCache';
 export * from './definitions/iCachingOptions';
 export * from './definitions/iExpiryCache';

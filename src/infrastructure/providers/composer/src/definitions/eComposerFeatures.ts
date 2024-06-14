@@ -1,4 +1,4 @@
-export enum ComposerContributions {
+export enum ComposerFeatures {
   Caching = 'composer.caching',
   Http = 'composer.http',
   DependencyProperties = 'composer.dependencyProperties',

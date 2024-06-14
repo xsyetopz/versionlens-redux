@@ -3,7 +3,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { GoContributions } from '#providers/golang';
+import { GoFeatures } from '#providers/golang';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<GoConfig>();
@@ -30,19 +30,19 @@ export class GoConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(GoContributions.FilePatterns);
+    return this.config.get(GoFeatures.FilePatterns);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(GoContributions.PrereleaseTagFilter);
+    return this.config.get(GoFeatures.PrereleaseTagFilter);
   }
 
   get apiUrl(): string {
-    return this.config.get(GoContributions.ApiUrl);
+    return this.config.get(GoFeatures.ApiUrl);
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(GoContributions.OnSaveChangesTask);
+    return this.config.get(GoFeatures.OnSaveChangesTask);
   }
 
 }

@@ -1,4 +1,4 @@
-export * from './definitions/ePubContributions'
+export * from './definitions/ePubFeatures'
 export * from './pubClient'
 export * from './pubConfig'
 export * from './pubContainer'

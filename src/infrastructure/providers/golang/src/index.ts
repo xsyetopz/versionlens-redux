@@ -1,4 +1,4 @@
-export * from './definitions/eGoContributions';
+export * from './definitions/eGoFeatures';
 export * from './goClient';
 export * from './goConfig';
 export * from './goContainer';

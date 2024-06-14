@@ -1,4 +1,4 @@
-export enum MavenContributions {
+export enum MavenFeatures {
   Caching = 'maven.caching',
   Http = 'maven.http',
   DependencyProperties = 'maven.dependencyProperties',

@@ -9,7 +9,7 @@ import {
   GitHubOptions,
   INpmServices,
   NpmConfig,
-  NpmContributions,
+  NpmFeatures,
   NpmPackageClient,
   NpmRegistryClient,
   NpmSuggestionProvider
@@ -22,7 +22,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        NpmContributions.Caching,
+        NpmFeatures.Caching,
         'caching'
       )
   );
@@ -34,7 +34,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        NpmContributions.Http,
+        NpmFeatures.Http,
         'http'
       )
   );
@@ -46,7 +46,7 @@ export function addGithubOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new GitHubOptions(
         container.appConfig,
-        NpmContributions.Github,
+        NpmFeatures.Github,
         'github'
       )
   );

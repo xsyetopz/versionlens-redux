@@ -1,6 +1,6 @@
 export * from './clients/mavenClient'
 export * from './clients/mvnCli'
-export * from './definitions/eMavenContributions'
+export * from './definitions/eMavenFeatures'
 export * from './definitions/mavenClientData'
 export * from './definitions/mavenProjectProperty'
 export * from './definitions/mavenRepository'

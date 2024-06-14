@@ -4,7 +4,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { MavenContributions } from '#providers/maven';
+import { MavenFeatures } from '#providers/maven';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<MavenConfig>();
@@ -31,23 +31,23 @@ export class MavenConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(MavenContributions.FilePatterns);
+    return this.config.get(MavenFeatures.FilePatterns);
   }
 
   get dependencyProperties(): Array<string> {
-    return this.config.get(MavenContributions.DependencyProperties);
+    return this.config.get(MavenFeatures.DependencyProperties);
   }
 
   get apiUrl(): string {
-    return UrlUtils.ensureEndSlash(this.config.get(MavenContributions.ApiUrl));
+    return UrlUtils.ensureEndSlash(this.config.get(MavenFeatures.ApiUrl));
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(MavenContributions.OnSaveChangesTask);
+    return this.config.get(MavenFeatures.OnSaveChangesTask);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(MavenContributions.prereleaseTagFilter);
+    return this.config.get(MavenFeatures.prereleaseTagFilter);
   }
 
 }

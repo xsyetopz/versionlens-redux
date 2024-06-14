@@ -1,4 +1,4 @@
-export enum PubContributions {
+export enum PubFeatures {
   Caching = 'pub.caching',
   Http = 'pub.http',
   DependencyProperties = 'pub.dependencyProperties',

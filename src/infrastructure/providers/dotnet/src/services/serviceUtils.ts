@@ -8,7 +8,7 @@ import { createProcessClient } from '#infrastructure/process';
 import {
   DotNetCli,
   DotNetConfig,
-  DotNetContributions,
+  DotNetFeatures,
   DotNetSuggestionProvider,
   IDotNetServices,
   NuGetPackageClient,
@@ -22,7 +22,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        DotNetContributions.Caching,
+        DotNetFeatures.Caching,
         'caching'
       )
   );
@@ -34,7 +34,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        DotNetContributions.Http,
+        DotNetFeatures.Http,
         'http'
       )
   );
@@ -46,7 +46,7 @@ export function addNugetOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new NugetOptions(
         container.appConfig,
-        DotNetContributions.Nuget
+        DotNetFeatures.Nuget
       )
   );
 }

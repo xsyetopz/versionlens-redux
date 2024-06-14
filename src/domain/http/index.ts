@@ -1,3 +1,3 @@
-export * from './eHttpContributions';
+export * from './eHttpFeatures';
 export * from './httpOptions';
 export * from './iHttpOptions';

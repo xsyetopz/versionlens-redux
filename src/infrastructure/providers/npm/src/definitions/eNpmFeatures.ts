@@ -1,4 +1,4 @@
-export enum NpmContributions {
+export enum NpmFeatures {
   Caching = 'npm.caching',
   Http = 'npm.http',
   Github = 'npm.github',

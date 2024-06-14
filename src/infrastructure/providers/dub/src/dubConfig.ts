@@ -4,7 +4,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { DubContributions } from '#providers/dub';
+import { DubFeatures } from '#providers/dub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<DubConfig>();
@@ -31,23 +31,23 @@ export class DubConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(DubContributions.FilePatterns);
+    return this.config.get(DubFeatures.FilePatterns);
   }
 
   get dependencyProperties(): Array<string> {
-    return this.config.get(DubContributions.DependencyProperties);
+    return this.config.get(DubFeatures.DependencyProperties);
   }
 
   get apiUrl(): string {
-    return UrlUtils.ensureEndSlash(this.config.get(DubContributions.ApiUrl));
+    return UrlUtils.ensureEndSlash(this.config.get(DubFeatures.ApiUrl));
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(DubContributions.OnSaveChangesTask);
+    return this.config.get(DubFeatures.OnSaveChangesTask);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(DubContributions.prereleaseTagFilter);
+    return this.config.get(DubFeatures.prereleaseTagFilter);
   }
 
 }

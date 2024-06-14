@@ -4,7 +4,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { CargoContributions } from '#providers/cargo';
+import { CargoFeatures } from '#providers/cargo';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<CargoConfig>();
@@ -31,23 +31,23 @@ export class CargoConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(CargoContributions.FilePatterns);
+    return this.config.get(CargoFeatures.FilePatterns);
   }
 
   get dependencyProperties(): Array<string> {
-    return this.config.get(CargoContributions.DependencyProperties);
+    return this.config.get(CargoFeatures.DependencyProperties);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(CargoContributions.PrereleaseTagFilter);
+    return this.config.get(CargoFeatures.PrereleaseTagFilter);
   }
 
   get apiUrl(): string {
-    return UrlUtils.ensureEndSlash(this.config.get(CargoContributions.ApiUrl));
+    return UrlUtils.ensureEndSlash(this.config.get(CargoFeatures.ApiUrl));
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(CargoContributions.OnSaveChangesTask);
+    return this.config.get(CargoFeatures.OnSaveChangesTask);
   }
 
 }

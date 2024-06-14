@@ -1,4 +1,4 @@
-export enum DotNetContributions {
+export enum DotNetFeatures {
   Caching = 'dotnet.caching',
   Http = 'dotnet.http',
   Nuget = 'dotnet.nuget',

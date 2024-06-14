@@ -4,7 +4,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { DotNetContributions } from '#providers/dotnet';
+import { DotNetFeatures } from '#providers/dotnet';
 import { INugetOptions } from '#providers/dotnet';
 
 const ctorParam = nameOf<DotNetConfig>();
@@ -37,11 +37,11 @@ export class DotNetConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(DotNetContributions.FilePatterns);
+    return this.config.get(DotNetFeatures.FilePatterns);
   }
 
   get dependencyProperties(): Array<string> {
-    return this.config.get(DotNetContributions.DependencyProperties);
+    return this.config.get(DotNetFeatures.DependencyProperties);
   }
 
   get fallbackNugetSource(): string {
@@ -49,11 +49,11 @@ export class DotNetConfig implements IProviderConfig {
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(DotNetContributions.OnSaveChangesTask);
+    return this.config.get(DotNetFeatures.OnSaveChangesTask);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(DotNetContributions.PrereleaseTagFilter);
+    return this.config.get(DotNetFeatures.PrereleaseTagFilter);
   }
 
 }

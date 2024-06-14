@@ -1,4 +1,4 @@
-export enum CargoContributions {
+export enum CargoFeatures {
   Caching = 'cargo.caching',
   Http = 'cargo.http',
   DependencyProperties = 'cargo.dependencyProperties',

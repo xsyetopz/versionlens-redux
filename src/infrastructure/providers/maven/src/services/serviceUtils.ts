@@ -9,7 +9,7 @@ import {
   IMavenServices, 
   MavenClient, 
   MavenConfig, 
-  MavenContributions, 
+  MavenFeatures, 
   MavenSuggestionProvider, 
   MvnCli 
 } from '#providers/maven';
@@ -20,7 +20,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        MavenContributions.Caching,
+        MavenFeatures.Caching,
         'caching'
       )
   );
@@ -32,7 +32,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        MavenContributions.Http,
+        MavenFeatures.Http,
         'http'
       )
   );

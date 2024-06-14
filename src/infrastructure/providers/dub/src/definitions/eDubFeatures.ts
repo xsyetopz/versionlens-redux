@@ -1,4 +1,4 @@
-export enum DubContributions {
+export enum DubFeatures {
   Caching = 'dub.caching',
   Http = 'dub.http',
   DependencyProperties = 'dub.dependencyProperties',

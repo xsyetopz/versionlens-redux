@@ -7,7 +7,7 @@ import { createJsonClient } from '#infrastructure/http';
 import {
   ComposerClient,
   ComposerConfig,
-  ComposerContributions,
+  ComposerFeatures,
   ComposerSuggestionProvider,
   IComposerService
 } from '#providers/composer';
@@ -18,7 +18,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        ComposerContributions.Caching,
+        ComposerFeatures.Caching,
         'caching'
       )
   );
@@ -30,7 +30,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        ComposerContributions.Http,
+        ComposerFeatures.Http,
         'http'
       )
   );

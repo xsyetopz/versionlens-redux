@@ -7,7 +7,7 @@ import { createHttpClient } from '#infrastructure/http';
 import {
   GoClient,
   GoConfig,
-  GoContributions,
+  GoFeatures,
   GoSuggestionProvider,
   IGoService
 } from '#providers/golang';
@@ -18,7 +18,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        GoContributions.Caching,
+        GoFeatures.Caching,
         'caching'
       )
   );
@@ -30,7 +30,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        GoContributions.Http,
+        GoFeatures.Http,
         'http'
       )
   );

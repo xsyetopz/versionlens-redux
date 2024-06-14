@@ -1,5 +1,5 @@
 import { IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
-import { HttpContributions, IHttpOptions } from '#domain/http';
+import { HttpFeatures, IHttpOptions } from '#domain/http';
 import { Nullable } from '#domain/utils';
 
 export class HttpOptions extends OptionsWithFallback implements IHttpOptions {
@@ -14,7 +14,7 @@ export class HttpOptions extends OptionsWithFallback implements IHttpOptions {
 
   get strictSSL(): boolean {
     return this.getOrDefault<boolean>(
-      HttpContributions.StrictSSL,
+      HttpFeatures.StrictSSL,
       true
     );
   }

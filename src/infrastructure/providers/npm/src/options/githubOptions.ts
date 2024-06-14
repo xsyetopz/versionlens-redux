@@ -1,6 +1,6 @@
 import { IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
 import { Nullable } from '#domain/utils';
-import { GitHubContributions } from '#providers/npm';
+import { GitHubFeatures } from '#providers/npm';
 
 export class GitHubOptions extends OptionsWithFallback {
 
@@ -14,7 +14,7 @@ export class GitHubOptions extends OptionsWithFallback {
 
   get accessToken(): string {
     return this.getOrDefault<string>(
-      GitHubContributions.AccessToken,
+      GitHubFeatures.AccessToken,
       null
     );
   }

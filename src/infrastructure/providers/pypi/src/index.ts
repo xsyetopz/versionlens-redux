@@ -1,4 +1,4 @@
-export * from './definitions/ePypiContributions';
+export * from './definitions/ePypiFeatures';
 export * from './pypiClient';
 export * from './pypiConfig';
 export * from './pypiContainer';

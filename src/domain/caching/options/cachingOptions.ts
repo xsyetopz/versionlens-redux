@@ -1,4 +1,4 @@
-import { CachingContributions, ICachingOptions } from '#domain/caching';
+import { CachingFeatures, ICachingOptions } from '#domain/caching';
 import { IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
 import { Nullable } from '#domain/utils';
 
@@ -15,7 +15,7 @@ export class CachingOptions extends OptionsWithFallback
 
   get duration(): number {
     const durationMin = this.getOrDefault<number>(
-      CachingContributions.CacheDuration,
+      CachingFeatures.CacheDuration,
       0
     );
     // convert to milliseconds

@@ -1,4 +1,4 @@
-export * from './definitions/eDubContributions'
+export * from './definitions/eDubFeatures'
 export * from './dubClient'
 export * from './dubConfig'
 export * from './dubContainer'

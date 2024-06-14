@@ -1,7 +1,7 @@
 import { IFrozenOptions, Options } from '#domain/configuration';
 import { ILoggingOptions, LogLevelTypes } from '#domain/logging';
 
-export enum LoggingContributions {
+export enum LoggingFeatures {
   LoggingLevel = 'level',
 }
 
@@ -13,7 +13,7 @@ export class LoggingOptions extends Options implements ILoggingOptions {
 
   get level(): LogLevelTypes {
     return super.get<LogLevelTypes>(
-      LoggingContributions.LoggingLevel
+      LoggingFeatures.LoggingLevel
     ) || LogLevelTypes.Error;
   }
 

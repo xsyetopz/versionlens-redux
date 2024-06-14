@@ -6,7 +6,7 @@ import { nameOf } from '#domain/utils';
 import { createJsonClient } from '#infrastructure/http';
 import {
   CargoConfig,
-  CargoContributions,
+  CargoFeatures,
   CargoSuggestionProvider,
   CratesClient,
   ICargoService
@@ -18,7 +18,7 @@ export function addCachingOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
-        CargoContributions.Caching,
+        CargoFeatures.Caching,
         'caching'
       )
   );
@@ -30,7 +30,7 @@ export function addHttpOptions(services: IServiceCollection) {
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
-        CargoContributions.Http,
+        CargoFeatures.Http,
         'http'
       )
   );

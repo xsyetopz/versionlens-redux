@@ -3,7 +3,7 @@ import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { nameOf } from '#domain/utils';
-import { GitHubOptions, NpmContributions } from '#providers/npm';
+import { GitHubOptions, NpmFeatures } from '#providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<NpmConfig>();
@@ -32,19 +32,19 @@ export class NpmConfig implements IProviderConfig {
   }
 
   get filePatterns(): string {
-    return this.config.get(NpmContributions.FilePatterns);
+    return this.config.get(NpmFeatures.FilePatterns);
   }
 
   get dependencyProperties(): Array<string> {
-    return this.config.get(NpmContributions.DependencyProperties);
+    return this.config.get(NpmFeatures.DependencyProperties);
   }
 
   get onSaveChangesTask(): string {
-    return this.config.get(NpmContributions.OnSaveChangesTask);
+    return this.config.get(NpmFeatures.OnSaveChangesTask);
   }
 
   get prereleaseTagFilter(): Array<string> {
-    return this.config.get(NpmContributions.PrereleaseTagFilter);
+    return this.config.get(NpmFeatures.PrereleaseTagFilter);
   }
 
 }

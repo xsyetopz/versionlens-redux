@@ -1,4 +1,4 @@
-export enum PypiContributions {
+export enum PypiFeatures {
   Caching = 'pypi.caching',
   Http = 'pypi.http',
   DependencyProperties = 'pypi.dependencyProperties',
