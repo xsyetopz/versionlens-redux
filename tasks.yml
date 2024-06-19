@@ -1,5 +1,5 @@
 tasks:
-  clean: rimraf ./dist test/smoke/**/node_modules
+  clean: rimraf ./dist
   fresh: clean -- ./node_modules ./package-lock.json
   bundle: [clean, lint, node ./build/esbuild.js]
   bundle:dev: [env: { BUNDLE_DEV: true }, bundle]
