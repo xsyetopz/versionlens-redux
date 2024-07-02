@@ -31,6 +31,7 @@ esbuild.build({
   platform: 'node',
   format: 'cjs',
   mainFields: ['module', 'main'],
+  packages: 'bundle',
   external,
   sourcemap: 'linked',
   bundle: true,
