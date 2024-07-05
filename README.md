@@ -26,6 +26,10 @@ The following languages are supported:
 - pub (dart) https://pub.dev/
 - python https://pypi.org/
 
+> NOTE
+>
+> TOML needs an extenstion that registers the TOML language with vscode. e.g. https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml
+
 ## Contents
 
 - [How do I see version information for a package?](#how-do-i-see-version-information-for-a-package)
