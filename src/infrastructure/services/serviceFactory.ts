@@ -3,9 +3,9 @@ import { ILoggingOptions } from '#domain/logging';
 import { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 import { OutputChannelTransport, createWinstonLogger } from '#infrastructure/logging';
+import { IInfrastructureServices } from '#infrastructure/services';
 import { PackageFileWatcher, WorkspaceAdapter } from '#infrastructure/watcher';
 import { workspace } from "vscode";
-import { IInfrastructureServices } from '#infrastructure/services';
 
 export function addWorkspaceAdapter(services: IServiceCollection) {
   services.addSingleton(

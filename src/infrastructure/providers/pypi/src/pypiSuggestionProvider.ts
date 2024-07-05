@@ -6,12 +6,14 @@ import {
   TPackageNameDescriptor,
   TPackagePathDescriptor,
   TPackageVersionDescriptor,
-  TTomlPackageParserOptions,
   createPackageResource,
-  getTomlComplexTypeHandlers,
-  parsePackagesToml
 } from '#domain/packages';
 import { ISuggestionProvider } from '#domain/providers';
+import {
+  TTomlPackageParserOptions,
+  getTomlComplexTypeHandlers,
+  parsePackagesToml
+} from '#infrastructure/parsers';
 import { PypiClient, PypiConfig } from '#providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 

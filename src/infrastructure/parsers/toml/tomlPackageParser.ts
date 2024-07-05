@@ -1,12 +1,12 @@
+import { PackageDescriptor } from '#domain/packages';
 import {
-  PackageDescriptor,
   TTomlPackageParserOptions,
   complexHasProperty,
   createNameDescFromTomlNode,
   createProjectVersionDescFromTomlNode,
   createVersionDescFromTomlNode,
   matchesTableExpression
-} from '#domain/packages';
+} from '#infrastructure/parsers';
 import { AST, parseTOML } from "toml-eslint-parser";
 
 const projectVersionParentKeys = ['project', 'package'];

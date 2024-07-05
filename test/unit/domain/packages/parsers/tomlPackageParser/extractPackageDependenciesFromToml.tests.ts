@@ -2,7 +2,7 @@ import {
   TTomlPackageParserOptions,
   getTomlComplexTypeHandlers,
   parsePackagesToml
-} from '#domain/packages';
+} from '#infrastructure/parsers';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import Fixtures from './extractPackageDependenciesFromToml.fixtures';
