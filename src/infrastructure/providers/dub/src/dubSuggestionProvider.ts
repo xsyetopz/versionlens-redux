@@ -2,18 +2,20 @@ import { ILogger } from '#domain/logging';
 import {
   PackageDependency,
   PackageDescriptorType,
-  TJsonPackageParserOptions,
-  TJsonPackageTypeHandler,
   TPackageNameDescriptor,
   TPackageVersionDescriptor,
   createPackageResource,
+} from '#domain/packages';
+import { ISuggestionProvider } from '#domain/providers';
+import { KeyDictionary } from '#domain/utils';
+import {
+  TJsonPackageParserOptions,
+  TJsonPackageTypeHandler,
   createPathDescFromJsonNode,
   createRepoDescFromJsonNode,
   createVersionDescFromJsonNode,
   parsePackagesJson
-} from '#domain/packages';
-import { ISuggestionProvider } from '#domain/providers';
-import { KeyDictionary } from '#domain/utils';
+} from '#infrastructure/parsers';
 import { DubClient, DubConfig } from '#providers/dub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 

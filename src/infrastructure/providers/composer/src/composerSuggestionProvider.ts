@@ -1,16 +1,19 @@
 import { ILogger } from '#domain/logging';
 import {
-  PackageDependency, PackageDescriptorType,
-  TJsonPackageParserOptions,
-  TJsonPackageTypeHandler,
+  PackageDependency,
+  PackageDescriptorType,
   TPackageNameDescriptor,
   TPackageVersionDescriptor,
   createPackageResource,
-  createVersionDescFromJsonNode,
-  parsePackagesJson
 } from '#domain/packages';
 import { ISuggestionProvider } from '#domain/providers';
 import { KeyDictionary } from '#domain/utils';
+import {
+  TJsonPackageParserOptions,
+  TJsonPackageTypeHandler,
+  createVersionDescFromJsonNode,
+  parsePackagesJson
+} from '#infrastructure/parsers';
 import {
   ComposerClient,
   ComposerConfig,

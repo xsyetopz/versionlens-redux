@@ -1,3 +1,4 @@
+import { KeyDictionary } from '#domain/utils';
 import {
   createPathDescFromJsonNode,
   createRepoDescFromJsonNode,
@@ -5,8 +6,7 @@ import {
   parsePackagesJson,
   TJsonPackageParserOptions,
   TJsonPackageTypeHandler
-} from '#domain/packages';
-import { KeyDictionary } from '#domain/utils';
+} from '#infrastructure/parsers';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import Fixtures from './extractPackageDependenciesFromJson.fixtures';

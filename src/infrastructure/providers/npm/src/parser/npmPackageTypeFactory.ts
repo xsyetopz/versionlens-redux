@@ -2,10 +2,9 @@ import {
   PackageDescriptor,
   TPackageVersionDescriptor,
   createIgnoreChangesDesc,
-  createNameDescFromJsonNode,
   createPackageParentDescType,
-  createVersionDescFromJsonNode
 } from '#domain/packages';
+import { createNameDescFromJsonNode, createVersionDescFromJsonNode } from '#infrastructure/parsers';
 import * as JsonC from 'jsonc-parser';
 
 /**
