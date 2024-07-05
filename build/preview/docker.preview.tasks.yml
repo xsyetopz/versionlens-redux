@@ -1,8 +1,16 @@
-var:
-  DOCKER_PREVIEW_PATH: ./build/preview
-  PREVIEW_IMAGE: versionlens:preview
-  PREVIEW_VOL: $PWD/.preview:/versionlens/.preview
 tasks:
+  # sets the preview property to true in the package.json
+  preview:prepack: node -e "
+    const pkg = require('./package.json');
+    const { writeFileSync } = require('fs');
+    pkg.preview=true;
+    pkg.version = pkg.version.replace('-preview', '');
+    writeFileSync('./package.json', JSON.stringify(pkg,null,'  '));"
+
   docker:preview:
+    - var:
+        DOCKER_PREVIEW_PATH: ./build/preview
+        PREVIEW_IMAGE: versionlens:preview
+        PREVIEW_VOL: $PWD/.preview:/versionlens/.preview
     - docker build -t $PREVIEW_IMAGE -f $DOCKER_PREVIEW_PATH/preview.dockerfile .
-    - docker run --rm -v $PREVIEW_VOL --env-file ./.env --name preview-container $PREVIEW_IMAGE
+    - docker run -it --rm -v $PREVIEW_VOL --env-file ./.env --name preview-container $PREVIEW_IMAGE

@@ -1,6 +1,7 @@
 # see ./docker.preview.tasks.yml on how this container is created
 FROM node:current-alpine
 ARG TARGET_PATH=/versionlens
+ENV PREVIEW_OUT_PATH=.preview
 
 COPY / $TARGET_PATH
 
@@ -18,14 +19,11 @@ RUN task build:test
 RUN task bundle
 
 # set preview=true in package.json
-RUN node -e "const {readFileSync, writeFileSync} = require('fs'); const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')); pkg.preview=true; pkg.version = pkg.version.replace('-preview', ''); writeFileSync('./package.json', JSON.stringify(pkg,null,'  '))"
+RUN task preview:prepack
 
-# package the extension
-RUN vsce package --pre-release
+# create the artifacts folder
+RUN mkdir $PREVIEW_OUT_PATH
 
-# move package to artifacts
-RUN mkdir ./artifacts
-RUN mv *.vsix ./artifacts
-
-# publish the package
-CMD vsce publish --pre-release
+# package and publish
+CMD vsce package --pre-release --out $PREVIEW_OUT_PATH \
+    && vsce publish --pre-release --packagePath $(find $PREVIEW_OUT_PATH/*.vsix)
