@@ -3,8 +3,6 @@ node_modules/
 test/
 !images/**/*.*
 !dist/**/*.js
-# adding a * to the end of a single file name is a workaround 
-# for a vsce bug where it appends `/**` to filenames and then scans sub folders for the filename.
 !AUTHORS.md
 !README.md
 !LICENSE
