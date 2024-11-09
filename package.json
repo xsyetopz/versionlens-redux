@@ -58,7 +58,7 @@
     "trace": "task"
   },
   "devDependencies": {
-    "@types/eslint": "8.56.10",
+    "@types/eslint": "9.6.1",
     "@types/micromatch": "4.0.9",
     "@types/mocha": "10.0.7",
     "@types/node": "20.14.9",
