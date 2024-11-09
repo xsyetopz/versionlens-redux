@@ -1,3 +1,11 @@
+# 1.14.3
+
+### Rust (cargo)
+
+ - Prevented rendering version lenses on non-version fields in the [package] section
+
+   Relates to [#371](https://gitlab.com/versionlens/vscode-versionlens/-/issues/371)
+
 # 1.14.2
 
 ### All Providers
