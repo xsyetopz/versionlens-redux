@@ -92,9 +92,10 @@ export default {
     test: `
       [package]
       version = "1.0.97"
+      description = "should ignore this field"
 
-      [project]
-      version = "1.3.5"
+      [dev-dependencies]
+      backtrace = "1.3.5"
     `,
     expected: [
       new PackageDescriptor([
@@ -103,9 +104,8 @@ export default {
         createProjectVersionTypeDesc()
       ]),
       new PackageDescriptor([
-        createPackageNameDesc("version", createDependencyRange(65, 65)),
-        createPackageVersionDesc("1.3.5", createDependencyRange(76, 81)),
-        createProjectVersionTypeDesc()
+        createPackageNameDesc("backtrace", createDependencyRange(121, 121)),
+        createPackageVersionDesc("1.3.5", createDependencyRange(134, 139))
       ]),
     ]
   }

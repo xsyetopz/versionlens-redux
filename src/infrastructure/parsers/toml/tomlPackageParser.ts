@@ -9,8 +9,6 @@ import {
 } from '#infrastructure/parsers';
 import { AST, parseTOML } from "toml-eslint-parser";
 
-const projectVersionParentKeys = ['project', 'package'];
-
 export function parsePackagesToml(
   toml: string,
   options: TTomlPackageParserOptions
@@ -36,10 +34,13 @@ function parsePackageNodes(
 
   const matchedTables = bodyNode.body
     .filter(x => x.type === 'TOMLTable')
-    .map((x: AST.TOMLTable) => ({
-      match: matchesTableExpression(x.resolvedKey, includePropNames),
-      rows: x.body
-    }))
+    .map(
+      (x: AST.TOMLTable) => ({
+        match: matchesTableExpression(x.resolvedKey, includePropNames),
+        name: (x.key.keys[0] as AST.TOMLBare).name,
+        rows: x.body
+      })
+    )
     .filter(x => x.match);
 
   for (const matchedTable of matchedTables) {
@@ -47,13 +48,17 @@ function parsePackageNodes(
     const isPkgNameInTableName = matchedTable.match.endsWith('*');
 
     for (const tableRow of tableRows) {
-      // check project versions
-      const bareKey = tableRow.key.keys[0] as AST.TOMLBare;
-      const bareParentKey = (tableRow.parent as AST.TOMLTable).key.keys[0] as AST.TOMLBare;
-      if (projectVersionParentKeys.includes(bareParentKey.name) && bareKey.name === 'version') {
+      const rowKey = tableRow.key.keys[0] as AST.TOMLBare;
+      const isPackageRow = matchedTable.name === "package";
+
+      // add version desc for [package] tables
+      if (isPackageRow && rowKey.name === 'version') {
         matchedDependencies.push(createProjectVersionDescFromTomlNode(tableRow));
-        continue;
+        break;
       }
+
+      // ignore other [package] table rows
+      if (isPackageRow) break;
 
       // complex or simple
       const isComplexNode = tableRow.value.type === 'TOMLInlineTable';

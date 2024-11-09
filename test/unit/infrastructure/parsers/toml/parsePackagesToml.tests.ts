@@ -43,7 +43,7 @@ export const extractPackageDependenciesFromTomlTests = {
         complexTypeHandlers: getTomlComplexTypeHandlers()
       };
 
-      const actual = parsePackagesToml(fixture.test, testOptions)
+      const actual = parsePackagesToml(fixture.test, testOptions);
       assert.deepEqual(actual, fixture.expected);
     }
   ]
