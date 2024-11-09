@@ -84,7 +84,7 @@
     "awilix": "10.0.2",
     "dotenv": "16.4.5",
     "jsonc-parser": "3.3.1",
-    "micromatch": "4.0.7",
+    "micromatch": "4.0.8",
     "npm-package-arg": "11.0.2",
     "npm-registry-fetch": "17.1.0",
     "request-light": "0.8.0",
