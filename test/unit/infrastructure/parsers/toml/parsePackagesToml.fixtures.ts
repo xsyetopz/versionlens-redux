@@ -88,9 +88,31 @@ export default {
     ]
   },
 
-  parsesProjectVersionEntries: {
+  parsesPackageVersionEntries: {
     test: `
       [package]
+      version = "1.0.97"
+      description = "should ignore this field"
+
+      [dev-dependencies]
+      backtrace = "1.3.5"
+    `,
+    expected: [
+      new PackageDescriptor([
+        createPackageNameDesc("version", createDependencyRange(23, 23)),
+        createPackageVersionDesc("1.0.97", createDependencyRange(34, 40)),
+        createProjectVersionTypeDesc()
+      ]),
+      new PackageDescriptor([
+        createPackageNameDesc("backtrace", createDependencyRange(121, 121)),
+        createPackageVersionDesc("1.3.5", createDependencyRange(134, 139))
+      ]),
+    ]
+  },
+
+  parsesProjectVersionEntries: {
+    test: `
+      [project]
       version = "1.0.97"
       description = "should ignore this field"
 

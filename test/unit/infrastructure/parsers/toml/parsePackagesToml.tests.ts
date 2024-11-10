@@ -29,6 +29,7 @@ export const extractPackageDependenciesFromTomlTests = {
 
   "case $i: parses dependencies from toml": [
     Fixtures.parsesDependencyEntries,
+    Fixtures.parsesPackageVersionEntries,
     Fixtures.parsesProjectVersionEntries,
     (fixture: any) => {
       const testOptions: TTomlPackageParserOptions = {

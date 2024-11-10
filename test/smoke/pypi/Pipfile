@@ -1,5 +1,6 @@
 [project]
 version = "1.2.3"
+description = "smoke test"
 
 [packages]
 Sphinx = "7.3.0"

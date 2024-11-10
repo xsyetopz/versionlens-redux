@@ -49,7 +49,7 @@ function parsePackageNodes(
 
     for (const tableRow of tableRows) {
       const rowKey = tableRow.key.keys[0] as AST.TOMLBare;
-      const isPackageRow = matchedTable.name === "package";
+      const isPackageRow = matchedTable.name === "package" || matchedTable.name === "project";
 
       // add version desc for [package] tables
       if (isPackageRow && rowKey.name === 'version') {
