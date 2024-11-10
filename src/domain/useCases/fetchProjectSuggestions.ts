@@ -56,7 +56,7 @@ export class FetchProjectSuggestions {
     // report completed duration
     const completedAt = performance.now();
     this.logger.info(
-      'all packages fetched for %s (%s ms)',
+      "all packages fetched for %s (%s ms)",
       provider.name,
       Math.floor(completedAt - startedAt)
     );
