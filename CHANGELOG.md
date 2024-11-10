@@ -1,3 +1,9 @@
+# 1.14.4
+
+### Python (pipfile)
+
+ - Prevented rendering version lenses on non-version fields in the [project] section
+
 # 1.14.3
 
 ### Rust (cargo)
