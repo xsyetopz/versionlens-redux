@@ -1,9 +1,6 @@
 import { IFrozenOptions, Options } from '#domain/configuration';
 import { ILoggingOptions, LogLevelTypes } from '#domain/logging';
-
-export enum LoggingFeatures {
-  LoggingLevel = 'level',
-}
+import { LoggingFeatures } from '#domain/logging';
 
 export class LoggingOptions extends Options implements ILoggingOptions {
 
