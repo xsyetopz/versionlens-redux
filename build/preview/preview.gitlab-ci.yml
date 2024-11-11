@@ -14,7 +14,6 @@ preview:
   script:
     - cp $VSCE_PAT_FILEPATH .env
     - task docker:preview
-    - mv ./artifacts/*.vsix .
   artifacts:
     paths:
-      - ./*.vsix
+      - .preview/*.vsix

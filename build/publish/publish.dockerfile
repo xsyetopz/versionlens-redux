@@ -1,6 +1,7 @@
 # see ./docker.publish.tasks.yml on how this container is created
-FROM node:current-alpine
+FROM node:20.18-alpine
 ARG TARGET_PATH=/versionlens
+ENV PACKAGE_OUT_PATH=.publish
 
 # update os packages
 RUN apk update && apk upgrade
@@ -23,12 +24,9 @@ RUN task build:test
 # bundle
 RUN task bundle
 
-# package the extension
-RUN vsce package
+# create the artifacts folder
+RUN mkdir $PACKAGE_OUT_PATH
 
-# move package to artifacts
-RUN mkdir ./artifacts
-RUN mv *.vsix ./artifacts
-
-# publish the package
-CMD vsce publish
+# package into the artifact folder then publish
+CMD vsce package --out $PACKAGE_OUT_PATH \
+    && vsce publish --packagePath $(find $PACKAGE_OUT_PATH/*.vsix)

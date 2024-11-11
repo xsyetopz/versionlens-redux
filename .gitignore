@@ -13,3 +13,6 @@ trace.log
 artifacts/
 **/*.vsix
 .coverage
+.preview
+.package
+.publish

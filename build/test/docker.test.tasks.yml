@@ -1,8 +1,8 @@
-var:
-  DOCKER_TEST_PATH: ./build/test
-  TEST_IMAGE: versionlens:tests
-  COVERAGE_VOL: $PWD/.coverage:/versionlens/.coverage
 tasks:
   docker:test:
+    - var:
+        DOCKER_TEST_PATH: ./build/test
+        TEST_IMAGE: versionlens:tests
+        COVERAGE_VOL: $PWD/.coverage:/versionlens/.coverage
     - docker build -t $TEST_IMAGE -f $DOCKER_TEST_PATH/test.dockerfile .
     - docker run --rm -v $COVERAGE_VOL --name test-container $TEST_IMAGE

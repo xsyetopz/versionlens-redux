@@ -1,5 +1,5 @@
 # see ./docker.preview.tasks.yml on how this container is created
-FROM node:current-alpine
+FROM node:20.18-alpine
 ARG TARGET_PATH=/versionlens
 ENV PREVIEW_OUT_PATH=.preview
 

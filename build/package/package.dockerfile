@@ -1,5 +1,5 @@
 # see ./docker.package.tasks.yml on how this container is created
-FROM node:current-alpine
+FROM node:20.18-alpine
 ARG TARGET_PATH=/versionlens
 ENV PACKAGE_OUT_PATH=.package
 

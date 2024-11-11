@@ -1,8 +1,8 @@
-var:
-  DOCKER_PACKAGE_PATH: ./build/package
-  PACKAGE_IMAGE: versionlens:package
-  PACKAGE_VOL: $PWD/.package:/versionlens/.package
 tasks:
   docker:package:
+    - var:
+        DOCKER_PACKAGE_PATH: ./build/package
+        PACKAGE_IMAGE: versionlens:package
+        PACKAGE_VOL: $PWD/.package:/versionlens/.package
     - docker build -t $PACKAGE_IMAGE -f $DOCKER_PACKAGE_PATH/package.dockerfile .
     - docker run --rm -v $PACKAGE_VOL --name test-container $PACKAGE_IMAGE
