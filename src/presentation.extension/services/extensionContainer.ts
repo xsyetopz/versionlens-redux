@@ -1,4 +1,5 @@
 import { IServiceCollection, IServiceProvider } from '#domain/di';
+import { AwilixServiceCollectionFactory } from '#domain/di/awilix';
 import {
   IDomainServices,
   addDomainServices,
@@ -6,8 +7,6 @@ import {
   addFetchProjectSuggestionsUseCase
 } from '#domain/services';
 import { nameOf } from '#domain/utils';
-import { AwilixServiceCollectionFactory } from '#infrastructure/di';
-import { addInfrastructureServices } from '#infrastructure/services';
 import {
   VersionLensExtension,
   addEditorDependencyCache,
@@ -35,6 +34,7 @@ import {
   addVersionLensProviders,
   addVersionLensState
 } from '#extension';
+import { addInfrastructureServices } from '#infrastructure/services';
 import { ExtensionContext, workspace } from 'vscode';
 
 export async function configureContainer(context: ExtensionContext): Promise<IServiceProvider> {

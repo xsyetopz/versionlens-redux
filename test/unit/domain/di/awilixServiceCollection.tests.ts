@@ -1,9 +1,9 @@
-import assert from 'node:assert';
-import { BuildResolver } from 'awilix';
 import { TServiceResolver } from '#domain/di';
+import { AwilixServiceCollection } from '#domain/di/awilix';
 import { KeyDictionary } from '#domain/utils';
-import { AwilixServiceCollection } from '#infrastructure/di';
+import { BuildResolver } from 'awilix';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 
 export const AwilixServiceCollectionTests = {
 

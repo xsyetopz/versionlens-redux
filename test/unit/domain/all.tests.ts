@@ -1,6 +1,7 @@
 export * as Caching from './caching/index.tests'
 export * as Clients from './clients/index.tests'
 export * as Configuration from './configuration/index.test'
+export * as Di from './di/all.tests'
 export * as Packages from './packages/index.test'
 export * as UseCases from './useCases/index.test'
 export * as Utils from './utils/all.tests'

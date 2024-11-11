@@ -1,8 +1,8 @@
-import assert from 'node:assert';
-import { asFunction, asValue, createContainer } from 'awilix';
 import { TServiceResolver } from '#domain/di';
-import { AwilixServiceCollection, AwilixServiceProvider } from '#infrastructure/di';
+import { AwilixServiceCollection, AwilixServiceProvider } from '#domain/di/awilix';
+import { asFunction, asValue, createContainer } from 'awilix';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 
 export const AwilixServiceProviderTests = {
 
