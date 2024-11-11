@@ -3,6 +3,7 @@ import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { createHttpClient } from '#domain/http/requestLight';
 import { createProcessClient } from '#domain/process/promiseSpawn';
+import { IProviderServices } from '#domain/providers';
 import {
   IMavenServices,
   MavenClient,
@@ -11,7 +12,7 @@ import {
   MavenSuggestionProvider,
   MvnCli
 } from '#domain/providers/maven';
-import { IDomainServices, IProviderServices } from '#domain/services';
+import { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {

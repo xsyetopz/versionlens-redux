@@ -61,3 +61,9 @@ export interface ISuggestionProvider {
   ): Promise<any>;
 
 }
+
+export interface IProviderServices {
+
+  suggestionProvider: ISuggestionProvider;
+
+}

@@ -2,6 +2,7 @@ import { CachingOptions } from '#domain/caching';
 import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { createHttpClient } from '#domain/http/requestLight';
+import { IProviderServices } from '#domain/providers';
 import {
   IPypiService,
   PypiClient,
@@ -9,7 +10,7 @@ import {
   PypiFeatures,
   PypiSuggestionProvider
 } from '#domain/providers/pypi';
-import { IDomainServices, IProviderServices } from '#domain/services';
+import { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {

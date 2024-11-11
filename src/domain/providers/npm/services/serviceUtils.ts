@@ -2,6 +2,7 @@ import { CachingOptions } from '#domain/caching';
 import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { createJsonClient } from '#domain/http/requestLight';
+import { IProviderServices } from '#domain/providers';
 import {
   GitHubClient,
   GitHubOptions,
@@ -12,7 +13,7 @@ import {
   NpmRegistryClient,
   NpmSuggestionProvider
 } from '#domain/providers/npm';
-import { IDomainServices, IProviderServices } from '#domain/services';
+import { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 import NpmRegistryFetch from 'npm-registry-fetch';
 

@@ -2,6 +2,7 @@ import { CachingOptions } from '#domain/caching';
 import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { createJsonClient } from '#domain/http/requestLight';
+import { IProviderServices } from '#domain/providers';
 import {
   ComposerClient,
   ComposerConfig,
@@ -9,7 +10,7 @@ import {
   ComposerSuggestionProvider,
   IComposerService
 } from '#domain/providers/composer';
-import { IDomainServices, IProviderServices } from '#domain/services';
+import { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {
