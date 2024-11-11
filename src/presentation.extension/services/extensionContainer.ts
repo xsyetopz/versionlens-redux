@@ -46,15 +46,16 @@ export async function configureContainer(context: ExtensionContext): Promise<ISe
   );
 
   // domain
+  const defaultLogGroup = "extension";
   addDomainServices(
     services,
     VersionLensExtension.extensionName,
-    workspace.getConfiguration
+    workspace.getConfiguration, 
+    defaultLogGroup
   );
 
   // infrastructure
-  const defaultLogGroup = "extension";
-  addInfrastructureServices(services, defaultLogGroup);
+  addInfrastructureServices(services);
 
   // extension
   addExtensionServices(services)

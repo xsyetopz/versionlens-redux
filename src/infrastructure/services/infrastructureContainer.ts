@@ -1,18 +1,12 @@
 import { IServiceCollection } from '#domain/di';
 import {
   addPackageFileWatcher,
-  addWinstonChannelLogger,
-  addWinstonLogger,
   addWorkspaceAdapter
 } from "#infrastructure/services";
 
-export function addInfrastructureServices(services: IServiceCollection, defaultLogGroup: string) {
+export function addInfrastructureServices(services: IServiceCollection) {
 
   addWorkspaceAdapter(services);
-
-  addWinstonChannelLogger(services);
-
-  addWinstonLogger(services, defaultLogGroup);
 
   addPackageFileWatcher(services);
 

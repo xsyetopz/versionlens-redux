@@ -13,13 +13,16 @@ import {
   addLoggingOptions,
   addProcessesCache,
   addSuggestionPackageCache,
-  addSuggestionProviders
+  addSuggestionProviders,
+  addWinstonChannelLogger,
+  addWinstonLogger
 } from '#domain/services';
 
 export function addDomainServices(
   services: IServiceCollection,
   configSection: string,
-  configResolver: TConfigSectionResolver
+  configResolver: TConfigSectionResolver, 
+  defaultLogGroup: string
 ) {
 
   addAppConfig(services, configSection, configResolver);
@@ -47,5 +50,9 @@ export function addDomainServices(
   addGetSuggestionProviderUseCase(services);
 
   addGetDependencyChangesUseCase(services);
+
+  addWinstonChannelLogger(services);
+
+  addWinstonLogger(services, defaultLogGroup);
 
 }
