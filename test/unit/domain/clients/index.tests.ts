@@ -1,2 +1,3 @@
+export * from './jsonClientRequest.tests';
 export * from './promiseSpawnClient.tests';
-export * from './requests/jsonClientRequest.tests';
+export * from './requestLightClient.tests';

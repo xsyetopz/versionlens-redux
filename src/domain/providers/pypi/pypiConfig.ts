@@ -1,6 +1,6 @@
 import { ICachingOptions } from '#domain/caching';
+import { IHttpOptions } from '#domain/clients';
 import { IFrozenOptions } from '#domain/configuration';
-import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { PypiFeatures } from '#domain/providers/pypi';
 import { nameOf } from '#domain/utils';

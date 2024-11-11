@@ -5,7 +5,7 @@ import {
   HttpClientResponse,
   IHttpClient,
 } from '#domain/clients';
-import { IXhrResponse } from '#domain/http/requestLight';
+import { IXhrResponse } from '#domain/clients/requestLight';
 import { ILogger } from '#domain/logging';
 import { createUrl, KeyStringDictionary } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';

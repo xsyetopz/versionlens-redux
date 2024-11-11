@@ -1,5 +1,5 @@
+import { HttpFeatures, IHttpOptions } from '#domain/clients';
 import { IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
-import { HttpFeatures, IHttpOptions } from '#domain/http';
 import { Nullable } from '#domain/utils';
 
 export class HttpOptions extends OptionsWithFallback implements IHttpOptions {

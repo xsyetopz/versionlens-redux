@@ -1,6 +1,6 @@
 import { ICachingOptions } from '#domain/caching';
+import { IHttpOptions } from '#domain/clients';
 import { IServiceCollection, IServiceProvider } from '#domain/di';
-import { IHttpOptions } from '#domain/http';
 import { ILogger } from '#domain/logging';
 import {
   IPackageClient,

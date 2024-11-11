@@ -1,6 +1,10 @@
 import { CachingOptions, ICachingOptions } from '#domain/caching';
-import { ClientResponseSource, IProcessClient } from '#domain/clients';
-import { HttpOptions, IHttpOptions } from '#domain/http';
+import {
+  ClientResponseSource,
+  HttpOptions,
+  IHttpOptions,
+  IProcessClient
+} from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
   DotNetCli,

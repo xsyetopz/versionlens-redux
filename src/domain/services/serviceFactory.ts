@@ -1,7 +1,7 @@
 import { CachingOptions, MemoryExpiryCache } from '#domain/caching';
+import { HttpOptions } from '#domain/clients';
 import { Config, TConfigSectionResolver } from '#domain/configuration';
 import { IServiceCollection, ServiceInjectionMode } from '#domain/di';
-import { HttpOptions } from '#domain/http';
 import { ILoggingOptions, LoggingOptions } from '#domain/logging';
 import { createWinstonLogger, OutputChannelTransport } from '#domain/logging/winston';
 import { DependencyCache, PackageCache } from '#domain/packages';

@@ -1,7 +1,7 @@
 import { CachingOptions } from '#domain/caching';
+import { HttpOptions } from '#domain/clients';
+import { createJsonClient } from '#domain/clients/requestLight';
 import { IServiceCollection } from '#domain/di';
-import { HttpOptions } from '#domain/http';
-import { createJsonClient } from '#domain/http/requestLight';
 import { IProviderServices } from '#domain/providers';
 import {
   DubClient,

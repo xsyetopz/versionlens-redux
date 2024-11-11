@@ -1,6 +1,6 @@
 import { ICachingOptions } from '#domain/caching';
+import { IHttpOptions } from '#domain/clients';
 import { IFrozenOptions } from '#domain/configuration';
-import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { GitHubOptions, NpmFeatures } from '#domain/providers/npm';
 import { nameOf } from '#domain/utils';

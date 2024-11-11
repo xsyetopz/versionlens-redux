@@ -1,5 +1,5 @@
 import { ICachingOptions } from '#domain/caching';
-import { IHttpOptions } from '#domain/http';
+import { IFrozenOptions } from '#domain/configuration';
 import { KeyDictionary, KeyStringDictionary } from '#domain/utils';
 
 export enum ClientResponseSource {
@@ -16,9 +16,24 @@ export type TClientResponse<TStatus, TData> = {
   rejected?: boolean;
 }
 
-export type HttpClientResponse = TClientResponse<number, string>;
+export enum HttpFeatures {
+  StrictSSL = 'strictSSL'
+}
 
-export type JsonClientResponse = TClientResponse<number, KeyDictionary<any>>;
+export interface IHttpOptions extends IFrozenOptions {
+
+  config: IFrozenOptions;
+
+  strictSSL: boolean;
+
+}
+
+export type HttpClientOptions = {
+  caching: ICachingOptions,
+  http: IHttpOptions,
+}
+
+export type HttpClientResponse = TClientResponse<number, string>;
 
 export enum HttpClientRequestMethods {
   get = 'GET',
@@ -39,6 +54,8 @@ export interface IHttpClient {
   request: THttpClientRequestFn;
 
 }
+
+export type JsonClientResponse = TClientResponse<number, KeyDictionary<any>>;
 
 export interface IJsonHttpClient {
 
@@ -65,9 +82,4 @@ export interface ProcessClientRequestFn {
 
 export interface IProcessClient {
   request: ProcessClientRequestFn;
-}
-
-export type HttpClientOptions = {
-  caching: ICachingOptions,
-  http: IHttpOptions,
 }

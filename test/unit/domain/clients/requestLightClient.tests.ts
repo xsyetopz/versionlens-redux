@@ -4,9 +4,10 @@ import {
   HttpClientOptions,
   HttpClientRequestMethods,
   HttpClientResponse,
+  HttpOptions,
+  IHttpOptions,
 } from '#domain/clients';
-import { HttpOptions, IHttpOptions } from '#domain/http';
-import { RequestLightClient } from '#domain/http/requestLight';
+import { RequestLightClient } from '#domain/clients/requestLight';
 import { ILogger } from '#domain/logging';
 import { createUrl, KeyStringDictionary } from '#domain/utils';
 import { test } from 'mocha-ui-esm';

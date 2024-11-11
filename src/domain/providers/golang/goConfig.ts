@@ -1,6 +1,6 @@
 import { ICachingOptions } from '#domain/caching';
+import { IHttpOptions } from '#domain/clients';
 import { IFrozenOptions } from '#domain/configuration';
-import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { GoFeatures } from '#domain/providers/golang';
 import { nameOf } from '#domain/utils';
