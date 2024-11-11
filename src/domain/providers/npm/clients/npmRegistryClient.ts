@@ -1,4 +1,4 @@
-import { ClientResponseSource, UrlUtils } from '#domain/clients';
+import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
   ClientResponseFactory,
@@ -16,6 +16,7 @@ import {
   NpmConfig,
   TNpmRegistryClientResponse
 } from '#domain/providers/npm';
+import { ensureEndSlash } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import semver from 'semver';
 
@@ -132,7 +133,7 @@ export class NpmRegistryClient {
   async request(npaSpec: NpaSpec, clientData: any): Promise<TNpmRegistryClientResponse> {
     try {
       const registry = this.npmRegistryFetch.pickRegistry(npaSpec, clientData);
-      const url = `${UrlUtils.ensureEndSlash(registry)}${npaSpec.escapedName}`;
+      const url = `${ensureEndSlash(registry)}${npaSpec.escapedName}`;
       const registryResponse = await this.npmRegistryFetch.json(url, clientData);
 
       return <TNpmRegistryClientResponse>{

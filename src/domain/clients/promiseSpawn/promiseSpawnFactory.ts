@@ -1,7 +1,7 @@
 import { ICachingOptions, IExpiryCache } from '#domain/caching';
 import { IProcessClient } from '#domain/clients';
+import { PromiseSpawnClient } from '#domain/clients/promiseSpawn';
 import { ILogger } from '#domain/logging';
-import { PromiseSpawnClient } from '#domain/process/promiseSpawn';
 import PromiseSpawn from '@npmcli/promise-spawn';
 
 export function createProcessClient(

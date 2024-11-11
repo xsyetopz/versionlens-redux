@@ -1,4 +1,3 @@
-import { UrlUtils } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import { createPackageResource, PackageDependency } from '#domain/packages';
 import {
@@ -14,6 +13,7 @@ import {
   MvnCli,
   parseMavenPackagesXml
 } from '#domain/providers/maven';
+import { RegistryProtocols } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class MavenSuggestionProvider implements ISuggestionProvider {
@@ -78,7 +78,7 @@ export class MavenSuggestionProvider implements ISuggestionProvider {
 
     // filter https urls
     const repositories = repos.filter(
-      repo => repo.protocol === UrlUtils.RegistryProtocols.https
+      repo => repo.protocol === RegistryProtocols.https
     );
 
     // return the client data

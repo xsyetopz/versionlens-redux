@@ -1,10 +1,9 @@
 import { ICachingOptions } from '#domain/caching';
-import { UrlUtils } from '#domain/clients';
 import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { PubFeatures } from '#domain/providers/pub';
-import { nameOf } from '#domain/utils';
+import { ensureEndSlash, nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<PubConfig>();
@@ -39,7 +38,7 @@ export class PubConfig implements IProviderConfig {
   }
 
   get apiUrl(): string {
-    return UrlUtils.ensureEndSlash(this.config.get(PubFeatures.ApiUrl));
+    return ensureEndSlash(this.config.get(PubFeatures.ApiUrl));
   }
 
   get onSaveChangesTask(): string {

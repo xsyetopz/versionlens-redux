@@ -5,6 +5,7 @@ export * from './generics/async';
 export * from './generics/collections';
 export * from './generics/nullable';
 export * from './nameOf';
+export * from './url';
 
-// todo figure out why esbuild needs this after disposable
+// esbuild needs this after disposable
 export * from './asyncEmitter';

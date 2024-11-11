@@ -1,4 +1,4 @@
-import { TPromiseSpawnOptions, TPromiseSpawnResult } from '#domain/process/promiseSpawn';
+import { TPromiseSpawnOptions, TPromiseSpawnResult } from '#domain/clients/promiseSpawn';
 
 export class ProcessSpawnStub {
 

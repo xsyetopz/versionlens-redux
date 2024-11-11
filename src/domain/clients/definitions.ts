@@ -20,8 +20,6 @@ export type HttpClientResponse = TClientResponse<number, string>;
 
 export type JsonClientResponse = TClientResponse<number, KeyDictionary<any>>;
 
-export type ProcessClientResponse = TClientResponse<string, string>;
-
 export enum HttpClientRequestMethods {
   get = 'GET',
   head = 'HEAD'
@@ -55,6 +53,8 @@ export interface IJsonHttpClient {
 
 }
 
+export type ProcessClientResponse = TClientResponse<string, string>;
+
 export interface ProcessClientRequestFn {
   (
     cmd: string,
@@ -64,15 +64,10 @@ export interface ProcessClientRequestFn {
 }
 
 export interface IProcessClient {
-
   request: ProcessClientRequestFn;
-
 }
 
 export type HttpClientOptions = {
-
-    caching: ICachingOptions,
-
-    http: IHttpOptions,
-
+  caching: ICachingOptions,
+  http: IHttpOptions,
 }

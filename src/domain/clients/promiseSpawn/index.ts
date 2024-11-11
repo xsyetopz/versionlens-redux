@@ -1,3 +1,3 @@
-export * from './iPromiseSpawn';
+export * from './definitions';
 export * from './promiseSpawnClient';
 export * from './promiseSpawnFactory';

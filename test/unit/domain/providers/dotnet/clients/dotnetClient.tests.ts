@@ -1,5 +1,5 @@
 import { CachingOptions, ICachingOptions } from '#domain/caching';
-import { ClientResponseSource, IProcessClient, UrlUtils } from '#domain/clients';
+import { ClientResponseSource, IProcessClient } from '#domain/clients';
 import { HttpOptions, IHttpOptions } from '#domain/http';
 import { ILogger } from '#domain/logging';
 import {
@@ -8,6 +8,7 @@ import {
   INugetOptions,
   NugetOptions
 } from '#domain/providers/dotnet';
+import { RegistryProtocols } from '#domain/utils';
 import assert from 'node:assert';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
 import Fixtures from './fixtures/dotnetSources';
@@ -48,25 +49,25 @@ export const DotNetCliTests = {
           enabled: true,
           machineWide: false,
           url: testFeeds[0],
-          protocol: UrlUtils.RegistryProtocols.https
+          protocol: RegistryProtocols.https
         },
         {
           enabled: true,
           machineWide: false,
           url: 'https://api.nuget.org/v3/index.json',
-          protocol: UrlUtils.RegistryProtocols.https
+          protocol: RegistryProtocols.https
         },
         {
           enabled: true,
           machineWide: false,
           url: 'http://non-ssl/v3/index.json',
-          protocol: UrlUtils.RegistryProtocols.http
+          protocol: RegistryProtocols.http
         },
         {
           enabled: true,
           machineWide: true,
           url: 'C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\',
-          protocol: UrlUtils.RegistryProtocols.file
+          protocol: RegistryProtocols.file
         },
       ]
 
@@ -129,7 +130,7 @@ export const DotNetCliTests = {
           enabled: true,
           machineWide: false,
           url: 'https://api.nuget.org/v3/index.json',
-          protocol: UrlUtils.RegistryProtocols.https
+          protocol: RegistryProtocols.https
         },
       ]
 

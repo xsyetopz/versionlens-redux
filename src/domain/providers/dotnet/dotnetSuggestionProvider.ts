@@ -1,4 +1,3 @@
-import { UrlUtils } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
   PackageDependency,
@@ -20,6 +19,7 @@ import {
   dotnetReplaceVersion,
   parseDotNetPackagesXml
 } from '#domain/providers/dotnet';
+import { RegistryProtocols } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class DotNetSuggestionProvider implements ISuggestionProvider {
@@ -89,8 +89,8 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
 
     // filter remote sources only
     const remoteSources = sources.filter(
-      s => s.protocol === UrlUtils.RegistryProtocols.https ||
-        s.protocol === UrlUtils.RegistryProtocols.http
+      s => s.protocol === RegistryProtocols.https ||
+        s.protocol === RegistryProtocols.http
     );
 
     // convert each fetch resource to a promise

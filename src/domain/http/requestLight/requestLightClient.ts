@@ -4,11 +4,10 @@ import {
   HttpClientRequestMethods,
   HttpClientResponse,
   IHttpClient,
-  UrlUtils
 } from '#domain/clients';
 import { IXhrResponse } from '#domain/http/requestLight';
 import { ILogger } from '#domain/logging';
-import { KeyStringDictionary } from '#domain/utils';
+import { createUrl, KeyStringDictionary } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { XHRRequest } from 'request-light';
 
@@ -35,7 +34,7 @@ export class RequestLightClient implements IHttpClient {
     headers: KeyStringDictionary = {}
   ): Promise<HttpClientResponse> {
 
-    const url = UrlUtils.createUrl(baseUrl, query);
+    const url = createUrl(baseUrl, query);
 
     try {
       // make the request

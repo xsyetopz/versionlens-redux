@@ -4,12 +4,11 @@ import {
   HttpClientOptions,
   HttpClientRequestMethods,
   HttpClientResponse,
-  UrlUtils
 } from '#domain/clients';
 import { HttpOptions, IHttpOptions } from '#domain/http';
 import { RequestLightClient } from '#domain/http/requestLight';
 import { ILogger } from '#domain/logging';
-import { KeyStringDictionary } from '#domain/utils';
+import { createUrl, KeyStringDictionary } from '#domain/utils';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import {
@@ -92,7 +91,7 @@ export const RequestLightClientTests = {
           responseText: null
         })
 
-      const expectedUrl = UrlUtils.createUrl(testUrl, testQuery);
+      const expectedUrl = createUrl(testUrl, testQuery);
 
       await rut.request(
         HttpClientRequestMethods.get,

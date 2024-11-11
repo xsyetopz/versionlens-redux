@@ -1,8 +1,8 @@
 import { CachingOptions } from '#domain/caching';
+import { createProcessClient } from '#domain/clients/promiseSpawn';
 import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { createJsonClient } from '#domain/http/requestLight';
-import { createProcessClient } from '#domain/process/promiseSpawn';
 import { IProviderServices } from '#domain/providers';
 import {
   DotNetCli,

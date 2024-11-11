@@ -2,7 +2,6 @@ import {
   HttpClientRequestMethods,
   HttpClientResponse,
   IJsonHttpClient,
-  UrlUtils
 } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
@@ -17,6 +16,7 @@ import {
   createSuggestions
 } from '#domain/packages';
 import { DotNetConfig, NuGetClientData, parseVersionSpec } from '#domain/providers/dotnet';
+import { ensureEndSlash } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
@@ -86,7 +86,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
     const query = {};
     const headers = {};
     const requestedPackage = request.parsedDependency.package;
-    const packageUrl = UrlUtils.ensureEndSlash(url)
+    const packageUrl = ensureEndSlash(url)
       + `${requestedPackage.name.toLowerCase()}/index.json`;
 
     const httpResponse = await this.jsonClient.request(

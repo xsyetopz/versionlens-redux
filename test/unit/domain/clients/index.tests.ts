@@ -1,2 +1,2 @@
-export * from './helpers/urlHelpers.tests';
+export * from './promiseSpawnClient.tests';
 export * from './requests/jsonClientRequest.tests';

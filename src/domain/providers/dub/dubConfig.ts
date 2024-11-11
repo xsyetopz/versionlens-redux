@@ -1,10 +1,9 @@
 import { ICachingOptions } from '#domain/caching';
-import { UrlUtils } from '#domain/clients';
 import { IFrozenOptions } from '#domain/configuration';
 import { IHttpOptions } from '#domain/http';
 import { IProviderConfig, TProviderFileMatcher } from '#domain/providers';
 import { DubFeatures } from '#domain/providers/dub';
-import { nameOf } from '#domain/utils';
+import { ensureEndSlash, nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const ctorParam = nameOf<DubConfig>();
@@ -39,7 +38,7 @@ export class DubConfig implements IProviderConfig {
   }
 
   get apiUrl(): string {
-    return UrlUtils.ensureEndSlash(this.config.get(DubFeatures.ApiUrl));
+    return ensureEndSlash(this.config.get(DubFeatures.ApiUrl));
   }
 
   get onSaveChangesTask(): string {

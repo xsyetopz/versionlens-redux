@@ -1,6 +1,6 @@
-import { UrlUtils } from '#domain/clients'
+import { RegistryProtocols } from '#domain/utils';
 
 export type MavenRepository = {
   url: string,
-  protocol: UrlUtils.RegistryProtocols
+  protocol: RegistryProtocols
 }

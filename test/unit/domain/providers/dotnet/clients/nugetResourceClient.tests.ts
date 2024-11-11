@@ -3,10 +3,10 @@ import {
   HttpClientRequestMethods,
   IJsonHttpClient,
   JsonHttpClient,
-  UrlUtils
 } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import { NuGetResourceClient } from '#domain/providers/dotnet';
+import { RegistryProtocols } from '#domain/utils';
 import assert from 'node:assert';
 import { anything, capture, instance, mock, when } from 'ts-mockito';
 import Fixtures from './fixtures/nugetResources';
@@ -30,7 +30,7 @@ export const NuGetResourceClientTests = {
         enabled: true,
         machineWide: false,
         url: 'https://test',
-        protocol: UrlUtils.RegistryProtocols.https
+        protocol: RegistryProtocols.https
       };
 
       const mockResponse = {
@@ -65,7 +65,7 @@ export const NuGetResourceClientTests = {
         enabled: true,
         machineWide: false,
         url: 'https://test',
-        protocol: UrlUtils.RegistryProtocols.https
+        protocol: RegistryProtocols.https
       };
 
       const errorResponse = {

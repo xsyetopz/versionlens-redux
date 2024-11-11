@@ -1,18 +1,18 @@
-import assert from 'node:assert';
-import { UrlUtils } from '#domain/clients';
+import { ensureEndSlash, getProtocolFromUrl, RegistryProtocols } from '#domain/utils';
 import { test } from 'mocha-ui-esm';
+import assert from 'node:assert';
 
-export const UrlHelpersTests = {
+export const UrlTests = {
 
-  [test.title]: "UrlHelpers",
+  [test.title]: "Url Utils",
 
-  getProtocolFromUrl: {
+  [getProtocolFromUrl.name]: {
 
     "parses $2 protocols": [
-      ['http://test.url.example/path', UrlUtils.RegistryProtocols.http],
-      ['https://test.url.example/path', UrlUtils.RegistryProtocols.https],
+      ['http://test.url.example/path', RegistryProtocols.http],
+      ['https://test.url.example/path', RegistryProtocols.https],
       (testUrl: string, expectedProtocol: string) => {
-        const actual = UrlUtils.getProtocolFromUrl(testUrl)
+        const actual = getProtocolFromUrl(testUrl)
         assert.equal(actual, expectedProtocol, "Protocol did not match")
       }
     ],
@@ -21,20 +21,20 @@ export const UrlHelpersTests = {
       ['d:\\some\\path'],
       ['/d/some/path'],
       (testFolder: string) => {
-        const actual = UrlUtils.getProtocolFromUrl(testFolder)
-        assert.equal(actual, UrlUtils.RegistryProtocols.file, "Protocol did not match")
+        const actual = getProtocolFromUrl(testFolder)
+        assert.equal(actual, RegistryProtocols.file, "Protocol did not match")
       }
     ],
 
   },
 
-  ensureEndSlash: {
+  [ensureEndSlash.name]: {
 
     "appends missing slashes for $1": [
       ['https://test1.url.example', 'https://test1.url.example/'],
       ['https://test2.url.example/', 'https://test2.url.example/'],
       (testUrl: string, expectedUrl: string) => {
-        const actual = UrlUtils.ensureEndSlash(testUrl)
+        const actual = ensureEndSlash(testUrl)
         assert.equal(actual, expectedUrl, "End slash did not match")
       },
     ]

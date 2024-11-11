@@ -1,7 +1,7 @@
 import { CachingOptions, ICachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { ClientResponseSource, ProcessClientResponse } from '#domain/clients';
+import { PromiseSpawnClient } from '#domain/clients/promiseSpawn';
 import { ILogger } from '#domain/logging';
-import { PromiseSpawnClient } from '#domain/process/promiseSpawn';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import { anything, instance, mock, when } from 'ts-mockito';
