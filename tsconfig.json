@@ -23,7 +23,7 @@
         "./src/domain/*/index"
       ],
       "#domain/providers/*": [
-        "./src/domain/providers/*/src/index"
+        "./src/domain/providers/*/index"
       ],
       "#infrastructure/*": [
         "./src/infrastructure/*/index"

@@ -5,7 +5,7 @@
   "main": "./dist/src/presentation.extension/activate.js",
   "imports": {
     "#domain/*": "./dist/src/domain/*/index.js",
-    "#domain/providers/*": "./dist/src/domain/providers/*/src/index.js",
+    "#domain/providers/*": "./dist/src/domain/providers/*/index.js",
     "#infrastructure/*": "./dist/src/infrastructure/*/index.js",
     "#extension": "./dist/src/presentation.extension/index.js",
     "#test/utils": "./dist/test/unit/utils.js"

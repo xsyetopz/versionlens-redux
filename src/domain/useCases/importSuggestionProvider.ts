@@ -25,7 +25,7 @@ export async function importSuggestionProvider(
     // https://github.com/evanw/esbuild/issues/3798
     try {
       // bundle mode
-      module = await import(`../../domain/providers/${providerName}/src/index.ts`);
+      module = await import(`../../domain/providers/${providerName}/index.ts`);
     } catch (e) {
       // dev mode
       module = await import(`#domain/providers/${providerName}`)
