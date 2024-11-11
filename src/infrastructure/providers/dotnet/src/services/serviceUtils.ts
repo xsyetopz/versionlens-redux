@@ -2,9 +2,9 @@ import { CachingOptions } from '#domain/caching';
 import { IServiceCollection } from '#domain/di';
 import { HttpOptions } from '#domain/http';
 import { createJsonClient } from '#domain/http/requestLight';
+import { createProcessClient } from '#domain/process/promiseSpawn';
 import { IDomainServices, IProviderServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
-import { createProcessClient } from '#infrastructure/process';
 import {
   DotNetCli,
   DotNetConfig,
