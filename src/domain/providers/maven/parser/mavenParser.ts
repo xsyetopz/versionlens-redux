@@ -1,6 +1,13 @@
-import { PackageDescriptor } from '#domain/packages';
-import { XmlDoc, XmlNode, createProjectVersionDescFromXmlElem } from '#domain/parsers';
-import { createNameDescFromXmlNodes, createVersionDescFromXmlNodes } from '#domain/providers/maven';
+import {
+  PackageDescriptor,
+  XmlDoc,
+  XmlNode,
+  createProjectVersionDescFromXmlElem
+} from '#domain/parsers';
+import {
+  createNameDescFromXmlNodes,
+  createVersionDescFromXmlNodes
+} from '#domain/providers/maven';
 
 export function parseMavenPackagesXml(
   xml: string,

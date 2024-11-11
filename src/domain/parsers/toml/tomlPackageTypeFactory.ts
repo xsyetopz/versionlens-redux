@@ -10,7 +10,7 @@ import {
   createPackagePathDescType,
   createPackageVersionDesc,
   createProjectVersionTypeDesc
-} from '#domain/packages';
+} from '#domain/parsers';
 import { AST } from 'toml-eslint-parser';
 import { TOMLKeyValue, TOMLTable } from 'toml-eslint-parser/lib/ast';
 

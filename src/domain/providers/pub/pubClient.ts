@@ -3,18 +3,20 @@ import { ILogger } from '#domain/logging';
 import {
   ClientResponseFactory,
   IPackageClient,
-  PackageDescriptorType,
   PackageSourceType,
   PackageStatusFactory,
   TPackageClientRequest,
   TPackageClientResponse,
-  TPackageGitDescriptor,
-  TPackageHostedDescriptor,
-  TPackagePathDescriptor,
   TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
+import {
+  PackageDescriptorType,
+  TPackageGitDescriptor,
+  TPackageHostedDescriptor,
+  TPackagePathDescriptor,
+} from '#domain/parsers';
 import { PubConfig } from '#domain/providers/pub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import semver from 'semver';

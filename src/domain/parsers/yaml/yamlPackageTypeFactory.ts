@@ -11,7 +11,7 @@ import {
   createPackagePathDescType,
   createPackageVersionDesc,
   createProjectVersionTypeDesc
-} from '#domain/packages';
+} from '#domain/parsers';
 import { Undefinable } from '#domain/utils';
 import { YAMLMap } from 'yaml';
 import { findPair } from 'yaml/util';

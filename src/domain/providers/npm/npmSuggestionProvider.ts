@@ -1,15 +1,15 @@
 import { ILogger } from '#domain/logging';
 import {
   PackageDependency,
-  PackageDescriptorType,
-  TPackageNameDescriptor,
-  TPackageVersionDescriptor,
   TSuggestionReplaceFunction,
   createPackageResource,
 } from '#domain/packages';
 import {
+  PackageDescriptorType,
   TJsonPackageParserOptions,
   TJsonPackageTypeHandler,
+  TPackageNameDescriptor,
+  TPackageVersionDescriptor,
   createVersionDescFromJsonNode,
   parsePackagesJson
 } from '#domain/parsers';

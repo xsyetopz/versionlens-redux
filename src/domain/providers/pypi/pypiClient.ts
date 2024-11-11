@@ -7,18 +7,20 @@ import { ILogger } from '#domain/logging';
 import {
   ClientResponseFactory,
   IPackageClient,
-  PackageDescriptorType,
   PackageSourceType,
   PackageStatusFactory,
   TPackageClientRequest,
   TPackageClientResponse,
-  TPackageGitDescriptor,
-  TPackagePathDescriptor,
   TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { XmlDoc } from '#domain/parsers';
+import {
+  PackageDescriptorType,
+  TPackageGitDescriptor,
+  TPackagePathDescriptor,
+  XmlDoc,
+} from '#domain/parsers';
 import { PypiConfig } from '#domain/providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import semver from 'semver';
@@ -131,7 +133,7 @@ export class PypiClient implements IPackageClient<null> {
       semverVersions,
       this.config.prereleaseTagFilter
     );
-    
+
     // analyse suggestions
     const suggestions = createSuggestions(
       versionRange,

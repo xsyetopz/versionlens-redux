@@ -10,7 +10,7 @@ import {
   createPackagePathDescType,
   createPackageVersionDesc,
   createProjectVersionTypeDesc
-} from '#domain/packages';
+} from '#domain/parsers';
 import * as JsonC from 'jsonc-parser';
 
 export function createNameDescFromJsonNode(keyNode: JsonC.Node): TPackageNameDescriptor {

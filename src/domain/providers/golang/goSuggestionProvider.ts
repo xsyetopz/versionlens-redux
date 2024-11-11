@@ -1,12 +1,15 @@
 import { ILogger } from '#domain/logging';
 import {
-  PackageDependency, PackageDescriptorType,
+  PackageDependency,
+  TSuggestionReplaceFunction,
+  createPackageResource,
+} from '#domain/packages';
+import {
+  PackageDescriptorType,
   TPackageNameDescriptor,
   TPackageVersionDescriptor,
-  TSuggestionReplaceFunction,
-  createPackageResource
-} from '#domain/packages';
-import { parsePackagesGoMod } from '#domain/parsers';
+  parsePackagesGoMod,
+} from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import { GoClient, GoConfig, goReplaceVersion } from '#domain/providers/golang';
 import { throwUndefinedOrNull } from '@esm-test/guards';

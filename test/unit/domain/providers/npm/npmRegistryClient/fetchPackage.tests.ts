@@ -1,16 +1,15 @@
 import { CachingOptions, ICachingOptions } from '#domain/caching';
 import { ILogger } from '#domain/logging';
 import {
+  createPackageResource,
   PackageDependency,
-  PackageDescriptor,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes,
   TPackageClientRequest,
-  TPackageSuggestion,
-  createDependencyRange,
-  createPackageResource
+  TPackageSuggestion
 } from '#domain/packages';
+import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
 import {
   GitHubOptions,
   INpmRegistry,

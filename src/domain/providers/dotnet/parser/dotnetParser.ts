@@ -1,5 +1,4 @@
-import { PackageDescriptor } from '#domain/packages';
-import { XmlDoc, createProjectVersionDescFromXmlElem } from '#domain/parsers';
+import { PackageDescriptor, XmlDoc, createProjectVersionDescFromXmlElem } from '#domain/parsers';
 import {
   createBlankVersionDescFromXmlAttr,
   createNameDescFromXmlAttr,

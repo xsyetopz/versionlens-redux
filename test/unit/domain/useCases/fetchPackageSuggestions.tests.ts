@@ -1,10 +1,11 @@
 import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
+  createPackageNameVersion,
+  createPackageResource,
   IPackageClient,
   PackageCache,
   PackageDependency,
-  PackageDescriptor,
   PackageResponse,
   PackageSourceType,
   PackageVersionType,
@@ -13,11 +14,9 @@ import {
   TPackageClientResponse,
   TPackageNameVersion,
   TPackageResource,
-  TPackageSuggestion,
-  createDependencyRange,
-  createPackageNameVersion,
-  createPackageResource
+  TPackageSuggestion
 } from '#domain/packages';
+import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
 import { IProviderConfig, ISuggestionProvider } from '#domain/providers';
 import { FetchPackageSuggestions } from '#domain/useCases';
 import { test } from 'mocha-ui-esm';

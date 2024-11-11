@@ -1,12 +1,11 @@
 import { UrlUtils } from '#domain/clients';
 import { ILogger } from '#domain/logging';
+import { createPackageResource, PackageDependency } from '#domain/packages';
 import {
-  createPackageResource,
-  PackageDependency,
   PackageDescriptorType,
   TPackageNameDescriptor,
   TPackageVersionDescriptor
-} from '#domain/packages';
+} from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import {
   MavenClient,

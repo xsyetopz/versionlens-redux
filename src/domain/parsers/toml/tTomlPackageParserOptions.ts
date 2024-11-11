@@ -1,4 +1,4 @@
-import { TPackageTypeDescriptor } from '#domain/packages';
+import { TPackageTypeDescriptor } from '#domain/parsers';
 import { KeyDictionary } from '#domain/utils';
 import { AST } from 'toml-eslint-parser';
 

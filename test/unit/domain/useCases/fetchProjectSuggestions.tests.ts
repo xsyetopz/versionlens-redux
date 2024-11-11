@@ -1,14 +1,13 @@
 import { ILogger } from '#domain/logging';
 import {
-  createDependencyRange,
   createPackageResource,
   PackageCache,
   PackageDependency,
-  PackageDescriptor,
   PackageResponse,
   PackageVersionType,
   TPackageClientRequest
 } from '#domain/packages';
+import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import { FetchPackageSuggestions, FetchProjectSuggestions } from '#domain/useCases';
 import { test } from 'mocha-ui-esm';

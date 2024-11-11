@@ -1,5 +1,4 @@
 import {
-  PackageDescriptor,
   createDependencyRange,
   createPackageGitDescType,
   createPackageHostedDescType,
@@ -7,8 +6,9 @@ import {
   createPackageParentDescType,
   createPackagePathDescType,
   createPackageVersionDesc,
-  createProjectVersionTypeDesc
-} from '#domain/packages';
+  createProjectVersionTypeDesc,
+  PackageDescriptor
+} from '#domain/parsers';
 
 export default {
 

@@ -7,17 +7,19 @@ import { ILogger } from '#domain/logging';
 import {
   ClientResponseFactory,
   IPackageClient,
-  PackageDescriptorType,
   PackageSourceType,
   PackageStatusFactory,
   TPackageClientRequest,
   TPackageClientResponse,
-  TPackageGitDescriptor,
-  TPackagePathDescriptor,
   TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
+import {
+  PackageDescriptorType,
+  TPackageGitDescriptor,
+  TPackagePathDescriptor,
+} from '#domain/parsers';
 import { CargoConfig, ICratesApiItem } from '#domain/providers/cargo';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 

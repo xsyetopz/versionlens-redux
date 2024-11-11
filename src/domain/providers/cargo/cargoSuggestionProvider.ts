@@ -1,17 +1,14 @@
 import { ILogger } from '#domain/logging';
+import { PackageDependency, createPackageResource } from '#domain/packages';
 import {
-  PackageDependency,
   PackageDescriptorType,
   TPackageGitDescriptor,
   TPackageNameDescriptor,
   TPackagePathDescriptor,
   TPackageVersionDescriptor,
-  createPackageResource,
-} from '#domain/packages';
-import {
   TTomlPackageParserOptions,
   getTomlComplexTypeHandlers,
-  parsePackagesToml
+  parsePackagesToml,
 } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import { CargoConfig, CratesClient } from '#domain/providers/cargo';

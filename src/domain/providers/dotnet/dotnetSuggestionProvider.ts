@@ -2,12 +2,14 @@ import { UrlUtils } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
   PackageDependency,
-  PackageDescriptorType,
-  TPackageNameDescriptor,
-  TPackageVersionDescriptor,
   TSuggestionReplaceFunction,
   createPackageResource
 } from '#domain/packages';
+import {
+  PackageDescriptorType,
+  TPackageNameDescriptor,
+  TPackageVersionDescriptor
+} from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import {
   DotNetCli,

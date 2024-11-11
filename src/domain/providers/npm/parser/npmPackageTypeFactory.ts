@@ -3,7 +3,7 @@ import {
   TPackageVersionDescriptor,
   createIgnoreChangesDesc,
   createPackageParentDescType,
-} from '#domain/packages';
+} from '#domain/parsers';
 import { createNameDescFromJsonNode, createVersionDescFromJsonNode } from '#domain/parsers';
 import * as JsonC from 'jsonc-parser';
 

@@ -1,8 +1,9 @@
-import { PackageDescriptor, createPackageParentDescType } from '#domain/packages';
 import {
+  PackageDescriptor,
   TJsonPackageParserOptions,
   TJsonPackageTypeHandler,
   createNameDescFromJsonNode,
+  createPackageParentDescType,
   createVersionDescFromJsonNode
 } from '#domain/parsers';
 import { KeyDictionary, Undefinable } from '#domain/utils';

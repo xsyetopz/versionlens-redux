@@ -1,4 +1,4 @@
-import { PackageDescriptor, TPackageTypeDescriptor } from '#domain/packages';
+import { PackageDescriptor, TPackageTypeDescriptor } from '#domain/parsers';
 import { KeyDictionary } from '#domain/utils';
 import * as JsonC from 'jsonc-parser';
 

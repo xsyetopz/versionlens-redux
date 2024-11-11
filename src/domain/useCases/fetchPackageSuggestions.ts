@@ -1,16 +1,16 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import {
   IPackageClient,
   PackageCache,
-  PackageDescriptorType,
   PackageResponse,
   ResponseFactory,
   TPackageClientRequest,
   TPackageClientResponse,
   getProjectVersionSuggestions
 } from '#domain/packages';
+import { PackageDescriptorType } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
+import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class FetchPackageSuggestions {
 

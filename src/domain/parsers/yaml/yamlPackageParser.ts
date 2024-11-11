@@ -1,9 +1,10 @@
-import { createPackageParentDescType, PackageDescriptor } from '#domain/packages';
 import {
   createNameDescFromYamlNode,
+  createPackageParentDescType,
   createVersionDescFromYamlNode,
   getPackageProjectVersionDesc,
   isNodeQuoted,
+  PackageDescriptor,
   TYamlPackageParserOptions,
   TYamlPackageTypeHandler
 } from '#domain/parsers';

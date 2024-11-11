@@ -1,4 +1,4 @@
-import { TPackageTypeDescriptor } from '#domain/packages';
+import { TPackageTypeDescriptor } from '#domain/parsers';
 
 export type TYamlPackageTypeHandler = (
   valueNode: any,

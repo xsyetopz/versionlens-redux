@@ -1,23 +1,12 @@
 import {
   PackageDependency,
-  PackageDescriptorType,
   SuggestionCategory,
   SuggestionTypes,
   TPackageNameVersion,
   TPackageResource,
-  TPackageSuggestion,
-  TPackageTextRange
+  TPackageSuggestion
 } from '#domain/packages';
-
-export function createDependencyRange(
-  start: number,
-  end: number
-): TPackageTextRange {
-  return {
-    start,
-    end
-  }
-}
+import { PackageDescriptorType } from '#domain/parsers';
 
 export function createPackageNameVersion(
   name: string,

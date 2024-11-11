@@ -1,10 +1,9 @@
+import { createPackageResource, PackageDependency } from '#domain/packages';
 import {
   createDependencyRange,
   createIgnoreChangesDesc,
-  createPackageResource,
-  PackageDependency,
   PackageDescriptor
-} from '#domain/packages';
+} from '#domain/parsers';
 
 export default {
   single: [

@@ -1,17 +1,14 @@
 import { ILogger } from '#domain/logging';
+import { createPackageResource, PackageDependency } from '#domain/packages';
 import {
-  PackageDependency,
+  getTomlComplexTypeHandlers,
   PackageDescriptorType,
+  parsePackagesToml,
   TPackageGitDescriptor,
   TPackageNameDescriptor,
   TPackagePathDescriptor,
   TPackageVersionDescriptor,
-  createPackageResource,
-} from '#domain/packages';
-import {
   TTomlPackageParserOptions,
-  getTomlComplexTypeHandlers,
-  parsePackagesToml
 } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import { PypiClient, PypiConfig } from '#domain/providers/pypi';

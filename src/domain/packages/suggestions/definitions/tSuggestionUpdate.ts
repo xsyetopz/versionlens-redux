@@ -1,9 +1,5 @@
-import {
-  PackageSourceType,
-  PackageVersionType,
-  SuggestionTypes,
-  TPackageTextRange
-} from '#domain/packages';
+import { PackageSourceType, PackageVersionType, SuggestionTypes } from '#domain/packages';
+import { TPackageTextRange } from '#domain/parsers';
 
 export type TSuggestionUpdate = {
   packageSource: PackageSourceType,

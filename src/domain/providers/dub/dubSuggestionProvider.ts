@@ -1,18 +1,15 @@
 import { ILogger } from '#domain/logging';
+import { PackageDependency, createPackageResource } from '#domain/packages';
 import {
-  PackageDependency,
   PackageDescriptorType,
-  TPackageNameDescriptor,
-  TPackageVersionDescriptor,
-  createPackageResource,
-} from '#domain/packages';
-import {
   TJsonPackageParserOptions,
   TJsonPackageTypeHandler,
+  TPackageNameDescriptor,
+  TPackageVersionDescriptor,
   createPathDescFromJsonNode,
   createRepoDescFromJsonNode,
   createVersionDescFromJsonNode,
-  parsePackagesJson
+  parsePackagesJson,
 } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import { DubClient, DubConfig } from '#domain/providers/dub';

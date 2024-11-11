@@ -1,10 +1,10 @@
 import {
-  PackageDescriptor,
   createDependencyRange,
   createPackageNameDesc,
   createPackageVersionDesc,
-  createProjectVersionTypeDesc
-} from '#domain/packages';
+  createProjectVersionTypeDesc,
+  PackageDescriptor
+} from '#domain/parsers';
 
 export default {
 

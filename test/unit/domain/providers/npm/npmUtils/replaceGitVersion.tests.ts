@@ -1,13 +1,12 @@
 import {
+  mapToSuggestionUpdate,
   PackageDependency,
-  PackageDescriptor,
   PackageResponse,
   PackageSourceType,
   SuggestionCategory,
-  SuggestionTypes,
-  createDependencyRange,
-  mapToSuggestionUpdate
+  SuggestionTypes
 } from '#domain/packages';
+import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
 import { npmReplaceVersion } from '#domain/providers/npm';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';

@@ -1,5 +1,5 @@
-import { PackageDescriptor } from '#domain/packages';
 import {
+  PackageDescriptor,
   TTomlPackageParserOptions,
   complexHasProperty,
   createNameDescFromTomlNode,

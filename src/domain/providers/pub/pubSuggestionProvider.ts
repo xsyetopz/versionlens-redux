@@ -1,15 +1,15 @@
 import { ILogger } from '#domain/logging';
 import {
   PackageDependency,
+  TSuggestionReplaceFunction,
+  createPackageResource,
+} from '#domain/packages';
+import {
   PackageDescriptorType,
   TPackageGitDescriptor,
   TPackageNameDescriptor,
   TPackagePathDescriptor,
   TPackageVersionDescriptor,
-  TSuggestionReplaceFunction,
-  createPackageResource,
-} from '#domain/packages';
-import {
   TYamlPackageParserOptions,
   createGitDescFromYamlNode,
   createHostedDescFromYamlNode,

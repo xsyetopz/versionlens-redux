@@ -6,7 +6,7 @@ import {
   createPackagePathDescType,
   createPackageVersionDesc,
   createProjectVersionTypeDesc
-} from '#domain/packages';
+} from '#domain/parsers';
 
 export default {
 

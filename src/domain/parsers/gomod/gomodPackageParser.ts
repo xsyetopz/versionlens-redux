@@ -5,7 +5,7 @@ import {
   TPackageVersionDescriptor,
   createPackageNameDesc,
   createPackageVersionDesc
-} from '#domain/packages';
+} from '#domain/parsers';
 
 const INCOMPAT_BUILD = "+incompatible";
 const PREPEND_V = "v";
