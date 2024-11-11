@@ -7,7 +7,7 @@ import {
   PackageVersionType,
   TPackageClientRequest
 } from '#domain/packages';
-import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
+import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import { FetchPackageSuggestions, FetchProjectSuggestions } from '#domain/useCases';
 import { test } from 'mocha-ui-esm';
@@ -55,9 +55,9 @@ export const fetchProjectSuggestionsTests = {
             "test/path"
           ),
           //nameRange
-          createDependencyRange(0, 1),
+          createTextRange(0, 1),
           // versionRange
-          createDependencyRange(2, 3),
+          createTextRange(2, 3),
           new PackageDescriptor([])
         )
       ];

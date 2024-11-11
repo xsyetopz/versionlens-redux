@@ -10,7 +10,7 @@ import {
   TPackageClientRequest,
   TPackageSuggestion
 } from '#domain/packages';
-import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
+import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import {
   GitHubClient,
   NpmConfig,
@@ -56,8 +56,8 @@ export const fetchPackageTests = {
       clientData: {},
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createDependencyRange(0, 0),
-        createDependencyRange(1, 1),
+        createTextRange(0, 0),
+        createTextRange(1, 1),
         new PackageDescriptor([]),
       ),
       attempt: 1
@@ -93,8 +93,8 @@ export const fetchPackageTests = {
       clientData: {},
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createDependencyRange(0, 0),
-        createDependencyRange(1, 1),
+        createTextRange(0, 0),
+        createTextRange(1, 1),
         new PackageDescriptor([]),
       ),
       attempt: 1
@@ -151,8 +151,8 @@ export const fetchPackageTests = {
       clientData: {},
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createDependencyRange(0, 0),
-        createDependencyRange(1, 1),
+        createTextRange(0, 0),
+        createTextRange(1, 1),
         new PackageDescriptor([]),
       ),
       attempt: 1
@@ -202,8 +202,8 @@ export const fetchPackageTests = {
         clientData: {},
         parsedDependency: new PackageDependency(
           testPackageRes,
-          createDependencyRange(0, 0),
-          createDependencyRange(1, 1),
+          createTextRange(0, 0),
+          createTextRange(1, 1),
           new PackageDescriptor([]),
         ),
         attempt: 1

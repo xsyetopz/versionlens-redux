@@ -1,8 +1,8 @@
 import {
-  createDependencyRange,
   createPackageNameDesc,
   createPackageVersionDesc,
   createProjectVersionTypeDesc,
+  createTextRange,
   PackageDescriptor
 } from '#domain/parsers';
 
@@ -34,72 +34,72 @@ export default {
       new PackageDescriptor([
         createPackageNameDesc(
           "Microsoft.Build.CentralPackageVersions",
-          createDependencyRange(25, 25)
+          createTextRange(25, 25)
         ),
-        createPackageVersionDesc("2.1.3", createDependencyRange(85, 90))
+        createPackageVersionDesc("2.1.3", createTextRange(85, 90))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "Microsoft.Azure.ServiceBus",
-          createDependencyRange(610, 610)
+          createTextRange(610, 610)
         ),
-        createPackageVersionDesc("(3.0,)", createDependencyRange(680, 686))
+        createPackageVersionDesc("(3.0,)", createTextRange(680, 686))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "Microsoft.Extensions.DependencyInjection.Abstractions",
-          createDependencyRange(127, 127)
+          createTextRange(127, 127)
         ),
-        createPackageVersionDesc("2.0.0", createDependencyRange(218, 223))
+        createPackageVersionDesc("2.0.0", createTextRange(218, 223))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "Microsoft.Extensions.Logging.Abstractions",
-          createDependencyRange(240, 240)
+          createTextRange(240, 240)
         ),
-        createPackageVersionDesc("2.0.1", createDependencyRange(319, 324))
+        createPackageVersionDesc("2.0.1", createTextRange(319, 324))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "NoVersionAttribute",
-          createDependencyRange(774, 774)
+          createTextRange(774, 774)
         ),
-        createPackageVersionDesc("*", createDependencyRange(821, 821), 'Version="', '" ')
+        createPackageVersionDesc("*", createTextRange(821, 821), 'Version="', '" ')
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "ChildVersionNoAttribute",
-          createDependencyRange(836, 836)
+          createTextRange(836, 836)
         ),
-        createPackageVersionDesc("*", createDependencyRange(887, 887), ' Version="', '"')
+        createPackageVersionDesc("*", createTextRange(887, 887), ' Version="', '"')
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "System.Text.Json",
-          createDependencyRange(341, 341)
+          createTextRange(341, 341)
         ),
-        createPackageVersionDesc("4.7.2", createDependencyRange(393, 398))
+        createPackageVersionDesc("4.7.2", createTextRange(393, 398))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "Microsoft.Extensions.Options",
-          createDependencyRange(415, 415)
+          createTextRange(415, 415)
         ),
-        createPackageVersionDesc("1.2.3", createDependencyRange(487, 492))
+        createPackageVersionDesc("1.2.3", createTextRange(487, 492))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "AngularJS.Core",
-          createDependencyRange(703, 703)
+          createTextRange(703, 703)
         ),
-        createPackageVersionDesc("1.0.*", createDependencyRange(752, 757))
+        createPackageVersionDesc("1.0.*", createTextRange(752, 757))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "Microsoft.EntityFrameworkCore.Tools",
-          createDependencyRange(509, 509)
+          createTextRange(509, 509)
         ),
-        createPackageVersionDesc("6.0.7", createDependencyRange(588, 593))
+        createPackageVersionDesc("6.0.7", createTextRange(588, 593))
       ]),
     ]
   },
@@ -115,13 +115,13 @@ export default {
     `,
     expected: [
       new PackageDescriptor([
-        createPackageNameDesc("AssemblyVersion", createDependencyRange(53, 53)),
-        createPackageVersionDesc("1.2.3", createDependencyRange(70, 75)),
+        createPackageNameDesc("AssemblyVersion", createTextRange(53, 53)),
+        createPackageVersionDesc("1.2.3", createTextRange(70, 75)),
         createProjectVersionTypeDesc()
       ]),
       new PackageDescriptor([
-        createPackageNameDesc("Version", createDependencyRange(106, 106)),
-        createPackageVersionDesc("", createDependencyRange(115, 115)),
+        createPackageNameDesc("Version", createTextRange(106, 106)),
+        createPackageVersionDesc("", createTextRange(115, 115)),
         createProjectVersionTypeDesc()
       ]),
     ]

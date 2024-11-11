@@ -1,11 +1,11 @@
 import {
   PackageDescriptor,
-  createDependencyRange,
   createPackageGitDescType,
   createPackageNameDesc,
   createPackagePathDescType,
   createPackageVersionDesc,
-  createProjectVersionTypeDesc
+  createProjectVersionTypeDesc,
+  createTextRange
 } from '#domain/parsers';
 
 export default {
@@ -32,58 +32,58 @@ export default {
       new PackageDescriptor([
         createPackageNameDesc(
           "serde",
-          createDependencyRange(28, 28)
+          createTextRange(28, 28)
         ),
-        createPackageVersionDesc("1.0.97", createDependencyRange(37, 43))
+        createPackageVersionDesc("1.0.97", createTextRange(37, 43))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "indexmap",
-          createDependencyRange(51, 51)
+          createTextRange(51, 51)
         ),
-        createPackageVersionDesc("1.0", createDependencyRange(75, 78))
+        createPackageVersionDesc("1.0", createTextRange(75, 78))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "awesome",
-          createDependencyRange(120, 120)
+          createTextRange(120, 120)
         ),
-        createPackageVersionDesc("1.3.5", createDependencyRange(146, 151))
+        createPackageVersionDesc("1.3.5", createTextRange(146, 151))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "serde_derive",
-          createDependencyRange(185, 185)
+          createTextRange(185, 185)
         ),
-        createPackageVersionDesc("1.0", createDependencyRange(201, 204))
+        createPackageVersionDesc("1.0", createTextRange(201, 204))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "serde_json",
-          createDependencyRange(212, 212)
+          createTextRange(212, 212)
         ),
-        createPackageVersionDesc("1.0", createDependencyRange(226, 229))
+        createPackageVersionDesc("1.0", createTextRange(226, 229))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "smallvec",
-          createDependencyRange(237, 237)
+          createTextRange(237, 237)
         ),
         createPackageGitDescType("https://github.com/servo/rust-smallvec.git")
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "bitflags",
-          createDependencyRange(309, 309)
+          createTextRange(309, 309)
         ),
-        createPackagePathDescType("my-bitflags", createDependencyRange(330, 341))
+        createPackagePathDescType("my-bitflags", createTextRange(330, 341))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "serde",
-          createDependencyRange(395, 395)
+          createTextRange(395, 395)
         ),
-        createPackageVersionDesc("1.0.97", createDependencyRange(404, 410))
+        createPackageVersionDesc("1.0.97", createTextRange(404, 410))
       ]),
     ]
   },
@@ -99,13 +99,13 @@ export default {
     `,
     expected: [
       new PackageDescriptor([
-        createPackageNameDesc("version", createDependencyRange(23, 23)),
-        createPackageVersionDesc("1.0.97", createDependencyRange(34, 40)),
+        createPackageNameDesc("version", createTextRange(23, 23)),
+        createPackageVersionDesc("1.0.97", createTextRange(34, 40)),
         createProjectVersionTypeDesc()
       ]),
       new PackageDescriptor([
-        createPackageNameDesc("backtrace", createDependencyRange(121, 121)),
-        createPackageVersionDesc("1.3.5", createDependencyRange(134, 139))
+        createPackageNameDesc("backtrace", createTextRange(121, 121)),
+        createPackageVersionDesc("1.3.5", createTextRange(134, 139))
       ]),
     ]
   },
@@ -121,13 +121,13 @@ export default {
     `,
     expected: [
       new PackageDescriptor([
-        createPackageNameDesc("version", createDependencyRange(23, 23)),
-        createPackageVersionDesc("1.0.97", createDependencyRange(34, 40)),
+        createPackageNameDesc("version", createTextRange(23, 23)),
+        createPackageVersionDesc("1.0.97", createTextRange(34, 40)),
         createProjectVersionTypeDesc()
       ]),
       new PackageDescriptor([
-        createPackageNameDesc("backtrace", createDependencyRange(121, 121)),
-        createPackageVersionDesc("1.3.5", createDependencyRange(134, 139))
+        createPackageNameDesc("backtrace", createTextRange(121, 121)),
+        createPackageVersionDesc("1.3.5", createTextRange(134, 139))
       ]),
     ]
   }

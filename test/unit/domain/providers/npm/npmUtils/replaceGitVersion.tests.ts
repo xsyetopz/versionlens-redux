@@ -6,7 +6,7 @@ import {
   SuggestionCategory,
   SuggestionTypes
 } from '#domain/packages';
-import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
+import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import { npmReplaceVersion } from '#domain/providers/npm';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
@@ -21,8 +21,8 @@ export const npmReplaceVersionTests = {
       providerName: 'testreplace',
       packageSource: PackageSourceType.Github,
       parsedDependency: <PackageDependency>{
-        nameRange: createDependencyRange(0, 0),
-        versionRange: createDependencyRange(1, 1),
+        nameRange: createTextRange(0, 0),
+        versionRange: createTextRange(1, 1),
         package: {
           path: 'packagepath',
           name: 'packagename',

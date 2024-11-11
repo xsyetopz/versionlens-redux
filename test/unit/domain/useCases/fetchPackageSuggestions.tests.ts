@@ -16,7 +16,7 @@ import {
   TPackageResource,
   TPackageSuggestion
 } from '#domain/packages';
-import { createDependencyRange, PackageDescriptor } from '#domain/parsers';
+import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import { IProviderConfig, ISuggestionProvider } from '#domain/providers';
 import { FetchPackageSuggestions } from '#domain/useCases';
 import { test } from 'mocha-ui-esm';
@@ -89,9 +89,9 @@ export const fetchPackageSuggestionsTests = <any>{
       parsedDependency: new PackageDependency(
         this.testPackageRes,
         //nameRange
-        createDependencyRange(1, 20),
+        createTextRange(1, 20),
         //versionRange
-        createDependencyRange(25, 30),
+        createTextRange(25, 30),
         new PackageDescriptor([])
       )
     } as TPackageClientRequest<any>

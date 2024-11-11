@@ -1,8 +1,8 @@
 import {
-  createDependencyRange,
   createPackageNameDesc,
   createPackageVersionDesc,
   createProjectVersionTypeDesc,
+  createTextRange,
   PackageDescriptor
 } from '#domain/parsers';
 
@@ -51,30 +51,30 @@ export default {
 
     expected: [
       new PackageDescriptor([
-        createPackageNameDesc("version", createDependencyRange(197, 197)),
-        createPackageVersionDesc("1.3.6-SNAPSHOT", createDependencyRange(206, 220)),
+        createPackageNameDesc("version", createTextRange(197, 197)),
+        createPackageVersionDesc("1.3.6-SNAPSHOT", createTextRange(206, 220)),
         createProjectVersionTypeDesc()
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "org.springframework.boot:spring-boot-starter-parent",
-          createDependencyRange(481, 481)
+          createTextRange(481, 481)
         ),
-        createPackageVersionDesc("1.5.16.RELEASE", createDependencyRange(625, 639))
+        createPackageVersionDesc("1.5.16.RELEASE", createTextRange(625, 639))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "org.springframework:spring-core",
-          createDependencyRange(701, 701)
+          createTextRange(701, 701)
         ),
-        createPackageVersionDesc("5.0.7.RELEASE", createDependencyRange(835, 848))
+        createPackageVersionDesc("5.0.7.RELEASE", createTextRange(835, 848))
       ]),
       new PackageDescriptor([
         createPackageNameDesc(
           "org.apache.tomcat:tomcat",
-          createDependencyRange(893, 893)
+          createTextRange(893, 893)
         ),
-        createPackageVersionDesc("9.0.12", createDependencyRange(427, 433))
+        createPackageVersionDesc("9.0.12", createTextRange(427, 433))
       ]),
     ]
   },

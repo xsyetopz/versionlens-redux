@@ -1,7 +1,7 @@
 import { createPackageResource, PackageDependency } from '#domain/packages';
 import {
-  createDependencyRange,
   createIgnoreChangesDesc,
+  createTextRange,
   PackageDescriptor
 } from '#domain/parsers';
 
@@ -14,9 +14,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(0, 1),
+      createTextRange(0, 1),
       // versionRange
-      createDependencyRange(2, 3),
+      createTextRange(2, 3),
       new PackageDescriptor([])
     )
   ],
@@ -28,9 +28,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(0, 1),
+      createTextRange(0, 1),
       // versionRange
-      createDependencyRange(2, 3),
+      createTextRange(2, 3),
       new PackageDescriptor([])
     )
   ],
@@ -42,9 +42,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(4, 5),
+      createTextRange(4, 5),
       // versionRange
-      createDependencyRange(2, 3),
+      createTextRange(2, 3),
       new PackageDescriptor([])
     )
   ],
@@ -56,9 +56,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(0, 1),
+      createTextRange(0, 1),
       // versionRange
-      createDependencyRange(4, 5),
+      createTextRange(4, 5),
       new PackageDescriptor([])
     )
   ],
@@ -70,9 +70,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(4, 5),
+      createTextRange(4, 5),
       // versionRange
-      createDependencyRange(6, 7),
+      createTextRange(6, 7),
       new PackageDescriptor([])
     ),
     new PackageDependency(
@@ -82,9 +82,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(8, 9),
+      createTextRange(8, 9),
       // versionRange
-      createDependencyRange(10, 11),
+      createTextRange(10, 11),
       new PackageDescriptor([])
     )
   ],
@@ -96,9 +96,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(4, 5),
+      createTextRange(4, 5),
       // versionRange
-      createDependencyRange(6, 7),
+      createTextRange(6, 7),
       new PackageDescriptor([])
     ),
     new PackageDependency(
@@ -108,9 +108,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(8, 9),
+      createTextRange(8, 9),
       // versionRange
-      createDependencyRange(10, 11),
+      createTextRange(10, 11),
       new PackageDescriptor([])
     )
   ],
@@ -122,9 +122,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(4, 5),
+      createTextRange(4, 5),
       // versionRange
-      createDependencyRange(6, 7),
+      createTextRange(6, 7),
       new PackageDescriptor([])
     ),
     new PackageDependency(
@@ -134,9 +134,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(12, 13),
+      createTextRange(12, 13),
       // versionRange
-      createDependencyRange(10, 11),
+      createTextRange(10, 11),
       new PackageDescriptor([])
     )
   ],
@@ -148,9 +148,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(4, 5),
+      createTextRange(4, 5),
       // versionRange
-      createDependencyRange(12, 13),
+      createTextRange(12, 13),
       new PackageDescriptor([])
     ),
     new PackageDependency(
@@ -160,9 +160,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(8, 9),
+      createTextRange(8, 9),
       // versionRange
-      createDependencyRange(10, 11),
+      createTextRange(10, 11),
       new PackageDescriptor([])
     )
   ],
@@ -174,9 +174,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(4, 5),
+      createTextRange(4, 5),
       // versionRange
-      createDependencyRange(12, 13),
+      createTextRange(12, 13),
       new PackageDescriptor([
         createIgnoreChangesDesc()
       ])
@@ -188,9 +188,9 @@ export default {
         "test/path"
       ),
       //nameRange
-      createDependencyRange(8, 9),
+      createTextRange(8, 9),
       // versionRange
-      createDependencyRange(10, 11),
+      createTextRange(10, 11),
       new PackageDescriptor([
         createIgnoreChangesDesc()
       ])
