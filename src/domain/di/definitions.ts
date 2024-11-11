@@ -1,4 +1,4 @@
-import { IServiceProvider } from "#domain/di";
+import { IDisposable } from '#domain/utils';
 
 type TServiceResolverFunction<T> = (...args: Array<any>) => T;
 
@@ -40,5 +40,19 @@ export interface IServiceCollection {
   build: () => Promise<IServiceProvider>;
 
   buildChild(name: string, serviceProvider: IServiceProvider): Promise<IServiceProvider>;
+
+}
+
+export interface IServiceCollectionFactory {
+
+  createServiceCollection: () => IServiceCollection
+
+}
+
+export interface IServiceProvider extends IDisposable {
+
+  name: string;
+
+  getService: <T>(name: string) => T;
 
 }
