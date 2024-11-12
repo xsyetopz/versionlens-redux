@@ -9,7 +9,7 @@ import {
   TPackageSuggestion,
   UpdateableFactory
 } from '#domain/packages';
-import { existsSync } from 'node:fs';
+import { fileExists } from '#domain/utils';
 import { dirname, join } from 'node:path';
 
 export function create(
@@ -88,15 +88,15 @@ export function createFixed(
   };
 }
 
-export function createDirectory(
+export async function createDirectory(
   packageName: string,
   packageFilePath: string,
   path: string
-): TPackageClientResponse {
+): Promise<TPackageClientResponse> {
   const source = PackageSourceType.Directory;
   const type = PackageVersionType.Version;
   const resolvedPath = join(dirname(packageFilePath), path);
-  const exists = existsSync(resolvedPath)
+  const exists = await fileExists(resolvedPath)
 
   const suggestions: Array<TPackageSuggestion> = [
     exists
@@ -124,9 +124,9 @@ export function createDirectory(
 }
 
 const fileDependencyRegex = /^file:(.*)$/;
-export function createDirectoryFromFileProtocol(
+export async function createDirectoryFromFileProtocol(
   requested: TPackageResource
-): TPackageClientResponse {
+): Promise<TPackageClientResponse> {
 
   const fileRegExpResult = fileDependencyRegex.exec(requested.version);
   if (!fileRegExpResult) {
@@ -138,7 +138,7 @@ export function createDirectoryFromFileProtocol(
 
   const path = fileRegExpResult[1];
 
-  return createDirectory(requested.name, requested.path, path);
+  return await createDirectory(requested.name, requested.path, path);
 }
 
 export function createGit(): TPackageClientResponse {

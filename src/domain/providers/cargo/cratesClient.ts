@@ -45,7 +45,7 @@ export class CratesClient implements IPackageClient<null> {
       PackageDescriptorType.path
     );
     if (pathDesc) {
-      return ClientResponseFactory.createDirectory(
+      return await ClientResponseFactory.createDirectory(
         requestedPackage.name,
         requestedPackage.path,
         pathDesc.path

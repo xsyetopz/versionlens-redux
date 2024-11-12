@@ -4,11 +4,17 @@ import util from 'node:util';
 export const CrLf = '\r\n';
 export const Lf = '\n';
 
-const fsFileExists = util.promisify(fs.exists);
+// setup fs/promises for node v20
 const fsReadFile = util.promisify(fs.readFile);
+const access = util.promisify(fs.access);
 
-export function fileExists(absFilePath: string): Promise<boolean> {
-  return fsFileExists(absFilePath)
+export async function fileExists(absFilePath: string): Promise<boolean> {
+  try {
+    await access(absFilePath);
+    return true;
+  } catch (error: any) {
+    return false;
+  }
 }
 
 export function readFile(absFilePath: string): Promise<string> {

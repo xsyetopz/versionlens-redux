@@ -68,7 +68,7 @@ export class NpmPackageClient implements IPackageClient<any> {
 
       // return if directory or file document
       if (source === PackageSourceType.Directory || source === PackageSourceType.File) {
-        return ClientResponseFactory.createDirectoryFromFileProtocol(requestedPackage);
+        return await ClientResponseFactory.createDirectoryFromFileProtocol(requestedPackage);
       }
 
       if (source === PackageSourceType.Github) {
