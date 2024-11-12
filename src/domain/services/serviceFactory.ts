@@ -81,7 +81,7 @@ export function addSuggestionPackageCache(services: IServiceCollection) {
 }
 
 export function addProcessesCache(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().processesCache;
+  const serviceName = nameOf<IDomainServices>().shellCache;
   services.addSingleton(serviceName, new MemoryExpiryCache(serviceName));
 }
 

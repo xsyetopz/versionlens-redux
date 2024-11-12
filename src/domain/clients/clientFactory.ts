@@ -3,7 +3,7 @@ import {
   HttpClientOptions,
   IHttpClient,
   IJsonHttpClient,
-  IProcessClient,
+  IShellClient,
   JsonHttpClient
 } from '#domain/clients';
 import { PromiseSpawnClient } from '#domain/clients/promiseSpawn';
@@ -12,12 +12,12 @@ import { ILogger } from '#domain/logging';
 import PromiseSpawn from '@npmcli/promise-spawn';
 import * as RequireLight from 'request-light';
 
-export function createProcessClient(
-  processCache: IExpiryCache,
+export function createShellClient(
+  shellCache: IExpiryCache,
   cachingOpts: ICachingOptions,
   logger: ILogger
-): IProcessClient {
-  return new PromiseSpawnClient(PromiseSpawn, processCache, cachingOpts, logger);
+): IShellClient {
+  return new PromiseSpawnClient(PromiseSpawn, shellCache, cachingOpts, logger);
 }
 
 export function createHttpClient(

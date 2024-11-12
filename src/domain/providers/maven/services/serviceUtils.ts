@@ -1,5 +1,5 @@
 import { CachingOptions } from '#domain/caching';
-import { createHttpClient, createProcessClient, HttpOptions } from '#domain/clients';
+import { createHttpClient, createShellClient, HttpOptions } from '#domain/clients';
 import { IServiceCollection } from '#domain/di';
 import { IProviderServices } from '#domain/providers';
 import {
@@ -50,12 +50,12 @@ export function addMavenConfig(services: IServiceCollection) {
 }
 
 export function addProcessClient(services: IServiceCollection) {
-  const serviceName = nameOf<IMavenServices>().mvnProcess;
+  const serviceName = nameOf<IMavenServices>().mvnShellClient;
   services.addSingleton(
     serviceName,
     (container: IMavenServices & IDomainServices) =>
-      createProcessClient(
-        container.processesCache,
+      createShellClient(
+        container.shellCache,
         container.mavenCachingOpts,
         container.logger.child({ logGroup: serviceName })
       )
@@ -69,7 +69,7 @@ export function addCliClient(services: IServiceCollection) {
     (container: IMavenServices & IDomainServices) =>
       new MvnCli(
         container.mavenConfig,
-        container.mvnProcess,
+        container.mvnShellClient,
         container.logger.child({ logGroup: serviceName })
       )
   );

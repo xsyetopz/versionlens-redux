@@ -3,7 +3,7 @@ import {
   ClientResponseSource,
   HttpOptions,
   IHttpOptions,
-  IProcessClient
+  IShellClient
 } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
@@ -22,7 +22,7 @@ let httpOptsMock: IHttpOptions;
 let nugetOptsMock: INugetOptions;
 let configMock: DotNetConfig;
 let loggerMock: ILogger;
-let clientMock: IProcessClient;
+let clientMock: IShellClient;
 
 export const DotNetCliTests = {
 

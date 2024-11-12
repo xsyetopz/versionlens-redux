@@ -1,5 +1,5 @@
 import { CachingOptions } from '#domain/caching';
-import { HttpOptions, IHttpClient, IProcessClient } from '#domain/clients';
+import { HttpOptions, IHttpClient, IShellClient } from '#domain/clients';
 import { MavenClient, MavenConfig, MvnCli } from '#domain/providers/maven';
 
 export interface IMavenServices {
@@ -10,7 +10,7 @@ export interface IMavenServices {
 
   mavenConfig: MavenConfig;
 
-  mvnProcess: IProcessClient;
+  mvnShellClient: IShellClient;
 
   mvnCli: MvnCli;
 

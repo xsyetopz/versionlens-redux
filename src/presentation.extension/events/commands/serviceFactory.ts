@@ -15,7 +15,7 @@ export function addOnClearCache(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) => {
       return new OnClearCache(
         container.packageCache,
-        container.processesCache,
+        container.shellCache,
         container.logger.child({ logGroup: serviceName })
       );
     },

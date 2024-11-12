@@ -1,5 +1,5 @@
 import { CachingOptions } from '#domain/caching';
-import { HttpOptions, IJsonHttpClient, IProcessClient } from '#domain/clients';
+import { HttpOptions, IJsonHttpClient, IShellClient } from '#domain/clients';
 import {
   DotNetCli,
   DotNetConfig,
@@ -18,7 +18,7 @@ export interface IDotNetServices {
 
   dotnetConfig: DotNetConfig;
 
-  dotnetProcess: IProcessClient;
+  dotnetShellClient: IShellClient;
 
   dotnetCli: DotNetCli;
 

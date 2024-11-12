@@ -44,7 +44,7 @@ export interface IDomainServices {
 
   packageCache: PackageCache;
 
-  processesCache: IExpiryCache;
+  shellCache: IExpiryCache;
 
   GetSuggestionProvider: GetSuggestionProvider;
 

@@ -1,5 +1,5 @@
 import { CachingOptions } from '#domain/caching';
-import { HttpOptions, createJsonClient, createProcessClient } from '#domain/clients';
+import { HttpOptions, createJsonClient, createShellClient } from '#domain/clients';
 import { IServiceCollection } from '#domain/di';
 import { IProviderServices } from '#domain/providers';
 import {
@@ -64,12 +64,12 @@ export function addDotNetConfig(services: IServiceCollection) {
 }
 
 export function addProcessClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDotNetServices>().dotnetProcess;
+  const serviceName = nameOf<IDotNetServices>().dotnetShellClient;
   services.addSingleton(
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
-      createProcessClient(
-        container.processesCache,
+      createShellClient(
+        container.shellCache,
         container.dotnetCachingOpts,
         container.logger.child({ logGroup: serviceName })
       )
@@ -83,7 +83,7 @@ export function addCliClient(services: IServiceCollection) {
     (container: IDotNetServices & IDomainServices) =>
       new DotNetCli(
         container.dotnetConfig,
-        container.dotnetProcess,
+        container.dotnetShellClient,
         container.logger.child({ logGroup: serviceName })
       )
   );

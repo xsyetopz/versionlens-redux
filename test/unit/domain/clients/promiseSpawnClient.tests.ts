@@ -1,29 +1,29 @@
 import { CachingOptions, ICachingOptions, MemoryExpiryCache } from '#domain/caching';
-import { ClientResponseSource, ProcessClientResponse } from '#domain/clients';
+import { ClientResponseSource, ShellClientResponse } from '#domain/clients';
 import { PromiseSpawnClient } from '#domain/clients/promiseSpawn';
 import { ILogger } from '#domain/logging';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import { anything, instance, mock, when } from 'ts-mockito';
-import { ProcessSpawnStub } from './processSpawnStub';
+import { PromiseSpawnStub } from './promiseSpawnStub';
 
-let psMock: ProcessSpawnStub;
+let psMock: PromiseSpawnStub;
 let cachingOptionsMock: ICachingOptions;
 let loggerMock: ILogger;
 
-export const ProcessClientRequestTests = {
+export const PromiseSpawnClientTests = {
 
   [test.title]: PromiseSpawnClient.name,
 
   beforeEach: () => {
     cachingOptionsMock = mock(CachingOptions)
     loggerMock = mock<ILogger>()
-    psMock = mock(ProcessSpawnStub)
+    psMock = mock(PromiseSpawnStub)
   },
 
   request: {
 
-    "returns <ProcessClientResponse> when error occurs": async () => {
+    "returns <ShellClientResponse> when error occurs": async () => {
 
       when(cachingOptionsMock.duration).thenReturn(30000);
 
@@ -48,7 +48,7 @@ export const ProcessClientRequestTests = {
         );
       }
       catch (error) {
-        const response = error as ProcessClientResponse;
+        const response = error as ShellClientResponse;
         assert.equal(response.status, "ENOENT");
         assert.equal(response.data, "spawn missing ENOENT");
         assert.equal(response.rejected, true);
@@ -56,7 +56,7 @@ export const ProcessClientRequestTests = {
 
     },
 
-    "returns <ProcessClientResponse> and caches response": async () => {
+    "returns <ShellClientResponse> and caches response": async () => {
       const testResponse = {
         source: ClientResponseSource.cli,
         status: 0,

@@ -21,11 +21,8 @@ export enum HttpFeatures {
 }
 
 export interface IHttpOptions extends IFrozenOptions {
-
   config: IFrozenOptions;
-
   strictSSL: boolean;
-
 }
 
 export type HttpClientOptions = {
@@ -50,36 +47,31 @@ export interface THttpClientRequestFn {
 }
 
 export interface IHttpClient {
-
   request: THttpClientRequestFn;
-
 }
 
 export type JsonClientResponse = TClientResponse<number, KeyDictionary<any>>;
 
 export interface IJsonHttpClient {
-
   httpClient: IHttpClient;
-
   request: (
     method: HttpClientRequestMethods,
     url: string,
     query: KeyStringDictionary,
     headers: KeyStringDictionary,
   ) => Promise<JsonClientResponse>;
-
 }
 
-export type ProcessClientResponse = TClientResponse<string, string>;
+export type ShellClientResponse = TClientResponse<string, string>;
 
-export interface ProcessClientRequestFn {
+export interface ShellClientRequestFn {
   (
     cmd: string,
     args: Array<string>,
     cwd: string,
-  ): Promise<ProcessClientResponse>
+  ): Promise<ShellClientResponse>
 }
 
-export interface IProcessClient {
-  request: ProcessClientRequestFn;
+export interface IShellClient {
+  request: ShellClientRequestFn;
 }

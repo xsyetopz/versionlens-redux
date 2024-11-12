@@ -1,6 +1,6 @@
 import { TPromiseSpawnOptions, TPromiseSpawnResult } from '#domain/clients/promiseSpawn';
 
-export class ProcessSpawnStub {
+export class PromiseSpawnStub {
 
   promiseSpawn(
     cmd: string,

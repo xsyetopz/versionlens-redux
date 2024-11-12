@@ -1,4 +1,4 @@
-import { IProcessClient } from '#domain/clients';
+import { IShellClient } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import { MavenConfig, MavenRepository, extractReposUrlsFromXml } from '#domain/providers/maven';
 import { getProtocolFromUrl } from '#domain/utils';
@@ -7,12 +7,12 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 export class MvnCli {
 
   constructor(
-    readonly config: MavenConfig, 
-    readonly processClient: IProcessClient, 
+    readonly config: MavenConfig,
+    readonly shellClient: IShellClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("processClient", processClient);
+    throwUndefinedOrNull("shellClient", shellClient);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -20,7 +20,7 @@ export class MvnCli {
     let repos: Array<string>;
 
     try {
-      const result = await this.processClient.request(
+      const result = await this.shellClient.request(
         'mvn ',
         ['help:effective-settings'],
         cwd

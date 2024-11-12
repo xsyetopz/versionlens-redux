@@ -1,4 +1,4 @@
-import { IProcessClient } from '#domain/clients';
+import { IShellClient } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import { DotNetConfig, DotNetSource } from '#domain/providers/dotnet';
 import { CrLf, getProtocolFromUrl, Lf, RegistryProtocols } from '#domain/utils';
@@ -12,11 +12,11 @@ export class DotNetCli {
 
   constructor(
     readonly config: DotNetConfig,
-    readonly processClient: IProcessClient,
+    readonly shellClient: IShellClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("processClient", processClient);
+    throwUndefinedOrNull("shellClient", shellClient);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -28,7 +28,7 @@ export class DotNetCli {
     );
 
     try {
-      const result = await this.processClient.request(
+      const result = await this.shellClient.request(
         DotNetCli.command,
         DotNetCli.fetchSourceArgs,
         cwd
