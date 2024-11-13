@@ -88,7 +88,7 @@
     "sax": "1.4.1",
     "semver": "7.6.3",
     "toml-eslint-parser": "0.10.0",
-    "winston": "3.16.0",
+    "winston": "3.17.0",
     "yaml": "2.6.0"
   },
   "overrides": {
