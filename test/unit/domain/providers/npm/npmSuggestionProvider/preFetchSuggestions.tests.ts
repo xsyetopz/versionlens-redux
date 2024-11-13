@@ -61,48 +61,56 @@ export const NpmSuggestionProviderTests = {
       when(this.clientMock.config).thenReturn(instance(this.configMock));
     },
 
-    "returns client data using .npmrc settings": async function (this: TestContext) {
-      const testPackageFilePath = path.join(testPackagePath, 'package.json');
-      const testNpmRcFilePath = path.join(testPackagePath, '.npmrc');
-      const testEnvFilePath = path.join(testPackagePath, '.env');
+    "returns client data using .npmrc settings $1": [
+      ["when userconfig is from env", true],
+      ["when userconfig is default", false],
+      async function (this: TestContext, testTitle: string, testEnvUserConfig: boolean) {
+        const testPackageFilePath = path.join(testPackagePath, 'package.json');
+        const testNpmRcFilePath = path.join(testPackagePath, '.npmrc');
+        const testEnvFilePath = path.join(testPackagePath, '.env');
+        const testUserConfigPath = resolve(homedir(), testEnvUserConfig ? ".npmrcenv" : ".npmrc");
+        const put = new NpmSuggestionProvider(
+          instance(this.clientMock),
+          instance(this.configMock),
+          instance(this.loggerMock)
+        );
 
-      const put = new NpmSuggestionProvider(
-        instance(this.clientMock),
-        instance(this.configMock),
-        instance(this.loggerMock)
-      );
+        if (testEnvUserConfig) process.env.NPM_CONFIG_USERCONFIG = testUserConfigPath;
 
-      await createFile(testPackageFilePath, "");
-      await createFile(testNpmRcFilePath, Fixtures.preFetchSuggestions['.npmrc']);
-      await createFile(testEnvFilePath, Fixtures.preFetchSuggestions['.npmrc-env']);
+        await createFile(testPackageFilePath, "");
+        await createFile(testNpmRcFilePath, Fixtures.preFetchSuggestions['.npmrc']);
+        await createFile(testEnvFilePath, Fixtures.preFetchSuggestions['.npmrc-env']);
 
-      const expectedClientData = {
-        cwd: testPackagePath,
-        userconfig: resolve(homedir(), ".npmrc"),
-        "//registry.npmjs.example/:_authToken": '12345678',
-        envFilePath: testEnvFilePath
+        const expectedClientData = {
+          cwd: testPackagePath,
+          userconfig: testUserConfigPath,
+          "//registry.npmjs.example/:_authToken": '12345678',
+          envFilePath: testEnvFilePath
+        }
+
+        const actualClientData = await put.preFetchSuggestions(
+          testProjectPath,
+          testPackagePath
+        );
+
+        verify(this.loggerMock.debug("Resolved .npmrc is %s", testNpmRcFilePath)).once();
+        verify(this.loggerMock.debug("Resolved .env is %s", testEnvFilePath)).once();
+
+        assert.equal(actualClientData.cwd, expectedClientData.cwd);
+        assert.equal(actualClientData.userconfig, expectedClientData.userconfig);
+        assert.equal(
+          actualClientData["//registry.npmjs.example/:_authToken"],
+          expectedClientData["//registry.npmjs.example/:_authToken"]
+        );
+
+        // clean up
+        delete process.env.NPM_CONFIG_USERCONFIG
+
+        await removeFile(testPackageFilePath);
+        await removeFile(testNpmRcFilePath);
+        await removeFile(testEnvFilePath);
       }
-
-      const actualClientData = await put.preFetchSuggestions(
-        testProjectPath,
-        testPackagePath
-      );
-
-      verify(this.loggerMock.debug("Resolved .npmrc is %s", testNpmRcFilePath)).once();
-      verify(this.loggerMock.debug("Resolved .env is %s", testEnvFilePath)).once();
-
-      assert.equal(actualClientData.cwd, expectedClientData.cwd);
-      assert.equal(actualClientData.userconfig, expectedClientData.userconfig);
-      assert.equal(
-        actualClientData["//registry.npmjs.example/:_authToken"],
-        expectedClientData["//registry.npmjs.example/:_authToken"]
-      );
-
-      // clean up
-      await removeFile(testPackageFilePath);
-      await removeFile(testNpmRcFilePath);
-      await removeFile(testEnvFilePath);
-    },
+    ],
 
     "returns client data when no .npmrc": async function (this: TestContext) {
       const put = new NpmSuggestionProvider(

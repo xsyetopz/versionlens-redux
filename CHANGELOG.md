@@ -1,3 +1,11 @@
+# 1.14.5
+
+### Npm
+
+  -  Added ability to load userconfig set by the $NPM_CONFIG_USERCONFIG env
+
+     Relates to [#375](https://gitlab.com/versionlens/vscode-versionlens/-/issues/371)
+
 # 1.14.4
 
 ### Python (pipfile)

@@ -109,7 +109,7 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     }
 
     // path to user .npmrc
-    const userConfigPath = resolve(homedir(), ".npmrc");
+    const userConfigPath = process.env.NPM_CONFIG_USERCONFIG || resolve(homedir(), '.npmrc');
 
     // package path takes precedence for .npmrc
     const resolveDotFilePaths = [
@@ -118,7 +118,7 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     ];
 
     // try to resolve project .npmrc files
-    const npmRcFilePath = await resolveDotFilePath(".npmrc", resolveDotFilePaths);
+    const npmRcFilePath = await resolveDotFilePath('.npmrc', resolveDotFilePaths);
     const hasNpmRcFile = npmRcFilePath.length > 0;
     this.logger.debug("Resolved .npmrc is %s", hasNpmRcFile ? npmRcFilePath : false);
 
