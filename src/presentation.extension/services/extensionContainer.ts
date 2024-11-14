@@ -1,11 +1,6 @@
 import { IServiceCollection, IServiceProvider } from '#domain/di';
 import { AwilixServiceCollectionFactory } from '#domain/di/awilix';
-import {
-  IDomainServices,
-  addDomainServices,
-  addFetchPackageSuggestionsUseCase,
-  addFetchProjectSuggestionsUseCase
-} from '#domain/services';
+import { IDomainServices, addDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 import {
   VersionLensExtension,
@@ -71,8 +66,6 @@ function addExtensionServices(services: IServiceCollection) {
   addOutputChannel(services);
   addVersionLensProviders(services);
   addEditorDependencyCache(services);
-  addFetchProjectSuggestionsUseCase(services);
-  addFetchPackageSuggestionsUseCase(services);
   addGetSuggestionsUseCase(services);
 
   // events
