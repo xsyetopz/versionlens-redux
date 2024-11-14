@@ -4,6 +4,29 @@ import { IProviderModule, IProviderServices, ISuggestionProvider } from '#domain
 import { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 
+export function importSuggestionProviders(
+  serviceProvider: IServiceProvider,
+  providerNames: Array<string>,
+  logger: ILogger
+): Promise<Array<ISuggestionProvider>> {
+
+  logger.debug('Loading suggestion providers %o', providerNames.join(', '));
+
+  const promises = [];
+
+  for (const providerName of providerNames) {
+    const promise = importSuggestionProvider(
+      serviceProvider,
+      providerName,
+      logger
+    );
+    promises.push(promise);
+  }
+
+  // parallel the promises
+  return Promise.all(promises);
+}
+
 export async function importSuggestionProvider(
   serviceProvider: IServiceProvider,
   providerName: string,

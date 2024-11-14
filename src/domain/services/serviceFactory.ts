@@ -5,14 +5,14 @@ import { IServiceCollection, ServiceInjectionMode } from '#domain/di';
 import { ILoggingOptions, LoggingOptions } from '#domain/logging';
 import { createWinstonLogger, OutputChannelTransport } from '#domain/logging/winston';
 import { DependencyCache, PackageCache } from '#domain/packages';
+import { importSuggestionProviders } from '#domain/providers';
 import { IDomainServices } from '#domain/services';
 import { FileSystemStorage } from '#domain/storage';
 import {
   FetchPackageSuggestions,
   FetchProjectSuggestions,
   GetDependencyChanges,
-  GetSuggestionProvider,
-  importSuggestionProviders
+  GetSuggestionProvider
 } from '#domain/useCases';
 import { nameOf } from '#domain/utils';
 
