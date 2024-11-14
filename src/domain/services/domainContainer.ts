@@ -11,7 +11,7 @@ import {
   addGetSuggestionProviderUseCase,
   addHttpOptions,
   addLoggingOptions,
-  addProcessesCache,
+  addShellCache,
   addSuggestionPackageCache,
   addSuggestionProviders,
   addWinstonChannelLogger,
@@ -21,38 +21,32 @@ import {
 export function addDomainServices(
   services: IServiceCollection,
   configSection: string,
-  configResolver: TConfigSectionResolver, 
+  configResolver: TConfigSectionResolver,
   defaultLogGroup: string
 ) {
-
   addAppConfig(services, configSection, configResolver);
-
-  addHttpOptions(services);
-
-  addCachingOptions(services);
-
-  addLoggingOptions(services);
-
   addFileSystemStorage(services);
 
-  addSuggestionProviders(services);
+  // options
+  addHttpOptions(services);
+  addCachingOptions(services);
 
+  // caches
   addFileWatcherDependencyCache(services);
-
   addSuggestionPackageCache(services);
+  addShellCache(services);
 
-  addProcessesCache(services);
-
-  addFetchProjectSuggestionsUseCase(services);
-
-  addFetchPackageSuggestionsUseCase(services);
-
-  addGetSuggestionProviderUseCase(services);
-
-  addGetDependencyChangesUseCase(services);
-
+  // logging
+  addLoggingOptions(services);
   addWinstonChannelLogger(services);
-
   addWinstonLogger(services, defaultLogGroup);
 
+  // providers
+  addSuggestionProviders(services);
+
+  // use cases
+  addFetchProjectSuggestionsUseCase(services);
+  addFetchPackageSuggestionsUseCase(services);
+  addGetSuggestionProviderUseCase(services);
+  addGetDependencyChangesUseCase(services);
 }
