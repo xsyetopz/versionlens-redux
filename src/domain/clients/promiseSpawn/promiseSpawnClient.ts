@@ -4,7 +4,7 @@ import {
   IShellClient,
   ShellClientResponse
 } from '#domain/clients';
-import { IPromiseSpawnFn } from '#domain/clients/promiseSpawn';
+import { IPromiseSpawnFn, ShellClientRequestError } from '#domain/clients/promiseSpawn';
 import { ILogger } from '#domain/logging';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
@@ -46,17 +46,13 @@ export class PromiseSpawnClient implements IShellClient {
         status: result.code,
         rejected: false
       };
-
     } catch (error) {
-
-      const result = <ShellClientResponse>{
-        data: error.message,
-        source: ClientResponseSource.cli,
-        status: error.code,
-        rejected: true
-      };
-
-      throw result;
+      throw new ShellClientRequestError(
+        `\tcmd: ${cmd}\n`
+        + `\targs: ${args}\n`
+        + `\tcwd: ${cwd}\n`,
+        error
+      );
     }
 
   }

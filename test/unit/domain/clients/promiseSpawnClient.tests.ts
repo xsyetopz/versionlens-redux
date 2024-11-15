@@ -1,6 +1,6 @@
 import { CachingOptions, ICachingOptions, MemoryExpiryCache } from '#domain/caching';
-import { ClientResponseSource, ShellClientResponse } from '#domain/clients';
-import { PromiseSpawnClient } from '#domain/clients/promiseSpawn';
+import { ClientResponseSource } from '#domain/clients';
+import { PromiseSpawnClient, ShellClientRequestError } from '#domain/clients/promiseSpawn';
 import { ILogger } from '#domain/logging';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
@@ -24,6 +24,9 @@ export const PromiseSpawnClientTests = {
   request: {
 
     "returns <ShellClientResponse> when error occurs": async () => {
+      const testCmd = 'missing';
+      const testArgs = ['--ooppss'];
+      const testCwd = '/';
 
       when(cachingOptionsMock.duration).thenReturn(30000);
 
@@ -41,17 +44,18 @@ export const PromiseSpawnClientTests = {
       );
 
       try {
-        await rut.request(
-          'missing',
-          ['--ooppss'],
-          '/'
-        );
+        await rut.request(testCmd, testArgs, testCwd);
       }
-      catch (error) {
-        const response = error as ShellClientResponse;
-        assert.equal(response.status, "ENOENT");
-        assert.equal(response.data, "spawn missing ENOENT");
-        assert.equal(response.rejected, true);
+      catch (e) {
+        const expectedMessage =
+          `${ShellClientRequestError.name}:\n`
+          + `\tcmd: ${testCmd}\n`
+          + `\targs: ${testArgs}\n`
+          + `\tcwd: ${testCwd}\n`;
+
+        const error = e as ShellClientRequestError;
+        assert.equal(error.message, expectedMessage);
+        assert.equal(error.cause.message, "spawn missing ENOENT");
       }
 
     },
