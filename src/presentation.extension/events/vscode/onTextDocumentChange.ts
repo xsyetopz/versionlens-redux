@@ -1,10 +1,10 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { ISuggestionProvider } from '#domain/providers';
 import { GetSuggestionProvider } from '#domain/useCases';
 import { AsyncEmitter } from '#domain/utils';
 import { VersionLensState } from '#extension';
-import { TextDocumentChangeEvent, TextDocumentChangeReason, workspace } from 'vscode';
+import { throwUndefinedOrNull } from '@esm-test/guards';
+import { TextDocumentChangeEvent, TextDocumentChangeReason } from 'vscode';
 
 export type ProviderTextDocumentChangeEvent = (
   provider: ISuggestionProvider,
@@ -23,9 +23,6 @@ export class OnTextDocumentChange extends AsyncEmitter<ProviderTextDocumentChang
     throwUndefinedOrNull("getSuggestionProvider", getSuggestionProvider);
     throwUndefinedOrNull("state", state);
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode workspace event
-    this.disposable = workspace.onDidChangeTextDocument(this.execute, this);
   }
 
   async execute(e: TextDocumentChangeEvent): Promise<void> {

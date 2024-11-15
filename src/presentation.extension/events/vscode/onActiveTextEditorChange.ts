@@ -2,9 +2,9 @@ import { ILogger } from '#domain/logging';
 import { ISuggestionProvider } from '#domain/providers';
 import { GetSuggestionProvider } from '#domain/useCases';
 import { AsyncEmitter } from '#domain/utils';
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { VersionLensState } from '#extension';
-import { TextDocument, TextEditor, window } from 'vscode';
+import { throwUndefinedOrNull } from '@esm-test/guards';
+import { TextDocument, TextEditor } from 'vscode';
 
 export type ProviderEditorActivatedEvent = (
   activeProvider: ISuggestionProvider,
@@ -22,9 +22,6 @@ export class OnActiveTextEditorChange extends AsyncEmitter<ProviderEditorActivat
     throwUndefinedOrNull("state", state);
     throwUndefinedOrNull("getSuggestionProvider", getSuggestionProvider);
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode editor event
-    this.disposable = window.onDidChangeActiveTextEditor(this.execute, this);
   }
 
   /**

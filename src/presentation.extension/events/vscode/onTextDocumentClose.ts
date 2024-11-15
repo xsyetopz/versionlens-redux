@@ -1,9 +1,9 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { ISuggestionProvider } from '#domain/providers';
 import { GetSuggestionProvider } from '#domain/useCases';
 import { AsyncEmitter } from '#domain/utils';
-import { TextDocument, workspace } from 'vscode';
+import { throwUndefinedOrNull } from '@esm-test/guards';
+import { TextDocument } from 'vscode';
 
 export type ProviderTextDocumentClosedEvent = (
   provider: ISuggestionProvider,
@@ -19,10 +19,8 @@ export class OnTextDocumentClose extends AsyncEmitter<ProviderTextDocumentClosed
     super();
     throwUndefinedOrNull("getSuggestionProvider", getSuggestionProvider);
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode workspace event
-    this.disposable = workspace.onDidCloseTextDocument(this.execute, this);
   }
+
   async execute(document: TextDocument): Promise<void> {
     // we can't check for an active provider here
     // because its already been de-activated before this event is called

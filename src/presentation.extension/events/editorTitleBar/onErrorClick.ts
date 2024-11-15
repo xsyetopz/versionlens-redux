@@ -1,8 +1,8 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { Disposable } from '#domain/utils';
-import { IconCommandFeatures, VersionLensState } from '#extension';
-import { OutputChannel, commands, window } from 'vscode';
+import { VersionLensState } from '#extension';
+import { throwUndefinedOrNull } from '@esm-test/guards';
+import { OutputChannel, window } from 'vscode';
 
 export class OnErrorClick extends Disposable {
 
@@ -15,13 +15,6 @@ export class OnErrorClick extends Disposable {
     throwUndefinedOrNull("state", state);
     throwUndefinedOrNull("outputChannel", outputChannel);
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode commands
-    this.disposable = commands.registerCommand(
-      IconCommandFeatures.ShowError,
-      this.execute,
-      this
-    );
   }
 
   async execute(): Promise<void> {

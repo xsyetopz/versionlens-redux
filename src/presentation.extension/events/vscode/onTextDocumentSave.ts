@@ -1,10 +1,10 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { ISuggestionProvider } from '#domain/providers';
 import { GetSuggestionProvider } from '#domain/useCases';
 import { AsyncEmitter } from '#domain/utils';
 import { VersionLensState } from '#extension';
-import { TextDocument, workspace } from 'vscode';
+import { throwUndefinedOrNull } from '@esm-test/guards';
+import { TextDocument } from 'vscode';
 
 export type ProviderTextDocumentSaveEvent = (
   provider: ISuggestionProvider,
@@ -22,9 +22,6 @@ export class OnTextDocumentSave extends AsyncEmitter<ProviderTextDocumentSaveEve
     throwUndefinedOrNull("getSuggestionProvider", getSuggestionProvider);
     throwUndefinedOrNull("state", state)
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode workspace event
-    this.disposable = workspace.onDidSaveTextDocument(this.execute, this);
   }
 
   async execute(document: TextDocument): Promise<void> {

@@ -1,12 +1,7 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { Disposable } from '#domain/utils';
-import {
-  IconCommandFeatures,
-  SuggestionCodeLensProvider,
-  VersionLensState
-} from '#extension';
-import { commands } from 'vscode';
+import { SuggestionCodeLensProvider, VersionLensState } from '#extension';
+import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class OnTogglePrereleases extends Disposable {
 
@@ -19,21 +14,14 @@ export class OnTogglePrereleases extends Disposable {
     throwUndefinedOrNull("suggestionCodeLensProviders", suggestionCodeLensProviders);
     throwUndefinedOrNull("state", state);
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode commands
-    this.disposables.push(
-      commands.registerCommand(
-        IconCommandFeatures.ShowPrereleaseVersions,
-        this.execute.bind(this, true)
-      ),
-      commands.registerCommand(
-        IconCommandFeatures.HidePrereleaseVersions,
-        this.execute.bind(this, false)
-      )
-    );
   }
 
+  /**
+   * Shows or hides version pre-release info
+   * @param toggle
+   */
   async execute(toggle: boolean): Promise<void> {
+    this.logger.debug("toggle version pre-releases = %s", toggle);
     await this.state.showPrereleases.change(toggle);
 
     // refresh the active code lenses

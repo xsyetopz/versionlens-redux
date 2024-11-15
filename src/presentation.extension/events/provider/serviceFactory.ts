@@ -1,19 +1,20 @@
 import { IServiceCollection } from '#domain/di';
 import { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
+import { IExtensionServices } from '#extension';
 import {
-  IExtensionServices,
   OnProviderEditorActivated,
   OnProviderTextDocumentChange,
   OnProviderTextDocumentClose
-} from '#extension';
+} from '#extension/events';
 
 export function addOnProviderEditorActivated(services: IServiceCollection) {
   const serviceName = nameOf<IExtensionServices>().onProviderEditorActivated;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
-      const listener = new OnProviderEditorActivated(
+      // create the event handler
+      const event = new OnProviderEditorActivated(
         container.loggerChannel,
         container.extension,
         container.packageFileWatcher,
@@ -21,8 +22,9 @@ export function addOnProviderEditorActivated(services: IServiceCollection) {
       );
 
       // register listener
-      container.onActiveTextEditorChange.registerListener(listener.execute, listener);
-      return listener;
+      container.onActiveTextEditorChange.registerListener(event.execute, event);
+
+      return event;
     },
     false
   )
@@ -33,7 +35,8 @@ export function addOnProviderTextDocumentChange(services: IServiceCollection) {
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
-      const listener = new OnProviderTextDocumentChange(
+      // create the event handler
+      const event = new OnProviderTextDocumentChange(
         container.extension.state,
         container.getDependencyChanges,
         container.editorDependencyCache,
@@ -41,8 +44,9 @@ export function addOnProviderTextDocumentChange(services: IServiceCollection) {
       );
 
       // register listener
-      container.onTextDocumentChange.registerListener(listener.execute, listener);
-      return listener;
+      container.onTextDocumentChange.registerListener(event.execute, event);
+
+      return event;
     },
     false
   )
@@ -53,6 +57,7 @@ export function addOnProviderTextDocumentClose(services: IServiceCollection) {
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
+      // create the event handler
       const event = new OnProviderTextDocumentClose(
         container.editorDependencyCache,
         container.logger.child({ logGroup: serviceName })

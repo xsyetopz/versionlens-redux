@@ -2,28 +2,19 @@ import { IExpiryCache } from '#domain/caching';
 import { ILogger } from '#domain/logging';
 import { PackageCache } from '#domain/packages';
 import { Disposable } from '#domain/utils';
-import { SuggestionCommandFeatures } from '#extension';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { commands } from 'vscode';
 
 export class OnClearCache extends Disposable {
 
   constructor(
     readonly packageCache: PackageCache,
-    readonly processesCache: IExpiryCache,
+    readonly shellCache: IExpiryCache,
     readonly logger: ILogger
   ) {
     super();
     throwUndefinedOrNull("packageCache", packageCache);
-    throwUndefinedOrNull("processesCache", processesCache);
+    throwUndefinedOrNull("shellCache", shellCache);
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode command
-    this.disposable = commands.registerCommand(
-      SuggestionCommandFeatures.OnClearCache,
-      this.execute,
-      this
-    );
   }
 
   /**
@@ -32,7 +23,7 @@ export class OnClearCache extends Disposable {
   execute() {
     this.logger.debug("Clearing packages cache");
     this.packageCache.clear();
-    this.processesCache.clear();
+    this.shellCache.clear();
   }
 
 }

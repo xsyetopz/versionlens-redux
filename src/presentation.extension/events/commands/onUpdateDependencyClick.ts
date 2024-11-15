@@ -1,13 +1,9 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { SuggestionTypes, mapToSuggestionUpdate } from '#domain/packages';
 import { Disposable } from '#domain/utils';
-import {
-  SuggestionCodeLens,
-  SuggestionCommandFeatures,
-  VersionLensState
-} from '#extension';
-import { WorkspaceEdit, commands, workspace } from 'vscode';
+import { SuggestionCodeLens, VersionLensState } from '#extension';
+import { throwUndefinedOrNull } from '@esm-test/guards';
+import { WorkspaceEdit, workspace } from 'vscode';
 
 export class OnUpdateDependencyClick extends Disposable {
 
@@ -17,13 +13,6 @@ export class OnUpdateDependencyClick extends Disposable {
   ) {
     super();
     throwUndefinedOrNull("logger", logger);
-
-    // register the vscode command
-    this.disposable = commands.registerCommand(
-      SuggestionCommandFeatures.OnUpdateDependencyClick,
-      this.execute,
-      this
-    );
   }
 
   /**
