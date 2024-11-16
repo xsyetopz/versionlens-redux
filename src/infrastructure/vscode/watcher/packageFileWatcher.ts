@@ -1,16 +1,16 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
-  DependencyCache,
-  IPackageFileWatcher,
-  OnPackageDependenciesChangedEvent
+  type IPackageFileWatcher,
+  type OnPackageDependenciesChangedEvent,
+  DependencyCache
 } from '#domain/packages';
-import { ISuggestionProvider } from '#domain/providers';
-import { DependencyChangesResult, GetDependencyChanges } from '#domain/useCases';
+import type { ISuggestionProvider } from '#domain/providers';
+import { type DependencyChangesResult, GetDependencyChanges } from '#domain/useCases';
 import { AsyncEmitter } from '#domain/utils';
+import type { IWorkspaceAdapter } from '#infrastructure/vscode';
+import { throwUndefinedOrNull } from '@esm-test/guards';
 import { isMatch } from 'micromatch';
-import { Uri } from 'vscode';
-import { IWorkspaceAdapter } from '.';
+import type { Uri } from 'vscode';
 
 export class PackageFileWatcher
   extends AsyncEmitter<OnPackageDependenciesChangedEvent>

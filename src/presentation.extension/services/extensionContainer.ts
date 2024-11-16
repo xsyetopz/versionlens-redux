@@ -29,7 +29,7 @@ import {
   addVersionLensProviders,
   addVersionLensState
 } from '#extension';
-import { addInfrastructureServices } from '#infrastructure/services';
+import { addInfrastructureServices } from '#infrastructure';
 import { ExtensionContext, workspace } from 'vscode';
 
 export async function configureContainer(context: ExtensionContext): Promise<IServiceProvider> {
@@ -45,7 +45,7 @@ export async function configureContainer(context: ExtensionContext): Promise<ISe
   addDomainServices(
     services,
     VersionLensExtension.extensionName,
-    workspace.getConfiguration, 
+    workspace.getConfiguration,
     defaultLogGroup
   );
 

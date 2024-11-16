@@ -25,7 +25,6 @@ let cachingOptsMock: ICachingOptions;
 let httpOptsMock: IHttpOptions;
 let loggerMock: ILogger;
 let requestLightMock: RequestLightStub;
-
 let rut: RequestLightClient;
 
 export const RequestLightClientTests = {

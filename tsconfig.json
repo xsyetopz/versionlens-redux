@@ -25,6 +25,9 @@
       "#domain/providers/*": [
         "./src/domain/providers/*/index"
       ],
+      "#infrastructure": [
+        "./src/infrastructure/index"
+      ],
       "#infrastructure/*": [
         "./src/infrastructure/*/index"
       ],

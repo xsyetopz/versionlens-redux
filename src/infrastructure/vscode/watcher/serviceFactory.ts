@@ -1,14 +1,14 @@
-import { IServiceCollection } from '#domain/di';
-import { IDomainServices } from '#domain/services';
+import type { IServiceCollection } from '#domain/di';
+import type { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
-import { IInfrastructureServices } from '#infrastructure/services';
-import { PackageFileWatcher, WorkspaceAdapter } from '#infrastructure/vscode';
-import { workspace } from "vscode";
+import type { IInfrastructureServices } from '#infrastructure';
+import { PackageFileWatcher, VsCodeWorkspace } from '#infrastructure/vscode';
+import { workspace } from 'vscode';
 
 export function addWorkspaceAdapter(services: IServiceCollection) {
   services.addSingleton(
     nameOf<IInfrastructureServices>().workspaceAdapter,
-    () => new WorkspaceAdapter(workspace)
+    () => new VsCodeWorkspace(workspace)
   );
 }
 

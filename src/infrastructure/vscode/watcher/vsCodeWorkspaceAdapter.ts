@@ -1,7 +1,7 @@
-import { FileSystemWatcher, Uri } from 'vscode';
-import { IWorkspaceAdapter } from './definitions';
+import type { FileSystemWatcher, Uri } from 'vscode';
+import type { IWorkspaceAdapter } from './definitions';
 
-export class WorkspaceAdapter implements IWorkspaceAdapter {
+export class VsCodeWorkspace implements IWorkspaceAdapter {
 
   constructor(private workspace: any) { }
 

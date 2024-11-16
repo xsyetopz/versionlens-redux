@@ -3,13 +3,13 @@ import { ILogger, ILoggingOptions } from '#domain/logging';
 import { IPackageFileWatcher } from '#domain/packages';
 import { IDomainServices } from '#domain/services';
 import { nameOf, readJsonFile } from '#domain/utils';
-import { join } from 'node:path';
 import {
+  configureContainer,
   IExtensionServices,
   OnActiveTextEditorChange,
-  VersionLensExtension,
-  configureContainer
+  VersionLensExtension
 } from '#extension';
+import { join } from 'node:path';
 import { ExtensionContext, window, workspace } from 'vscode';
 
 let serviceProvider: IServiceProvider;

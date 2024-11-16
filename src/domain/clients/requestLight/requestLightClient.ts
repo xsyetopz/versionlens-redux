@@ -33,7 +33,6 @@ export class RequestLightClient implements IHttpClient {
     query: KeyStringDictionary = {},
     headers: KeyStringDictionary = {}
   ): Promise<HttpClientResponse> {
-
     const url = createUrl(baseUrl, query);
 
     try {

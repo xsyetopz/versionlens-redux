@@ -1,3 +1,3 @@
-export * from './definitions';
-export * from './packageFileWatcher';
-export * from './workspaceAdapter';
+export * from './watcher/definitions';
+export * from './watcher/packageFileWatcher';
+export * from './watcher/vsCodeWorkspaceAdapter';
