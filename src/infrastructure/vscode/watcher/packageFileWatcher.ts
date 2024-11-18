@@ -7,10 +7,10 @@ import {
 import type { ISuggestionProvider } from '#domain/providers';
 import { type DependencyChangesResult, GetDependencyChanges } from '#domain/useCases';
 import { AsyncEmitter } from '#domain/utils';
-import type { IWorkspaceAdapter } from '#infrastructure/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { isMatch } from 'micromatch';
 import type { Uri } from 'vscode';
+import { IVsCodeWorkspace } from './definitions';
 
 export class PackageFileWatcher
   extends AsyncEmitter<OnPackageDependenciesChangedEvent>
@@ -18,7 +18,7 @@ export class PackageFileWatcher
 
   constructor(
     readonly getDependencyChanges: GetDependencyChanges,
-    readonly workspace: IWorkspaceAdapter,
+    readonly workspace: IVsCodeWorkspace,
     readonly providers: ISuggestionProvider[],
     readonly dependencyCache: DependencyCache,
     readonly logger: ILogger

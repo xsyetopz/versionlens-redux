@@ -1,6 +1,17 @@
-import type { FileSystemWatcher, Uri } from 'vscode';
+import type { CancellationToken, FileSystemWatcher, GlobPattern, Uri } from 'vscode';
 
-export interface IWorkspaceAdapter {
-  findFiles: (include: string, exclude: string) => Promise<Uri[]>;
-  createFileSystemWatcher: (pattern: string) => FileSystemWatcher;
+export interface IVsCodeWorkspace {
+  findFiles(
+    include: GlobPattern,
+    exclude?: GlobPattern | null,
+    maxResults?: number,
+    token?: CancellationToken
+  ): Promise<Uri[]>;
+
+  createFileSystemWatcher(
+    globPattern: GlobPattern,
+    ignoreCreateEvents?: boolean,
+    ignoreChangeEvents?: boolean,
+    ignoreDeleteEvents?: boolean
+  ): FileSystemWatcher;
 }

@@ -2,14 +2,14 @@ import { ILogger } from '#domain/logging';
 import { DependencyCache, PackageDependency } from '#domain/packages';
 import { IProviderConfig, ISuggestionProvider } from '#domain/providers';
 import { GetDependencyChanges } from '#domain/useCases';
-import { IWorkspaceAdapter, PackageFileWatcher } from '#infrastructure/vscode';
+import { IVsCodeWorkspace, PackageFileWatcher } from '#infrastructure/vscode';
 import { test } from 'mocha-ui-esm';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
 import { FileSystemWatcher, Uri } from 'vscode';
 
 type TestContext = {
   mockGetDependencyChanges: GetDependencyChanges,
-  mockWorkspace: IWorkspaceAdapter;
+  mockWorkspace: IVsCodeWorkspace;
   mockProvider: ISuggestionProvider;
   mockCache: DependencyCache;
   mockLogger: ILogger;
@@ -23,7 +23,7 @@ export const packageFileWatcherTests = {
 
   beforeEach: function (this: TestContext) {
     this.mockGetDependencyChanges = mock<GetDependencyChanges>();
-    this.mockWorkspace = mock<IWorkspaceAdapter>();
+    this.mockWorkspace = mock<IVsCodeWorkspace>();
     this.mockProvider = mock<ISuggestionProvider>();
     this.mockCache = mock<DependencyCache>();
     this.mockLogger = mock<ILogger>();
