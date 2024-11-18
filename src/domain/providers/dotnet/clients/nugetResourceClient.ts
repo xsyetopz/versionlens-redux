@@ -1,10 +1,6 @@
-import {
-  HttpClientRequestMethods,
-  HttpClientResponse,
-  IJsonHttpClient
-} from '#domain/clients';
-import { ILogger } from '#domain/logging';
-import { DotNetSource, NugetServiceIndexResponse } from '#domain/providers/dotnet';
+import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
+import type { DotNetSource, NugetServiceIndexResponse } from '#domain/providers/dotnet';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class NuGetResourceClient {
@@ -21,10 +17,7 @@ export class NuGetResourceClient {
     this.logger.debug("Requesting PackageBaseAddressService from %s", source.url)
 
     try {
-      const response = await this.jsonClient.request(
-        HttpClientRequestMethods.get,
-        source.url
-      ) as NugetServiceIndexResponse;
+      const response = await this.jsonClient.get(source.url) as NugetServiceIndexResponse;
 
       const packageBaseAddressServices = response.data.resources
         .filter(res => res["@type"].indexOf('PackageBaseAddress') > -1);

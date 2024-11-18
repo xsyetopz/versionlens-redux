@@ -1,21 +1,17 @@
-import {
-  HttpClientRequestMethods,
-  HttpClientResponse,
-  IJsonHttpClient
-} from '#domain/clients';
+import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TSemverSpec,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { ComposerConfig, IPackagistApiItem } from '#domain/providers/composer';
+import { type IPackagistApiItem, ComposerConfig } from '#domain/providers/composer';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class ComposerClient implements IPackageClient<null> {
@@ -67,7 +63,7 @@ export class ComposerClient implements IPackageClient<null> {
     semverSpec: TSemverSpec
   ): Promise<TPackageClientResponse> {
     // fetch package from api
-    const httpResponse = await this.jsonClient.request(HttpClientRequestMethods.get, url);
+    const httpResponse = await this.jsonClient.get(url);
 
     const requestPackage = request.parsedDependency.package;
     const versionRange = semverSpec.rawVersion;

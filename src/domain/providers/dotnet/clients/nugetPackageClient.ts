@@ -1,21 +1,17 @@
-import {
-  HttpClientRequestMethods,
-  HttpClientResponse,
-  IJsonHttpClient,
-} from '#domain/clients';
+import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
   PackageVersionType,
-  TPackageClientRequest,
-  TPackageClientResponse,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { DotNetConfig, NuGetClientData, parseVersionSpec } from '#domain/providers/dotnet';
+import { type NuGetClientData, DotNetConfig, parseVersionSpec } from '#domain/providers/dotnet';
 import { ensureEndSlash } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
@@ -86,7 +82,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
     const packageUrl = ensureEndSlash(url)
       + `${requestedPackage.name.toLowerCase()}/index.json`;
 
-    const httpResponse = await this.jsonClient.request(HttpClientRequestMethods.get, packageUrl);
+    const httpResponse = await this.jsonClient.get(packageUrl);
 
     const { data } = httpResponse;
 

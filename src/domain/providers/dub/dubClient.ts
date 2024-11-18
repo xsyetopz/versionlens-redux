@@ -1,18 +1,14 @@
+import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
 import {
-  HttpClientRequestMethods,
-  HttpClientResponse,
-  IJsonHttpClient
-} from '#domain/clients';
-import { ILogger } from '#domain/logging';
-import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TPackageSuggestion,
+  type TSemverSpec,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TPackageSuggestion,
-  TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
@@ -70,11 +66,7 @@ export class DubClient implements IPackageClient<null> {
     const query = { minimize: 'true' }
 
     // fetch package from api
-    const httpResponse = await this.jsonClient.request(
-      HttpClientRequestMethods.get,
-      url,
-      query
-    );
+    const httpResponse = await this.jsonClient.get(url, query);
 
     const packageInfo = httpResponse.data;
     const versionRange = semverSpec.rawVersion;

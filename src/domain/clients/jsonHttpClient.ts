@@ -1,12 +1,11 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
-import {
-  HttpClientRequestMethods,
+import type {
   HttpClientResponse,
   IHttpClient,
   IJsonHttpClient,
   JsonClientResponse
 } from '#domain/clients';
-import { KeyStringDictionary } from '#domain/utils';
+import type { KeyStringDictionary } from '#domain/utils';
+import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class JsonHttpClient implements IJsonHttpClient {
 
@@ -16,14 +15,13 @@ export class JsonHttpClient implements IJsonHttpClient {
     this.httpClient = httpClient;
   }
 
-  request(
-    method: HttpClientRequestMethods,
+  get(
     url: string,
     query: KeyStringDictionary = {},
     headers: KeyStringDictionary = {}
   ): Promise<JsonClientResponse> {
 
-    return this.httpClient.request(method, url, query, headers)
+    return this.httpClient.get(url, query, headers)
       .then(function (response: HttpClientResponse) {
         return {
           source: response.source,

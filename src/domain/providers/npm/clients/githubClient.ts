@@ -1,16 +1,16 @@
-import { HttpClientRequestMethods, IJsonHttpClient } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { IJsonHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
 import {
+  type TPackageClientResponse,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
   PackageVersionType,
-  TPackageClientResponse,
   UpdateableFactory,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { NpaSpec, NpmConfig } from '#domain/providers/npm';
+import { type NpaSpec, NpmConfig } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import semver from 'semver';
 
@@ -55,12 +55,7 @@ export class GitHubClient {
     const query = {};
     const headers = this.getHeaders();
 
-    const clientResponse = await this.jsonClient.request(
-      HttpClientRequestMethods.get,
-      tagsRepoUrl,
-      query,
-      headers
-    );
+    const clientResponse = await this.jsonClient.get(tagsRepoUrl, query, headers);
 
     const { compareLoose } = semver;
 
@@ -116,12 +111,7 @@ export class GitHubClient {
     const query = {};
     const headers = this.getHeaders();
 
-    const clientResponse = await this.jsonClient.request(
-      HttpClientRequestMethods.get,
-      commitsRepoUrl,
-      query,
-      headers
-    );
+    const clientResponse = await this.jsonClient.get(commitsRepoUrl, query, headers);
 
     const commitInfos = <[]>clientResponse.data
 

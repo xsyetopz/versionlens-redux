@@ -1,25 +1,21 @@
+import type { HttpClientResponse, IHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
 import {
-  HttpClientRequestMethods,
-  HttpClientResponse,
-  IHttpClient
-} from '#domain/clients';
-import { ILogger } from '#domain/logging';
-import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TSemverSpec,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
 import {
+  type TPackageGitDescriptor,
+  type TPackagePathDescriptor,
   PackageDescriptorType,
-  TPackageGitDescriptor,
-  TPackagePathDescriptor,
-  XmlDoc,
+  XmlDoc
 } from '#domain/parsers';
 import { PypiConfig } from '#domain/providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
@@ -94,7 +90,7 @@ export class PypiClient implements IPackageClient<null> {
   ): Promise<TPackageClientResponse> {
 
     // fetch package from api
-    const httpResponse = await this.httpClient.request(HttpClientRequestMethods.get, url);
+    const httpResponse = await this.httpClient.get(url);
 
     const requestPackage = request.parsedDependency.package;
     const versionRange = semverSpec.rawVersion;

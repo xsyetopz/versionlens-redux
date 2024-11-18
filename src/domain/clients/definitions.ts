@@ -1,6 +1,6 @@
-import { ICachingOptions } from '#domain/caching';
-import { IFrozenOptions } from '#domain/configuration';
-import { KeyDictionary, KeyStringDictionary } from '#domain/utils';
+import type { ICachingOptions } from '#domain/caching';
+import type { IFrozenOptions } from '#domain/configuration';
+import type { KeyDictionary, KeyStringDictionary } from '#domain/utils';
 
 export enum ClientResponseSource {
   remote = 'remote',
@@ -39,7 +39,6 @@ export enum HttpClientRequestMethods {
 
 export interface THttpClientRequestFn {
   (
-    method: HttpClientRequestMethods,
     url: string,
     query?: KeyStringDictionary,
     headers?: KeyStringDictionary,
@@ -47,15 +46,14 @@ export interface THttpClientRequestFn {
 }
 
 export interface IHttpClient {
-  request: THttpClientRequestFn;
+  get: THttpClientRequestFn;
 }
 
 export type JsonClientResponse = TClientResponse<number, KeyDictionary<any>>;
 
 export interface IJsonHttpClient {
   httpClient: IHttpClient;
-  request: (
-    method: HttpClientRequestMethods,
+  get: (
     url: string,
     query?: KeyStringDictionary,
     headers?: KeyStringDictionary,

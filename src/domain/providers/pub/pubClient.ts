@@ -1,21 +1,21 @@
-import { HttpClientRequestMethods, HttpClientResponse, IJsonHttpClient } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
 import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TSemverSpec,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
 import {
-  PackageDescriptorType,
-  TPackageGitDescriptor,
-  TPackageHostedDescriptor,
-  TPackagePathDescriptor,
+  type TPackageGitDescriptor,
+  type TPackageHostedDescriptor,
+  type TPackagePathDescriptor,
+  PackageDescriptorType
 } from '#domain/parsers';
 import { PubConfig } from '#domain/providers/pub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
@@ -103,7 +103,7 @@ export class PubClient implements IPackageClient<null> {
     semverSpec: TSemverSpec
   ): Promise<TPackageClientResponse> {
     // fetch package from api
-    const httpResponse = await this.jsonClient.request(HttpClientRequestMethods.get, url);
+    const httpResponse = await this.jsonClient.get(url);
 
     const packageInfo = httpResponse.data;
 

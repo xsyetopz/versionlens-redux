@@ -1,11 +1,10 @@
-import { CachingOptions, ICachingOptions } from '#domain/caching';
+import { type ICachingOptions, CachingOptions } from '#domain/caching';
 import {
+  type IHttpClient,
+  type IHttpOptions,
   ClientResponseSource,
-  HttpClientRequestMethods,
   HttpOptions,
-  IHttpClient,
-  IHttpOptions,
-  JsonHttpClient,
+  JsonHttpClient
 } from '#domain/clients';
 import assert from 'node:assert';
 import { anything, instance, mock, when } from 'ts-mockito';
@@ -45,8 +44,7 @@ export const JsonClientRequestTests = {
       }
 
       when(
-        httpClientMock.request(
-          anything(),
+        httpClientMock.get(
           anything(),
           anything(),
           anything()
@@ -54,8 +52,7 @@ export const JsonClientRequestTests = {
       ).thenResolve(testResponse)
 
       const rut = new JsonHttpClient(instance(httpClientMock));
-      await rut.request(
-        HttpClientRequestMethods.get,
+      await rut.get(
         testUrl,
         testQueryParams
       ).then(response => {

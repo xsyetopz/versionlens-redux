@@ -1,21 +1,17 @@
+import type { HttpClientResponse, IHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
 import {
-  HttpClientRequestMethods,
-  HttpClientResponse,
-  IHttpClient
-} from '#domain/clients';
-import { ILogger } from '#domain/logging';
-import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TSemverSpec,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { MavenClientData, MavenConfig, getVersionsFromPackageXml } from '#domain/providers/maven';
+import { type MavenClientData, MavenConfig, getVersionsFromPackageXml } from '#domain/providers/maven';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class MavenClient implements IPackageClient<MavenClientData> {
@@ -72,7 +68,7 @@ export class MavenClient implements IPackageClient<MavenClientData> {
     semverSpec: TSemverSpec
   ): Promise<TPackageClientResponse> {
     // fetch package from api
-    const httpResponse = await this.httpClient.request(HttpClientRequestMethods.get, url);
+    const httpResponse = await this.httpClient.get(url);
 
     const { data } = httpResponse;
     const source = PackageSourceType.Registry;

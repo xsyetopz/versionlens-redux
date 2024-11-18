@@ -1,24 +1,18 @@
-import { CachingOptions, ICachingOptions } from '#domain/caching';
+import { type ICachingOptions, CachingOptions } from '#domain/caching';
 import {
+  type HttpClientOptions,
+  type HttpClientResponse,
+  type IHttpOptions,
   ClientResponseSource,
-  HttpClientOptions,
   HttpClientRequestMethods,
-  HttpClientResponse,
-  HttpOptions,
-  IHttpOptions,
+  HttpOptions
 } from '#domain/clients';
 import { RequestLightClient } from '#domain/clients/requestLight';
-import { ILogger } from '#domain/logging';
-import { createUrl, KeyStringDictionary } from '#domain/utils';
+import type { ILogger } from '#domain/logging';
+import { type KeyStringDictionary, createUrl } from '#domain/utils';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
-import {
-  anything,
-  capture,
-  instance,
-  mock,
-  when
-} from 'ts-mockito';
+import { anything, capture, instance, mock, when } from 'ts-mockito';
 import { RequestLightStub } from './requestLightStub';
 
 let cachingOptsMock: ICachingOptions;
@@ -29,7 +23,7 @@ let rut: RequestLightClient;
 
 export const RequestLightClientTests = {
 
-  [test.title]: RequestLightClient.prototype.request.name,
+  [test.title]: RequestLightClient.prototype.get.name,
 
   beforeEach: () => {
     cachingOptsMock = mock(CachingOptions);
@@ -72,7 +66,7 @@ export const RequestLightClientTests = {
         instance(loggerMock)
       );
 
-      await rut.request(HttpClientRequestMethods.get, 'anywhere')
+      await rut.get('anywhere');
 
       const [actualOpts] = capture(requestLightMock.xhr).first();
       assert.equal(actualOpts.strictSSL, testStrictSSL);
@@ -93,11 +87,7 @@ export const RequestLightClientTests = {
 
       const expectedUrl = createUrl(testUrl, testQuery);
 
-      await rut.request(
-        HttpClientRequestMethods.get,
-        testUrl,
-        testQuery
-      )
+      await rut.get(testUrl, testQuery);
 
       const [actualOpts] = capture(requestLightMock.xhr).first();
       assert.equal(actualOpts.url, expectedUrl);
@@ -123,11 +113,7 @@ export const RequestLightClientTests = {
 
     when(requestLightMock.xhr(anything())).thenResolve(<any>testXhrResponse)
 
-    const actual = await rut.request(
-      HttpClientRequestMethods.get,
-      testUrl,
-      testQueryParams
-    );
+    const actual = await rut.get(testUrl, testQueryParams);
 
     assert.deepEqual(actual, expectedResponse);
   },
@@ -152,11 +138,7 @@ export const RequestLightClientTests = {
 
     // test
     try {
-      await rut.request(
-        HttpClientRequestMethods.get,
-        testUrl,
-        testQueryParams
-      );
+      await rut.get(testUrl, testQueryParams);
       assert.ok(false);
     } catch (actual) {
       assert.deepEqual(actual, expectedResponse);

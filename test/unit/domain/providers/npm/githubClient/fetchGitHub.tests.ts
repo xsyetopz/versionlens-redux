@@ -1,19 +1,15 @@
+import { type IJsonHttpClient, ClientResponseSource, JsonHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
 import {
-  ClientResponseSource,
-  IJsonHttpClient,
-  JsonHttpClient
-} from '#domain/clients';
-import { ILogger } from '#domain/logging';
-import {
+  type TPackageSuggestion,
   SuggestionCategory,
   SuggestionStatusText,
-  SuggestionTypes,
-  TPackageSuggestion
+  SuggestionTypes
 } from '#domain/packages';
 import {
+  type NpaSpec,
   GitHubClient,
   GitHubOptions,
-  NpaSpec,
   NpmConfig
 } from '#domain/providers/npm';
 import assert from 'node:assert';
@@ -56,7 +52,7 @@ export const fetchGithubTests = {
       testRequest.package.path
     ) as NpaSpec;
 
-    when(jsonClientMock.request(anything(), anything(), anything(), anything()))
+    when(jsonClientMock.get(anything(), anything(), anything()))
       .thenResolve({
         status: 200,
         data: githubFixtures.tags,
@@ -125,7 +121,7 @@ export const fetchGithubTests = {
       testRequest.package.path
     ) as NpaSpec;
 
-    when(jsonClientMock.request(anything(), anything(), anything(), anything()))
+    when(jsonClientMock.get(anything(), anything(), anything()))
       .thenResolve({
         status: 200,
         data: githubFixtures.tags,
@@ -194,7 +190,7 @@ export const fetchGithubTests = {
       testRequest.package.path
     ) as NpaSpec;
 
-    when(jsonClientMock.request(anything(), anything(), anything(), anything()))
+    when(jsonClientMock.get(anything(), anything(), anything()))
       .thenResolve({
         status: 200,
         data: githubFixtures.commits,
@@ -252,7 +248,7 @@ export const fetchGithubTests = {
 
     const testToken = 'testToken';
 
-    when(jsonClientMock.request(anything(), anything(), anything(), anything()))
+    when(jsonClientMock.get(anything(), anything(), anything()))
       .thenResolve({
         status: 200,
         data: githubFixtures.commits,
@@ -269,7 +265,7 @@ export const fetchGithubTests = {
 
     await cut.fetchGithub(testSpec)
 
-    const [, , , actualHeaders] = capture(jsonClientMock.request).first();
+    const [, , actualHeaders] = capture(jsonClientMock.get).first();
     assert.equal(actualHeaders['authorization'], 'token ' + testToken);
   }
 

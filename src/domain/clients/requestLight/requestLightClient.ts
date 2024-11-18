@@ -1,13 +1,13 @@
 import {
+  type HttpClientOptions,
+  type HttpClientResponse,
+  type IHttpClient,
   ClientResponseSource,
-  HttpClientOptions,
   HttpClientRequestMethods,
-  HttpClientResponse,
-  IHttpClient,
 } from '#domain/clients';
-import { IXhrResponse } from '#domain/clients/requestLight';
-import { ILogger } from '#domain/logging';
-import { createUrl, KeyStringDictionary } from '#domain/utils';
+import type { IXhrResponse } from '#domain/clients/requestLight';
+import type { ILogger } from '#domain/logging';
+import { type KeyStringDictionary, createUrl } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { XHRRequest } from 'request-light';
 
@@ -27,8 +27,7 @@ export class RequestLightClient implements IHttpClient {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async request(
-    method: HttpClientRequestMethods,
+  async get(
     baseUrl: string,
     query: KeyStringDictionary = {},
     headers: KeyStringDictionary = {}
@@ -39,7 +38,7 @@ export class RequestLightClient implements IHttpClient {
       // make the request
       const response = await this.xhr({
         url,
-        type: method,
+        type: HttpClientRequestMethods.get,
         headers: Object.assign({}, headers, defaultHeaders),
         strictSSL: this.options.http.strictSSL
       });

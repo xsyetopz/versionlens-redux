@@ -1,26 +1,22 @@
-import {
-  HttpClientRequestMethods,
-  HttpClientResponse,
-  IJsonHttpClient
-} from '#domain/clients';
+import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TSemverSpec,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TSemverSpec,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
 import {
-  PackageDescriptorType,
-  TPackageGitDescriptor,
-  TPackagePathDescriptor,
+  type TPackageGitDescriptor,
+  type TPackagePathDescriptor,
+  PackageDescriptorType
 } from '#domain/parsers';
-import { CargoConfig, ICratesApiItem } from '#domain/providers/cargo';
+import { type ICratesApiItem, CargoConfig } from '#domain/providers/cargo';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class CratesClient implements IPackageClient<null> {
@@ -91,7 +87,7 @@ export class CratesClient implements IPackageClient<null> {
     semverSpec: TSemverSpec
   ): Promise<TPackageClientResponse> {
     // fetch package from api
-    const httpResponse = await this.jsonClient.request(HttpClientRequestMethods.get, url);
+    const httpResponse = await this.jsonClient.get(url);
 
     const requestPackage = request.parsedDependency.package;
     const versionRange = semverSpec.rawVersion;

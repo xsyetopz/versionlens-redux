@@ -1,10 +1,5 @@
-import {
-  ClientResponseSource,
-  HttpClientRequestMethods,
-  IJsonHttpClient,
-  JsonHttpClient,
-} from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import { type IJsonHttpClient, ClientResponseSource, JsonHttpClient } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
 import { NuGetResourceClient } from '#domain/providers/dotnet';
 import { RegistryProtocols } from '#domain/utils';
 import assert from 'node:assert';
@@ -41,7 +36,7 @@ export const NuGetResourceClientTests = {
 
       const expected = 'https://api.nuget.org/v3-flatcontainer1/';
 
-      when(jsonClientMock.request(anything(), anything())).thenResolve(mockResponse)
+      when(jsonClientMock.get(anything())).thenResolve(mockResponse)
 
       const cut = new NuGetResourceClient(instance(jsonClientMock), instance(loggerMock))
 
@@ -49,8 +44,7 @@ export const NuGetResourceClientTests = {
         .then(actualSources => {
           assert.equal(actualSources, expected)
 
-          const [actualMethod, actualUrl] = capture(jsonClientMock.request).first();
-          assert.equal(actualMethod, HttpClientRequestMethods.get);
+          const [actualUrl] = capture(jsonClientMock.get).first();
           assert.equal(actualUrl, testSource.url);
         });
     },
@@ -73,7 +67,7 @@ export const NuGetResourceClientTests = {
 
       const expectedUrl = "";
 
-      when(jsonClientMock.request(anything(), anything(), anything(), anything()))
+      when(jsonClientMock.get(anything(), anything(), anything()))
         .thenReject(<any>errorResponse)
 
       const cut = new NuGetResourceClient(
