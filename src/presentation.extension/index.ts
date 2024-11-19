@@ -5,8 +5,4 @@ export * from './services/iExtensionServices';
 export * from './services/serviceFactory';
 export * from './state/contextState';
 export * from './state/versionLensState';
-export * from './suggestions/suggestionCodeLens';
-export * from './suggestions/suggestionCodeLensProvider';
-export * as CommandFactory from './suggestions/suggestionCommandFactory';
-export * from './suggestions/suggestionsOptions';
 export * from './versionLensExtension';

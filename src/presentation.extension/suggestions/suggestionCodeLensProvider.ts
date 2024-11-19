@@ -1,16 +1,12 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
 import { ILogger } from '#domain/logging';
 import { PackageResponse, defaultReplaceFn } from '#domain/packages';
 import { ISuggestionProvider } from '#domain/providers';
 import { GetSuggestions } from '#domain/useCases';
 import { IDisposable } from '#domain/utils';
+import { VersionLensExtension, VersionLensState } from '#extension';
+import { CommandFactory, SuggestionCodeLens } from '#extension/suggestions';
+import { throwUndefinedOrNull } from '@esm-test/guards';
 import { dirname } from 'node:path';
-import {
-  CommandFactory,
-  SuggestionCodeLens,
-  VersionLensExtension,
-  VersionLensState
-} from '#extension';
 import * as VsCode from 'vscode';
 import {
   CancellationToken,

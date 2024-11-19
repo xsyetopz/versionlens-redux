@@ -5,11 +5,10 @@ import { GetSuggestions } from '#domain/useCases';
 import { DisposableArray, nameOf } from '#domain/utils';
 import {
   IExtensionServices,
-  SuggestionCodeLensProvider,
-  SuggestionsOptions,
   VersionLensExtension,
   VersionLensState
 } from '#extension';
+import { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
 import { window, workspace } from 'vscode';
 
 export function addSuggestionOptions(services: IServiceCollection) {

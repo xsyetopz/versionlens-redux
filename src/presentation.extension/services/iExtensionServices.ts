@@ -1,11 +1,10 @@
 import { DependencyCache } from '#domain/packages';
 import {
   IEventServices,
-  SuggestionCodeLensProvider,
-  SuggestionsOptions,
   VersionLensExtension,
   VersionLensState
 } from '#extension';
+import { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
 import { OutputChannel } from 'vscode';
 
 export interface IExtensionServices extends IEventServices {

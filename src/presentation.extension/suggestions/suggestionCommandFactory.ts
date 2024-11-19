@@ -4,11 +4,9 @@ import {
   SuggestionTypes
 } from '#domain/packages';
 import { KeyDictionary } from '#domain/utils';
+import { SuggestionCommandFeatures } from '#extension';
+import { SuggestionCodeLens } from '#extension/suggestions';
 import * as os from 'node:os';
-import {
-  SuggestionCodeLens,
-  SuggestionCommandFeatures
-} from '#extension';
 
 const isWindows = os.type() === "Windows_NT";
 

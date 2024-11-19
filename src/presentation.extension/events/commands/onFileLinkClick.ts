@@ -1,6 +1,6 @@
 import { ILogger } from '#domain/logging';
 import { Disposable } from '#domain/utils';
-import { SuggestionCodeLens } from '#extension';
+import { SuggestionCodeLens } from '#extension/suggestions';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { env } from 'vscode';
 

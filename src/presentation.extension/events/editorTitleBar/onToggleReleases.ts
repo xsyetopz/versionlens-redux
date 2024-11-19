@@ -1,6 +1,7 @@
 import { ILogger } from '#domain/logging';
 import { Disposable } from '#domain/utils';
-import { SuggestionCodeLensProvider, VersionLensState } from '#extension';
+import { VersionLensState } from '#extension';
+import { SuggestionCodeLensProvider } from '#extension/suggestions';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class OnToggleReleases extends Disposable {
