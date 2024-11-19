@@ -1,5 +1,5 @@
-import { IExpiryCache } from '#domain/caching';
-import { ILogger } from '#domain/logging';
+import type { IExpiryCache } from '#domain/caching';
+import type { ILogger } from '#domain/logging';
 import { PackageCache } from '#domain/packages';
 import { Disposable } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';

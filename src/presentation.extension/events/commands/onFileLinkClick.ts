@@ -1,4 +1,4 @@
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import { Disposable } from '#domain/utils';
 import { SuggestionCodeLens } from '#extension/suggestions';
 import { throwUndefinedOrNull } from '@esm-test/guards';

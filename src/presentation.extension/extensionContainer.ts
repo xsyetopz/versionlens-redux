@@ -1,6 +1,6 @@
-import { IServiceCollection, IServiceProvider } from '#domain/di';
+import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import { AwilixServiceCollectionFactory } from '#domain/di/awilix';
-import { IDomainServices, addDomainServices } from '#domain/services';
+import { type IDomainServices, addDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
 import {
   VersionLensExtension,
@@ -30,7 +30,7 @@ import {
   addVersionLensState
 } from '#extension';
 import { addInfrastructureServices } from '#infrastructure';
-import { ExtensionContext, workspace } from 'vscode';
+import { type ExtensionContext, workspace } from 'vscode';
 
 export async function configureContainer(context: ExtensionContext): Promise<IServiceProvider> {
   const serviceCollectionFactory = new AwilixServiceCollectionFactory();

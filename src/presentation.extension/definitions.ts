@@ -20,7 +20,7 @@ import {
 } from '#extension';
 import { VersionLensState } from '#extension/state';
 import { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
-import { OutputChannel } from 'vscode';
+import type { OutputChannel } from 'vscode';
 
 export enum IconCommandFeatures {
   ShowError = 'versionlens.icons.showError',

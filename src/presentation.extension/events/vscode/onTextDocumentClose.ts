@@ -1,9 +1,9 @@
-import { ILogger } from '#domain/logging';
-import { ISuggestionProvider } from '#domain/providers';
+import type { ILogger } from '#domain/logging';
+import type { ISuggestionProvider } from '#domain/providers';
 import { GetSuggestionProvider } from '#domain/useCases';
 import { AsyncEmitter } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { TextDocument } from 'vscode';
+import type { TextDocument } from 'vscode';
 
 export type ProviderTextDocumentClosedEvent = (
   provider: ISuggestionProvider,

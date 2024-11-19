@@ -1,7 +1,7 @@
-import { throwUndefinedOrNull } from '@esm-test/guards';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import { DependencyCache } from '#domain/packages';
-import { ISuggestionProvider } from '#domain/providers';
+import type { ISuggestionProvider } from '#domain/providers';
+import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class OnPreSaveChanges {
 

@@ -1,7 +1,7 @@
-import { IConfig } from '#domain/configuration';
-import { KeyDictionary } from '#domain/utils';
-import { throwUndefinedOrNull } from '@esm-test/guards';
+import type { IConfig } from '#domain/configuration';
+import type { KeyDictionary } from '#domain/utils';
 import { SuggestionFeatures } from '#extension';
+import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class SuggestionsOptions {
 

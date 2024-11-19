@@ -1,8 +1,8 @@
-import { ILogger } from '#domain/logging';
-import { PackageResponse, defaultReplaceFn } from '#domain/packages';
-import { ISuggestionProvider } from '#domain/providers';
+import type { ILogger } from '#domain/logging';
+import { type PackageResponse, defaultReplaceFn } from '#domain/packages';
+import type { ISuggestionProvider } from '#domain/providers';
 import { GetSuggestions } from '#domain/useCases';
-import { IDisposable } from '#domain/utils';
+import type { IDisposable } from '#domain/utils';
 import { VersionLensExtension } from '#extension';
 import { VersionLensState } from '#extension/state';
 import { CommandFactory, SuggestionCodeLens } from '#extension/suggestions';
@@ -10,12 +10,12 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { dirname } from 'node:path';
 import * as VsCode from 'vscode';
 import {
-  CancellationToken,
+  type CancellationToken,
+  type CodeLensProvider,
+  type Event,
+  type TextDocument,
   CodeLens,
-  CodeLensProvider,
-  Event,
   EventEmitter,
-  TextDocument,
   languages
 } from 'vscode';
 

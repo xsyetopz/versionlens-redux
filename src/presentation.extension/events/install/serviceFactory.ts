@@ -1,7 +1,7 @@
-import { IServiceCollection } from '#domain/di';
-import { IDomainServices } from '#domain/services';
+import type { IServiceCollection } from '#domain/di';
+import type { IDomainServices } from '#domain/services';
 import { nameOf } from '#domain/utils';
-import { IExtensionServices } from '#extension';
+import type { IExtensionServices } from '#extension';
 import { OnPreSaveChanges, OnSaveChanges } from '#extension/events';
 
 export function addOnPreSaveChanges(services: IServiceCollection) {

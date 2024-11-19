@@ -1,5 +1,5 @@
-import { PackageResponse, TSuggestionReplaceFunction } from '#domain/packages';
-import { CodeLens, Range, TextDocument, Uri } from 'vscode';
+import type { PackageResponse, TSuggestionReplaceFunction } from '#domain/packages';
+import { type TextDocument, CodeLens, Range, Uri } from 'vscode';
 
 export class SuggestionCodeLens extends CodeLens {
 

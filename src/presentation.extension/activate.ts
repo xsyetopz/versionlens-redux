@@ -1,16 +1,16 @@
-import { IServiceProvider } from '#domain/di';
-import { ILogger, ILoggingOptions } from '#domain/logging';
-import { IPackageFileWatcher } from '#domain/packages';
-import { IDomainServices } from '#domain/services';
+import type { IServiceProvider } from '#domain/di';
+import type { ILogger, ILoggingOptions } from '#domain/logging';
+import type { IPackageFileWatcher } from '#domain/packages';
+import type { IDomainServices } from '#domain/services';
 import { nameOf, readJsonFile } from '#domain/utils';
 import {
+  type IExtensionServices,
   configureContainer,
-  IExtensionServices,
   OnActiveTextEditorChange,
   VersionLensExtension
 } from '#extension';
 import { join } from 'node:path';
-import { ExtensionContext, window, workspace } from 'vscode';
+import { type ExtensionContext, window, workspace } from 'vscode';
 
 let serviceProvider: IServiceProvider;
 

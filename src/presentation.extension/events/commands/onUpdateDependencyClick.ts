@@ -1,4 +1,4 @@
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import { SuggestionTypes, mapToSuggestionUpdate } from '#domain/packages';
 import { Disposable } from '#domain/utils';
 import { VersionLensState } from '#extension/state';
