@@ -103,20 +103,15 @@ export class PubClient implements IPackageClient<null> {
     semverSpec: TSemverSpec
   ): Promise<TPackageClientResponse> {
     // fetch package from api
-    const httpResponse = await this.jsonClient.get(url);
+    const jsonResponse = await this.jsonClient.get(url);
 
-    const packageInfo = httpResponse.data;
+    const packageInfo = jsonResponse.data;
 
     const versionRange = semverSpec.rawVersion;
 
     const resolved = {
       name: packageName,
       version: versionRange,
-    };
-
-    const responseStatus = {
-      source: httpResponse.source,
-      status: httpResponse.status,
     };
 
     // remove redacted versions
@@ -141,7 +136,7 @@ export class PubClient implements IPackageClient<null> {
     // return PackageDocument
     return {
       source: PackageSourceType.Registry,
-      responseStatus,
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(jsonResponse),
       type: semverSpec.type,
       resolved,
       suggestions,

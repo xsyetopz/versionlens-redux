@@ -100,11 +100,6 @@ export class PypiClient implements IPackageClient<null> {
       version: versionRange,
     };
 
-    const responseStatus = {
-      source: httpResponse.source,
-      status: httpResponse.status,
-    };
-
     const xmlDoc = new XmlDoc()
     xmlDoc.parse(httpResponse.data)
     const rawVersions = xmlDoc.findExactPaths("rss.channel.item.title")
@@ -131,7 +126,7 @@ export class PypiClient implements IPackageClient<null> {
 
     return {
       source: PackageSourceType.Registry,
-      responseStatus,
+      responseStatus: ClientResponseFactory.mapStatusFromHttpResponse(httpResponse),
       type: semverSpec.type,
       resolved,
       suggestions,

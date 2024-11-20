@@ -1,20 +1,21 @@
 import { ClientResponseSource } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TPackageClientResponseStatus,
   ClientResponseFactory,
   PackageSourceType,
   PackageVersionType,
-  TPackageClientRequest,
-  TPackageClientResponse,
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
 import {
-  INpmRegistry,
-  NpaSpec,
+  type INpmRegistry,
+  type NpaSpec,
+  type TNpmRegistryClientResponse,
   NpaTypes,
-  NpmConfig,
-  TNpmRegistryClientResponse
+  NpmConfig
 } from '#domain/providers/npm';
 import { ensureEndSlash } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
@@ -56,7 +57,7 @@ export class NpmRegistryClient {
       version: versionRange,
     };
 
-    const responseStatus = {
+    const responseStatus: TPackageClientResponseStatus = {
       source: response.source,
       status: response.status,
     };
@@ -135,16 +136,16 @@ export class NpmRegistryClient {
       const registry = this.npmRegistryFetch.pickRegistry(npaSpec, clientData);
       const url = `${ensureEndSlash(registry)}${npaSpec.escapedName}`;
       const registryResponse = await this.npmRegistryFetch.json(url, clientData);
-
-      return <TNpmRegistryClientResponse>{
+      const result: TNpmRegistryClientResponse = {
         source: ClientResponseSource.remote,
         status: 200,
         data: registryResponse,
         rejected: false
       };
 
+      return result;
     } catch (error) {
-      const result = <TNpmRegistryClientResponse>{
+      const result: TNpmRegistryClientResponse = {
         source: ClientResponseSource.remote,
         status: error.code,
         data: error.message,

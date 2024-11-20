@@ -97,11 +97,6 @@ export class CratesClient implements IPackageClient<null> {
       version: versionRange,
     };
 
-    const responseStatus = {
-      source: httpResponse.source,
-      status: httpResponse.status,
-    };
-
     const responseVersions = httpResponse.data as ICratesApiItem;
     let rawVersions = responseVersions.versions
       .reverse()
@@ -125,7 +120,7 @@ export class CratesClient implements IPackageClient<null> {
 
     return {
       source: PackageSourceType.Registry,
-      responseStatus,
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(httpResponse),
       type: semverSpec.type,
       resolved,
       suggestions,

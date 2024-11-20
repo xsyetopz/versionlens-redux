@@ -55,12 +55,12 @@ export class GitHubClient {
     const query = {};
     const headers = this.getHeaders();
 
-    const clientResponse = await this.jsonClient.get(tagsRepoUrl, query, headers);
+    const jsonResponse = await this.jsonClient.get(tagsRepoUrl, query, headers);
 
     const { compareLoose } = semver;
 
     // extract versions
-    const tags = clientResponse.data as [];
+    const tags = jsonResponse.data as [];
 
     const rawVersions = tags.map((tag: any) => tag.name);
 
@@ -94,10 +94,7 @@ export class GitHubClient {
 
     return {
       source,
-      responseStatus: {
-        source: clientResponse.source,
-        status: clientResponse.status
-      },
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(jsonResponse),
       type,
       resolved,
       suggestions
@@ -111,9 +108,9 @@ export class GitHubClient {
     const query = {};
     const headers = this.getHeaders();
 
-    const clientResponse = await this.jsonClient.get(commitsRepoUrl, query, headers);
+    const jsonResponse = await this.jsonClient.get(commitsRepoUrl, query, headers);
 
-    const commitInfos = <[]>clientResponse.data
+    const commitInfos = <[]>jsonResponse.data
 
     const commits = commitInfos.map((commit: any) => commit.sha);
 
@@ -127,7 +124,7 @@ export class GitHubClient {
       // no commits found
       return ClientResponseFactory.create(
         PackageSourceType.Github,
-        clientResponse,
+        jsonResponse,
         [PackageStatusFactory.createNotFoundStatus()]
       )
     }
@@ -167,10 +164,7 @@ export class GitHubClient {
 
     return {
       source,
-      responseStatus: {
-        source: clientResponse.source,
-        status: clientResponse.status
-      },
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(jsonResponse),
       type,
       resolved,
       suggestions,

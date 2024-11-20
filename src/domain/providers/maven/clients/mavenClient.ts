@@ -75,11 +75,6 @@ export class MavenClient implements IPackageClient<MavenClientData> {
     const versionRange = semverSpec.rawVersion;
     const requestedPackage = request.parsedDependency.package;
 
-    const responseStatus = {
-      source: httpResponse.source,
-      status: httpResponse.status,
-    };
-
     // extract versions form xml
     const rawVersions = getVersionsFromPackageXml(data);
 
@@ -106,7 +101,7 @@ export class MavenClient implements IPackageClient<MavenClientData> {
 
     return {
       source,
-      responseStatus,
+      responseStatus: ClientResponseFactory.mapStatusFromHttpResponse(httpResponse),
       type: semverSpec.type,
       resolved,
       suggestions,

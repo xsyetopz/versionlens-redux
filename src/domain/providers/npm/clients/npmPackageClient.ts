@@ -1,18 +1,18 @@
 import { ClientResponseSource } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
+  type IPackageClient,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
+  type TPackageSuggestion,
   ClientResponseFactory,
-  IPackageClient,
   PackageSourceType,
   PackageStatusFactory,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TPackageSuggestion,
   UpdateableFactory
 } from '#domain/packages';
 import {
+  type NpaSpec,
   GitHubClient,
-  NpaSpec,
   NpaTypes,
   NpmConfig,
   NpmRegistryClient,

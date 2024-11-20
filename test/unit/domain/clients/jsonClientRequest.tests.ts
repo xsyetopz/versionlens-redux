@@ -1,5 +1,6 @@
 import { type ICachingOptions, CachingOptions } from '#domain/caching';
 import {
+  type HttpClientResponse,
   type IHttpClient,
   type IHttpOptions,
   ClientResponseSource,
@@ -31,13 +32,13 @@ export const JsonClientRequestTests = {
     "returns response as an object": async () => {
       const testUrl = 'https://test.url.example/path';
       const testQueryParams = {}
-      const testResponse = {
+      const testResponse: HttpClientResponse = {
         source: ClientResponseSource.remote,
         status: 404,
         data: '{ "item1": "not found" }',
       }
 
-      const expectedCacheData = {
+      const expectedCacheData: HttpClientResponse = {
         source: ClientResponseSource.remote,
         status: testResponse.status,
         data: JSON.parse(testResponse.data),

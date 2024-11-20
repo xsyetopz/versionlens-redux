@@ -66,19 +66,14 @@ export class DubClient implements IPackageClient<null> {
     const query = { minimize: 'true' }
 
     // fetch package from api
-    const httpResponse = await this.jsonClient.get(url, query);
+    const jsonResponse = await this.jsonClient.get(url, query);
 
-    const packageInfo = httpResponse.data;
+    const packageInfo = jsonResponse.data;
     const versionRange = semverSpec.rawVersion;
 
     const resolved = {
       name: requestedPackage.name,
       version: versionRange,
-    };
-
-    const responseStatus = {
-      source: httpResponse.source,
-      status: httpResponse.status,
     };
 
     const rawVersions = VersionUtils.extractVersionsFromMap(packageInfo.versions);
@@ -98,7 +93,7 @@ export class DubClient implements IPackageClient<null> {
 
     return {
       source: PackageSourceType.Registry,
-      responseStatus,
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(jsonResponse),
       type: semverSpec.type,
       resolved,
       suggestions,

@@ -1,4 +1,8 @@
-import { ClientResponseSource } from '#domain/clients';
+import {
+  type HttpClientResponse,
+  type JsonClientResponse,
+  ClientResponseSource
+} from '#domain/clients';
 import {
   type TPackageClientResponse,
   type TPackageClientResponseStatus,
@@ -150,12 +154,27 @@ export function createGit(): TPackageClientResponse {
   );
 }
 
+export function mapStatusFromHttpResponse(
+  response: HttpClientResponse
+): TPackageClientResponseStatus {
+  return {
+    source: response.source,
+    status: response.status
+  };
+}
+
+export function mapStatusFromJsonResponse(
+  response: JsonClientResponse
+): TPackageClientResponseStatus {
+  return {
+    source: response.source,
+    status: response.status
+  };
+}
+
 export function createResponseStatus(
   source: ClientResponseSource,
   status: number
 ): TPackageClientResponseStatus {
-  return {
-    source,
-    status
-  };
+  return { source, status };
 }

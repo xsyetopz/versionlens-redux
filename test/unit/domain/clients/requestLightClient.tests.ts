@@ -66,7 +66,7 @@ export const RequestLightClientTests = {
         instance(loggerMock)
       );
 
-      await rut.get('anywhere');
+      await rut.get('http://anywhere');
 
       const [actualOpts] = capture(requestLightMock.xhr).first();
       assert.equal(actualOpts.strictSSL, testStrictSSL);
@@ -104,7 +104,7 @@ export const RequestLightClientTests = {
       responseText: "success test",
     };
 
-    const expectedResponse = <HttpClientResponse>{
+    const expectedResponse: HttpClientResponse = {
       source: ClientResponseSource.remote,
       status: testXhrResponse.status,
       data: testXhrResponse.responseText,
@@ -127,7 +127,7 @@ export const RequestLightClientTests = {
       source: ClientResponseSource.remote
     };
 
-    const expectedResponse = <HttpClientResponse>{
+    const expectedResponse: HttpClientResponse = {
       status: testResponse.status,
       data: testResponse.responseText,
       source: ClientResponseSource.remote,

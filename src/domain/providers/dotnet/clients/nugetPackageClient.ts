@@ -1,5 +1,5 @@
 import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
   type TPackageClientRequest,
@@ -82,18 +82,13 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
     const packageUrl = ensureEndSlash(url)
       + `${requestedPackage.name.toLowerCase()}/index.json`;
 
-    const httpResponse = await this.jsonClient.get(packageUrl);
+    const jsonResponse = await this.jsonClient.get(packageUrl);
 
-    const { data } = httpResponse;
+    const { data } = jsonResponse;
 
     const source = PackageSourceType.Registry;
 
     const packageInfo = data;
-
-    const responseStatus = {
-      source: httpResponse.source,
-      status: httpResponse.status,
-    };
 
     // parse nuget range expressions
     const dotnetSpec = parseVersionSpec(requestedPackage.version);
@@ -102,7 +97,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
     if (dotnetSpec.spec && dotnetSpec.spec.hasFourSegments) {
       return ClientResponseFactory.create(
         PackageSourceType.Registry,
-        httpResponse,
+        jsonResponse,
         [],
       );
     }
@@ -121,7 +116,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
       return ClientResponseFactory.createNoMatch(
         source,
         PackageVersionType.Version,
-        ClientResponseFactory.createResponseStatus(httpResponse.source, 404),
+        ClientResponseFactory.createResponseStatus(jsonResponse.source, 404),
         // suggest the latest release if available
         releases.length > 0 ? releases[releases.length - 1] : null,
       );
@@ -143,7 +138,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
 
     return {
       source,
-      responseStatus,
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(jsonResponse),
       type: dotnetSpec.type,
       resolved,
       suggestions,

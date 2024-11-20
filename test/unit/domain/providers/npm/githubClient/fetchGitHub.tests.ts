@@ -1,4 +1,9 @@
-import { type IJsonHttpClient, ClientResponseSource, JsonHttpClient } from '#domain/clients';
+import {
+  type IJsonHttpClient,
+  type JsonClientResponse,
+  ClientResponseSource,
+  JsonHttpClient
+} from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type TPackageSuggestion,
@@ -52,12 +57,14 @@ export const fetchGithubTests = {
       testRequest.package.path
     ) as NpaSpec;
 
+    const testResponse: JsonClientResponse = {
+      status: 200,
+      data: githubFixtures.tags,
+      source: ClientResponseSource.remote
+    };
+
     when(jsonClientMock.get(anything(), anything(), anything()))
-      .thenResolve({
-        status: 200,
-        data: githubFixtures.tags,
-        source: ClientResponseSource.remote
-      })
+      .thenResolve(testResponse)
 
     // setup initial call
     const cut = new GitHubClient(
@@ -121,12 +128,14 @@ export const fetchGithubTests = {
       testRequest.package.path
     ) as NpaSpec;
 
+    const testResponse: JsonClientResponse = {
+      status: 200,
+      data: githubFixtures.tags,
+      source: ClientResponseSource.remote
+    };
+
     when(jsonClientMock.get(anything(), anything(), anything()))
-      .thenResolve({
-        status: 200,
-        data: githubFixtures.tags,
-        source: ClientResponseSource.remote
-      })
+      .thenResolve(testResponse)
 
     // setup initial call
     const cut = new GitHubClient(
@@ -190,12 +199,14 @@ export const fetchGithubTests = {
       testRequest.package.path
     ) as NpaSpec;
 
+    const testResponse: JsonClientResponse = {
+      status: 200,
+      data: githubFixtures.commits,
+      source: ClientResponseSource.remote
+    };
+
     when(jsonClientMock.get(anything(), anything(), anything()))
-      .thenResolve({
-        status: 200,
-        data: githubFixtures.commits,
-        source: ClientResponseSource.remote
-      })
+      .thenResolve(testResponse)
 
     const cut = new GitHubClient(
       instance(configMock),
@@ -248,12 +259,14 @@ export const fetchGithubTests = {
 
     const testToken = 'testToken';
 
-    when(jsonClientMock.get(anything(), anything(), anything()))
-      .thenResolve({
+    const testResponse: JsonClientResponse = {
         status: 200,
         data: githubFixtures.commits,
         source: ClientResponseSource.remote
-      })
+    };
+
+    when(jsonClientMock.get(anything(), anything(), anything()))
+      .thenResolve(testResponse)
 
     when(githubOptsMock.accessToken).thenReturn(testToken);
 
