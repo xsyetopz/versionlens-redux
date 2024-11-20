@@ -1,11 +1,6 @@
-export * from './clients/ePackageSource';
-export * from './clients/iPackageClient';
-export * as ClientResponseFactory from './clients/packageClientResponseFactory';
-export * from "./clients/tPackageClientRequest";
-export * from './clients/tPackageClientResponse';
-export * from "./clients/tPackageClientResponseStatus";
 export * from './definitions';
 export * from "./dependencyCache";
+export * as ClientResponseFactory from './factories/packageClientResponseFactory';
 export * as ResponseFactory from './factories/packageResponseFactory';
 export * as PackageStatusFactory from './factories/packageStatusFactory';
 export * as UpdateableFactory from './factories/packageUpdateableFactory';

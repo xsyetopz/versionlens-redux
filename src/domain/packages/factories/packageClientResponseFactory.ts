@@ -1,12 +1,12 @@
 import { ClientResponseSource } from '#domain/clients';
 import {
+  type TPackageClientResponse,
+  type TPackageClientResponseStatus,
+  type TPackageResource,
+  type TPackageSuggestion,
   PackageSourceType,
   PackageStatusFactory,
   PackageVersionType,
-  TPackageClientResponse,
-  TPackageClientResponseStatus,
-  TPackageResource,
-  TPackageSuggestion,
   UpdateableFactory
 } from '#domain/packages';
 import { fileExists } from '#domain/utils';

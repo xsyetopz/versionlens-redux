@@ -1,6 +1,8 @@
-import { PackageDependency, PackageSourceType, TPackageSuggestion } from '#domain/packages';
-import { ISuggestionProvider } from '#domain/providers';
-import { Uri } from "vscode";
+import type { ClientResponseSource } from '#domain/clients';
+import type { ILogger } from '#domain/logging';
+import type {  TPackageSuggestion, PackageDependency } from '#domain/packages';
+import type { IProviderConfig, ISuggestionProvider } from '#domain/providers';
+import type { Uri } from "vscode";
 
 export enum PackageVersionType {
   Version = 'version',
@@ -53,4 +55,45 @@ export type TPackageVersions = {
 export type TSemverSpec = {
   rawVersion: string,
   type: PackageVersionType,
+};
+
+export enum PackageSourceType {
+  Directory = 'directory',
+  File = 'file',
+  Git = 'git',
+  Github = 'github',
+  Registry = 'registry'
+}
+
+export interface IPackageClient<TClientData> {
+  logger: ILogger;
+  config: IProviderConfig,
+  fetchPackage: (request: TPackageClientRequest<TClientData>)
+    => Promise<TPackageClientResponse>;
+}
+
+export type TPackageClientRequest<TClientData> = {
+  // provider descriptor
+  providerName: string;
+  // provider specific data
+  clientData: TClientData,
+  // dependency to fetch
+  parsedDependency: PackageDependency;
+  // number of fallback attempts
+  attempt: number;
+};
+
+export type TPackageClientResponseStatus = {
+  source: ClientResponseSource;
+  status: number;
+  rejected?: boolean;
+};
+
+export type TPackageClientResponse = {
+  source: PackageSourceType;
+  responseStatus?: TPackageClientResponseStatus;
+  type: PackageVersionType;
+  resolved?: TPackageNameVersion;
+  suggestions: Array<TPackageSuggestion>;
+  gitSpec?: any;
 };
