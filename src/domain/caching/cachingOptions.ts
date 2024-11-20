@@ -1,5 +1,5 @@
-import { CachingFeatures, ICachingOptions } from '#domain/caching';
-import { IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
+import { type ICachingOptions, CachingFeatures } from '#domain/caching';
+import { type IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
 import { Nullable } from '#domain/utils';
 
 export class CachingOptions extends OptionsWithFallback
