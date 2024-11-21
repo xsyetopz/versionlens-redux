@@ -44,18 +44,19 @@ export class RequestLightClient implements IHttpClient {
       });
 
       // return the response
-      return <HttpClientResponse>{
+      const result: HttpClientResponse = {
         source: ClientResponseSource.remote,
         status: response.status,
         data: response.responseText,
         rejected: false
       };
 
+      return result;
     } catch (error) {
       const errorResponse = error as IXhrResponse;
 
       // throw the error response
-      const result = <HttpClientResponse>{
+      const result: HttpClientResponse = {
         source: ClientResponseSource.remote,
         status: errorResponse.status,
         data: errorResponse.responseText,
