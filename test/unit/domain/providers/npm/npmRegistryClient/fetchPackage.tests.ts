@@ -1,27 +1,26 @@
-import { CachingOptions, ICachingOptions } from '#domain/caching';
-import { ILogger } from '#domain/logging';
+import { type ICachingOptions, CachingOptions } from '#domain/caching';
+import type { ILogger } from '#domain/logging';
 import {
+  type TPackageClientRequest,
+  type TPackageSuggestion,
   createPackageResource,
   PackageDependency,
   SuggestionCategory,
   SuggestionStatusText,
-  SuggestionTypes,
-  TPackageClientRequest,
-  TPackageSuggestion
+  SuggestionTypes
 } from '#domain/packages';
 import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import {
+  type INpmRegistry,
+  type NpaSpec,
+  type TNpmClientData,
+  defaultRegistryFetchTimeoutOpts,
   GitHubOptions,
-  INpmRegistry,
-  NpaSpec,
   NpmConfig,
-  NpmRegistryClient,
-  TNpmClientData
+  NpmRegistryClient
 } from '#domain/providers/npm';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
-import { homedir } from 'node:os';
-import { resolve } from 'node:path';
 import npa from 'npm-package-arg';
 import { anything, instance, mock, when } from 'ts-mockito';
 import Fixtures from './npmRegistryClient.fixtures';
@@ -61,13 +60,12 @@ export const fetchPackageTests = {
     );
 
     const testClientData: TNpmClientData = {
-      projectPath: testPackageRes.path,
-      envFilePath: "",
-      npmRcFilePath: "",
-      userConfigPath: resolve(homedir(), ".npmrc")
+      registry: 'https://registry.npmjs.org/',
+      strictSSL: true,
+      ...defaultRegistryFetchTimeoutOpts
     };
 
-    const testRequest: TPackageClientRequest<any> = {
+    const testRequest: TPackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -114,13 +112,12 @@ export const fetchPackageTests = {
     );
 
     const testClientData: TNpmClientData = {
-      projectPath: testPackageRes.path,
-      envFilePath: "",
-      npmRcFilePath: "",
-      userConfigPath: resolve(homedir(), ".npmrc")
+      registry: 'https://registry.npmjs.org/',
+      strictSSL: true,
+      ...defaultRegistryFetchTimeoutOpts
     };
 
-    const testRequest: TPackageClientRequest<any> = {
+    const testRequest: TPackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -166,13 +163,12 @@ export const fetchPackageTests = {
     );
 
     const testClientData: TNpmClientData = {
-      projectPath: testPackageRes.path,
-      envFilePath: "",
-      npmRcFilePath: "",
-      userConfigPath: resolve(homedir(), ".npmrc")
+      registry: 'https://registry.npmjs.org/',
+      strictSSL: true,
+      ...defaultRegistryFetchTimeoutOpts
     };
 
-    const testRequest: TPackageClientRequest<any> = {
+    const testRequest: TPackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -226,13 +222,12 @@ export const fetchPackageTests = {
     );
 
     const testClientData: TNpmClientData = {
-      projectPath: testPackageRes.path,
-      envFilePath: "",
-      npmRcFilePath: "",
-      userConfigPath: resolve(homedir(), ".npmrc")
+      registry: 'https://registry.npmjs.org/',
+      strictSSL: true,
+      ...defaultRegistryFetchTimeoutOpts
     };
 
-    const testRequest: TPackageClientRequest<any> = {
+    const testRequest: TPackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(

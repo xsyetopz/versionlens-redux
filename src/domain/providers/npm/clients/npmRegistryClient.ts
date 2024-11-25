@@ -13,6 +13,7 @@ import {
 import {
   type INpmRegistry,
   type NpaSpec,
+  type TNpmClientData,
   type TNpmRegistryClientResponse,
   NpaTypes,
   NpmConfig
@@ -34,7 +35,7 @@ export class NpmRegistryClient {
   }
 
   async fetchPackage(
-    request: TPackageClientRequest<any>,
+    request: TPackageClientRequest<TNpmClientData>,
     npaSpec: NpaSpec
   ): Promise<TPackageClientResponse> {
     const type: PackageVersionType = <any>npaSpec.type;

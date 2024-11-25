@@ -1,29 +1,30 @@
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
+  type TSuggestionReplaceFunction,
   PackageDependency,
-  TSuggestionReplaceFunction,
   createPackageResource,
 } from '#domain/packages';
 import {
+  type TJsonPackageParserOptions,
+  type TJsonPackageTypeHandler,
+  type TPackageNameDescriptor,
+  type TPackageVersionDescriptor,
   PackageDescriptorType,
-  TJsonPackageParserOptions,
-  TJsonPackageTypeHandler,
-  TPackageNameDescriptor,
-  TPackageVersionDescriptor,
   createVersionDescFromJsonNode,
   parsePackagesJson
 } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import {
+  type TNpmCliConfigParams,
+  type TNpmClientData,
   NpmConfig,
   NpmPackageClient,
-  TNpmCliConfigParams,
   createNpmRegistryClientData,
   customDescriptorHandler,
   npmReplaceVersion,
   resolveDotFilePath
 } from '#domain/providers/npm';
-import { KeyDictionary } from '#domain/utils';
+import type { KeyDictionary } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
@@ -101,7 +102,7 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
-  async preFetchSuggestions(projectPath: string, packagePath: string): Promise<any> {
+  async preFetchSuggestions(projectPath: string, packagePath: string): Promise<TNpmClientData> {
     if (this.config.github.accessToken &&
       this.config.github.accessToken.length > 0) {
       // defrost github parameters

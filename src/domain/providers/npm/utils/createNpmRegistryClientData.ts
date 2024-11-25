@@ -1,10 +1,11 @@
-import { TNpmCliConfigParams, getDotEnv } from '#domain/providers/npm';
+import { type TNpmCliConfigParams, type TNpmClientData, defaultRegistryFetchTimeoutOpts, getDotEnv } from '#domain/providers/npm';
 import NpmCliConfig from '@npmcli/config';
+import { definitions, flatten, shorthands } from '@npmcli/config/lib/definitions';
 
 export async function createNpmRegistryClientData(
   packagePath: string,
   options: TNpmCliConfigParams
-): Promise<any> {
+): Promise<TNpmClientData> {
   const {
     npmRcFilePath,
     envFilePath,
@@ -15,8 +16,9 @@ export async function createNpmRegistryClientData(
 
   // load the npm config
   const npmCliConfig = new NpmCliConfig({
-    shorthands: {},
-    definitions: {},
+    shorthands,
+    definitions,
+    flatten,
     npmPath: packagePath,
     // use the npmrc path to make npm cli parse the npmrc file
     // otherwise defaults to the package path
@@ -32,8 +34,11 @@ export async function createNpmRegistryClientData(
   await npmCliConfig.load();
 
   // flatten all the options
-  return npmCliConfig.list.reduce(
-    (memo, list) => ({ ...memo, ...list }),
-    { cwd: packagePath }
-  );
+  const flatConfig = npmCliConfig.flat;
+
+  return {
+    ...flatConfig,
+    // override cli defaults
+    ...defaultRegistryFetchTimeoutOpts
+  };
 }

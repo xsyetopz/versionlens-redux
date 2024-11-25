@@ -1,5 +1,7 @@
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
+  type TNpmClientData,
+  defaultRegistryFetchTimeoutOpts,
   GitHubOptions,
   NpmConfig,
   NpmPackageClient,
@@ -81,12 +83,12 @@ export const NpmSuggestionProviderTests = {
         await createFile(testNpmRcFilePath, Fixtures.preFetchSuggestions['.npmrc']);
         await createFile(testEnvFilePath, Fixtures.preFetchSuggestions['.npmrc-env']);
 
-        const expectedClientData = {
-          cwd: testPackagePath,
-          userconfig: testUserConfigPath,
-          "//registry.npmjs.example/:_authToken": '12345678',
-          envFilePath: testEnvFilePath
-        }
+        const expectedClientData: TNpmClientData = {
+          registry: 'https://registry.npmjs.org/',
+          strictSSL: true,
+          ...defaultRegistryFetchTimeoutOpts
+        };
+        expectedClientData['//registry.npmjs.example/:_authToken'] = '12345678';
 
         const actualClientData = await put.preFetchSuggestions(
           testProjectPath,
@@ -96,8 +98,10 @@ export const NpmSuggestionProviderTests = {
         verify(this.loggerMock.debug("Resolved .npmrc is %s", testNpmRcFilePath)).once();
         verify(this.loggerMock.debug("Resolved .env is %s", testEnvFilePath)).once();
 
-        assert.equal(actualClientData.cwd, expectedClientData.cwd);
-        assert.equal(actualClientData.userconfig, expectedClientData.userconfig);
+        assert.equal(actualClientData.registry, expectedClientData.registry);
+        assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
+        assert.equal(actualClientData.timeout, expectedClientData.timeout);
+        assert.deepEqual(actualClientData.retry, expectedClientData.retry);
         assert.equal(
           actualClientData["//registry.npmjs.example/:_authToken"],
           expectedClientData["//registry.npmjs.example/:_authToken"]
@@ -119,10 +123,11 @@ export const NpmSuggestionProviderTests = {
         instance(this.loggerMock)
       );
 
-      const expectedClientData = {
-        cwd: testPackagePath,
-        userconfig: resolve(homedir(), ".npmrc")
-      }
+      const expectedClientData: TNpmClientData = {
+        registry: 'https://registry.npmjs.org/',
+        strictSSL: true,
+        ...defaultRegistryFetchTimeoutOpts
+      };
 
       const actualClientData = await put.preFetchSuggestions(
         testProjectPath,
@@ -132,8 +137,10 @@ export const NpmSuggestionProviderTests = {
       verify(this.loggerMock.debug("Resolved .npmrc is %s", false)).once();
       verify(this.loggerMock.debug("Resolved .env is %s", false)).once();
 
-      assert.equal(actualClientData.cwd, expectedClientData.cwd);
-      assert.equal(actualClientData.userconfig, expectedClientData.userconfig);
+      assert.equal(actualClientData.registry, expectedClientData.registry);
+      assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
+      assert.equal(actualClientData.timeout, expectedClientData.timeout);
+      assert.deepEqual(actualClientData.retry, expectedClientData.retry);
     },
 
     "returns client data when no .env": async function (this: TestContext) {
@@ -149,11 +156,12 @@ export const NpmSuggestionProviderTests = {
       await createFile(testPackageFilePath, "");
       await createFile(testNpmRcFilePath, Fixtures.preFetchSuggestions['.npmrc']);
 
-      const expectedClientData = {
-        cwd: testPackagePath,
-        userconfig: resolve(homedir(), ".npmrc"),
-        "//registry.npmjs.example/:_authToken": '${NPM_AUTH}'
-      }
+      const expectedClientData: TNpmClientData = {
+        registry: 'https://registry.npmjs.org/',
+        strictSSL: true,
+        ...defaultRegistryFetchTimeoutOpts
+      };
+      expectedClientData['//registry.npmjs.example/:_authToken'] = '${NPM_AUTH}';
 
       const actualClientData = await put.preFetchSuggestions(
         testProjectPath,
@@ -163,8 +171,10 @@ export const NpmSuggestionProviderTests = {
       verify(this.loggerMock.debug("Resolved .npmrc is %s", testNpmRcFilePath)).once();
       verify(this.loggerMock.debug("Resolved .env is %s", false)).once();
 
-      assert.equal(actualClientData.cwd, expectedClientData.cwd);
-      assert.equal(actualClientData.userconfig, expectedClientData.userconfig);
+      assert.equal(actualClientData.registry, expectedClientData.registry);
+      assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
+      assert.equal(actualClientData.timeout, expectedClientData.timeout);
+      assert.deepEqual(actualClientData.retry, expectedClientData.retry);
 
       assert.equal(
         actualClientData["//registry.npmjs.example/:_authToken"],
@@ -175,6 +185,48 @@ export const NpmSuggestionProviderTests = {
       await removeFile(testPackageFilePath);
       await removeFile(testNpmRcFilePath);
     },
-  }
 
+    "returns ca when cafile set in .npmrc": async function (this: TestContext) {
+      const testPackageFilePath = path.join(testPackagePath, 'package.json');
+      const testCaFileNpmRcFilePath = path.join(testPackagePath, '.npmrc');
+      const testPemFilePath = path.join(testPackagePath, 'test-cafile.pem');
+
+      const put = new NpmSuggestionProvider(
+        instance(this.clientMock),
+        instance(this.configMock),
+        instance(this.loggerMock)
+      );
+
+      await createFile(testPackageFilePath, "");
+      await createFile(testCaFileNpmRcFilePath, `cafile=${testPemFilePath}`);
+      await createFile(testPemFilePath, Fixtures.preFetchSuggestions['cafile']);
+
+      const expectedClientData: TNpmClientData = {
+        registry: 'https://registry.npmjs.org/',
+        strictSSL: true,
+        ca: Fixtures.preFetchSuggestions['cafile'],
+        ...defaultRegistryFetchTimeoutOpts
+      };
+
+      const actualClientData = await put.preFetchSuggestions(
+        testProjectPath,
+        testPackagePath
+      );
+
+      verify(this.loggerMock.debug("Resolved .npmrc is %s", testCaFileNpmRcFilePath)).once();
+      verify(this.loggerMock.debug("Resolved .env is %s", false)).once();
+
+      assert.equal(actualClientData.registry, expectedClientData.registry);
+      assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
+      assert.equal(actualClientData.timeout, expectedClientData.timeout);
+      assert.deepEqual(actualClientData.retry, expectedClientData.retry);
+      assert.equal(actualClientData.ca, expectedClientData.ca);
+
+      // clean up
+      await removeFile(testPackageFilePath);
+      await removeFile(testCaFileNpmRcFilePath);
+      await removeFile(testPemFilePath);
+    },
+
+  },
 }
