@@ -33,7 +33,7 @@ export class Authorization implements IAuthorization {
   async getToken(url: string): Promise<string | undefined> {
     // get the persisted url auth info
     const urlAuthInfo = this.urlAuthStore.get(url);
-    if (!urlAuthInfo || urlAuthInfo.scheme === AuthenticationScheme.None) {
+    if (!urlAuthInfo || urlAuthInfo.scheme === AuthenticationScheme.NotSet) {
       return undefined;
     }
 

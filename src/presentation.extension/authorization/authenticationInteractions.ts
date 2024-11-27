@@ -128,11 +128,11 @@ export class AuthenticationInteractions {
       urlAuthData,
       urlAuth => {
         const protocolDetail = urlAuth.protocol === 'http:'
-          ? urlAuth.scheme === AuthenticationScheme.None ? '' : 'Unsecured '
+          ? urlAuth.scheme === AuthenticationScheme.NotSet ? '' : 'Unsecured '
           : 'Secure ';
 
-        const schemeDetail = urlAuth.scheme === AuthenticationScheme.None
-          ? AuthenticationScheme.None
+        const schemeDetail = urlAuth.scheme === AuthenticationScheme.NotSet
+          ? AuthenticationScheme.NotSet
           : urlAuth.label
 
         return <any>{

@@ -55,7 +55,7 @@ export const AuthorizationTests = {
 
     "case $i: returns undefined when url is not in the UrlAuthStore or AuthenticationScheme is None": [
       undefined,
-      { scheme: AuthenticationScheme.None },
+      { scheme: AuthenticationScheme.NotSet },
       async function (this: TestContext, testStoreItem: undefined | UrlAuthenticationData) {
         const testUrl = 'https://anything';
 

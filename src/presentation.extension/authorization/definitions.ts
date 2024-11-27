@@ -15,7 +15,7 @@ import type {
 } from 'vscode';
 
 export enum AuthenticationScheme {
-  None = 'None',
+  NotSet = 'Not consented',
   Basic = 'Basic',
   Bearer = 'Bearer',
   Raw = 'Raw'

@@ -37,7 +37,7 @@ export function createEmptyUrlAuthData(url: string): UrlAuthenticationData {
     protocol: parsedUrl.protocol,
     id: null,
     label: null,
-    scheme: AuthenticationScheme.None,
+    scheme: AuthenticationScheme.NotSet,
     isCustomProvider: false
   };
 }
