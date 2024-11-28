@@ -13,4 +13,4 @@ tasks:
         PREVIEW_IMAGE: versionlens:preview
         PREVIEW_VOL: $PWD/.preview:/versionlens/.preview
     - docker build -t $PREVIEW_IMAGE -f $DOCKER_PREVIEW_PATH/preview.dockerfile .
-    - docker run -it --rm -v $PREVIEW_VOL --env-file ./.env --name preview-container $PREVIEW_IMAGE
+    - docker run --rm -v $PREVIEW_VOL --env-file ./.env --name preview-container $PREVIEW_IMAGE
