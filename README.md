@@ -36,12 +36,13 @@ The following languages are supported:
 ## Contents
 
 - [How do I see version information for a package?](#how-do-i-see-version-information-for-a-package)
-- [Can I see pre-release versions?](#can-i-see-pre-release-versions)
+- [Pre-release versions](#can-i-see-pre-release-versions)
 - [What do the suggestion links mean?](./docs/suggestion-overview.md)
 - [Will this extension install packages for me?](#will-this-extension-install-packages-for-me)
+- [How do I authorize packages that need credentials?](./docs/authorization.md)
 - [How do I install this extension?](#how-do-i-install-this-extension)
-- [Can I install this extension manually?](#can-i-install-this-extension-manually)
-- [I'm not able to install this extention](#im-not-able-to-install-this-extention)
+  - [Can I install this extension manually?](#can-i-install-this-extension-manually)
+  - [I'm not able to install this extention](#im-not-able-to-install-this-extention)
 - [How do I troubleshoot this extension?](#how-do-i-troubleshoot-this-extension)
 
 ## How do I see version information for a package?
@@ -68,21 +69,23 @@ To set this up follow the [custom task install guide](./docs/custom-install-task
 
 Follow this link on [how to install vscode extensions](https://code.visualstudio.com/docs/editor/extension-gallery)
 
-## Can I install this extension manually?
+### Can I install this extension manually?
 
 Yes goto the [release page for instructions](https://gitlab.com/versionlens/vscode-versionlens/-/releases)
 
-## I'm not able to install this extention
+### I'm not able to install this extention
 
 Try a clean install:
 
 - Shut down vscode
-- Delete the extension folder `{home}/.vscode/extensions/pflannery.vscode-versionlens*`
+- Delete the extension folder `{home}/.vscode/extensions/pflannery.vscode-versionlens`
 - Open vscode and try reinstalling the extension again
 
-If that fails then have a look in the output channel and choose the `Log (Extension Host)` in thedrop down. Report the problem here if this doesn't help.
-
-![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-host-log.png)
+  > **NOTE**
+  >
+  > If the installation still fails then have a look for errors in the output channel and choose the `Log (Extension Host)` in the drop down.
+  > 
+  > ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-host-log.png)
 
 ## How do I troubleshoot this extension?
 
