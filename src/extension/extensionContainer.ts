@@ -2,10 +2,14 @@ import { type IDomainServices, addDomainServices } from '#domain';
 import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import { AwilixServiceCollectionFactory } from '#domain/di/awilix';
 import { nameOf } from '#domain/utils';
+import { type ExtensionContext, type Memento, type SecretStorage, workspace } from 'vscode';
 import {
-  VersionLensExtension,
-  addEditorDependencyCache,
-  addGetSuggestionsUseCase,
+  addAuthenticationInteractions,
+  addAuthenticationProviderFactory,
+  addAuthorization,
+  addUrlAuthenticationStore
+} from './authorization/serviceFactory';
+import {
   addOnActiveTextEditorChange,
   addOnClearCache,
   addOnErrorClick,
@@ -22,21 +26,19 @@ import {
   addOnTextDocumentSave,
   addOnTogglePrereleases,
   addOnToggleReleases,
-  addOnUpdateDependencyClick,
+  addOnUpdateDependencyClick
+} from './events/serviceFactory';
+import {
+  addEditorDependencyCache,
+  addGetSuggestionsUseCase,
   addOutputChannel,
   addProviderNames,
   addSuggestionOptions,
   addVersionLensExtension,
   addVersionLensProviders,
   addVersionLensState
-} from '#extension';
-import { type ExtensionContext, type Memento, type SecretStorage, workspace } from 'vscode';
-import {
-  addAuthenticationInteractions,
-  addAuthenticationProviderFactory,
-  addAuthorization,
-  addUrlAuthenticationStore
-} from './authorization/serviceFactory';
+} from './serviceFactory';
+import { VersionLensExtension } from './versionLensExtension';
 import { addPackageFileWatcher } from './watcher/serviceFactory';
 
 export async function configureContainer(context: ExtensionContext): Promise<IServiceProvider> {
