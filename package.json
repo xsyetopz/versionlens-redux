@@ -72,7 +72,7 @@
     "js-build-tasks": "1.0.0-rc.18",
     "mocha": "10.8.2",
     "mocha-ui-esm": "1.0.0-beta.14",
-    "rimraf": "5.0.10",
+    "rimraf": "6.0.1",
     "source-map-support": "0.5.21",
     "ts-mockito": "2.6.1",
     "typescript": "5.7.2"
