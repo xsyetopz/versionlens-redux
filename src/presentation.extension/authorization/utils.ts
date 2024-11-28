@@ -5,8 +5,8 @@ export function createCustomProviderId(scheme: AuthenticationScheme, url: string
   switch (scheme) {
     case AuthenticationScheme.Basic:
       return `(Basic Auth) ${url}`;
-    case AuthenticationScheme.Raw:
-      return `(Raw Auth) ${url}`;
+    case AuthenticationScheme.Custom:
+      return `(Custom Auth) ${url}`;
     default:
       throw new Error("Authentication scheme not defined");
   }

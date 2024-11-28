@@ -18,7 +18,7 @@ export enum AuthenticationScheme {
   NotSet = 'Not consented',
   Basic = 'Basic',
   Bearer = 'Bearer',
-  Raw = 'Raw'
+  Custom = 'Custom'
 }
 
 export interface IAuthenticationProviderFactory {
@@ -111,9 +111,9 @@ export const authenticationProviders: Array<AuthenticationProviderInfo> = [
     custom: false
   },
   {
-    scheme: AuthenticationScheme.Raw,
-    label: 'Raw Value',
-    description: 'Authenticate using a raw authorization value',
+    scheme: AuthenticationScheme.Custom,
+    label: 'Custom Value',
+    description: 'Authenticate using a custom authorization value',
     custom: true
   },
 ];

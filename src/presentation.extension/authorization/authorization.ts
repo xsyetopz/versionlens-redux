@@ -56,7 +56,7 @@ export class Authorization implements IAuthorization {
       );
 
       // return the authorization header value
-      return urlAuthInfo.scheme === AuthenticationScheme.Raw
+      return urlAuthInfo.scheme === AuthenticationScheme.Custom
         ? sessionInfo.accessToken
         : `${urlAuthInfo.scheme} ${sessionInfo.accessToken}`;
     }

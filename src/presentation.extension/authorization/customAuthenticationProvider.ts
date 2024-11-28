@@ -41,7 +41,7 @@ export class CustomAuthenticationProvider implements AuthenticationProvider, Dis
         this.consentLabel = `basic authentication for ${this.url}`;
         break;
       default:
-        this.consentLabel = `raw authentication for ${this.url}`;
+        this.consentLabel = `custom authentication for ${this.url}`;
         break;
     }
   }
