@@ -7,7 +7,8 @@ import {
   AuthenticationScheme,
   AuthLog,
   Authorizer,
-  createUrlAuthData
+  createUrlAuthData,
+  UrlAuthenticationStatus
 } from '#extension/authorization';
 import type { IVsCodeAuthentication } from '#extension/vscode';
 import assert from 'assert';
@@ -50,7 +51,7 @@ export const getTokenTests = {
     );
   },
 
-  "case $i: returns undefined when url is not in the UrlAuthStore or AuthenticationScheme is None": [
+  "case $i: returns undefined when url is not in the UrlAuthStore or AuthenticationScheme.NotSet": [
     undefined,
     { scheme: AuthenticationScheme.NotSet },
     async function (this: TestContext, testStoreItem: undefined | UrlAuthenticationData) {
@@ -77,6 +78,7 @@ export const getTokenTests = {
       'testId',
       'test label',
       testScheme,
+      UrlAuthenticationStatus.NoStatus,
       true
     );
 
@@ -102,6 +104,7 @@ export const getTokenTests = {
       'testId',
       'test label',
       testScheme,
+      UrlAuthenticationStatus.NoStatus,
       true
     );
 

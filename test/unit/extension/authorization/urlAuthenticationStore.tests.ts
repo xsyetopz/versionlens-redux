@@ -3,6 +3,7 @@ import {
   type UrlAuthenticationData,
   AuthenticationScheme,
   createUrlAuthData,
+  UrlAuthenticationStatus,
   UrlAuthenticationStore
 } from '#extension/authorization';
 import assert from 'assert';
@@ -33,6 +34,7 @@ export const UrlAuthenticationStoreTests = {
         `(Test) ${this.testUrl}`,
         'test label',
         AuthenticationScheme.Basic,
+        UrlAuthenticationStatus.NoStatus,
         true
       )
     };
@@ -68,6 +70,7 @@ export const UrlAuthenticationStoreTests = {
       `(Test Update) ${this.testUrl}`,
       'test update label',
       AuthenticationScheme.Basic,
+      UrlAuthenticationStatus.NoStatus,
       false
     );
 

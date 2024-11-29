@@ -3,9 +3,12 @@ import {
   type AuthenticationInteractions,
   type IAuthenticationProviderFactory,
   type UrlAuthenticationStore,
+  AuthenticationScheme,
   Authorizer,
   AuthPrompt,
-  createEmptyUrlAuthData
+  createUrlAuthData,
+  UrlAuthenticationData,
+  UrlAuthenticationStatus
 } from '#extension/authorization';
 import type { IVsCodeAuthentication } from '#extension/vscode';
 import assert from 'assert';
@@ -47,21 +50,34 @@ export const retryCredentialsTests = {
     );
   },
 
-  "stores empty url auth data when prompt returns undefined":
+  "stores failed credential status when prompt returns undefined":
     async function (this: TestContext) {
       const testUrl = 'https://anything';
-      const testAuthData = createEmptyUrlAuthData(testUrl);
+      const testUrlAuthData = createUrlAuthData(
+        testUrl,
+        'testId',
+        'test label',
+        AuthenticationScheme.Basic,
+        UrlAuthenticationStatus.NotConsented,
+        true
+      );
+      const expectedUrlAuthData: UrlAuthenticationData = {
+        ...testUrlAuthData,
+        scheme: AuthenticationScheme.NotSet,
+        status: UrlAuthenticationStatus.CredentialsFailed
+      };
       const expectedPromptMessage = AuthPrompt.couldNotAuthenticate(testUrl);
 
       when(this.mockInteractions.promptYesCancel(expectedPromptMessage))
         .thenResolve(false);
 
+      when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData);
       // test
       const actual = await this.testAuthorizer.retryCredentials(testUrl);
 
       // verify
       verify(this.mockInteractions.promptYesCancel(expectedPromptMessage)).once();
-      verify(this.mockUrlAuthStore.update(testUrl, deepEqual(testAuthData))).once();
+      verify(this.mockUrlAuthStore.update(testUrl, deepEqual(expectedUrlAuthData))).once();
 
       // assert
       assert.equal(actual, false);

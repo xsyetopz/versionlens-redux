@@ -2,6 +2,7 @@ import type { ILogger } from '#domain/logging';
 import {
   type UrlAuthenticationData,
   AuthenticationScheme,
+  UrlAuthenticationStatus,
   authenticationProviders,
   createCustomProviderId,
   createUrlAuthData
@@ -61,6 +62,7 @@ export class AuthenticationInteractions {
       id,
       label,
       scheme,
+      UrlAuthenticationStatus.NoStatus,
       providerBuiltIn === false
     );
   }
@@ -127,18 +129,21 @@ export class AuthenticationInteractions {
     const pickItems: QuickPickItem[] = Array.from(
       urlAuthData,
       urlAuth => {
-        const protocolDetail = urlAuth.protocol === 'http:'
-          ? urlAuth.scheme === AuthenticationScheme.NotSet ? '' : 'Unsecured '
-          : 'Secure ';
+        const detailBuilder = [];
 
-        const schemeDetail = urlAuth.scheme === AuthenticationScheme.NotSet
-          ? AuthenticationScheme.NotSet
-          : urlAuth.label
+        if (urlAuth.scheme !== AuthenticationScheme.NotSet) {
+          detailBuilder.push(urlAuth.protocol === 'http:' ? 'Unsecured' : 'Secure');
+          detailBuilder.push(urlAuth.label);
+        }
+
+        if (urlAuth.status !== UrlAuthenticationStatus.NoStatus) {
+          detailBuilder.push(`(${urlAuth.status})`);
+        }
 
         return <any>{
           // ui data
           label: urlAuth.url,
-          detail: `${protocolDetail}${schemeDetail}`,
+          detail: detailBuilder.join(' '),
           // selected item data
           _id: urlAuth.id
         };

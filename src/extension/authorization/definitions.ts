@@ -1,8 +1,14 @@
 export enum AuthenticationScheme {
-  NotSet = 'Not consented',
+  NotSet = 'NotSet',
   Basic = 'Basic',
   Bearer = 'Bearer',
   Custom = 'Custom'
+}
+
+export enum UrlAuthenticationStatus {
+  NoStatus = 'NoStatus',
+  NotConsented = 'Not consented',
+  CredentialsFailed = 'Credentials failed'
 }
 
 export interface IAuthenticationProviderFactory {
@@ -10,19 +16,20 @@ export interface IAuthenticationProviderFactory {
 }
 
 export type UrlAuthenticationData = {
-  url: string
-  protocol: string
-  id: string
-  label: string
-  scheme: AuthenticationScheme
-  isCustomProvider: boolean
+  readonly url: string
+  readonly protocol: string
+  readonly id: string
+  readonly label: string
+  readonly scheme: AuthenticationScheme
+  readonly status: UrlAuthenticationStatus
+  readonly isCustomProvider: boolean
 }
 
 type AuthenticationProviderInfo = {
-  scheme: AuthenticationScheme
-  label: string
-  description: string,
-  custom: boolean
+  readonly scheme: AuthenticationScheme
+  readonly label: string
+  readonly description: string,
+  readonly custom: boolean
 }
 
 export const authenticationProviders: Array<AuthenticationProviderInfo> = [

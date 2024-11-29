@@ -5,7 +5,8 @@ import {
   type UrlAuthenticationData,
   type UrlAuthenticationStore,
   AuthenticationScheme,
-  Authorizer
+  Authorizer,
+  UrlAuthenticationStatus
 } from '#extension/authorization';
 import type { IVsCodeAuthentication } from '#extension/vscode';
 import assert from 'assert';
@@ -48,8 +49,34 @@ export const urlHasAuthConsentTests = {
 
   "case $i: returns $2": [
     [undefined, false],
-    [{ scheme: AuthenticationScheme.NotSet }, false],
-    [{ scheme: AuthenticationScheme.Basic }, true],
+    [
+      <UrlAuthenticationData>{
+        scheme: AuthenticationScheme.NotSet,
+        status: UrlAuthenticationStatus.NoStatus
+      },
+      false
+    ],
+    [
+      <UrlAuthenticationData>{
+        scheme: AuthenticationScheme.Basic,
+        status: UrlAuthenticationStatus.CredentialsFailed
+      },
+      false
+    ],
+    [
+      <UrlAuthenticationData>{
+        scheme: AuthenticationScheme.Basic,
+        status: UrlAuthenticationStatus.NotConsented
+      },
+      false
+    ],
+    [
+      <UrlAuthenticationData>{
+        scheme: AuthenticationScheme.Basic,
+        status: UrlAuthenticationStatus.NoStatus
+      },
+      true
+    ],
     function (
       this: TestContext,
       testUrlAuthData: undefined | UrlAuthenticationData,

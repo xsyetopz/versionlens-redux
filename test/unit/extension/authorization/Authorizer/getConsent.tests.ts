@@ -8,7 +8,8 @@ import {
   AuthLog,
   Authorizer,
   createEmptyUrlAuthData,
-  createUrlAuthData
+  createUrlAuthData,
+  UrlAuthenticationStatus
 } from '#extension/authorization';
 import type { IVsCodeAuthentication } from '#extension/vscode';
 import assert from 'assert';
@@ -101,6 +102,7 @@ export const getConsentTests = {
       'testId',
       'test label',
       testScheme,
+      UrlAuthenticationStatus.NoStatus,
       true
     );
 
@@ -124,6 +126,7 @@ export const getConsentTests = {
       'testId',
       'test label',
       testScheme,
+      UrlAuthenticationStatus.NoStatus,
       true
     );
     const testAuthSessionOpts: AuthenticationGetSessionOptions = {
@@ -169,8 +172,10 @@ export const getConsentTests = {
         'testId',
         'test label',
         testScheme,
+        UrlAuthenticationStatus.NoStatus,
         true
       );
+      const expectedUrlAuthData = createEmptyUrlAuthData(testUrl);
       const testAuthSessionOpts: AuthenticationGetSessionOptions = {
         forceNewSession: true
       };
@@ -207,12 +212,7 @@ export const getConsentTests = {
           anyOfClass(Error)
         )
       ).once();
-      verify(
-        this.mockUrlAuthStore.update(
-          testUrl,
-          deepEqual(createEmptyUrlAuthData(testUrl))
-        )
-      ).once();
+      verify(this.mockUrlAuthStore.update(testUrl, deepEqual(expectedUrlAuthData))).once();
 
       // assert
       assert.equal(actual, false);

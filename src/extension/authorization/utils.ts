@@ -1,4 +1,8 @@
-import { type UrlAuthenticationData, AuthenticationScheme } from '#extension/authorization';
+import {
+  type UrlAuthenticationData,
+  AuthenticationScheme,
+  UrlAuthenticationStatus
+} from '#extension/authorization';
 import { URL } from 'node:url';
 
 export function createCustomProviderId(scheme: AuthenticationScheme, url: string) {
@@ -17,6 +21,7 @@ export function createUrlAuthData(
   id: string,
   label: string,
   scheme: AuthenticationScheme,
+  status: UrlAuthenticationStatus,
   isCustomProvider: boolean
 ): UrlAuthenticationData {
   const parsedUrl = new URL(url);
@@ -26,6 +31,7 @@ export function createUrlAuthData(
     id,
     label,
     scheme,
+    status,
     isCustomProvider
   };
 }
@@ -38,6 +44,7 @@ export function createEmptyUrlAuthData(url: string): UrlAuthenticationData {
     id: null,
     label: null,
     scheme: AuthenticationScheme.NotSet,
+    status: UrlAuthenticationStatus.NotConsented,
     isCustomProvider: false
   };
 }

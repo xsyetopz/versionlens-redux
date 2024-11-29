@@ -4,10 +4,11 @@ import {
   type AuthenticationInteractions,
   type IAuthenticationProviderFactory,
   type UrlAuthenticationStore,
-  AuthenticationScheme,
-  createEmptyUrlAuthData,
   AuthLog,
-  AuthPrompt
+  AuthPrompt,
+  AuthenticationScheme,
+  UrlAuthenticationStatus,
+  createEmptyUrlAuthData
 } from '#extension/authorization';
 import type { IVsCodeAuthentication } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
@@ -31,7 +32,10 @@ export class Authorizer implements IAuthorizer {
   urlHasAuthConsent(url: string): boolean {
     const urlAuthInfo = this.urlAuthStore.get(url);
     if (urlAuthInfo === undefined) return false;
-    return urlAuthInfo.scheme !== AuthenticationScheme.NotSet;
+    if (urlAuthInfo.scheme === AuthenticationScheme.NotSet) return false;
+    if (urlAuthInfo.status !== UrlAuthenticationStatus.NoStatus) return false;
+
+    return true;
   }
 
   async getToken(url: string): Promise<string | undefined> {
@@ -109,7 +113,13 @@ export class Authorizer implements IAuthorizer {
     );
     if (retry === false) {
       // save 'failed credentials' data
-      await this.urlAuthStore.update(url, createEmptyUrlAuthData(url));
+      const urlAuthData = this.urlAuthStore.get(url);
+      const failedAuthData = {
+        ...urlAuthData,
+        scheme: AuthenticationScheme.NotSet,
+        status: UrlAuthenticationStatus.CredentialsFailed
+      };
+      await this.urlAuthStore.update(url, failedAuthData);
       return false;
     }
 
