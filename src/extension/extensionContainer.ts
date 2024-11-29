@@ -6,7 +6,7 @@ import { type ExtensionContext, type Memento, type SecretStorage, workspace } fr
 import {
   addAuthenticationInteractions,
   addAuthenticationProviderFactory,
-  addAuthorization,
+  addAuthorizer,
   addUrlAuthenticationStore
 } from './authorization/serviceFactory';
 import {
@@ -82,7 +82,7 @@ function addExtensionServices(
   addPackageFileWatcher(services);
 
   // auth
-  addAuthorization(services);
+  addAuthorizer(services);
   addAuthenticationInteractions(services);
   addAuthenticationProviderFactory(services, secrets);
   addUrlAuthenticationStore(services, workspaceState);

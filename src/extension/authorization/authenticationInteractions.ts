@@ -165,7 +165,7 @@ export class AuthenticationInteractions {
     return results;
   }
 
-  private async promptRetry(message: string, detail: string): Promise<boolean | undefined> {
+  async promptRetry(message: string, detail: string): Promise<boolean | undefined> {
     const choice = await this.window.showInformationMessage(
       message,
       { modal: true, detail: detail },
@@ -173,6 +173,18 @@ export class AuthenticationInteractions {
     );
 
     if (choice === undefined) return undefined;
+
+    return true;
+  }
+
+  async promptYesCancel(message: string, detail: string = ""): Promise<boolean> {
+    const choice = await this.window.showInformationMessage(
+      message,
+      { modal: true, detail: detail },
+      'Yes'
+    );
+
+    if (choice === undefined) return false;
 
     return true;
   }

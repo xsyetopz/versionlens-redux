@@ -95,7 +95,7 @@ export function addJsonClient(services: IServiceCollection) {
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
       createJsonClient(
-        container.authorization,
+        container.authorizer,
         {
           caching: container.dotnetCachingOpts,
           http: container.dotnetHttpOpts

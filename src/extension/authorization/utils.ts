@@ -1,4 +1,4 @@
-import { AuthenticationScheme, UrlAuthenticationData } from '#extension/authorization';
+import { type UrlAuthenticationData, AuthenticationScheme } from '#extension/authorization';
 import { URL } from 'node:url';
 
 export function createCustomProviderId(scheme: AuthenticationScheme, url: string) {

@@ -1,4 +1,4 @@
-import type { IAuthorization } from '#domain/authorization';
+import type { IAuthorizer } from '#domain/authorization';
 import type { CachingOptions, IExpiryCache } from '#domain/caching';
 import type { HttpOptions } from '#domain/clients';
 import type { Config } from '#domain/configuration';
@@ -18,7 +18,7 @@ import type {
 export interface IDomainServices {
   serviceCollectionFactory: IServiceCollectionFactory;
   serviceProvider: IServiceProvider;
-  authorization: IAuthorization;
+  authorizer: IAuthorizer;
   appConfig: Config;
   loggingOptions: LoggingOptions;
   httpOptions: HttpOptions;

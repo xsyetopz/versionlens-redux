@@ -54,7 +54,7 @@ export function addHttpClient(services: IServiceCollection) {
     serviceName,
     (container: IPypiService & IDomainServices) =>
       createHttpClient(
-        container.authorization,
+        container.authorizer,
         {
           caching: container.pypiCachingOpts,
           http: container.pypiHttpOpts

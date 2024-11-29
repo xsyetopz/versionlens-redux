@@ -1,4 +1,4 @@
-import type { IAuthorization } from '#domain/authorization';
+import type { IAuthorizer } from '#domain/authorization';
 import { type ICachingOptions, CachingOptions } from '#domain/caching';
 import {
   type HttpClientOptions,
@@ -21,10 +21,11 @@ import type { XHROptions } from 'request-light';
 import { anything, capture, deepEqual, instance, mock, verify, when } from 'ts-mockito';
 
 type TestContext = {
-  mockAuthorization: IAuthorization
+  mockAuthorizer: IAuthorizer
   mockCachingOpts: ICachingOptions
   mockHttpOpts: IHttpOptions
   mockRequestLight: IXhrRequest,
+  testRequestOpts: XHROptions,
   rut: RequestLightClient
 }
 
@@ -33,7 +34,7 @@ export const RequestLightClientTests = {
   [test.title]: RequestLightClient.name,
 
   beforeEach: function (this: TestContext) {
-    this.mockAuthorization = mock<IAuthorization>();
+    this.mockAuthorizer = mock<IAuthorizer>();
     this.mockCachingOpts = mock(CachingOptions);
     this.mockHttpOpts = mock(HttpOptions);
     this.mockRequestLight = mock<IXhrRequest>();
@@ -55,7 +56,7 @@ export const RequestLightClientTests = {
     // request under test
     this.rut = new RequestLightClient(
       instance(this.mockRequestLight),
-      instance(this.mockAuthorization),
+      instance(this.mockAuthorizer),
       testOptions
     );
   },
@@ -82,7 +83,7 @@ export const RequestLightClientTests = {
 
       const rut = new RequestLightClient(
         instance(this.mockRequestLight),
-        instance(this.mockAuthorization),
+        instance(this.mockAuthorizer),
         testOptions
       );
 
@@ -210,6 +211,7 @@ export const RequestLightClientTests = {
 
     // verify
     verify(this.mockRequestLight.xhr(deepEqual(expectedOptions))).once();
+    verify(this.mockAuthorizer.urlHasAuthConsent(testHost)).never();
 
     // assert
     assert.ok(!!actual);
@@ -248,65 +250,226 @@ export const RequestLightClientTests = {
         when(this.mockHttpOpts.strictSSL).thenReturn(true);
 
         // set auth
-        when(this.mockAuthorization.isUrlAuthorized(testHost)).thenReturn(testIsUrlAuthorized);
-        when(this.mockAuthorization.getToken(testHost)).thenResolve(testToken);
+        when(this.mockAuthorizer.urlHasAuthConsent(testHost))
+          .thenReturn(testIsUrlAuthorized);
+
+        when(this.mockAuthorizer.getToken(testHost)).thenResolve(testToken);
 
         // test
         const actual = await this.rut.get(testUrl);
 
         // verify
         verify(this.mockRequestLight.xhr(deepEqual(expectedOptions))).once();
+        verify(this.mockAuthorizer.urlHasAuthConsent(testHost)).once();
+        verify(this.mockAuthorizer.retryCredentials(testHost)).never();
+        verify(this.mockAuthorizer.getConsent(testHost)).never();
 
         // assert
         assert.ok(!!actual);
       }
     ],
 
-  "'$1' to authorize when consent is '$2'": [
-    ['retries', true, 'authorized'],
-    ['does not retry', false, 'not authorized'],
-    async function (this: TestContext, testTitle: string, testConsent: boolean, expectedData: string) {
-      let testRetries = 0;
-
+  "does not retry to authorize when authorizer.getConsent() returns false":
+    async function (this: TestContext) {
       const testHost = 'https://test.url.example';
       const testUrl = `${testHost}/path`;
+      const testRequest: XHROptions = {
+        url: testUrl,
+        type: HttpClientRequestMethods.get,
+        headers: httpClientDefaultHeaders,
+        strictSSL: true
+      };
       const testResponse: IXhrResponse = {
         status: 401,
         headers: {},
         responseText: 'not authorized'
       };
 
-      when(this.mockRequestLight.xhr(anything()))
-        .thenCall(() => {
-          if (testRetries === 0) {
-            testRetries++;
-            return Promise.reject(testResponse);
-          }
+      when(this.mockRequestLight.xhr(deepEqual(testRequest))).thenReject(<any>testResponse);
+      when(this.mockAuthorizer.getConsent(testHost)).thenResolve(false);
 
-          testResponse.status = 200;
-          testResponse.responseText = expectedData
-          return Promise.resolve(testResponse)
+      try {
+        // test
+        await this.rut.get(testUrl);
+        assert.fail();
+      } catch (error) {
+        // assert
+        assert.equal(error.status, 401);
+        assert.equal(error.data, testResponse.responseText);
+      }
+
+      // verify
+      verify(this.mockAuthorizer.getToken(anything())).never();
+      verify(this.mockRequestLight.xhr(deepEqual(testRequest))).once();
+      verify(this.mockAuthorizer.getConsent(testHost)).once();
+      verify(this.mockAuthorizer.retryCredentials(testHost)).never();
+    },
+
+  "retries to authorize when authorizer.getConsent() returns true":
+    async function (this: TestContext) {
+      let testRetries = 0;
+      const testHost = 'https://test.url.example';
+      const testUrl = `${testHost}/path`;
+      const testToken = '12345678';
+      const testFirstRequest: XHROptions = {
+        url: testUrl,
+        type: HttpClientRequestMethods.get,
+        headers: httpClientDefaultHeaders,
+        strictSSL: true
+      };
+      const testSecondRequest: XHROptions = {
+        url: testUrl,
+        type: HttpClientRequestMethods.get,
+        headers: { ...httpClientDefaultHeaders, Authorization: testToken },
+        strictSSL: true
+      };
+      const testResponse: IXhrResponse = {
+        status: 401,
+        headers: {},
+        responseText: 'not authorized'
+      };
+
+      // set state first time is called
+      when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(false);
+
+      // first xhr time called
+      when(this.mockRequestLight.xhr(deepEqual(testFirstRequest)))
+        .thenCall(() => {
+          testRetries++;
+          when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(true);
+          when(this.mockAuthorizer.getToken(testHost)).thenResolve(testToken);
+          when(this.mockAuthorizer.getConsent(testHost)).thenResolve(true);
+          return Promise.reject(testResponse);
         });
 
-      when(this.mockAuthorization.getConsent(testHost)).thenResolve(testConsent);
+      // second xhr time called
+      when(this.mockRequestLight.xhr(deepEqual(testSecondRequest))).thenResolve({
+        status: 200,
+        responseText: 'success',
+        headers: {}
+      });
 
       try {
         // test
         const actual = await this.rut.get(testUrl);
         // assert
+        assert.equal(testRetries, 1);
         assert.equal(actual.status, 200);
-        assert.equal(actual.data, expectedData);
+        assert.equal(actual.data, 'success');
       } catch (error) {
-        // assert
-        assert.equal(error.status, 401);
-        assert.equal(error.data, expectedData);
+        assert.fail();
       }
 
       // verify
-      verify(this.mockAuthorization.getConsent(testHost)).once();
+      verify(this.mockRequestLight.xhr(deepEqual(testFirstRequest))).once();
+      verify(this.mockRequestLight.xhr(deepEqual(testSecondRequest))).once();
+      verify(this.mockAuthorizer.urlHasAuthConsent(testHost)).twice();
+      verify(this.mockAuthorizer.getToken(testHost)).once();
+      verify(this.mockAuthorizer.getConsent(testHost)).once();
+      verify(this.mockAuthorizer.retryCredentials(testHost)).never();
+    },
 
-      // assert
-      assert.equal(testRetries, 1);
-    }
-  ]
+  "does not retry to authorize when authorizer.retryCredentials() returns false":
+    async function (this: TestContext) {
+      const testHost = 'https://test.url.example';
+      const testUrl = `${testHost}/path`;
+      const testToken = '12345678';
+      const testRequest: XHROptions = {
+        url: testUrl,
+        type: HttpClientRequestMethods.get,
+        headers: { ...httpClientDefaultHeaders, Authorization: testToken },
+        strictSSL: true
+      };
+      const testResponse: IXhrResponse = {
+        status: 401,
+        headers: {},
+        responseText: 'not authorized'
+      };
+
+      when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(true);
+      when(this.mockAuthorizer.getToken(testHost)).thenResolve(testToken);
+      when(this.mockRequestLight.xhr(deepEqual(testRequest))).thenReject(<any>testResponse);
+      when(this.mockAuthorizer.retryCredentials(testHost)).thenResolve(false);
+
+      try {
+        // test
+        await this.rut.get(testUrl);
+        assert.fail();
+      } catch (error) {
+        // assert
+        assert.equal(error.status, 401);
+        assert.equal(error.data, testResponse.responseText);
+      }
+
+      // verify
+      verify(this.mockAuthorizer.getToken(anything())).once();
+      verify(this.mockRequestLight.xhr(deepEqual(testRequest))).once();
+      verify(this.mockAuthorizer.retryCredentials(testHost)).once();
+      verify(this.mockAuthorizer.getConsent(testHost)).never();
+    },
+
+  "retries to authorize when authorizer.retryCredentials() returns true":
+    async function (this: TestContext) {
+      let testRetries = 0;
+      const testHost = 'https://test.url.example';
+      const testUrl = `${testHost}/path`;
+      const testFirstToken = '12345678';
+      const testSecondToken = 'ABCDEFGH';
+      const testFirstRequest: XHROptions = {
+        url: testUrl,
+        type: HttpClientRequestMethods.get,
+        headers: { ...httpClientDefaultHeaders, Authorization: testFirstToken },
+        strictSSL: true
+      };
+      const testSecondRequest: XHROptions = {
+        url: testUrl,
+        type: HttpClientRequestMethods.get,
+        headers: { ...httpClientDefaultHeaders, Authorization: testSecondToken },
+        strictSSL: true
+      };
+      const testResponse: IXhrResponse = {
+        status: 401,
+        headers: {},
+        responseText: 'not authorized'
+      };
+
+      when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(true);
+      when(this.mockAuthorizer.getToken(testHost)).thenResolve(testFirstToken);
+
+      // first xhr time called
+      when(this.mockRequestLight.xhr(deepEqual(testFirstRequest)))
+        .thenCall(() => {
+          testRetries++;
+          when(this.mockAuthorizer.getToken(testHost)).thenResolve(testSecondToken);
+          when(this.mockAuthorizer.retryCredentials(testHost)).thenResolve(true);
+          return Promise.reject(testResponse);
+        });
+
+      // second xhr time called
+      when(this.mockRequestLight.xhr(deepEqual(testSecondRequest))).thenResolve({
+        status: 200,
+        responseText: 'success',
+        headers: {}
+      });
+
+      try {
+        // test
+        const actual = await this.rut.get(testUrl);
+        // assert
+        assert.equal(testRetries, 1);
+        assert.equal(actual.status, 200);
+        assert.equal(actual.data, 'success');
+      } catch (error) {
+        assert.fail();
+      }
+
+      // verify
+      verify(this.mockRequestLight.xhr(deepEqual(testFirstRequest))).once();
+      verify(this.mockRequestLight.xhr(deepEqual(testSecondRequest))).once();
+      verify(this.mockAuthorizer.urlHasAuthConsent(testHost)).twice();
+      verify(this.mockAuthorizer.getToken(testHost)).twice();
+      verify(this.mockAuthorizer.retryCredentials(testHost)).once();
+      verify(this.mockAuthorizer.getConsent(testHost)).never();
+    },
+
 };

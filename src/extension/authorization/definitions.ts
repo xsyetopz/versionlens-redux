@@ -51,3 +51,15 @@ export const authenticationProviders: Array<AuthenticationProviderInfo> = [
     custom: true
   },
 ];
+
+export const AuthLog = {
+  authProviderInfo: "Using [%s] authentication provider for %s",
+  couldNotAutheticateError: "Could not authenticate using '%s' for %s. %s"
+}
+
+export const AuthPrompt = {
+  couldNotAuthenticate: (url: string) => {
+    return `Could not authenticate credentials with ${url}.\n\n`
+      + "Would you like to re-enter your credentials?"
+  }
+}

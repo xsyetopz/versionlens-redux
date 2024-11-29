@@ -1,16 +1,18 @@
-import type { IAuthorization } from '#domain/authorization';
+import type { IAuthorizer } from '#domain/authorization';
 import type { ILogger } from '#domain/logging';
 import {
   type AuthenticationInteractions,
   type IAuthenticationProviderFactory,
   type UrlAuthenticationStore,
   AuthenticationScheme,
-  createEmptyUrlAuthData
+  createEmptyUrlAuthData,
+  AuthLog,
+  AuthPrompt
 } from '#extension/authorization';
 import type { IVsCodeAuthentication } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
-export class Authorization implements IAuthorization {
+export class Authorizer implements IAuthorizer {
 
   constructor(
     readonly interactions: AuthenticationInteractions,
@@ -26,7 +28,7 @@ export class Authorization implements IAuthorization {
     throwUndefinedOrNull('logger', logger);
   }
 
-  isUrlAuthorized(url: string): boolean {
+  urlHasAuthConsent(url: string): boolean {
     const urlAuthInfo = this.urlAuthStore.get(url);
     if (urlAuthInfo === undefined) return false;
     return urlAuthInfo.scheme !== AuthenticationScheme.NotSet;
@@ -49,11 +51,7 @@ export class Authorization implements IAuthorization {
       const sessionInfo = await this.authentication.getSession(urlAuthInfo.id, []);
       if (!sessionInfo || !sessionInfo.accessToken) return undefined;
 
-      this.logger.info(
-        "Using [%s] authentication provider for %s",
-        urlAuthInfo.label,
-        url
-      );
+      this.logger.info(AuthLog.authProviderInfo, urlAuthInfo.label, url);
 
       // return the authorization header value
       return urlAuthInfo.scheme === AuthenticationScheme.Custom
@@ -91,19 +89,34 @@ export class Authorization implements IAuthorization {
       consent = true;
 
       // persist the url auth type
-      this.urlAuthStore.update(url, authType);
-
+      await this.urlAuthStore.update(url, authType);
     } catch (error) {
       this.logger.error(
-        "Could not authenticate using '%s' for %s. %s",
+        AuthLog.couldNotAutheticateError,
         authType.label,
         url,
         error
       );
-      this.urlAuthStore.update(url, createEmptyUrlAuthData(url));
+      await this.urlAuthStore.update(url, createEmptyUrlAuthData(url));
     }
 
     return consent;
+  }
+
+  async retryCredentials(url: string): Promise<boolean> {
+    const retry = await this.interactions.promptYesCancel(
+      AuthPrompt.couldNotAuthenticate(url)
+    );
+    if (retry === false) {
+      // save 'failed credentials' data
+      await this.urlAuthStore.update(url, createEmptyUrlAuthData(url));
+      return false;
+    }
+
+    // remove url auth data for re-attempt
+    this.urlAuthStore.remove(url);
+
+    return true;
   }
 
 }

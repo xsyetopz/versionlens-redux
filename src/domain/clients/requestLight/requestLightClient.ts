@@ -1,4 +1,4 @@
-import type { IAuthorization } from '#domain/authorization';
+import type { IAuthorizer } from '#domain/authorization';
 import {
   type HttpClientOptions,
   type HttpClientResponse,
@@ -19,11 +19,11 @@ export class RequestLightClient implements IHttpClient {
 
   constructor(
     readonly requestLight: IXhrRequest,
-    readonly authorization: IAuthorization,
+    readonly authorizer: IAuthorizer,
     readonly options: HttpClientOptions
   ) {
     throwUndefinedOrNull('requestLight', requestLight);
-    throwUndefinedOrNull('authorization', authorization);
+    throwUndefinedOrNull('authorizer', authorizer);
     throwUndefinedOrNull('options', options);
   }
 
@@ -35,25 +35,28 @@ export class RequestLightClient implements IHttpClient {
     const url = createUrl(baseUrl, query);
     const parsedBaseUrl = parse(baseUrl, false);
     const host = `${parsedBaseUrl.protocol}//${parsedBaseUrl.host}`;
+    const shouldAutoAuthorize = !headers.Authorization
+      && this.authorizer.urlHasAuthConsent(host);
+    const autoAuthHeaders: any = {};
 
     try {
-      const shouldAutoAuthorize = !headers.Authorization
-        && this.authorization.isUrlAuthorized(host);
-
       if (shouldAutoAuthorize) {
-        const authToken = await this.authorization.getToken(host);
-        if (authToken) headers.Authorization = authToken;
+        const authToken = await this.authorizer.getToken(host);
+        if (authToken) autoAuthHeaders.Authorization = authToken;
       }
 
-      const requestHeaders = { ...headers, ...httpClientDefaultHeaders };
-
-      // make the request
-      const response = await this.requestLight.xhr({
+      const request = {
         url,
         type: HttpClientRequestMethods.get,
-        headers: requestHeaders,
+        headers: {
+          ...httpClientDefaultHeaders,
+          ...autoAuthHeaders,
+          ...headers,
+        },
         strictSSL: this.options.http.strictSSL
-      });
+      };
+
+      const response = await this.requestLight.xhr(request);
 
       // return the response
       const result: HttpClientResponse = {
@@ -71,7 +74,10 @@ export class RequestLightClient implements IHttpClient {
 
       // retry when the status is 401
       if (errorResponse.status === 401) {
-        const consent = await this.authorization.getConsent(host);
+        const consent = shouldAutoAuthorize
+          ? await this.authorizer.retryCredentials(host)
+          : await this.authorizer.getConsent(host);
+
         if (consent) return await this.get(baseUrl, query, headers);
       }
 

@@ -1,5 +1,6 @@
-export interface IAuthorization {
+export interface IAuthorizer {
   getConsent(url: string): Promise<boolean>;
+  retryCredentials(url: string): Promise<boolean>;
+  urlHasAuthConsent(url: string): boolean;
   getToken(url: string): Promise<string | undefined>;
-  isUrlAuthorized(url: string): boolean;
 }

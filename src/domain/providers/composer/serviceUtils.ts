@@ -54,7 +54,7 @@ export function addJsonClient(services: IServiceCollection) {
     serviceName,
     (container: IComposerService & IDomainServices) =>
       createJsonClient(
-        container.authorization,
+        container.authorizer,
         {
           caching: container.composerCachingOpts,
           http: container.composerHttpOpts

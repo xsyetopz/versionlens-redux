@@ -4,7 +4,7 @@ import { nameOf } from '#domain/utils';
 import type { IExtensionServices } from '#extension';
 import {
   AuthenticationInteractions,
-  Authorization,
+  Authorizer,
   UrlAuthenticationStore
 } from '#extension/authorization';
 import { IVsCodeAuthentication } from '#extension/vscode';
@@ -46,12 +46,12 @@ export function addUrlAuthenticationStore(services: IServiceCollection, persiste
   );
 }
 
-export function addAuthorization(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().authorization;
+export function addAuthorizer(services: IServiceCollection) {
+  const serviceName = nameOf<IDomainServices>().authorizer;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) =>
-      new Authorization(
+      new Authorizer(
         container.authenticationInteractions,
         container.urlAuthenticationStore,
         container.authenticationProviderFactory,
