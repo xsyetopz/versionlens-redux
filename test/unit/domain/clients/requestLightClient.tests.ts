@@ -1,12 +1,11 @@
 import type { IAuthorizer } from '#domain/authorization';
-import { type ICachingOptions, CachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import {
   type HttpClientOptions,
   type HttpClientResponse,
-  type IHttpOptions,
+  type HttpOptions,
   ClientResponseSource,
   HttpClientRequestMethods,
-  HttpOptions
 } from '#domain/clients';
 import {
   type IXhrRequest,
@@ -22,8 +21,8 @@ import { anything, capture, deepEqual, instance, mock, verify, when } from 'ts-m
 
 type TestContext = {
   mockAuthorizer: IAuthorizer
-  mockCachingOpts: ICachingOptions
-  mockHttpOpts: IHttpOptions
+  mockCachingOpts: CachingOptions
+  mockHttpOpts: HttpOptions
   mockRequestLight: IXhrRequest,
   testRequestOpts: XHROptions,
   rut: RequestLightClient
@@ -35,8 +34,8 @@ export const RequestLightClientTests = {
 
   beforeEach: function (this: TestContext) {
     this.mockAuthorizer = mock<IAuthorizer>();
-    this.mockCachingOpts = mock(CachingOptions);
-    this.mockHttpOpts = mock(HttpOptions);
+    this.mockCachingOpts = mock<CachingOptions>();
+    this.mockHttpOpts = mock<HttpOptions>();
     this.mockRequestLight = mock<IXhrRequest>();
     const testOptions: HttpClientOptions = {
       caching: instance(this.mockCachingOpts),
@@ -250,6 +249,7 @@ export const RequestLightClientTests = {
         when(this.mockHttpOpts.strictSSL).thenReturn(true);
 
         // set auth
+        when(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).thenReturn(testHost);
         when(this.mockAuthorizer.urlHasAuthConsent(testHost))
           .thenReturn(testIsUrlAuthorized);
 
@@ -259,10 +259,11 @@ export const RequestLightClientTests = {
         const actual = await this.rut.get(testUrl);
 
         // verify
+        verify(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).once();
         verify(this.mockRequestLight.xhr(deepEqual(expectedOptions))).once();
         verify(this.mockAuthorizer.urlHasAuthConsent(testHost)).once();
         verify(this.mockAuthorizer.retryCredentials(testHost)).never();
-        verify(this.mockAuthorizer.getConsent(testHost)).never();
+        verify(this.mockAuthorizer.getConsent(testHost, testUrl)).never();
 
         // assert
         assert.ok(!!actual);
@@ -285,8 +286,9 @@ export const RequestLightClientTests = {
         responseText: 'not authorized'
       };
 
+      when(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).thenReturn(testHost);
       when(this.mockRequestLight.xhr(deepEqual(testRequest))).thenReject(<any>testResponse);
-      when(this.mockAuthorizer.getConsent(testHost)).thenResolve(false);
+      when(this.mockAuthorizer.getConsent(testHost, testUrl)).thenResolve(false);
 
       try {
         // test
@@ -299,9 +301,10 @@ export const RequestLightClientTests = {
       }
 
       // verify
+      verify(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).once();
       verify(this.mockAuthorizer.getToken(anything())).never();
       verify(this.mockRequestLight.xhr(deepEqual(testRequest))).once();
-      verify(this.mockAuthorizer.getConsent(testHost)).once();
+      verify(this.mockAuthorizer.getConsent(testHost, testUrl)).once();
       verify(this.mockAuthorizer.retryCredentials(testHost)).never();
     },
 
@@ -329,6 +332,8 @@ export const RequestLightClientTests = {
         responseText: 'not authorized'
       };
 
+      when(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).thenReturn(testHost);
+
       // set state first time is called
       when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(false);
 
@@ -338,7 +343,7 @@ export const RequestLightClientTests = {
           testRetries++;
           when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(true);
           when(this.mockAuthorizer.getToken(testHost)).thenResolve(testToken);
-          when(this.mockAuthorizer.getConsent(testHost)).thenResolve(true);
+          when(this.mockAuthorizer.getConsent(testHost, testUrl)).thenResolve(true);
           return Promise.reject(testResponse);
         });
 
@@ -363,9 +368,10 @@ export const RequestLightClientTests = {
       // verify
       verify(this.mockRequestLight.xhr(deepEqual(testFirstRequest))).once();
       verify(this.mockRequestLight.xhr(deepEqual(testSecondRequest))).once();
+      verify(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).twice();
       verify(this.mockAuthorizer.urlHasAuthConsent(testHost)).twice();
       verify(this.mockAuthorizer.getToken(testHost)).once();
-      verify(this.mockAuthorizer.getConsent(testHost)).once();
+      verify(this.mockAuthorizer.getConsent(testHost, testUrl)).once();
       verify(this.mockAuthorizer.retryCredentials(testHost)).never();
     },
 
@@ -386,6 +392,7 @@ export const RequestLightClientTests = {
         responseText: 'not authorized'
       };
 
+      when(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).thenReturn(testHost);
       when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(true);
       when(this.mockAuthorizer.getToken(testHost)).thenResolve(testToken);
       when(this.mockRequestLight.xhr(deepEqual(testRequest))).thenReject(<any>testResponse);
@@ -402,10 +409,11 @@ export const RequestLightClientTests = {
       }
 
       // verify
+      verify(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).once();
       verify(this.mockAuthorizer.getToken(anything())).once();
       verify(this.mockRequestLight.xhr(deepEqual(testRequest))).once();
       verify(this.mockAuthorizer.retryCredentials(testHost)).once();
-      verify(this.mockAuthorizer.getConsent(testHost)).never();
+      verify(this.mockAuthorizer.getConsent(testHost, testUrl)).never();
     },
 
   "retries to authorize when authorizer.retryCredentials() returns true":
@@ -433,6 +441,7 @@ export const RequestLightClientTests = {
         responseText: 'not authorized'
       };
 
+      when(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).thenReturn(testHost);
       when(this.mockAuthorizer.urlHasAuthConsent(testHost)).thenReturn(true);
       when(this.mockAuthorizer.getToken(testHost)).thenResolve(testFirstToken);
 
@@ -466,10 +475,37 @@ export const RequestLightClientTests = {
       // verify
       verify(this.mockRequestLight.xhr(deepEqual(testFirstRequest))).once();
       verify(this.mockRequestLight.xhr(deepEqual(testSecondRequest))).once();
+      verify(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).twice();
       verify(this.mockAuthorizer.urlHasAuthConsent(testHost)).twice();
       verify(this.mockAuthorizer.getToken(testHost)).twice();
       verify(this.mockAuthorizer.retryCredentials(testHost)).once();
-      verify(this.mockAuthorizer.getConsent(testHost)).never();
+      verify(this.mockAuthorizer.getConsent(testHost, testUrl)).never();
     },
+
+  "when the fetch url starts with multi registry url then use multi registry url for auth lookup": async function (this: TestContext) {
+    const testHost = 'https://test.url.example';
+    const testUrl = `${testHost}/sub/user/project/registry/index.json`;
+    const testMultiRegistryUrl = `${testHost}/sub/user/project/registry`;
+    const testToken = '12345678';
+    const testRequest: XHROptions = {
+      url: testUrl,
+      type: HttpClientRequestMethods.get,
+      headers: { ...httpClientDefaultHeaders, Authorization: testToken },
+      strictSSL: true
+    };
+
+    when(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).thenReturn(testMultiRegistryUrl);
+    when(this.mockAuthorizer.urlHasAuthConsent(testMultiRegistryUrl)).thenReturn(true);
+    when(this.mockAuthorizer.getToken(testMultiRegistryUrl)).thenResolve(testToken);
+
+    // test
+    await this.rut.get(testUrl);
+
+    // verify
+    verify(this.mockAuthorizer.getRegistryAuthUrl(testUrl)).once();
+    verify(this.mockAuthorizer.urlHasAuthConsent(testMultiRegistryUrl)).once();
+    verify(this.mockAuthorizer.getToken(testMultiRegistryUrl)).once();
+    verify(this.mockRequestLight.xhr(deepEqual(testRequest))).once();
+  }
 
 };

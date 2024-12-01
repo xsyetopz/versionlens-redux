@@ -8,7 +8,12 @@ import {
   UrlAuthenticationStore
 } from '#extension/authorization';
 import { IVsCodeAuthentication } from '#extension/vscode';
-import { type Memento, type SecretStorage, authentication, window } from 'vscode';
+import {
+  type Memento,
+  type SecretStorage,
+  authentication,
+  window
+} from 'vscode';
 import { AuthenticationProviderFactory } from './authenticationProviderFactory';
 
 export function addAuthenticationInteractions(services: IServiceCollection) {
@@ -38,11 +43,14 @@ export function addAuthenticationProviderFactory(
   );
 }
 
-export function addUrlAuthenticationStore(services: IServiceCollection, persistence: Memento) {
+export function addUrlAuthenticationStore(
+  services: IServiceCollection,
+  workspaceState: Memento
+) {
   const serviceName = nameOf<IExtensionServices>().urlAuthenticationStore;
   services.addSingleton(
     serviceName,
-    () => new UrlAuthenticationStore(UrlAuthenticationStore.name, persistence)
+    () => new UrlAuthenticationStore('UrlAuthenticationStore', workspaceState)
   );
 }
 

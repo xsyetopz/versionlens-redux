@@ -9,7 +9,6 @@ import {
 import type { IXhrRequest, IXhrResponse } from '#domain/clients/requestLight';
 import { type KeyStringDictionary, createUrl } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { parse } from 'node:url';
 
 export const httpClientDefaultHeaders = {
   'user-agent': 'vscode-versionlens (gitlab.com/versionlens/vscode-versionlens)'
@@ -33,15 +32,14 @@ export class RequestLightClient implements IHttpClient {
     headers: KeyStringDictionary = {}
   ): Promise<HttpClientResponse> {
     const url = createUrl(baseUrl, query);
-    const parsedBaseUrl = parse(baseUrl, false);
-    const host = `${parsedBaseUrl.protocol}//${parsedBaseUrl.host}`;
+    const authUrl = this.authorizer.getRegistryAuthUrl(baseUrl);
     const shouldAutoAuthorize = !headers.Authorization
-      && this.authorizer.urlHasAuthConsent(host);
+      && this.authorizer.urlHasAuthConsent(authUrl);
     const autoAuthHeaders: any = {};
 
     try {
       if (shouldAutoAuthorize) {
-        const authToken = await this.authorizer.getToken(host);
+        const authToken = await this.authorizer.getToken(authUrl);
         if (authToken) autoAuthHeaders.Authorization = authToken;
       }
 
@@ -75,8 +73,8 @@ export class RequestLightClient implements IHttpClient {
       // retry when the status is 401
       if (errorResponse.status === 401) {
         const consent = shouldAutoAuthorize
-          ? await this.authorizer.retryCredentials(host)
-          : await this.authorizer.getConsent(host);
+          ? await this.authorizer.retryCredentials(authUrl)
+          : await this.authorizer.getConsent(authUrl, baseUrl);
 
         if (consent) return await this.get(baseUrl, query, headers);
       }

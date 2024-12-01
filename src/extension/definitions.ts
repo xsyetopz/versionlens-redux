@@ -26,6 +26,7 @@ import type {
 } from '#extension/authorization';
 import type { VersionLensState } from '#extension/state';
 import type { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
+import type { IVsCodeConstructFactory } from '#extension/vscode';
 import type { OutputChannel } from 'vscode';
 
 export enum AuthorizationCommandFeatures {
@@ -70,14 +71,19 @@ export interface IExtensionServices {
   versionLensProviders: Array<SuggestionCodeLensProvider>;
   editorDependencyCache: DependencyCache;
 
+  // vscode
+  vsCodeConstructFactory: IVsCodeConstructFactory;
+
   // auth
   authenticationInteractions: AuthenticationInteractions;
   authenticationProviderFactory: IAuthenticationProviderFactory;
   urlAuthenticationStore: UrlAuthenticationStore;
 
+  // auth events
+  onRemoveUrlAuthentication: OnRemoveUrlAuthentication;
+
   // command events
   onClearCache: OnClearCache;
-  onRemoveUrlAuthentication: OnRemoveUrlAuthentication;
   onFileLinkClick: OnFileLinkClick;
   onUpdateDependencyClick: OnUpdateDependencyClick;
 

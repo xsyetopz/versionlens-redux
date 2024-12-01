@@ -1,17 +1,59 @@
 # Authorization
 
-Version lens has an interactive worflow for authorizing packages that respond with 401 status codes and stores the [url authentication data](./authorization.md#url-authentication-data) data per workspace.
-
-Supported authentication types are
-- Basic Auth (prompts for a username and password)
-- Custom (prompts for a custom authentication value)
-- Microsoft (vscode built-in provider)
-- Github (vscode built-in provider)
-
 > **NOTE**
 >
-> - Doesn't support multiple authentications for the same domain
-> - Doesn't work with Npm because npm uses npmrc files to authorize requests
+> The following isn't available for Npm because npm uses npmrc files to authorize requests
+
+By default, when versionlens detects a 401 status code it will prompt you for authentication info.
+
+- `Step 1:` **Confirm the authorization url**
+
+  This url is used to match package request urls and provide them with your credentials.
+
+  Urls must:
+    - be in the same domain as the package request url
+    - partially match the package request url e.g. packageRequestUrl.startsWith(authorizationUrl)
+
+  The default value is the domain host of the package request url.
+
+  > **NOTE**
+  >
+  > - The default value should work fine in a lot of cases but you will need to override this value if you need to use a registry provider that hosts multiple registries on the same domain e.g. gitlab
+  >
+  >   example:
+  >   ```js
+  >   // package request url
+  >   'https://gitlab.com/api/v4/projects/some-user/some-project-id/packages/nuget/download/some.package.name/index.json'
+  >
+  >   // authorization url (entered in this prompt step)
+  >   'https://gitlab.com/api/v4/projects/some-user/some-project-id'
+  >   ```
+
+- `Step 2:` **Choose an authentication scheme**
+
+  Supported schemes are
+  - Basic Auth (prompts for a username and password)
+  - Custom (prompts for a custom authentication value)
+  - Microsoft (vscode built-in provider)
+  - Github (vscode built-in provider)
+
+- `Step 3:` **Enter your authentication credentials**
+
+  Depending on the scheme you have choose you will be prompted for consent and your credentials e.g. username and password
+
+## Clearing Url Authentication Data
+
+To clear credentials
+
+- Press `ctrl+p` then type `Remove url authentication data`.
+
+  ![alt text](../images/docs/authorization/remove-url-authentication-data.png)
+
+- Choose the url(s) you want to clear and press `ok`
+
+  > **NOTE**
+  >
+  > If you have a project\package file opened when running this commandand one of your packages needs re-authorization with the same url then you will be prompted to re-enter authorization. (if you dismiss this prompt then the url will need to be cleared again)
 
 ## Url Authentication Data
 
@@ -30,20 +72,5 @@ Supported authentication types are
   id: string
   label: string
   scheme: AuthenticationScheme
-  isCustomProvider: boolean
 }
 ```
-
-### Clearing Url Authentication Data
-
-To clear credentials
-
-- Press `ctrl+p` then type `Remove url authentication data`.
-
-  ![alt text](../images/docs/authorization/remove-url-authentication-data.png)
-
-- Choose the url(s) you want to clear and press `ok`
-
-  > **NOTE**
-  >
-  > If you have a project\package file opened when running these steps and one of your packages need re-authorization with the same url then you will be prompted to re-enter authorization (if you dismiss this prompt then the url will need to be cleared again)

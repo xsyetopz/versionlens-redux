@@ -3,7 +3,7 @@ import type { PackageCache } from '#domain/packages';
 import { Disposable } from '#domain/utils';
 import {
   type UrlAuthenticationStore,
-  AuthenticationInteractions,
+  AuthenticationInteractions
 } from '#extension/authorization';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import type { SecretStorage } from 'vscode';

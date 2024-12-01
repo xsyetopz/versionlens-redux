@@ -47,7 +47,9 @@ export interface IVsCodeWorkspace {
     ignoreDeleteEvents?: boolean
   ): FileSystemWatcher;
 
-  applyEdit(edit: WorkspaceEdit, metadata?: WorkspaceEditMetadata): Thenable<boolean>
+  applyEdit(edit: WorkspaceEdit, metadata?: WorkspaceEditMetadata): Thenable<boolean>;
+
+  openTextDocument(uri: Uri): Thenable<TextDocument>;
 }
 
 /***
@@ -129,6 +131,7 @@ export interface IVsCodeTasks {
  */
 export interface IVsCodeConstructFactory {
   createWorkspaceEdit(): WorkspaceEdit;
+  createUri(uri: string): Uri;
 }
 
 /***

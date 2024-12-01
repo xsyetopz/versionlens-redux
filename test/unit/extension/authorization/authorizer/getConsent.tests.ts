@@ -56,12 +56,13 @@ export const getConsentTests = {
   "returns false when the url auth data is already unconsented":
     async function (this: TestContext) {
       const testUrl = 'https://anything';
-      const testUrlAuthData: UrlAuthenticationData = createEmptyUrlAuthData(testUrl);
+      const testRequestUrl = `${testUrl}/package/path/index.json`;
+      const testUrlAuthData: UrlAuthenticationData = createEmptyUrlAuthData(testRequestUrl);
 
       when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData);
 
       // test
-      const actual = await this.testAuthorizer.getConsent(testUrl);
+      const actual = await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
 
       // verify
       verify(this.mockUrlAuthStore.get(testUrl)).once();
@@ -71,17 +72,45 @@ export const getConsentTests = {
       assert.equal(actual, false);
     },
 
-  "returns false and stores empty auth data when no auth type was choosen":
+  "returns false and stores empty auth data when no auth url was choosen":
     async function (this: TestContext) {
       const testUrl = 'https://anything';
+      const testRequestUrl = `${testUrl}/package/path/index.json`;
 
-      when(this.mockInteractions.chooseAuthenticationType(testUrl)).thenResolve(undefined);
+      when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).thenResolve(undefined);
 
       // test
-      const actual = await this.testAuthorizer.getConsent(testUrl);
+      const actual = await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
 
       // verify
       verify(this.mockUrlAuthStore.get(testUrl)).once();
+      verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
+      verify(this.mockInteractions.chooseAuthenticationType(testUrl)).never();
+      verify(
+        this.mockUrlAuthStore.update(
+          testUrl,
+          deepEqual(createEmptyUrlAuthData(testUrl))
+        )
+      ).once();
+
+      // assert
+      assert.equal(actual, false);
+    },
+
+  "returns false and stores empty auth data when no auth type was choosen":
+    async function (this: TestContext) {
+      const testUrl = 'https://anything';
+      const testRequestUrl = `${testUrl}/package/path/index.json`;
+
+      when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).thenResolve(testUrl);
+      when(this.mockInteractions.chooseAuthenticationType(testUrl)).thenResolve(undefined);
+
+      // test
+      const actual = await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
+
+      // verify
+      verify(this.mockUrlAuthStore.get(testUrl)).once();
+      verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
       verify(this.mockInteractions.chooseAuthenticationType(testUrl)).once();
       verify(
         this.mockUrlAuthStore.update(
@@ -97,6 +126,7 @@ export const getConsentTests = {
   "ensures custom providers are registered": async function (this: TestContext) {
     const testScheme = AuthenticationScheme.Basic;
     const testUrl = 'https://anything';
+    const testRequestUrl = `${testUrl}/package/path/index.json`;
     const testUrlAuthData = createUrlAuthData(
       testUrl,
       'testId',
@@ -106,14 +136,16 @@ export const getConsentTests = {
       true
     );
 
+    when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).thenResolve(testUrl);
     when(this.mockInteractions.chooseAuthenticationType(testUrl))
       .thenResolve(testUrlAuthData);
 
     // test
-    await this.testAuthorizer.getConsent(testUrl);
+    await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
 
     // verify
     verify(this.mockUrlAuthStore.get(testUrl)).once();
+    verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
     verify(this.mockInteractions.chooseAuthenticationType(testUrl)).once();
     verify(this.mockProviderFactory.registerCustomAuthProvider(testScheme, testUrl)).once();
   },
@@ -121,6 +153,7 @@ export const getConsentTests = {
   "returns true when getSession resolves": async function (this: TestContext) {
     const testScheme = AuthenticationScheme.Basic;
     const testUrl = 'https://anything';
+    const testRequestUrl = `${testUrl}/package/path/index.json`;
     const testUrlAuthData = createUrlAuthData(
       testUrl,
       'testId',
@@ -133,6 +166,8 @@ export const getConsentTests = {
       forceNewSession: true
     };
 
+    when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl))
+      .thenResolve(testUrl);
     when(this.mockInteractions.chooseAuthenticationType(testUrl))
       .thenResolve(testUrlAuthData);
 
@@ -145,10 +180,11 @@ export const getConsentTests = {
     );
 
     // test
-    const actual = await this.testAuthorizer.getConsent(testUrl);
+    const actual = await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
 
     // verify
     verify(this.mockUrlAuthStore.get(testUrl)).once();
+    verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
     verify(this.mockInteractions.chooseAuthenticationType(testUrl)).once();
     verify(
       this.mockAuthentication.getSession(
@@ -167,6 +203,7 @@ export const getConsentTests = {
     async function (this: TestContext) {
       const testScheme = AuthenticationScheme.Basic;
       const testUrl = 'https://anything';
+      const testRequestUrl = `${testUrl}/package/path/index.json`;
       const testUrlAuthData = createUrlAuthData(
         testUrl,
         'testId',
@@ -180,6 +217,8 @@ export const getConsentTests = {
         forceNewSession: true
       };
 
+      when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl))
+        .thenResolve(testUrl);
       when(this.mockInteractions.chooseAuthenticationType(testUrl))
         .thenResolve(testUrlAuthData);
 
@@ -192,10 +231,11 @@ export const getConsentTests = {
       ).thenReject(new Error("testing rejection"));
 
       // test
-      const actual = await this.testAuthorizer.getConsent(testUrl);
+      const actual = await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
 
       // verify
       verify(this.mockUrlAuthStore.get(testUrl)).once();
+      verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
       verify(this.mockInteractions.chooseAuthenticationType(testUrl)).once();
       verify(
         this.mockAuthentication.getSession(

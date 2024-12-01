@@ -2,12 +2,12 @@ import type { ILogger } from '#domain/logging';
 import {
   type AuthenticationInteractions,
   type IAuthenticationProviderFactory,
+  type UrlAuthenticationData,
   type UrlAuthenticationStore,
   AuthenticationScheme,
   Authorizer,
   AuthPrompt,
   createUrlAuthData,
-  UrlAuthenticationData,
   UrlAuthenticationStatus
 } from '#extension/authorization';
 import type { IVsCodeAuthentication } from '#extension/vscode';
@@ -68,10 +68,9 @@ export const retryCredentialsTests = {
       };
       const expectedPromptMessage = AuthPrompt.couldNotAuthenticate(testUrl);
 
-      when(this.mockInteractions.promptYesCancel(expectedPromptMessage))
-        .thenResolve(false);
-
+      when(this.mockInteractions.promptYesCancel(expectedPromptMessage)).thenResolve(false);
       when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData);
+
       // test
       const actual = await this.testAuthorizer.retryCredentials(testUrl);
 
@@ -83,23 +82,37 @@ export const retryCredentialsTests = {
       assert.equal(actual, false);
     },
 
-  "removes url auth data when prompt returns true":
-    async function (this: TestContext) {
-      const testUrl = 'https://anything';
-      const expectedPromptMessage = AuthPrompt.couldNotAuthenticate(testUrl);
+  "retries to authenticate when prompt returns true": async function (this: TestContext) {
+    const testScheme = AuthenticationScheme.Basic;
+    const testUrl = 'https://anything';
+    const testUrlAuthData = createUrlAuthData(
+      testUrl,
+      'testId',
+      'test label',
+      testScheme,
+      UrlAuthenticationStatus.NoStatus,
+      true
+    );
+    const expectedPromptMessage = AuthPrompt.couldNotAuthenticate(testUrl);
 
-      when(this.mockInteractions.promptYesCancel(expectedPromptMessage))
-        .thenResolve(true);
+    when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData);
+    when(this.mockInteractions.promptYesCancel(expectedPromptMessage)).thenResolve(true);
 
-      // test
-      const actual = await this.testAuthorizer.retryCredentials(testUrl);
+    // test
+    let wasCalled = false;
+    (<any>this.testAuthorizer).authenticate = async (actual: UrlAuthenticationData) => {
+      assert.deepEqual(actual, testUrlAuthData);
+      wasCalled = true;
+    }
 
-      // verify
-      verify(this.mockInteractions.promptYesCancel(expectedPromptMessage)).once();
-      verify(this.mockUrlAuthStore.remove(testUrl)).once();
+    await this.testAuthorizer.retryCredentials(testUrl);
 
-      // assert
-      assert.equal(actual, true);
-    },
+    // verify
+    verify(this.mockInteractions.promptYesCancel(expectedPromptMessage)).once();
+    verify(this.mockUrlAuthStore.get(testUrl)).once();
+
+    // assert
+    assert.ok(wasCalled);
+  }
 
 }

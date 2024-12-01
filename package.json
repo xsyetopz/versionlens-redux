@@ -42,7 +42,8 @@
     "onLanguage:xml",
     "onLanguage:toml",
     "onLanguage:yaml",
-    "onLanguage:go.mod"
+    "onLanguage:go.mod",
+    "onFileSystem:versionlens"
   ],
   "scripts": {
     "fresh": "task",
@@ -207,6 +208,12 @@
         }
       ]
     },
+    "jsonValidation": [
+      {
+        "fileMatch": "versionlens:/versionlens.multi-registries.json",
+        "url": "./src/schema/versionlens.multi-registries.json"
+      }
+    ],
     "configuration": {
       "title": "VersionLens",
       "properties": {

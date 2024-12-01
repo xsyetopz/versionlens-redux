@@ -86,6 +86,8 @@ function addExtensionServices(
   addAuthenticationInteractions(services);
   addAuthenticationProviderFactory(services, secrets);
   addUrlAuthenticationStore(services, workspaceState);
+
+  // auth events
   addOnRemoveUrlAuthentication(services, secrets);
 
   // command events
