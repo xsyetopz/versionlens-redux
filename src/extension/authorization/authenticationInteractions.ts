@@ -134,7 +134,7 @@ export class AuthenticationInteractions {
     return btoa(`${username}:${password}`);
   }
 
-  async enterRawAuthDetails(url: string): Promise<string | undefined> {
+  async enterCustomAuthValue(url: string): Promise<string | undefined> {
     // prompt for the value
     const value = await this.window.showInputBox({
       ignoreFocusOut: true,

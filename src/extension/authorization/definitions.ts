@@ -91,3 +91,7 @@ export const basicAuthPrompt = {
   invalidBasicAuthUsername: "You cannot have a ':' character in the user name.\n\n"
     + "Do you want re-enter the username or cancel?",
 };
+
+export const customAuthPrompt = {
+  enterAuthValue: (url: string) => `Enter the authorization value for ${url}`
+};

@@ -87,7 +87,7 @@ export class CustomAuthenticationProvider implements AuthenticationProvider, Dis
     if (this.scheme === AuthenticationScheme.Basic)
       token = await this.interactions.enterBasicAuthDetails(this.url);
     else
-      token = await this.interactions.enterRawAuthDetails(this.url);
+      token = await this.interactions.enterCustomAuthValue(this.url);
 
     if (token === undefined) return Promise.reject('Authentication was cancelled');
 
