@@ -69,8 +69,8 @@ export const AuthPrompt = {
     return `Could not authenticate credentials with ${url}.\n\n`
       + "Would you like to re-enter your credentials?"
   },
-  unsecureAuthorizationUrl: (url: string) => `${url} is using the unsecured HTTP protocol.\n\n` +
-    "Are you sure you want to send your credentials using this url?"
+  unsecureAuthorizationUrl: (url: string) => `${url} is using the unsecure HTTP protocol.\n\n` +
+    "Are you sure you want to send your credentials with this url?"
 }
 
 export const confirmAuthUrlPrompt = {
