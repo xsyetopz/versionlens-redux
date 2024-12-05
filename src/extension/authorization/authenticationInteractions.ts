@@ -132,7 +132,7 @@ export class AuthenticationInteractions {
     // validate username
     if (username.includes(':')) {
       const retry = await this.promptRetry(basicAuthPrompt.invalidBasicAuthUsername);
-      if (retry === undefined) return undefined;
+      if (retry === false) return undefined;
 
       return await this.enterBasicAuthDetails(url);
     }
@@ -207,16 +207,14 @@ export class AuthenticationInteractions {
     return results;
   }
 
-  async promptRetry(message: string, detail: string = ""): Promise<boolean | undefined> {
+  async promptRetry(message: string, detail: string = ""): Promise<boolean> {
     const choice = await this.window.showInformationMessage(
       message,
       { modal: true, detail },
       'Retry'
     );
 
-    if (!choice) return undefined;
-
-    return true;
+    return !!choice;
   }
 
   async promptYesCancel(message: string, detail: string = ""): Promise<boolean> {
@@ -226,9 +224,7 @@ export class AuthenticationInteractions {
       'Yes'
     );
 
-    if (choice === undefined) return false;
-
-    return true;
+    return !!choice;
   }
 
   async promptUnsecured(url: string): Promise<boolean> {
@@ -237,9 +233,8 @@ export class AuthenticationInteractions {
       { modal: true },
       'Yes'
     );
-    if (!choice) return false;
 
-    return true;
+    return !!choice;
   }
 
 }
