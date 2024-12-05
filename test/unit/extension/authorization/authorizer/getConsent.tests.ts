@@ -1,34 +1,29 @@
 import type { ILogger } from '#domain/logging';
 import {
   type AuthenticationInteractions,
-  type IAuthenticationProviderFactory,
   type UrlAuthenticationData,
   type UrlAuthenticationStore,
   AuthenticationScheme,
-  AuthLog,
   Authorizer,
+  BasicAuthProvider,
   createEmptyUrlAuthData,
   createUrlAuthData,
   UrlAuthenticationStatus
 } from '#extension/authorization';
-import type { IVsCodeAuthentication } from '#extension/vscode';
 import assert from 'assert';
 import { test } from 'mocha-ui-esm';
 import {
-  anyOfClass,
   deepEqual,
   instance,
   mock,
   verify,
   when
 } from 'ts-mockito';
-import type { AuthenticationGetSessionOptions } from 'vscode';
 
 type TestContext = {
-  mockInteractions: AuthenticationInteractions
   mockUrlAuthStore: UrlAuthenticationStore
-  mockProviderFactory: IAuthenticationProviderFactory
-  mockAuthentication: IVsCodeAuthentication
+  mockAuthProvider: BasicAuthProvider
+  mockInteractions: AuthenticationInteractions
   mockLogger: ILogger
   testAuthorizer: Authorizer
 }
@@ -38,17 +33,15 @@ export const getConsentTests = {
   [test.title]: Authorizer.prototype.getConsent.name,
 
   beforeEach: function (this: TestContext) {
-    this.mockInteractions = mock<AuthenticationInteractions>();
     this.mockUrlAuthStore = mock<UrlAuthenticationStore>();
-    this.mockProviderFactory = mock<IAuthenticationProviderFactory>();
-    this.mockAuthentication = mock<IVsCodeAuthentication>();
+    this.mockAuthProvider = mock<BasicAuthProvider>();
+    this.mockInteractions = mock<AuthenticationInteractions>();
     this.mockLogger = mock<ILogger>();
 
     this.testAuthorizer = new Authorizer(
-      instance(this.mockInteractions),
       instance(this.mockUrlAuthStore),
-      instance(this.mockProviderFactory),
-      instance(this.mockAuthentication),
+      { [AuthenticationScheme.Basic]: instance(this.mockAuthProvider) },
+      instance(this.mockInteractions),
       instance(this.mockLogger)
     );
   },
@@ -150,7 +143,7 @@ export const getConsentTests = {
       assert.equal(actual, false);
     },
 
-  "ensures custom providers are registered": async function (this: TestContext) {
+  "saves url auth data when AuthProvider.create is true": async function (this: TestContext) {
     const testScheme = AuthenticationScheme.Basic;
     const testUrl = 'https://anything';
     const testRequestUrl = `${testUrl}/package/path/index.json`;
@@ -162,49 +155,14 @@ export const getConsentTests = {
       UrlAuthenticationStatus.NoStatus,
       true
     );
-
-    when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).thenResolve(testUrl);
-    when(this.mockInteractions.chooseAuthenticationScheme(testUrl))
-      .thenResolve(testUrlAuthData);
-
-    // test
-    await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
-
-    // verify
-    verify(this.mockUrlAuthStore.get(testUrl)).once();
-    verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
-    verify(this.mockInteractions.chooseAuthenticationScheme(testUrl)).once();
-    verify(this.mockProviderFactory.registerCustomAuthProvider(testScheme, testUrl)).once();
-  },
-
-  "returns true when getSession resolves": async function (this: TestContext) {
-    const testScheme = AuthenticationScheme.Basic;
-    const testUrl = 'https://anything';
-    const testRequestUrl = `${testUrl}/package/path/index.json`;
-    const testUrlAuthData = createUrlAuthData(
-      testUrl,
-      'testId',
-      'test label',
-      testScheme,
-      UrlAuthenticationStatus.NoStatus,
-      true
-    );
-    const testAuthSessionOpts: AuthenticationGetSessionOptions = {
-      forceNewSession: true
-    };
-
     when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl))
       .thenResolve(testUrl);
+
     when(this.mockInteractions.chooseAuthenticationScheme(testUrl))
       .thenResolve(testUrlAuthData);
 
-    when(
-      this.mockAuthentication.getSession(
-        testUrlAuthData.id,
-        anyOfClass(Array),
-        deepEqual(testAuthSessionOpts)
-      )
-    );
+    when(this.mockAuthProvider.create(testUrl))
+      .thenResolve(true);
 
     // test
     const actual = await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
@@ -213,20 +171,14 @@ export const getConsentTests = {
     verify(this.mockUrlAuthStore.get(testUrl)).once();
     verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
     verify(this.mockInteractions.chooseAuthenticationScheme(testUrl)).once();
-    verify(
-      this.mockAuthentication.getSession(
-        testUrlAuthData.id,
-        anyOfClass(Array),
-        deepEqual(testAuthSessionOpts)
-      )
-    ).once();
+    verify(this.mockAuthProvider.create(testUrl)).once();
     verify(this.mockUrlAuthStore.update(testUrl, deepEqual(testUrlAuthData))).once();
 
     // assert
     assert.equal(actual, true);
   },
 
-  "returns false and stores empty auth data when getSession rejects":
+  "saves empty url auth data when AuthProvider.create is false":
     async function (this: TestContext) {
       const testScheme = AuthenticationScheme.Basic;
       const testUrl = 'https://anything';
@@ -240,22 +192,15 @@ export const getConsentTests = {
         true
       );
       const expectedUrlAuthData = createEmptyUrlAuthData(testUrl);
-      const testAuthSessionOpts: AuthenticationGetSessionOptions = {
-        forceNewSession: true
-      };
 
       when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl))
         .thenResolve(testUrl);
+
       when(this.mockInteractions.chooseAuthenticationScheme(testUrl))
         .thenResolve(testUrlAuthData);
 
-      when(
-        this.mockAuthentication.getSession(
-          testUrlAuthData.id,
-          anyOfClass(Array),
-          deepEqual(testAuthSessionOpts)
-        )
-      ).thenReject(new Error("testing rejection"));
+      when(this.mockAuthProvider.create(testUrl))
+        .thenResolve(false);
 
       // test
       const actual = await this.testAuthorizer.getConsent(testUrl, testRequestUrl);
@@ -264,21 +209,7 @@ export const getConsentTests = {
       verify(this.mockUrlAuthStore.get(testUrl)).once();
       verify(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl)).once();
       verify(this.mockInteractions.chooseAuthenticationScheme(testUrl)).once();
-      verify(
-        this.mockAuthentication.getSession(
-          testUrlAuthData.id,
-          anyOfClass(Array),
-          deepEqual(testAuthSessionOpts)
-        )
-      ).once();
-      verify(
-        this.mockLogger.error(
-          AuthLog.couldNotAutheticateError,
-          testUrlAuthData.label,
-          testUrl,
-          anyOfClass(Error)
-        )
-      ).once();
+      verify(this.mockAuthProvider.create(testUrl)).once();
       verify(this.mockUrlAuthStore.update(testUrl, deepEqual(expectedUrlAuthData))).once();
 
       // assert

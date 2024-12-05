@@ -1,8 +1,9 @@
 import type { IAuthorizer } from '#domain/authorization';
 import type { ILogger } from '#domain/logging';
+import type { KeyDictionary } from '#domain/utils';
+import type { AuthenticationProvider } from '#extension/authorization';
 import {
   type AuthenticationInteractions,
-  type IAuthenticationProviderFactory,
   type UrlAuthenticationData,
   type UrlAuthenticationStore,
   AuthLog,
@@ -11,27 +12,24 @@ import {
   UrlAuthenticationStatus,
   createEmptyUrlAuthData
 } from '#extension/authorization';
-import type { IVsCodeAuthentication } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { parse } from 'url';
 
 export class Authorizer implements IAuthorizer {
 
   constructor(
-    readonly interactions: AuthenticationInteractions,
     readonly urlAuthStore: UrlAuthenticationStore,
-    readonly providerFactory: IAuthenticationProviderFactory,
-    readonly authentication: IVsCodeAuthentication,
+    readonly providers: KeyDictionary<AuthenticationProvider>,
+    readonly interactions: AuthenticationInteractions,
     readonly logger: ILogger
   ) {
-    throwUndefinedOrNull('interactions', interactions);
     throwUndefinedOrNull('urlAuthStore', urlAuthStore);
-    throwUndefinedOrNull('providerFactory', providerFactory);
-    throwUndefinedOrNull('authentication', authentication);
+    throwUndefinedOrNull('providers', providers);
+    throwUndefinedOrNull('interactions', interactions);
     throwUndefinedOrNull('logger', logger);
   }
 
-  urlHasAuthConsent(url: string): boolean {
+  hasAuthorizationUrl(url: string): boolean {
     const urlAuthInfo = this.urlAuthStore.get(url);
     if (urlAuthInfo === undefined) return false;
     if (urlAuthInfo.scheme === AuthenticationScheme.NotSet) return false;
@@ -59,32 +57,22 @@ export class Authorizer implements IAuthorizer {
       return undefined;
     }
 
-    // create the custom provider unless built-in
-    if (['github', 'microsoft'].includes(urlAuthInfo.id) === false) {
-      await this.providerFactory.registerCustomAuthProvider(urlAuthInfo.scheme, url);
-    }
+    // attempt to get an existing provider session
+    const accessToken = await this.providers[urlAuthInfo.scheme].get(urlAuthInfo.url);
+    if (!accessToken) return undefined;
 
-    try {
-      // attempt to get an existing provider session
-      const sessionInfo = await this.authentication.getSession(urlAuthInfo.id, []);
-      if (!sessionInfo || !sessionInfo.accessToken) return undefined;
+    this.logger.info(AuthLog.authProviderInfo, urlAuthInfo.label, url);
 
-      this.logger.info(AuthLog.authProviderInfo, urlAuthInfo.label, url);
-
-      // return the authorization header value
-      return urlAuthInfo.scheme === AuthenticationScheme.Custom
-        ? sessionInfo.accessToken
-        : `${urlAuthInfo.scheme} ${sessionInfo.accessToken}`;
-    }
-    catch (e) { }
-
-    return undefined;
+    // return the authorization header value
+    return urlAuthInfo.scheme === AuthenticationScheme.Custom
+      ? accessToken
+      : `${urlAuthInfo.scheme} ${accessToken}`;
   }
 
   async getConsent(url: string, requestUrl: string): Promise<boolean> {
     // check url isn't already unconsented
-    const urlAuthInfo = this.urlAuthStore.get(url);
-    if (urlAuthInfo?.scheme === AuthenticationScheme.NotSet) {
+    const existingUrlAuthData = this.urlAuthStore.get(url);
+    if (existingUrlAuthData?.scheme === AuthenticationScheme.NotSet) {
       return false;
     }
 
@@ -107,14 +95,14 @@ export class Authorizer implements IAuthorizer {
     }
 
     // get the authentication type
-    const authData = await this.interactions.chooseAuthenticationScheme(authUrl);
-    if (authData === undefined) {
+    const urlAuthData = await this.interactions.chooseAuthenticationScheme(authUrl);
+    if (urlAuthData === undefined) {
       // prevent re-prompting the user
       this.urlAuthStore.update(authUrl, createEmptyUrlAuthData(authUrl));
       return false;
     }
 
-    return await this.authenticate(authData);
+    return await this.authenticate(urlAuthData);
   }
 
   async retryCredentials(url: string): Promise<boolean> {
@@ -140,30 +128,15 @@ export class Authorizer implements IAuthorizer {
   }
 
   private async authenticate(urlAuthData: UrlAuthenticationData): Promise<boolean> {
-    // ensure custom providers are registered
-    if (urlAuthData.isCustomProvider) {
-      await this.providerFactory.registerCustomAuthProvider(urlAuthData.scheme, urlAuthData.url);
-    }
-
-    // attempt to get a new session
-    let consent: boolean = false;
-    try {
-      await this.authentication.getSession(urlAuthData.id, [], { forceNewSession: true });
-      consent = true;
+    const didCreate = await this.providers[urlAuthData.scheme].create(urlAuthData.url);
+    if (didCreate)
       // save the url auth data
       await this.urlAuthStore.update(urlAuthData.url, urlAuthData);
-    } catch (error) {
-      this.logger.error(
-        AuthLog.couldNotAutheticateError,
-        urlAuthData.label,
-        urlAuthData.url,
-        error
-      );
-      // save the unconsented auth data
+    else
+      // save as unconsented auth data
       await this.urlAuthStore.update(urlAuthData.url, createEmptyUrlAuthData(urlAuthData.url));
-    }
 
-    return consent;
+    return didCreate;
   }
 
 }

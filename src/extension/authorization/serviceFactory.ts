@@ -4,39 +4,38 @@ import { nameOf } from '#domain/utils';
 import type { IExtensionServices } from '#extension';
 import {
   AuthenticationInteractions,
+  AuthenticationScheme,
   Authorizer,
   UrlAuthenticationStore
 } from '#extension/authorization';
-import { IVsCodeAuthentication } from '#extension/vscode';
-import {
-  type Memento,
-  type SecretStorage,
-  authentication,
-  window
-} from 'vscode';
-import { AuthenticationProviderFactory } from './authenticationProviderFactory';
+import { type Memento, type SecretStorage, window } from 'vscode';
+import { BasicAuthProvider, CustomAuthProvider } from './authenticationProviders';
+
+export function addAuthenticationProviders(
+  services: IServiceCollection,
+  secrets: SecretStorage
+) {
+  const serviceName = nameOf<IExtensionServices>().authenticationProviders;
+  services.addSingleton(
+    serviceName,
+    (container: IExtensionServices) => ({
+      [AuthenticationScheme.Basic]: new BasicAuthProvider(
+        secrets,
+        container.authenticationInteractions
+      ),
+      [AuthenticationScheme.Custom]: new CustomAuthProvider(
+        secrets,
+        container.authenticationInteractions
+      )
+    })
+  );
+}
 
 export function addAuthenticationInteractions(services: IServiceCollection) {
   const serviceName = nameOf<IExtensionServices>().authenticationInteractions;
   services.addSingleton(
     serviceName,
     () => new AuthenticationInteractions(window)
-  );
-}
-
-export function addAuthenticationProviderFactory(
-  services: IServiceCollection,
-  secrets: SecretStorage
-) {
-  services.addSingleton(
-    nameOf<IExtensionServices>().authenticationProviderFactory,
-    (container: IExtensionServices) =>
-      new AuthenticationProviderFactory(
-        authentication,
-        container.authenticationInteractions,
-        secrets
-      ),
-    true
   );
 }
 
@@ -57,10 +56,9 @@ export function addAuthorizer(services: IServiceCollection) {
     serviceName,
     (container: IDomainServices & IExtensionServices) =>
       new Authorizer(
-        container.authenticationInteractions,
         container.urlAuthenticationStore,
-        container.authenticationProviderFactory,
-        authentication as IVsCodeAuthentication,
+        container.authenticationProviders,
+        container.authenticationInteractions,
         container.logger.child({ logGroup: serviceName })
       )
   );

@@ -65,6 +65,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   // instantiate dependencies that aren't referenced
   const instantiateDeps = [
     // auth events
+    serviceNames.onAddUrlAuthentication,
     serviceNames.onRemoveUrlAuthentication,
     // commands events
     serviceNames.onClearCache,

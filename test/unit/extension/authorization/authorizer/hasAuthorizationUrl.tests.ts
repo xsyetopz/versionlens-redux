@@ -1,14 +1,14 @@
 import type { ILogger } from '#domain/logging';
+import type { KeyDictionary } from '#domain/utils';
 import {
   type AuthenticationInteractions,
-  type IAuthenticationProviderFactory,
+  type AuthenticationProvider,
   type UrlAuthenticationData,
   type UrlAuthenticationStore,
   AuthenticationScheme,
   Authorizer,
   UrlAuthenticationStatus
 } from '#extension/authorization';
-import type { IVsCodeAuthentication } from '#extension/vscode';
 import assert from 'assert';
 import { test } from 'mocha-ui-esm';
 import {
@@ -19,30 +19,27 @@ import {
 } from 'ts-mockito';
 
 type TestContext = {
-  mockInteractions: AuthenticationInteractions
   mockUrlAuthStore: UrlAuthenticationStore
-  mockProviderFactory: IAuthenticationProviderFactory
-  mockAuthentication: IVsCodeAuthentication
+  mockAuthProviders: KeyDictionary<AuthenticationProvider>
+  mockInteractions: AuthenticationInteractions
   mockLogger: ILogger
   testAuthorizer: Authorizer
 }
 
 export const urlHasAuthConsentTests = {
 
-  [test.title]: Authorizer.prototype.urlHasAuthConsent.name,
+  [test.title]: Authorizer.prototype.hasAuthorizationUrl.name,
 
   beforeEach: function (this: TestContext) {
-    this.mockInteractions = mock<AuthenticationInteractions>();
     this.mockUrlAuthStore = mock<UrlAuthenticationStore>();
-    this.mockProviderFactory = mock<IAuthenticationProviderFactory>();
-    this.mockAuthentication = mock<IVsCodeAuthentication>();
+    this.mockAuthProviders = mock<KeyDictionary<AuthenticationProvider>>();
+    this.mockInteractions = mock<AuthenticationInteractions>();
     this.mockLogger = mock<ILogger>();
 
     this.testAuthorizer = new Authorizer(
-      instance(this.mockInteractions),
       instance(this.mockUrlAuthStore),
-      instance(this.mockProviderFactory),
-      instance(this.mockAuthentication),
+      instance(this.mockAuthProviders),
+      instance(this.mockInteractions),
       instance(this.mockLogger)
     );
   },
@@ -87,7 +84,7 @@ export const urlHasAuthConsentTests = {
       when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData);
 
       // test
-      const actual = this.testAuthorizer.urlHasAuthConsent(testUrl);
+      const actual = this.testAuthorizer.hasAuthorizationUrl(testUrl);
 
       // verify
       verify(this.mockUrlAuthStore.get(testUrl)).once();

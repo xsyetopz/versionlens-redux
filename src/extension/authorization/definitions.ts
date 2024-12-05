@@ -11,10 +11,6 @@ export enum UrlAuthenticationStatus {
   CredentialsFailed = 'Credentials failed'
 }
 
-export interface IAuthenticationProviderFactory {
-  registerCustomAuthProvider(scheme: AuthenticationScheme, url: string): Promise<void>;
-}
-
 export type UrlAuthenticationData = {
   readonly url: string
   readonly protocol: string
@@ -38,18 +34,6 @@ export const authenticationProviders: Array<AuthenticationProviderInfo> = [
     label: 'Basic Auth',
     description: 'Authenticate using basic auth credentials',
     custom: true
-  },
-  {
-    scheme: AuthenticationScheme.Bearer,
-    label: 'Github',
-    description: 'Authenticate using github',
-    custom: false
-  },
-  {
-    scheme: AuthenticationScheme.Bearer,
-    label: 'Microsoft',
-    description: 'Authenticate using microsoft',
-    custom: false
   },
   {
     scheme: AuthenticationScheme.Custom,

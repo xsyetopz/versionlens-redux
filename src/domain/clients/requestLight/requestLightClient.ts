@@ -34,7 +34,7 @@ export class RequestLightClient implements IHttpClient {
     const url = createUrl(baseUrl, query);
     const authUrl = this.authorizer.getAuthorizationUrl(baseUrl);
     const shouldAutoAuthorize = !headers.Authorization
-      && this.authorizer.urlHasAuthConsent(authUrl);
+      && this.authorizer.hasAuthorizationUrl(authUrl);
     const autoAuthHeaders: any = {};
 
     try {

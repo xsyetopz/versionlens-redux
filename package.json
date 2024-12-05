@@ -147,8 +147,13 @@
         "category": "VersionLens"
       },
       {
+        "command": "versionlens.authorization.addUrlAuthentication",
+        "title": "Add url authentication",
+        "category": "VersionLens"
+      },
+      {
         "command": "versionlens.authorization.removeUrlAuthentication",
-        "title": "Remove url authentication data",
+        "title": "Remove url authentication",
         "category": "VersionLens"
       }
     ],

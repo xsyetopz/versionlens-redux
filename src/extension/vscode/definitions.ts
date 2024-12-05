@@ -2,14 +2,7 @@
  * Interfaces for vscode namespaces
  */
 import type {
-  AuthenticationGetSessionOptions,
-  AuthenticationProvider,
-  AuthenticationProviderOptions,
-  AuthenticationSession,
-  AuthenticationSessionAccountInformation,
-  AuthenticationSessionsChangeEvent,
   CancellationToken,
-  Disposable,
   Event,
   FileSystemWatcher,
   GlobPattern,
@@ -50,28 +43,6 @@ export interface IVsCodeWorkspace {
   applyEdit(edit: WorkspaceEdit, metadata?: WorkspaceEditMetadata): Thenable<boolean>;
 
   openTextDocument(uri: Uri): Thenable<TextDocument>;
-}
-
-/***
- * Adapter interface for the 'authentication' namespace
- */
-export interface IVsCodeAuthentication {
-  getAccounts(providerId: string): Thenable<readonly AuthenticationSessionAccountInformation[]>;
-
-  onDidChangeSessions: Event<AuthenticationSessionsChangeEvent>
-
-  getSession(
-    providerId: string,
-    scopes: readonly string[],
-    options?: AuthenticationGetSessionOptions
-  ): Thenable<AuthenticationSession | undefined>;
-
-  registerAuthenticationProvider(
-    id: string,
-    label: string,
-    provider: AuthenticationProvider,
-    options?: AuthenticationProviderOptions
-  ): Disposable
 }
 
 /***

@@ -32,10 +32,8 @@ By default, when versionlens detects a 401 status code it will prompt you for au
 - `Step 2:` **Choose an authentication scheme**
 
   Supported schemes are
-  - Basic Auth (prompts for a username and password)
-  - Custom (prompts for a custom authentication value)
-  - Microsoft (vscode built-in provider)
-  - Github (vscode built-in provider)
+  - Basic Auth (username and password)
+  - Custom (raw authentication header value e.g. `Bearer {YOUR_API_TOKEN}`)
 
 - `Step 3:` **Enter your authentication credentials**
 

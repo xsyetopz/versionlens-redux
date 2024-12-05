@@ -1,4 +1,5 @@
 import type { DependencyCache } from '#domain/packages';
+import type { KeyDictionary } from '#domain/utils';
 import type {
   OnActiveTextEditorChange,
   OnClearCache,
@@ -9,6 +10,7 @@ import type {
   OnProviderEditorActivated,
   OnProviderTextDocumentChange,
   OnProviderTextDocumentClose,
+  OnAddUrlAuthentication,
   OnRemoveUrlAuthentication,
   OnSaveChanges,
   OnTextDocumentChange,
@@ -21,15 +23,16 @@ import type {
 } from '#extension';
 import type {
   AuthenticationInteractions,
-  IAuthenticationProviderFactory,
   UrlAuthenticationStore
 } from '#extension/authorization';
 import type { VersionLensState } from '#extension/state';
 import type { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
 import type { IVsCodeConstructFactory } from '#extension/vscode';
 import type { OutputChannel } from 'vscode';
+import type { AuthenticationProvider } from './authorization/authenticationProviders';
 
 export enum AuthorizationCommandFeatures {
+  OnAddUrlAuthentication = "versionlens.authorization.addUrlAuthentication",
   OnRemoveUrlAuthentication = "versionlens.authorization.removeUrlAuthentication"
 }
 
@@ -75,11 +78,12 @@ export interface IExtensionServices {
   vsCodeConstructFactory: IVsCodeConstructFactory;
 
   // auth
+  authenticationProviders: KeyDictionary<AuthenticationProvider>;
   authenticationInteractions: AuthenticationInteractions;
-  authenticationProviderFactory: IAuthenticationProviderFactory;
   urlAuthenticationStore: UrlAuthenticationStore;
 
   // auth events
+  onAddUrlAuthentication: OnAddUrlAuthentication;
   onRemoveUrlAuthentication: OnRemoveUrlAuthentication;
 
   // command events

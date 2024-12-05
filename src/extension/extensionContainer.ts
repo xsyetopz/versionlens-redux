@@ -2,15 +2,21 @@ import { type IDomainServices, addDomainServices } from '#domain';
 import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import { AwilixServiceCollectionFactory } from '#domain/di/awilix';
 import { nameOf } from '#domain/utils';
-import { type ExtensionContext, type Memento, type SecretStorage, workspace } from 'vscode';
+import {
+  type ExtensionContext,
+  type Memento,
+  type SecretStorage,
+  workspace
+} from 'vscode';
 import {
   addAuthenticationInteractions,
-  addAuthenticationProviderFactory,
+  addAuthenticationProviders,
   addAuthorizer,
   addUrlAuthenticationStore
 } from './authorization/serviceFactory';
 import {
   addOnActiveTextEditorChange,
+  addOnAddUrlAuthentication,
   addOnClearCache,
   addOnErrorClick,
   addOnFileLinkClick,
@@ -82,12 +88,13 @@ function addExtensionServices(
   addPackageFileWatcher(services);
 
   // auth
-  addAuthorizer(services);
+  addAuthenticationProviders(services, secrets);
   addAuthenticationInteractions(services);
-  addAuthenticationProviderFactory(services, secrets);
   addUrlAuthenticationStore(services, workspaceState);
+  addAuthorizer(services);
 
   // auth events
+  addOnAddUrlAuthentication(services);
   addOnRemoveUrlAuthentication(services, secrets);
 
   // command events

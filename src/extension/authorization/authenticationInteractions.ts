@@ -12,13 +12,29 @@ import {
 } from '#extension/authorization';
 import type { IVsCodeWindow } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { parse } from 'url';
+import { URL } from 'url';
 import type { QuickPickItem } from 'vscode';
 
 export class AuthenticationInteractions {
 
   constructor(readonly window: IVsCodeWindow) {
     throwUndefinedOrNull('window', window);
+  }
+
+  async enterAuthorizationUrl(): Promise<string | undefined> {
+    const authUrl = await this.window.showInputBox({
+      ignoreFocusOut: true,
+      prompt: confirmAuthUrlPrompt.enterAuthorizationUrl,
+      placeHolder: 'Authorization url'
+    });
+
+    // check the user entered a value
+    if (!authUrl) return undefined;
+
+    // check url is (some what) valid
+    new URL(authUrl);
+
+    return authUrl;
   }
 
   async confirmAuthorziationUrl(url: string, requestUrl: string): Promise<string | undefined> {
@@ -32,8 +48,8 @@ export class AuthenticationInteractions {
     if (!authUrl) return undefined;
 
     // check the authUrl matches the original url domain
-    const parsedRequestUrl = parse(requestUrl, false);
-    const parsedAuthUrl = parse(authUrl, false);
+    const parsedRequestUrl = new URL(requestUrl);
+    const parsedAuthUrl = new URL(authUrl);
     if (parsedAuthUrl.host !== parsedRequestUrl.host) {
       const retry = await this.promptRetry(confirmAuthUrlPrompt.differentDomain);
       return retry
