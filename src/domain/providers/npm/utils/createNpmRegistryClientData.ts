@@ -1,4 +1,9 @@
-import { type TNpmCliConfigParams, type TNpmClientData, defaultRegistryFetchTimeoutOpts, getDotEnv } from '#domain/providers/npm';
+import {
+  type TNpmCliConfigParams,
+  type TNpmClientData,
+  defaultRegistryFetchTimeoutOpts,
+  getDotEnv
+} from '#domain/providers/npm';
 import NpmCliConfig from '@npmcli/config';
 import { definitions, flatten, shorthands } from '@npmcli/config/lib/definitions';
 
@@ -14,6 +19,11 @@ export async function createNpmRegistryClientData(
     hasEnvFile
   } = options;
 
+  const env = {
+    ...process.env,
+    ...hasEnvFile ? await getDotEnv(envFilePath) : {}
+  };
+
   // load the npm config
   const npmCliConfig = new NpmCliConfig({
     shorthands,
@@ -26,9 +36,7 @@ export async function createNpmRegistryClientData(
     // ensures user npmrc is parsed by npm
     argv: ['', '', `--userconfig=${userConfigPath}`],
     // pass through .env data
-    env: hasEnvFile
-      ? await getDotEnv(envFilePath)
-      : {}
+    env
   });
 
   await npmCliConfig.load();
