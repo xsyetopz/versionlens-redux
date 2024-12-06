@@ -70,9 +70,8 @@ export const getTokenTests = {
     const testToken = '12345678';
     const testUrlAuthData = createUrlAuthData(
       testUrl,
-      'testId',
-      'test label',
       testScheme,
+      'test label',
       UrlAuthenticationStatus.NoStatus
     );
 

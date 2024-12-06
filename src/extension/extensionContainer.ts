@@ -47,7 +47,10 @@ import {
 import { VersionLensExtension } from './versionLensExtension';
 import { addPackageFileWatcher } from './watcher/serviceFactory';
 
-export async function configureContainer(context: ExtensionContext): Promise<IServiceProvider> {
+export async function configureContainer(
+  context: ExtensionContext,
+  resourceFolderPath: string
+): Promise<IServiceProvider> {
   const serviceCollectionFactory = new AwilixServiceCollectionFactory();
   const services = serviceCollectionFactory.createServiceCollection();
   services.addSingleton(
@@ -65,13 +68,19 @@ export async function configureContainer(context: ExtensionContext): Promise<ISe
   );
 
   // extension
-  addExtensionServices(services, context.workspaceState, context.secrets)
+  addExtensionServices(
+    services,
+    resourceFolderPath,
+    context.workspaceState,
+    context.secrets
+  );
 
   return await services.build();
 }
 
 function addExtensionServices(
   services: IServiceCollection,
+  resourceFolderPath: string,
   workspaceState: Memento,
   secrets: SecretStorage
 ) {
@@ -88,7 +97,7 @@ function addExtensionServices(
   addPackageFileWatcher(services);
 
   // auth
-  addAuthenticationProviders(services, secrets);
+  addAuthenticationProviders(services, resourceFolderPath, secrets);
   addAuthenticationInteractions(services);
   addUrlAuthenticationStore(services, workspaceState);
   addAuthorizer(services);

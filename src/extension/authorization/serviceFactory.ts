@@ -6,13 +6,15 @@ import {
   AuthenticationInteractions,
   AuthenticationScheme,
   Authorizer,
+  BasicAuthProvider,
+  CustomAuthProvider,
   UrlAuthenticationStore
 } from '#extension/authorization';
 import { type Memento, type SecretStorage, window } from 'vscode';
-import { BasicAuthProvider, CustomAuthProvider } from './authenticationProviders';
 
 export function addAuthenticationProviders(
   services: IServiceCollection,
+  resourceFolderPath: string,
   secrets: SecretStorage
 ) {
   const serviceName = nameOf<IExtensionServices>().authenticationProviders;
@@ -20,10 +22,12 @@ export function addAuthenticationProviders(
     serviceName,
     (container: IExtensionServices) => ({
       [AuthenticationScheme.Basic]: new BasicAuthProvider(
+        resourceFolderPath,
         secrets,
         container.authenticationInteractions
       ),
       [AuthenticationScheme.Custom]: new CustomAuthProvider(
+        resourceFolderPath,
         secrets,
         container.authenticationInteractions
       )

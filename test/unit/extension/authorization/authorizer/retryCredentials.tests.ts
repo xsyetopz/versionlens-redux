@@ -52,16 +52,17 @@ export const retryCredentialsTests = {
       const testUrl = 'https://anything';
       const testUrlAuthData = createUrlAuthData(
         testUrl,
-        'testId',
-        'test label',
         AuthenticationScheme.Basic,
-        UrlAuthenticationStatus.NotConsented
+        'test label',
+        UrlAuthenticationStatus.UserCancelled
       );
-      const expectedUrlAuthData: UrlAuthenticationData = {
-        ...testUrlAuthData,
-        scheme: AuthenticationScheme.NotSet,
-        status: UrlAuthenticationStatus.CredentialsFailed
-      };
+      const expectedUrlAuthData = createUrlAuthData(
+        testUrl,
+        AuthenticationScheme.NotSet,
+        'test label',
+        UrlAuthenticationStatus.CredentialsFailed
+      );
+
       const expectedPromptMessage = AuthPrompt.couldNotAuthenticate(testUrl);
 
       when(this.mockInteractions.promptYesCancel(expectedPromptMessage)).thenResolve(false);
@@ -83,9 +84,8 @@ export const retryCredentialsTests = {
     const testUrl = 'https://anything';
     const testUrlAuthData = createUrlAuthData(
       testUrl,
-      'testId',
-      'test label',
       testScheme,
+      'test label',
       UrlAuthenticationStatus.NoStatus
     );
     const expectedPromptMessage = AuthPrompt.couldNotAuthenticate(testUrl);

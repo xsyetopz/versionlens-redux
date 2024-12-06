@@ -7,16 +7,15 @@ export enum AuthenticationScheme {
 
 export enum UrlAuthenticationStatus {
   NoStatus = 'NoStatus',
-  NotConsented = 'Not consented',
+  UserCancelled = 'User cancelled',
   CredentialsFailed = 'Credentials failed'
 }
 
 export type UrlAuthenticationData = {
   readonly url: string
-  readonly protocol: string
-  readonly id: string
-  readonly label: string
   readonly scheme: AuthenticationScheme
+  readonly protocol: string
+  readonly label: string
   readonly status: UrlAuthenticationStatus
 }
 

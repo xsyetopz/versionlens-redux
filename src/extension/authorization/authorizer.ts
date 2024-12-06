@@ -130,11 +130,14 @@ export class Authorizer implements IAuthorizer {
   private async authenticate(urlAuthData: UrlAuthenticationData): Promise<boolean> {
     const didCreate = await this.providers[urlAuthData.scheme].create(urlAuthData.url);
     if (didCreate)
-      // save the url auth data
+      // save completed data
       await this.urlAuthStore.update(urlAuthData.url, urlAuthData);
     else
-      // save as unconsented auth data
-      await this.urlAuthStore.update(urlAuthData.url, createEmptyUrlAuthData(urlAuthData.url));
+      // save cancelled data
+      await this.urlAuthStore.update(
+        urlAuthData.url,
+        createEmptyUrlAuthData(urlAuthData.url)
+      );
 
     return didCreate;
   }

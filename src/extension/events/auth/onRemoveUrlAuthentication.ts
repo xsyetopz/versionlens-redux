@@ -4,21 +4,22 @@ import { type KeyDictionary, Disposable } from '#domain/utils';
 import {
   type AuthenticationProvider,
   type UrlAuthenticationStore,
-  AuthenticationInteractions
+  AuthenticationInteractions,
+  AuthenticationScheme
 } from '#extension/authorization';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class OnRemoveUrlAuthentication extends Disposable {
 
   constructor(
-    readonly providers: KeyDictionary<AuthenticationProvider>,
+    readonly authProviders: KeyDictionary<AuthenticationProvider>,
     readonly urlAuthStore: UrlAuthenticationStore,
     readonly packageCache: PackageCache,
     readonly interactions: AuthenticationInteractions,
     readonly logger: ILogger
   ) {
     super();
-    throwUndefinedOrNull('providers', providers);
+    throwUndefinedOrNull('authProviders', authProviders);
     throwUndefinedOrNull('urlAuthStore', urlAuthStore);
     throwUndefinedOrNull('packageCache', packageCache);
     throwUndefinedOrNull('interactions', interactions);
@@ -32,7 +33,7 @@ export class OnRemoveUrlAuthentication extends Disposable {
     // sort the list
     data.sort();
 
-    // ask the user which url(s) to remove
+    // prompt the user stored url auth data to remove
     const authDataToClear = await this.interactions.chooseUrlAuthToClear(data);
     if (authDataToClear.length === 0) return;
 
@@ -44,7 +45,9 @@ export class OnRemoveUrlAuthentication extends Disposable {
       await this.urlAuthStore.remove(authItem.url);
 
       // clear secret auth persistence
-      await this.providers[authItem.scheme].remove(authItem.id);
+      if (authItem.scheme !== AuthenticationScheme.NotSet) {
+        await this.authProviders[authItem.scheme].remove(authItem.url);
+      }
     }
 
     // clear package cache

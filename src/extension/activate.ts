@@ -8,15 +8,18 @@ import {
   OnActiveTextEditorChange,
   VersionLensExtension
 } from '#extension';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { type ExtensionContext, window, workspace } from 'vscode';
 import { configureContainer } from './extensionContainer';
 
 let serviceProvider: IServiceProvider;
 
 export async function activate(context: ExtensionContext): Promise<void> {
+  // get the resource folder path (opened folder or single file)
+  const resourceFolderPath = await getResourceFolderPath(context);
+
   // create the ioc service provider
-  serviceProvider = await configureContainer(context)
+  serviceProvider = await configureContainer(context, resourceFolderPath);
 
   const serviceNames = nameOf<IDomainServices & IExtensionServices>();
 
@@ -45,6 +48,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   // log general start up info
   const logPath = join(context.logUri.fsPath, "..");
   logger.info("extension path: %s", extensionPath);
+  logger.info("resource folder path: %s", resourceFolderPath);
   logger.info("workspace mode: %s", extension.isWorkspaceMode);
   logger.info("version: %s", version);
   logger.info("log level: %s", loggingOptions.level);
@@ -95,4 +99,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
 export async function deactivate() {
   await serviceProvider.dispose();
+}
+
+async function getResourceFolderPath(context: ExtensionContext): Promise<string> {
+  if (context.storageUri) return context.storageUri.path;
+  const resourceFilePath = window.activeTextEditor.document.uri.path;
+  return dirname(resourceFilePath);
 }

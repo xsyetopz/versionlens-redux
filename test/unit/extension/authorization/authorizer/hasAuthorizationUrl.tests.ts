@@ -63,7 +63,7 @@ export const urlHasAuthConsentTests = {
     [
       <UrlAuthenticationData>{
         scheme: AuthenticationScheme.Basic,
-        status: UrlAuthenticationStatus.NotConsented
+        status: UrlAuthenticationStatus.UserCancelled
       },
       false
     ],
@@ -76,7 +76,7 @@ export const urlHasAuthConsentTests = {
     ],
     function (
       this: TestContext,
-      testUrlAuthData: undefined | UrlAuthenticationData,
+      testUrlAuthData: UrlAuthenticationData | undefined,
       expected: boolean
     ) {
       const testUrl = 'https://anything';

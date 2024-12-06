@@ -41,14 +41,20 @@ export class OnAddUrlAuthentication extends Disposable {
     const urlAuthData = await this.interactions.chooseAuthenticationScheme(authUrl);
     if (urlAuthData === undefined) return;
 
-    // save credentials
-    const didCreate = await this.authProviders[urlAuthData.scheme].create(urlAuthData.url);
+    // prompt for provider credentials
+    const didCreate = await this.authProviders[urlAuthData.scheme].create(
+      urlAuthData.url
+    );
+
     if (didCreate)
-      // save the url auth data
+      // save completed data
       await this.urlAuthStore.update(urlAuthData.url, urlAuthData);
     else
-      // save as unconsented auth data
-      await this.urlAuthStore.update(urlAuthData.url, createEmptyUrlAuthData(urlAuthData.url));
+      // save cancelled data
+      await this.urlAuthStore.update(
+        urlAuthData.url,
+        createEmptyUrlAuthData(urlAuthData.url)
+      );
 
     // clear package cache
     this.logger.info('Clearing package caches');

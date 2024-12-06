@@ -7,13 +7,17 @@ import {
   basicAuthPrompt,
   chooseAuthSchemePrompt,
   confirmAuthUrlPrompt,
-  createCustomProviderId,
   createUrlAuthData
 } from '#extension/authorization';
 import type { IVsCodeWindow } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { URL } from 'url';
 import type { QuickPickItem } from 'vscode';
+
+export type ProviderQuickPickItem = QuickPickItem & {
+  providerLabel: string,
+  providerScheme: AuthenticationScheme
+}
 
 export class AuthenticationInteractions {
 
@@ -71,17 +75,16 @@ export class AuthenticationInteractions {
   }
 
   async chooseAuthenticationScheme(url: string): Promise<UrlAuthenticationData | undefined> {
-    const pickItems: QuickPickItem[] = Array.from(
+    const pickItems: ProviderQuickPickItem[] = Array.from(
       authenticationProviders,
-      authProviderInfo => (<any>{
+      authProviderInfo => ({
         // ui data
         label: authProviderInfo.label,
         detail: authProviderInfo.description,
 
         // selected item data
         providerLabel: authProviderInfo.label,
-        providerScheme: authProviderInfo.scheme,
-        providerId: createCustomProviderId(authProviderInfo.scheme, url)
+        providerScheme: authProviderInfo.scheme
       })
     );
 
@@ -97,19 +100,11 @@ export class AuthenticationInteractions {
     // check the user made a selection
     if (!selectedQuickPick) return undefined;
 
-    // extract the selection data
-    const {
-      providerId: id,
-      providerLabel: label,
-      providerScheme: scheme
-    } = <any>selectedQuickPick;
-
     // map to result
     return createUrlAuthData(
       url,
-      id,
-      label,
-      scheme,
+      selectedQuickPick.providerScheme,
+      selectedQuickPick.providerLabel,
       UrlAuthenticationStatus.NoStatus
     );
   }
@@ -172,12 +167,10 @@ export class AuthenticationInteractions {
           detailBuilder.push(`(${urlAuth.status})`);
         }
 
-        return <any>{
+        return {
           // ui data
           label: urlAuth.url,
           detail: detailBuilder.join(' '),
-          // selected item data
-          _id: urlAuth.id
         };
       }
     );
@@ -196,7 +189,7 @@ export class AuthenticationInteractions {
 
     // filter the url auth data by selected
     const results = urlAuthData.filter(authData => {
-      return selected.some((item: any) => item._id === authData.id);
+      return selected.some(item => item.label === authData.url);
     });
 
     return results;

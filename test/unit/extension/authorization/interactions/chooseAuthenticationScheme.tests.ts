@@ -1,8 +1,9 @@
 import {
-  type UrlAuthenticationData,
+  type ProviderQuickPickItem,
   AuthenticationInteractions,
   authenticationProviders,
   chooseAuthSchemePrompt,
+  createUrlAuthData,
   UrlAuthenticationStatus
 } from '#extension/authorization';
 import type { IVsCodeWindow } from '#extension/vscode';
@@ -53,27 +54,23 @@ export const chooseAuthenticationSchemeTests = {
     const testOptions: QuickPickOptions = {
       title: chooseAuthSchemePrompt.chooseAuthenticationScheme(testAuthUrl),
       placeHolder: "Choose an authentication provider"
-    }
-    const testProviderId = `(Basic Auth) ${testAuthUrl}`;
-    const testPickedData = {
+    };
+    const testPickedData: ProviderQuickPickItem = {
       label: authenticationProviders[0].label,
       detail: authenticationProviders[0].description,
 
       providerLabel: authenticationProviders[0].label,
       providerScheme: authenticationProviders[0].scheme,
-      providerId: testProviderId
-    }
-    const expected: UrlAuthenticationData = {
-      id: testProviderId,
-      url: testAuthUrl,
-      label: authenticationProviders[0].label,
-      scheme: authenticationProviders[0].scheme,
-      protocol: 'https:',
-      status: UrlAuthenticationStatus.NoStatus
     };
+    const expected = createUrlAuthData(
+      testAuthUrl,
+      authenticationProviders[0].scheme,
+      authenticationProviders[0].label,
+      UrlAuthenticationStatus.NoStatus
+    );
 
-    when(this.mockWindow.showQuickPick(anything(), <any>deepEqual(testOptions)))
-      .thenResolve(<any>testPickedData);
+    when(this.mockWindow.showQuickPick(anything(), deepEqual(testOptions) as any))
+      .thenResolve(testPickedData as any);
 
     // test
     const actual = await this.testInterations.chooseAuthenticationScheme(testAuthUrl);
@@ -82,7 +79,7 @@ export const chooseAuthenticationSchemeTests = {
     verify(
       this.mockWindow.showQuickPick(
         anyOfClass(Array),
-        <any>deepEqual(testOptions)
+        deepEqual(testOptions) as any
       )
     ).once();
 

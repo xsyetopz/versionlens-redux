@@ -149,9 +149,8 @@ export const getCredentialsTests = {
     const testRequestUrl = `${testUrl}/package/path/index.json`;
     const testUrlAuthData = createUrlAuthData(
       testUrl,
-      'testId',
-      'test label',
       testScheme,
+      'test label',
       UrlAuthenticationStatus.NoStatus
     );
     when(this.mockInteractions.confirmAuthorziationUrl(testUrl, testRequestUrl))
@@ -184,9 +183,8 @@ export const getCredentialsTests = {
       const testRequestUrl = `${testUrl}/package/path/index.json`;
       const testUrlAuthData = createUrlAuthData(
         testUrl,
-        'testId',
-        'test label',
         testScheme,
+        'test label',
         UrlAuthenticationStatus.NoStatus
       );
       const expectedUrlAuthData = createEmptyUrlAuthData(testUrl);

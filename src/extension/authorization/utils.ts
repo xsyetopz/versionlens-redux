@@ -5,31 +5,18 @@ import {
 } from '#extension/authorization';
 import { URL } from 'node:url';
 
-export function createCustomProviderId(scheme: AuthenticationScheme, url: string) {
-  switch (scheme) {
-    case AuthenticationScheme.Basic:
-      return `(Basic Auth) ${url}`;
-    case AuthenticationScheme.Custom:
-      return `(Custom Auth) ${url}`;
-    default:
-      throw new Error("Authentication scheme not defined");
-  }
-}
-
 export function createUrlAuthData(
   url: string,
-  id: string,
-  label: string,
   scheme: AuthenticationScheme,
+  label: string,
   status: UrlAuthenticationStatus
 ): UrlAuthenticationData {
   const parsedUrl = new URL(url);
   return {
     url,
-    protocol: parsedUrl.protocol,
-    id,
-    label,
     scheme,
+    protocol: parsedUrl.protocol,
+    label,
     status
   };
 }
@@ -38,10 +25,9 @@ export function createEmptyUrlAuthData(url: string): UrlAuthenticationData {
   const parsedUrl = new URL(url);
   return {
     url,
-    protocol: parsedUrl.protocol,
-    id: null,
-    label: null,
     scheme: AuthenticationScheme.NotSet,
-    status: UrlAuthenticationStatus.NotConsented
+    protocol: parsedUrl.protocol,
+    label: null,
+    status: UrlAuthenticationStatus.UserCancelled
   };
 }

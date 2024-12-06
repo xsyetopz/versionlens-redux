@@ -39,16 +39,14 @@ export const getAuthorizationUrlTests = {
     when(this.mockUrlAuthStore.getAll()).thenReturn([
       createUrlAuthData(
         'https://test-registry-1/auth',
-        'testId1',
-        'test label 1',
         AuthenticationScheme.Basic,
+        'test label 1',
         UrlAuthenticationStatus.NoStatus
       ),
       createUrlAuthData(
         'https://test-registry-2/auth',
-        'testId2',
-        'test label 2',
         AuthenticationScheme.Basic,
+        'test label 2',
         UrlAuthenticationStatus.NoStatus
       )
     ]);

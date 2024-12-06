@@ -31,9 +31,8 @@ export const UrlAuthenticationStoreTests = {
     this.testData = {
       [this.testUrl]: createUrlAuthData(
         this.testUrl,
-        `(Test) ${this.testUrl}`,
-        'test label',
         AuthenticationScheme.Basic,
+        'test label',
         UrlAuthenticationStatus.NoStatus
       )
     };
@@ -66,9 +65,8 @@ export const UrlAuthenticationStoreTests = {
   "updates data by url": async function (this: TestContext) {
     const testUpdateData = createUrlAuthData(
       this.testUrl,
-      `(Test Update) ${this.testUrl}`,
-      'test update label',
       AuthenticationScheme.Basic,
+      'test update label',
       UrlAuthenticationStatus.NoStatus
     );
 
