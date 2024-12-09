@@ -1,12 +1,12 @@
 import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
-import type { FileMatcher, IProviderConfig } from '#domain/providers';
+import type { IProviderConfig } from '#domain/providers';
 import { PubFeatures } from '#domain/providers/pub';
 import { ensureEndSlash, nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
-const ctorParam = nameOf<PubConfig>();
+const def = nameOf<PubConfig>();
 
 export class PubConfig implements IProviderConfig {
 
@@ -15,18 +15,12 @@ export class PubConfig implements IProviderConfig {
     readonly caching: CachingOptions,
     readonly http: HttpOptions
   ) {
-    throwUndefinedOrNull(ctorParam.config, config);
-    throwUndefinedOrNull(ctorParam.caching, caching);
-    throwUndefinedOrNull(ctorParam.http, http);
+    throwUndefinedOrNull(def.config, config);
+    throwUndefinedOrNull(def.caching, caching);
+    throwUndefinedOrNull(def.http, http);
   }
 
-  get fileMatcher(): FileMatcher {
-    return {
-      language: 'yaml',
-      scheme: 'file',
-      pattern: this.filePatterns
-    };
-  }
+  readonly fileLanguage = 'yaml';
 
   get filePatterns(): string {
     return this.config.get(PubFeatures.FilePatterns);

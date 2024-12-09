@@ -14,12 +14,12 @@ export class GetSuggestionProvider {
 
     let filtered = this.suggestionProviders
       .filter(
-        provider => isMatch(filename, provider.config.fileMatcher.pattern)
+        provider => isMatch(filename, provider.config.filePatterns)
       )
       .filter(
         provider => !(
-          provider.config.fileMatcher.exclude &&
-          isMatch(filePath, provider.config.fileMatcher.exclude)
+          provider.config.fileExcludePatterns &&
+          isMatch(filePath, provider.config.fileExcludePatterns)
         )
       );
 

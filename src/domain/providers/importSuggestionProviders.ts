@@ -71,7 +71,7 @@ export async function importSuggestionProvider(
     logger.debug(
       "Registered provider for %s:\t file pattern: %s\t caching: %s seconds\t strict ssl: %s",
       providerName,
-      suggestionProvider.config.fileMatcher.pattern,
+      suggestionProvider.config.filePatterns,
       suggestionProvider.config.caching.duration / 1000,
       suggestionProvider.config.http.strictSSL,
     );

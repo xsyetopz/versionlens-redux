@@ -1,12 +1,12 @@
 import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
-import type { FileMatcher, IProviderConfig } from '#domain/providers';
+import type { IProviderConfig } from '#domain/providers';
 import { DubFeatures } from '#domain/providers/dub';
 import { ensureEndSlash, nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
-const ctorParam = nameOf<DubConfig>();
+const def = nameOf<DubConfig>();
 
 export class DubConfig implements IProviderConfig {
 
@@ -15,18 +15,12 @@ export class DubConfig implements IProviderConfig {
     readonly caching: CachingOptions,
     readonly http: HttpOptions
   ) {
-    throwUndefinedOrNull(ctorParam.config, config);
-    throwUndefinedOrNull(ctorParam.caching, caching);
-    throwUndefinedOrNull(ctorParam.http, http);
+    throwUndefinedOrNull(def.config, config);
+    throwUndefinedOrNull(def.caching, caching);
+    throwUndefinedOrNull(def.http, http);
   }
 
-  get fileMatcher(): FileMatcher {
-    return {
-      language: 'json',
-      scheme: 'file',
-      pattern: this.filePatterns
-    };
-  }
+  readonly fileLanguage = 'json';
 
   get filePatterns(): string {
     return this.config.get(DubFeatures.FilePatterns);

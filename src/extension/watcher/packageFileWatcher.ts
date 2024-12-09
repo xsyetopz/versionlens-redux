@@ -57,7 +57,7 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
 
   async watchFile(file: Uri): Promise<void> {
     const matched = this.providers.filter(
-      provider => isMatch(file.fsPath, provider.config.fileMatcher.pattern, { dot: true })
+      provider => isMatch(file.fsPath, provider.config.filePatterns, { dot: true })
     );
 
     if (matched.length === 0) {
@@ -82,14 +82,12 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
   watch(): void {
     // watch files
     this.providers.forEach(provider => {
-      const watcher = this.workspace.createFileSystemWatcher(
-        provider.config.fileMatcher.pattern
-      );
+      const watcher = this.workspace.createFileSystemWatcher(provider.config.filePatterns);
 
       this.logger.debug(
         `created watcher for '%s' with pattern '%s'`,
         provider.name,
-        provider.config.fileMatcher.pattern
+        provider.config.filePatterns
       );
 
       this.disposables.push(
@@ -147,16 +145,19 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
   private async findProviderFiles(provider: ISuggestionProvider) {
     // capture start time
     const startedAt = performance.now();
-    const { pattern, exclude } = provider.config.fileMatcher;
+    const { filePatterns, fileExcludePatterns } = provider.config;
     const excludeFiles = this.editorConfig.excludeFiles;
     const excludePatterns = [
       ...defaultExcludes,
       ...Object.keys(excludeFiles).filter(x => excludeFiles[x])
     ];
 
-    if (exclude) excludePatterns.push(...exclude);
+    if (fileExcludePatterns) excludePatterns.push(...fileExcludePatterns);
 
-    const files = await this.workspace.findFiles(pattern, `{${excludePatterns.join(',')}}`);
+    const files = await this.workspace.findFiles(
+      filePatterns,
+      mapToSinglePattern(excludePatterns)
+    );
 
     for (const file of files) {
       await this.onFileAdd(provider, file)
@@ -171,5 +172,8 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
       Math.floor(completedAt - startedAt)
     );
   }
+}
 
+export function mapToSinglePattern(patterns: string[]): string {
+  return `{${patterns.join(',')}}`;
 }

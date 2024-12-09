@@ -1,12 +1,12 @@
 import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
-import type { FileMatcher, IProviderConfig } from '#domain/providers';
+import type { IProviderConfig } from '#domain/providers';
 import { MavenFeatures } from '#domain/providers/maven';
 import { ensureEndSlash, nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
-const ctorParam = nameOf<MavenConfig>();
+const def = nameOf<MavenConfig>();
 
 export class MavenConfig implements IProviderConfig {
 
@@ -15,18 +15,12 @@ export class MavenConfig implements IProviderConfig {
     readonly caching: CachingOptions,
     readonly http: HttpOptions
   ) {
-    throwUndefinedOrNull(ctorParam.config, config);
-    throwUndefinedOrNull(ctorParam.caching, caching);
-    throwUndefinedOrNull(ctorParam.http, http);
+    throwUndefinedOrNull(def.config, config);
+    throwUndefinedOrNull(def.caching, caching);
+    throwUndefinedOrNull(def.http, http);
   }
 
-  get fileMatcher(): FileMatcher {
-    return {
-      language: 'xml',
-      scheme: 'file',
-      pattern: this.filePatterns
-    };
-  }
+  readonly fileLanguage = 'xml';
 
   get filePatterns(): string {
     return this.config.get(MavenFeatures.FilePatterns);

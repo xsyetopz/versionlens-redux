@@ -34,13 +34,8 @@ export const packageFileWatcherTests = {
     this.mockPackageFileWatcher = mock<PackageFileWatcher>();
 
     when(this.mockProvider.name).thenReturn("test provider");
-
-    when(this.mockProviderConfig.fileMatcher).thenReturn({
-      language: "",
-      pattern: "**/package.json",
-      scheme: "",
-      exclude: ['**/node_modules/**']
-    });
+    when(this.mockProviderConfig.filePatterns).thenReturn('**/package.json');
+    when(this.mockProviderConfig.fileExcludePatterns).thenReturn(['**/node_modules/**']);
   },
 
   watchFolder: {
@@ -53,7 +48,7 @@ export const packageFileWatcherTests = {
       const testExcludes = [
         ...defaultExcludes,
         ...Object.keys(testUserFileExcludes).filter(x => testUserFileExcludes[x]),
-        ...testConfig.fileMatcher.exclude
+        ...testConfig.fileExcludePatterns
       ];
 
       when(this.mockProvider.config).thenReturn(testConfig);
@@ -61,7 +56,7 @@ export const packageFileWatcherTests = {
 
       when(
         this.mockWorkspace.findFiles(
-          testConfig.fileMatcher.pattern,
+          testConfig.filePatterns,
           `{${testExcludes.join(',')}}`
         )
       ).thenResolve([testUri] as any);
@@ -129,7 +124,7 @@ export const packageFileWatcherTests = {
 
       when(this.mockProvider.config).thenReturn(testConfig);
 
-      when(this.mockWorkspace.createFileSystemWatcher(testConfig.fileMatcher.pattern))
+      when(this.mockWorkspace.createFileSystemWatcher(testConfig.filePatterns))
         .thenReturn(instance(mockFileSystemWatcher))
 
       const watcher = new PackageFileWatcher(
@@ -149,7 +144,7 @@ export const packageFileWatcherTests = {
         this.mockLogger.debug(
           "created watcher for '%s' with pattern '%s'",
           testProvider.name,
-          testProvider.config.fileMatcher.pattern
+          testConfig.filePatterns
         )
       ).once();
 

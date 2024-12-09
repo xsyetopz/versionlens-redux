@@ -7,6 +7,7 @@ import { instance, mock, when } from 'ts-mockito';
 
 type TestContext = {
   mockConfig: IProviderConfig,
+  mockLogger: ILogger,
   testProviders: Array<ISuggestionProvider>
 }
 
@@ -15,20 +16,18 @@ export const getSuggestionProviderTests = {
   [test.title]: GetSuggestionProvider.name,
 
   beforeEach: function (this: TestContext) {
-    const mockLogger = mock<ILogger>();
-    const mockConfig = mock<IProviderConfig>();
-    when(mockConfig.fileMatcher).thenReturn({
-      language: 'json',
-      scheme: 'file',
-      pattern: '**/package.json',
-      exclude: ['**/node_modules/**']
-    });
+    this.mockConfig = mock<IProviderConfig>();
+    this.mockLogger = mock<ILogger>();
+
+    when(this.mockConfig.fileLanguage).thenReturn('json');
+    when(this.mockConfig.filePatterns).thenReturn('**/package.json');
+    when(this.mockConfig.fileExcludePatterns).thenReturn(['**/node_modules/**']);
 
     this.testProviders = [
       <ISuggestionProvider>{
         name: "test",
-        config: instance(mockConfig),
-        logger: instance(mockLogger)
+        config: instance(this.mockConfig),
+        logger: instance(this.mockLogger)
       }
     ]
   },

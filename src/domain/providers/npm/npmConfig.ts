@@ -1,12 +1,12 @@
 import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
-import type { FileMatcher, IProviderConfig } from '#domain/providers';
+import type { IProviderConfig } from '#domain/providers';
 import { type GitHubOptions, NpmFeatures } from '#domain/providers/npm';
 import { nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
-const ctorParam = nameOf<NpmConfig>();
+const def = nameOf<NpmConfig>();
 
 export class NpmConfig implements IProviderConfig {
 
@@ -16,19 +16,13 @@ export class NpmConfig implements IProviderConfig {
     readonly http: HttpOptions,
     readonly github: GitHubOptions,
   ) {
-    throwUndefinedOrNull(ctorParam.config, config);
-    throwUndefinedOrNull(ctorParam.caching, caching);
-    throwUndefinedOrNull(ctorParam.http, http);
-    throwUndefinedOrNull(ctorParam.github, github);
+    throwUndefinedOrNull(def.config, config);
+    throwUndefinedOrNull(def.caching, caching);
+    throwUndefinedOrNull(def.http, http);
+    throwUndefinedOrNull(def.github, github);
   }
 
-  get fileMatcher(): FileMatcher {
-    return {
-      language: 'json',
-      scheme: 'file',
-      pattern: this.filePatterns
-    };
-  }
+  readonly fileLanguage = 'json';
 
   get filePatterns(): string {
     return this.config.get(NpmFeatures.FilePatterns);
