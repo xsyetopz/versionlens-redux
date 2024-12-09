@@ -1,7 +1,7 @@
-import { IFrozenOptions, Options } from '#domain/configuration';
-import { INugetOptions, NugetFeatures } from '#domain/providers/dotnet';
+import { type IFrozenOptions, Options } from '#domain/configuration';
+import { NugetFeatures } from '#domain/providers/dotnet';
 
-export class NugetOptions extends Options implements INugetOptions {
+export class NugetOptions extends Options {
 
   constructor(config: IFrozenOptions, section: string) {
     super(config, section);

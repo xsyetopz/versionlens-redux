@@ -1,20 +1,19 @@
-import { CachingOptions } from '#domain/caching';
-import {
+import type { CachingOptions } from '#domain/caching';
+import type {
   HttpOptions,
   IJsonHttpClient,
   IShellClient,
   TClientResponse
 } from '#domain/clients';
-import { IOptions } from '#domain/configuration';
-import { PackageVersionType } from '#domain/packages';
-import {
+import type { PackageVersionType } from '#domain/packages';
+import type {
   DotNetCli,
   DotNetConfig,
   NuGetPackageClient,
   NuGetResourceClient,
   NugetOptions
 } from '#domain/providers/dotnet';
-import { RegistryProtocols } from '#domain/utils';
+import type { RegistryProtocols } from '#domain/utils';
 
 export enum DotNetFeatures {
   Caching = 'dotnet.caching',
@@ -28,10 +27,6 @@ export enum DotNetFeatures {
 
 export enum NugetFeatures {
   Sources = 'sources',
-}
-
-export interface INugetOptions extends IOptions {
-  sources: Array<string>;
 }
 
 export type NugetVersionSpec = {

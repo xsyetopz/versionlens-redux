@@ -1,16 +1,7 @@
 import type { CachingOptions } from '#domain/caching';
-import {
-  type HttpOptions,
-  type IShellClient,
-  ClientResponseSource,
-} from '#domain/clients';
+import { type HttpOptions, type IShellClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import {
-  type DotNetConfig,
-  type INugetOptions,
-  type NugetOptions,
-  DotNetCli,
-} from '#domain/providers/dotnet';
+import { type DotNetConfig, type NugetOptions, DotNetCli, } from '#domain/providers/dotnet';
 import { RegistryProtocols } from '#domain/utils';
 import assert from 'node:assert';
 import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito';
@@ -19,7 +10,7 @@ import Fixtures from './fixtures/dotnetSources';
 type TestContext = {
   cacheOptsMock: CachingOptions
   httpOptsMock: HttpOptions
-  nugetOptsMock: INugetOptions
+  nugetOptsMock: NugetOptions
   configMock: DotNetConfig
   loggerMock: ILogger
   clientMock: IShellClient
