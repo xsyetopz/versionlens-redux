@@ -31,7 +31,7 @@ export class OnTogglePrereleases extends Disposable {
       x => x.providerName === providerName
     );
 
-    codelensProvider && codelensProvider.reloadCodeLenses();
+    codelensProvider && codelensProvider.refreshCodeLenses();
   }
 
 }

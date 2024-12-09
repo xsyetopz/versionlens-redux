@@ -7,7 +7,7 @@ import { type IExtensionServices, VersionLensExtension } from '#extension';
 import { VersionLensState } from '#extension/state';
 import { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
 import { EditorConfig } from '#extension/vscode';
-import { window, workspace } from 'vscode';
+import { EventEmitter, languages, window, workspace } from 'vscode';
 
 export function addEditorConfig(services: IServiceCollection) {
   services.addSingleton(
@@ -65,12 +65,30 @@ export function addVersionLensProviders(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) =>
       new DisposableArray(
         container.suggestionProviders.map(
-          suggestionProvider => new SuggestionCodeLensProvider(
-            container.extension,
-            suggestionProvider,
-            container.getSuggestions,
-            container.logger.child({ logGroup: `${suggestionProvider.name}CodeLensProvider` })
-          )
+          suggestionProvider => {
+            const provider = new SuggestionCodeLensProvider(
+              container.extension,
+              suggestionProvider,
+              container.getSuggestions,
+              new EventEmitter(),
+              container.logger.child({ logGroup: `${suggestionProvider.name}CodeLensProvider` })
+            );
+
+            // register codelens provider with vscode
+            const selector = suggestionProvider.config.fileMatcher;
+            const expandedSelector = selector.language === 'json'
+              // expand to a Array<DocumentSelector> to support JSONC
+              ? [selector, { ...selector, language: 'jsonc' }]
+              // otherwise use the single selector
+              : selector;
+
+            provider.disposable = languages.registerCodeLensProvider(
+              expandedSelector,
+              provider
+            );
+
+            return provider;
+          }
         )
       ),
     true
