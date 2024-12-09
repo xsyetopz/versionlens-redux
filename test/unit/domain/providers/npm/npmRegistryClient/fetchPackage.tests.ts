@@ -1,4 +1,4 @@
-import { type ICachingOptions, CachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import type { ILogger } from '#domain/logging';
 import {
   type TPackageClientRequest,
@@ -11,12 +11,12 @@ import {
 } from '#domain/packages';
 import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import {
+  type GitHubOptions,
   type INpmRegistry,
   type NpaSpec,
+  type NpmConfig,
   type TNpmClientData,
   defaultRegistryFetchTimeoutOpts,
-  GitHubOptions,
-  NpmConfig,
   NpmRegistryClient
 } from '#domain/providers/npm';
 import { test } from 'mocha-ui-esm';
@@ -25,31 +25,33 @@ import npa from 'npm-package-arg';
 import { anything, instance, mock, when } from 'ts-mockito';
 import Fixtures from './npmRegistryClient.fixtures';
 
-let cachingOptsMock: ICachingOptions;
-let githubOptsMock: GitHubOptions;
-let loggerMock: ILogger;
-let configMock: NpmConfig;
-let npmRegistryMock: INpmRegistry;
+type TestContext = {
+  cachingOptsMock: CachingOptions
+  githubOptsMock: GitHubOptions
+  loggerMock: ILogger
+  configMock: NpmConfig
+  npmRegistryMock: INpmRegistry
+}
 
 export const fetchPackageTests = {
 
   [test.title]: NpmRegistryClient.prototype.fetchPackage.name,
 
-  beforeEach: () => {
-    githubOptsMock = mock(GitHubOptions);
-    cachingOptsMock = mock(CachingOptions)
-    configMock = mock(NpmConfig)
-    loggerMock = mock<ILogger>()
-    npmRegistryMock = mock<INpmRegistry>()
+  beforeEach: function (this: TestContext) {
+    this.githubOptsMock = mock<GitHubOptions>();
+    this.cachingOptsMock = mock<CachingOptions>()
+    this.configMock = mock<NpmConfig>()
+    this.loggerMock = mock<ILogger>()
+    this.npmRegistryMock = mock<INpmRegistry>()
 
-    when(configMock.caching).thenReturn(instance(cachingOptsMock))
-    when(configMock.github).thenReturn(instance(githubOptsMock))
-    when(configMock.prereleaseTagFilter).thenReturn([])
-    when(npmRegistryMock.pickRegistry(anything(), anything()))
+    when(this.configMock.caching).thenReturn(instance(this.cachingOptsMock))
+    when(this.configMock.github).thenReturn(instance(this.githubOptsMock))
+    when(this.configMock.prereleaseTagFilter).thenReturn([])
+    when(this.npmRegistryMock.pickRegistry(anything(), anything()))
       .thenReturn("https://registry.npmjs.org/")
   },
 
-  'returns a registry range package': async () => {
+  'returns a registry range package': async function (this: TestContext) {
     const testPackageRes = createPackageResource(
       // package name
       'pacote',
@@ -83,13 +85,13 @@ export const fetchPackageTests = {
       testPackageRes.path
     ) as NpaSpec;
 
-    when(npmRegistryMock.json(anything(), anything()))
+    when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentRegistryRange)
 
     const cut = new NpmRegistryClient(
-      instance(npmRegistryMock),
-      instance(configMock),
-      instance(loggerMock)
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      instance(this.loggerMock)
     )
 
     return cut.fetchPackage(testRequest, npaSpec)
@@ -101,7 +103,7 @@ export const fetchPackageTests = {
       })
   },
 
-  'returns a registry version package': async () => {
+  'returns a registry version package': async function (this: TestContext) {
     const testPackageRes = createPackageResource(
       // package name
       'npm-package-arg',
@@ -135,13 +137,13 @@ export const fetchPackageTests = {
       testPackageRes.path
     ) as NpaSpec;
 
-    when(npmRegistryMock.json(anything(), anything()))
+    when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentRegistryVersion)
 
     const cut = new NpmRegistryClient(
-      instance(npmRegistryMock),
-      instance(configMock),
-      instance(loggerMock)
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      instance(this.loggerMock)
     )
 
     return cut.fetchPackage(testRequest, npaSpec)
@@ -152,7 +154,7 @@ export const fetchPackageTests = {
       })
   },
 
-  'returns capped latest versions': async () => {
+  'returns capped latest versions': async function (this: TestContext) {
     const testPackageRes = createPackageResource(
       // package name
       'npm-package-arg',
@@ -186,13 +188,13 @@ export const fetchPackageTests = {
       testPackageRes.path
     ) as NpaSpec;
 
-    when(npmRegistryMock.json(anything(), anything()))
+    when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentCappedToLatestTaggedVersion)
 
     const cut = new NpmRegistryClient(
-      instance(npmRegistryMock),
-      instance(configMock),
-      instance(loggerMock)
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      instance(this.loggerMock)
     )
 
     return cut.fetchPackage(testRequest, npaSpec)
@@ -211,7 +213,7 @@ export const fetchPackageTests = {
       })
   },
 
-  'returns a registry alias package': async () => {
+  'returns a registry alias package': async function (this: TestContext) {
     const testPackageRes = createPackageResource(
       // package name
       'aliased',
@@ -245,13 +247,13 @@ export const fetchPackageTests = {
       testPackageRes.path
     ) as NpaSpec;
 
-    when(npmRegistryMock.json(anything(), anything()))
+    when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentRegistryAlias)
 
     const cut = new NpmRegistryClient(
-      instance(npmRegistryMock),
-      instance(configMock),
-      instance(loggerMock)
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      instance(this.loggerMock)
     )
 
     return cut.fetchPackage(testRequest, npaSpec)

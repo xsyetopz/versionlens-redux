@@ -1,6 +1,6 @@
-import { ICachingOptions } from '#domain/caching';
-import { IHttpOptions, IJsonHttpClient } from '#domain/clients';
-import { DubClient, DubConfig } from '#domain/providers/dub';
+import type { CachingOptions } from '#domain/caching';
+import type { IHttpOptions, IJsonHttpClient } from '#domain/clients';
+import type { DubClient, DubConfig } from '#domain/providers/dub';
 
 export enum DubFeatures {
   Caching = 'dub.caching',
@@ -13,7 +13,7 @@ export enum DubFeatures {
 }
 
 export interface IDubServices {
-  dubCachingOpts: ICachingOptions;
+  dubCachingOpts: CachingOptions;
   dubHttpOpts: IHttpOptions;
   dubConfig: DubConfig;
   dubJsonClient: IJsonHttpClient;

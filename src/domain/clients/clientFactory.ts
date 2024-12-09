@@ -1,10 +1,10 @@
 import type { IAuthorizer } from '#domain/authorization';
-import type { ICachingOptions, IExpiryCache } from '#domain/caching';
+import type { CachingOptions, IExpiryCache } from '#domain/caching';
 import {
+  type HttpClientOptions,
   type IHttpClient,
   type IJsonHttpClient,
   type IShellClient,
-  HttpClientOptions,
   JsonHttpClient
 } from '#domain/clients';
 import { PromiseSpawnClient } from '#domain/clients/promiseSpawn';
@@ -15,7 +15,7 @@ import * as RequireLight from 'request-light';
 
 export function createShellClient(
   shellCache: IExpiryCache,
-  cachingOpts: ICachingOptions,
+  cachingOpts: CachingOptions,
   logger: ILogger
 ): IShellClient {
   return new PromiseSpawnClient(PromiseSpawn, shellCache, cachingOpts, logger);

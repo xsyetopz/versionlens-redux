@@ -1,5 +1,4 @@
-import { IFrozenOptions } from '#domain/configuration';
-import { TAsyncFunction } from '#domain/utils';
+import type { TAsyncFunction } from '#domain/utils';
 
 export enum CachingFeatures {
   CacheDuration = 'duration',
@@ -20,14 +19,6 @@ export interface ICache {
   clear(): void;
 
 };
-
-export interface ICachingOptions extends IFrozenOptions {
-
-  config: IFrozenOptions;
-
-  duration: number;
-
-}
 
 export type ExpiryCacheEntry<T> = {
   createdTime: number,

@@ -1,4 +1,4 @@
-import type { ICachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import type { IHttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
 import type { FileMatcher, IProviderConfig } from '#domain/providers';
@@ -12,7 +12,7 @@ export class ComposerConfig implements IProviderConfig {
 
   constructor(
     readonly config: IFrozenOptions,
-    readonly caching: ICachingOptions,
+    readonly caching: CachingOptions,
     readonly http: IHttpOptions
   ) {
     throwUndefinedOrNull(ctorParam.config, config);

@@ -1,35 +1,37 @@
-import { type ICachingOptions, CachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import {
   type HttpClientResponse,
+  type HttpOptions,
   type IHttpClient,
   type IHttpOptions,
   ClientResponseSource,
-  HttpOptions,
   JsonHttpClient
 } from '#domain/clients';
 import assert from 'node:assert';
-import { anything, instance, mock, when } from 'ts-mockito';
+import { anything, deepEqual, instance, mock, when } from 'ts-mockito';
 
-let cachingOptsMock: ICachingOptions;
-let httpOptsMock: IHttpOptions;
-let httpClientMock: IHttpClient;
+type TestContext = {
+  cachingOptsMock: CachingOptions;
+  httpOptsMock: IHttpOptions;
+  httpClientMock: IHttpClient;
+}
 
 export const JsonClientRequestTests = {
 
   title: "JsonClientRequest",
 
-  beforeEach: () => {
-    cachingOptsMock = mock(CachingOptions);
-    httpOptsMock = mock(HttpOptions);
-    httpClientMock = mock();
+  beforeEach: function (this: TestContext) {
+    this.cachingOptsMock = mock<CachingOptions>();
+    this.httpOptsMock = mock<HttpOptions>();
+    this.httpClientMock = mock<IHttpClient>();
 
-    when(cachingOptsMock.duration).thenReturn(30000);
-    when(httpOptsMock.strictSSL).thenReturn(true);
+    when(this.cachingOptsMock.duration).thenReturn(30000);
+    when(this.httpOptsMock.strictSSL).thenReturn(true);
   },
 
-  "requestJson": {
+  "get": {
 
-    "returns response as an object": async () => {
+    "returns response as an object": async function (this: TestContext) {
       const testUrl = 'https://test.url.example/path';
       const testQueryParams = {}
       const testResponse: HttpClientResponse = {
@@ -45,14 +47,14 @@ export const JsonClientRequestTests = {
       }
 
       when(
-        httpClientMock.get(
-          anything(),
-          anything(),
+        this.httpClientMock.get(
+          testUrl,
+          deepEqual(testQueryParams),
           anything()
         )
       ).thenResolve(testResponse)
 
-      const rut = new JsonHttpClient(instance(httpClientMock));
+      const rut = new JsonHttpClient(instance(this.httpClientMock));
 
       // test
       const actual = await rut.get(testUrl, testQueryParams);

@@ -1,156 +1,156 @@
-import { CachingOptions, ICachingOptions, MemoryExpiryCache } from '#domain/caching';
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { ClientResponseSource, ShellClientRequestError } from '#domain/clients';
-import { PromiseSpawnClient } from '#domain/clients/promiseSpawn';
-import { ILogger } from '#domain/logging';
+import { type PromiseSpawnFn, PromiseSpawnClient } from '#domain/clients/promiseSpawn';
+import type { ILogger } from '#domain/logging';
 import { test } from 'mocha-ui-esm';
 import assert from 'node:assert';
 import { anything, instance, mock, when } from 'ts-mockito';
-import { PromiseSpawnStub } from './promiseSpawnStub';
 
-let psMock: PromiseSpawnStub;
-let cachingOptionsMock: ICachingOptions;
-let loggerMock: ILogger;
+interface IPromiseSpawn {
+  promiseSpawnFn: PromiseSpawnFn
+}
+
+type TestContext = {
+  psMock: IPromiseSpawn;
+  cachingOptionsMock: CachingOptions;
+  loggerMock: ILogger;
+}
 
 export const PromiseSpawnClientTests = {
 
   [test.title]: PromiseSpawnClient.name,
 
-  beforeEach: () => {
-    cachingOptionsMock = mock(CachingOptions)
-    loggerMock = mock<ILogger>()
-    psMock = mock(PromiseSpawnStub)
+  beforeEach: function (this: TestContext) {
+    this.cachingOptionsMock = mock<CachingOptions>()
+    this.loggerMock = mock<ILogger>()
+    this.psMock = mock<IPromiseSpawn>()
   },
 
   request: {
 
-    "returns <ShellClientResponse> when error occurs": async () => {
-      const testCmd = 'missing';
-      const testArgs = ['--ooppss'];
-      const testCwd = '/';
+    "returns <ShellClientResponse> when error occurs":
+      async function (this: TestContext) {
+        const testCmd = 'missing';
+        const testArgs = ['--ooppss'];
+        const testCwd = '/';
 
-      when(cachingOptionsMock.duration).thenReturn(30000);
+        when(this.cachingOptionsMock.duration).thenReturn(30000);
 
-      when(psMock.promiseSpawn(anything(), anything(), anything()))
-        .thenReject(<any>{
-          code: "ENOENT",
-          message: "spawn missing ENOENT"
-        });
+        when(this.psMock.promiseSpawnFn(testCmd, testArgs, anything()))
+          .thenReject(<any>{
+            code: "ENOENT",
+            message: "spawn missing ENOENT"
+          });
 
-      const rut = new PromiseSpawnClient(
-        instance(psMock).promiseSpawn,
-        new MemoryExpiryCache("PromiseSpawnClientCache"),
-        instance(cachingOptionsMock),
-        instance(loggerMock)
-      );
+        const rut = new PromiseSpawnClient(
+          instance(this.psMock).promiseSpawnFn,
+          new MemoryExpiryCache("PromiseSpawnClientCache"),
+          instance(this.cachingOptionsMock),
+          instance(this.loggerMock)
+        );
 
-      try {
-        await rut.request(testCmd, testArgs, testCwd);
-      }
-      catch (e) {
-        const expectedMessage =
-          `${ShellClientRequestError.name}:\n`
-          + `\tcmd: ${testCmd}\n`
-          + `\targs: ${testArgs}\n`
-          + `\tcwd: ${testCwd}\n`;
+        try {
+          await rut.request(testCmd, testArgs, testCwd);
+        }
+        catch (e) {
+          const expectedMessage =
+            `${ShellClientRequestError.name}:\n`
+            + `\tcmd: ${testCmd}\n`
+            + `\targs: ${testArgs}\n`
+            + `\tcwd: ${testCwd}\n`;
 
-        const error = e as ShellClientRequestError;
-        assert.equal(error.message, expectedMessage);
-        assert.equal(error.cause.message, "spawn missing ENOENT");
-      }
+          const error = e as ShellClientRequestError;
+          assert.equal(error.message, expectedMessage);
+          assert.equal(error.cause.message, "spawn missing ENOENT");
+        }
 
-    },
+      },
 
-    "returns <ShellClientResponse> and caches response": async () => {
-      const testResponse = {
-        source: ClientResponseSource.cli,
-        status: 0,
-        data: '123\n',
-        rejected: false
-      }
+    "returns <ShellClientResponse> and caches response":
+      async function (this: TestContext) {
+        const testCmd = 'echo';
+        const testArgs = ['123'];
+        const testCwd = 'd:\\';
 
-      const expectedCacheData = {
-        source: ClientResponseSource.cache,
-        status: testResponse.status,
-        data: testResponse.data,
-        rejected: false
-      };
+        const testResponse = {
+          source: ClientResponseSource.cli,
+          status: 0,
+          data: '123\n',
+          rejected: false
+        }
 
-      when(psMock.promiseSpawn(anything(), anything(), anything()))
-        .thenResolve(<any>{
-          code: 0,
-          stdout: testResponse.data
-        });
+        const expectedCacheData = {
+          source: ClientResponseSource.cache,
+          status: testResponse.status,
+          data: testResponse.data,
+          rejected: false
+        };
 
-      when(cachingOptionsMock.duration).thenReturn(30000);
+        when(this.psMock.promiseSpawnFn(testCmd, testArgs, anything()))
+          .thenResolve(<any>{
+            code: 0,
+            stdout: testResponse.data
+          });
 
-      const rut = new PromiseSpawnClient(
-        instance(psMock).promiseSpawn,
-        new MemoryExpiryCache("PromiseSpawnClientCache"),
-        instance(cachingOptionsMock),
-        instance(loggerMock)
-      );
+        when(this.cachingOptionsMock.duration).thenReturn(30000);
 
-      const firstResponse = await rut.request(
-        'echo',
-        ['123'],
-        'd:\\'
-      );
+        const rut = new PromiseSpawnClient(
+          instance(this.psMock).promiseSpawnFn,
+          new MemoryExpiryCache("PromiseSpawnClientCache"),
+          instance(this.cachingOptionsMock),
+          instance(this.loggerMock)
+        );
 
-      assert.deepEqual(firstResponse, testResponse);
+        const firstResponse = await rut.request(testCmd, testArgs, testCwd);
 
-      const cachedResponse = await rut.request(
-        'echo',
-        ['123'],
-        'd:\\'
-      );
+        assert.deepEqual(firstResponse, testResponse);
 
-      assert.deepEqual(cachedResponse, expectedCacheData);
-    },
+        const cachedResponse = await rut.request(testCmd, testArgs, testCwd);
 
-    "doesn't cache when duration is 0": async () => {
-      const testDuration = 0;
-      const testKey = 'echo 123';
-      const testResponse = {
-        source: ClientResponseSource.cli,
-        status: 0,
-        data: '123\n',
-        rejected: false,
-      }
+        assert.deepEqual(cachedResponse, expectedCacheData);
+      },
 
-      when(psMock.promiseSpawn(anything(), anything(), anything()))
-        .thenResolve(<any>{
-          code: 0,
-          stdout: testResponse.data
-        });
+    "doesn't cache when duration is 0":
+      async function (this: TestContext) {
+        const testCmd = 'echo';
+        const testArgs = ['123'];
+        const testCwd = 'd:\\';
 
-      when(cachingOptionsMock.duration).thenReturn(testDuration);
-      const testCache = new MemoryExpiryCache("PromiseSpawnClientCache");
+        const testDuration = 0;
+        const testKey = 'echo 123';
+        const testResponse = {
+          source: ClientResponseSource.cli,
+          status: 0,
+          data: '123\n',
+          rejected: false,
+        }
 
-      const rut = new PromiseSpawnClient(
-        instance(psMock).promiseSpawn,
-        testCache,
-        instance(cachingOptionsMock),
-        instance(loggerMock)
-      );
+        when(this.psMock.promiseSpawnFn(testCmd, testArgs, anything()))
+          .thenResolve(<any>{
+            code: 0,
+            stdout: testResponse.data
+          });
 
-      const firstResponse = await rut.request(
-        'echo',
-        ['123'],
-        'd:\\'
-      );
+        when(this.cachingOptionsMock.duration).thenReturn(testDuration);
+        const testCache = new MemoryExpiryCache("PromiseSpawnClientCache");
 
-      assert.deepEqual(firstResponse, testResponse);
+        const rut = new PromiseSpawnClient(
+          instance(this.psMock).promiseSpawnFn,
+          testCache,
+          instance(this.cachingOptionsMock),
+          instance(this.loggerMock)
+        );
 
-      const cachedResponse = await rut.request(
-        'echo',
-        ['123'],
-        'd:\\'
-      );
+        const firstResponse = await rut.request(testCmd, testArgs, testCwd);
 
-      assert.deepEqual(cachedResponse, testResponse);
-      const cachedData = testCache.get(testKey, testDuration);
-      assert.equal(cachedData, undefined);
-    },
+        assert.deepEqual(firstResponse, testResponse);
+
+        const cachedResponse = await rut.request(testCmd, testArgs, testCwd);
+
+        assert.deepEqual(cachedResponse, testResponse);
+        const cachedData = testCache.get(testKey, testDuration);
+        assert.equal(cachedData, undefined);
+      },
 
   },
 

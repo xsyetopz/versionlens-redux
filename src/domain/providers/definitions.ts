@@ -1,4 +1,4 @@
-import type { ICachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import type { IHttpOptions } from '#domain/clients';
 import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import type { ILogger } from '#domain/logging';
@@ -17,7 +17,7 @@ export type FileMatcher = {
 
 export interface IProviderConfig {
   fileMatcher: FileMatcher;
-  caching: ICachingOptions;
+  caching: CachingOptions;
   http: IHttpOptions;
   onSaveChangesTask: string;
 }

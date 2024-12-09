@@ -1,20 +1,20 @@
-import { ICachingOptions, IExpiryCache } from '#domain/caching';
+import type { CachingOptions, IExpiryCache } from '#domain/caching';
 import {
+  type IShellClient,
+  type ShellClientResponse,
   ClientResponseSource,
-  IShellClient,
-  ShellClientRequestError,
-  ShellClientResponse
+  ShellClientRequestError
 } from '#domain/clients';
-import { IPromiseSpawnFn } from '#domain/clients/promiseSpawn';
-import { ILogger } from '#domain/logging';
+import type { PromiseSpawnFn } from '#domain/clients/promiseSpawn';
+import type { ILogger } from '#domain/logging';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class PromiseSpawnClient implements IShellClient {
 
   constructor(
-    readonly promiseSpawnFn: IPromiseSpawnFn,
+    readonly promiseSpawnFn: PromiseSpawnFn,
     readonly shellCache: IExpiryCache,
-    readonly cachingOptions: ICachingOptions,
+    readonly cachingOptions: CachingOptions,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("promiseSpawnFn", promiseSpawnFn);

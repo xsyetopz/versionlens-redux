@@ -1,4 +1,4 @@
-import type { ICachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import type { IFrozenOptions } from '#domain/configuration';
 import type { KeyDictionary, KeyStringDictionary } from '#domain/utils';
 
@@ -26,7 +26,7 @@ export interface IHttpOptions extends IFrozenOptions {
 }
 
 export type HttpClientOptions = {
-  caching: ICachingOptions,
+  caching: CachingOptions,
   http: IHttpOptions,
 }
 

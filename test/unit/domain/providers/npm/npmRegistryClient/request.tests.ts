@@ -1,12 +1,12 @@
-import { CachingOptions, ICachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import { ClientResponseSource } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import { createPackageResource } from '#domain/packages';
 import {
-  GitHubOptions,
-  INpmRegistry,
-  NpaSpec,
-  NpmConfig,
+  type GitHubOptions,
+  type INpmRegistry,
+  type NpaSpec,
+  type NpmConfig,
   NpmRegistryClient
 } from '#domain/providers/npm';
 import { test } from 'mocha-ui-esm';
@@ -14,32 +14,34 @@ import assert from 'node:assert';
 import npa from 'npm-package-arg';
 import { anything, instance, mock, when } from 'ts-mockito';
 
-let cachingOptsMock: ICachingOptions;
-let githubOptsMock: GitHubOptions;
-let loggerMock: ILogger;
-let configMock: NpmConfig;
-let npmRegistryMock: INpmRegistry;
+type TestContext = {
+  cachingOptsMock: CachingOptions
+  githubOptsMock: GitHubOptions
+  loggerMock: ILogger
+  configMock: NpmConfig
+  npmRegistryMock: INpmRegistry
+}
 
 export const RequestsTests = {
 
   [test.title]: NpmRegistryClient.prototype.request.name,
 
-  beforeEach: () => {
-    githubOptsMock = mock(GitHubOptions);
-    cachingOptsMock = mock(CachingOptions)
-    configMock = mock(NpmConfig)
-    loggerMock = mock<ILogger>()
-    npmRegistryMock = mock<INpmRegistry>()
+  beforeEach: function (this: TestContext) {
+    this.githubOptsMock = mock<GitHubOptions>();
+    this.cachingOptsMock = mock<CachingOptions>();
+    this.configMock = mock<NpmConfig>()
+    this.loggerMock = mock<ILogger>()
+    this.npmRegistryMock = mock<INpmRegistry>()
 
-    when(cachingOptsMock.duration).thenReturn(30000);
-    when(configMock.caching).thenReturn(instance(cachingOptsMock))
-    when(configMock.github).thenReturn(instance(githubOptsMock))
-    when(configMock.prereleaseTagFilter).thenReturn([])
-    when(npmRegistryMock.pickRegistry(anything(), anything()))
+    when(this.cachingOptsMock.duration).thenReturn(30000);
+    when(this.configMock.caching).thenReturn(instance(this.cachingOptsMock))
+    when(this.configMock.github).thenReturn(instance(this.githubOptsMock))
+    when(this.configMock.prereleaseTagFilter).thenReturn([])
+    when(this.npmRegistryMock.pickRegistry(anything(), anything()))
       .thenReturn("https://registry.npmjs.org/")
   },
 
-  "returns successful responses": async () => {
+  "returns successful responses": async function (this: TestContext) {
     const testResponse = {
       any: "test success response from npm registry"
     };
@@ -66,13 +68,13 @@ export const RequestsTests = {
       testPackageRes.path
     ) as NpaSpec;
 
-    when(npmRegistryMock.json(anything(), anything()))
+    when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(testResponse);
 
     const cut = new NpmRegistryClient(
-      instance(npmRegistryMock),
-      instance(configMock),
-      instance(loggerMock)
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      instance(this.loggerMock)
     );
 
     // test
@@ -82,7 +84,7 @@ export const RequestsTests = {
     assert.deepEqual(actual, expectedResponse);
   },
 
-  "caches url responses when rejected": async () => {
+  "caches url responses when rejected": async function (this: TestContext) {
     const testResponse = {
       code: "E404",
       message: "404 Not Found - GET https://registry.npmjs.org/somepackage - Not found",
@@ -110,13 +112,13 @@ export const RequestsTests = {
       testPackageRes.path
     ) as NpaSpec;
 
-    when(npmRegistryMock.json(anything(), anything()))
+    when(this.npmRegistryMock.json(anything(), anything()))
       .thenReject(<any>testResponse);
 
     const cut = new NpmRegistryClient(
-      instance(npmRegistryMock),
-      instance(configMock),
-      instance(loggerMock)
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      instance(this.loggerMock)
     );
 
     try {

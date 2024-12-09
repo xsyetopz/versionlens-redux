@@ -1,8 +1,8 @@
-import type { ICachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import type { IHttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
 import type { FileMatcher, IProviderConfig } from '#domain/providers';
-import { DotNetFeatures, INugetOptions } from '#domain/providers/dotnet';
+import { type INugetOptions, DotNetFeatures } from '#domain/providers/dotnet';
 import { nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
@@ -12,7 +12,7 @@ export class DotNetConfig implements IProviderConfig {
 
   constructor(
     readonly config: IFrozenOptions,
-    readonly caching: ICachingOptions,
+    readonly caching: CachingOptions,
     readonly http: IHttpOptions,
     nugetOptions: INugetOptions,
   ) {

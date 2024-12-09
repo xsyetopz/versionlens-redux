@@ -1,9 +1,8 @@
-import { type ICachingOptions, CachingFeatures } from '#domain/caching';
+import { CachingFeatures } from '#domain/caching';
 import { type IFrozenOptions, OptionsWithFallback } from '#domain/configuration';
-import { Nullable } from '#domain/utils';
+import type { Nullable } from '#domain/utils';
 
-export class CachingOptions extends OptionsWithFallback
-  implements ICachingOptions {
+export class CachingOptions extends OptionsWithFallback {
 
   constructor(
     config: IFrozenOptions,

@@ -1,8 +1,8 @@
-import type { ICachingOptions } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import type { IHttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
 import type { FileMatcher, IProviderConfig } from '#domain/providers';
-import { GitHubOptions, NpmFeatures } from '#domain/providers/npm';
+import { type GitHubOptions, NpmFeatures } from '#domain/providers/npm';
 import { nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
@@ -12,7 +12,7 @@ export class NpmConfig implements IProviderConfig {
 
   constructor(
     readonly config: IFrozenOptions,
-    readonly caching: ICachingOptions,
+    readonly caching: CachingOptions,
     readonly http: IHttpOptions,
     readonly github: GitHubOptions,
   ) {
