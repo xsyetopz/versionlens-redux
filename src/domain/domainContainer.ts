@@ -8,14 +8,13 @@ import {
   addGetDependencyChangesUseCase,
   addGetSuggestionProviderUseCase,
   addHttpOptions,
-  addLoggingOptions,
   addShellCache,
   addSuggestionPackageCache,
   addSuggestionProviders,
-  addWinstonLogger
 } from '#domain';
 import type { TConfigSectionResolver } from '#domain/configuration';
 import type { IServiceCollection } from '#domain/di';
+import { addLoggingOptions, addWinstonLogger } from './logging/serviceFactory';
 
 export function addDomainServices(
   services: IServiceCollection,

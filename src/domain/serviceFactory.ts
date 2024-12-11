@@ -3,8 +3,6 @@ import { CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { HttpOptions } from '#domain/clients';
 import { type TConfigSectionResolver, Config } from '#domain/configuration';
 import type { IServiceCollection } from '#domain/di';
-import { LoggingOptions } from '#domain/logging';
-import { createWinstonLogger } from '#domain/logging/winston';
 import { DependencyCache, PackageCache } from '#domain/packages';
 import { importSuggestionProviders } from '#domain/providers';
 import { FileSystemStorage } from '#domain/storage';
@@ -38,13 +36,6 @@ export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     nameOf<IDomainServices>().cachingOptions,
     (container: IDomainServices) => new CachingOptions(container.appConfig, 'caching')
-  )
-}
-
-export function addLoggingOptions(services: IServiceCollection) {
-  services.addSingleton(
-    nameOf<IDomainServices>().loggingOptions,
-    (container: IDomainServices) => new LoggingOptions(container.appConfig, 'logging')
   )
 }
 
@@ -127,13 +118,5 @@ export function addFetchPackageSuggestionsUseCase(services: IServiceCollection) 
         container.packageCache,
         container.logger.child({ logGroup: serviceName })
       )
-  );
-}
-
-export function addWinstonLogger(services: IServiceCollection, defaultLogGroup: string) {
-  services.addSingleton(
-    nameOf<IDomainServices>().logger,
-    (container: IDomainServices) =>
-      createWinstonLogger(container.loggerChannel, defaultLogGroup)
   );
 }
