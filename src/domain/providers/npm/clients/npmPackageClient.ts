@@ -2,13 +2,12 @@ import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
+  type PackageSuggestion,
   type TPackageClientRequest,
   type TPackageClientResponse,
-  type TPackageSuggestion,
   ClientResponseFactory,
   PackageSourceType,
-  PackageStatusFactory,
-  UpdateableFactory
+  PackageStatusFactory
 } from '#domain/packages';
 import {
   type NpaSpec,
@@ -17,7 +16,8 @@ import {
   NpaTypes,
   NpmConfig,
   NpmRegistryClient,
-  convertNpmErrorToResponse
+  convertNpmErrorToResponse,
+  createNpmSuggestionFromErrorCode
 } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import npa from 'npm-package-arg';
@@ -104,42 +104,24 @@ export class NpmPackageClient implements IPackageClient<TNpmClientData> {
         );
       }
 
-      const status = response.status &&
-        !Number.isInteger(response.status) &&
-        response.status.startsWith('E') ?
-        response.status.substr(1) :
-        response.status;
+      const status = response.status
+      const statusIsNumber = Number.isInteger(status);
+      let suggestions: Array<PackageSuggestion>;
 
-      let suggestions: Array<TPackageSuggestion>;
-
-      if (status == 'CONNREFUSED')
-        suggestions = [PackageStatusFactory.createConnectionRefusedStatus()];
-      else if (status == 'CONNRESET')
-        suggestions = [PackageStatusFactory.createConnectionResetStatus()];
-      else if (status == 'UNSUPPORTEDPROTOCOL' || response.data == 'Not implemented yet')
-        suggestions = [PackageStatusFactory.createNotSupportedStatus()];
-      else if (status == 'INVALIDTAGNAME' || response.data.includes('Invalid comparator:'))
+      if (statusIsNumber)
         suggestions = [
-          PackageStatusFactory.createInvalidStatus(''),
-          UpdateableFactory.createLatestUpdateable('latest')
+          status === 128
+            ? PackageStatusFactory.createNotFoundStatus()
+            : PackageStatusFactory.createFromHttpStatus(status)
         ];
-      else if (status == 'INVALIDPACKAGENAME')
-        suggestions = [
-          PackageStatusFactory.createInvalidStatus('')
-        ];
-      else if (status == 128)
-        suggestions = [PackageStatusFactory.createNotFoundStatus()]
       else
-        suggestions = [PackageStatusFactory.createFromHttpStatus(status)];
-
-      if (suggestions === null) throw response;
+        suggestions = createNpmSuggestionFromErrorCode(status);
 
       return ClientResponseFactory.create(
         source,
         ClientResponseFactory.createResponseStatus(response.source, response.status),
         suggestions
       );
-
     };
 
   }

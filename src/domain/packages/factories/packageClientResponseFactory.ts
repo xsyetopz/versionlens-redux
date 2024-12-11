@@ -4,10 +4,10 @@ import {
   ClientResponseSource
 } from '#domain/clients';
 import {
+  type PackageSuggestion,
   type TPackageClientResponse,
   type TPackageClientResponseStatus,
   type TPackageResource,
-  type TPackageSuggestion,
   PackageSourceType,
   PackageStatusFactory,
   PackageVersionType,
@@ -19,7 +19,7 @@ import { dirname, join } from 'node:path';
 export function create(
   source: PackageSourceType,
   responseStatus: TPackageClientResponseStatus,
-  suggestions: Array<TPackageSuggestion>
+  suggestions: Array<PackageSuggestion>
 ): TPackageClientResponse {
 
   return {
@@ -37,7 +37,7 @@ export function createInvalidVersion(
   type: PackageVersionType
 ): TPackageClientResponse {
   const source: PackageSourceType = PackageSourceType.Registry;
-  const suggestions: Array<TPackageSuggestion> = [
+  const suggestions: Array<PackageSuggestion> = [
     PackageStatusFactory.createInvalidStatus(''),
     UpdateableFactory.createLatestUpdateable(),
   ];
@@ -58,7 +58,7 @@ export function createNoMatch(
   latestVersion?: string
 ): TPackageClientResponse {
 
-  const suggestions: Array<TPackageSuggestion> = [
+  const suggestions: Array<PackageSuggestion> = [
     PackageStatusFactory.createNoMatchStatus(),
     UpdateableFactory.createLatestUpdateable(latestVersion),
   ];
@@ -79,7 +79,7 @@ export function createFixed(
   fixedVersion: string
 ): TPackageClientResponse {
 
-  const suggestions: Array<TPackageSuggestion> = [
+  const suggestions: Array<PackageSuggestion> = [
     PackageStatusFactory.createFixedStatus(fixedVersion)
   ];
 
@@ -102,7 +102,7 @@ export async function createDirectory(
   const resolvedPath = join(dirname(packageFilePath), path);
   const exists = await fileExists(resolvedPath)
 
-  const suggestions: Array<TPackageSuggestion> = [
+  const suggestions: Array<PackageSuggestion> = [
     exists
       ? PackageStatusFactory.createDirectoryStatus(path)
       : PackageStatusFactory.createDirectoryNotFoundStatus(path)

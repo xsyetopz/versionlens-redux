@@ -1,15 +1,15 @@
 import {
+  type PackageSuggestion,
   PackageStatusFactory,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes,
-  TPackageSuggestion,
   createSuggestion
 } from '#domain/packages';
 import { Nullable } from '#domain/utils';
 import semver from 'semver';
 
-export function createFromHttpStatus(status: number | string): Nullable<TPackageSuggestion> {
+export function createFromHttpStatus(status: number | string): Nullable<PackageSuggestion> {
 
   if (status == 400)
     return PackageStatusFactory.createBadRequestStatus();
@@ -25,7 +25,7 @@ export function createFromHttpStatus(status: number | string): Nullable<TPackage
   return null;
 }
 
-export function createNotFoundStatus(): TPackageSuggestion {
+export function createNotFoundStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NotFound,
     category: SuggestionCategory.Error,
@@ -34,7 +34,7 @@ export function createNotFoundStatus(): TPackageSuggestion {
   };
 }
 
-export function createInternalServerErrorStatus(): TPackageSuggestion {
+export function createInternalServerErrorStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.InternalServerError,
     category: SuggestionCategory.Error,
@@ -43,7 +43,7 @@ export function createInternalServerErrorStatus(): TPackageSuggestion {
   };
 }
 
-export function createConnectionRefusedStatus(): TPackageSuggestion {
+export function createConnectionRefusedStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.ConnectionRefused,
     category: SuggestionCategory.Error,
@@ -52,7 +52,7 @@ export function createConnectionRefusedStatus(): TPackageSuggestion {
   };
 }
 
-export function createConnectionResetStatus(): TPackageSuggestion {
+export function createConnectionResetStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.ConnectionReset,
     category: SuggestionCategory.Error,
@@ -61,7 +61,7 @@ export function createConnectionResetStatus(): TPackageSuggestion {
   };
 }
 
-export function createForbiddenStatus(): TPackageSuggestion {
+export function createForbiddenStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.Forbidden,
     category: SuggestionCategory.Error,
@@ -70,7 +70,7 @@ export function createForbiddenStatus(): TPackageSuggestion {
   };
 }
 
-export function createNotAuthorizedStatus(): TPackageSuggestion {
+export function createNotAuthorizedStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NotAuthorized,
     category: SuggestionCategory.Error,
@@ -79,7 +79,7 @@ export function createNotAuthorizedStatus(): TPackageSuggestion {
   };
 }
 
-export function createBadRequestStatus(): TPackageSuggestion {
+export function createBadRequestStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.BadRequest,
     category: SuggestionCategory.Error,
@@ -88,7 +88,7 @@ export function createBadRequestStatus(): TPackageSuggestion {
   };
 }
 
-export function createDirectoryNotFoundStatus(path: string): TPackageSuggestion {
+export function createDirectoryNotFoundStatus(path: string): PackageSuggestion {
   return {
     name: SuggestionStatusText.DirectoryNotFound,
     category: SuggestionCategory.Error,
@@ -97,7 +97,7 @@ export function createDirectoryNotFoundStatus(path: string): TPackageSuggestion 
   };
 }
 
-export function createDirectoryStatus(path: string): TPackageSuggestion {
+export function createDirectoryStatus(path: string): PackageSuggestion {
   return {
     name: 'file://',
     category: SuggestionCategory.Directory,
@@ -106,7 +106,7 @@ export function createDirectoryStatus(path: string): TPackageSuggestion {
   };
 }
 
-export function createInvalidStatus(requestedVersion: string): TPackageSuggestion {
+export function createInvalidStatus(requestedVersion: string): PackageSuggestion {
   return {
     name: SuggestionStatusText.InvalidVersion,
     category: SuggestionCategory.Error,
@@ -115,11 +115,11 @@ export function createInvalidStatus(requestedVersion: string): TPackageSuggestio
   };
 }
 
-export function createInvalidRangeStatus(): TPackageSuggestion {
+export function createInvalidRangeStatus(): PackageSuggestion {
   return createInvalidStatus('range')
 }
 
-export function createNotSupportedStatus(): TPackageSuggestion {
+export function createNotSupportedStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NotSupported,
     category: SuggestionCategory.NoMatch,
@@ -128,7 +128,7 @@ export function createNotSupportedStatus(): TPackageSuggestion {
   };
 }
 
-export function createNoMatchStatus(): TPackageSuggestion {
+export function createNoMatchStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NoMatch,
     category: SuggestionCategory.NoMatch,
@@ -137,7 +137,7 @@ export function createNoMatchStatus(): TPackageSuggestion {
   };
 }
 
-export function createMatchesLatestStatus(latestVersion: string): TPackageSuggestion {
+export function createMatchesLatestStatus(latestVersion: string): PackageSuggestion {
   const isPrerelease = semver.prerelease(latestVersion);
 
   const name = isPrerelease
@@ -152,7 +152,7 @@ export function createMatchesLatestStatus(latestVersion: string): TPackageSugges
   };
 }
 
-export function createSatisifiesLatestStatus(latestVersion: string): TPackageSuggestion {
+export function createSatisifiesLatestStatus(latestVersion: string): PackageSuggestion {
   return createSuggestion(
     SuggestionStatusText.SatisfiesLatest,
     SuggestionCategory.Match,
@@ -161,7 +161,7 @@ export function createSatisifiesLatestStatus(latestVersion: string): TPackageSug
   )
 }
 
-export function createSatisifiesStatus(satisfiesVersion: string): TPackageSuggestion {
+export function createSatisifiesStatus(satisfiesVersion: string): PackageSuggestion {
   return createSuggestion(
     SuggestionStatusText.Satisfies,
     SuggestionCategory.Match,
@@ -170,7 +170,7 @@ export function createSatisifiesStatus(satisfiesVersion: string): TPackageSugges
   )
 }
 
-export function createFixedStatus(version: string): TPackageSuggestion {
+export function createFixedStatus(version: string): PackageSuggestion {
   return createSuggestion(
     SuggestionStatusText.Fixed,
     SuggestionCategory.Match,

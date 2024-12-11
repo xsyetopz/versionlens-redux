@@ -3,11 +3,11 @@ import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
   type PackageResponse,
+  type PackageSuggestion,
   type TPackageClientRequest,
   type TPackageClientResponse,
   type TPackageNameVersion,
   type TPackageResource,
-  type TPackageSuggestion,
   createPackageNameVersion,
   createPackageResource,
   PackageCache,
@@ -108,7 +108,7 @@ export const fetchPackageTests = <any>{
       },
       resolved: this.testPackageNameVersion,
       suggestions: [
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: this.testPackageRes.name,
           version: "1.0.0",
           type: SuggestionTypes.release
@@ -176,7 +176,7 @@ export const fetchPackageTests = <any>{
         },
         resolved: this.testPackageNameVersion,
         suggestions: [
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: this.testPackageRes.name,
             version: "1.0.0",
             type: SuggestionTypes.release

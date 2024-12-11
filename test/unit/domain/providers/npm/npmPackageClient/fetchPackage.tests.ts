@@ -1,14 +1,14 @@
 import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
+  type PackageSuggestion,
+  type TPackageClientRequest,
   createPackageResource,
   PackageDependency,
   PackageSourceType,
   SuggestionCategory,
   SuggestionStatusText,
-  SuggestionTypes,
-  TPackageClientRequest,
-  TPackageSuggestion
+  SuggestionTypes
 } from '#domain/packages';
 import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import {
@@ -123,7 +123,7 @@ export const fetchPackageTests = {
         assert.deepEqual(
           actual.suggestions,
           [
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.Fixed,
               category: SuggestionCategory.Match,
               version: 'git repository',
@@ -171,7 +171,7 @@ export const fetchPackageTests = {
         assert.deepEqual(
           actual.suggestions,
           [
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.NotSupported,
               category: SuggestionCategory.NoMatch,
               version: '',
@@ -184,7 +184,7 @@ export const fetchPackageTests = {
   },
 
   'returns $1 suggestion statuses': [
-    ["401", { status: 401, suggestion: { name: SuggestionStatusText.NotAuthorized} }],
+    ["401", { status: 401, suggestion: { name: SuggestionStatusText.NotAuthorized } }],
     ["404", { status: 404, suggestion: { name: SuggestionStatusText.NotFound } }],
     ["ECONNREFUSED", { status: 'ECONNREFUSED', suggestion: { name: SuggestionStatusText.ConnectionRefused } }],
     async (testTitlePart: string, testState: any) => {
@@ -231,7 +231,7 @@ export const fetchPackageTests = {
       assert.deepEqual(
         actual.suggestions,
         [
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: testState.suggestion.name,
             category: SuggestionCategory.Error,
             version: '',

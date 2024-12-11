@@ -1,8 +1,8 @@
 import {
+  type PackageSuggestion,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes,
-  TPackageSuggestion,
   UpdateableFactory
 } from '#domain/packages';
 import assert from 'node:assert';
@@ -14,7 +14,7 @@ export const PackageUpdateableFactoryTests = {
       const actual = UpdateableFactory.createLatestUpdateable()
       assert.deepEqual(
         actual,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.UpdateLatest,
           category: SuggestionCategory.Updateable,
           version: '*',
@@ -26,7 +26,7 @@ export const PackageUpdateableFactoryTests = {
       const actual = UpdateableFactory.createLatestUpdateable(testRelease)
       assert.deepEqual(
         actual,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.UpdateLatest,
           category: SuggestionCategory.Updateable,
           version: testRelease,
@@ -38,7 +38,7 @@ export const PackageUpdateableFactoryTests = {
       const actual = UpdateableFactory.createLatestUpdateable(testPrerelease)
       assert.deepEqual(
         actual,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.UpdateLatestPrerelease,
           category: SuggestionCategory.Updateable,
           version: testPrerelease,
@@ -59,7 +59,7 @@ export const PackageUpdateableFactoryTests = {
 
         assert.deepEqual(
           actual,
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: expectedName,
             version: testVersion,
             category: SuggestionCategory.Updateable,
@@ -82,7 +82,7 @@ export const PackageUpdateableFactoryTests = {
 
       assert.deepEqual(
         actual,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: testName,
           version: testVersion,
           category: SuggestionCategory.Updateable,

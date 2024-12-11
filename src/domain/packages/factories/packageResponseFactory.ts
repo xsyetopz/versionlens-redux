@@ -1,10 +1,10 @@
 import {
-  PackageResponse,
+  type PackageResponse,
+  type PackageSuggestion,
+  type TPackageClientRequest,
+  type TPackageClientResponse,
   PackageSourceType,
   PackageVersionType,
-  TPackageClientRequest,
-  TPackageClientResponse,
-  TPackageSuggestion
 } from '#domain/packages';
 
 export function createSuccess<TClientData>(
@@ -14,7 +14,7 @@ export function createSuccess<TClientData>(
 ): Array<PackageResponse> {
   // map the documents to responses
   return response.suggestions.map(
-    function (suggestion: TPackageSuggestion, order: number): PackageResponse {
+    function (suggestion: PackageSuggestion, order: number): PackageResponse {
       return {
         providerName,
         parsedDependency: request.parsedDependency,
@@ -31,7 +31,7 @@ export function createSuccess<TClientData>(
 export function createProjectVersionPackageResponse(
   providerName: string,
   request: TPackageClientRequest<any>,
-  suggestion: TPackageSuggestion
+  suggestion: PackageSuggestion
 ) {
   return {
     order: 0,

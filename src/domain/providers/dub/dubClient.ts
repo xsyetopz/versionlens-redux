@@ -2,9 +2,9 @@ import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
+  type PackageSuggestion,
   type TPackageClientRequest,
   type TPackageClientResponse,
-  type TPackageSuggestion,
   type TSemverSpec,
   ClientResponseFactory,
   PackageSourceType,
@@ -106,7 +106,7 @@ export function parseSuggestions(
   versionRange: string,
   releases: string[],
   prereleases: string[]
-): Array<TPackageSuggestion> {
+): Array<PackageSuggestion> {
   if (releases.length === 0) {
     return [PackageStatusFactory.createNoMatchStatus()]
   }

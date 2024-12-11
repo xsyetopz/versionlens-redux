@@ -1,11 +1,11 @@
 import {
+  type PackageSuggestion,
   SuggestionIncrements,
-  TPackageSuggestion,
   UpdateableFactory
 } from '#domain/packages';
 import { inc, valid, prerelease } from 'semver';
 
-export function getProjectVersionSuggestions(projectVersion: string): TPackageSuggestion[] {
+export function getProjectVersionSuggestions(projectVersion: string): PackageSuggestion[] {
   if (!valid(projectVersion)) projectVersion = '0.0.0';
 
   const isPrerelease = !!prerelease(projectVersion);

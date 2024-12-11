@@ -1,13 +1,13 @@
 import {
+  type PackageSuggestion,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes,
-  TPackageSuggestion,
   createSuggestion
 } from '#domain/packages';
 import { prerelease } from 'semver';
 
-export function createLatestUpdateable(requestedVersion?: string, name?: string): TPackageSuggestion {
+export function createLatestUpdateable(requestedVersion?: string, name?: string): PackageSuggestion {
   const isPrerelease = prerelease(requestedVersion);
 
   name ??= isPrerelease
@@ -27,7 +27,7 @@ export function createLatestUpdateable(requestedVersion?: string, name?: string)
   };
 }
 
-export function createNextMaxUpdateable(requestedVersion: string, name: string): TPackageSuggestion {
+export function createNextMaxUpdateable(requestedVersion: string, name: string): PackageSuggestion {
   return {
     name,
     category: SuggestionCategory.Updateable,
@@ -36,7 +36,7 @@ export function createNextMaxUpdateable(requestedVersion: string, name: string):
   };
 }
 
-export function createTaggedPreleaseUpdateable(name: string, version: string): TPackageSuggestion {
+export function createTaggedPreleaseUpdateable(name: string, version: string): PackageSuggestion {
   return createSuggestion(
     name,
     SuggestionCategory.Updateable,

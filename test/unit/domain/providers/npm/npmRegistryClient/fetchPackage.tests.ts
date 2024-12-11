@@ -1,8 +1,8 @@
 import type { CachingOptions } from '#domain/caching';
 import type { ILogger } from '#domain/logging';
 import {
+  type PackageSuggestion,
   type TPackageClientRequest,
-  type TPackageSuggestion,
   createPackageResource,
   PackageDependency,
   SuggestionCategory,
@@ -202,7 +202,7 @@ export const fetchPackageTests = {
         assert.deepEqual(
           actual.suggestions,
           [
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.Latest,
               category: SuggestionCategory.Latest,
               version: testPackageRes.version,

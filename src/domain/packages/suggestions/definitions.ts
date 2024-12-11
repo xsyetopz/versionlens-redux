@@ -51,7 +51,7 @@ export enum SuggestionTypes {
   tag = 8
 }
 
-export type TPackageSuggestion = {
+export type PackageSuggestion = {
   type: SuggestionTypes,
   category: SuggestionCategory,
   name: string,

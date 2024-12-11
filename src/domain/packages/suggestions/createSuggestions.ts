@@ -1,6 +1,6 @@
 import {
+  type PackageSuggestion,
   PackageStatusFactory,
-  TPackageSuggestion,
   getPreReleaseSuggestions,
   getReleaseSuggestions,
   getVersionStatus,
@@ -12,7 +12,7 @@ export function createSuggestions(
   releases: string[],
   prereleases: string[],
   distTagVersion?: string
-): Array<TPackageSuggestion> {
+): Array<PackageSuggestion> {
   if (releases.length === 0 && prereleases.length === 0) {
     // no versions published
     return [PackageStatusFactory.createNoMatchStatus()];
@@ -25,7 +25,7 @@ export function createSuggestions(
     distTagVersion
   )
 
-  const status: TPackageSuggestion = getVersionStatus(parsed);
+  const status: PackageSuggestion = getVersionStatus(parsed);
 
   const releaseSuggestions = releases.length > 0
     ? getReleaseSuggestions(requestedVersion, parsed, releases)

@@ -6,7 +6,7 @@ import {
 } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
-  type TPackageSuggestion,
+  type PackageSuggestion,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes
@@ -82,25 +82,25 @@ export const fetchGithubTests = {
         assert.deepEqual(
           actual.suggestions,
           [
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.SatisfiesLatest,
               category: SuggestionCategory.Match,
               version: 'v2.5.0',
               type: SuggestionTypes.status
             },
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.Latest,
               category: SuggestionCategory.Updateable,
               version: 'v2.5.0',
               type: SuggestionTypes.release
             },
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: 'rc',
               category: SuggestionCategory.Updateable,
               version: 'v2.6.0-rc.1',
               type: SuggestionTypes.prerelease
             },
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: 'preview',
               category: SuggestionCategory.Updateable,
               version: 'v2.5.0-preview.1',
@@ -153,25 +153,25 @@ export const fetchGithubTests = {
         assert.deepEqual(
           actual.suggestions,
           [
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.Fixed,
               category: SuggestionCategory.Match,
               version: 'v2.0.0',
               type: SuggestionTypes.status
             },
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.UpdateLatest,
               category: SuggestionCategory.Updateable,
               version: 'v2.5.0',
               type: SuggestionTypes.release
             },
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: 'rc',
               category: SuggestionCategory.Updateable,
               version: 'v2.6.0-rc.1',
               type: SuggestionTypes.prerelease
             },
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: 'preview',
               category: SuggestionCategory.Updateable,
               version: 'v2.5.0-preview.1',
@@ -223,13 +223,13 @@ export const fetchGithubTests = {
         assert.deepEqual(
           actual.suggestions,
           [
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.Fixed,
               category: SuggestionCategory.Match,
               version: '166c3497',
               type: SuggestionTypes.status
             },
-            <TPackageSuggestion>{
+            <PackageSuggestion>{
               name: SuggestionStatusText.UpdateLatest,
               category: SuggestionCategory.Updateable,
               version: 'df4d9435',

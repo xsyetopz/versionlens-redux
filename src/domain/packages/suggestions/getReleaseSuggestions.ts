@@ -1,8 +1,8 @@
 import {
+  type PackageSuggestion,
+  type TParsedVersion,
   SuggestionIncrements,
   SuggestionStatusText,
-  TPackageSuggestion,
-  TParsedVersion,
   UpdateableFactory
 } from '#domain/packages';
 import { compare, inc, maxSatisfying } from 'semver';
@@ -13,7 +13,7 @@ export function getReleaseSuggestions(
   releases: string[]
 ) {
   const potentialSuggestions: Array<[SuggestionStatusText, string]> = [];
-  const suggestions: Array<TPackageSuggestion> = [];
+  const suggestions: Array<PackageSuggestion> = [];
 
   // suggest latest?
   const suggestLatest = !parsed.isLatest || parsed.hasRangeUpdate;

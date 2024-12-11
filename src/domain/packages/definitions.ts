@@ -1,6 +1,6 @@
 import type { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import type { PackageDependency, TPackageSuggestion } from '#domain/packages';
+import type { PackageDependency, PackageSuggestion } from '#domain/packages';
 import type { IProviderConfig, ISuggestionProvider } from '#domain/providers';
 
 export enum PackageVersionType {
@@ -32,7 +32,7 @@ export type PackageResponse = {
   fetchedPackage?: TPackageNameVersion;
   packageSource?: PackageSourceType;
   type?: PackageVersionType;
-  suggestion?: TPackageSuggestion;
+  suggestion?: PackageSuggestion;
   order: number;
 };
 
@@ -83,6 +83,6 @@ export type TPackageClientResponse = {
   responseStatus?: TPackageClientResponseStatus;
   type: PackageVersionType;
   resolved?: TPackageNameVersion;
-  suggestions: Array<TPackageSuggestion>;
+  suggestions: Array<PackageSuggestion>;
   gitSpec?: any;
 };

@@ -1,11 +1,11 @@
-import assert from 'node:assert';
 import {
-  SuggestionCategory,
+  type PackageSuggestion,
   PackageStatusFactory,
+  SuggestionCategory,
   SuggestionStatusText,
-  SuggestionTypes,
-  TPackageSuggestion
+  SuggestionTypes
 } from '#domain/packages';
+import assert from 'node:assert';
 
 export const PackageStatusFactoryTests = {
 
@@ -14,7 +14,7 @@ export const PackageStatusFactoryTests = {
     "returns suggestions from implemented http status $1": [
       [
         400,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.BadRequest,
           category: SuggestionCategory.Error,
           version: '',
@@ -23,7 +23,7 @@ export const PackageStatusFactoryTests = {
       ],
       [
         401,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.NotAuthorized,
           category: SuggestionCategory.Error,
           version: '',
@@ -32,7 +32,7 @@ export const PackageStatusFactoryTests = {
       ],
       [
         403,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.Forbidden,
           category: SuggestionCategory.Error,
           version: '',
@@ -41,7 +41,7 @@ export const PackageStatusFactoryTests = {
       ],
       [
         404,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.NotFound,
           category: SuggestionCategory.Error,
           version: '',
@@ -50,14 +50,14 @@ export const PackageStatusFactoryTests = {
       ],
       [
         500,
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.InternalServerError,
           category: SuggestionCategory.Error,
           version: '',
           type: SuggestionTypes.status
         }
       ],
-      (testStatus: number, expected: TPackageSuggestion) => {
+      (testStatus: number, expected: PackageSuggestion) => {
         const actual = PackageStatusFactory.createFromHttpStatus(testStatus)
         assert.deepEqual(actual, expected)
       }

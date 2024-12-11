@@ -1,8 +1,8 @@
 import {
+  type PackageSuggestion,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes,
-  TPackageSuggestion,
   createSuggestions
 } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
@@ -16,7 +16,7 @@ export const CreateSuggestionsTests = {
 
     "when releases and prereleases are empty": () => {
       const expected = [
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.NoMatch,
           version: '',
           type: SuggestionTypes.status
@@ -40,13 +40,13 @@ export const CreateSuggestionsTests = {
     "when releases or prereleases do not contain a matching version": () => {
 
       const expected = [
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.NoMatch,
           category: SuggestionCategory.NoMatch,
           version: '',
           type: SuggestionTypes.status
         },
-        <TPackageSuggestion>{
+        <PackageSuggestion>{
           name: SuggestionStatusText.UpdateLatest,
           category: SuggestionCategory.Updateable,
           version: '1.0.0',
@@ -73,13 +73,13 @@ export const CreateSuggestionsTests = {
         const testDistTagLatest = '4.0.0-next';
 
         const expected = [
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: SuggestionStatusText.NoMatch,
             category: SuggestionCategory.NoMatch,
             version: '',
             type: SuggestionTypes.status
           },
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: SuggestionStatusText.UpdateLatestPrerelease,
             category: SuggestionCategory.Updateable,
             version: '4.0.0-next',
@@ -109,7 +109,7 @@ export const CreateSuggestionsTests = {
         const testDistTagVersion = '5.0.0';
 
         const expected = [
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: SuggestionStatusText.Latest,
             category: SuggestionCategory.Latest,
             version: '5.0.0',
@@ -214,13 +214,13 @@ export const CreateSuggestionsTests = {
         const testPrereleases = [testVersion, '1.0.0-beta.2', '1.0.0-beta.3']
 
         const expected = [
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: SuggestionStatusText.Fixed,
             category: SuggestionCategory.Match,
             version: '1.0.0-beta.1',
             type: SuggestionTypes.status
           },
-          <TPackageSuggestion>{
+          <PackageSuggestion>{
             name: 'beta',
             category: SuggestionCategory.Updateable,
             version: '1.0.0-beta.3',

@@ -1,5 +1,5 @@
 import {
-  TPackageSuggestion,
+  type PackageSuggestion,
   UpdateableFactory,
   VersionUtils,
   filterPrereleasesGtMinRange
@@ -8,7 +8,7 @@ import {
 export function getPreReleaseSuggestions(
   fixedOrRangedVersion: string,
   prereleases: string[]
-): TPackageSuggestion[] {
+): PackageSuggestion[] {
   const maxSatisfyingPrereleases = filterPrereleasesGtMinRange(
     fixedOrRangedVersion,
     prereleases
