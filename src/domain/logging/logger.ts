@@ -5,6 +5,8 @@ import {
 } from '#domain/logging';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+const loggerRe = /{([a-zA-Z0-9_]+)}/g;
+
 export class LoggerFactory {
 
   constructor(readonly sinks: ILoggerSink[]) {
@@ -37,7 +39,7 @@ class Logger implements ILogger {
 
     let replaceIndex = 0;
     const mergedMsg = message.replaceAll(
-      /{([a-zA-Z0-9_]+)}/g,
+      loggerRe,
       (substring: string, ...matches: any[]) => {
         const value = args[replaceIndex++];
 
