@@ -58,7 +58,7 @@ export class FetchPackage {
     // report completed duration
     const completedAt = performance.now();
     this.logger.info(
-      'fetched from %s %s@%s (%s ms)',
+      'fetched from {source} {packageName}@{packageVersion} ({duration} ms)',
       source,
       requestedPackage.name,
       requestedPackage.version,
@@ -79,7 +79,7 @@ export class FetchPackage {
 
     const requestedPackage = request.parsedDependency.package;
 
-    this.logger.silly("fetching %s", requestedPackage.name);
+    this.logger.trace("fetching {packageName}", requestedPackage.name);
 
     let response: TPackageClientResponse;
     try {
@@ -90,7 +90,7 @@ export class FetchPackage {
     } catch (error) {
       // unexpected error
       this.logger.error(
-        `%s caught an exception.\n Package: %j\n Error: %j`,
+        `{functionName} caught an exception.\n Package: {requestedPackage}\n Error: {error}`,
         this.fetchFromClient.name,
         requestedPackage,
         error
@@ -102,7 +102,7 @@ export class FetchPackage {
     // client handled error responses
     if (response.responseStatus?.rejected) {
       this.logger.error(
-        "%s@%s was rejected with the status code %s",
+        "{packageName}@{packageVersion} was rejected with the status code {responseStatus}",
         requestedPackage.name,
         requestedPackage.version,
         response.responseStatus.status

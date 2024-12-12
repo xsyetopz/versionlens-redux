@@ -71,7 +71,7 @@ export function addPubClient(services: IServiceCollection) {
       new PubClient(
         container.pubConfig,
         container.pubJsonClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -83,7 +83,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new PubSuggestionProvider(
         container.pubClient,
         container.pubConfig,
-        container.logger.child({ logGroup: 'pubSuggestionProvider' })
+        container.loggerFactory.create(PubSuggestionProvider.name)
       )
   );
 }

@@ -56,8 +56,8 @@ export const onProviderTextDocumentChangeTests = {
 
     // verify
     verify(
-      this.mockLogger.silly(
-        "%s provider text document change",
+      this.mockLogger.trace(
+        "{suggestionProviderName} provider text document change",
         testProviderName
       )
     ).once();

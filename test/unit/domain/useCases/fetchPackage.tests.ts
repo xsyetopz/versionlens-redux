@@ -145,10 +145,13 @@ export const fetchPackageTests = <any>{
 
     // verify
     const expectedPackage = this.testRequest.parsedDependency.package;
-    verify(this.loggerMock.silly("fetching %s", expectedPackage.name)).once();
+    verify(
+      this.loggerMock.trace("fetching {packageName}", expectedPackage.name)
+    ).once();
+
     verify(
       this.loggerMock.info(
-        'fetched from %s %s@%s (%s ms)',
+        'fetched from {source} {packageName}@{packageVersion} ({duration} ms)',
         'client',
         expectedPackage.name,
         expectedPackage.version,
@@ -197,7 +200,7 @@ export const fetchPackageTests = <any>{
       verify(this.clientMock.fetchPackage(this.testRequest)).once();
       verify(
         this.loggerMock.error(
-          "%s@%s was rejected with the status code %s",
+          "{packageName}@{packageVersion} was rejected with the status code {responseStatus}",
           this.testRequest.parsedDependency.package.name,
           this.testRequest.parsedDependency.package.version,
           testRespDoc.responseStatus?.status

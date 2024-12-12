@@ -16,7 +16,7 @@ export function addOnAddUrlAuthentication(services: IServiceCollection) {
         container.urlAuthenticationStore,
         container.packageCache,
         container.authenticationInteractions,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode command
@@ -43,7 +43,7 @@ export function addOnRemoveUrlAuthentication(services: IServiceCollection) {
         container.urlAuthenticationStore,
         container.packageCache,
         container.authenticationInteractions,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode command

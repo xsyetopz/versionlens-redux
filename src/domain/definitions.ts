@@ -3,7 +3,7 @@ import type { CachingOptions, IExpiryCache } from '#domain/caching';
 import type { HttpOptions } from '#domain/clients';
 import type { Config } from '#domain/configuration';
 import type { IServiceCollectionFactory, IServiceProvider } from '#domain/di';
-import type { ILogger, ILoggerChannel, LoggingOptions } from '#domain/logging';
+import type { ILoggerSink, LoggerFactory } from '#domain/logging';
 import type { DependencyCache, PackageCache } from '#domain/packages';
 import type { ISuggestionProvider } from '#domain/providers';
 import type { IStorage } from '#domain/storage';
@@ -20,11 +20,10 @@ export interface IDomainServices {
   serviceProvider: IServiceProvider;
   authorizer: IAuthorizer;
   appConfig: Config;
-  loggingOptions: LoggingOptions;
+  loggerSinks: ILoggerSink[];
+  loggerFactory: LoggerFactory;
   httpOptions: HttpOptions;
   cachingOptions: CachingOptions;
-  logger: ILogger;
-  loggerChannel: ILoggerChannel;
   storage: IStorage,
   providerNames: Array<string>;
   suggestionProviders: Array<ISuggestionProvider>;

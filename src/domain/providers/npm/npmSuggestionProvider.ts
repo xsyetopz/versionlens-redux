@@ -121,7 +121,7 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     // try to resolve project .npmrc files
     const npmRcFilePath = await resolveDotFilePath('.npmrc', resolveDotFilePaths);
     const hasNpmRcFile = npmRcFilePath.length > 0;
-    this.logger.debug("Resolved .npmrc is %s", hasNpmRcFile ? npmRcFilePath : false);
+    this.logger.debug("Resolved .npmrc is {filePath}", hasNpmRcFile ? npmRcFilePath : false);
 
     // try to resolve .env files (if .npmrc exists)
     let envFilePath = "";
@@ -129,7 +129,7 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
       envFilePath = await resolveDotFilePath(".env", resolveDotFilePaths);
     }
     const hasEnvFile = envFilePath.length > 0;
-    this.logger.debug("Resolved .env is %s", hasEnvFile ? envFilePath : false);
+    this.logger.debug("Resolved .env is {filePath}", hasEnvFile ? envFilePath : false);
 
     // return options as client data
     const npmCliConfigData: TNpmCliConfigParams = {

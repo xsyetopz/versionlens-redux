@@ -1,4 +1,4 @@
-import type { ILogger, ILoggerChannel } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import type { ISuggestionProvider } from '#domain/providers';
 import type { VersionLensExtension } from '#extension';
 import type { PackageFileWatcher } from '#extension/watcher';
@@ -9,22 +9,17 @@ import type { TextDocument } from 'vscode';
 export class OnProviderEditorActivated {
 
   constructor(
-    readonly loggerChannel: ILoggerChannel,
     readonly extension: VersionLensExtension,
     readonly packageFileWatcher: PackageFileWatcher,
     readonly logger: ILogger,
   ) {
-    throwUndefinedOrNull("loggerChannel", loggerChannel);
     throwUndefinedOrNull("extension", extension);
     throwUndefinedOrNull("packageFileWatcher", packageFileWatcher);
     throwUndefinedOrNull("logger", logger);
   }
 
   async execute(activeProvider: ISuggestionProvider, document: TextDocument): Promise<void> {
-    this.logger.debug("%s provider editor activated", activeProvider.name);
-
-    // ensure the latest logging level is set
-    this.loggerChannel.refreshLoggingLevel();
+    this.logger.debug("{providerName} provider editor activated", activeProvider.name);
 
     // get the package file path
     const packageFilePath = document.uri.fsPath;

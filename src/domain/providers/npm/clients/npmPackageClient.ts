@@ -95,7 +95,7 @@ export class NpmPackageClient implements IPackageClient<TNpmClientData> {
       return await this.npmRegistryClient.fetchPackage(request, npaSpec);
 
     } catch (response) {
-      this.logger.debug("Caught exception from %s: %O", source, response);
+      this.logger.debug("Caught exception from {source}: {error}", source, response);
 
       if (!response.data) {
         response = convertNpmErrorToResponse(

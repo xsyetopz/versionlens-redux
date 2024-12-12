@@ -40,7 +40,7 @@ export const onProviderTextDocumentCloseTests = {
     ).once();
     verify(
       this.mockLogger.debug(
-        'cleared editor dependency cache for %s',
+        'cleared editor dependency cache for {packageFilePath}',
         testPackageFilePath
       )
     ).once();

@@ -71,7 +71,7 @@ export function addDubClient(services: IServiceCollection) {
       new DubClient(
         container.dubConfig,
         container.dubJsonClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -83,7 +83,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new DubSuggestionProvider(
         container.dubClient,
         container.dubConfig,
-        container.logger.child({ logGroup: 'dubSuggestionProvider' })
+        container.loggerFactory.create(DubSuggestionProvider.name)
       )
   );
 }

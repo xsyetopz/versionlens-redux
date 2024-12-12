@@ -14,7 +14,10 @@ export class NuGetResourceClient {
   }
 
   async fetchResource(source: DotNetSource): Promise<string> {
-    this.logger.debug("Requesting PackageBaseAddressService from %s", source.url)
+    this.logger.debug(
+      "Requesting PackageBaseAddressService from {url}",
+      new URL(source.url)
+    )
 
     try {
       const response = await this.jsonClient.get(source.url) as NugetServiceIndexResponse;
@@ -23,20 +26,20 @@ export class NuGetResourceClient {
         .filter(res => res["@type"].indexOf('PackageBaseAddress') > -1);
 
       // just take one service for now
-      const foundPackageBaseAddressServices = packageBaseAddressServices[0]["@id"];
+      const url = packageBaseAddressServices[0]["@id"];
 
       this.logger.debug(
-        "Resolved PackageBaseAddressService endpoint: %O",
-        foundPackageBaseAddressServices
+        "Resolved PackageBaseAddressService endpoint: {url}",
+        new URL(url)
       );
 
-      return foundPackageBaseAddressServices;
+      return url;
     }
     catch (error) {
       const responseError = error as HttpClientResponse;
       this.logger.error(
-        "Could not resolve nuget service index %s. %O",
-        source.url,
+        "Could not resolve nuget service index {url}. {error}",
+        new URL(source.url),
         responseError
       );
       return "";

@@ -51,7 +51,7 @@ export async function addSuggestionProviders(services: IServiceCollection) {
       return await importSuggestionProviders(
         container.serviceProvider,
         container.providerNames,
-        container.logger
+        container.loggerFactory.create(importSuggestionProviders.name)
       )
     }
   )
@@ -92,7 +92,7 @@ export function addGetDependencyChangesUseCase(services: IServiceCollection) {
       new GetDependencyChanges(
         container.storage,
         container.fileWatcherDependencyCache,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -104,7 +104,7 @@ export function addFetchProjectSuggestionsUseCase(services: IServiceCollection) 
     (container: IDomainServices) =>
       new FetchPackages(
         container.fetchPackage,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -116,7 +116,7 @@ export function addFetchPackageSuggestionsUseCase(services: IServiceCollection) 
     (container: IDomainServices) =>
       new FetchPackage(
         container.packageCache,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }

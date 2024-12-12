@@ -95,8 +95,13 @@ export const NpmSuggestionProviderTests = {
           testPackagePath
         );
 
-        verify(this.loggerMock.debug("Resolved .npmrc is %s", testNpmRcFilePath)).once();
-        verify(this.loggerMock.debug("Resolved .env is %s", testEnvFilePath)).once();
+        verify(
+          this.loggerMock.debug("Resolved .npmrc is {filePath}", testNpmRcFilePath)
+        ).once();
+
+        verify(
+          this.loggerMock.debug("Resolved .env is {filePath}", testEnvFilePath)
+        ).once();
 
         assert.equal(actualClientData.registry, expectedClientData.registry);
         assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
@@ -134,8 +139,12 @@ export const NpmSuggestionProviderTests = {
         testPackagePath
       );
 
-      verify(this.loggerMock.debug("Resolved .npmrc is %s", false)).once();
-      verify(this.loggerMock.debug("Resolved .env is %s", false)).once();
+      verify(
+        this.loggerMock.debug("Resolved .npmrc is {filePath}", false)
+      ).once();
+      verify(
+        this.loggerMock.debug("Resolved .env is {filePath}", false)
+      ).once();
 
       assert.equal(actualClientData.registry, expectedClientData.registry);
       assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
@@ -168,8 +177,13 @@ export const NpmSuggestionProviderTests = {
         testPackagePath
       );
 
-      verify(this.loggerMock.debug("Resolved .npmrc is %s", testNpmRcFilePath)).once();
-      verify(this.loggerMock.debug("Resolved .env is %s", false)).once();
+      verify(
+        this.loggerMock.debug("Resolved .npmrc is {filePath}", testNpmRcFilePath)
+      ).once();
+
+      verify(
+        this.loggerMock.debug("Resolved .env is {filePath}", false)
+      ).once();
 
       assert.equal(actualClientData.registry, expectedClientData.registry);
       assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
@@ -213,8 +227,13 @@ export const NpmSuggestionProviderTests = {
         testPackagePath
       );
 
-      verify(this.loggerMock.debug("Resolved .npmrc is %s", testCaFileNpmRcFilePath)).once();
-      verify(this.loggerMock.debug("Resolved .env is %s", false)).once();
+      verify(
+        this.loggerMock.debug("Resolved .npmrc is {filePath}", testCaFileNpmRcFilePath)
+      ).once();
+
+      verify(
+        this.loggerMock.debug("Resolved .env is {filePath}", false)
+      ).once();
 
       assert.equal(actualClientData.registry, expectedClientData.registry);
       assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);

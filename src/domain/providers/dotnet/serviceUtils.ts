@@ -71,7 +71,7 @@ export function addProcessClient(services: IServiceCollection) {
       createShellClient(
         container.shellCache,
         container.dotnetCachingOpts,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -84,7 +84,7 @@ export function addCliClient(services: IServiceCollection) {
       new DotNetCli(
         container.dotnetConfig,
         container.dotnetShellClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -112,7 +112,7 @@ export function addNuGetPackageClient(services: IServiceCollection) {
       new NuGetPackageClient(
         container.dotnetConfig,
         container.dotnetJsonClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -124,7 +124,7 @@ export function addNuGetResourceClient(services: IServiceCollection) {
     (container: IDotNetServices & IDomainServices) =>
       new NuGetResourceClient(
         container.dotnetJsonClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -138,7 +138,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
         container.dotnetCli,
         container.nugetResClient,
         container.dotnetConfig,
-        container.logger.child({ logGroup: 'dotnetSuggestionProvider' })
+        container.loggerFactory.create(DotNetSuggestionProvider.name)
       )
   );
 }

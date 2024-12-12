@@ -14,7 +14,7 @@ export function importSuggestionProviders(
   logger: ILogger
 ): Promise<Array<ISuggestionProvider>> {
 
-  logger.debug('Loading suggestion providers %o', providerNames.join(', '));
+  logger.debug('Loading suggestion providers {providerNames}', providerNames);
 
   const promises = [];
 
@@ -39,7 +39,7 @@ export async function importSuggestionProvider(
 
   try {
 
-    logger.debug('Activating container scope for %s', providerName);
+    logger.debug('Activating container scope for {providerName}', providerName);
 
     // get the service collection factory
     const serviceCollectionFactory = serviceProvider.getService<IServiceCollectionFactory>(
@@ -69,7 +69,7 @@ export async function importSuggestionProvider(
     );
 
     logger.debug(
-      "Registered provider for %s:\t file pattern: %s\t caching: %s seconds\t strict ssl: %s",
+      "Registered provider for {providerName}:\t file pattern: {filePatterns}\t caching: {cacheDuration} seconds\t strict ssl: {strictSSL}",
       providerName,
       suggestionProvider.config.filePatterns,
       suggestionProvider.config.caching.duration / 1000,
@@ -81,9 +81,9 @@ export async function importSuggestionProvider(
   } catch (error) {
 
     logger.error(
-      'Could not register provider %s. Reason: %O',
+      'Could not register provider {providerName}. Reason: {error}',
       providerName,
-      error,
+      error
     );
 
     throw error;

@@ -10,7 +10,7 @@ export function addOnPackageDependenciesChanged(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) => {
       const event = new OnPackageDependenciesChanged(
         container.extension.state,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register listener

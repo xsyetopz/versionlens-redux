@@ -3,7 +3,6 @@ import {
   AuthenticationScheme,
   UrlAuthenticationStatus
 } from '#extension/authorization';
-import { URL } from 'node:url';
 
 export function createUrlAuthData(
   url: string,

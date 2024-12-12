@@ -1,6 +1,6 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceProvider } from '#domain/di';
-import type { ILogger, LoggingOptions } from '#domain/logging';
+import { LogLevel, type LoggerFactory } from '#domain/logging';
 import { nameOf, readJsonFile } from '#domain/utils';
 import {
   type IExtensionServices,
@@ -9,7 +9,7 @@ import {
 } from '#extension';
 import type { EditorConfig } from '#extension/vscode';
 import { dirname, join } from 'node:path';
-import { type ExtensionContext, window } from 'vscode';
+import { type ExtensionContext, LogOutputChannel, window } from 'vscode';
 import { configureContainer } from './extensionContainer';
 import type { PackageFileWatcher } from './watcher';
 
@@ -25,9 +25,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const serviceNames = nameOf<IDomainServices & IExtensionServices>();
 
   // get the logger
-  const logger = serviceProvider.getService<ILogger>(serviceNames.logger);
-  const loggingOptions = serviceProvider.getService<LoggingOptions>(
-    serviceNames.loggingOptions
+  const loggerFactory = serviceProvider.getService<LoggerFactory>(serviceNames.loggerFactory);
+  const logger = loggerFactory.create('activate');
+  const logOutputChannel = serviceProvider.getService<LogOutputChannel>(
+    serviceNames.logOutputChannel
   );
 
   // get the editorConfig
@@ -51,13 +52,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const { version } = await readJsonFile<any>(packageJsonPath);
 
   // log general start up info
-  const logPath = join(context.logUri.fsPath, "..");
-  logger.info("extension path: %s", extensionPath);
-  logger.info("resource folder path: %s", resourceFolderPath);
-  logger.info("workspace mode: %s", extension.isWorkspaceMode);
-  logger.info("version: %s", version);
-  logger.info("log level: %s", loggingOptions.level);
-  logger.info("log folder: %s", logPath);
+  logger.info("extension path: {extensionPath}", extensionPath);
+  logger.info("resource folder path: {resourceFolderPath}", join(resourceFolderPath, ".."));
+  logger.info("workspace mode: {isWorkspaceMode}", extension.isWorkspaceMode);
+  logger.info("version: {version}", version);
+  logger.info("log level: {logLevel}", LogLevel[logOutputChannel.logLevel]);
+  logger.info("log folder: {logPath}", join(context.logUri.fsPath, ".."));
 
   // setup package dependency watcher
   const watcher = serviceProvider.getService<PackageFileWatcher>(

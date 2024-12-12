@@ -63,7 +63,7 @@ export function addVersionLensProviders(services: IServiceCollection) {
               suggestionProvider,
               container.getSuggestions,
               new EventEmitter(),
-              container.logger.child({ logGroup: `${suggestionProvider.name}CodeLensProvider` })
+              container.loggerFactory.create(`${suggestionProvider.name}CodeLensProvider`)
             );
 
             // map FileMatcher to DocumentFilter
@@ -133,7 +133,7 @@ export function addGetSuggestionsUseCase(services: IServiceCollection) {
           container.editorDependencyCache,
           container.fileWatcherDependencyCache
         ],
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }

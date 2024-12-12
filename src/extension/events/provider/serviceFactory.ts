@@ -15,10 +15,9 @@ export function addOnProviderEditorActivated(services: IServiceCollection) {
     (container: IDomainServices & IExtensionServices) => {
       // create the event handler
       const event = new OnProviderEditorActivated(
-        container.loggerChannel,
         container.extension,
         container.packageFileWatcher,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register listener
@@ -40,7 +39,7 @@ export function addOnProviderTextDocumentChange(services: IServiceCollection) {
         container.extension.state,
         container.getDependencyChanges,
         container.editorDependencyCache,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register listener
@@ -60,7 +59,7 @@ export function addOnProviderTextDocumentClose(services: IServiceCollection) {
       // create the event handler
       const event = new OnProviderTextDocumentClose(
         container.editorDependencyCache,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register listener

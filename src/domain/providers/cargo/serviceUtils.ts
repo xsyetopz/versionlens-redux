@@ -71,7 +71,7 @@ export function addCratesClient(services: IServiceCollection) {
       new CratesClient(
         container.cargoConfig,
         container.cargoJsonClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -83,7 +83,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new CargoSuggestionProvider(
         container.cratesClient,
         container.cargoConfig,
-        container.logger.child({ logGroup: 'cargoSuggestionProvider' })
+        container.loggerFactory.create(CargoSuggestionProvider.name)
       )
   );
 }

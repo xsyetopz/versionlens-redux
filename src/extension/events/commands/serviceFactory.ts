@@ -19,7 +19,7 @@ export function addOnClearCache(services: IServiceCollection) {
       const handler = new OnClearCache(
         container.packageCache,
         container.shellCache,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode command
@@ -43,7 +43,7 @@ export function addOnFileLinkClick(services: IServiceCollection) {
       // create the event handler
       const handler = new OnFileLinkClick(
         env,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode command
@@ -69,7 +69,7 @@ export function addOnUpdateDependencyClick(services: IServiceCollection) {
         new VsCodeConstructionFactory(),
         workspace,
         container.versionLensState,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode command

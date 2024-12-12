@@ -71,7 +71,7 @@ export function addComposerClient(services: IServiceCollection) {
       new ComposerClient(
         container.composerConfig,
         container.composerJsonClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -83,7 +83,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new ComposerSuggestionProvider(
         container.composerClient,
         container.composerConfig,
-        container.logger.child({ logGroup: 'composerSuggestionProvider' })
+        container.loggerFactory.create(ComposerSuggestionProvider.name)
       )
   );
 }

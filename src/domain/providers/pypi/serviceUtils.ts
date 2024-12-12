@@ -71,7 +71,7 @@ export function addPypiClient(services: IServiceCollection) {
       new PypiClient(
         container.pypiConfig,
         container.pypiHttpClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -83,7 +83,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new PypiSuggestionProvider(
         container.pypiClient,
         container.pypiConfig,
-        container.logger.child({ logGroup: 'pypiSuggestionProvider' })
+        container.loggerFactory.create(PypiSuggestionProvider.name)
       )
   );
 }

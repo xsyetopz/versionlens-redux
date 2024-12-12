@@ -22,7 +22,7 @@ export class OnTogglePrereleases extends Disposable {
    * @param toggle
    */
   async execute(toggle: boolean): Promise<void> {
-    this.logger.debug("toggle version pre-releases = %s", toggle);
+    this.logger.debug("toggle version pre-releases = {toggle}", toggle);
     await this.state.showPrereleases.change(toggle);
 
     // refresh the active code lenses

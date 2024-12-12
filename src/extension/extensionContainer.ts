@@ -34,7 +34,7 @@ import {
   addOnToggleReleases,
   addOnUpdateDependencyClick
 } from './events/serviceFactory';
-import { addOutputChannel, addWinstonChannelLogger } from './logging/serviceFactory';
+import { addLoggerSinks, addLogOutputChannel } from './logging/serviceFactory';
 import {
   addEditorConfig,
   addEditorDependencyCache,
@@ -60,12 +60,10 @@ export async function configureContainer(
   );
 
   // domain
-  const defaultLogGroup = 'extension';
   addDomainServices(
     services,
     VersionLensExtension.extensionName,
-    workspace.getConfiguration,
-    defaultLogGroup
+    workspace.getConfiguration
   );
 
   // extension
@@ -95,8 +93,8 @@ function addExtensionServices(
   addGetSuggestionsUseCase(services);
 
   // logging
-  addOutputChannel(services);
-  addWinstonChannelLogger(services);
+  addLogOutputChannel(services);
+  addLoggerSinks(services);
 
   // file watcher
   addPackageFileWatcher(services);

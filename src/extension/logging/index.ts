@@ -1,1 +1,1 @@
-export * from './outputChannelTransport';
+export * from './outputChannelLoggerSink';

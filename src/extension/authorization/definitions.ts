@@ -39,8 +39,7 @@ export const authenticationProviders: Array<AuthenticationProviderInfo> = [
 ];
 
 export const AuthLog = {
-  authProviderInfo: "Using [%s] authentication provider for %s",
-  couldNotAutheticateError: "Could not authenticate using '%s' for %s. %s"
+  authProviderInfo: "Using [{label}] authentication provider for {url}}"
 }
 
 export const AuthPrompt = {

@@ -22,7 +22,7 @@ export class OnToggleReleases extends Disposable {
    * @param toggle
    */
   async execute(toggle: boolean): Promise<void> {
-    this.logger.debug("toggle version releases = %s", toggle);
+    this.logger.debug("toggle version releases = {toggle}", toggle);
     await this.state.show.change(toggle)
 
     // refresh the active code lenses

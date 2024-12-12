@@ -79,7 +79,7 @@ export class PubClient implements IPackageClient<null> {
       const errorResponse = error as HttpClientResponse;
 
       this.logger.debug(
-        "Caught exception from %s: %O",
+        "Caught exception from {packageSource}: {error}",
         PackageSourceType.Registry,
         errorResponse
       );

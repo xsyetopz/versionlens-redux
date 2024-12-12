@@ -71,7 +71,7 @@ export function addGoClient(services: IServiceCollection) {
       new GoClient(
         container.goConfig,
         container.goHttpClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -83,7 +83,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new GoSuggestionProvider(
         container.goClient,
         container.goConfig,
-        container.logger.child({ logGroup: 'goSuggestionProvider' })
+        container.loggerFactory.create(GoSuggestionProvider.name)
       )
   );
 }

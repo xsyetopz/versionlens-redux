@@ -1,32 +1,22 @@
-import { LoggingOptions } from '#domain/logging';
+import { IDisposable } from '#domain/utils';
 
-export enum LoggingFeatures {
-  LoggingLevel = 'level',
+export enum LogLevel {
+  trace = 1,
+  debug = 2,
+  info = 3,
+  warn = 4,
+  error = 5
 }
-
-export enum LogLevelTypes {
-  Error = "error",
-  Info = "info",
-  Debug = "debug",
-  Silly = "silly"
-}
-
-export type TChildLoggerOptions = {
-  logGroup: string;
-};
 
 export interface ILogger {
-  log(level: LogLevelTypes, message: string, ...splats: any): void;
-  error(message: string, ...splats: any): void;
-  warn(message: string, ...splats: any): void;
-  info(message: string, ...splats: any): void;
-  debug(message: string, ...splats: any): void;
-  silly(message: string, ...splats: any): void;
-  child(options: TChildLoggerOptions): ILogger;
+  error(message: string, ...args: any[]): void;
+  warn(message: string, ...args: any[]): void;
+  info(message: string, ...args: any[]): void;
+  debug(message: string, ...args: any[]): void;
+  trace(message: string, ...args: any[]): void;
 }
 
-export interface ILoggerChannel {
-  name: string;
-  logging: LoggingOptions;
-  refreshLoggingLevel(): void;
+export interface ILoggerSink extends IDisposable {
+  logLevel: LogLevel
+  log(level: LogLevel, namespace: string, message: string): void
 }

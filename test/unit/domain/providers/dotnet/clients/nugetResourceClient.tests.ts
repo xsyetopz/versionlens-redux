@@ -3,7 +3,7 @@ import type { ILogger } from '#domain/logging';
 import { NuGetResourceClient } from '#domain/providers/dotnet';
 import { RegistryProtocols } from '#domain/utils';
 import assert from 'node:assert';
-import { anything, capture, instance, mock, verify, when } from 'ts-mockito';
+import { anyOfClass, anything, capture, instance, mock, verify, when } from 'ts-mockito';
 import Fixtures from './fixtures/nugetResources';
 
 let jsonClientMock: IJsonHttpClient;
@@ -44,8 +44,8 @@ export const NuGetResourceClientTests = {
       // verify
       verify(
         loggerMock.debug(
-          "Resolved PackageBaseAddressService endpoint: %O",
-          actual
+          "Resolved PackageBaseAddressService endpoint: {url}",
+          anyOfClass(URL)
         )
       ).once();
 
@@ -85,8 +85,8 @@ export const NuGetResourceClientTests = {
       // verify
       verify(
         loggerMock.error(
-          "Could not resolve nuget service index %s. %O",
-          testResourceUrl,
+          "Could not resolve nuget service index {url}. {error}",
+          anyOfClass(URL),
           errorResponse
         )
       ).once();

@@ -63,7 +63,7 @@ export function addAuthorizer(services: IServiceCollection) {
         container.urlAuthenticationStore,
         container.authenticationProviders,
         container.authenticationInteractions,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }

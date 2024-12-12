@@ -14,8 +14,8 @@ export function addOnErrorClick(services: IServiceCollection) {
       const event = new OnErrorClick(
         window,
         container.extension.state,
-        container.outputChannel,
-        container.logger.child({ logGroup: serviceName })
+        container.logOutputChannel,
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode commands
@@ -40,7 +40,7 @@ export function addOnToggleReleases(services: IServiceCollection) {
       const event = new OnToggleReleases(
         container.versionLensProviders,
         container.extension.state,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode commands
@@ -70,7 +70,7 @@ export function addOnTogglePrereleases(services: IServiceCollection) {
       const event = new OnTogglePrereleases(
         container.versionLensProviders,
         container.extension.state,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode commands

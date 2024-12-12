@@ -13,7 +13,7 @@ import {
   createEmptyUrlAuthData
 } from '#extension/authorization';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { parse } from 'url';
+import { parse } from 'node:url';
 
 export class Authorizer implements IAuthorizer {
 
@@ -61,7 +61,7 @@ export class Authorizer implements IAuthorizer {
     const accessToken = await this.providers[urlAuthInfo.scheme].get(urlAuthInfo.url);
     if (!accessToken) return undefined;
 
-    this.logger.info(AuthLog.authProviderInfo, urlAuthInfo.label, url);
+    this.logger.info(AuthLog.authProviderInfo, urlAuthInfo.label, new URL(url));
 
     // return the authorization header value
     return urlAuthInfo.scheme === AuthenticationScheme.Custom

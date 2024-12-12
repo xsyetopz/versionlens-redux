@@ -1,2 +1,3 @@
+export * from './consoleLoggerSink';
 export * from './definitions';
-export * from './loggingOptions';
+export * from './logger';

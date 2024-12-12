@@ -15,7 +15,7 @@ export class OnSaveChanges {
     // check we have a task to run
     if (provider.config.onSaveChangesTask === null) {
       this.logger.info(
-        'Skipping "%s.onSaveChanges" because a custom task was not provided.',
+        'Skipping "{providerName}.onSaveChanges" because a custom task was not provided.',
         provider.name
       );
       return;
@@ -30,7 +30,7 @@ export class OnSaveChanges {
     // check we found a task
     if (filteredTasks.length == 0) {
       this.logger.error(
-        'Could not find the %s.onSaveChanges["%s"] task.',
+        'Could not find the {providerName}.onSaveChanges["{onSaveChangesTask}"] task.',
         provider.name,
         provider.config.onSaveChangesTask
       );
@@ -38,7 +38,7 @@ export class OnSaveChanges {
     }
 
     this.logger.info(
-      'Executing %s.onSaveChanges["%s"] task.',
+      'Executing {providerName}.onSaveChanges["{onSaveChangesTask}"] task.',
       provider.name,
       provider.config.onSaveChangesTask
     );
@@ -47,7 +47,7 @@ export class OnSaveChanges {
     const exitCode = await this.executeTask(filteredTasks[0])
 
     this.logger.info(
-      '%s.onSaveChanges["%s"] task exited with %s.',
+      '{providerName}.onSaveChanges["{onSaveChangesTask}"] task exited with {exitCode}.',
       provider.name,
       provider.config.onSaveChangesTask,
       exitCode

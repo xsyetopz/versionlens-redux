@@ -109,14 +109,14 @@ export const fetchPackagesTests = {
 
       verify(
         this.loggerMock.debug(
-          "queueing %s package fetch tasks",
+          "queueing {packageCount} package fetch tasks",
           testDependencies.length
         )
       ).once();
 
       verify(
         this.loggerMock.info(
-          'all packages fetched for %s (%s ms)',
+          "all packages fetched for {providerName} ({duration} ms)",
           testProvider.name,
           anything()
         )

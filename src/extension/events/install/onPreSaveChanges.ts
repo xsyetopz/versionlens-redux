@@ -23,7 +23,7 @@ export class OnPreSaveChanges {
     // remove the packageFilePath from editor dependency cache
     this.editorDependencyCache.remove(provider.name, packageFilePath);
     this.logger.debug(
-      "cleared editor dependency cache for %s",
+      "cleared editor dependency cache for {packageFilePath}",
       packageFilePath
     );
   }

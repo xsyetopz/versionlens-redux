@@ -32,7 +32,7 @@ export class GetSuggestions {
     // ensure the caching duration is up to date
     provider.config.caching.defrost();
     this.logger.debug(
-      "caching duration is set to %s seconds",
+      "caching duration is set to {duration} seconds",
       provider.config.caching.duration / 1000
     );
 
@@ -53,7 +53,7 @@ export class GetSuggestions {
     );
 
     this.logger.info(
-      "resolved %s %s package release and pre-release suggestions",
+      "resolved {suggestionCount} {providerName} package release and pre-release suggestions",
       suggestions.length,
       provider.name
     );

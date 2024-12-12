@@ -19,7 +19,7 @@ export function addOnActiveTextEditorChange(services: IServiceCollection) {
       const event = new OnActiveTextEditorChange(
         container.extension.state,
         container.GetSuggestionProvider,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode editor event
@@ -40,7 +40,7 @@ export function addOnTextDocumentChange(services: IServiceCollection) {
       const event = new OnTextDocumentChange(
         container.GetSuggestionProvider,
         container.versionLensState,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode workspace event
@@ -60,7 +60,7 @@ export function addOnTextDocumentClose(services: IServiceCollection) {
       // create the event handler
       const event = new OnTextDocumentClose(
         container.GetSuggestionProvider,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode workspace event
@@ -81,7 +81,7 @@ export function addOnTextDocumentSave(services: IServiceCollection) {
       const event = new OnTextDocumentSave(
         container.GetSuggestionProvider,
         container.extension.state,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register the vscode workspace event

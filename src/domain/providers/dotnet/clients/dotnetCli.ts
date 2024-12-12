@@ -22,7 +22,7 @@ export class DotNetCli {
 
   async fetchSources(cwd: string): Promise<Array<DotNetSource>> {
     this.logger.debug(
-      "executing %s '%s'",
+      "executing '{command} {args}'",
       DotNetCli.command,
       DotNetCli.fetchSourceArgs.join(' ')
     );
@@ -64,20 +64,20 @@ export class DotNetCli {
 
       // log combinedSources for diagnostics
       this.logger.debug(
-        "package sources found: %s",
-        combinedSources.map(x => x.url)
+        "package sources found: {packageSources}",
+        combinedSources.map(x => new URL(x.url))
       )
 
       return combinedSources;
 
     } catch (error) {
       this.logger.error(
-        "failed to get package sources: %s",
+        "failed to get package sources: {error}",
         error
       )
 
       this.logger.info(
-        "using fallback source: %s",
+        "using fallback source: {fallbackSource}",
         this.config.fallbackNugetSource
       )
 

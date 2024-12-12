@@ -27,7 +27,10 @@ export class FetchPackages {
       clientData = await provider.preFetchSuggestions(projectPath, packagePath);
     }
 
-    this.logger.debug("queueing %s package fetch tasks", parsedPackages.length);
+    this.logger.debug(
+      "queueing {packageCount} package fetch tasks",
+      parsedPackages.length
+    );
 
     // capture start time
     const startedAt = performance.now();
@@ -56,7 +59,7 @@ export class FetchPackages {
     // report completed duration
     const completedAt = performance.now();
     this.logger.info(
-      "all packages fetched for %s (%s ms)",
+      "all packages fetched for {providerName} ({duration} ms)",
       provider.name,
       Math.floor(completedAt - startedAt)
     );

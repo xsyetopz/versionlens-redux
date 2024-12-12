@@ -26,7 +26,7 @@ export class PromiseSpawnClient implements IShellClient {
   async request(cmd: string, args: Array<string>, cwd: string): Promise<ShellClientResponse> {
     const cacheKey = `${cmd} ${args.join(' ')}`;
 
-    this.logger.silly('executing %s', cacheKey);
+    this.logger.trace("executing '{cacheKey}'", cacheKey);
 
     try {
       let source = ClientResponseSource.cache;
@@ -39,7 +39,11 @@ export class PromiseSpawnClient implements IShellClient {
         this.cachingOptions.duration
       )
 
-      this.logger.debug("command result from %s - '%s'", source, cacheKey);
+      this.logger.debug(
+        "command result from {source} - '{cacheKey}'",
+        source,
+        cacheKey
+      );
 
       return <ShellClientResponse>{
         data: result.stdout,

@@ -12,7 +12,6 @@ import {
 } from '#extension/authorization';
 import type { IVsCodeWindow } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { URL } from 'url';
 import type { QuickPickItem } from 'vscode';
 
 export type ProviderQuickPickItem = QuickPickItem & {

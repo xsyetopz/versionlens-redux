@@ -90,7 +90,6 @@
     "sax": "1.4.1",
     "semver": "7.6.3",
     "toml-eslint-parser": "0.10.0",
-    "winston": "3.17.0",
     "yaml": "2.6.1"
   },
   "overrides": {
@@ -251,17 +250,6 @@
             }
           },
           "description": "The indicators used when showing version suggestion statuses."
-        },
-        "versionlens.logging.level": {
-          "type": "string",
-          "default": "error",
-          "enum": [
-            "error",
-            "info",
-            "debug",
-            "silly"
-          ],
-          "description": "Sets the level of logs to be written to the VersionLens output channel."
         },
         "versionlens.caching.duration": {
           "type": [

@@ -14,13 +14,12 @@ import {
 } from '#domain';
 import type { TConfigSectionResolver } from '#domain/configuration';
 import type { IServiceCollection } from '#domain/di';
-import { addLoggingOptions, addWinstonLogger } from './logging/serviceFactory';
+import { addLoggerFactory } from './logging/serviceFactory';
 
 export function addDomainServices(
   services: IServiceCollection,
   configSection: string,
-  configResolver: TConfigSectionResolver,
-  defaultLogGroup: string
+  configResolver: TConfigSectionResolver
 ) {
   addAppConfig(services, configSection, configResolver);
   addFileSystemStorage(services);
@@ -35,8 +34,7 @@ export function addDomainServices(
   addShellCache(services);
 
   // logging
-  addLoggingOptions(services);
-  addWinstonLogger(services, defaultLogGroup);
+  addLoggerFactory(services);
 
   // providers
   addSuggestionProviders(services);

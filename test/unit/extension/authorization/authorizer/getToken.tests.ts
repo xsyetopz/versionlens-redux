@@ -13,6 +13,7 @@ import {
 import assert from 'assert';
 import { test } from 'mocha-ui-esm';
 import {
+  anyOfClass,
   instance,
   mock,
   verify,
@@ -78,6 +79,7 @@ export const getTokenTests = {
     when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData);
     when(this.mockAuthProvider.get(testUrl)).thenResolve(testToken);
 
+    // test
     const actual = await this.testAuthorizer.getToken(testUrl);
 
     // verify
@@ -87,7 +89,7 @@ export const getTokenTests = {
       this.mockLogger.info(
         AuthLog.authProviderInfo,
         testUrlAuthData.label,
-        testUrl
+        anyOfClass(URL)
       )
     ).once();
 

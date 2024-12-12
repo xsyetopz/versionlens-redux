@@ -48,7 +48,7 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
 
     const completedAt = performance.now();
     this.logger.debug(
-      'initialized PackageFileWatcher (%s ms)',
+      'initialized PackageFileWatcher ({duration} ms)',
       Math.floor(completedAt - startedAt)
     );
 
@@ -62,7 +62,7 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
 
     if (matched.length === 0) {
       this.logger.error(
-        `could not find '%s' project file`,
+        `could not find '{filePath}' project file`,
         file.fsPath
       );
       return;
@@ -71,8 +71,7 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     const provider = matched[0];
     await this.onFileAdd(provider, file);
     this.logger.debug(
-      'found %s project file for %s',
-      1,
+      'found 1 project file for {providerName}',
       provider.name
     );
 
@@ -85,7 +84,7 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
       const watcher = this.workspace.createFileSystemWatcher(provider.config.filePatterns);
 
       this.logger.debug(
-        `created watcher for '%s' with pattern '%s'`,
+        "created watcher for '{providerName}' with pattern '{filePatterns}'",
         provider.name,
         provider.config.filePatterns
       );
@@ -100,22 +99,22 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
   }
 
   async onFileAdd(provider: ISuggestionProvider, uri: Uri) {
-    this.logger.silly("file added '%s'", uri);
+    this.logger.trace("file added '{uri}'", uri.toString());
     await this.updateCacheFromFile(provider, uri.fsPath);
   }
 
   private async onFileCreate(provider: ISuggestionProvider, uri: Uri) {
-    this.logger.silly("file created '%s'", uri);
+    this.logger.trace("file created '{uri}'", uri.toString());
     await this.updateCacheFromFile(provider, uri.fsPath);
   }
 
   private onFileDelete(provider: ISuggestionProvider, uri: Uri) {
-    this.logger.silly("file removed '%s'", uri);
+    this.logger.trace("file removed '{uri}'", uri.toString());
     this.dependencyCache.remove(provider.name, uri.fsPath);
   }
 
   async onFileChange(provider: ISuggestionProvider, uri: Uri) {
-    this.logger.silly("file changed '%s'", uri);
+    this.logger.trace("file changed '{uri}'", uri.toString());
 
     const packageFilePath = uri.fsPath;
     const result = await this.updateCacheFromFile(provider, packageFilePath);
@@ -136,7 +135,10 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
   ): Promise<DependencyChangesResult> {
 
     const result = await this.getDependencyChanges.execute(provider, packageFilePath);
-    this.logger.silly("updating package dependency cache for '%s'", packageFilePath);
+    this.logger.trace(
+      "updating package dependency cache for '{packageFilePath}'",
+      packageFilePath
+    );
     this.dependencyCache.set(provider.name, packageFilePath, result.parsedDependencies);
 
     return result;
@@ -166,7 +168,7 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     // report completed duration
     const completedAt = performance.now();
     this.logger.debug(
-      'found %s project files for %s (%s ms)',
+      'found {fileCount} project files for {providerName} ({duration} ms)',
       files.length,
       provider.name,
       Math.floor(completedAt - startedAt)

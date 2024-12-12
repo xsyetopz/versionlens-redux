@@ -116,7 +116,7 @@ export const getSuggestionsTests = {
 
       verify(
         this.mockLogger.debug(
-          "caching duration is set to %s seconds",
+          "caching duration is set to {duration} seconds",
           testCacheOpts.duration / 1000
         )
       ).once();
@@ -134,7 +134,7 @@ export const getSuggestionsTests = {
 
       verify(
         this.mockLogger.info(
-          "resolved %s %s package release and pre-release suggestions",
+          "resolved {suggestionCount} {providerName} package release and pre-release suggestions",
           expectedLength,
           testProvider.name
         )

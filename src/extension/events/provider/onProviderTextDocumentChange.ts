@@ -20,7 +20,10 @@ export class OnProviderTextDocumentChange {
   }
 
   async execute(suggestionProvider: ISuggestionProvider, packageFilePath: string, newContent: string): Promise<void> {
-    this.logger.silly("%s provider text document change", suggestionProvider.name);
+    this.logger.trace(
+      "{suggestionProviderName} provider text document change",
+      suggestionProvider.name
+    );
 
     const result = await this.getDependencyChanges.execute(
       suggestionProvider,
@@ -35,7 +38,7 @@ export class OnProviderTextDocumentChange {
       result.parsedDependencies
     );
 
-    this.logger.silly("has changes = %s", result.hasChanged);
+    this.logger.trace("has changes = {changed}", result.hasChanged);
     await this.state.showOutdated.change(result.hasChanged);
   }
 

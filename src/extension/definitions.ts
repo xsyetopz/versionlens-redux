@@ -29,7 +29,7 @@ import type { VersionLensState } from '#extension/state';
 import type { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
 import type { EditorConfig, IVsCodeConstructFactory } from '#extension/vscode';
 import type { PackageFileWatcher } from '#extension/watcher';
-import type { OutputChannel } from 'vscode';
+import type { LogOutputChannel } from 'vscode';
 import type { AuthenticationProvider } from './authorization/authenticationProviders';
 
 export enum AuthorizationCommandFeatures {
@@ -71,7 +71,7 @@ export interface IExtensionServices {
   suggestionOptions: SuggestionsOptions
   extension: VersionLensExtension
   versionLensState: VersionLensState
-  outputChannel: OutputChannel
+  logOutputChannel: LogOutputChannel
   versionLensProviders: Array<SuggestionCodeLensProvider>
   editorDependencyCache: DependencyCache
   packageFileWatcher: PackageFileWatcher;

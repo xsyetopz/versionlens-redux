@@ -39,7 +39,7 @@ export class OnRemoveUrlAuthentication extends Disposable {
 
     // clear url authentication
     for (const authItem of authDataToClear) {
-      this.logger.info(`Clearing %s authentication`, authItem.url);
+      this.logger.info(`Clearing {url} authentication`, new URL(authItem.url));
 
       // clear url auth persistence
       await this.urlAuthStore.remove(authItem.url);

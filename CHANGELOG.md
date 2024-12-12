@@ -3,6 +3,12 @@
   - Added an interactive authorization workflow for 401 http responses.
     See the [authorization doc](https://gitlab.com/versionlens/vscode-versionlens/-/blob/master/docs/authorization.md) for more info.
 
+  - Removed the `versionlens.logging.level` setting. 
+
+    The log level can now be set by either 
+    - `ctrl+p` then type `Developer: Set Log Level`; or
+    - via the 'VersionLens' output log window
+
   - Fixed a case where calls to the `vscode workspace.findFiles` api was no longer defaulting to the users `files.exclude` setting which may of led to longer start up times
 
     Relates to [#350](https://gitlab.com/versionlens/vscode-versionlens/-/issues/350)

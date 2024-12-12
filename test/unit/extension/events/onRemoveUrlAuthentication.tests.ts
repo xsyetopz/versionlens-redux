@@ -8,9 +8,9 @@ import {
   createUrlAuthData,
   UrlAuthenticationStatus
 } from '#extension/authorization';
-import { OnAddUrlAuthentication, OnRemoveUrlAuthentication } from '#extension/events';
+import { OnRemoveUrlAuthentication } from '#extension/events';
 import { test } from 'mocha-ui-esm';
-import { instance, mock, verify, when } from 'ts-mockito';
+import { anyOfClass, instance, mock, verify, when } from 'ts-mockito';
 
 type TestContext = {
   mockAuthProvider: AuthenticationProvider
@@ -18,7 +18,7 @@ type TestContext = {
   mockPackageCache: PackageCache
   mockInteractions: AuthenticationInteractions
   mockLogger: ILogger
-  testEvent: OnAddUrlAuthentication
+  testEvent: OnRemoveUrlAuthentication
 }
 
 export const onRemoveUrlAuthenticationTests = {
@@ -78,7 +78,7 @@ export const onRemoveUrlAuthenticationTests = {
     // verify
     verify(this.mockUrlAuthStore.getAll()).once();
     verify(this.mockInteractions.chooseUrlAuthToClear(testUrlAuthData)).once();
-    verify(this.mockLogger.info('Clearing %s authentication', testAuthUrl)).once();
+    verify(this.mockLogger.info('Clearing {url} authentication', anyOfClass(URL))).once();
     verify(this.mockUrlAuthStore.remove(testAuthUrl)).once();
     verify(this.mockAuthProvider.remove(testAuthUrl)).once();
     verify(this.mockLogger.info('Clearing package caches')).once();
@@ -107,7 +107,7 @@ export const onRemoveUrlAuthenticationTests = {
     // verify
     verify(this.mockUrlAuthStore.getAll()).once();
     verify(this.mockInteractions.chooseUrlAuthToClear(testUrlAuthData)).once();
-    verify(this.mockLogger.info('Clearing %s authentication', testAuthUrl)).once();
+    verify(this.mockLogger.info('Clearing {url} authentication', anyOfClass(URL))).once();
     verify(this.mockUrlAuthStore.remove(testAuthUrl)).once();
     verify(this.mockAuthProvider.remove(testAuthUrl)).never();
     verify(this.mockLogger.info('Clearing package caches')).once();

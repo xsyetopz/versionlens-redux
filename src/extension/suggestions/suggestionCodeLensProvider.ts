@@ -61,7 +61,7 @@ export class SuggestionCodeLensProvider extends Disposable implements CodeLensPr
       ? this.extension.projectPath
       : packagePath;
 
-    this.logger.info("Project path is %s", projectPath);
+    this.logger.info("Project path is {projectPath}", projectPath);
 
     // clear any errors
     await this.state.clearErrorState();

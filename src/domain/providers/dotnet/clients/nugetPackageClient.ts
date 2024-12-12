@@ -40,7 +40,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
       const errorResponse = error as HttpClientResponse;
 
       this.logger.debug(
-        "request failed for '%s' from '%s': %O",
+        "request failed for '{packageName}' from '{resourceUrl}': {error}",
         request.parsedDependency.package.name,
         resourceUrl,
         errorResponse
@@ -52,9 +52,9 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
       // only retry if 404 and we have more urls to try
       if (errorResponse.status === 404 && request.attempt < urls.length) {
         this.logger.debug(
-          "attempting to fetch '%s' from '%s'",
+          "attempting to fetch '{packageName}' from '{url}'",
           request.parsedDependency.package.name,
-          urls[request.attempt]
+          new URL(urls[request.attempt])
         );
         return this.fetchPackage(request);
       }

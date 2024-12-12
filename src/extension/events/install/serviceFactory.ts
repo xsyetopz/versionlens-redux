@@ -14,7 +14,7 @@ export function addOnPreSaveChanges(services: IServiceCollection) {
       const event = new OnPreSaveChanges(
         container.fileWatcherDependencyCache,
         container.editorDependencyCache,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register listener
@@ -33,7 +33,7 @@ export function addOnSaveChanges(services: IServiceCollection) {
       // create the event handler
       const event = new OnSaveChanges(
         tasks,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       );
 
       // register listener

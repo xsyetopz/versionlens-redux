@@ -57,7 +57,7 @@ export function addProcessClient(services: IServiceCollection) {
       createShellClient(
         container.shellCache,
         container.mavenCachingOpts,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -70,7 +70,7 @@ export function addCliClient(services: IServiceCollection) {
       new MvnCli(
         container.mavenConfig,
         container.mvnShellClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -98,7 +98,7 @@ export function addMavenClient(services: IServiceCollection) {
       new MavenClient(
         container.mavenConfig,
         container.mavenHttpClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -111,7 +111,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
         container.mavenClient,
         container.mvnCli,
         container.mavenConfig,
-        container.logger.child({ logGroup: 'mavenSuggestionProvider' })
+        container.loggerFactory.create(MavenSuggestionProvider.name)
       )
   );
 }

@@ -4,7 +4,7 @@ import type { ILogger } from '#domain/logging';
 import { type DotNetConfig, type NugetOptions, DotNetCli, } from '#domain/providers/dotnet';
 import { RegistryProtocols } from '#domain/utils';
 import assert from 'node:assert';
-import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito';
+import { anything, capture, instance, mock, verify, when } from 'ts-mockito';
 import Fixtures from './fixtures/dotnetSources';
 
 type TestContext = {
@@ -87,10 +87,14 @@ export const DotNetCliTests = {
 
       verify(
         this.loggerMock.debug(
-          "package sources found: %s",
-          deepEqual(actualSources.map(x => x.url))
+          "package sources found: {packageSources}",
+          anything()
         )
       ).once();
+
+      // work around for ts-mockito not supporing deepEqual(URL)
+      const debugArgs = capture(this.loggerMock.debug).last();
+      assert.deepEqual(debugArgs[1], Array.from(actualSources, x => new URL(x.url)));
 
       assert.deepEqual(actualSources, expected);
     },
@@ -177,14 +181,14 @@ export const DotNetCliTests = {
 
       verify(
         this.loggerMock.error(
-          "failed to get package sources: %s",
+          "failed to get package sources: {error}",
           anything()
         )
       ).once();
 
       verify(
         this.loggerMock.info(
-          "using fallback source: %s",
+          "using fallback source: {fallbackSource}",
           expectedFallbackNugetSource
         )
       ).once();

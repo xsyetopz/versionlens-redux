@@ -16,7 +16,7 @@ export function addPackageFileWatcher(services: IServiceCollection) {
         container.fileWatcherDependencyCache,
         container.editorConfig,
         workspace,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       ),
     true
   );

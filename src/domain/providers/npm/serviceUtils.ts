@@ -88,7 +88,7 @@ export function addGitHubClient(services: IServiceCollection) {
       new GitHubClient(
         container.npmConfig,
         container.githubJsonClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -101,7 +101,7 @@ export function addNpmRegistryClient(services: IServiceCollection) {
       new NpmRegistryClient(
         NpmRegistryFetch,
         container.npmConfig,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -115,7 +115,7 @@ export function addNpmPackageClient(services: IServiceCollection) {
         container.npmConfig,
         container.npmRegistryClient,
         container.githubClient,
-        container.logger.child({ logGroup: serviceName })
+        container.loggerFactory.create(serviceName)
       )
   );
 }
@@ -127,7 +127,7 @@ export function addSuggestionProvider(services: IServiceCollection) {
       new NpmSuggestionProvider(
         container.npmClient,
         container.npmConfig,
-        container.logger.child({ logGroup: 'npmSuggestionProvider' })
+        container.loggerFactory.create(NpmSuggestionProvider.name)
       )
   );
 }

@@ -142,7 +142,7 @@ export const packageFileWatcherTests = {
       // verify
       verify(
         this.mockLogger.debug(
-          "created watcher for '%s' with pattern '%s'",
+          "created watcher for '{providerName}' with pattern '{filePatterns}'",
           testProvider.name,
           testConfig.filePatterns
         )
@@ -185,12 +185,7 @@ export const packageFileWatcherTests = {
       await watcher.onFileChange(testProvider, testUri);
 
       // verify
-      verify(
-        this.mockLogger.silly(
-          "file changed '%s'",
-          testUri
-        )
-      ).once();
+      verify(this.mockLogger.trace("file changed '{uri}'", testUri.toString())).once();
 
       verify(
         this.mockGetDependencyChanges.execute(testProvider, testUri.fsPath),
@@ -246,10 +241,7 @@ export const packageFileWatcherTests = {
 
       // verify
       verify(
-        this.mockLogger.silly(
-          "file changed '%s'",
-          testUri
-        )
+        this.mockLogger.trace("file changed '{uri}'", testUri.toString())
       ).once();
 
       verify(
@@ -257,8 +249,8 @@ export const packageFileWatcherTests = {
       ).once()
 
       verify(
-        this.mockLogger.silly(
-          "updating package dependency cache for '%s'",
+        this.mockLogger.trace(
+          "updating package dependency cache for '{packageFilePath}'",
           testUri.fsPath
         )
       ).once();

@@ -99,13 +99,21 @@ Try a clean install:
 
 - Version lens writes a log to an output channel in vscode.
 
-  If your experiencing issues please set your `versionlens.logging.level` to `debug` (vscode needs to be restarted) 
-    
-  Then open the channel like:
-    
+  If you're experiencing issues then set your log level to `debug`.
+
+  You can change the log level by either 
+  - `ctrl+p` then type `Developer: Set Log Level`; or
+  - via the `VersionLens` output log window
+
+  > **NOTE**
+  >
+  > You may need to restart vscode if your issue is a start up problem.
+
+  You can find the `VersionLens` output channel as seen in this picture:
+
   ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-log.png)
 
-- In the worst case no logs are output. There maybe an error in the developer tools of vscode. You can open the dev tools from the `help menu` in vscode (Ctrl+Shift+I)
+- In the worst case no logs are output. There maybe an error in the developer tools of vscode. You can open the dev tools from the `help menu` in vscode
 
 ## License
 
