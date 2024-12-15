@@ -3,4 +3,4 @@ export * from './pypiClient';
 export * from './pypiConfig';
 export * from './pypiContainer';
 export * from './pypiSuggestionProvider';
-export * from './serviceUtils';
+export * from './serviceFactory';

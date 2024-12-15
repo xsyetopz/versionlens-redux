@@ -4,4 +4,4 @@ export * from './composerContainer';
 export * from './composerSuggestionProvider';
 export * from './definitions';
 export * from './parser/customDescriptorHandler';
-export * from './serviceUtils';
+export * from './serviceFactory';

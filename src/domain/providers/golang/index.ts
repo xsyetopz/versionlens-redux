@@ -4,4 +4,4 @@ export * from './goConfig';
 export * from './goContainer';
 export * from './goReplaceVersion';
 export * from './goSuggestionProvider';
-export * from './serviceUtils';
+export * from './serviceFactory';
