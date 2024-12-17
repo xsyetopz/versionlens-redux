@@ -7,3 +7,4 @@ export * from './onPreSaveChanges.tests';
 export * from './onProviderTextDocumentChange.tests';
 export * from './onProviderTextDocumentClose.tests';
 export * from './onRemoveUrlAuthentication.tests';
+export * from './onTextDocumentChange.tests';
