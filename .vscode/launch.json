@@ -4,14 +4,12 @@
   "configurations": [
     {
       "name": "Debug unit tests",
-      "type": "extensionHost",
+      "type": "node",
       "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "args": [
-        "--disable-extensions",
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "--extensionTestsPath=${workspaceFolder}/dist/test/runner.js"
-      ],
+      "program": "${workspaceFolder}/dist/test/runner.js",
+      "env": {
+        "TEST_HEADLESS": "true"
+      },
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
       ],
