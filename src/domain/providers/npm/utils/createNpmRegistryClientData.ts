@@ -1,7 +1,6 @@
 import {
   type TNpmCliConfigParams,
   type TNpmClientData,
-  defaultRegistryFetchTimeoutOpts,
   getDotEnv
 } from '#domain/providers/npm';
 import NpmCliConfig from '@npmcli/config';
@@ -41,12 +40,5 @@ export async function createNpmRegistryClientData(
 
   await npmCliConfig.load();
 
-  // flatten all the options
-  const flatConfig = npmCliConfig.flat;
-
-  return {
-    ...flatConfig,
-    // override cli defaults
-    ...defaultRegistryFetchTimeoutOpts
-  };
+  return npmCliConfig.flat;
 }

@@ -16,7 +16,6 @@ import {
   type NpaSpec,
   type NpmConfig,
   type TNpmClientData,
-  defaultRegistryFetchTimeoutOpts,
   NpmRegistryClient
 } from '#domain/providers/npm';
 import { test } from 'mocha-ui-esm';
@@ -63,8 +62,7 @@ export const fetchPackageTests = {
 
     const testClientData: TNpmClientData = {
       registry: 'https://registry.npmjs.org/',
-      strictSSL: true,
-      ...defaultRegistryFetchTimeoutOpts
+      strictSSL: true
     };
 
     const testRequest: TPackageClientRequest<TNpmClientData> = {
@@ -115,8 +113,7 @@ export const fetchPackageTests = {
 
     const testClientData: TNpmClientData = {
       registry: 'https://registry.npmjs.org/',
-      strictSSL: true,
-      ...defaultRegistryFetchTimeoutOpts
+      strictSSL: true
     };
 
     const testRequest: TPackageClientRequest<TNpmClientData> = {
@@ -166,8 +163,7 @@ export const fetchPackageTests = {
 
     const testClientData: TNpmClientData = {
       registry: 'https://registry.npmjs.org/',
-      strictSSL: true,
-      ...defaultRegistryFetchTimeoutOpts
+      strictSSL: true
     };
 
     const testRequest: TPackageClientRequest<TNpmClientData> = {
@@ -225,8 +221,7 @@ export const fetchPackageTests = {
 
     const testClientData: TNpmClientData = {
       registry: 'https://registry.npmjs.org/',
-      strictSSL: true,
-      ...defaultRegistryFetchTimeoutOpts
+      strictSSL: true
     };
 
     const testRequest: TPackageClientRequest<TNpmClientData> = {

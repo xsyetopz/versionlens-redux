@@ -1,7 +1,6 @@
 import type { ILogger } from '#domain/logging';
 import {
   type TNpmClientData,
-  defaultRegistryFetchTimeoutOpts,
   GitHubOptions,
   NpmConfig,
   NpmPackageClient,
@@ -86,7 +85,6 @@ export const NpmSuggestionProviderTests = {
         const expectedClientData: TNpmClientData = {
           registry: 'https://registry.npmjs.org/',
           strictSSL: true,
-          ...defaultRegistryFetchTimeoutOpts
         };
         expectedClientData['//registry.npmjs.example/:_authToken'] = '12345678';
 
@@ -105,8 +103,6 @@ export const NpmSuggestionProviderTests = {
 
         assert.equal(actualClientData.registry, expectedClientData.registry);
         assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
-        assert.equal(actualClientData.timeout, expectedClientData.timeout);
-        assert.deepEqual(actualClientData.retry, expectedClientData.retry);
         assert.equal(
           actualClientData["//registry.npmjs.example/:_authToken"],
           expectedClientData["//registry.npmjs.example/:_authToken"]
@@ -130,8 +126,7 @@ export const NpmSuggestionProviderTests = {
 
       const expectedClientData: TNpmClientData = {
         registry: 'https://registry.npmjs.org/',
-        strictSSL: true,
-        ...defaultRegistryFetchTimeoutOpts
+        strictSSL: true
       };
 
       const actualClientData = await put.preFetchSuggestions(
@@ -148,8 +143,6 @@ export const NpmSuggestionProviderTests = {
 
       assert.equal(actualClientData.registry, expectedClientData.registry);
       assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
-      assert.equal(actualClientData.timeout, expectedClientData.timeout);
-      assert.deepEqual(actualClientData.retry, expectedClientData.retry);
     },
 
     "returns client data when no .env": async function (this: TestContext) {
@@ -167,8 +160,7 @@ export const NpmSuggestionProviderTests = {
 
       const expectedClientData: TNpmClientData = {
         registry: 'https://registry.npmjs.org/',
-        strictSSL: true,
-        ...defaultRegistryFetchTimeoutOpts
+        strictSSL: true
       };
       expectedClientData['//registry.npmjs.example/:_authToken'] = '${NPM_AUTH}';
 
@@ -187,8 +179,6 @@ export const NpmSuggestionProviderTests = {
 
       assert.equal(actualClientData.registry, expectedClientData.registry);
       assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
-      assert.equal(actualClientData.timeout, expectedClientData.timeout);
-      assert.deepEqual(actualClientData.retry, expectedClientData.retry);
 
       assert.equal(
         actualClientData["//registry.npmjs.example/:_authToken"],
@@ -218,8 +208,7 @@ export const NpmSuggestionProviderTests = {
       const expectedClientData: TNpmClientData = {
         registry: 'https://registry.npmjs.org/',
         strictSSL: true,
-        ca: Fixtures.preFetchSuggestions['cafile'],
-        ...defaultRegistryFetchTimeoutOpts
+        ca: Fixtures.preFetchSuggestions['cafile']
       };
 
       const actualClientData = await put.preFetchSuggestions(
@@ -237,8 +226,6 @@ export const NpmSuggestionProviderTests = {
 
       assert.equal(actualClientData.registry, expectedClientData.registry);
       assert.equal(actualClientData.strictSSL, expectedClientData.strictSSL);
-      assert.equal(actualClientData.timeout, expectedClientData.timeout);
-      assert.deepEqual(actualClientData.retry, expectedClientData.retry);
       assert.equal(actualClientData.ca, expectedClientData.ca);
 
       // clean up

@@ -51,17 +51,10 @@ export type TNpmCliConfigParams = {
 export type TNpmClientData = {
   ca?: string | Array<string>
   cert?: string
-  retry: {
-    retries: number
-    factor?: number
-    maxTimeout?: number
-    minTimeout?: number
-  }
   proxy?: string | null
   httpsProxy?: string | null
   registry: string
   strictSSL: boolean
-  timeout: number
 }
 
 export type TNpmRegistryData = {
@@ -69,12 +62,5 @@ export type TNpmRegistryData = {
   versions: KeyDictionary<any>;
   "dist-tags": KeyDictionary<string>;
 }
-
-export const defaultRegistryFetchTimeoutOpts = {
-  timeout: 1000,
-  retry: {
-    retries: 1
-  }
-};
 
 export type TNpmRegistryClientResponse = TClientResponse<number, TNpmRegistryData>
