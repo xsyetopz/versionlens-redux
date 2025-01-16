@@ -39,7 +39,7 @@ export const authenticationProviders: Array<AuthenticationProviderInfo> = [
 ];
 
 export const AuthLog = {
-  authProviderInfo: "Using [{label}] authentication provider for {url}}"
+  authProviderInfo: "Using [{label}] authentication provider for {url}"
 }
 
 export const AuthPrompt = {
