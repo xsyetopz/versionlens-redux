@@ -1,3 +1,11 @@
+# 1.16.3
+
+### All Providers
+
+  - Fixed a case when the `onSaveChangesTask` fails and is prevented from running again until further version changes are made
+
+    Relates to [#382](https://gitlab.com/versionlens/vscode-versionlens/-/issues/382)
+
 # 1.16.2
 
 ## Npm
