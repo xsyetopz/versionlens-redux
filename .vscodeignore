@@ -1,6 +1,9 @@
+# ignore
 **/*.*
 node_modules/
 test/
+
+# permit
 !images/**/*.*
 !dist/**/*.js
 !AUTHORS.md
