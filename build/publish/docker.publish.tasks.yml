@@ -1,8 +1,0 @@
-tasks:
-  docker:publish:
-    - var:
-        DOCKER_PUBLISH_PATH: ./build/publish
-        PUBLISH_IMAGE: versionlens:publish
-        PUBLISH_VOL: $PWD/.publish:/versionlens/.publish
-    - docker build -t $PUBLISH_IMAGE -f $DOCKER_PUBLISH_PATH/publish.dockerfile .
-    - docker run --rm -v $PUBLISH_VOL --env-file ./.env --name publish-container $PUBLISH_IMAGE
