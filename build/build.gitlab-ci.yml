@@ -19,3 +19,5 @@ unit_tests:
       coverage_report:
         coverage_format: cobertura
         path: .coverage/cobertura-coverage.xml
+  rules:
+    - if: $IS_TEST == "1"

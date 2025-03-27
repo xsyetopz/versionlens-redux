@@ -1,18 +1,22 @@
 "Push to master trigger -> Run tests":
   stage: test
+  variables:
+    IS_TEST: "1"
   trigger:
     strategy: depend
     include:
-      - local: build/test/test.gitlab-ci.yml
+      - local: build/build.gitlab-ci.yml
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 "Merge to master trigger -> Run tests":
   stage: test
+  variables:
+    IS_TEST: "1"
   trigger:
     strategy: depend
     include:
-      - local: build/test/test.gitlab-ci.yml
+      - local: build/build.gitlab-ci.yml
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
 
