@@ -89,7 +89,9 @@ Try a clean install:
 
 ## How do I troubleshoot this extension?
 
-- Ensure you have `"editor.codeLens": true` set in your settings.
+- This plugin won't work unless you have `"editor.codeLens": true` enabled in your settings. (`true` is the default)
+
+- Version lens uses editor action icons so make sure you don't have `"workbench.editor.editorActionsLocation": "hidden"` set
 
 - Try resetting the cache by running the clear cache command (ctrl+p then type "Clear Cache") 
   This setting can be changed using `versionlens.caching.duration`. 
