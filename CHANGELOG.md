@@ -1,3 +1,11 @@
+# 1.16.4
+
+## Dart (pub)
+
+  - Removed double slashes from the host part of the api url
+
+    Relates to [#383](https://gitlab.com/versionlens/vscode-versionlens/-/issues/383)
+
 # 1.16.3
 
 ### All Providers
