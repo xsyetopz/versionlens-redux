@@ -81,7 +81,7 @@
     "@npmcli/config": "10.1.0",
     "@npmcli/promise-spawn": "8.0.2",
     "awilix": "12.0.5",
-    "dotenv": "16.4.7",
+    "dotenv": "16.5.0",
     "jsonc-parser": "3.3.1",
     "micromatch": "4.0.8",
     "npm-package-arg": "12.0.2",
