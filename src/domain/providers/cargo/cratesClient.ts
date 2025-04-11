@@ -99,6 +99,7 @@ export class CratesClient implements IPackageClient<null> {
 
     const responseVersions = httpResponse.data as ICratesApiItem;
     let rawVersions = responseVersions.versions
+      .filter(p => p.yanked === false)
       .reverse()
       .map(p => p.num);
 

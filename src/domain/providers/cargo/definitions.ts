@@ -13,7 +13,10 @@ export enum CargoFeatures {
 }
 
 export interface ICratesApiItem {
-  versions: [{ num: string }];
+  versions: [{
+    num: string,
+    yanked: boolean
+  }];
 }
 
 export interface ICargoService {
