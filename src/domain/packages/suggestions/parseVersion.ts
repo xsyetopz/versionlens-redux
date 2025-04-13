@@ -35,7 +35,10 @@ export function parseVersion(
   }
 
   let minVersion = null;
-  if (isRangeVersion) minVersion = getMinVersion(requestedVersion)?.version;
+  if (isRangeVersion) {
+    minVersion = getMinVersion(requestedVersion)?.version;
+    satisfiesVersion && satisfiesVersion.startsWith('v') && (minVersion = `v${minVersion}`)
+  }
 
   const latestRelease = distTagVersion || releases[releases.length - 1];
   const latestPreRelease = prereleases[prereleases.length - 1];

@@ -2,13 +2,20 @@ import { parseVersion } from '#domain/packages';
 import { test } from 'mocha-ui-esm';
 import { equal, notEqual, ok } from 'node:assert';
 
+type TestContext = {
+  testReleases: string[]
+  testPrereleases: string[]
+  testVReleases: string[]
+}
+
 export const parseVersionTests = {
 
   [test.title]: parseVersion.name,
 
-  beforeEach: function (this: any) {
+  beforeEach: function (this: TestContext) {
     this.testReleases = ['5.3.3', '5.4.3', '5.4.4', '5.4.5'];
     this.testPrereleases = ['5.3.3-dev.1234', '5.4.3-beta.4567', '5.4.4-rc.6789', '5.4.5-next.1452'];
+    this.testVReleases = ['v5.3.3', 'v5.4.3', 'v5.4.4', 'v5.4.5'];
   },
 
   isPreRelease: {
@@ -108,7 +115,7 @@ export const parseVersionTests = {
       '5.4.3-beta.4567',
       '5.4.4-rc.6789',
       '5.4.5-next.1452',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
         equal(actual.satisfiesVersion, testVersion);
       }
@@ -119,7 +126,7 @@ export const parseVersionTests = {
       ['*', '5.4.5'],
       ['5.3.*-pre', '5.3.3'],
       ['5.*.*-pre', '5.4.5'],
-      function (this: any, testVersion: string, expected: string) {
+      function (this: TestContext, testVersion: string, expected: string) {
         const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
         equal(actual.satisfiesVersion, expected);
       }
@@ -128,7 +135,7 @@ export const parseVersionTests = {
       '5.3.1',
       '5.4.0',
       '5.4.0-pre',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, []);
         equal(actual.satisfiesVersion, undefined);
         notEqual(actual.satisfiesVersion, testVersion);
@@ -139,7 +146,7 @@ export const parseVersionTests = {
       '6.*',
       '6',
       '5.6.*-pre',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, []);
         equal(actual.satisfiesVersion, undefined);
         notEqual(actual.satisfiesVersion, testVersion);
@@ -152,7 +159,7 @@ export const parseVersionTests = {
       '5.4.*',
       '5.*',
       '5',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, []);
         equal(actual.satisfiesVersion, '5.4.5');
         notEqual(actual.satisfiesVersion, actual.minVersion);
@@ -162,8 +169,31 @@ export const parseVersionTests = {
     'case $i: is false when has satisfiesVersion and satisfiesVersion equal to minVersion': [
       ['~5.3.3', '5.3.3'],
       ['~5.4.5', '5.4.5'],
-      function (this: any, testVersion: string, expectedSatisfiesVersion: string) {
+      ['^v5.4.5', '5.4.5'],
+      function (this: TestContext, testVersion: string, expectedSatisfiesVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, []);
+        equal(actual.satisfiesVersion, expectedSatisfiesVersion);
+        equal(actual.minVersion, actual.satisfiesVersion);
+        ok(actual.hasRangeUpdate === false);
+      }
+    ],
+    'case $i v-releases: is true when has satisfiesVersion and satisfiesVersion not equal to minVersion': [
+      'v5.4.*',
+      'v5.*',
+      'v5',
+      function (this: TestContext, testVersion: string) {
+        const actual = parseVersion(testVersion, this.testVReleases, []);
+        equal(actual.satisfiesVersion, 'v5.4.5');
+        notEqual(actual.satisfiesVersion, actual.minVersion);
+        ok(actual.hasRangeUpdate);
+      }
+    ],
+    'case $i v-releases: is false when has satisfiesVersion and satisfiesVersion equal to minVersion': [
+      ['~v5.3.3', 'v5.3.3'],
+      ['~v5.4.5', 'v5.4.5'],
+      ['^v5.4.5', 'v5.4.5'],
+      function (this: TestContext, testVersion: string, expectedSatisfiesVersion: string) {
+        const actual = parseVersion(testVersion, this.testVReleases, []);
         equal(actual.satisfiesVersion, expectedSatisfiesVersion);
         equal(actual.minVersion, actual.satisfiesVersion);
         ok(actual.hasRangeUpdate === false);
@@ -176,7 +206,7 @@ export const parseVersionTests = {
       '5.4.5',
       '5.4.*',
       '5.4.*-pre',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
         ok(actual.isLatest);
         equal(actual.latestRelease, this.testReleases[this.testReleases.length - 1]);
@@ -186,7 +216,7 @@ export const parseVersionTests = {
       '1.2.3',
       '5.4.4',
       '5.4.5-pre',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
         ok(actual.isLatest === false);
         equal(actual.latestRelease, this.testReleases[this.testReleases.length - 1]);
@@ -196,7 +226,7 @@ export const parseVersionTests = {
       '5.3.3',
       '5.3.*',
       '5.3.*-pre',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const testDistTagVersion = '5.3.3';
         const actual = parseVersion(
           testVersion,
@@ -212,7 +242,7 @@ export const parseVersionTests = {
       '1.2.3',
       '5.4.4',
       '5.4.5-pre',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const testDistTagVersion = '5.3.3';
         const actual = parseVersion(
           testVersion,
@@ -227,7 +257,7 @@ export const parseVersionTests = {
   },
 
   isLatestPrerelease: {
-    'is true when equals latest prerelease version': function (this: any) {
+    'is true when equals latest prerelease version': function (this: TestContext) {
       const testVersion = '5.4.5-next.1452';
       const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
       ok(actual.isPreRelease);
@@ -237,7 +267,7 @@ export const parseVersionTests = {
       '5.4.5-pre',
       '5.6.0-pre',
       '5.4.*-pre',
-      function (this: any, testVersion: string) {
+      function (this: TestContext, testVersion: string) {
         const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
         ok(actual.isLatestPreRelease === false);
         equal(actual.latestPreRelease, undefined);
@@ -246,14 +276,14 @@ export const parseVersionTests = {
   },
 
   hasInvalidRange: {
-    'is true when isRangeVersion and minVersion is null': function (this: any) {
+    'is true when isRangeVersion and minVersion is null': function (this: TestContext) {
       const testVersion = '>1 <1';
       const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
       ok(actual.isRangeVersion);
       equal(actual.minVersion, undefined);
       ok(actual.hasInvalidRange);
     },
-    'is false when isRangeVersion and minVersion is set': function (this: any) {
+    'is false when isRangeVersion and minVersion is set': function (this: TestContext) {
       const testVersion = '>1 <3';
       const actual = parseVersion(testVersion, this.testReleases, this.testPrereleases);
       ok(actual.isRangeVersion);
