@@ -13,6 +13,7 @@ import {
 import { createTextRange, PackageDescriptor } from '#domain/parsers';
 import {
   GitHubClient,
+  JsrClient,
   NpmConfig,
   NpmPackageClient,
   NpmRegistryClient
@@ -26,6 +27,7 @@ const testDir = fileDir();
 let configMock: NpmConfig;
 let npmRegistryClientMock: NpmRegistryClient;
 let githubClientMock: GitHubClient;
+let jsrClientMock: JsrClient;
 let loggerMock: ILogger;
 
 export const fetchPackageTests = {
@@ -36,6 +38,7 @@ export const fetchPackageTests = {
     configMock = mock(NpmConfig);
     npmRegistryClientMock = mock(NpmRegistryClient);
     githubClientMock = mock(GitHubClient);
+    jsrClientMock = mock(JsrClient);
     loggerMock = mock<ILogger>();
   },
 
@@ -67,6 +70,7 @@ export const fetchPackageTests = {
       instance(configMock),
       instance(npmRegistryClientMock),
       instance(githubClientMock),
+      instance(jsrClientMock),
       instance(loggerMock)
     );
 
@@ -112,6 +116,7 @@ export const fetchPackageTests = {
       instance(configMock),
       instance(npmRegistryClientMock),
       instance(githubClientMock),
+      instance(jsrClientMock),
       instance(loggerMock)
     );
 
@@ -163,6 +168,7 @@ export const fetchPackageTests = {
       instance(configMock),
       instance(npmRegistryClientMock),
       instance(githubClientMock),
+      instance(jsrClientMock),
       instance(loggerMock)
     );
 
@@ -214,6 +220,7 @@ export const fetchPackageTests = {
         instance(configMock),
         instance(npmRegistryClientMock),
         instance(githubClientMock),
+        instance(jsrClientMock),
         instance(loggerMock)
       );
 

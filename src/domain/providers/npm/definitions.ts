@@ -3,6 +3,7 @@ import { HttpOptions, IJsonHttpClient, TClientResponse } from '#domain/clients';
 import {
   GitHubClient,
   GitHubOptions,
+  JsrClient,
   NpaSpec,
   NpmConfig,
   NpmPackageClient,
@@ -31,6 +32,7 @@ export interface INpmServices {
   npmConfig: NpmConfig;
   githubJsonClient: IJsonHttpClient;
   githubClient: GitHubClient;
+  jsrClient: JsrClient;
   npmRegistryClient: NpmRegistryClient;
   npmClient: NpmPackageClient;
 }
@@ -64,3 +66,12 @@ export type TNpmRegistryData = {
 }
 
 export type TNpmRegistryClientResponse = TClientResponse<number, TNpmRegistryData>
+
+export type TJsrApiItem = {
+  latest: string
+  versions: {
+    [version: string]: {
+      yanked?: boolean
+    }
+  }
+}

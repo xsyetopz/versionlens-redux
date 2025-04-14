@@ -7,6 +7,7 @@ import {
   type INpmServices,
   GitHubClient,
   GitHubOptions,
+  JsrClient,
   NpmConfig,
   NpmFeatures,
   NpmPackageClient,
@@ -93,6 +94,19 @@ export function addGitHubClient(services: IServiceCollection) {
   );
 }
 
+export function addJsrClient(services: IServiceCollection) {
+  const serviceName = nameOf<INpmServices>().jsrClient;
+  services.addSingleton(
+    serviceName,
+    (container: INpmServices & IDomainServices) =>
+      new JsrClient(
+        container.npmConfig,
+        container.githubJsonClient,
+        container.loggerFactory.create(serviceName)
+      )
+  );
+}
+
 export function addNpmRegistryClient(services: IServiceCollection) {
   const serviceName = nameOf<INpmServices>().npmRegistryClient;
   services.addSingleton(
@@ -115,6 +129,7 @@ export function addNpmPackageClient(services: IServiceCollection) {
         container.npmConfig,
         container.npmRegistryClient,
         container.githubClient,
+        container.jsrClient,
         container.loggerFactory.create(serviceName)
       )
   );

@@ -273,7 +273,7 @@
         },
         "versionlens.npm.files": {
           "type": "string",
-          "default": "**/package.json",
+          "default": "**/{package.json,deno.json}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.npm.caching.duration": {
@@ -304,7 +304,8 @@
             "jspm.peerDependencies",
             "jspm.optionalDependencies",
             "pnpm.overrides",
-            "pnpm.overrides.*"
+            "pnpm.overrides.*",
+            "imports"
           ],
           "description": "Defines which properties in package.json should be parsed by this extension"
         },

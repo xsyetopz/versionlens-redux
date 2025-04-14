@@ -154,6 +154,14 @@ export function createGit(): TPackageClientResponse {
   );
 }
 
+export function createNoSuggestions(): TPackageClientResponse {
+  return create(
+    PackageSourceType.Registry,
+    { source: ClientResponseSource.remote, status: 200 },
+    []
+  )
+}
+
 export function mapStatusFromHttpResponse(
   response: HttpClientResponse
 ): TPackageClientResponseStatus {

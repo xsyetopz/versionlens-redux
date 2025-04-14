@@ -20,9 +20,10 @@
     "jspm.optionalDependencies",
     "pnpm.overrides",
     "pnpm.overrides.*",
-    "customDependencies"
+    "customDependencies",
+    "imports"
   ],
-  "versionlens.npm.files": "**/{package.json,web-module.json}",
+  "versionlens.npm.files": "**/{package.json,deno.json,web-module.json}",
   "versionlens.npm.onSaveChanges": "smoke npm install",
   "files.associations": {
     "*.json": "json"

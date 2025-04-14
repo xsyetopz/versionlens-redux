@@ -35,5 +35,7 @@ function replaceAliasVersion(suggestionUpdate: TSuggestionUpdate): string {
     suggestionUpdate.suggestionVersion
   );
 
-  return `npm:${suggestionUpdate.fetchedName}@${preservedLeadingVersion}`;
+  const firstColon = suggestionUpdate.parsedVersion.indexOf(':');
+  const registry = suggestionUpdate.parsedVersion.substring(0, firstColon)
+  return `${registry}:${suggestionUpdate.fetchedName}@${preservedLeadingVersion}`;
 }

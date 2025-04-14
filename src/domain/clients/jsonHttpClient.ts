@@ -7,6 +7,8 @@ import type {
 import type { KeyStringDictionary } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+export const defaultHeaders = { 'Accept': 'application/json' };
+
 export class JsonHttpClient implements IJsonHttpClient {
 
   constructor(readonly httpClient: IHttpClient) {
@@ -21,7 +23,7 @@ export class JsonHttpClient implements IJsonHttpClient {
     headers: KeyStringDictionary = {}
   ): Promise<JsonClientResponse> {
 
-    return this.httpClient.get(url, query, headers)
+    return this.httpClient.get(url, query, { ...defaultHeaders, ...headers })
       .then(function (response: HttpClientResponse) {
         return {
           source: response.source,
