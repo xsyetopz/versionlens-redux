@@ -92,7 +92,7 @@ export const UrlAuthenticationStoreTests = {
 
     // assert
     const map = this.testUrlAuthStore.getAll();
-    assert.deepEqual(map[this.testUrl], undefined);
+    assert.equal(map.length, 0)
   },
 
   "clears all data": function (this: TestContext) {

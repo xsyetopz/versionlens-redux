@@ -1,5 +1,5 @@
 import type { ILogger } from '#domain/logging';
-import type { DependencyCache } from '#domain/packages';
+import type { DependencyCache, PackageDependency } from '#domain/packages';
 import type { ISuggestionProvider } from '#domain/providers';
 import type { DependencyChangesResult, GetDependencyChanges } from '#domain/useCases';
 import { OnProviderTextDocumentChange } from '#extension/events';
@@ -31,7 +31,7 @@ export const onProviderTextDocumentChangeTests = {
 
   "updates editor cache with document changes": async function (this: TestContext) {
     const testProviderName = 'testProvider';
-    const testParsedDeps = [];
+    const testParsedDeps: PackageDependency[] = [];
 
     const testProvider: ISuggestionProvider = { name: testProviderName } as any;
     const testPackageFilePath = 'test/path/dir';

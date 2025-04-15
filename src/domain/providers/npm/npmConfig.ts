@@ -32,8 +32,8 @@ export class NpmConfig implements IProviderConfig {
     return this.config.get(NpmFeatures.DependencyProperties);
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(NpmFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(NpmFeatures.OnSaveChangesTask) ?? null;
   }
 
   get prereleaseTagFilter(): Array<string> {

@@ -34,8 +34,8 @@ export class GoConfig implements IProviderConfig {
     return this.config.get(GoFeatures.ApiUrl);
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(GoFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(GoFeatures.OnSaveChangesTask) ?? null;
   }
 
 }

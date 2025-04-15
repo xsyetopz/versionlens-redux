@@ -51,6 +51,7 @@ export type TNpmCliConfigParams = {
 }
 
 export type TNpmClientData = {
+  [url: string]: any,
   ca?: string | Array<string>
   cert?: string
   proxy?: string | null

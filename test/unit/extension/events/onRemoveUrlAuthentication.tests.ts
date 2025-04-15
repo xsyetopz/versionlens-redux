@@ -3,6 +3,7 @@ import type { PackageCache } from '#domain/packages';
 import {
   type AuthenticationInteractions,
   type AuthenticationProvider,
+  type UrlAuthenticationData,
   type UrlAuthenticationStore,
   AuthenticationScheme,
   createUrlAuthData,
@@ -42,7 +43,7 @@ export const onRemoveUrlAuthenticationTests = {
   },
 
   "prompts the user which url(s) to remove": async function (this: TestContext) {
-    const testUrlAuthData = [];
+    const testUrlAuthData: UrlAuthenticationData[] = [];
 
     when(this.mockUrlAuthStore.getAll()).thenReturn(testUrlAuthData);
     when(this.mockInteractions.chooseUrlAuthToClear(testUrlAuthData))

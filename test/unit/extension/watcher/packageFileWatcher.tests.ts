@@ -44,11 +44,11 @@ export const packageFileWatcherTests = {
       const testProvider = instance(this.mockProvider);
       const testConfig = instance(this.mockProviderConfig);
       const testUri: Uri = <any>{ fsPath: 'some-dir/package.json' };
-      const testUserFileExcludes = { '**/exclude.files/**': true };
+      const testUserFileExcludes: Record<string, boolean> = { '**/exclude.files/**': true };
       const testExcludes = [
         ...defaultExcludes,
         ...Object.keys(testUserFileExcludes).filter(x => testUserFileExcludes[x]),
-        ...testConfig.fileExcludePatterns
+        ...testConfig.fileExcludePatterns!
       ];
 
       when(this.mockProvider.config).thenReturn(testConfig);

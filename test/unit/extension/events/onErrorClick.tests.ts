@@ -40,7 +40,7 @@ export const onErrorClickTests = {
     verify(this.mockState.clearErrorState()).once();
     verify(this.mockState.clearBusyState()).once();
     verify(
-      this.mockWindow.showTextDocument(this.mockWindow.activeTextEditor.document)
+      this.mockWindow.showTextDocument(this.mockWindow.activeTextEditor!.document)
     ).once();
   },
 

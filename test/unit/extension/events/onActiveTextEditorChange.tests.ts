@@ -11,7 +11,7 @@ type TestContext = {
   mockState: VersionLensState
   mockGetSuggestionProvider: GetSuggestionProvider
   mockLogger: ILogger
-  mockActiveState: ContextState<string>
+  mockActiveState: ContextState<string | null>
   mockTextEditor: TextEditor
   mockDocument: TextDocument
   mockUri: Uri
@@ -29,7 +29,7 @@ export const onActiveTextEditorChangeTests = {
     this.mockTextEditor = mock<TextEditor>();
     this.mockDocument = mock<TextDocument>();
     this.mockUri = mock<Uri>();
-    this.mockActiveState = mock<ContextState<string>>();
+    this.mockActiveState = mock<ContextState<string | null>>();
 
     when(this.mockState.providerActive).thenReturn(instance(this.mockActiveState))
     when(this.mockUri.scheme).thenReturn('file');
@@ -71,9 +71,6 @@ export const onActiveTextEditorChangeTests = {
 
   "disable icons when no suggestion provider found": async function (this: TestContext) {
     const testFilePath = '/some/file/path';
-
-    when(this.mockGetSuggestionProvider.execute(testFilePath))
-      .thenReturn(undefined);
 
     // test
     await this.testEvent.execute(instance(this.mockTextEditor));

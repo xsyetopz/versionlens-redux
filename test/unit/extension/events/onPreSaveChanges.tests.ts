@@ -1,5 +1,5 @@
 import type { ILogger } from '#domain/logging';
-import type { DependencyCache } from '#domain/packages';
+import type { DependencyCache, PackageDependency } from '#domain/packages';
 import type { ISuggestionProvider } from '#domain/providers';
 import { OnPreSaveChanges } from '#extension/events';
 import { test } from 'mocha-ui-esm';
@@ -25,7 +25,7 @@ export const onPreSaveChangesTests = {
     const testProviderName = 'testProvider';
     const testPackageFilePath = 'test/path/dir';
     const testProvider: ISuggestionProvider = { name: testProviderName } as any;
-    const testPackageDeps = [];
+    const testPackageDeps: PackageDependency[] = [];
     const testEvent = new OnPreSaveChanges(
       instance(this.mockFileWatcherDependencyCache),
       instance(this.mockEditorDependencyCache),

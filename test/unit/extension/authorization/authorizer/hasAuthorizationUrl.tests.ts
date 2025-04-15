@@ -81,7 +81,7 @@ export const urlHasAuthConsentTests = {
     ) {
       const testUrl = 'https://anything';
 
-      when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData);
+      when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testUrlAuthData!);
 
       // test
       const actual = this.testAuthorizer.hasAuthorizationUrl(testUrl);

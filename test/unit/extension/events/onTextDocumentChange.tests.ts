@@ -15,7 +15,7 @@ type TestContext = {
   mockState: VersionLensState
   mockGetSuggestionProvider: GetSuggestionProvider
   mockLogger: ILogger
-  mockProviderActive: ContextState<string>
+  mockProviderActive: ContextState<string | null>
   testEvent: OnTextDocumentChange
 }
 
@@ -39,10 +39,12 @@ export const onTextDocumentChangeTests = {
   },
 
   "does not fire event when a provider is not active": async function (this: TestContext) {
+    // setup
+    const event = mock<TextDocumentChangeEvent>()
     when(this.mockProviderActive.value).thenReturn(null);
 
     // test
-    await this.testEvent.execute(null);
+    await this.testEvent.execute(instance(event));
 
     // verify
     verify(this.mockGetSuggestionProvider.execute(anything())).never();

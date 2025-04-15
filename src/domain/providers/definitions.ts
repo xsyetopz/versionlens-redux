@@ -14,7 +14,7 @@ export interface IProviderConfig {
   readonly fileLanguage: string
   readonly filePatterns: string
   readonly fileExcludePatterns?: string[]
-  onSaveChangesTask: string
+  onSaveChangesTask: string | null
 }
 
 export interface IProviderModule {

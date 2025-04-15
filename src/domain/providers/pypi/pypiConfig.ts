@@ -38,8 +38,8 @@ export class PypiConfig implements IProviderConfig {
     return this.config.get(PypiFeatures.ApiUrl);
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(PypiFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(PypiFeatures.OnSaveChangesTask) ?? null;
   }
 
 }

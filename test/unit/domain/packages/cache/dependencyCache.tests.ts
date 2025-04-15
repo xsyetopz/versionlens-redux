@@ -62,9 +62,6 @@ export const dependencyCacheTests = {
       when(mockPreferredCache.get(anything(), anything()))
         .thenReturn(testPreferredDeps);
 
-      when(mockFallbackCache.get(this.testProviderName, this.testPackageFilePath))
-        .thenReturn(undefined);
-
       // test
       const actualDeps = DependencyCache.getDependenciesWithFallback(
         this.testProviderName,
@@ -88,9 +85,6 @@ export const dependencyCacheTests = {
       const testFallbackDeps: PackageDependency[] = [];
       const mockPreferredCache = mock<DependencyCache>();
       const mockFallbackCache = mock<DependencyCache>();
-
-      when(mockPreferredCache.get(anything(), anything()))
-        .thenReturn(undefined);
 
       when(mockFallbackCache.get(this.testProviderName, this.testPackageFilePath))
         .thenReturn(testFallbackDeps);

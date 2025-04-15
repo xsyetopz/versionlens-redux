@@ -38,8 +38,8 @@ export class ComposerConfig implements IProviderConfig {
     return ensureEndSlash(this.config.get(ComposerFeatures.ApiUrl));
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(ComposerFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(ComposerFeatures.OnSaveChangesTask) ?? null;
   }
 
 }

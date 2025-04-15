@@ -37,7 +37,7 @@ export const loggerTests = {
         .map(x => Number.parseInt(x));
 
       testLevels.forEach((testLevel: LogLevel) => {
-        const testLevelFn = LogLevel[testLevel]
+        const testLevelFn = LogLevel[testLevel] as keyof typeof LogLevel
         // test
         this.testLogger[testLevelFn](testTemplate, ...testArgs)
         // assert

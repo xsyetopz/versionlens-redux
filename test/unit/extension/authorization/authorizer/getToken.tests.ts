@@ -49,10 +49,10 @@ export const getTokenTests = {
   "case $i: returns undefined when url is not in the UrlAuthStore or AuthenticationScheme.NotSet": [
     undefined,
     { scheme: AuthenticationScheme.NotSet },
-    async function (this: TestContext, testStoreItem: undefined | UrlAuthenticationData) {
+    async function (this: TestContext, testStoreItem: UrlAuthenticationData | undefined) {
       const testUrl = 'https://anything';
 
-      when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testStoreItem);
+      testStoreItem && when(this.mockUrlAuthStore.get(testUrl)).thenReturn(testStoreItem);
 
       // test
       const actual = await this.testAuthorizer.getToken(testUrl);

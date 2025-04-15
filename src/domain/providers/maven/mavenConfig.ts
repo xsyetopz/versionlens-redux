@@ -34,8 +34,8 @@ export class MavenConfig implements IProviderConfig {
     return ensureEndSlash(this.config.get(MavenFeatures.ApiUrl));
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(MavenFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(MavenFeatures.OnSaveChangesTask) ?? null;
   }
 
   get prereleaseTagFilter(): Array<string> {

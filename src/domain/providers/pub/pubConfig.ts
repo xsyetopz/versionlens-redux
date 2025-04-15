@@ -34,8 +34,8 @@ export class PubConfig implements IProviderConfig {
     return ensureEndSlash(this.config.get(PubFeatures.ApiUrl));
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(PubFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(PubFeatures.OnSaveChangesTask) ?? null;
   }
 
   get prereleaseTagFilter(): Array<string> {

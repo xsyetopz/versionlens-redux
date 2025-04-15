@@ -38,8 +38,8 @@ export class CargoConfig implements IProviderConfig {
     return ensureEndSlash(this.config.get(CargoFeatures.ApiUrl));
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(CargoFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(CargoFeatures.OnSaveChangesTask) ?? null;
   }
 
 }

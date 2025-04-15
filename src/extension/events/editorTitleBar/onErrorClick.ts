@@ -29,7 +29,7 @@ export class OnErrorClick extends Disposable {
     await this.state.clearBusyState();
 
     // focus on the document unhide icons
-    this.window.showTextDocument(this.window.activeTextEditor.document);
+    this.window.showTextDocument(this.window.activeTextEditor!.document);
   }
 
 }

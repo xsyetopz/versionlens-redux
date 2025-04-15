@@ -66,7 +66,7 @@ export const fetchPackagesTests = {
 
       const testClientData = 'test client data';
       if (testPreFetch) {
-        when(this.suggestionProviderMock.preFetchSuggestions(testProjectPath, testPackagePath))
+        when(this.suggestionProviderMock.preFetchSuggestions!(testProjectPath, testPackagePath))
           .thenResolve(testClientData);
       }
 
@@ -103,7 +103,7 @@ export const fetchPackagesTests = {
 
       if (testPreFetch) {
         verify(
-          this.suggestionProviderMock.preFetchSuggestions(anything(), anything())
+          this.suggestionProviderMock.preFetchSuggestions!(anything(), anything())
         ).once();
       }
 

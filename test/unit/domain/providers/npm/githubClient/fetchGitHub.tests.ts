@@ -17,7 +17,7 @@ import {
   GitHubOptions,
   NpmConfig
 } from '#domain/providers/npm';
-import assert from 'node:assert';
+import { deepEqual, equal, notEqual } from 'node:assert';
 import npa from 'npm-package-arg';
 import { anything, capture, instance, mock, when } from 'ts-mockito';
 import { githubFixtures } from './fetchGitHub.fixtures';
@@ -75,11 +75,11 @@ export const fetchGithubTests = {
 
     return cut.fetchGithub(testSpec)
       .then((actual) => {
-        assert.equal(actual.source, 'github')
-        assert.equal(actual.type, 'range')
-        assert.equal(actual.resolved?.name, testRequest.package.name)
+        equal(actual.source, 'github')
+        equal(actual.type, 'range')
+        equal(actual.resolved?.name, testRequest.package.name)
 
-        assert.deepEqual(
+        deepEqual(
           actual.suggestions,
           [
             <PackageSuggestion>{
@@ -146,11 +146,11 @@ export const fetchGithubTests = {
 
     return cut.fetchGithub(testSpec)
       .then((actual) => {
-        assert.equal(actual.source, 'github')
-        assert.equal(actual.type, 'range')
-        assert.equal(actual.resolved?.name, testRequest.package.name)
+        equal(actual.source, 'github')
+        equal(actual.type, 'range')
+        equal(actual.resolved?.name, testRequest.package.name)
 
-        assert.deepEqual(
+        deepEqual(
           actual.suggestions,
           [
             <PackageSuggestion>{
@@ -216,11 +216,11 @@ export const fetchGithubTests = {
 
     return cut.fetchGithub(testSpec)
       .then((actual) => {
-        assert.equal(actual.source, 'github')
-        assert.equal(actual.type, 'committish')
-        assert.equal(actual.resolved?.name, testRequest.package.name)
+        equal(actual.source, 'github')
+        equal(actual.type, 'committish')
+        equal(actual.resolved?.name, testRequest.package.name)
 
-        assert.deepEqual(
+        deepEqual(
           actual.suggestions,
           [
             <PackageSuggestion>{
@@ -260,9 +260,9 @@ export const fetchGithubTests = {
     const testToken = 'testToken';
 
     const testResponse: JsonClientResponse = {
-        status: 200,
-        data: githubFixtures.commits,
-        source: ClientResponseSource.remote
+      status: 200,
+      data: githubFixtures.commits,
+      source: ClientResponseSource.remote
     };
 
     when(jsonClientMock.get(anything(), anything(), anything()))
@@ -279,7 +279,8 @@ export const fetchGithubTests = {
     await cut.fetchGithub(testSpec)
 
     const [, , actualHeaders] = capture(jsonClientMock.get).first();
-    assert.equal(actualHeaders['authorization'], 'token ' + testToken);
+    notEqual(actualHeaders, undefined)
+    equal(actualHeaders!['authorization'], 'token ' + testToken);
   }
 
 }

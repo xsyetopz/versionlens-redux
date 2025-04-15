@@ -34,8 +34,8 @@ export class DubConfig implements IProviderConfig {
     return ensureEndSlash(this.config.get(DubFeatures.ApiUrl));
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(DubFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(DubFeatures.OnSaveChangesTask) ?? null;
   }
 
   get prereleaseTagFilter(): Array<string> {

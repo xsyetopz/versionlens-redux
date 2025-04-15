@@ -42,8 +42,8 @@ export class DotNetConfig implements IProviderConfig {
     return 'https://api.nuget.org/v3/index.json';
   }
 
-  get onSaveChangesTask(): string {
-    return this.config.get(DotNetFeatures.OnSaveChangesTask);
+  get onSaveChangesTask(): string | null {
+    return this.config.get(DotNetFeatures.OnSaveChangesTask) ?? null;
   }
 
   get prereleaseTagFilter(): Array<string> {

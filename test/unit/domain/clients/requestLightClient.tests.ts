@@ -102,13 +102,6 @@ export const RequestLightClientTests = {
       const testUrl = 'https://test.url.example/path';
       const expectedUrl = createUrl(testUrl, testQuery);
 
-      when(this.mockRequestLight.xhr(anything()))
-        .thenResolve({
-          status: 200,
-          headers: {},
-          responseText: null
-        });
-
       // test
       await this.rut.get(testUrl, testQuery);
 
@@ -295,9 +288,10 @@ export const RequestLightClientTests = {
         await this.rut.get(testUrl);
         assert.fail();
       } catch (error) {
+        const actualResponse = error as HttpClientResponse;
         // assert
-        assert.equal(error.status, 401);
-        assert.equal(error.data, testResponse.responseText);
+        assert.equal(actualResponse.status, 401);
+        assert.equal(actualResponse.data, testResponse.responseText);
       }
 
       // verify
@@ -403,9 +397,10 @@ export const RequestLightClientTests = {
         await this.rut.get(testUrl);
         assert.fail();
       } catch (error) {
+        const actualResponse = error as HttpClientResponse;
         // assert
-        assert.equal(error.status, 401);
-        assert.equal(error.data, testResponse.responseText);
+        assert.equal(actualResponse.status, 401);
+        assert.equal(actualResponse.data, testResponse.responseText);
       }
 
       // verify

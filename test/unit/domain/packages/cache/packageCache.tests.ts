@@ -1,4 +1,3 @@
-import assert from "node:assert";
 import {
   PackageCache,
   PackageSourceType,
@@ -7,6 +6,7 @@ import {
   TPackageResource
 } from '#domain/packages';
 import { test } from "mocha-ui-esm";
+import { deepEqual, fail } from 'node:assert';
 
 type TestContext = {
   testProviderName: string;
@@ -45,7 +45,7 @@ export const packageCacheTests = {
     );
 
     // assert
-    assert.deepEqual(actual, this.testCacheItem);
+    deepEqual(actual, this.testCacheItem);
   },
 
   get: async function (this: TestContext) {
@@ -61,16 +61,22 @@ export const packageCacheTests = {
     const actual = await this.testCache.getOrCreate(
       this.testProviderName,
       this.testPackage,
-      async () => undefined,
+      async () => fail('should not call method to cache'),
       1000
     );
 
     // assert
-    assert.deepEqual(actual, this.testCacheItem);
+    deepEqual(actual, this.testCacheItem);
   },
 
   clear: async function (this: TestContext) {
     // setup
+    const expectedData = this.testCacheItem = {
+      source: PackageSourceType.File,
+      type: PackageVersionType.Tag,
+      suggestions: []
+    };
+
     await this.testCache.getOrCreate(
       this.testProviderName,
       this.testPackage,
@@ -85,11 +91,11 @@ export const packageCacheTests = {
     const actual = await this.testCache.getOrCreate(
       this.testProviderName,
       this.testPackage,
-      async () => undefined,
+      async () => expectedData,
       1000
     );
 
-    assert.equal(actual, undefined);
+    deepEqual(actual, expectedData);
   },
 
 }
