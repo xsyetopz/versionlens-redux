@@ -67,7 +67,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     await watcher.watchFolder();
   else
     // watch single project file
-    await watcher.watchFile(window.activeTextEditor.document.uri)
+    await watcher.watchFile(window.activeTextEditor!.document.uri)
 
   // instantiate dependencies that aren't referenced
   const instantiateDeps = [
@@ -106,6 +106,6 @@ export async function deactivate() {
 
 async function getResourceFolderPath(context: ExtensionContext): Promise<string> {
   if (context.storageUri) return context.storageUri.path;
-  const resourceFilePath = window.activeTextEditor.document.uri.path;
+  const resourceFilePath = window.activeTextEditor!.document.uri.path;
   return dirname(resourceFilePath);
 }
