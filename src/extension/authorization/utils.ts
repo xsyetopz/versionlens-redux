@@ -26,7 +26,6 @@ export function createEmptyUrlAuthData(url: string): UrlAuthenticationData {
     url,
     scheme: AuthenticationScheme.NotSet,
     protocol: parsedUrl.protocol,
-    label: null,
     status: UrlAuthenticationStatus.UserCancelled
   };
 }

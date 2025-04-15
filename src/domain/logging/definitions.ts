@@ -8,6 +8,8 @@ export enum LogLevel {
   error = 5
 }
 
+export type LogLevelName = keyof typeof LogLevel
+
 export interface ILogger {
   error(message: string, ...args: any[]): void;
   warn(message: string, ...args: any[]): void;

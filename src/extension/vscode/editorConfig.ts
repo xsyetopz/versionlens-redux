@@ -9,7 +9,7 @@ export class EditorConfig {
   }
 
   get codeLens(): boolean {
-    return this.workspace.getConfiguration().get('editor.codeLens');
+    return this.workspace.getConfiguration().get('editor.codeLens') ?? true;
   }
 
   get excludeFiles(): KeyDictionary<boolean> {

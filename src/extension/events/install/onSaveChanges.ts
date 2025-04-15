@@ -69,7 +69,7 @@ export class OnSaveChanges {
       await this.state.showOutdated.change(false);
   }
 
-  private async executeTask(task: Task): Promise<number> {
+  private async executeTask(task: Task): Promise<number | undefined> {
     await this.tasks.executeTask(task);
     return new Promise((resolve, reject) => {
       const disposables: IDisposable[] = []

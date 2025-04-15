@@ -17,7 +17,7 @@ export class OnFileLinkClick extends Disposable {
    * @param codeLens
    */
   async execute(codeLens: SuggestionCodeLens): Promise<void> {
-    const filePath = codeLens.packageResponse.fetchedPackage.version;
+    const filePath = codeLens.packageResponse.fetchedPackage!.version;
     await this.env.openExternal(<any>('file:///' + filePath));
   }
 

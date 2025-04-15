@@ -1,4 +1,4 @@
-import { type ILoggerSink, LogLevel } from '#domain/logging';
+import { type ILoggerSink, LogLevel, LogLevelName } from '#domain/logging';
 import { Disposable, nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import type { LogOutputChannel } from 'vscode';
@@ -21,7 +21,7 @@ export class OutputChannelLoggerSink extends Disposable implements ILoggerSink {
 
   log(level: LogLevel, namespace: string, message: string) {
     const logLevelName = LogLevel[level];
-    this.logChannel[logLevelName](`[${namespace}] ${message}`);
+    this.logChannel[logLevelName as LogLevelName](`[${namespace}] ${message}`);
   }
 
   private onDidChangeLogLevel(newLogLevel: any) {

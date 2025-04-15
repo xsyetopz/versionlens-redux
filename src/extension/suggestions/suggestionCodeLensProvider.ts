@@ -94,7 +94,7 @@ export class SuggestionCodeLensProvider extends Disposable implements CodeLensPr
     );
   }
 
-  async resolveCodeLens(codeLens: CodeLens, token: CancellationToken): Promise<CodeLens> {
+  async resolveCodeLens(codeLens: CodeLens, token: CancellationToken): Promise<CodeLens | undefined> {
     if (codeLens instanceof SuggestionCodeLens) {
       // evaluate the code lens
       const evaluated = this.evaluateCodeLens(codeLens);

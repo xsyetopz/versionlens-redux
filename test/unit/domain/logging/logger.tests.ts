@@ -2,7 +2,8 @@ import {
   type ILogger,
   type ILoggerSink,
   LoggerFactory,
-  LogLevel
+  LogLevel,
+  LogLevelName
 } from '#domain/logging';
 import { test } from 'mocha-ui-esm';
 import { anything, instance, mock, verify, when } from 'ts-mockito';
@@ -37,7 +38,7 @@ export const loggerTests = {
         .map(x => Number.parseInt(x));
 
       testLevels.forEach((testLevel: LogLevel) => {
-        const testLevelFn = LogLevel[testLevel] as keyof typeof LogLevel
+        const testLevelFn = LogLevel[testLevel] as LogLevelName
         // test
         this.testLogger[testLevelFn](testTemplate, ...testArgs)
         // assert

@@ -15,7 +15,7 @@ export type UrlAuthenticationData = {
   readonly url: string
   readonly scheme: AuthenticationScheme
   readonly protocol: string
-  readonly label: string
+  readonly label?: string
   readonly status: UrlAuthenticationStatus
 }
 

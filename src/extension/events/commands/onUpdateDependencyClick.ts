@@ -31,7 +31,7 @@ export class OnUpdateDependencyClick extends Disposable {
     // disable codelens replace to prevent suggestion race condition
     await this.state.enableCodeLensReplace(false);
 
-    const { version, type } = codeLens.packageResponse.suggestion;
+    const { version, type } = codeLens.packageResponse.suggestion!;
     const isTag = type & SuggestionTypes.tag;
     const suggestionUpdate = mapToSuggestionUpdate(codeLens.packageResponse);
     const replaceWithVersion: string = isTag
