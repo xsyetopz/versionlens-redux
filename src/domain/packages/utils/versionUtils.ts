@@ -152,3 +152,9 @@ export function findVersionBuilds(fixed: string, versions: string[], options: an
 
   return results;
 }
+
+export function stripBuild(version?: string): string | undefined {
+  return version && version.includes('+')
+    ? version.substring(0, version.indexOf('+'))
+    : version;
+}

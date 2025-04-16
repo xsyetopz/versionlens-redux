@@ -72,6 +72,14 @@ export function createNoMatch(
   };
 }
 
+export function createNotSupported(): TPackageClientResponse {
+  return create(
+    PackageSourceType.Registry,
+    { source: ClientResponseSource.remote, status: 200 },
+    [PackageStatusFactory.createNotSupportedStatus()]
+  )
+}
+
 export function createFixed(
   source: PackageSourceType,
   responseStatus: TPackageClientResponseStatus,

@@ -103,6 +103,7 @@ export function addProviderNames(services: IServiceCollection) {
     [
       'cargo',
       'composer',
+      'docker',
       'dotnet',
       'dub',
       'maven',

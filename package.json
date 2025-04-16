@@ -43,6 +43,7 @@
     "onLanguage:toml",
     "onLanguage:yaml",
     "onLanguage:go.mod",
+    "onLanguage:dockerfile",
     "onFileSystem:versionlens"
   ],
   "scripts": {
@@ -81,6 +82,7 @@
     "@npmcli/config": "10.1.0",
     "@npmcli/promise-spawn": "8.0.2",
     "awilix": "12.0.5",
+    "dockerfile-ast": "0.7.0",
     "dotenv": "16.5.0",
     "jsonc-parser": "3.3.1",
     "micromatch": "4.0.8",
@@ -644,6 +646,30 @@
           "minItems": 0,
           "default": [],
           "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prereleases' icon is activated."
+        },
+        "versionlens.docker.files": {
+          "type": "string",
+          "default": "**/dockerfile",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.docker.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.docker.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.docker.apiUrl": {
+          "type": "string",
+          "default": "https://hub.docker.com/v2/namespaces/{namespace}/repositories/{repository}/tags",
+          "description": "Defines the docker api to use for image tag searching."
         },
         "versionlens.maven.onSaveChanges": {
           "type": "string",

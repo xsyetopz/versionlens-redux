@@ -50,7 +50,7 @@ export interface IJsonHttpClient {
   httpClient: IHttpClient;
   get: (
     url: string,
-    query?: KeyStringDictionary,
+    query?: KeyDictionary<string | number | boolean>,
     headers?: KeyStringDictionary,
   ) => Promise<JsonClientResponse>;
 }
