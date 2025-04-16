@@ -1,12 +1,11 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import { type IExtensionServices, IconCommandFeatures } from '#extension';
+import { ExtensionServiceName, IconCommandFeatures, type IExtensionServices } from '#extension';
 import { OnErrorClick, OnTogglePrereleases, OnToggleReleases } from '#extension/events';
 import { commands, window } from 'vscode';
 
 export function addOnErrorClick(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onErrorClick;
+  const serviceName = ExtensionServiceName.onErrorClick;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -32,7 +31,7 @@ export function addOnErrorClick(services: IServiceCollection) {
 }
 
 export function addOnToggleReleases(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onToggleReleases;
+  const serviceName = ExtensionServiceName.onToggleReleases;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -62,7 +61,7 @@ export function addOnToggleReleases(services: IServiceCollection) {
 }
 
 export function addOnTogglePrereleases(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onTogglePrereleases;
+  const serviceName = ExtensionServiceName.onTogglePrereleases;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {

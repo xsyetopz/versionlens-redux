@@ -1,5 +1,5 @@
 import type { DependencyCache } from '#domain/packages';
-import type { KeyDictionary } from '#domain/utils';
+import { nameOf, type KeyDictionary } from '#domain/utils';
 import type {
   OnActiveTextEditorChange,
   OnAddUrlAuthentication,
@@ -117,6 +117,8 @@ export interface IExtensionServices {
   // watcher events
   onPackageDependenciesChanged: OnPackageDependenciesChanged
 }
+
+export const ExtensionServiceName = nameOf<IExtensionServices>()
 
 export interface IVersionLensState {
   show: ContextState<boolean>

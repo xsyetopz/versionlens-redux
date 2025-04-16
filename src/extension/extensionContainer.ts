@@ -1,7 +1,6 @@
-import { type IDomainServices, addDomainServices } from '#domain';
+import { addDomainServices, DomainServiceName } from '#domain';
 import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import { AwilixServiceCollectionFactory } from '#domain/di/awilix';
-import { nameOf } from '#domain/utils';
 import {
   type ExtensionContext,
   type Memento,
@@ -55,7 +54,7 @@ export async function configureContainer(
   const serviceCollectionFactory = new AwilixServiceCollectionFactory();
   const services = serviceCollectionFactory.createServiceCollection();
   services.addSingleton(
-    nameOf<IDomainServices>().serviceCollectionFactory,
+    DomainServiceName.serviceCollectionFactory,
     serviceCollectionFactory
   );
 

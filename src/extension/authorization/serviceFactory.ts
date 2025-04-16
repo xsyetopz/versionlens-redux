@@ -1,7 +1,6 @@
-import type { IDomainServices } from '#domain';
+import { DomainServiceName, type IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import type { IExtensionServices } from '#extension';
+import { ExtensionServiceName, type IExtensionServices } from '#extension';
 import {
   AuthenticationInteractions,
   AuthenticationScheme,
@@ -17,7 +16,7 @@ export function addAuthenticationProviders(
   resourceFolderPath: string,
   secrets: SecretStorage
 ) {
-  const serviceName = nameOf<IExtensionServices>().authenticationProviders;
+  const serviceName = ExtensionServiceName.authenticationProviders;
   services.addSingleton(
     serviceName,
     (container: IExtensionServices) => ({
@@ -36,7 +35,7 @@ export function addAuthenticationProviders(
 }
 
 export function addAuthenticationInteractions(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().authenticationInteractions;
+  const serviceName = ExtensionServiceName.authenticationInteractions;
   services.addSingleton(
     serviceName,
     () => new AuthenticationInteractions(window)
@@ -47,7 +46,7 @@ export function addUrlAuthenticationStore(
   services: IServiceCollection,
   workspaceState: Memento
 ) {
-  const serviceName = nameOf<IExtensionServices>().urlAuthenticationStore;
+  const serviceName = ExtensionServiceName.urlAuthenticationStore;
   services.addSingleton(
     serviceName,
     () => new UrlAuthenticationStore('UrlAuthenticationStore', workspaceState)
@@ -55,7 +54,7 @@ export function addUrlAuthenticationStore(
 }
 
 export function addAuthorizer(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().authorizer;
+  const serviceName = DomainServiceName.authorizer;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) =>

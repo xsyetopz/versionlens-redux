@@ -1,12 +1,11 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import { type IExtensionServices, AuthorizationCommandFeatures } from '#extension';
+import { AuthorizationCommandFeatures, ExtensionServiceName, type IExtensionServices } from '#extension';
 import { OnAddUrlAuthentication, OnRemoveUrlAuthentication } from '#extension/events';
 import { commands } from 'vscode';
 
 export function addOnAddUrlAuthentication(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onAddUrlAuthentication;
+  const serviceName = ExtensionServiceName.onAddUrlAuthentication;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -33,7 +32,7 @@ export function addOnAddUrlAuthentication(services: IServiceCollection) {
 }
 
 export function addOnRemoveUrlAuthentication(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onRemoveUrlAuthentication;
+  const serviceName = ExtensionServiceName.onRemoveUrlAuthentication;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {

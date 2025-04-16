@@ -1,4 +1,4 @@
-import type { IDomainServices } from '#domain';
+import { DomainServiceName } from '#domain';
 import type { IServiceCollectionFactory, IServiceProvider } from '#domain/di';
 import type { ILogger } from '#domain/logging';
 import type {
@@ -43,7 +43,7 @@ export async function importSuggestionProvider(
 
     // get the service collection factory
     const serviceCollectionFactory = serviceProvider.getService<IServiceCollectionFactory>(
-      nameOf<IDomainServices>().serviceCollectionFactory
+      DomainServiceName.serviceCollectionFactory
     );
 
     // import the provider

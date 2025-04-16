@@ -1,10 +1,9 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import { type IExtensionServices, OnPackageDependenciesChanged } from '#extension';
+import { ExtensionServiceName, OnPackageDependenciesChanged, type IExtensionServices } from '#extension';
 
 export function addOnPackageDependenciesChanged(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onPackageDependenciesChanged
+  const serviceName = ExtensionServiceName.onPackageDependenciesChanged
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {

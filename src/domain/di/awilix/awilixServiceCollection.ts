@@ -1,4 +1,4 @@
-import type { IDomainServices } from '#domain';
+import { DomainServiceName } from '#domain';
 import {
   type IServiceCollection,
   type IServiceProvider,
@@ -10,8 +10,7 @@ import { AwilixServiceProvider, registerAsyncSingletons } from '#domain/di/awili
 import {
   type IDisposable,
   type KeyDictionary,
-  AsyncFunction,
-  nameOf
+  AsyncFunction
 } from '#domain/utils';
 import {
   type AwilixContainer,
@@ -102,7 +101,7 @@ export class AwilixServiceCollection implements IServiceCollection {
     // add the service provider to the container
     const serviceProvider = new AwilixServiceProvider(name, container);
     this.addSingleton(
-      nameOf<IDomainServices>().serviceProvider,
+      DomainServiceName.serviceProvider,
       serviceProvider,
       true
     );

@@ -1,31 +1,31 @@
-import type { IDomainServices } from '#domain';
+import { DomainServiceName, type IDomainServices } from '#domain';
 import { type IServiceCollection } from '#domain/di';
 import { DependencyCache } from '#domain/packages';
 import { GetSuggestions } from '#domain/useCases';
-import { DisposableArray, nameOf } from '#domain/utils';
-import { type IExtensionServices, VersionLensExtension } from '#extension';
+import { DisposableArray } from '#domain/utils';
+import { ExtensionServiceName, VersionLensExtension, type IExtensionServices } from '#extension';
 import { VersionLensState } from '#extension/state';
 import { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/suggestions';
 import { EditorConfig } from '#extension/vscode';
-import { type DocumentFilter, EventEmitter, languages, workspace } from 'vscode';
+import { EventEmitter, languages, workspace, type DocumentFilter } from 'vscode';
 
 export function addEditorConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IExtensionServices>().editorConfig,
+    ExtensionServiceName.editorConfig,
     () => new EditorConfig(workspace)
   )
 }
 
 export function addSuggestionOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IExtensionServices>().suggestionOptions,
+    ExtensionServiceName.suggestionOptions,
     (container: IDomainServices) => new SuggestionsOptions(container.appConfig)
   )
 }
 
 export function addVersionLensState(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IExtensionServices>().versionLensState,
+    ExtensionServiceName.versionLensState,
     async (container: IExtensionServices) => {
       const state = new VersionLensState(container.suggestionOptions)
       await state.applyDefaults();
@@ -40,7 +40,7 @@ export function addVersionLensExtension(services: IServiceCollection) {
     : '';
 
   services.addSingleton(
-    nameOf<IExtensionServices>().extension,
+    ExtensionServiceName.extension,
     (container: IDomainServices & IExtensionServices) =>
       new VersionLensExtension(
         container.appConfig,
@@ -53,7 +53,7 @@ export function addVersionLensExtension(services: IServiceCollection) {
 
 export function addVersionLensProviders(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IExtensionServices>().versionLensProviders,
+    ExtensionServiceName.versionLensProviders,
     (container: IDomainServices & IExtensionServices) =>
       new DisposableArray(
         container.suggestionProviders.map(
@@ -99,7 +99,7 @@ export function addVersionLensProviders(services: IServiceCollection) {
 
 export function addProviderNames(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDomainServices>().providerNames,
+    DomainServiceName.providerNames,
     [
       'cargo',
       'composer',
@@ -116,14 +116,14 @@ export function addProviderNames(services: IServiceCollection) {
 
 export function addEditorDependencyCache(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IExtensionServices>().editorDependencyCache,
+    ExtensionServiceName.editorDependencyCache,
     (container: IDomainServices) => new DependencyCache(container.providerNames)
 
   );
 }
 
 export function addGetSuggestionsUseCase(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().getSuggestions;
+  const serviceName = DomainServiceName.getSuggestions;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) =>

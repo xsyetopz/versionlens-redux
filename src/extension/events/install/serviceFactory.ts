@@ -1,12 +1,11 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import type { IExtensionServices } from '#extension';
+import { ExtensionServiceName, type IExtensionServices } from '#extension';
 import { OnPreSaveChanges, OnSaveChanges } from '#extension/events';
 import { tasks } from 'vscode';
 
 export function addOnPreSaveChanges(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onPreSaveChanges
+  const serviceName = ExtensionServiceName.onPreSaveChanges
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -26,7 +25,7 @@ export function addOnPreSaveChanges(services: IServiceCollection) {
 }
 
 export function addOnSaveChanges(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onSaveChanges
+  const serviceName = ExtensionServiceName.onSaveChanges
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {

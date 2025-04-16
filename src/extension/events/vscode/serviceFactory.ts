@@ -1,7 +1,6 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import type { IExtensionServices } from '#extension';
+import { type IExtensionServices, ExtensionServiceName } from '#extension';
 import {
   OnActiveTextEditorChange,
   OnTextDocumentChange,
@@ -11,7 +10,7 @@ import {
 import { window, workspace } from 'vscode';
 
 export function addOnActiveTextEditorChange(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onActiveTextEditorChange;
+  const serviceName = ExtensionServiceName.onActiveTextEditorChange;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -32,7 +31,7 @@ export function addOnActiveTextEditorChange(services: IServiceCollection) {
 }
 
 export function addOnTextDocumentChange(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onTextDocumentChange;
+  const serviceName = ExtensionServiceName.onTextDocumentChange;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -53,7 +52,7 @@ export function addOnTextDocumentChange(services: IServiceCollection) {
 }
 
 export function addOnTextDocumentClose(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onTextDocumentClose;
+  const serviceName = ExtensionServiceName.onTextDocumentClose;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -73,7 +72,7 @@ export function addOnTextDocumentClose(services: IServiceCollection) {
 }
 
 export function addOnTextDocumentSave(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onTextDocumentSave;
+  const serviceName = ExtensionServiceName.onTextDocumentSave;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {

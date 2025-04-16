@@ -14,6 +14,7 @@ import type {
   GetSuggestionProvider,
   GetSuggestions
 } from '#domain/useCases';
+import { nameOf } from '#domain/utils';
 
 export interface IDomainServices {
   serviceCollectionFactory: IServiceCollectionFactory;
@@ -36,3 +37,5 @@ export interface IDomainServices {
   getSuggestions: GetSuggestions;
   getDependencyChanges: GetDependencyChanges;
 }
+
+export const DomainServiceName = nameOf<IDomainServices>()

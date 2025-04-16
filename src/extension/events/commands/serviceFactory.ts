@@ -1,7 +1,6 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import { type IExtensionServices, SuggestionCommandFeatures } from '#extension';
+import { ExtensionServiceName, SuggestionCommandFeatures, type IExtensionServices } from '#extension';
 import {
   OnClearCache,
   OnFileLinkClick,
@@ -11,7 +10,7 @@ import { commands, env, workspace } from 'vscode';
 import { VsCodeConstructionFactory } from '../../vscode/vsCodeConstructFactory';
 
 export function addOnClearCache(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onClearCache;
+  const serviceName = ExtensionServiceName.onClearCache;
   services.addSingleton(
     serviceName,
     (container: IDomainServices) => {
@@ -36,7 +35,7 @@ export function addOnClearCache(services: IServiceCollection) {
 }
 
 export function addOnFileLinkClick(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onFileLinkClick;
+  const serviceName = ExtensionServiceName.onFileLinkClick;
   services.addSingleton(
     serviceName,
     (container: IDomainServices) => {
@@ -60,7 +59,7 @@ export function addOnFileLinkClick(services: IServiceCollection) {
 }
 
 export function addOnUpdateDependencyClick(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onUpdateDependencyClick;
+  const serviceName = ExtensionServiceName.onUpdateDependencyClick;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {

@@ -1,7 +1,7 @@
-import type { IDomainServices } from '#domain';
+import { DomainServiceName, type IDomainServices } from '#domain';
 import { CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { HttpOptions } from '#domain/clients';
-import { type TConfigSectionResolver, Config } from '#domain/configuration';
+import { Config, type TConfigSectionResolver } from '#domain/configuration';
 import type { IServiceCollection } from '#domain/di';
 import { DependencyCache, PackageCache } from '#domain/packages';
 import { importSuggestionProviders } from '#domain/providers';
@@ -12,7 +12,6 @@ import {
   GetDependencyChanges,
   GetSuggestionProvider
 } from '#domain/useCases';
-import { nameOf } from '#domain/utils';
 
 export function addAppConfig(
   services: IServiceCollection,
@@ -20,33 +19,32 @@ export function addAppConfig(
   configSectionResolver: TConfigSectionResolver
 ) {
   services.addSingleton(
-    nameOf<IDomainServices>().appConfig,
+    DomainServiceName.appConfig,
     () => new Config(configSectionResolver, configSection.toLowerCase())
   )
 }
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDomainServices>().httpOptions,
+    DomainServiceName.httpOptions,
     (container: IDomainServices) => new HttpOptions(container.appConfig, 'http')
   )
 }
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDomainServices>().cachingOptions,
+    DomainServiceName.cachingOptions,
     (container: IDomainServices) => new CachingOptions(container.appConfig, 'caching')
   )
 }
 
 export function addFileSystemStorage(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().storage;
-  services.addSingleton(serviceName, new FileSystemStorage());
+  services.addSingleton(DomainServiceName.storage, new FileSystemStorage());
 }
 
 export async function addSuggestionProviders(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDomainServices>().suggestionProviders,
+    DomainServiceName.suggestionProviders,
     async (container: IDomainServices) => {
       return await importSuggestionProviders(
         container.serviceProvider,
@@ -59,25 +57,25 @@ export async function addSuggestionProviders(services: IServiceCollection) {
 
 export function addFileWatcherDependencyCache(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDomainServices>().fileWatcherDependencyCache,
+    DomainServiceName.fileWatcherDependencyCache,
     (container: IDomainServices) => new DependencyCache(container.providerNames)
   );
 }
 
 export function addSuggestionPackageCache(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDomainServices>().packageCache,
+    DomainServiceName.packageCache,
     (container: IDomainServices) => new PackageCache(container.providerNames)
   );
 }
 
 export function addShellCache(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().shellCache;
+  const serviceName = DomainServiceName.shellCache;
   services.addSingleton(serviceName, new MemoryExpiryCache(serviceName));
 }
 
 export function addGetSuggestionProviderUseCase(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().GetSuggestionProvider;
+  const serviceName = DomainServiceName.GetSuggestionProvider;
   services.addSingleton(
     serviceName,
     (container: IDomainServices) => new GetSuggestionProvider(container.suggestionProviders)
@@ -85,7 +83,7 @@ export function addGetSuggestionProviderUseCase(services: IServiceCollection) {
 }
 
 export function addGetDependencyChangesUseCase(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().getDependencyChanges;
+  const serviceName = DomainServiceName.getDependencyChanges;
   services.addSingleton(
     serviceName,
     (container: IDomainServices) =>
@@ -98,7 +96,7 @@ export function addGetDependencyChangesUseCase(services: IServiceCollection) {
 }
 
 export function addFetchProjectSuggestionsUseCase(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().fetchPackages;
+  const serviceName = DomainServiceName.fetchPackages;
   services.addSingleton(
     serviceName,
     (container: IDomainServices) =>
@@ -110,7 +108,7 @@ export function addFetchProjectSuggestionsUseCase(services: IServiceCollection) 
 }
 
 export function addFetchPackageSuggestionsUseCase(services: IServiceCollection) {
-  const serviceName = nameOf<IDomainServices>().fetchPackage;
+  const serviceName = DomainServiceName.fetchPackage;
   services.addSingleton(
     serviceName,
     (container: IDomainServices) =>

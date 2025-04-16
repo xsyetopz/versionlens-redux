@@ -1,7 +1,6 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { nameOf } from '#domain/utils';
-import type { IExtensionServices } from '#extension';
+import { ExtensionServiceName, type IExtensionServices } from '#extension';
 import {
   OnProviderEditorActivated,
   OnProviderTextDocumentChange,
@@ -9,7 +8,7 @@ import {
 } from '#extension/events';
 
 export function addOnProviderEditorActivated(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onProviderEditorActivated;
+  const serviceName = ExtensionServiceName.onProviderEditorActivated;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -30,7 +29,7 @@ export function addOnProviderEditorActivated(services: IServiceCollection) {
 }
 
 export function addOnProviderTextDocumentChange(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onProviderTextDocumentChange;
+  const serviceName = ExtensionServiceName.onProviderTextDocumentChange;
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
@@ -52,7 +51,7 @@ export function addOnProviderTextDocumentChange(services: IServiceCollection) {
 }
 
 export function addOnProviderTextDocumentClose(services: IServiceCollection) {
-  const serviceName = nameOf<IExtensionServices>().onProviderTextDocumentClose
+  const serviceName = ExtensionServiceName.onProviderTextDocumentClose
   services.addSingleton(
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
