@@ -14,6 +14,10 @@
     > - Only one build update link will be shown per version
     > - For more information about using build meta data see: <br> https://semver.org/#spec-item-10
 
+  ### GoLang
+
+    - Fixed an issue that breaks versions when replacing versions that have comments
+
 # 1.18.0
 
 ### Deno
