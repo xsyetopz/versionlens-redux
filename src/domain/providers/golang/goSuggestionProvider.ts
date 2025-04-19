@@ -1,8 +1,9 @@
 import { ILogger } from '#domain/logging';
 import {
   PackageDependency,
-  TSuggestionReplaceFunction,
+  TSuggestionUpdate,
   createPackageResource,
+  defaultReplaceFn
 } from '#domain/packages';
 import {
   PackageDescriptorType,
@@ -11,7 +12,7 @@ import {
   parsePackagesGoMod,
 } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
-import { GoClient, GoConfig, goReplaceVersion } from '#domain/providers/golang';
+import { GoClient, GoConfig } from '#domain/providers/golang';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class GoSuggestionProvider implements ISuggestionProvider {
@@ -28,7 +29,16 @@ export class GoSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull("logger", logger);
   }
 
-  suggestionReplaceFn?: TSuggestionReplaceFunction = goReplaceVersion;
+  suggestionReplaceFn(suggestionUpdate: TSuggestionUpdate, newVersion: string): string {
+    const insert = suggestionUpdate.parsedVersionPrepend.length > 0;
+    return defaultReplaceFn(
+      suggestionUpdate,
+      // handle cases with blank version attr entries
+      insert
+        ? `${suggestionUpdate.parsedVersionPrepend}${newVersion}${suggestionUpdate.parsedVersionAppend}`
+        : newVersion
+    );
+  }
 
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency> {
     const parsedPackages = parsePackagesGoMod(packageText);

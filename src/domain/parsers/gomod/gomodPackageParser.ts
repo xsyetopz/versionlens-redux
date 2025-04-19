@@ -9,10 +9,10 @@ import {
 
 const INCOMPAT_BUILD = "+incompatible";
 const PREPEND_V = "v";
+const re = /(\S+(?<!retract))\s*\s((?=v\d+\.\d+\.\d+).[^/ \n]*)/gd
 
 export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
   const matchedDependencies: Array<PackageDescriptor> = [];
-  const re = /(\S+(?<!retract))\s*(\s(?=v\d+\.\d+\.\d+).*)/gd
   let match
 
   while ((match = re.exec(text)) !== null) {
@@ -20,8 +20,6 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
     const [packageStart] = match.indices[1];
 
     const version = match[2];
-    const commentPos = version.indexOf('//');
-    const hasComment = commentPos !== -1;
     const [versionStart, versionEnd] = match.indices[2];
 
     const skip =
@@ -34,14 +32,10 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
 
     // create the package descriptor
     const nameDesc = createGoNameDescType(packageName, packageStart);
-    const v = hasComment ? version.substring(0, commentPos) : version;
-
     const versionDesc = createGoVersionDescType(
-      v.trim(),
-      versionStart + 1,
-      !hasComment ?
-        versionEnd :
-        versionEnd - commentPos - 3
+      version.trim(),
+      versionStart,
+      versionEnd
     );
 
     const packageDesc = new PackageDescriptor([nameDesc, versionDesc]);
