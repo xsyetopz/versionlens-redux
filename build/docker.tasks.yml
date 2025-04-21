@@ -25,18 +25,25 @@ tasks:
     - docker build -t $PUBLISH_IMAGE -f $DOCKER_FILE_PATH/publish.dockerfile .
     - docker run --rm -v $PUBLISH_VOL --env-file ./.env --name publish-container $PUBLISH_IMAGE
 
-  # sets the preview property to true in the package.json
-  preview:prepack: node -e "
+  # sets the pre-release property to true in the package.json
+  prerelease:prepack: node -e "
     const pkg = require('./package.json');
     const { writeFileSync } = require('fs');
-    pkg.preview=true;
-    pkg.version = pkg.version.replace('-preview', '');
+    pkg.version = pkg.version.replace('-prerelease', '');
     writeFileSync('./package.json', JSON.stringify(pkg,null,'  '));"
 
-  # publish a preview to the marketplace
-  docker:preview:
+  # publish a pre-release to ms marketplace
+  docker:prerelease:vsce:
     - var:
-        PREVIEW_IMAGE: versionlens:preview
-        PREVIEW_VOL: $PWD/.preview:/versionlens/.preview
-    - docker build -t $PREVIEW_IMAGE -f $DOCKER_FILE_PATH/preview.dockerfile .
-    - docker run --rm -v $PREVIEW_VOL --env-file ./.env --name preview-container $PREVIEW_IMAGE
+        PRERELEASE_IMAGE: versionlens:prerelease-vsce
+        PRERELEASE_VOL: $PWD/.prerelease:/versionlens/.prerelease-vsce
+    - docker build -t $PRERELEASE_IMAGE -f $DOCKER_FILE_PATH/prerelease.vsce.dockerfile .
+    - docker run --rm -v $PRERELEASE_VOL --env-file ./.env --name prerelease-vsce-container $PRERELEASE_IMAGE
+
+  # publish a pre-release to ovsx
+  docker:prerelease:ovsx:
+    - var:
+        PRERELEASE_IMAGE: versionlens:prerelease-ovsx
+        PRERELEASE_VOL: $PWD/.prerelease:/versionlens/.prerelease-ovsx
+    - docker build -t $PRERELEASE_IMAGE -f $DOCKER_FILE_PATH/prerelease.ovsx.dockerfile .
+    - docker run --rm -v $PRERELEASE_VOL --env-file ./.env --name prerelease-osvx-container $PRERELEASE_IMAGE

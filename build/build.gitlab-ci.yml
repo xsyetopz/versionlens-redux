@@ -30,15 +30,25 @@ package:
   rules:
     - if: $IS_PACKAGE == "1"
 
-preview:
+prerelease:vsce:
   script:
     - cp $VSCE_PAT_FILEPATH .env
-    - task docker:preview
+    - task docker:prerelease:vsce
   artifacts:
     paths:
-      - .preview/*.vsix
+      - .prerelease-vsce/*.vsix
   rules:
-    - if: $IS_PREVIEW == "1"
+    - if: $IS_PRERELEASE == "1"
+
+prerelease:ovsx:
+  script:
+    - cp $OVSX_PAT_FILEPATH .env
+    - task docker:prerelease:ovsx
+  artifacts:
+    paths:
+      - .prerelease-ovsx/*.vsix
+  rules:
+    - if: $IS_PRERELEASE == "1"
 
 publish:
   script:

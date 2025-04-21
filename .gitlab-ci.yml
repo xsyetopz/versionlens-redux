@@ -33,10 +33,10 @@
     - when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-"Publish preview trigger":
+"Publish prerelease":
   stage: deploy
   variables:
-    IS_PREVIEW: "1"
+    IS_PRERELEASE: "1"
   trigger:
     strategy: depend
     include:
