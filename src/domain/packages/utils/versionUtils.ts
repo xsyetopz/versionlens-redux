@@ -145,6 +145,8 @@ export function findVersionBuilds(fixed: string, versions: string[], options: an
     if (results.includes(version)) continue;
 
     const coerced = coerce(version, options);
+    if (coerced === null) continue;
+
     eq(fixed, coerced, options) && results.push(version);
   }
 
