@@ -30,7 +30,7 @@
     "packages",
     "dependencies",
     "references",
-    "c#,composer,csharp,dart,dotnet,dub,f#,fsharp,go,java,jspm,maven,npm,nuget,pnpm,pub,python"
+    "c#,composer,csharp,dart,deno,docker,dotnet,dub,f#,fsharp,go,java,jspm,maven,npm,nuget,pnpm,pub,python"
   ],
   "categories": [
     "Programming Languages",
