@@ -649,7 +649,7 @@
         },
         "versionlens.docker.files": {
           "type": "string",
-          "default": "**/dockerfile",
+          "default": "**/{dockerfile, *.dockerfile}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.docker.caching.duration": {
