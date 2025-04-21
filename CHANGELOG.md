@@ -14,6 +14,21 @@
     >
     > For more information about build meta data see https://semver.org/#spec-item-10
 
+  ### Docker
+
+  - Added dockerfile `FROM <image>[:<tag>]` analysis
+
+    ![image](https://gitlab.com/-/project/19418059/uploads/5161cf0f88c8701db036cc710ee59673/docker.gif)
+
+    > **NOTE**
+    > - Only supports [docker hub api v2](https://docs.docker.com/reference/api/hub/latest/#tag/repositories/paths/~1v2~1namespaces~1%7Bnamespace%7D~1repositories~1%7Brepository%7D~1tags/get)
+    > - Prereleases aren't supported yet
+    > - `ARG` used in `<image>[:<tag>]` is not supported
+    > - Docker compose files aren't supported yet
+    > - Docker hub api doesn't currently provide a fast and minimal lookup of tags.<br>
+        So api fetch calls have to be limited to fetching 3 pages per repository.<br>
+        This means only recent tags can be found by version lens
+
   ### GoLang
 
     - Fixed an issue that breaks versions when replacing versions that have comments
