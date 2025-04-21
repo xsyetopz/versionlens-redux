@@ -14,5 +14,6 @@ artifacts/
 **/*.vsix
 .coverage
 .preview
+.prerelease
 .package
 .publish
