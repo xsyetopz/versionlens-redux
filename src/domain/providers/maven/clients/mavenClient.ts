@@ -13,6 +13,7 @@ import {
 } from '#domain/packages';
 import { type MavenClientData, MavenConfig, getVersionsFromPackageXml } from '#domain/providers/maven';
 import { throwUndefinedOrNull } from '@esm-test/guards';
+import { valid } from 'semver';
 
 export class MavenClient implements IPackageClient<MavenClientData> {
 
@@ -79,7 +80,8 @@ export class MavenClient implements IPackageClient<MavenClientData> {
     const rawVersions = getVersionsFromPackageXml(data);
 
     // extract semver versions only
-    const semverVersions = VersionUtils.filterSemverVersions(rawVersions);
+    const semverVersions = VersionUtils.filterSemverVersions(rawVersions)
+      .filter(x => !!valid(x));
 
     // seperate versions to releases and prereleases
     const { releases, prereleases } = VersionUtils.splitReleasesFromArray(

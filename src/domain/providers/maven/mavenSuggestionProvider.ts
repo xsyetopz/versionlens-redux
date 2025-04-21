@@ -69,10 +69,7 @@ export class MavenSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
-  async preFetchSuggestions(
-    projectPath: string,
-    packagePath: string
-  ): Promise<MavenClientData> {
+  async preFetchSuggestions(projectPath: string, packagePath: string): Promise<MavenClientData> {
     // gets source feeds from the project path
     const repos = await this.mvnCli.fetchRepositories(packagePath);
 
