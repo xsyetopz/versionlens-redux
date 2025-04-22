@@ -17,7 +17,7 @@
   ### Docker
 
   - Added dockerfile `FROM <image>[:<tag>]` analysis<br>
-  - Added docker compose file analysis
+  - Added docker compose file analysis (currenlty vscode has a codelens [bug](https://github.com/microsoft/vscode/issues/247181) with default docker compose files)
 
     *Preview*
 
