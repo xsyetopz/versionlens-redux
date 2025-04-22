@@ -67,8 +67,6 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
               versionDesc.version,
               packagePath
             ),
-            nameDesc.nameRange,
-            versionDesc.versionRange,
             descriptors
           );
         }

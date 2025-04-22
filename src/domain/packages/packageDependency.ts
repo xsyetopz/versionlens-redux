@@ -1,18 +1,24 @@
 import type { TPackageResource } from '#domain/packages';
-import type { PackageDescriptor, TPackageTextRange } from '#domain/parsers';
+import type {
+  PackageDescriptor,
+  TPackageNameDescriptor,
+  TPackagePathDescriptor,
+  TPackageTextRange,
+  TPackageVersionDescriptor
+} from '#domain/parsers';
 
 export class PackageDependency {
 
   constructor(
     packageRes: TPackageResource,
-    nameRange: TPackageTextRange,
-    versionRange: TPackageTextRange,
-    descriptors: PackageDescriptor
+    readonly descriptors: PackageDescriptor
   ) {
     this.package = packageRes;
-    this.nameRange = nameRange;
-    this.versionRange = versionRange;
     this.descriptors = descriptors;
+    this.nameRange = descriptors.getType<TPackageNameDescriptor>('name')?.nameRange
+    this.versionRange = descriptors.getType<TPackageVersionDescriptor>('version')?.versionRange
+      ?? descriptors.getType<TPackagePathDescriptor>('path')?.pathRange
+      ?? this.nameRange
   }
 
   nameRange: TPackageTextRange;
@@ -20,8 +26,6 @@ export class PackageDependency {
   versionRange: TPackageTextRange;
 
   package: TPackageResource;
-
-  descriptors: PackageDescriptor;
 
   packageEquals(other: PackageDependency) {
     return other.package.name === this.package.name

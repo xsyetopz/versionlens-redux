@@ -7,7 +7,12 @@ import {
   PackageDependency,
   PackageVersionType
 } from '#domain/packages';
-import { createTextRange, PackageDescriptor } from '#domain/parsers';
+import {
+  createPackageNameDesc,
+  createPackageVersionDesc,
+  createTextRange,
+  PackageDescriptor
+} from '#domain/parsers';
 import type { ISuggestionProvider } from '#domain/providers';
 import { FetchPackage, FetchPackages } from '#domain/useCases';
 import { test } from 'mocha-ui-esm';
@@ -49,16 +54,11 @@ export const fetchPackagesTests = {
 
       const testDependencies = [
         new PackageDependency(
-          createPackageResource(
-            "testPackage1",
-            "1.0.0",
-            "test/path"
-          ),
-          //nameRange
-          createTextRange(0, 1),
-          // versionRange
-          createTextRange(2, 3),
-          new PackageDescriptor([])
+          createPackageResource("testPackage1", "1.0.0", "test/path"),
+          new PackageDescriptor([
+            createPackageNameDesc('testPackage1', createTextRange(0, 1)),
+            createPackageVersionDesc('1.0.0', createTextRange(2, 3)),
+          ])
         )
       ];
 

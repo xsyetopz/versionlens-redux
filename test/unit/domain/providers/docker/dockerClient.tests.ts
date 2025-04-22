@@ -1,7 +1,12 @@
 import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from '#domain/logging';
-import { ClientResponseFactory, PackageDependency, TPackageClientRequest } from '#domain/packages';
-import { createTextRange, PackageDescriptor } from '#domain/parsers';
+import { ClientResponseFactory, createPackageResource, PackageDependency, TPackageClientRequest } from '#domain/packages';
+import {
+  createPackageNameDesc,
+  createPackageVersionDesc,
+  createTextRange,
+  PackageDescriptor
+} from '#domain/parsers';
 import { DockerClient, DockerConfig, DockerHubClient } from '#domain/providers/docker';
 import { deepEqual, equal } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
@@ -38,16 +43,11 @@ export const dockerClientTests = {
         attempt: 1,
         clientData: {},
         parsedDependency: new PackageDependency(
-          {
-            path: 'test/path',
-            name: testRepo,
-            version: '23'
-          },
-          //nameRange
-          createTextRange(1, 20),
-          //versionRange
-          createTextRange(25, 30),
-          new PackageDescriptor([])
+          createPackageResource(testRepo, '23', 'test/path'),
+          new PackageDescriptor([
+            createPackageNameDesc(testRepo, createTextRange(1, 20)),
+            createPackageVersionDesc('23', createTextRange(25, 30)),
+          ])
         )
       } as TPackageClientRequest<null>
 
@@ -70,16 +70,11 @@ export const dockerClientTests = {
           attempt: 1,
           clientData: {},
           parsedDependency: new PackageDependency(
-            {
-              path: 'test/path',
-              name: testRepo,
-              version: '23'
-            },
-            //nameRange
-            createTextRange(1, 20),
-            //versionRange
-            createTextRange(25, 30),
-            new PackageDescriptor([])
+            createPackageResource(testRepo, '23', 'test/path'),
+            new PackageDescriptor([
+              createPackageNameDesc(testRepo, createTextRange(1, 20)),
+              createPackageVersionDesc('23', createTextRange(25, 30)),
+            ])
           )
         } as TPackageClientRequest<null>
 

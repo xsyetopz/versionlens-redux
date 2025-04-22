@@ -16,7 +16,12 @@ import {
   PackageVersionType,
   SuggestionTypes
 } from '#domain/packages';
-import { createTextRange, PackageDescriptor } from '#domain/parsers';
+import {
+  createPackageNameDesc,
+  createPackageVersionDesc,
+  createTextRange,
+  PackageDescriptor
+} from '#domain/parsers';
 import type { IProviderConfig, ISuggestionProvider } from '#domain/providers';
 import { FetchPackage } from '#domain/useCases';
 import { test } from 'mocha-ui-esm';
@@ -88,11 +93,10 @@ export const fetchPackageTests = <any>{
       clientData: {},
       parsedDependency: new PackageDependency(
         this.testPackageRes,
-        //nameRange
-        createTextRange(1, 20),
-        //versionRange
-        createTextRange(25, 30),
-        new PackageDescriptor([])
+        new PackageDescriptor([
+          createPackageNameDesc(this.testPackageRes.name, createTextRange(1, 20)),
+          createPackageVersionDesc(this.testPackageRes.version, createTextRange(25, 30)),
+        ])
       )
     } as TPackageClientRequest<any>
   },
@@ -125,9 +129,10 @@ export const fetchPackageTests = <any>{
         fetchedPackage: testRespDoc.resolved,
         parsedDependency: new PackageDependency(
           this.testPackageRes,
-          { start: 1, end: 20 }, // nameRange
-          { start: 25, end: 30 }, // versionRange
-          new PackageDescriptor([])
+          new PackageDescriptor([
+            createPackageNameDesc(this.testPackageRes.name, createTextRange(1, 20)),
+            createPackageVersionDesc(this.testPackageRes.version, createTextRange(25, 30)),
+          ])
         ),
         suggestion: testRespDoc.suggestions[0],
         order: 0

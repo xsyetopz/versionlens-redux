@@ -67,8 +67,6 @@ export class DockerSuggestionProvider implements ISuggestionProvider {
             imageTag,
             packagePath
           ),
-          nameRange,
-          versionRange,
           new PackageDescriptor([
             createPackageNameDesc(imageName, nameRange),
             createPackageVersionDesc(imageTag, versionRange, hasTag ? '' : ':'),

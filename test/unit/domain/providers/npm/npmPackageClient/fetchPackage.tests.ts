@@ -10,7 +10,12 @@ import {
   SuggestionStatusText,
   SuggestionTypes
 } from '#domain/packages';
-import { createTextRange, PackageDescriptor } from '#domain/parsers';
+import {
+  createPackageNameDesc,
+  createPackageVersionDesc,
+  createTextRange,
+  PackageDescriptor
+} from '#domain/parsers';
 import {
   GitHubClient,
   NpmConfig,
@@ -56,9 +61,10 @@ export const fetchPackageTests = {
       clientData: {},
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createTextRange(0, 0),
-        createTextRange(1, 1),
-        new PackageDescriptor([]),
+        new PackageDescriptor([
+          createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+          createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+        ]),
       ),
       attempt: 1
     };
@@ -93,9 +99,10 @@ export const fetchPackageTests = {
       clientData: {},
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createTextRange(0, 0),
-        createTextRange(1, 1),
-        new PackageDescriptor([]),
+        new PackageDescriptor([
+          createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+          createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+        ]),
       ),
       attempt: 1
     };
@@ -151,9 +158,10 @@ export const fetchPackageTests = {
       clientData: {},
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createTextRange(0, 0),
-        createTextRange(1, 1),
-        new PackageDescriptor([]),
+        new PackageDescriptor([
+          createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+          createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+        ]),
       ),
       attempt: 1
     };
@@ -188,23 +196,16 @@ export const fetchPackageTests = {
     ["404", { status: 404, suggestion: { name: SuggestionStatusText.NotFound } }],
     ["ECONNREFUSED", { status: 'ECONNREFUSED', suggestion: { name: SuggestionStatusText.ConnectionRefused } }],
     async (testTitlePart: string, testState: any) => {
-      const testPackageRes = createPackageResource(
-        // package name
-        'private-reg',
-        // package version
-        '1.2.3',
-        // package path
-        'packagepath',
-      );
-
+      const testPackageRes = createPackageResource('private-reg', '1.2.3', 'packagepath');
       const testRequest: TPackageClientRequest<any> = {
         providerName: 'testnpmprovider',
         clientData: {},
         parsedDependency: new PackageDependency(
           testPackageRes,
-          createTextRange(0, 0),
-          createTextRange(1, 1),
-          new PackageDescriptor([]),
+          new PackageDescriptor([
+            createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+            createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+          ]),
         ),
         attempt: 1
       };

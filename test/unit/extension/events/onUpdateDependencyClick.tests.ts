@@ -5,7 +5,12 @@ import {
   SuggestionCategory,
   SuggestionTypes
 } from '#domain/packages';
-import { createTextRange, PackageDescriptor } from '#domain/parsers';
+import {
+  createPackageNameDesc,
+  createPackageVersionDesc,
+  createTextRange,
+  PackageDescriptor
+} from '#domain/parsers';
 import type { IContextState, ISuggestionCodeLens, IVersionLensState } from '#extension';
 import { OnUpdateDependencyClick } from '#extension/events';
 import type { IVsCodeConstructFactory, IVsCodeWorkspace } from '#extension/vscode';
@@ -79,9 +84,10 @@ export const onUpdateDependencyClickTests = {
         providerName: 'test-provider',
         parsedDependency: new PackageDependency(
           createPackageResource('test-name', testVersion, 'test/path'),
-          createTextRange(0, 0), // nameRange
-          createTextRange(1, 1), // versionRange
-          new PackageDescriptor([])
+          new PackageDescriptor([
+            createPackageNameDesc('testPackage1', createTextRange(0, 0)),
+            createPackageVersionDesc('1.0.0', createTextRange(1, 1)),
+          ])
         ),
         order: 0,
       })

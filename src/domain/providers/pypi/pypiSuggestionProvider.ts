@@ -58,8 +58,6 @@ export class PypiSuggestionProvider implements ISuggestionProvider {
               versionDesc.version,
               packagePath
             ),
-            nameDesc.nameRange,
-            versionDesc.versionRange,
             descriptors
           )
         );
@@ -80,8 +78,6 @@ export class PypiSuggestionProvider implements ISuggestionProvider {
               pathType.path,
               packagePath
             ),
-            nameDesc.nameRange,
-            pathType.pathRange,
             descriptors
           )
         );
@@ -102,8 +98,6 @@ export class PypiSuggestionProvider implements ISuggestionProvider {
               gitType.gitUrl,
               packagePath
             ),
-            nameDesc.nameRange,
-            nameDesc.nameRange,
             descriptors
           )
         );

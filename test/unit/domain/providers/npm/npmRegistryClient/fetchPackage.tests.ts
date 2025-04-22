@@ -9,7 +9,12 @@ import {
   SuggestionStatusText,
   SuggestionTypes
 } from '#domain/packages';
-import { createTextRange, PackageDescriptor } from '#domain/parsers';
+import {
+  createPackageNameDesc,
+  createPackageVersionDesc,
+  createTextRange,
+  PackageDescriptor
+} from '#domain/parsers';
 import {
   type GitHubOptions,
   type INpmRegistry,
@@ -70,9 +75,10 @@ export const fetchPackageTests = {
       clientData: testClientData,
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createTextRange(0, 0),
-        createTextRange(1, 1),
-        new PackageDescriptor([]),
+        new PackageDescriptor([
+          createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+          createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+        ]),
       ),
       attempt: 1
     }
@@ -121,9 +127,10 @@ export const fetchPackageTests = {
       clientData: testClientData,
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createTextRange(0, 0),
-        createTextRange(1, 1),
-        new PackageDescriptor([]),
+        new PackageDescriptor([
+          createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+          createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+        ]),
       ),
       attempt: 1
     }
@@ -171,9 +178,10 @@ export const fetchPackageTests = {
       clientData: testClientData,
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createTextRange(0, 0),
-        createTextRange(1, 1),
-        new PackageDescriptor([]),
+        new PackageDescriptor([
+          createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+          createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+        ]),
       ),
       attempt: 1
     }
@@ -229,9 +237,10 @@ export const fetchPackageTests = {
       clientData: testClientData,
       parsedDependency: new PackageDependency(
         testPackageRes,
-        createTextRange(0, 0),
-        createTextRange(1, 1),
-        new PackageDescriptor([]),
+        new PackageDescriptor([
+          createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+          createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+        ]),
       ),
       attempt: 1
     }

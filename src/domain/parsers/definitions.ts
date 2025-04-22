@@ -15,7 +15,7 @@ export type TPackageTextRange = {
 };
 
 export type TPackageType = {
-  type: string
+  type: keyof typeof PackageDescriptorType
 }
 
 export type TPackageNameDescriptor = TPackageType & {

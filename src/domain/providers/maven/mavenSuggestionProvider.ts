@@ -59,8 +59,6 @@ export class MavenSuggestionProvider implements ISuggestionProvider {
               versionDesc.version,
               packagePath
             ),
-            nameDesc.nameRange,
-            versionDesc.versionRange,
             descriptors
           )
         }

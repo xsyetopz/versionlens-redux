@@ -18,7 +18,7 @@ export function createFromPackageResponses(
   );
 }
 
-function  createFromPackageResponse(
+function createFromPackageResponse(
   packageResponse: PackageResponse,
   document: TextDocument,
   replaceVersionFn: TSuggestionReplaceFunction,

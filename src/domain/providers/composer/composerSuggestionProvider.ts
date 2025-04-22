@@ -64,8 +64,6 @@ export class ComposerSuggestionProvider implements ISuggestionProvider {
               versionDesc.version,
               packagePath
             ),
-            nameDesc.nameRange,
-            versionDesc.versionRange,
             descriptors
           )
         }

@@ -76,8 +76,6 @@ export class PubSuggestionProvider implements ISuggestionProvider {
               versionType.version,
               packagePath
             ),
-            nameDesc.nameRange,
-            versionType.versionRange,
             descriptors
           )
         );
@@ -98,8 +96,6 @@ export class PubSuggestionProvider implements ISuggestionProvider {
               pathType.path,
               packagePath
             ),
-            nameDesc.nameRange,
-            pathType.pathRange,
             descriptors
           )
         );
@@ -118,8 +114,6 @@ export class PubSuggestionProvider implements ISuggestionProvider {
               gitType.gitUrl,
               packagePath
             ),
-            nameDesc.nameRange,
-            nameDesc.nameRange,
             descriptors
           )
         );

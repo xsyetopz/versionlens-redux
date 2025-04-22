@@ -1,4 +1,4 @@
-import { TPackageTypeDescriptor } from "#domain/parsers";
+import { PackageDescriptorType, TPackageTypeDescriptor } from "#domain/parsers";
 import { KeyDictionary } from '#domain/utils';
 
 export class PackageDescriptor {
@@ -20,11 +20,11 @@ export class PackageDescriptor {
     this.typeCount++;
   }
 
-  hasType(descType: string): boolean {
+  hasType(descType: keyof typeof PackageDescriptorType): boolean {
     return Reflect.has(this.types, descType);
   }
 
-  getType<T extends TPackageTypeDescriptor>(descType: string): T {
+  getType<T extends TPackageTypeDescriptor>(descType: keyof typeof PackageDescriptorType): T {
     return this.types[descType] as T;
   }
 
