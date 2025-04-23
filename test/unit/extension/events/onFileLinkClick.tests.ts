@@ -50,7 +50,7 @@ export const onFileLinkClickTests = {
     // setup
     const testFilePath = 'some/path/dir/file.txt';
     const expected = instance(mock<Uri>())
-    when(this.mockVsCodeConstruct.createUri(testFilePath)).thenReturn(expected);
+    when(this.mockVsCodeConstruct.createFileUri(testFilePath)).thenReturn(expected);
     // test
     await this.testEvent.execute({
       packageResponse: {

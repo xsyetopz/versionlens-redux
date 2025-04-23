@@ -123,6 +123,7 @@ export interface IVsCodeTasks {
 export interface IVsCodeConstructFactory {
   createWorkspaceEdit(): WorkspaceEdit;
   createUri(uri: string): Uri;
+  createFileUri(path: string): Uri;
 }
 
 /***

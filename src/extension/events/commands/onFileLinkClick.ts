@@ -31,7 +31,7 @@ export class OnFileLinkClick extends Disposable {
       await this.env.openExternal(`file:///${filePath}` as any);
     else
       // open file
-      await this.window.showTextDocument(this.construct.createUri(filePath));
+      await this.window.showTextDocument(this.construct.createFileUri(filePath));
   }
 
 }

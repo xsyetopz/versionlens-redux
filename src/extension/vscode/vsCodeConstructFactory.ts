@@ -15,4 +15,8 @@ export class VsCodeConstructionFactory implements IVsCodeConstructFactory {
     return Uri.parse(uri);
   }
 
+  createFileUri(uri: string): Uri {
+    return Uri.file(uri);
+  }
+
 }
