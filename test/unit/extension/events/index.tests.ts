@@ -1,5 +1,6 @@
 export * from './onActiveTextEditorChange.tests';
 export * from './onAddUrlAuthentication.tests';
+export * from './onChooseBuildClick.tests';
 export * from './onClearCache.tests';
 export * from './onErrorClick.tests';
 export * from './onFileLinkClick.tests';

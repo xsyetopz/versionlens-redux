@@ -1,9 +1,8 @@
 import type { ILogger } from '#domain/logging';
 import { mapToSuggestionUpdate } from '#domain/packages';
 import { Disposable } from '#domain/utils';
-import type { ISuggestionCodeLens } from '#extension';
-import { VersionLensState } from '#extension/state';
-import { SuggestionInteractions } from '#extension/suggestions';
+import type { ISuggestionCodeLens, IVersionLensState } from '#extension';
+import type { SuggestionInteractions } from '#extension/suggestions';
 import type { IVsCodeConstructFactory, IVsCodeWorkspace } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
@@ -13,7 +12,7 @@ export class OnChooseBuildClick extends Disposable {
     readonly interactions: SuggestionInteractions,
     readonly construct: IVsCodeConstructFactory,
     readonly workspace: IVsCodeWorkspace,
-    readonly state: VersionLensState,
+    readonly state: IVersionLensState,
     readonly logger: ILogger
   ) {
     super();
