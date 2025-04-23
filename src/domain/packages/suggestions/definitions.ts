@@ -42,7 +42,7 @@ export enum SuggestionStatusText {
   UpdatePatch = 'patch',
   UpdateLatestPrerelease = 'latest prerelease',
   UpdateRange = 'bump',
-  UpdateBuild = 'build',
+  UpdateBuild = 'change build',
 }
 
 export enum SuggestionTypes {

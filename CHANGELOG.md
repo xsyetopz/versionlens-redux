@@ -4,7 +4,7 @@
 
   - Added an interactive picker for choosing build versions <br>
 
-    ![BuildUpdateable](https://gitlab.com/-/project/19418059/uploads/51c94d8131d81d939d004411cf5d60d7/BuildUpdateable.gif)
+    ![BuildUpdateable](https://gitlab.com/-/project/19418059/uploads/58f0cb983df7877cfbff7780107f25df/pub.gif)
 
     This change also fixes [#325](https://gitlab.com/versionlens/vscode-versionlens/-/issues/325)
 
@@ -21,7 +21,7 @@
 
     *Preview*
 
-    ![image](https://gitlab.com/-/project/19418059/uploads/1f5d62e562d6f0e6376f9f4e437a8001/docker.gif)
+    ![image](https://gitlab.com/-/project/19418059/uploads/2a5a8a9af78c704359057b8a0f573372/docker.gif)
 
     |Setting|Default|
     |-|-|
