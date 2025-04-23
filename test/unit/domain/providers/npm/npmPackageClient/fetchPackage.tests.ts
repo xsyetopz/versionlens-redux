@@ -76,11 +76,12 @@ export const fetchPackageTests = {
       instance(loggerMock)
     );
 
-    return cut.fetchPackage(testRequest)
-      .then(actual => {
-        assert.equal(actual.source, PackageSourceType.Directory, `expected to see ${expectedSource}`)
-        assert.deepEqual(actual.resolved?.name, testPackageRes.name)
-      })
+    // test
+    const actual = await cut.fetchPackage(testRequest)
+
+    // assert
+    assert.equal(actual.source, PackageSourceType.Directory, `expected to see ${expectedSource}`)
+    assert.deepEqual(actual.resolved?.name, testPackageRes.name)
   },
 
   'returns fixed package for git:// requests': async () => {
@@ -122,25 +123,23 @@ export const fetchPackageTests = {
       instance(loggerMock)
     );
 
-    return cut.fetchPackage(testRequest)
-      .then((actual) => {
-        assert.equal(actual.source, 'git')
-        assert.equal(actual.resolved, null)
+    // test
+    const actual = await cut.fetchPackage(testRequest)
 
-        assert.deepEqual(
-          actual.suggestions,
-          [
-            <PackageSuggestion>{
-              name: SuggestionStatusText.Fixed,
-              category: SuggestionCategory.Match,
-              version: 'git repository',
-              type: SuggestionTypes.status
-            }
-          ]
-        )
-
-      })
-
+    // assert
+    assert.equal(actual.source, 'git')
+    assert.equal(actual.resolved, null)
+    assert.deepEqual(
+      actual.suggestions,
+      [
+        <PackageSuggestion>{
+          name: SuggestionStatusText.Fixed,
+          category: SuggestionCategory.Match,
+          version: 'git repository',
+          type: SuggestionTypes.status
+        }
+      ]
+    )
   },
 
   'returns unsupported suggestion when not github': async () => {
@@ -174,21 +173,21 @@ export const fetchPackageTests = {
       instance(loggerMock)
     );
 
-    return cut.fetchPackage(testRequest)
-      .then((actual) => {
-        assert.deepEqual(
-          actual.suggestions,
-          [
-            <PackageSuggestion>{
-              name: SuggestionStatusText.NotSupported,
-              category: SuggestionCategory.NoMatch,
-              version: '',
-              type: SuggestionTypes.status
-            }
-          ]
-        )
-      })
+    // test
+    const actual = await cut.fetchPackage(testRequest)
 
+    // assert
+    assert.deepEqual(
+      actual.suggestions,
+      [
+        <PackageSuggestion>{
+          name: SuggestionStatusText.NotSupported,
+          category: SuggestionCategory.NoMatch,
+          version: '',
+          type: SuggestionTypes.status
+        }
+      ]
+    )
   },
 
   'returns $1 suggestion statuses': [

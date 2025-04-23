@@ -98,13 +98,14 @@ export const fetchPackageTests = {
       instance(this.loggerMock)
     )
 
-    return cut.fetchPackage(testRequest, npaSpec)
-      .then((actual) => {
-        assert.equal(actual.source, 'registry')
-        assert.equal(actual.type, 'range')
-        assert.equal(actual.resolved?.name, testPackageRes.name)
-        assert.deepEqual(actual.resolved?.version, testPackageRes.version)
-      })
+    // test
+    const actual = await cut.fetchPackage(testRequest, npaSpec)
+
+    // assert
+    assert.equal(actual.source, 'registry')
+    assert.equal(actual.type, 'range')
+    assert.equal(actual.resolved?.name, testPackageRes.name)
+    assert.deepEqual(actual.resolved?.version, testPackageRes.version)
   },
 
   'returns a registry version package': async function (this: TestContext) {
@@ -150,12 +151,13 @@ export const fetchPackageTests = {
       instance(this.loggerMock)
     )
 
-    return cut.fetchPackage(testRequest, npaSpec)
-      .then((actual) => {
-        assert.equal(actual.source, 'registry')
-        assert.equal(actual.type, 'version')
-        assert.equal(actual.resolved?.name, testPackageRes.name)
-      })
+    // test
+    const actual = await cut.fetchPackage(testRequest, npaSpec)
+
+    // assert
+    assert.equal(actual.source, 'registry')
+    assert.equal(actual.type, 'version')
+    assert.equal(actual.resolved?.name, testPackageRes.name)
   },
 
   'returns capped latest versions': async function (this: TestContext) {
@@ -201,20 +203,21 @@ export const fetchPackageTests = {
       instance(this.loggerMock)
     )
 
-    return cut.fetchPackage(testRequest, npaSpec)
-      .then((actual) => {
-        assert.deepEqual(
-          actual.suggestions,
-          [
-            <PackageSuggestion>{
-              name: SuggestionStatusText.Latest,
-              category: SuggestionCategory.Latest,
-              version: testPackageRes.version,
-              type: SuggestionTypes.status
-            }
-          ]
-        )
-      })
+    // test
+    const actual = await cut.fetchPackage(testRequest, npaSpec)
+
+    // assert
+    assert.deepEqual(
+      actual.suggestions,
+      [
+        <PackageSuggestion>{
+          name: SuggestionStatusText.Latest,
+          category: SuggestionCategory.Latest,
+          version: testPackageRes.version,
+          type: SuggestionTypes.status
+        }
+      ]
+    )
   },
 
   'returns a registry alias package': async function (this: TestContext) {
@@ -260,13 +263,14 @@ export const fetchPackageTests = {
       instance(this.loggerMock)
     )
 
-    return cut.fetchPackage(testRequest, npaSpec)
-      .then((actual) => {
-        assert.equal(actual.source, 'registry')
-        assert.equal(actual.type, 'alias')
-        assert.equal(actual.resolved?.name, 'pacote')
-        assert.equal(actual.resolved?.version, '11.1.9')
-      })
+    // test
+    const actual = await cut.fetchPackage(testRequest, npaSpec)
+
+    // assert
+    assert.equal(actual.source, 'registry')
+    assert.equal(actual.type, 'alias')
+    assert.equal(actual.resolved?.name, 'pacote')
+    assert.equal(actual.resolved?.version, '11.1.9')
   }
 
 }
