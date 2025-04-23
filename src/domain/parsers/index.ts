@@ -1,5 +1,4 @@
 export * from "./definitions";
-export * from "./gomod/gomodPackageParser";
 export * from './json/definitions';
 export * from "./json/jsonPackageParser";
 export * from './json/jsonPackageTypeFactory';

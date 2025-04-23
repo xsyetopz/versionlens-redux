@@ -8,11 +8,10 @@ import {
 import {
   type PackageNameDescriptor,
   type PackageVersionDescriptor,
-  PackageDescriptorType,
-  parsePackagesGoMod,
+  PackageDescriptorType
 } from '#domain/parsers';
 import type { ISuggestionProvider } from '#domain/providers';
-import { GoClient, GoConfig } from '#domain/providers/golang';
+import { type GoClient, type GoConfig, parsePackagesGoMod } from '#domain/providers/golang';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class GoSuggestionProvider implements ISuggestionProvider {
