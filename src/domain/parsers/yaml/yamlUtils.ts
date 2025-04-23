@@ -2,9 +2,9 @@ import { Document, isCollection, Pair, YAMLMap, YAMLSeq } from 'yaml';
 
 type YamlCollection = YAMLMap<string, any> | YAMLSeq
 
-export function findByPath(root: YamlCollection | Document, path: Iterable<string>): Array<Pair<string, any>>;
-export function findByPath(root: any, [key, ...rest]: string[]): Array<any> {
-  const results = [];
+export function findByPath(root: YamlCollection | Document, path: Array<string>): Array<Pair<string, any>>;
+export function findByPath(root: any, [key, ...rest]: string[]): Array<Pair<string, any>> {
+  const results: Array<Pair<string, any>> = [];
   const hasKey = key.length > 0;
   const lastKey = rest.length === 0;
   if (hasKey === false && lastKey === true) return results;
