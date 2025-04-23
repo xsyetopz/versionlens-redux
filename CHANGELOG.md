@@ -1,4 +1,4 @@
-# 1.19.2-prerelease
+# 1.19.3-prerelease
 
   ### All Providers
 
@@ -17,7 +17,7 @@
   ### Docker
 
   - Added dockerfile `FROM <image>[:<tag>]` analysis<br>
-  - Added docker compose file analysis (currenlty vscode has a codelens [bug](https://github.com/microsoft/vscode/issues/247181) with default docker compose files)
+  - Added docker compose file analysis (**NOTE** vscode has a [codelens bug](https://github.com/microsoft/vscode/issues/247181) with default docker compose files)
 
     *Preview*
 
