@@ -1,6 +1,6 @@
-import { PackageStatusFactory, TParsedVersion } from '#domain/packages';
+import { PackageStatusFactory, ParsedVersion } from '#domain/packages';
 
-export function getVersionStatus(parsed: TParsedVersion) {
+export function getVersionStatus(parsed: ParsedVersion) {
   if (parsed.hasInvalidRange) {
     return PackageStatusFactory.createInvalidRangeStatus();
   }

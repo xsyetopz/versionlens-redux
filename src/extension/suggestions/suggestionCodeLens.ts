@@ -1,5 +1,5 @@
-import type { PackageResponse, TSuggestionReplaceFunction } from '#domain/packages';
-import { ISuggestionCodeLens } from '#extension';
+import type { PackageResponse, SuggestionReplaceFunction } from '#domain/packages';
+import type { ISuggestionCodeLens } from '#extension';
 import { type Range, type Uri, CodeLens } from 'vscode';
 
 export class SuggestionCodeLens extends CodeLens implements ISuggestionCodeLens {
@@ -9,7 +9,7 @@ export class SuggestionCodeLens extends CodeLens implements ISuggestionCodeLens 
     readonly replaceRange: Range,
     readonly packageResponse: PackageResponse,
     readonly documentUrl: Uri,
-    readonly replaceVersionFn: TSuggestionReplaceFunction
+    readonly replaceVersionFn: SuggestionReplaceFunction
   ) {
     super(commandRange);
     this.replaceRange = replaceRange ?? commandRange;

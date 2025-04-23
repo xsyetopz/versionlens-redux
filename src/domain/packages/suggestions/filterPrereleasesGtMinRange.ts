@@ -1,4 +1,4 @@
-import { TPreReleaseGroup, VersionUtils, friendlifyPrereleaseName } from '#domain/packages';
+import { PreReleaseGroup, VersionUtils, friendlifyPrereleaseName } from '#domain/packages';
 import { KeyDictionary } from '#domain/utils';
 import {
   SemVer,
@@ -19,7 +19,7 @@ export function filterPrereleasesGtMinRange(
     versionRange;
   if (!minVersionFromRange) return [];
 
-  const groupedByTag: KeyDictionary<TPreReleaseGroup> = {};
+  const groupedByTag: KeyDictionary<PreReleaseGroup> = {};
 
   // for each prerelease version;
   // group prereleases by x.x.x-{name}*.x
@@ -52,7 +52,7 @@ export function filterPrereleasesGtMinRange(
   // for each group;
   // extract versions that are greater than the min-range (latest from each group)
   const gtfn = isValidRange ? gt : maxSatisfying;
-  const satisfiedPrereleases = [];
+  const satisfiedPrereleases: string[] = [];
   publishedOrder.forEach(function (group) {
     const testMaxVersion = group.versions[group.versions.length - 1];
     const isPrereleaseGt = gtfn(

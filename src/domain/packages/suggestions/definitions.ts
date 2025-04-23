@@ -60,7 +60,7 @@ export type PackageSuggestion = {
   version: string,
 }
 
-export type TParsedVersion = {
+export type ParsedVersion = {
   isFixedVersion: boolean
   isRangeVersion: boolean
   isPreRelease: boolean
@@ -74,13 +74,13 @@ export type TParsedVersion = {
   latestPreRelease?: string
 }
 
-export type TPreReleaseGroup = {
+export type PreReleaseGroup = {
   name: string
   order: number
   versions: string[]
 }
 
-export type TSuggestionUpdate = {
+export type SuggestionUpdate = {
   packageSource: PackageSourceType,
   packageVersionType: PackageVersionType,
 
@@ -97,7 +97,7 @@ export type TSuggestionUpdate = {
   suggestionVersion: string,
 }
 
-export type TSuggestionReplaceFunction = (
-  suggestionUpdate: TSuggestionUpdate,
+export type SuggestionReplaceFunction = (
+  suggestionUpdate: SuggestionUpdate,
   version: string
 ) => string;

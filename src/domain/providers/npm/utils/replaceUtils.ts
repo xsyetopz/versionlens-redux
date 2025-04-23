@@ -1,11 +1,11 @@
 import {
+  type SuggestionUpdate,
   PackageSourceType,
   PackageVersionType,
-  TSuggestionUpdate,
   VersionUtils
 } from '#domain/packages';
 
-export function npmReplaceVersion(suggestionUpdate: TSuggestionUpdate): string {
+export function npmReplaceVersion(suggestionUpdate: SuggestionUpdate): string {
   if (suggestionUpdate.packageSource === PackageSourceType.Github) {
     return replaceGitVersion(suggestionUpdate);
   }
@@ -21,14 +21,14 @@ export function npmReplaceVersion(suggestionUpdate: TSuggestionUpdate): string {
   );
 }
 
-function replaceGitVersion(suggestionUpdate: TSuggestionUpdate): string {
+function replaceGitVersion(suggestionUpdate: SuggestionUpdate): string {
   return suggestionUpdate.parsedVersion.replace(
     suggestionUpdate.fetchedVersion,
     suggestionUpdate.suggestionVersion
   )
 }
 
-function replaceAliasVersion(suggestionUpdate: TSuggestionUpdate): string {
+function replaceAliasVersion(suggestionUpdate: SuggestionUpdate): string {
   // preserve the leading symbol from the existing version
   const preservedLeadingVersion = VersionUtils.preserveLeadingRange(
     suggestionUpdate.fetchedVersion,

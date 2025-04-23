@@ -58,6 +58,7 @@ export class DockerClient implements IPackageClient<null> {
     }
 
     try {
+      // fetch from the api
       let namespace = 'library'
       let repo = requestedPackage.name
       if (requestedPackage.name.includes('/')) {
@@ -97,7 +98,7 @@ export class DockerClient implements IPackageClient<null> {
     const { versionMap, tagMap, releases, latest } = createVersionMapper(results);
 
     const tagged = Object.keys(tagMap);
-    let versionRange = pkg.version || latest;
+    let versionRange = pkg.version || latest || '';
     if (tagged.includes(versionRange)) versionRange = tagMap[versionRange];
 
     // analyse suggestions
@@ -137,7 +138,7 @@ export class DockerClient implements IPackageClient<null> {
         case SuggestionCategory.Latest:
         case SuggestionCategory.Match:
         case SuggestionCategory.Updateable:
-          suggestion.version = VersionUtils.stripBuild(suggestion.version)
+          suggestion.version = VersionUtils.stripBuild(suggestion.version)!
       }
     }
 

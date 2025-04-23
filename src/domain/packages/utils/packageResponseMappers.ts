@@ -1,7 +1,7 @@
-import type { PackageResponse, TSuggestionUpdate } from '#domain/packages';
+import type { PackageResponse, SuggestionUpdate } from '#domain/packages';
 import { type PackageVersionDescriptor, PackageDescriptorType } from '#domain/parsers';
 
-export function mapToSuggestionUpdate(packageResponse: PackageResponse): TSuggestionUpdate {
+export function mapToSuggestionUpdate(packageResponse: PackageResponse): SuggestionUpdate {
   let parsedVersionPrepend = "";
   let parsedVersionAppend = "";
 

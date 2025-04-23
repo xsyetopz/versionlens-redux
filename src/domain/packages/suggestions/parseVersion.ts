@@ -1,4 +1,4 @@
-import { TParsedVersion, VersionUtils } from '#domain/packages';
+import { ParsedVersion, VersionUtils } from '#domain/packages';
 import {
   eq,
   minVersion as getMinVersion,
@@ -13,7 +13,7 @@ export function parseVersion(
   releases: string[],
   prereleases: string[],
   distTagVersion?: string
-): TParsedVersion {
+): ParsedVersion {
   const isFixedVersion = valid(requestedVersion) !== null;
   const isRangeVersion = !isFixedVersion && validRange(requestedVersion) !== null;
   const isPreRelease = isRangeVersion

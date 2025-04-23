@@ -1,4 +1,4 @@
-import type { DependencyCache, PackageResponse, TSuggestionReplaceFunction } from '#domain/packages';
+import type { DependencyCache, PackageResponse, SuggestionReplaceFunction } from '#domain/packages';
 import { nameOf, type KeyDictionary } from '#domain/utils';
 import type {
   OnActiveTextEditorChange,
@@ -149,5 +149,5 @@ export interface ISuggestionCodeLens {
   replaceRange: Range,
   packageResponse: PackageResponse,
   documentUrl: Uri,
-  replaceVersionFn: TSuggestionReplaceFunction
+  replaceVersionFn: SuggestionReplaceFunction
 }

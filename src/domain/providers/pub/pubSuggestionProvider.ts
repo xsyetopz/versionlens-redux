@@ -1,6 +1,6 @@
 import type { ILogger } from '#domain/logging';
 import {
-  type TSuggestionUpdate,
+  type SuggestionUpdate,
   PackageDependency,
   createPackageResource,
   defaultReplaceFn
@@ -46,7 +46,7 @@ export class PubSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull("logger", logger);
   }
 
-  suggestionReplaceFn(suggestionUpdate: TSuggestionUpdate, newVersion: string): string {
+  suggestionReplaceFn(suggestionUpdate: SuggestionUpdate, newVersion: string): string {
     return defaultReplaceFn(
       suggestionUpdate,
       // handle cases for blank entries and # comments

@@ -1,6 +1,6 @@
 import {
   type PackageSuggestion,
-  type TParsedVersion,
+  type ParsedVersion,
   SuggestionIncrements,
   SuggestionStatusText,
   UpdateableFactory,
@@ -11,7 +11,7 @@ import { findVersionBuilds } from '../utils/versionUtils.js';
 
 export function getReleaseSuggestions(
   fixedOrRangedVersion: string,
-  parsed: TParsedVersion,
+  parsed: ParsedVersion,
   releases: string[]
 ) {
   const potentialSuggestions: Array<[SuggestionStatusText, string]> = [];

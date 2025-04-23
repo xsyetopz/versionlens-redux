@@ -5,7 +5,7 @@ import type { ILogger } from '#domain/logging';
 import type {
   IPackageClient,
   PackageDependency,
-  TSuggestionReplaceFunction
+  SuggestionReplaceFunction
 } from '#domain/packages';
 
 export interface IProviderConfig {
@@ -29,7 +29,7 @@ export interface ISuggestionProvider {
   readonly config: IProviderConfig;
   readonly client: IPackageClient<any>
   readonly logger: ILogger;
-  suggestionReplaceFn?: TSuggestionReplaceFunction;
+  suggestionReplaceFn?: SuggestionReplaceFunction;
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency>;
   /**
    * Optional function called before queueing all suggestion fetch requests.

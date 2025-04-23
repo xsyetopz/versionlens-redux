@@ -1,12 +1,12 @@
-import { ILogger } from '#domain/logging';
-import { defaultReplaceFn, PackageDependency, TSuggestionUpdate } from '#domain/packages';
-import { YamlParserOptions } from '#domain/parsers';
-import { ISuggestionProvider } from '#domain/providers';
+import type { ILogger } from '#domain/logging';
+import { type SuggestionUpdate, defaultReplaceFn, PackageDependency } from '#domain/packages';
+import type { YamlParserOptions } from '#domain/parsers';
+import type { ISuggestionProvider } from '#domain/providers';
 import {
+  type DockerClient,
+  type DockerConfig,
   createBuildDescFromYamlNode,
   createImageDescFromYamlNode,
-  DockerClient,
-  DockerConfig,
   parseDockerCompose,
   parseDockerfile
 } from '#domain/providers/docker';
@@ -34,7 +34,7 @@ export class DockerSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull("logger", logger);
   }
 
-  suggestionReplaceFn(suggestionUpdate: TSuggestionUpdate, newVersion: string): string {
+  suggestionReplaceFn(suggestionUpdate: SuggestionUpdate, newVersion: string): string {
     const insert = suggestionUpdate.parsedVersionPrepend.length > 0;
     return defaultReplaceFn(
       suggestionUpdate,

@@ -1,8 +1,9 @@
 import type { ILogger } from '#domain/logging';
 import {
-  type TSuggestionReplaceFunction,
+  type SuggestionUpdate,
   PackageDependency,
-  createPackageResource
+  createPackageResource,
+  defaultReplaceFn
 } from '#domain/packages';
 import {
   type PackageNameDescriptor,
@@ -16,7 +17,6 @@ import {
   type NuGetClientData,
   type NuGetPackageClient,
   type NuGetResourceClient,
-  dotnetReplaceVersion,
   parseDotNetPackagesXml
 } from '#domain/providers/dotnet';
 import { RegistryProtocols } from '#domain/utils';
@@ -40,10 +40,18 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull("logger", logger);
   }
 
-  suggestionReplaceFn?: TSuggestionReplaceFunction = dotnetReplaceVersion;
+  suggestionReplaceFn(suggestionUpdate: SuggestionUpdate, newVersion: string): string {
+    const insert = suggestionUpdate.parsedVersionPrepend.length > 2;
+    return defaultReplaceFn(
+      suggestionUpdate,
+      // handle cases with blank version entries
+      insert
+        ? `${suggestionUpdate.parsedVersionPrepend}${newVersion}${suggestionUpdate.parsedVersionAppend}`
+        : newVersion
+    );
+  }
 
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency> {
-
     const parsedPackages = parseDotNetPackagesXml(
       packageText,
       this.config.dependencyProperties
@@ -75,10 +83,7 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
-  async preFetchSuggestions(
-    projectPath: string,
-    packagePath: string
-  ): Promise<NuGetClientData> {
+  async preFetchSuggestions(projectPath: string, packagePath: string): Promise<NuGetClientData> {
     // ensure latest nuget sources from settings
     this.config.nuget.defrost();
 

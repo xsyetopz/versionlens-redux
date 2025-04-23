@@ -1,11 +1,11 @@
-import { PackageResponse, TSuggestionReplaceFunction } from '#domain/packages';
+import { type PackageResponse, SuggestionReplaceFunction } from '#domain/packages';
 import { SuggestionCodeLens } from '#extension/suggestions';
-import { Range, TextDocument, Uri } from 'vscode';
+import { type TextDocument, Range, Uri } from 'vscode';
 
 export function createFromPackageResponses(
   document: TextDocument,
   suggestions: Array<PackageResponse>,
-  replaceVersionFn: TSuggestionReplaceFunction,
+  replaceVersionFn: SuggestionReplaceFunction,
 ): Array<SuggestionCodeLens> {
   return suggestions.map(
     function (response) {
@@ -21,7 +21,7 @@ export function createFromPackageResponses(
 function createFromPackageResponse(
   packageResponse: PackageResponse,
   document: TextDocument,
-  replaceVersionFn: TSuggestionReplaceFunction,
+  replaceVersionFn: SuggestionReplaceFunction,
 ): SuggestionCodeLens {
   const { nameRange, versionRange } = packageResponse.parsedDependency;
   const commandRangePos = nameRange.start + packageResponse.order;

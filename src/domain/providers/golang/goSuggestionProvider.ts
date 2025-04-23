@@ -1,6 +1,6 @@
 import type { ILogger } from '#domain/logging';
 import {
-  type TSuggestionUpdate,
+  type SuggestionUpdate,
   PackageDependency,
   createPackageResource,
   defaultReplaceFn
@@ -29,7 +29,7 @@ export class GoSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull("logger", logger);
   }
 
-  suggestionReplaceFn(suggestionUpdate: TSuggestionUpdate, newVersion: string): string {
+  suggestionReplaceFn(suggestionUpdate: SuggestionUpdate, newVersion: string): string {
     const insert = suggestionUpdate.parsedVersionPrepend.length > 0;
     return defaultReplaceFn(
       suggestionUpdate,
