@@ -21,7 +21,7 @@
 
     *Preview*
 
-    ![image](https://gitlab.com/-/project/19418059/uploads/92d8a8ac6bddd0573e119f86977c2a52/docker.gif)
+    ![image](https://gitlab.com/-/project/19418059/uploads/1f5d62e562d6f0e6376f9f4e437a8001/docker.gif)
 
     |Setting|Default|
     |-|-|
