@@ -1,9 +1,0 @@
-services:
-  web:
-    image: nginx
-  backend:
-    build:
-      context: ./build-folder
-      dockerfile: custom.dockerfile
-  mongo:
-    image: mongo
