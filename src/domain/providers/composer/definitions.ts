@@ -1,6 +1,7 @@
-import { CachingOptions } from '#domain/caching';
-import { HttpOptions, IJsonHttpClient } from '#domain/clients';
-import { ComposerClient, ComposerConfig } from "#domain/providers/composer";
+import type { CachingOptions } from '#domain/caching';
+import type { HttpOptions, IJsonHttpClient, JsonClientResponse } from '#domain/clients';
+import type { ComposerClient, ComposerConfig, PackagistClient } from "#domain/providers/composer";
+import { nameOf } from '#domain/utils';
 
 export enum ComposerFeatures {
   Caching = 'composer.caching',
@@ -21,5 +22,20 @@ export interface IComposerService {
   composerHttpOpts: HttpOptions;
   composerConfig: ComposerConfig;
   composerJsonClient: IJsonHttpClient;
+  packagistClient: PackagistClient;
   composerClient: ComposerClient;
 }
+
+export const ComposerService = nameOf<IComposerService>()
+
+export type PackagistVersionEntry = {
+  version: string
+}
+
+export type PackagistPackagesResult = {
+  packages: {
+    [key: string]: PackagistVersionEntry[]
+  }
+}
+
+export type PackagistPackagesResponse = JsonClientResponse<PackagistPackagesResult>

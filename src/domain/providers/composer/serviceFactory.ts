@@ -8,13 +8,15 @@ import {
   ComposerClient,
   ComposerConfig,
   ComposerFeatures,
-  ComposerSuggestionProvider
+  ComposerService,
+  ComposerSuggestionProvider,
+  PackagistClient
 } from '#domain/providers/composer';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IComposerService>().composerCachingOpts,
+    ComposerService.composerCachingOpts,
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
@@ -26,7 +28,7 @@ export function addCachingOptions(services: IServiceCollection) {
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IComposerService>().composerHttpOpts,
+    ComposerService.composerHttpOpts,
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
@@ -38,7 +40,7 @@ export function addHttpOptions(services: IServiceCollection) {
 
 export function addComposerConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IComposerService>().composerConfig,
+    ComposerService.composerConfig,
     (container: IComposerService & IDomainServices) =>
       new ComposerConfig(
         container.appConfig,
@@ -49,7 +51,7 @@ export function addComposerConfig(services: IServiceCollection) {
 }
 
 export function addJsonClient(services: IServiceCollection) {
-  const serviceName = nameOf<IComposerService>().composerJsonClient;
+  const serviceName = ComposerService.composerJsonClient;
   services.addSingleton(
     serviceName,
     (container: IComposerService & IDomainServices) =>
@@ -63,14 +65,27 @@ export function addJsonClient(services: IServiceCollection) {
   );
 }
 
+export function addPackagistClient(services: IServiceCollection) {
+  const serviceName = ComposerService.packagistClient;
+  services.addSingleton(
+    serviceName,
+    (container: IComposerService & IDomainServices) =>
+      new PackagistClient(
+        container.composerConfig,
+        container.composerJsonClient,
+        container.loggerFactory.create(serviceName)
+      )
+  );
+}
+
 export function addComposerClient(services: IServiceCollection) {
-  const serviceName = nameOf<IComposerService>().composerClient;
+  const serviceName = ComposerService.composerClient;
   services.addSingleton(
     serviceName,
     (container: IComposerService & IDomainServices) =>
       new ComposerClient(
         container.composerConfig,
-        container.composerJsonClient,
+        container.packagistClient,
         container.loggerFactory.create(serviceName)
       )
   );

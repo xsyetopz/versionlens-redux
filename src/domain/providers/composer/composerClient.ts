@@ -1,4 +1,4 @@
-import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
+import type { HttpClientResponse } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
@@ -11,19 +11,19 @@ import {
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { type IPackagistApiItem, ComposerConfig } from '#domain/providers/composer';
+import { ComposerConfig, PackagistClient } from '#domain/providers/composer';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class ComposerClient implements IPackageClient<null> {
 
   constructor(
     readonly config: ComposerConfig,
-    readonly jsonClient: IJsonHttpClient,
+    readonly packagistClient: PackagistClient,
     readonly logger: ILogger
   ) {
-    throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("jsonClient", jsonClient);
-    throwUndefinedOrNull("logger", logger);
+    throwUndefinedOrNull('config', config);
+    throwUndefinedOrNull('packagistClient', packagistClient);
+    throwUndefinedOrNull('logger', logger);
   }
 
   async fetchPackage<TClientData>(
@@ -31,10 +31,9 @@ export class ComposerClient implements IPackageClient<null> {
   ): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const semverSpec = VersionUtils.parseSemver(requestedPackage.version);
-    const url = `${this.config.apiUrl}${requestedPackage.name}.json`;
 
     try {
-      return await this.createRemotePackageDocument(url, request, semverSpec)
+      return await this.createRemotePackageDocument(request, semverSpec)
     } catch (error) {
       const errorResponse = error as HttpClientResponse;
 
@@ -58,14 +57,14 @@ export class ComposerClient implements IPackageClient<null> {
   }
 
   async createRemotePackageDocument<TClientData>(
-    url: string,
     request: PackageClientRequest<TClientData>,
     semverSpec: SemverSpec
   ): Promise<PackageClientResponse> {
-    // fetch package from api
-    const httpResponse = await this.jsonClient.get(url);
-
+    // fetch
     const requestPackage = request.parsedDependency.package;
+    const jsonResponse = await this.packagistClient.get(requestPackage.name);
+
+    // process response
     const versionRange = semverSpec.rawVersion;
 
     const resolved = {
@@ -74,20 +73,14 @@ export class ComposerClient implements IPackageClient<null> {
     };
 
     const responseStatus = {
-      source: httpResponse.source,
-      status: httpResponse.status,
+      source: jsonResponse.source,
+      status: jsonResponse.status,
     };
 
-    const responseVersions: IPackagistApiItem[] = httpResponse.data.packages[requestPackage.name];
-
-    let rawVersions: string[] = [];
-    if (url.indexOf('/p2/') !== -1) {
-      rawVersions = responseVersions
-        .reverse()
-        .map((p: IPackagistApiItem) => p.version);
-    } else {
-      rawVersions = Object.keys(responseVersions);
-    }
+    const responseVersions = jsonResponse.data.packages[requestPackage.name];
+    const rawVersions: string[] = responseVersions
+      .map(x => x.version)
+      .toSorted(VersionUtils.compareVersionsAndBuilds)
 
     // extract semver versions only
     const semverVersions = VersionUtils.filterSemverVersions(rawVersions);

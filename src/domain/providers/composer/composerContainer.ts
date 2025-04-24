@@ -1,10 +1,11 @@
-import { IServiceCollection, IServiceProvider } from '#domain/di';
+import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import {
   addCachingOptions,
   addComposerClient,
   addComposerConfig,
   addHttpOptions,
   addJsonClient,
+  addPackagistClient,
   addSuggestionProvider
 } from '#domain/providers/composer';
 
@@ -20,6 +21,8 @@ export async function configureContainer(
   addComposerConfig(services);
 
   addJsonClient(services);
+
+  addPackagistClient(services);
 
   addComposerClient(services);
 
