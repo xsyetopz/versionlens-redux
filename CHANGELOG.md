@@ -2,7 +2,14 @@
 
   ### Dart (pub)
 
+  - Fixed `Cannot read properties of null (reading 'type')` errors when trying to parse array dependency properties that aren't supported
+
+    Relates to [#388](https://gitlab.com/versionlens/vscode-versionlens/-/issues/388)
+
+  - Fixed quotes being replaced in nested complex dependency objects
+
   - added `dependency_overrides` to the default `versionlens.pub.dependencyProperties` setting
+
   - added `any` keyword support (equivalent to '*')
 
 # 1.20.0

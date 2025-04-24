@@ -9,7 +9,7 @@ import {
   PackageDescriptor
 } from '#domain/parsers';
 import { KeyDictionary } from '#domain/utils';
-import { Document, isMap, Pair, ParsedNode, parseDocument, YAMLMap } from 'yaml';
+import { Document, isMap, isScalar, Pair, ParsedNode, parseDocument, YAMLMap } from 'yaml';
 import { findPair } from 'yaml/util';
 
 export function parsePackagesYaml(
@@ -48,7 +48,7 @@ function parsePackageNodes(
 
 function descendChildNodes(
   path: string,
-  pairs: Array<Pair<any, any>>,
+  pairs: Array<Pair<string, any>>,
   complexTypeHandlers: KeyDictionary<YamlTypeDescriptorHandler>
 ): Array<PackageDescriptor> {
   const matchedDependencies: Array<PackageDescriptor> = [];
@@ -56,54 +56,47 @@ function descendChildNodes(
 
   for (const pair of pairs) {
     const { key: keyNode, value: valueNode } = pair;
-    const isQuotedType = isNodeQuoted(valueNode);
-    const isStringType = valueNode.type === "PLAIN" || isQuotedType;
+    const isScalarValue = isScalar(valueNode)
+    const isQuotedType = isScalarValue && isNodeQuoted(valueNode);
 
     // parse string properties
-    if (isStringType) {
-
+    if (isScalarValue) {
       // create the name descriptor
       const nameDesc = createNameDescFromYamlNode(keyNode);
-
       // create the version descriptor
       const versionDesc = createVersionDescFromYamlNode(valueNode, isQuotedType);
-
       // create the parent path desc
       const parentDesc = createPackageParentDescType(path);
-
       // create the package descriptor
       const packageDesc = new PackageDescriptor([nameDesc, versionDesc, parentDesc]);
-
       // add the package desc to the matched array
       matchedDependencies.push(packageDesc);
-
       continue;
     }
 
     // parse complex properties
     if (isMap(valueNode)) {
       const map = valueNode as YAMLMap;
-      const isQuotedType = isNodeQuoted(valueNode);
 
       // create the package descriptor
       const packageDesc = new PackageDescriptor([]);
 
       for (const typeName in complexTypeHandlers) {
-        if (map.has(typeName)) {
-          const pair = findPair(map.items, typeName);
-          if (!pair) continue;
+        if (map.has(typeName) === false) continue;
 
-          // get the type desc
-          const handler = complexTypeHandlers[typeName];
+        const pair = findPair(map.items, typeName);
+        if (!pair) continue;
 
-          // add the handled type to the package desc
-          const typeDesc = handler(pair.value, isQuotedType);
+        // get the type desc
+        const handler = complexTypeHandlers[typeName];
 
-          // skip types that are't fully defined
-          if (!typeDesc) continue;
+        // add the handled type to the package desc
+        const isScalarValue = isScalar(pair.value)
+        const isQuotedType = isScalarValue && isNodeQuoted(pair.value);
+        const typeDesc = handler(pair.value, isQuotedType);
+        if (!typeDesc) continue;
 
-          packageDesc.addType(typeDesc);
-        }
+        packageDesc.addType(typeDesc);
       }
 
       // skip when no types were added
@@ -119,7 +112,6 @@ function descendChildNodes(
       // add the package desc to the matched array
       matchedDependencies.push(packageDesc);
     }
-
   }
 
   return matchedDependencies;

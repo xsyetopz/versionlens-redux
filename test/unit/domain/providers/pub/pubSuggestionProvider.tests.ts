@@ -35,12 +35,27 @@ export const pubSuggestionProviderTests = {
   },
 
   "returns empty when no dependency entry names match": function (this: TestContext) {
-    const includePropNames = ["non-dependencies"];
+    const includePropNames = ['non-dependencies'];
     when(this.pubConfigMock.dependencyProperties).thenReturn(includePropNames);
     // test
     const results = this.put.parseDependencies('test/path', Fixtures.parsesDependencyEntries.test);
     // assert
     equal(results.length, 0);
+  },
+
+  "ignores arrays": function (this: TestContext) {
+    const testProps = ['fonts'];
+    const testContent = `
+      fonts:
+        - family: SST Arabic
+          fonts:
+            - asset: assets/fonts/SST-Arabic-Medium.ttf
+    `;
+    when(this.pubConfigMock.dependencyProperties).thenReturn(testProps);
+    // test
+    const actual = this.put.parseDependencies('test/path', testContent)
+    // assert
+    equal(actual.length, 0);
   },
 
   "case $i: parses yaml dependencies": [
@@ -54,7 +69,7 @@ export const pubSuggestionProviderTests = {
     Fixtures.parsesEmptyProjectVersionWithComment,
     Fixtures.parsesAnyVersionKeyword,
     function (this: TestContext, fixture: any) {
-      const includePropNames = ["version", "dependencies"];
+      const includePropNames = ['version', 'dependencies'];
       when(this.pubConfigMock.dependencyProperties).thenReturn(includePropNames);
       // test
       const results = this.put.parseDependencies('test/path', fixture.test);
