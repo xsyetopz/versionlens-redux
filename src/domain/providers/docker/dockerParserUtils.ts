@@ -122,7 +122,7 @@ export function createImageDescFromYamlNode(valueNode: any): PackageImageDescrip
     valueRange.end--;
   }
 
-  const [image, tag] = valueNode.value.split(':');
+  const [image, tag] = valueNode.value.toString().split(':');
   const imageRange = {
     start: valueRange.start,
     end: valueRange.start + image.length

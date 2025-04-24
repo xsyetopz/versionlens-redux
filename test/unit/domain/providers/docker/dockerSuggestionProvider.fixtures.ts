@@ -96,6 +96,8 @@ export default {
           build:
             context: .
             dockerfile: custom.dockerfile
+        image-number:
+          image: 123456
         empty-image:
           image:
         empty-build:
@@ -139,6 +141,14 @@ export default {
         new PackageDescriptor([
           createPackageNameDesc('./custom.dockerfile', createTextRange(262, 263)),
           createPackagePathDescType('./custom.dockerfile', createTextRange(262, 263)),
+          createPackageParentDescType('services.*')
+        ])
+      ),
+      new PackageDependency(
+        createPackageResource('123456', '', 'test/path/compose.yaml'),
+        new PackageDescriptor([
+          createPackageNameDesc('123456', createTextRange(345, 351)),
+          createPackageVersionDesc('', createTextRange(351), ':'),
           createPackageParentDescType('services.*')
         ])
       )
