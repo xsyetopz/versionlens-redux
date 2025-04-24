@@ -1,16 +1,16 @@
 import {
+  type PackageClientResponse,
   type PackageResponse,
   type PackageSuggestion,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
+  type PackageClientRequest,
   PackageSourceType,
   PackageVersionType,
 } from '#domain/packages';
 
 export function createSuccess<TClientData>(
   providerName: string,
-  request: TPackageClientRequest<TClientData>,
-  response: TPackageClientResponse
+  request: PackageClientRequest<TClientData>,
+  response: PackageClientResponse
 ): Array<PackageResponse> {
   // map the documents to responses
   return response.suggestions.map(
@@ -30,7 +30,7 @@ export function createSuccess<TClientData>(
 
 export function createProjectVersionPackageResponse(
   providerName: string,
-  request: TPackageClientRequest<any>,
+  request: PackageClientRequest<any>,
   suggestion: PackageSuggestion
 ) {
   return {

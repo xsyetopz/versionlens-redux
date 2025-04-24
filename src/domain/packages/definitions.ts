@@ -17,31 +17,31 @@ export type OnPackageDependenciesChangedEvent = (
   packageDeps: PackageDependency[]
 ) => Promise<void>;
 
-export type TPackageNameVersion = {
+export type PackageNameVersion = {
   name: string;
   version: string;
 };
 
-export type TPackageResource = TPackageNameVersion & {
+export type PackageResource = PackageNameVersion & {
   path: string;
 };
 
 export type PackageResponse = {
   providerName: string;
   parsedDependency: PackageDependency,
-  fetchedPackage?: TPackageNameVersion;
+  fetchedPackage?: PackageNameVersion;
   packageSource?: PackageSourceType;
   type?: PackageVersionType;
   suggestion?: PackageSuggestion;
   order: number;
 };
 
-export type TPackageVersions = {
+export type PackageVersions = {
   releases: Array<string>,
   prereleases: Array<string>
 }
 
-export type TSemverSpec = {
+export type SemverSpec = {
   rawVersion: string,
   type: PackageVersionType,
 };
@@ -57,11 +57,11 @@ export enum PackageSourceType {
 export interface IPackageClient<TClientData> {
   logger: ILogger;
   config: IProviderConfig,
-  fetchPackage: (request: TPackageClientRequest<TClientData>)
-    => Promise<TPackageClientResponse>;
+  fetchPackage: (request: PackageClientRequest<TClientData>)
+    => Promise<PackageClientResponse>;
 }
 
-export type TPackageClientRequest<TClientData> = {
+export type PackageClientRequest<TClientData> = {
   // provider descriptor
   providerName: string;
   // provider specific data
@@ -72,17 +72,17 @@ export type TPackageClientRequest<TClientData> = {
   attempt: number;
 };
 
-export type TPackageClientResponseStatus = {
+export type PackageClientResponseStatus = {
   source: ClientResponseSource;
   status: number;
   rejected?: boolean;
 };
 
-export type TPackageClientResponse = {
+export type PackageClientResponse = {
   source: PackageSourceType;
-  responseStatus?: TPackageClientResponseStatus;
+  responseStatus?: PackageClientResponseStatus;
   type: PackageVersionType;
-  resolved?: TPackageNameVersion;
+  resolved?: PackageNameVersion;
   suggestions: Array<PackageSuggestion>;
   gitSpec?: any;
 };

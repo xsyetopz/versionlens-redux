@@ -1,8 +1,8 @@
 import {
-  PackageVersionType,
-  TPackageNameVersion,
-  TPackageVersions,
-  TSemverSpec
+  type PackageNameVersion,
+  type PackageVersions,
+  type SemverSpec,
+  PackageVersionType
 } from '#domain/packages';
 import { Range, SemVer, coerce, eq, lte, major, prerelease, valid, validRange } from 'semver';
 
@@ -24,17 +24,17 @@ export function filterPrereleaseTags(
 }
 
 export function extractVersionsFromMap(
-  versions: Array<TPackageNameVersion>
+  versions: Array<PackageNameVersion>
 ): Array<string> {
-  return versions.map(function (pnv: TPackageNameVersion) {
+  return versions.map(function (pnv: PackageNameVersion) {
     return pnv.version;
   });
 }
 
 export function extractTaggedVersions(
   versions: Array<string>
-): Array<TPackageNameVersion> {
-  const results: Array<TPackageNameVersion> = [];
+): Array<PackageNameVersion> {
+  const results: Array<PackageNameVersion> = [];
   versions.forEach(function (version) {
     const prereleaseComponents = prerelease(version);
     const isPrerelease = !!prereleaseComponents && prereleaseComponents.length > 0;
@@ -55,7 +55,7 @@ export function extractTaggedVersions(
 export function splitReleasesFromArray(
   versions: Array<string>,
   filterTags: Array<string>
-): TPackageVersions {
+): PackageVersions {
   const releases: Array<string> = [];
   const prereleases: Array<string> = [];
 
@@ -97,7 +97,7 @@ export function isFourSegmentedVersion(versionToCheck: string): boolean {
   return isfourSegmentVersionRegex.test(versionToCheck);
 }
 
-export function parseSemver(packageVersion: string): TSemverSpec {
+export function parseSemver(packageVersion: string): SemverSpec {
   const isVersion = valid(packageVersion, loosePrereleases);
   const isRange = validRange(packageVersion, loosePrereleases);
   return {

@@ -2,9 +2,9 @@ import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
-  type TSemverSpec,
+  type PackageClientRequest,
+  type PackageClientResponse,
+  type SemverSpec,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
@@ -32,8 +32,8 @@ export class CratesClient implements IPackageClient<null> {
   }
 
   async fetchPackage<TClientData>(
-    request: TPackageClientRequest<TClientData>
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<TClientData>
+  ): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
 
     // return a directory response if this a path type
@@ -83,9 +83,9 @@ export class CratesClient implements IPackageClient<null> {
 
   async createRemotePackageDocument<TClientData>(
     url: string,
-    request: TPackageClientRequest<TClientData>,
-    semverSpec: TSemverSpec
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<TClientData>,
+    semverSpec: SemverSpec
+  ): Promise<PackageClientResponse> {
     // fetch package from api
     const httpResponse = await this.jsonClient.get(url);
 

@@ -1,4 +1,4 @@
-import type { TPackageResource } from '#domain/packages';
+import type { PackageResource } from '#domain/packages';
 import type {
   PackageDescriptor,
   PackageNameDescriptor,
@@ -10,7 +10,7 @@ import type {
 export class PackageDependency {
 
   constructor(
-    packageRes: TPackageResource,
+    packageRes: PackageResource,
     readonly descriptors: PackageDescriptor
   ) {
     this.package = packageRes;
@@ -25,7 +25,7 @@ export class PackageDependency {
 
   versionRange: PackageTextRange;
 
-  package: TPackageResource;
+  package: PackageResource;
 
   packageEquals(other: PackageDependency) {
     return other.package.name === this.package.name

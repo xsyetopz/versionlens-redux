@@ -1,9 +1,9 @@
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
+  type PackageClientRequest,
+  type PackageClientResponse,
   type PackageResponse,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
   PackageCache,
   ResponseFactory,
   getProjectVersionSuggestions
@@ -24,7 +24,7 @@ export class FetchPackage {
 
   async execute(
     provider: ISuggestionProvider,
-    request: TPackageClientRequest<any>
+    request: PackageClientRequest<any>
   ): Promise<Array<PackageResponse>> {
     const providerName = provider.name;
     const parsedDependency = request.parsedDependency;
@@ -74,14 +74,14 @@ export class FetchPackage {
 
   async fetchFromClient(
     client: IPackageClient<any>,
-    request: TPackageClientRequest<any>
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<any>
+  ): Promise<PackageClientResponse> {
 
     const requestedPackage = request.parsedDependency.package;
 
     this.logger.trace("fetching {packageName}", requestedPackage.name);
 
-    let response: TPackageClientResponse;
+    let response: PackageClientResponse;
     try {
 
       // fetch the package

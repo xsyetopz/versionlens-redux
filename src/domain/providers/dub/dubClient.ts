@@ -2,10 +2,10 @@ import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
+  type PackageClientRequest,
+  type PackageClientResponse,
   type PackageSuggestion,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
-  type TSemverSpec,
+  type SemverSpec,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
@@ -28,7 +28,7 @@ export class DubClient implements IPackageClient<null> {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(request: TPackageClientRequest<null>): Promise<TPackageClientResponse> {
+  async fetchPackage(request: PackageClientRequest<null>): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const semverSpec = VersionUtils.parseSemver(requestedPackage.version);
     const url = `${this.config.apiUrl}${encodeURIComponent(requestedPackage.name)}/info`;
@@ -59,9 +59,9 @@ export class DubClient implements IPackageClient<null> {
 
   async createRemotePackageDocument(
     url: string,
-    request: TPackageClientRequest<null>,
-    semverSpec: TSemverSpec
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<null>,
+    semverSpec: SemverSpec
+  ): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const query = { minimize: 'true' }
 

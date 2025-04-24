@@ -1,9 +1,9 @@
 import {
+  type PackageClientResponse,
+  type PackageResource,
   PackageCache,
   PackageSourceType,
-  PackageVersionType,
-  TPackageClientResponse,
-  TPackageResource
+  PackageVersionType
 } from '#domain/packages';
 import { test } from "mocha-ui-esm";
 import { deepEqual, fail } from 'node:assert';
@@ -11,8 +11,8 @@ import { deepEqual, fail } from 'node:assert';
 type TestContext = {
   testProviderName: string;
   testPackageFilePath: string;
-  testPackage: TPackageResource;
-  testCacheItem: TPackageClientResponse;
+  testPackage: PackageResource;
+  testCacheItem: PackageClientResponse;
   testCache: PackageCache;
 }
 

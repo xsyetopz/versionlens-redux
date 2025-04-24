@@ -2,9 +2,9 @@ import type { HttpClientResponse, IHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
-  type TSemverSpec,
+  type PackageClientRequest,
+  type PackageClientResponse,
+  type SemverSpec,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
@@ -28,8 +28,8 @@ export class MavenClient implements IPackageClient<MavenClientData> {
   }
 
   async fetchPackage(
-    request: TPackageClientRequest<MavenClientData>
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<MavenClientData>
+  ): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const semverSpec = VersionUtils.parseSemver(requestedPackage.version);
 
@@ -65,9 +65,9 @@ export class MavenClient implements IPackageClient<MavenClientData> {
 
   async createRemotePackageDocument(
     url: string,
-    request: TPackageClientRequest<MavenClientData>,
-    semverSpec: TSemverSpec
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<MavenClientData>,
+    semverSpec: SemverSpec
+  ): Promise<PackageClientResponse> {
     // fetch package from api
     const httpResponse = await this.httpClient.get(url);
 

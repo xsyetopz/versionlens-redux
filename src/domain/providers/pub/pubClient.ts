@@ -2,9 +2,9 @@ import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
-  type TSemverSpec,
+  type PackageClientRequest,
+  type PackageClientResponse,
+  type SemverSpec,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
@@ -33,7 +33,7 @@ export class PubClient implements IPackageClient<null> {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(request: TPackageClientRequest<null>): Promise<TPackageClientResponse> {
+  async fetchPackage(request: PackageClientRequest<null>): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
 
     // return a directory response if this a path type
@@ -100,8 +100,8 @@ export class PubClient implements IPackageClient<null> {
   async createRemotePackageDocument(
     url: string,
     packageName: string,
-    semverSpec: TSemverSpec
-  ): Promise<TPackageClientResponse> {
+    semverSpec: SemverSpec
+  ): Promise<PackageClientResponse> {
     // fetch package from api
     const jsonResponse = await this.jsonClient.get(url);
 

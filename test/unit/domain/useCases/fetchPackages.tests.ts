@@ -1,7 +1,7 @@
 import type { ILogger } from '#domain/logging';
 import {
+  type PackageClientRequest,
   type PackageResponse,
-  type TPackageClientRequest,
   createPackageResource,
   PackageCache,
   PackageDependency,
@@ -71,7 +71,7 @@ export const fetchPackagesTests = {
       }
 
       when(this.fetchPackageSuggestionsMock.execute(anything(), anything()))
-        .thenCall((prov: ISuggestionProvider, cr: TPackageClientRequest<any>) => {
+        .thenCall((prov: ISuggestionProvider, cr: PackageClientRequest<any>) => {
           const testResp = <PackageResponse>{
             order: 0,
             type: PackageVersionType.Version,

@@ -1,14 +1,14 @@
 import type {
   PackageDependency,
+  PackageNameVersion,
+  PackageResource,
   PackageSuggestion,
   SuggestionCategory,
-  SuggestionTypes,
-  TPackageNameVersion,
-  TPackageResource
+  SuggestionTypes
 } from '#domain/packages';
 import { PackageDescriptorType } from '#domain/parsers';
 
-export function createPackageNameVersion(name: string, version: string): TPackageNameVersion {
+export function createPackageNameVersion(name: string, version: string): PackageNameVersion {
   return {
     name,
     version
@@ -19,7 +19,7 @@ export function createPackageResource(
   name: string,
   version: string,
   path: string
-): TPackageResource {
+): PackageResource {
   return {
     name,
     version,

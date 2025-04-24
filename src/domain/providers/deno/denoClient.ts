@@ -1,12 +1,12 @@
 import type { ILogger } from '#domain/logging';
 import {
-  ClientResponseFactory,
   type IPackageClient,
-  type TPackageClientRequest,
-  type TPackageClientResponse
+  type PackageClientRequest,
+  type PackageClientResponse,
+  ClientResponseFactory
 } from '#domain/packages';
 import { DenoConfig, JsrClient } from '#domain/providers/deno';
-import { NpaSpec, NpmPackageClient, TNpmClientData } from '#domain/providers/npm';
+import { type NpaSpec, type TNpmClientData, NpmPackageClient } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import npa from 'npm-package-arg';
 
@@ -24,7 +24,7 @@ export class DenoClient implements IPackageClient<TNpmClientData> {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(request: TPackageClientRequest<TNpmClientData>): Promise<TPackageClientResponse> {
+  async fetchPackage(request: PackageClientRequest<TNpmClientData>): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const isDenoJsr = requestedPackage.version.startsWith('jsr:');
     const isDenoNpm = requestedPackage.version.startsWith('npm:');

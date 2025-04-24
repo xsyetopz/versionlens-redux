@@ -1,7 +1,7 @@
 import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
-  type TPackageClientResponse,
+  type PackageClientResponse,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
@@ -25,7 +25,7 @@ export class JsrClient {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(npaSpec: NpaSpec): Promise<TPackageClientResponse> {
+  async fetchPackage(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     const url = `https://jsr.io/${npaSpec.subSpec.name}/meta.json`;
 
     try {
@@ -55,7 +55,7 @@ export class JsrClient {
   async createRemotePackageDocument(
     url: string,
     npaSpec: NpaSpec
-  ): Promise<TPackageClientResponse> {
+  ): Promise<PackageClientResponse> {
     // fetch package from api
     const httpResponse = await this.jsonClient.get(url);
 

@@ -1,7 +1,7 @@
 import type { IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
-  type TPackageClientResponse,
+  type PackageClientResponse,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
@@ -30,7 +30,7 @@ export class GitHubClient {
     throwUndefinedOrNull("logger", logger);
   }
 
-  fetchGithub(npaSpec: NpaSpec): Promise<TPackageClientResponse> {
+  fetchGithub(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     const { validRange } = semver;
 
     if (npaSpec.gitRange) {
@@ -48,7 +48,7 @@ export class GitHubClient {
     return this.fetchCommits(npaSpec);
   }
 
-  async fetchTags(npaSpec: NpaSpec): Promise<TPackageClientResponse> {
+  async fetchTags(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     // todo pass in auth
     const { user, project } = npaSpec.hosted;
     const tagsRepoUrl = `https://api.github.com/repos/${user}/${project}/tags`;
@@ -101,7 +101,7 @@ export class GitHubClient {
     };
   }
 
-  async fetchCommits(npaSpec: NpaSpec): Promise<TPackageClientResponse> {
+  async fetchCommits(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     // todo pass in auth
     const { user, project } = npaSpec.hosted;
     const commitsRepoUrl = `https://api.github.com/repos/${user}/${project}/commits`;

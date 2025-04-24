@@ -2,9 +2,9 @@ import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
+  type PackageClientRequest,
+  type PackageClientResponse,
   type PackageSuggestion,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory
@@ -36,7 +36,7 @@ export class NpmPackageClient implements IPackageClient<TNpmClientData> {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(request: TPackageClientRequest<TNpmClientData>): Promise<TPackageClientResponse> {
+  async fetchPackage(request: PackageClientRequest<TNpmClientData>): Promise<PackageClientResponse> {
     let source: PackageSourceType;
 
     try {

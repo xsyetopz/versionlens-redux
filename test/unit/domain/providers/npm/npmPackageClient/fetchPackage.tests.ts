@@ -1,8 +1,8 @@
 import { ClientResponseSource } from '#domain/clients';
 import { ILogger } from '#domain/logging';
 import {
+  type PackageClientRequest,
   type PackageSuggestion,
-  type TPackageClientRequest,
   createPackageResource,
   PackageDependency,
   PackageSourceType,
@@ -56,7 +56,7 @@ export const fetchPackageTests = {
       testDir,
     );
 
-    const testRequest: TPackageClientRequest<any> = {
+    const testRequest: PackageClientRequest<any> = {
       providerName: 'testnpmprovider',
       clientData: {},
       parsedDependency: new PackageDependency(
@@ -95,7 +95,7 @@ export const fetchPackageTests = {
       'packagepath',
     );
 
-    const testRequest: TPackageClientRequest<any> = {
+    const testRequest: PackageClientRequest<any> = {
       providerName: 'testnpmprovider',
       clientData: {},
       parsedDependency: new PackageDependency(
@@ -152,7 +152,7 @@ export const fetchPackageTests = {
       'packagepath',
     );
 
-    const testRequest: TPackageClientRequest<any> = {
+    const testRequest: PackageClientRequest<any> = {
       providerName: 'testnpmprovider',
       clientData: {},
       parsedDependency: new PackageDependency(
@@ -196,7 +196,7 @@ export const fetchPackageTests = {
     ["ECONNREFUSED", { status: 'ECONNREFUSED', suggestion: { name: SuggestionStatusText.ConnectionRefused } }],
     async (testTitlePart: string, testState: any) => {
       const testPackageRes = createPackageResource('private-reg', '1.2.3', 'packagepath');
-      const testRequest: TPackageClientRequest<any> = {
+      const testRequest: PackageClientRequest<any> = {
         providerName: 'testnpmprovider',
         clientData: {},
         parsedDependency: new PackageDependency(

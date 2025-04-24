@@ -2,8 +2,8 @@ import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
+  type PackageClientRequest,
+  type PackageClientResponse,
   ClientResponseFactory,
   PackageSourceType,
   PackageStatusFactory,
@@ -29,8 +29,8 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
   }
 
   async fetchPackage(
-    request: TPackageClientRequest<NuGetClientData>
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<NuGetClientData>
+  ): Promise<PackageClientResponse> {
     const urls = request.clientData.serviceUrls;
     const resourceUrl = urls[request.attempt];
 
@@ -77,8 +77,8 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
 
   async fetch(
     resourceUrl: string,
-    request: TPackageClientRequest<NuGetClientData>
-  ): Promise<TPackageClientResponse> {
+    request: PackageClientRequest<NuGetClientData>
+  ): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const packageUrl = ensureEndSlash(resourceUrl)
       + `${requestedPackage.name.toLowerCase()}/index.json`;

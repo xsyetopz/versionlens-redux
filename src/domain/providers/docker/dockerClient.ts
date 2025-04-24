@@ -2,9 +2,9 @@ import type { HttpClientResponse } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
-  type TPackageResource,
+  type PackageClientRequest,
+  type PackageClientResponse,
+  type PackageResource,
   ClientResponseFactory,
   createSuggestions,
   PackageSourceType,
@@ -35,7 +35,7 @@ export class DockerClient implements IPackageClient<null> {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(request: TPackageClientRequest<null>): Promise<TPackageClientResponse> {
+  async fetchPackage(request: PackageClientRequest<null>): Promise<PackageClientResponse> {
     const dependency = request.parsedDependency
     const requestedPackage = dependency.package;
 
@@ -88,7 +88,7 @@ export class DockerClient implements IPackageClient<null> {
     }
   }
 
-  async fetch(pkg: TPackageResource, repo: string, namespace: string): Promise<TPackageClientResponse> {
+  async fetch(pkg: PackageResource, repo: string, namespace: string): Promise<PackageClientResponse> {
     const jsonResponse = await this.dockerHubClient.get(repo, namespace);
 
     // map docker tags to semver

@@ -1,9 +1,9 @@
 import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
-  type TPackageClientRequest,
-  type TPackageClientResponse,
-  type TPackageClientResponseStatus,
+  type PackageClientRequest,
+  type PackageClientResponse,
+  type PackageClientResponseStatus,
   ClientResponseFactory,
   PackageSourceType,
   PackageVersionType,
@@ -35,9 +35,9 @@ export class NpmRegistryClient {
   }
 
   async fetchPackage(
-    request: TPackageClientRequest<TNpmClientData>,
+    request: PackageClientRequest<TNpmClientData>,
     npaSpec: NpaSpec
-  ): Promise<TPackageClientResponse> {
+  ): Promise<PackageClientResponse> {
     const type: PackageVersionType = <any>npaSpec.type;
 
     const spec = type == PackageVersionType.Alias
@@ -58,7 +58,7 @@ export class NpmRegistryClient {
       version: versionRange,
     };
 
-    const responseStatus: TPackageClientResponseStatus = {
+    const responseStatus: PackageClientResponseStatus = {
       source: response.source,
       status: response.status,
     };

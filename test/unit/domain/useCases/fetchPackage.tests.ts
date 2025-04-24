@@ -2,12 +2,12 @@ import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
+  type PackageClientRequest,
+  type PackageClientResponse,
+  type PackageNameVersion,
+  type PackageResource,
   type PackageResponse,
   type PackageSuggestion,
-  type TPackageClientRequest,
-  type TPackageClientResponse,
-  type TPackageNameVersion,
-  type TPackageResource,
   createPackageNameVersion,
   createPackageResource,
   PackageCache,
@@ -38,9 +38,9 @@ type TestContext = {
   testClient: IPackageClient<any>;
   testProvider: ISuggestionProvider;
   testPackageCache: PackageCache,
-  testPackageRes: TPackageResource;
-  testPackageNameVersion: TPackageNameVersion;
-  testRequest: TPackageClientRequest<any>;
+  testPackageRes: PackageResource;
+  testPackageNameVersion: PackageNameVersion;
+  testRequest: PackageClientRequest<any>;
 }
 
 export const fetchPackageTests = <any>{
@@ -98,12 +98,12 @@ export const fetchPackageTests = <any>{
           createPackageVersionDesc(this.testPackageRes.version, createTextRange(25, 30)),
         ])
       )
-    } as TPackageClientRequest<any>
+    } as PackageClientRequest<any>
   },
 
   "returns successful package suggestions": async function (this: TestContext) {
     // setup client response
-    const testRespDoc: TPackageClientResponse = {
+    const testRespDoc: PackageClientResponse = {
       type: PackageVersionType.Version,
       source: PackageSourceType.Registry,
       responseStatus: {
@@ -174,7 +174,7 @@ export const fetchPackageTests = <any>{
   "writes error status code to log for packages with handled errors":
     async function (this: TestContext) {
       // response
-      const testRespDoc: TPackageClientResponse = {
+      const testRespDoc: PackageClientResponse = {
         type: PackageVersionType.Version,
         source: PackageSourceType.Registry,
         responseStatus: {

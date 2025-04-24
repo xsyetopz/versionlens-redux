@@ -1,5 +1,5 @@
 import type { ILogger } from '#domain/logging';
-import { type PackageResponse, type TPackageClientRequest, PackageDependency } from '#domain/packages';
+import { type PackageClientRequest, type PackageResponse, PackageDependency } from '#domain/packages';
 import type { ISuggestionProvider } from '#domain/providers';
 import { FetchPackage } from '#domain/useCases';
 import { throwUndefinedOrNull } from '@esm-test/guards';
@@ -39,7 +39,7 @@ export class FetchPackages {
     const promises = [];
     for (const parsedPackage of parsedPackages) {
       // setup the client request
-      const clientRequest: TPackageClientRequest<any> = {
+      const clientRequest: PackageClientRequest<any> = {
         providerName: provider.name,
         clientData,
         parsedDependency: parsedPackage,

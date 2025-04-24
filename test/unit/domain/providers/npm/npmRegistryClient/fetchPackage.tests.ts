@@ -1,8 +1,8 @@
 import type { CachingOptions } from '#domain/caching';
 import type { ILogger } from '#domain/logging';
 import {
+  type PackageClientRequest,
   type PackageSuggestion,
-  type TPackageClientRequest,
   createPackageResource,
   PackageDependency,
   SuggestionCategory,
@@ -70,7 +70,7 @@ export const fetchPackageTests = {
       strictSSL: true
     };
 
-    const testRequest: TPackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -123,7 +123,7 @@ export const fetchPackageTests = {
       strictSSL: true
     };
 
-    const testRequest: TPackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -175,7 +175,7 @@ export const fetchPackageTests = {
       strictSSL: true
     };
 
-    const testRequest: TPackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -235,7 +235,7 @@ export const fetchPackageTests = {
       strictSSL: true
     };
 
-    const testRequest: TPackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<TNpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(

@@ -1,10 +1,10 @@
 import { ClientResponseSource } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
+  type PackageClientRequest,
   ClientResponseFactory,
   createPackageResource,
-  PackageDependency,
-  TPackageClientRequest
+  PackageDependency
 } from '#domain/packages';
 import {
   createPackageNameDesc,
@@ -54,7 +54,7 @@ export const dockerClientTests = {
             createPackageVersionDesc('23', createTextRange(25, 30)),
           ])
         )
-      } as TPackageClientRequest<null>
+      } as PackageClientRequest<null>
 
       when(this.dockerHubClientMock.get(testRepo, testNs))
         .thenResolve({
@@ -80,7 +80,7 @@ export const dockerClientTests = {
             createPackageVersionDesc('23', createTextRange(25, 30)),
           ])
         )
-      } as TPackageClientRequest<null>
+      } as PackageClientRequest<null>
 
       when(this.dockerHubClientMock.get(testRepo, testNs))
         .thenResolve({
@@ -107,7 +107,7 @@ export const dockerClientTests = {
             createPackageVersionDesc('22-bookworm', createTextRange(25, 30)),
           ])
         )
-      } as TPackageClientRequest<null>
+      } as PackageClientRequest<null>
 
       when(this.dockerHubClientMock.get(testRepo, testNs))
         .thenResolve({

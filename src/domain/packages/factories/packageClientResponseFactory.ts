@@ -4,10 +4,10 @@ import {
   ClientResponseSource
 } from '#domain/clients';
 import {
+  type PackageClientResponse,
+  type PackageClientResponseStatus,
+  type PackageResource,
   type PackageSuggestion,
-  type TPackageClientResponse,
-  type TPackageClientResponseStatus,
-  type TPackageResource,
   PackageSourceType,
   PackageStatusFactory,
   PackageVersionType,
@@ -18,9 +18,9 @@ import { dirname, join } from 'node:path';
 
 export function create(
   source: PackageSourceType,
-  responseStatus: TPackageClientResponseStatus,
+  responseStatus: PackageClientResponseStatus,
   suggestions: Array<PackageSuggestion>
-): TPackageClientResponse {
+): PackageClientResponse {
 
   return {
     source,
@@ -33,9 +33,9 @@ export function create(
 }
 
 export function createInvalidVersion(
-  responseStatus: TPackageClientResponseStatus,
+  responseStatus: PackageClientResponseStatus,
   type: PackageVersionType
-): TPackageClientResponse {
+): PackageClientResponse {
   const source: PackageSourceType = PackageSourceType.Registry;
   const suggestions: Array<PackageSuggestion> = [
     PackageStatusFactory.createInvalidStatus(''),
@@ -54,9 +54,9 @@ export function createInvalidVersion(
 export function createNoMatch(
   source: PackageSourceType,
   type: PackageVersionType,
-  responseStatus: TPackageClientResponseStatus,
+  responseStatus: PackageClientResponseStatus,
   latestVersion?: string
-): TPackageClientResponse {
+): PackageClientResponse {
 
   const suggestions: Array<PackageSuggestion> = [
     PackageStatusFactory.createNoMatchStatus(),
@@ -72,7 +72,7 @@ export function createNoMatch(
   };
 }
 
-export function createNotSupported(): TPackageClientResponse {
+export function createNotSupported(): PackageClientResponse {
   return create(
     PackageSourceType.Registry,
     { source: ClientResponseSource.remote, status: 200 },
@@ -82,10 +82,10 @@ export function createNotSupported(): TPackageClientResponse {
 
 export function createFixed(
   source: PackageSourceType,
-  responseStatus: TPackageClientResponseStatus,
+  responseStatus: PackageClientResponseStatus,
   type: PackageVersionType,
   fixedVersion: string
-): TPackageClientResponse {
+): PackageClientResponse {
 
   const suggestions: Array<PackageSuggestion> = [
     PackageStatusFactory.createFixedStatus(fixedVersion)
@@ -105,7 +105,7 @@ export async function createDirectory(
   packageFilePath: string,
   path: string,
   source = PackageSourceType.Directory
-): Promise<TPackageClientResponse> {
+): Promise<PackageClientResponse> {
   const type = PackageVersionType.Version;
   const resolvedPath = join(dirname(packageFilePath), path);
   const exists = await fileExists(resolvedPath)
@@ -137,8 +137,8 @@ export async function createDirectory(
 
 const fileDependencyRegex = /^file:(.*)$/;
 export async function createDirectoryFromFileProtocol(
-  requested: TPackageResource
-): Promise<TPackageClientResponse> {
+  requested: PackageResource
+): Promise<PackageClientResponse> {
 
   const fileRegExpResult = fileDependencyRegex.exec(requested.version);
   if (!fileRegExpResult) {
@@ -153,7 +153,7 @@ export async function createDirectoryFromFileProtocol(
   return await createDirectory(requested.name, requested.path, path);
 }
 
-export function createGit(): TPackageClientResponse {
+export function createGit(): PackageClientResponse {
   return createFixed(
     PackageSourceType.Git,
     createResponseStatus(ClientResponseSource.local, 0),
@@ -162,7 +162,7 @@ export function createGit(): TPackageClientResponse {
   );
 }
 
-export function createNoSuggestions(): TPackageClientResponse {
+export function createNoSuggestions(): PackageClientResponse {
   return create(
     PackageSourceType.Registry,
     { source: ClientResponseSource.remote, status: 200 },
@@ -172,7 +172,7 @@ export function createNoSuggestions(): TPackageClientResponse {
 
 export function mapStatusFromHttpResponse(
   response: HttpClientResponse
-): TPackageClientResponseStatus {
+): PackageClientResponseStatus {
   return {
     source: response.source,
     status: response.status
@@ -181,7 +181,7 @@ export function mapStatusFromHttpResponse(
 
 export function mapStatusFromJsonResponse(
   response: JsonClientResponse<any>
-): TPackageClientResponseStatus {
+): PackageClientResponseStatus {
   return {
     source: response.source,
     status: response.status
@@ -191,6 +191,6 @@ export function mapStatusFromJsonResponse(
 export function createResponseStatus(
   source: ClientResponseSource,
   status: number
-): TPackageClientResponseStatus {
+): PackageClientResponseStatus {
   return { source, status };
 }
