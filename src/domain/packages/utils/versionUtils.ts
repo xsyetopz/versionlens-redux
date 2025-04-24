@@ -162,11 +162,12 @@ export function stripBuild(version?: string): string | undefined {
 export function findNextMajor(startFromVersion: string, versions: string[]): string | null {
   let index = versions.indexOf(startFromVersion);
   if (index === -1) return null;
-
-  const startMajor = major(startFromVersion);
-  for (; index < versions.length; index++) {
-    const testMajor = major(versions[index])
-    if (testMajor > startMajor) return testMajor
-  }
+  try {
+    const startMajor = major(startFromVersion);
+    for (; index < versions.length; index++) {
+      const testMajor = major(versions[index], true)
+      if (testMajor > startMajor) return testMajor
+    }
+  } catch { }
   return null
 }

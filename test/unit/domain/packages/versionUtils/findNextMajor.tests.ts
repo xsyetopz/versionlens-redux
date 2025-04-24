@@ -45,6 +45,16 @@ export const findNextMajorTests = {
     }
   ],
 
+  "return null when invalid versions exist in the versions array": () => {
+    const actual = VersionUtils.findNextMajor('2.0.0', ['2.0.0', 'ABC', '3.0.0']);
+    equal(actual, null);
+  },
+
+  "case $i: handles loose versions": () => {
+    const actual = VersionUtils.findNextMajor('2.0.0', ['2.0.0', '3.1.2ar']);
+    equal(actual, '3');
+  },
+
   "case $i: returns the next major from a versions array": [
     ['1.0.0', '2'],
     ['2.1.0', '3'],
