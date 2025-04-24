@@ -19,7 +19,7 @@ import {
 } from '#domain/parsers';
 import { PypiConfig } from '#domain/providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import semver from 'semver';
+import { coerce } from 'semver';
 
 export class PypiClient implements IPackageClient<null> {
 
@@ -107,7 +107,6 @@ export class PypiClient implements IPackageClient<null> {
       .reverse();
 
     // extract semver versions only
-    const { coerce } = semver;
     const semverVersions = VersionUtils.filterSemverVersions(rawVersions)
       .map(x => coerce(x, VersionUtils.loosePrereleases).toString())
       .toSorted(VersionUtils.compareVersionsAndBuilds);
