@@ -23,7 +23,7 @@ export enum SuggestionStatusText {
   BadRequest = '400 bad request',
   NotAuthorized = '401 not authorized',
   Forbidden = '403 forbidden',
-  NotFound = 'package not found',
+  NotFound = 'not found',
   InternalServerError = '500 internal server error',
   NotSupported = 'not supported',
   ConnectionRefused = 'connection refused',
