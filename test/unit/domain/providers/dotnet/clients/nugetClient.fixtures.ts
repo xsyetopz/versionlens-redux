@@ -1,6 +1,27 @@
 export default {
-
-  success: {
+  get: {
+    test: {
+      "versions": [
+        "1.4.1",
+        "1.4.2",
+        "1.4.3",
+        "1.4.4",
+        "1.5.0",
+        "1.6.2",
+      ],
+    },
+    expected: {
+      versions: [
+        "1.4.1",
+        "1.4.2",
+        "1.4.3",
+        "1.4.4",
+        "1.5.0",
+        "1.6.2",
+      ],
+    }
+  },
+  resource: {
     "resources": [
       {
         "@id": "https://unit-test-search-ussc.nuget.org/query",
@@ -20,5 +41,4 @@ export default {
       }
     ]
   }
-
 }

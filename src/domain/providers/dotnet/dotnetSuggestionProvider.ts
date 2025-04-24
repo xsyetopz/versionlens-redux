@@ -14,9 +14,9 @@ import type { ISuggestionProvider } from '#domain/providers';
 import {
   type DotNetCli,
   type DotNetConfig,
+  type DotnetClient,
   type NuGetClientData,
-  type NuGetPackageClient,
-  type NuGetResourceClient,
+  NuGetClient,
   parseDotNetPackagesXml
 } from '#domain/providers/dotnet';
 import { RegistryProtocols } from '#domain/utils';
@@ -27,15 +27,15 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
   readonly name: string = 'dotnet';
 
   constructor(
-    readonly client: NuGetPackageClient,
-    readonly dotnetClient: DotNetCli,
-    readonly nugetResClient: NuGetResourceClient,
+    readonly client: DotnetClient,
+    readonly dotnetCli: DotNetCli,
+    readonly nugetClient: NuGetClient,
     readonly config: DotNetConfig,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("client", client);
-    throwUndefinedOrNull("dotnetClient", dotnetClient);
-    throwUndefinedOrNull("nugetResClient", nugetResClient);
+    throwUndefinedOrNull("dotnetCli", dotnetCli);
+    throwUndefinedOrNull("nugetClient", nugetClient);
     throwUndefinedOrNull("config", config);
     throwUndefinedOrNull("logger", logger);
   }
@@ -88,7 +88,7 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
     this.config.nuget.defrost();
 
     // get each service index source from the dotnet cli
-    const sources = await this.dotnetClient.fetchSources(packagePath)
+    const sources = await this.dotnetCli.fetchSources(packagePath)
 
     // filter remote sources only
     const remoteSources = sources.filter(
@@ -98,7 +98,7 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
 
     // convert each fetch resource to a promise
     const promised = remoteSources.map(
-      remoteSource => this.nugetResClient.fetchResource(remoteSource)
+      remoteSource => this.nugetClient.fetchResource(remoteSource)
     );
 
     // filter service urls

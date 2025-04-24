@@ -8,16 +8,17 @@ import {
   DotNetCli,
   DotNetConfig,
   DotNetFeatures,
+  DotNetService,
   DotNetSuggestionProvider,
-  NuGetPackageClient,
-  NuGetResourceClient,
+  DotnetClient,
+  NuGetClient,
   NugetOptions
 } from '#domain/providers/dotnet';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDotNetServices>().dotnetCachingOpts,
+    DotNetService.dotnetCachingOpts,
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
@@ -29,7 +30,7 @@ export function addCachingOptions(services: IServiceCollection) {
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDotNetServices>().dotnetHttpOpts,
+    DotNetService.dotnetHttpOpts,
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
@@ -41,7 +42,7 @@ export function addHttpOptions(services: IServiceCollection) {
 
 export function addNugetOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDotNetServices>().nugetOpts,
+    DotNetService.nugetOpts,
     (container: IDomainServices) =>
       new NugetOptions(
         container.appConfig,
@@ -52,7 +53,7 @@ export function addNugetOptions(services: IServiceCollection) {
 
 export function addDotNetConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDotNetServices>().dotnetConfig,
+    DotNetService.dotnetConfig,
     (container: IDotNetServices & IDomainServices) =>
       new DotNetConfig(
         container.appConfig,
@@ -64,7 +65,7 @@ export function addDotNetConfig(services: IServiceCollection) {
 }
 
 export function addProcessClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDotNetServices>().dotnetShellClient;
+  const serviceName = DotNetService.dotnetShellClient;
   services.addSingleton(
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
@@ -77,7 +78,7 @@ export function addProcessClient(services: IServiceCollection) {
 }
 
 export function addCliClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDotNetServices>().dotnetCli;
+  const serviceName = DotNetService.dotnetCli;
   services.addSingleton(
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
@@ -90,7 +91,7 @@ export function addCliClient(services: IServiceCollection) {
 }
 
 export function addJsonClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDotNetServices>().dotnetJsonClient;
+  const serviceName = DotNetService.dotnetJsonClient;
   services.addSingleton(
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
@@ -104,26 +105,26 @@ export function addJsonClient(services: IServiceCollection) {
   );
 }
 
-export function addNuGetPackageClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDotNetServices>().nugetClient;
+export function addNuGetClient(services: IServiceCollection) {
+  const serviceName = DotNetService.nugetClient;
   services.addSingleton(
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
-      new NuGetPackageClient(
-        container.dotnetConfig,
+      new NuGetClient(
         container.dotnetJsonClient,
         container.loggerFactory.create(serviceName)
       )
   );
 }
 
-export function addNuGetResourceClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDotNetServices>().nugetResClient;
+export function addDotnetClient(services: IServiceCollection) {
+  const serviceName = DotNetService.dotnetClient;
   services.addSingleton(
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
-      new NuGetResourceClient(
-        container.dotnetJsonClient,
+      new DotnetClient(
+        container.dotnetConfig,
+        container.nugetClient,
         container.loggerFactory.create(serviceName)
       )
   );
@@ -134,9 +135,9 @@ export function addSuggestionProvider(services: IServiceCollection) {
     nameOf<IProviderServices>().suggestionProvider,
     (container: IDotNetServices & IDomainServices) =>
       new DotNetSuggestionProvider(
-        container.nugetClient,
+        container.dotnetClient,
         container.dotnetCli,
-        container.nugetResClient,
+        container.nugetClient,
         container.dotnetConfig,
         container.loggerFactory.create(DotNetSuggestionProvider.name)
       )

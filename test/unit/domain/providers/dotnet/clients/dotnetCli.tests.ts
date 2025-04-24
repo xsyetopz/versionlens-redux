@@ -5,7 +5,7 @@ import { type DotNetConfig, type NugetOptions, DotNetCli, } from '#domain/provid
 import { RegistryProtocols } from '#domain/utils';
 import assert from 'node:assert';
 import { anything, capture, instance, mock, verify, when } from 'ts-mockito';
-import Fixtures from './fixtures/dotnetSources';
+import Fixtures from './dotnetCli.fixtures';
 
 type TestContext = {
   cacheOptsMock: CachingOptions

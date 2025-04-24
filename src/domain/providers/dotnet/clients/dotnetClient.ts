@@ -1,4 +1,4 @@
-import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
+import type { HttpClientResponse } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
@@ -11,54 +11,33 @@ import {
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { type NuGetClientData, DotNetConfig, parseVersionSpec } from '#domain/providers/dotnet';
-import { ensureEndSlash } from '#domain/utils';
+import {
+  type DotNetConfig,
+  type NuGetClient,
+  type NuGetClientData,
+  parseVersionSpec
+} from '#domain/providers/dotnet';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { compareLoose } from 'semver';
 
-export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
+export class DotnetClient implements IPackageClient<NuGetClientData> {
 
   constructor(
     readonly config: DotNetConfig,
-    readonly jsonClient: IJsonHttpClient,
+    readonly nugetClient: NuGetClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("jsonClient", jsonClient);
+    throwUndefinedOrNull("nugetClient", nugetClient);
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(
-    request: PackageClientRequest<NuGetClientData>
-  ): Promise<PackageClientResponse> {
-    const urls = request.clientData.serviceUrls;
-    const resourceUrl = urls[request.attempt];
-
+  async fetchPackage(request: PackageClientRequest<NuGetClientData>): Promise<PackageClientResponse> {
     try {
-      return await this.fetch(resourceUrl, request);
+      return await this.fetch(request);
     }
     catch (error) {
       const errorResponse = error as HttpClientResponse;
-
-      this.logger.debug(
-        "request failed for '{packageName}' from '{resourceUrl}': {error}",
-        request.parsedDependency.package.name,
-        resourceUrl,
-        errorResponse
-      );
-
-      // increase the attempt number
-      request.attempt++;
-
-      // only retry if 404 and we have more urls to try
-      if (errorResponse.status === 404 && request.attempt < urls.length) {
-        this.logger.debug(
-          "attempting to fetch '{packageName}' from '{url}'",
-          request.parsedDependency.package.name,
-          new URL(urls[request.attempt])
-        );
-        return this.fetchPackage(request);
-      }
 
       // attempt to create a suggestion from the http status
       const suggestion = PackageStatusFactory.createFromHttpStatus(errorResponse.status);
@@ -75,21 +54,18 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
     };
   }
 
-  async fetch(
-    resourceUrl: string,
-    request: PackageClientRequest<NuGetClientData>
-  ): Promise<PackageClientResponse> {
+  async fetch(request: PackageClientRequest<NuGetClientData>): Promise<PackageClientResponse> {
+    // fetch
     const requestedPackage = request.parsedDependency.package;
-    const packageUrl = ensureEndSlash(resourceUrl)
-      + `${requestedPackage.name.toLowerCase()}/index.json`;
+    const jsonResponse = await this.nugetClient.get(
+      requestedPackage.name,
+      request.clientData.serviceUrls
+    );
 
-    const jsonResponse = await this.jsonClient.get(packageUrl);
-
+    // process response
     const { data } = jsonResponse;
 
     const source = PackageSourceType.Registry;
-
-    const packageInfo = data;
 
     // parse nuget range expressions
     const dotnetSpec = parseVersionSpec(requestedPackage.version);
@@ -104,7 +80,7 @@ export class NuGetPackageClient implements IPackageClient<NuGetClientData> {
     }
 
     // sanitize to semver only versions
-    const rawVersions = VersionUtils.filterSemverVersions(packageInfo.versions)
+    const rawVersions = VersionUtils.filterSemverVersions(data.versions)
       .sort(compareLoose);
 
     // seperate versions to releases and prereleases

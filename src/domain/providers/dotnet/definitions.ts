@@ -3,17 +3,17 @@ import type {
   HttpOptions,
   IJsonHttpClient,
   IShellClient,
-  TClientResponse
+  JsonClientResponse
 } from '#domain/clients';
 import type { PackageVersionType } from '#domain/packages';
 import type {
   DotNetCli,
   DotNetConfig,
-  NuGetPackageClient,
-  NuGetResourceClient,
+  DotnetClient,
+  NuGetClient,
   NugetOptions
 } from '#domain/providers/dotnet';
-import type { RegistryProtocols } from '#domain/utils';
+import { type RegistryProtocols, nameOf } from '#domain/utils';
 
 export enum DotNetFeatures {
   Caching = 'dotnet.caching',
@@ -62,7 +62,7 @@ export interface NugetServiceIndex {
   resources: Array<NugetServiceResource>;
 }
 
-export type NugetServiceIndexResponse = TClientResponse<number, NugetServiceIndex>
+export type NugetServiceIndexResponse = JsonClientResponse<NugetServiceIndex>
 
 export type NuGetClientData = {
   serviceUrls: Array<string>,
@@ -76,6 +76,16 @@ export interface IDotNetServices {
   dotnetShellClient: IShellClient;
   dotnetCli: DotNetCli;
   dotnetJsonClient: IJsonHttpClient;
-  nugetClient: NuGetPackageClient;
-  nugetResClient: NuGetResourceClient;
+  nugetClient: NuGetClient;
+  dotnetClient: DotnetClient;
 }
+
+export const DotNetService = nameOf<IDotNetServices>()
+
+export type NugetApiResult = {
+  versions: string[]
+}
+
+export type NugetApiResponse = JsonClientResponse<NugetApiResult>
+
+export type JsrClientResponse = JsonClientResponse<string[]>
