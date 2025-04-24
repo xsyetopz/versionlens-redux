@@ -90,7 +90,7 @@ export function createBadRequestStatus(): PackageSuggestion {
 
 export function createDirectoryNotFoundStatus(path: string): PackageSuggestion {
   return {
-    name: SuggestionStatusText.DirectoryNotFound,
+    name: SuggestionStatusText.NotFound,
     category: SuggestionCategory.Error,
     version: path,
     type: SuggestionTypes.status

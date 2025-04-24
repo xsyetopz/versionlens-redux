@@ -30,7 +30,6 @@ export enum SuggestionStatusText {
   ConnectionReset = 'connection reset',
   Invalid = 'invalid entry',
   InvalidVersion = 'invalid version',
-  DirectoryNotFound = 'directory not found',
   NoMatch = 'no match',
   Satisfies = 'satisfies',
   SatisfiesLatest = 'satisfies latest',

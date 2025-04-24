@@ -51,9 +51,7 @@ export function createSuggestedVersionCommand(
   // create the indicated command title
   const cmdTitle = type === SuggestionTypes.tag
     ? indicatedName.trim()
-    : category === SuggestionCategory.Build
-      ? indicatedName
-      : `${indicatedName} ${version}`.trim();
+    : `${indicatedName} ${version}`.trim();
 
   // create the suggestion command
   switch (category) {
@@ -62,11 +60,12 @@ export function createSuggestedVersionCommand(
       break;
 
     case SuggestionCategory.Directory:
-      createDirectoryLinkCommand(cmdTitle, codeLens);
+      const fileTitle = `${indicatedName}${version}`.trim();
+      createDirectoryLinkCommand(fileTitle, codeLens);
       break;
 
     case SuggestionCategory.Build:
-      createChooseBuildCommand(cmdTitle, codeLens);
+      createChooseBuildCommand(indicatedName, codeLens);
       break;
 
     default:
