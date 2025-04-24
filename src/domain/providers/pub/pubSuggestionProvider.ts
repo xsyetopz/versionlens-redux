@@ -12,8 +12,7 @@ import {
   type PackageVersionDescriptor,
   type YamlParserOptions,
   PackageDescriptorType,
-  createVersionDescFromYamlNode,
-  parsePackagesYaml,
+  parsePackagesYaml
 } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import {
@@ -21,12 +20,13 @@ import {
   type PubConfig,
   createGitDescFromYamlNode,
   createHostedDescFromYamlNode,
-  createPathDescFromYamlNode
+  createPathDescFromYamlNode,
+  createPubVersionDescFromYamlNode
 } from '#domain/providers/pub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const complexTypeHandlers = {
-  [PackageDescriptorType.version]: createVersionDescFromYamlNode,
+  [PackageDescriptorType.version]: createPubVersionDescFromYamlNode,
   [PackageDescriptorType.path]: createPathDescFromYamlNode,
   [PackageDescriptorType.hosted]: createHostedDescFromYamlNode,
   [PackageDescriptorType.git]: createGitDescFromYamlNode

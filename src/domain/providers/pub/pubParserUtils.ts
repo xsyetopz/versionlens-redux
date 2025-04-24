@@ -2,12 +2,22 @@ import {
   type PackageGitDescriptor,
   type PackageHostedDescriptor,
   type PackagePathDescriptor,
+  PackageVersionDescriptor,
   createPackageGitDescType,
   createPackageHostedDescType,
-  createPackagePathDescType
+  createPackagePathDescType,
+  createVersionDescFromYamlNode
 } from '#domain/parsers';
 import type { YAMLMap } from 'yaml';
 import { findPair } from 'yaml/util';
+
+export function createPubVersionDescFromYamlNode(
+  valueNode: any,
+  isQuoteType: boolean
+): PackageVersionDescriptor {
+  valueNode.value === 'any' && (valueNode.value = '*')
+  return createVersionDescFromYamlNode(valueNode, isQuoteType)
+}
 
 export function createPathDescFromYamlNode(
   valueNode: any,

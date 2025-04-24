@@ -1,13 +1,12 @@
 import {
+  type YamlParserOptions,
+  type YamlTypeDescriptorHandler,
   createNameDescFromYamlNode,
   createPackageParentDescType,
-  createVersionDescFromYamlNode,
   findByPath,
   getPackageProjectVersionDesc,
   isNodeQuoted,
-  PackageDescriptor,
-  YamlParserOptions,
-  YamlTypeDescriptorHandler
+  PackageDescriptor
 } from '#domain/parsers';
 import { KeyDictionary } from '#domain/utils';
 import { Document, isMap, Pair, ParsedNode, parseDocument, YAMLMap } from 'yaml';
@@ -53,6 +52,7 @@ function descendChildNodes(
   complexTypeHandlers: KeyDictionary<YamlTypeDescriptorHandler>
 ): Array<PackageDescriptor> {
   const matchedDependencies: Array<PackageDescriptor> = [];
+  const createVersionDescFromYamlNode = complexTypeHandlers['version']
 
   for (const pair of pairs) {
     const { key: keyNode, value: valueNode } = pair;
@@ -66,10 +66,7 @@ function descendChildNodes(
       const nameDesc = createNameDescFromYamlNode(keyNode);
 
       // create the version descriptor
-      const versionDesc = createVersionDescFromYamlNode(
-        valueNode,
-        isQuotedType
-      );
+      const versionDesc = createVersionDescFromYamlNode(valueNode, isQuotedType);
 
       // create the parent path desc
       const parentDesc = createPackageParentDescType(path);

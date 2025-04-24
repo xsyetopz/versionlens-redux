@@ -3,6 +3,7 @@
   ### Dart (pub)
 
   - added `dependency_overrides` to the default `versionlens.pub.dependencyProperties` setting
+  - added `any` keyword support (equivalent to '*')
 
 # 1.20.0
 

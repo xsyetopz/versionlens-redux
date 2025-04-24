@@ -1,13 +1,14 @@
-import { ILogger } from '#domain/logging';
-import { PubClient, PubConfig, PubSuggestionProvider } from '#domain/providers/pub';
+import type { ILogger } from '#domain/logging';
+import { type PubClient, type PubConfig, PubSuggestionProvider } from '#domain/providers/pub';
 import { test } from 'mocha-ui-esm';
-import assert from 'node:assert';
+import { deepEqual, equal } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
 import Fixtures from './pubSuggestionProvider.fixtures';
 
 type TestContext = {
   pubClientMock: PubClient
   pubConfigMock: PubConfig
+  put: PubSuggestionProvider
   loggerMock: ILogger
 }
 
@@ -19,33 +20,27 @@ export const pubSuggestionProviderTests = {
     this.pubClientMock = mock<PubClient>()
     this.pubConfigMock = mock<PubConfig>()
     this.loggerMock = mock<ILogger>()
-  },
-
-  "returns empty when no matches found": function (this: TestContext) {
-    const put = new PubSuggestionProvider(
+    this.put = new PubSuggestionProvider(
       instance(this.pubClientMock),
       instance(this.pubConfigMock),
       instance(this.loggerMock)
     );
+  },
+
+  "returns empty when no matches found": function (this: TestContext) {
     // test
-    const actual = put.parseDependencies('test/path', '')
+    const actual = this.put.parseDependencies('test/path', '')
     // assert
-    assert.equal(actual.length, 0);
+    equal(actual.length, 0);
   },
 
   "returns empty when no dependency entry names match": function (this: TestContext) {
     const includePropNames = ["non-dependencies"];
-    const put = new PubSuggestionProvider(
-      instance(this.pubClientMock),
-      instance(this.pubConfigMock),
-      instance(this.loggerMock)
-    );
-
     when(this.pubConfigMock.dependencyProperties).thenReturn(includePropNames);
-
-    const results = put.parseDependencies('test/path', Fixtures.parsesDependencyEntries.test);
-
-    assert.equal(results.length, 0);
+    // test
+    const results = this.put.parseDependencies('test/path', Fixtures.parsesDependencyEntries.test);
+    // assert
+    equal(results.length, 0);
   },
 
   "case $i: parses yaml dependencies": [
@@ -57,19 +52,14 @@ export const pubSuggestionProviderTests = {
     Fixtures.parsesProjectVersionWithQuotes,
     Fixtures.parsesProjectVersionWithComment,
     Fixtures.parsesEmptyProjectVersionWithComment,
+    Fixtures.parsesAnyVersionKeyword,
     function (this: TestContext, fixture: any) {
       const includePropNames = ["version", "dependencies"];
-      const put = new PubSuggestionProvider(
-        instance(this.pubClientMock),
-        instance(this.pubConfigMock),
-        instance(this.loggerMock)
-      );
-
       when(this.pubConfigMock.dependencyProperties).thenReturn(includePropNames);
-
-      const results = put.parseDependencies('test/path', fixture.test);
-
-      assert.deepEqual(results, fixture.expected);
+      // test
+      const results = this.put.parseDependencies('test/path', fixture.test);
+      // assert
+      deepEqual(results, fixture.expected);
     }
   ]
 }

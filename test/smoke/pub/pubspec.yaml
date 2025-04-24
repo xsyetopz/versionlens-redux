@@ -37,7 +37,7 @@ dependency_overrides:
   injectable_generator: ^2.7.0
   intl_utils: ^2.8.10
   json_serializable: ^6.9.5
-  mobx_codegen: ^2.7.0
+  mobx_codegen: any
 
 flutter:
   uses-material-design: true
