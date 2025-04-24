@@ -1,8 +1,8 @@
-import { ILogger } from '#domain/logging';
-import { PackageDependency } from '#domain/packages';
-import { ISuggestionProvider } from '#domain/providers';
-import { DenoClient, DenoConfig } from '#domain/providers/deno';
-import { npmReplaceVersion, NpmSuggestionProvider } from '#domain/providers/npm';
+import type { ILogger } from '#domain/logging';
+import type { PackageDependency } from '#domain/packages';
+import type { ISuggestionProvider } from '#domain/providers';
+import type { DenoClient, DenoConfig } from '#domain/providers/deno';
+import { type NpmSuggestionProvider, npmReplaceVersion } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class DenoSuggestionProvider implements ISuggestionProvider {

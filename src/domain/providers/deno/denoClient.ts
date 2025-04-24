@@ -1,12 +1,18 @@
+import { HttpClientResponse } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
   type PackageClientRequest,
   type PackageClientResponse,
-  ClientResponseFactory
+  ClientResponseFactory,
+  createSuggestions,
+  PackageSourceType,
+  PackageStatusFactory,
+  PackageVersionType,
+  VersionUtils
 } from '#domain/packages';
-import { DenoConfig, JsrClient } from '#domain/providers/deno';
-import { type NpaSpec, type TNpmClientData, NpmPackageClient } from '#domain/providers/npm';
+import type { DenoConfig, JsrClient } from '#domain/providers/deno';
+import type { NpaSpec, NpmPackageClient, TNpmClientData } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import npa from 'npm-package-arg';
 
@@ -31,13 +37,73 @@ export class DenoClient implements IPackageClient<TNpmClientData> {
     if (!isDenoJsr && !isDenoNpm) return ClientResponseFactory.createNoSuggestions();
     if (isDenoNpm) return this.npmClient.fetchPackage(request);
 
-    const npaSpec = npa.resolve(
-      requestedPackage.name,
-      requestedPackage.version.replaceAll('jsr:', 'npm:'),
-      requestedPackage.path
-    ) as NpaSpec;
+    try {
+      const npaSpec = npa.resolve(
+        requestedPackage.name,
+        requestedPackage.version.replaceAll('jsr:', 'npm:'),
+        requestedPackage.path
+      ) as NpaSpec;
 
-    return this.jsrClient.fetchPackage(npaSpec);
+      return this.createRemotePackageDocument(npaSpec);
+    } catch (error) {
+      const errorResponse = error as HttpClientResponse;
+
+      this.logger.debug(
+        "Caught exception from {packageSource}: {error}",
+        PackageSourceType.Registry,
+        errorResponse
+      );
+
+      const suggestion = PackageStatusFactory.createFromHttpStatus(errorResponse.status);
+      if (suggestion != null) {
+        return ClientResponseFactory.create(
+          PackageSourceType.Registry,
+          errorResponse,
+          [suggestion]
+        )
+      }
+
+      throw errorResponse;
+    }
+  }
+
+  async createRemotePackageDocument(npaSpec: NpaSpec): Promise<PackageClientResponse> {
+    // fetch
+    const jsonResponse = await this.jsrClient.get(npaSpec.subSpec.name);
+
+    // process response
+    const versionRange = npaSpec.subSpec.rawSpec;
+    const resolved = {
+      name: npaSpec.subSpec.name,
+      version: versionRange,
+    };
+
+    // sort versions
+    const rawVersions = jsonResponse.data.toSorted(VersionUtils.compareVersionsAndBuilds);
+
+    // extract semver versions only
+    const semverVersions = VersionUtils.filterSemverVersions(rawVersions);
+
+    // seperate versions to releases and prereleases
+    const { releases, prereleases } = VersionUtils.splitReleasesFromArray(
+      semverVersions,
+      this.config.prereleaseTagFilter
+    );
+
+    // analyse suggestions
+    const suggestions = createSuggestions(
+      versionRange,
+      releases,
+      prereleases
+    );
+
+    return {
+      source: PackageSourceType.Registry,
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(jsonResponse),
+      type: PackageVersionType.Alias,
+      resolved,
+      suggestions,
+    };
   }
 
 }

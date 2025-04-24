@@ -1,16 +1,6 @@
-import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
+import type { IJsonHttpClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import {
-  type PackageClientResponse,
-  ClientResponseFactory,
-  PackageSourceType,
-  PackageStatusFactory,
-  PackageVersionType,
-  VersionUtils,
-  createSuggestions
-} from '#domain/packages';
-import { DenoConfig, TJsrApiItem } from '#domain/providers/deno';
-import { NpaSpec } from '#domain/providers/npm';
+import type { DenoConfig, JsrApiResponse, JsrClientResponse } from '#domain/providers/deno';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class JsrClient {
@@ -25,75 +15,18 @@ export class JsrClient {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(npaSpec: NpaSpec): Promise<PackageClientResponse> {
-    const url = `https://jsr.io/${npaSpec.subSpec.name}/meta.json`;
+  async get(packageName: string): Promise<JsrClientResponse> {
+    const url = `https://jsr.io/${packageName}/meta.json`;
 
-    try {
-      return await this.createRemotePackageDocument(url, npaSpec)
-    } catch (error) {
-      const errorResponse = error as HttpClientResponse;
+    const jsonResponse = await this.jsonClient.get(url) as JsrApiResponse;
+    if (jsonResponse.rejected) return jsonResponse as any;
 
-      this.logger.debug(
-        "Caught exception from {packageSource}: {error}",
-        PackageSourceType.Registry,
-        errorResponse
-      );
+    // reduce the dataset
+    const versions = Object.keys(jsonResponse.data.versions)
+      .filter(k => !jsonResponse.data.versions[k].yanked)
 
-      const suggestion = PackageStatusFactory.createFromHttpStatus(errorResponse.status);
-      if (suggestion != null) {
-        return ClientResponseFactory.create(
-          PackageSourceType.Registry,
-          errorResponse,
-          [suggestion]
-        )
-      }
-
-      throw errorResponse;
-    }
+    // return the response
+    return { ...jsonResponse, data: versions };
   }
 
-  async createRemotePackageDocument(
-    url: string,
-    npaSpec: NpaSpec
-  ): Promise<PackageClientResponse> {
-    // fetch package from api
-    const httpResponse = await this.jsonClient.get(url);
-
-    // process response
-    const versionRange = npaSpec.subSpec.rawSpec;
-    const resolved = {
-      name: npaSpec.subSpec.name,
-      version: versionRange,
-    };
-
-    const responseVersions = httpResponse.data as TJsrApiItem;
-    let rawVersions = Object.keys(responseVersions.versions)
-      .filter(k => !responseVersions.versions[k].yanked)
-      .reverse()
-      .map(k => k);
-
-    // extract semver versions only
-    const semverVersions = VersionUtils.filterSemverVersions(rawVersions);
-
-    // seperate versions to releases and prereleases
-    const { releases, prereleases } = VersionUtils.splitReleasesFromArray(
-      semverVersions,
-      this.config.prereleaseTagFilter
-    );
-
-    // analyse suggestions
-    const suggestions = createSuggestions(
-      versionRange,
-      releases,
-      prereleases
-    );
-
-    return {
-      source: PackageSourceType.Registry,
-      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(httpResponse),
-      type: PackageVersionType.Alias,
-      resolved,
-      suggestions,
-    };
-  }
 }

@@ -1,6 +1,7 @@
-import { CachingOptions } from '#domain/caching';
-import { HttpOptions, IJsonHttpClient } from '#domain/clients';
-import { DenoClient, DenoConfig, JsrClient } from "#domain/providers/deno";
+import type { CachingOptions } from '#domain/caching';
+import type { HttpOptions, IJsonHttpClient, JsonClientResponse } from '#domain/clients';
+import type { DenoClient, DenoConfig, JsrClient } from "#domain/providers/deno";
+import { nameOf } from '#domain/utils';
 
 export enum DenoFeatures {
   Caching = 'deno.caching',
@@ -11,15 +12,6 @@ export enum DenoFeatures {
   PrereleaseTagFilter = 'deno.prereleaseTagFilter',
 }
 
-export type TJsrApiItem = {
-  latest: string
-  versions: {
-    [version: string]: {
-      yanked?: boolean
-    }
-  }
-}
-
 export interface IDenoServices {
   denoCachingOpts: CachingOptions
   denoHttpOpts: HttpOptions
@@ -28,3 +20,18 @@ export interface IDenoServices {
   jsrClient: JsrClient
   denoClient: DenoClient
 }
+
+export const DenoService = nameOf<IDenoServices>()
+
+export type JsrApiResult = {
+  latest: string
+  versions: {
+    [version: string]: {
+      yanked?: boolean
+    }
+  }
+}
+
+export type JsrApiResponse = JsonClientResponse<JsrApiResult>
+
+export type JsrClientResponse = JsonClientResponse<string[]>

@@ -8,6 +8,7 @@ import {
   DenoClient,
   DenoConfig,
   DenoFeatures,
+  DenoService,
   DenoSuggestionProvider,
   JsrClient
 } from "#domain/providers/deno";
@@ -16,7 +17,7 @@ import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDenoServices>().denoCachingOpts,
+    DenoService.denoCachingOpts,
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
@@ -28,7 +29,7 @@ export function addCachingOptions(services: IServiceCollection) {
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDenoServices>().denoHttpOpts,
+    DenoService.denoHttpOpts,
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
@@ -40,7 +41,7 @@ export function addHttpOptions(services: IServiceCollection) {
 
 export function addDenoConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDenoServices>().denoConfig,
+    DenoService.denoConfig,
     (container: IDenoServices & IDomainServices) =>
       new DenoConfig(
         container.appConfig,
@@ -51,7 +52,7 @@ export function addDenoConfig(services: IServiceCollection) {
 }
 
 export function addJsonClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDenoServices>().denoJsonClient;
+  const serviceName = DenoService.denoJsonClient;
   services.addSingleton(
     serviceName,
     (container: IDenoServices & IDomainServices) =>
@@ -66,7 +67,7 @@ export function addJsonClient(services: IServiceCollection) {
 }
 
 export function addJsrClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDenoServices>().jsrClient;
+  const serviceName = DenoService.jsrClient;
   services.addSingleton(
     serviceName,
     (container: IDenoServices & IDomainServices) =>
@@ -79,7 +80,7 @@ export function addJsrClient(services: IServiceCollection) {
 }
 
 export function addDenoClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDenoServices>().denoClient;
+  const serviceName = DenoService.denoClient;
   services.addSingleton(
     serviceName,
     (container: INpmServices & IDenoServices & IDomainServices) => {
