@@ -45,6 +45,10 @@
 
   - Fixed an issue that breaks versions when replacing versions that have comments
 
+  ### Pypi
+
+  - Fixed cases where fetched versions were not fully sorted by version
+
 # 1.18.0
 
 ### Deno
