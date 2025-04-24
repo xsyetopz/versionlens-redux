@@ -18,7 +18,6 @@ import {
   parseVersionSpec
 } from '#domain/providers/dotnet';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import { compareLoose } from 'semver';
 
 export class DotnetClient implements IPackageClient<NuGetClientData> {
 
@@ -81,7 +80,7 @@ export class DotnetClient implements IPackageClient<NuGetClientData> {
 
     // sanitize to semver only versions
     const rawVersions = VersionUtils.filterSemverVersions(data.versions)
-      .sort(compareLoose);
+      .toSorted(VersionUtils.compareVersionsAndBuilds);
 
     // seperate versions to releases and prereleases
     const { releases, prereleases } = VersionUtils.splitReleasesFromArray(
