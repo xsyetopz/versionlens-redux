@@ -1,3 +1,9 @@
+# 1.20.1
+
+  ### Dart (pub)
+
+  - added `dependency_overrides` to the default `versionlens.pub.dependencyProperties` setting
+
 # 1.20.0
 
   ### All Providers
