@@ -1,12 +1,8 @@
-# 1.19.5-prerelease
+# 1.20.0
 
   ### All Providers
 
-  - Added a suggestion link for the next available `major` version.
-
-    ![MajorUpdateable](https://gitlab.com/-/project/19418059/uploads/5d5bb712870321e032a48c3892aa452e/image.png)
-
-  - Added an interactive picker for choosing build versions <br>
+  - Added an interactive picker for choosing build versions
 
     ![BuildUpdateable](https://gitlab.com/-/project/19418059/uploads/58f0cb983df7877cfbff7780107f25df/pub.gif)
 
@@ -18,14 +14,14 @@
     >
     > For more information about build meta data see https://semver.org/#spec-item-10
 
+  - Added a suggestion link for the next available `major` version
+
+    ![MajorUpdateable](https://gitlab.com/-/project/19418059/uploads/5d5bb712870321e032a48c3892aa452e/image.png)
+
   ### Docker
 
   - Added dockerfile `FROM <image>[:<tag>]` analysis<br>
-  - Added docker compose file analysis
-
-    *Preview*
-
-    ![image](https://gitlab.com/-/project/19418059/uploads/2a5a8a9af78c704359057b8a0f573372/docker.gif)
+  - Added docker compose file `image` and `build` analysis
 
     |Setting|Default|
     |-|-|
@@ -33,12 +29,14 @@
     |versionlens.docker.files|`**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,docker-compose.yaml,docker-compose.yml}`|
     |versionlens.docker.caching.duration|Defaults to `versionlens.caching.duration` which is 3 minutes.<br>Can be cleared using `VersionLens: Clear cache` command|
 
+    ![image](https://gitlab.com/-/project/19418059/uploads/2a5a8a9af78c704359057b8a0f573372/docker.gif)
+
     > **NOTE**
     > - Only supports [docker hub api v2](https://docs.docker.com/reference/api/hub/latest/#tag/repositories/paths/~1v2~1namespaces~1%7Bnamespace%7D~1repositories~1%7Brepository%7D~1tags/get)
     > - Prereleases aren't supported yet
     > - `ARG` used in `<image>[:<tag>]` is not supported
-    > - Docker hub api doesn't currently provide a fast and minimal lookup of tags.<br>
-        So api fetch calls have to be limited to fetching 3 pages per repository.<br>
+    > - Docker hub api doesn't currently provide a minimal lookup of tags <br>
+        so api fetch calls are limited to fetching 3 pages per repository.<br>
         This means only recent tags can be found by version lens
 
   ### GoLang
