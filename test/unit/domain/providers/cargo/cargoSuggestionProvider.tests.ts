@@ -15,7 +15,7 @@ type TestContext = {
   put: CargoSuggestionProvider
 }
 
-export const dockerSuggestionProviderTests = {
+export const cargoSuggestionProviderTests = {
 
   title: CargoSuggestionProvider.name,
 
