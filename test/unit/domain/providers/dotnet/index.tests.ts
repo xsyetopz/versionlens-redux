@@ -1,4 +1,4 @@
-export * from './clients/dotnetCli.tests';
-export * from './clients/nugetClient.tests';
-export * as DotNetUtils from './dotnetUtils/parseVersionSpec.tests';
-export * as DotNetParser from './dotnetXmlParser/parseDotNetPackagesXml.tests';
+export * from './dotnetCli.tests';
+export * from './nugetClient.tests';
+export * as DotNetParser from './parseDotNetPackagesXml.tests';
+export * as DotNetUtils from './parseVersionSpec.tests';
