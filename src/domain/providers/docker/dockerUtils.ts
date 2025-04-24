@@ -5,7 +5,7 @@ import {
   DockerVersion,
   DockerVersionMapper
 } from '#domain/providers/docker';
-import { coerce, compareBuild, gt, maxSatisfying } from 'semver';
+import { coerce, gt, maxSatisfying } from 'semver';
 
 export function createVersionMapper(dockerTags: DockerHubRepository[]): DockerVersionMapper {
   const digestMapper = createDigestMapper(dockerTags)
@@ -17,13 +17,13 @@ export function createVersionMapper(dockerTags: DockerHubRepository[]): DockerVe
   const prereleases = latest
     ? Object.keys(versionMap)
       .filter(x => gt(x, latest, VersionUtils.loosePrereleases))
-      .toSorted(compareCoerceBuild)
+      .toSorted(VersionUtils.compareVersionsAndBuilds)
     : [];
 
   // extract releases
   const releases = Object.keys(versionMap)
     .filter(x => prereleases.includes(x) === false)
-    .toSorted(compareCoerceBuild)
+    .toSorted(VersionUtils.compareVersionsAndBuilds)
 
   for (const prerelease of prereleases) {
     const tags = versionMap[prerelease]
@@ -68,14 +68,6 @@ export function extract(dockerTag: string): DockerVersion {
   return { version, tag };
 }
 
-function compareCoerceBuild(a: string, b: string): 0 | 1 | -1 {
-  return compareBuild(
-    a,
-    b,
-    VersionUtils.loosePrereleases
-  )
-}
-
 function coerceDockerTagsToSemver(dockerTags: string[], digestMapper: DockerDigestMapper) {
   const versionToTagMap: Record<string, string[]> = {};
 
@@ -106,7 +98,7 @@ function coerceDockerTagsToSemver(dockerTags: string[], digestMapper: DockerDige
 
   const fixedVersions = Object.keys(versionToTagMap)
     .filter(x => x.includes('*') === false)
-    .toSorted(compareCoerceBuild);
+    .toSorted(VersionUtils.compareVersionsAndBuilds);
 
   const rangedVersions = Object.keys(versionToTagMap)
     .filter(x => x.includes('*'));

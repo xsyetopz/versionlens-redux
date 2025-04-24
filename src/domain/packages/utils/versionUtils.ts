@@ -2,9 +2,21 @@ import {
   type PackageNameVersion,
   type PackageVersions,
   type SemverSpec,
-  PackageVersionType
+  PackageVersionType,
+  VersionUtils
 } from '#domain/packages';
-import { Range, SemVer, coerce, eq, lte, major, prerelease, valid, validRange } from 'semver';
+import {
+  coerce,
+  compareBuild,
+  eq,
+  lte,
+  major,
+  prerelease,
+  Range,
+  SemVer,
+  valid,
+  validRange
+} from 'semver';
 
 export const formatTagNameRegex = /^[^0-9\-]*/;
 export const loosePrereleases = { loose: true, includePrerelease: true };
@@ -170,4 +182,8 @@ export function findNextMajor(startFromVersion: string, versions: string[]): str
     }
   } catch { }
   return null
+}
+
+export function compareVersionsAndBuilds(a: string, b: string): 0 | 1 | -1 {
+  return compareBuild(a, b, VersionUtils.loosePrereleases)
 }

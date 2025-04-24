@@ -109,7 +109,8 @@ export class PypiClient implements IPackageClient<null> {
     // extract semver versions only
     const { coerce } = semver;
     const semverVersions = VersionUtils.filterSemverVersions(rawVersions)
-      .map(x => coerce(x, VersionUtils.loosePrereleases).toString());
+      .map(x => coerce(x, VersionUtils.loosePrereleases).toString())
+      .toSorted(VersionUtils.compareVersionsAndBuilds);
 
     // seperate versions to releases and prereleases
     const { releases, prereleases } = VersionUtils.splitReleasesFromArray(
