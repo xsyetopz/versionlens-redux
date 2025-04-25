@@ -48,21 +48,6 @@ export function addDubConfig(services: IServiceCollection) {
   );
 }
 
-export function addJsonClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDubServices>().dubJsonClient;
-  services.addSingleton(
-    serviceName,
-    (container: IDubServices & IDomainServices) =>
-      createJsonClient(
-        container.authorizer,
-        {
-          caching: container.dubCachingOpts,
-          http: container.dubHttpOpts
-        }
-      )
-  );
-}
-
 export function addDubClient(services: IServiceCollection) {
   const serviceName = nameOf<IDubServices>().dubClient;
   services.addSingleton(
@@ -70,7 +55,13 @@ export function addDubClient(services: IServiceCollection) {
     (container: IDubServices & IDomainServices) =>
       new DubClient(
         container.dubConfig,
-        container.dubJsonClient,
+        createJsonClient(
+          container.authorizer,
+          {
+            caching: container.dubCachingOpts,
+            http: container.dubHttpOpts
+          }
+        ),
         container.loggerFactory.create(serviceName)
       )
   );

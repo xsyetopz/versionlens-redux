@@ -4,7 +4,6 @@ import {
   addDubClient,
   addDubConfig,
   addHttpOptions,
-  addJsonClient,
   addSuggestionProvider
 } from '#domain/providers/dub';
 
@@ -18,8 +17,6 @@ export async function configureContainer(
   addHttpOptions(services);
 
   addDubConfig(services);
-
-  addJsonClient(services);
 
   addDubClient(services);
 
