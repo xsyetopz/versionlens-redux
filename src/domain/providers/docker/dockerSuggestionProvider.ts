@@ -1,6 +1,6 @@
 import type { ILogger } from '#domain/logging';
 import { type SuggestionUpdate, defaultReplaceFn, PackageDependency } from '#domain/packages';
-import type { YamlParserOptions } from '#domain/parsers';
+import { createVersionDescFromYamlNode, type YamlParserOptions } from '#domain/parsers';
 import type { ISuggestionProvider } from '#domain/providers';
 import {
   type DockerClient,
@@ -15,6 +15,7 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 const parserOptions: YamlParserOptions = {
   includePropNames: ['services.*'],
   complexTypeHandlers: {
+    version: createVersionDescFromYamlNode,
     image: createImageDescFromYamlNode,
     build: createBuildDescFromYamlNode
   }
