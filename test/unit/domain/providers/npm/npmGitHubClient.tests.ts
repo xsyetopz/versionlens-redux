@@ -14,7 +14,7 @@ import { type NpaSpec, type NpmConfig, NpmGitHubClient } from '#domain/providers
 import { deepEqual, equal } from 'node:assert';
 import npa from 'npm-package-arg';
 import { anything, instance, mock, when } from 'ts-mockito';
-import { githubFixtures } from './fetchGitHub.fixtures';
+import { githubFixtures } from './npmGitHubClient.fixtures';
 
 type TestContext = {
   configMock: NpmConfig

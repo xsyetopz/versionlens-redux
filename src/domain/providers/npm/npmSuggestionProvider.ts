@@ -11,8 +11,8 @@ import {
 } from '#domain/parsers';
 import { ISuggestionProvider } from '#domain/providers';
 import {
+  type NpmClientData,
   type TNpmCliConfigParams,
-  type TNpmClientData,
   NpmConfig,
   NpmPackageClient,
   createNpmRegistryClientData,
@@ -98,7 +98,7 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
-  async preFetchSuggestions(projectPath: string, packagePath: string): Promise<TNpmClientData> {
+  async preFetchSuggestions(projectPath: string, packagePath: string): Promise<NpmClientData> {
     // path to user .npmrc
     const userConfigPath = process.env.NPM_CONFIG_USERCONFIG || resolve(homedir(), '.npmrc');
 

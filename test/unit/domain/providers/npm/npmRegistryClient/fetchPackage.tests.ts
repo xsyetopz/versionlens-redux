@@ -18,8 +18,8 @@ import {
 import {
   type INpmRegistry,
   type NpaSpec,
+  type NpmClientData,
   type NpmConfig,
-  type TNpmClientData,
   NpmRegistryClient
 } from '#domain/providers/npm';
 import { test } from 'mocha-ui-esm';
@@ -61,12 +61,12 @@ export const fetchPackageTests = {
       'packagepath',
     );
 
-    const testClientData: TNpmClientData = {
+    const testClientData: NpmClientData = {
       registry: 'https://registry.npmjs.org/',
       strictSSL: true
     };
 
-    const testRequest: PackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<NpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -114,12 +114,12 @@ export const fetchPackageTests = {
       'packagepath',
     );
 
-    const testClientData: TNpmClientData = {
+    const testClientData: NpmClientData = {
       registry: 'https://registry.npmjs.org/',
       strictSSL: true
     };
 
-    const testRequest: PackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<NpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -166,12 +166,12 @@ export const fetchPackageTests = {
       'packagepath',
     );
 
-    const testClientData: TNpmClientData = {
+    const testClientData: NpmClientData = {
       registry: 'https://registry.npmjs.org/',
       strictSSL: true
     };
 
-    const testRequest: PackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<NpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(
@@ -226,12 +226,12 @@ export const fetchPackageTests = {
       'packagepath',
     );
 
-    const testClientData: TNpmClientData = {
+    const testClientData: NpmClientData = {
       registry: 'https://registry.npmjs.org/',
       strictSSL: true
     };
 
-    const testRequest: PackageClientRequest<TNpmClientData> = {
+    const testRequest: PackageClientRequest<NpmClientData> = {
       providerName: 'testnpmprovider',
       clientData: testClientData,
       parsedDependency: new PackageDependency(

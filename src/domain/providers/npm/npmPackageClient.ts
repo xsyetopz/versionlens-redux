@@ -11,7 +11,7 @@ import {
 } from '#domain/packages';
 import {
   type NpaSpec,
-  type TNpmClientData,
+  type NpmClientData,
   NpaTypes,
   NpmConfig,
   NpmGitHubClient,
@@ -22,7 +22,7 @@ import {
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import npa from 'npm-package-arg';
 
-export class NpmPackageClient implements IPackageClient<TNpmClientData> {
+export class NpmPackageClient implements IPackageClient<NpmClientData> {
 
   constructor(
     readonly config: NpmConfig,
@@ -36,7 +36,7 @@ export class NpmPackageClient implements IPackageClient<TNpmClientData> {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(request: PackageClientRequest<TNpmClientData>): Promise<PackageClientResponse> {
+  async fetchPackage(request: PackageClientRequest<NpmClientData>): Promise<PackageClientResponse> {
     let source: PackageSourceType;
 
     try {

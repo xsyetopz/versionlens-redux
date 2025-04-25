@@ -1,6 +1,6 @@
 import type { ILogger } from '#domain/logging';
 import {
-  type TNpmClientData,
+  type NpmClientData,
   NpmConfig,
   NpmPackageClient,
   NpmSuggestionProvider
@@ -78,7 +78,7 @@ export const NpmSuggestionProviderTests = {
         await createFile(testNpmRcFilePath, Fixtures.preFetchSuggestions['.npmrc']);
         await createFile(testEnvFilePath, Fixtures.preFetchSuggestions['.npmrc-env']);
 
-        const expectedClientData: TNpmClientData = {
+        const expectedClientData: NpmClientData = {
           registry: 'https://registry.npmjs.org/',
           strictSSL: true,
         };
@@ -120,7 +120,7 @@ export const NpmSuggestionProviderTests = {
         instance(this.loggerMock)
       );
 
-      const expectedClientData: TNpmClientData = {
+      const expectedClientData: NpmClientData = {
         registry: 'https://registry.npmjs.org/',
         strictSSL: true
       };
@@ -154,7 +154,7 @@ export const NpmSuggestionProviderTests = {
       await createFile(testPackageFilePath, "");
       await createFile(testNpmRcFilePath, Fixtures.preFetchSuggestions['.npmrc']);
 
-      const expectedClientData: TNpmClientData = {
+      const expectedClientData: NpmClientData = {
         registry: 'https://registry.npmjs.org/',
         strictSSL: true
       };
@@ -201,7 +201,7 @@ export const NpmSuggestionProviderTests = {
       await createFile(testCaFileNpmRcFilePath, `cafile=${testPemFilePath}`);
       await createFile(testPemFilePath, Fixtures.preFetchSuggestions['cafile']);
 
-      const expectedClientData: TNpmClientData = {
+      const expectedClientData: NpmClientData = {
         registry: 'https://registry.npmjs.org/',
         strictSSL: true,
         ca: Fixtures.preFetchSuggestions['cafile']

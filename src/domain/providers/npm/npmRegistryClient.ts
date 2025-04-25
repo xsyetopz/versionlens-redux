@@ -13,8 +13,8 @@ import {
 import {
   type INpmRegistry,
   type NpaSpec,
-  type TNpmClientData,
-  type TNpmRegistryClientResponse,
+  type NpmClientData,
+  type NpmRegistryClientResponse,
   NpaTypes,
   NpmConfig
 } from '#domain/providers/npm';
@@ -34,7 +34,7 @@ export class NpmRegistryClient {
   }
 
   async fetchPackage(
-    request: PackageClientRequest<TNpmClientData>,
+    request: PackageClientRequest<NpmClientData>,
     npaSpec: NpaSpec
   ): Promise<PackageClientResponse> {
     const type: PackageVersionType = <any>npaSpec.type;
@@ -130,7 +130,7 @@ export class NpmRegistryClient {
 
   }
 
-  async request(npaSpec: NpaSpec, clientData: any): Promise<TNpmRegistryClientResponse> {
+  async request(npaSpec: NpaSpec, clientData: any): Promise<NpmRegistryClientResponse> {
     try {
       const registry = this.npmRegistryFetch.pickRegistry(npaSpec, clientData);
       const url = `${ensureEndSlash(registry)}${npaSpec.escapedName}`;
@@ -144,7 +144,7 @@ export class NpmRegistryClient {
       );
 
       const registryResponse = await this.npmRegistryFetch.json(url, clientData);
-      const result: TNpmRegistryClientResponse = {
+      const result: NpmRegistryClientResponse = {
         source: ClientResponseSource.remote,
         status: 200,
         data: registryResponse,
@@ -153,7 +153,7 @@ export class NpmRegistryClient {
 
       return result;
     } catch (error) {
-      const result: TNpmRegistryClientResponse = {
+      const result: NpmRegistryClientResponse = {
         source: ClientResponseSource.remote,
         status: error.code,
         data: error.message,

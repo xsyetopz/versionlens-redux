@@ -12,11 +12,11 @@ import {
   VersionUtils
 } from '#domain/packages';
 import type { DenoConfig, JsrClient } from '#domain/providers/deno';
-import type { NpaSpec, NpmPackageClient, TNpmClientData } from '#domain/providers/npm';
+import type { NpaSpec, NpmClientData, NpmPackageClient } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import npa from 'npm-package-arg';
 
-export class DenoClient implements IPackageClient<TNpmClientData> {
+export class DenoClient implements IPackageClient<NpmClientData> {
 
   constructor(
     readonly config: DenoConfig,
@@ -30,7 +30,7 @@ export class DenoClient implements IPackageClient<TNpmClientData> {
     throwUndefinedOrNull("logger", logger);
   }
 
-  async fetchPackage(request: PackageClientRequest<TNpmClientData>): Promise<PackageClientResponse> {
+  async fetchPackage(request: PackageClientRequest<NpmClientData>): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const isDenoJsr = requestedPackage.version.startsWith('jsr:');
     const isDenoNpm = requestedPackage.version.startsWith('npm:');

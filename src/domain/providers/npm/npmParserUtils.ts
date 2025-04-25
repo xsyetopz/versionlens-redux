@@ -4,6 +4,7 @@ import {
   createIgnoreChangesDesc,
   createNameDescFromJsonNode,
   createPackageParentDescType,
+  createProjectVersionDesc,
   createVersionDescFromJsonNode,
 } from '#domain/parsers';
 import * as JsonC from 'jsonc-parser';
@@ -41,4 +42,17 @@ function createPackageManagerVersionFromJsonNode(valueNode: any): PackageVersion
   }
 
   return versionDesc;
+}
+
+export function customDescriptorHandler(path: string, node: JsonC.Node) {
+  if (node.type !== 'string') return;
+
+  const parent = node.parent.children[0];
+
+  switch (parent.value) {
+    case 'packageManager':
+      return createPackageManagerDesc(path, node);
+    case 'version':
+      return createProjectVersionDesc(path, node);
+  }
 }

@@ -9,7 +9,7 @@ export enum ClientResponseSource {
   cli = 'cli'
 }
 
-export type TClientResponse<TStatus, TData> = {
+export type ClientResponse<TStatus, TData> = {
   source: ClientResponseSource;
   status: TStatus;
   data: TData;
@@ -25,7 +25,7 @@ export type HttpClientOptions = {
   http: HttpOptions,
 }
 
-export type HttpClientResponse = TClientResponse<number, string>;
+export type HttpClientResponse = ClientResponse<number, string>;
 
 export enum HttpClientRequestMethods {
   get = 'GET',
@@ -46,7 +46,7 @@ export interface IHttpClient {
   get: THttpClientRequestFn;
 }
 
-export type JsonClientResponse<TData> = TClientResponse<number, TData>;
+export type JsonClientResponse<TData> = ClientResponse<number, TData>;
 
 export interface IJsonHttpClient {
   httpClient: IHttpClient;
@@ -57,7 +57,7 @@ export interface IJsonHttpClient {
   ): Promise<JsonClientResponse<TData>>;
 }
 
-export type ShellClientResponse = TClientResponse<string, string>;
+export type ShellClientResponse = ClientResponse<string, string>;
 
 export interface ShellClientRequestFn {
   (
