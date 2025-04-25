@@ -1,3 +1,8 @@
+import type { CachingOptions } from '#domain/caching';
+import type { HttpOptions, JsonClientResponse } from '#domain/clients';
+import type { PubClient, PubConfig, PubJsonClient } from '#domain/providers/pub';
+import { nameOf } from '#domain/utils';
+
 export enum PubFeatures {
   Caching = 'pub.caching',
   Http = 'pub.http',
@@ -8,14 +13,29 @@ export enum PubFeatures {
   PrereleaseTagFilter = 'pub.prereleaseTagFilter',
 }
 
-import { CachingOptions } from '#domain/caching';
-import { HttpOptions, JsonHttpClient } from '#domain/clients';
-import { PubClient, PubConfig } from '#domain/providers/pub';
-
 export interface IPubServices {
   pubCachingOpts: CachingOptions;
   pubHttpOpts: HttpOptions;
   pubConfig: PubConfig;
-  pubJsonClient: JsonHttpClient;
+  pubJsonClient: PubJsonClient;
   pubClient: PubClient;
 }
+
+export const PubService = nameOf<IPubServices>()
+
+export type PubApiVersionEntry = {
+  version: string,
+  retracted: boolean
+}
+
+export type PubApiPackageResult = {
+  versions: PubApiVersionEntry[]
+}
+
+export type PubJsonClientResult = {
+  versions: string[]
+}
+
+export type PubPackageResponse = JsonClientResponse<PubApiPackageResult>
+
+export type PubJsonClientResponse = JsonClientResponse<PubJsonClientResult>

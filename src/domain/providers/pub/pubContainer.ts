@@ -2,9 +2,9 @@ import { IServiceCollection, IServiceProvider } from '#domain/di';
 import {
   addCachingOptions,
   addHttpOptions,
-  addJsonClient,
   addPubClient,
   addPubConfig,
+  addPubJsonClient,
   addSuggestionProvider
 } from '#domain/providers/pub';
 
@@ -19,7 +19,7 @@ export async function configureContainer(
 
   addPubConfig(services);
 
-  addJsonClient(services);
+  addPubJsonClient(services);
 
   addPubClient(services);
 

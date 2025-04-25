@@ -8,13 +8,15 @@ import {
   PubClient,
   PubConfig,
   PubFeatures,
+  PubJsonClient,
+  PubService,
   PubSuggestionProvider
 } from '#domain/providers/pub';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IPubServices>().pubCachingOpts,
+    PubService.pubCachingOpts,
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
@@ -26,7 +28,7 @@ export function addCachingOptions(services: IServiceCollection) {
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IPubServices>().pubHttpOpts,
+    PubService.pubHttpOpts,
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
@@ -38,7 +40,7 @@ export function addHttpOptions(services: IServiceCollection) {
 
 export function addPubConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IPubServices>().pubConfig,
+    PubService.pubConfig,
     (container: IPubServices & IDomainServices) =>
       new PubConfig(
         container.appConfig,
@@ -48,23 +50,27 @@ export function addPubConfig(services: IServiceCollection) {
   );
 }
 
-export function addJsonClient(services: IServiceCollection) {
-  const serviceName = nameOf<IPubServices>().pubJsonClient;
+export function addPubJsonClient(services: IServiceCollection) {
+  const serviceName = PubService.pubJsonClient;
   services.addSingleton(
     serviceName,
     (container: IPubServices & IDomainServices) =>
-      createJsonClient(
-        container.authorizer,
-        {
-          caching: container.pubCachingOpts,
-          http: container.pubHttpOpts
-        }
+      new PubJsonClient(
+        container.pubConfig,
+        createJsonClient(
+          container.authorizer,
+          {
+            caching: container.pubCachingOpts,
+            http: container.pubHttpOpts
+          }
+        ),
+        container.loggerFactory.create(serviceName)
       )
   );
 }
 
 export function addPubClient(services: IServiceCollection) {
-  const serviceName = nameOf<IPubServices>().pubClient;
+  const serviceName = PubService.pubClient;
   services.addSingleton(
     serviceName,
     (container: IPubServices & IDomainServices) =>

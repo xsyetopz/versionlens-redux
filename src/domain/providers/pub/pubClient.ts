@@ -1,4 +1,4 @@
-import type { HttpClientResponse, IJsonHttpClient } from '#domain/clients';
+import type { HttpClientResponse } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
@@ -17,19 +17,18 @@ import {
   type PackagePathDescriptor,
   PackageDescriptorType
 } from '#domain/parsers';
-import { PubConfig } from '#domain/providers/pub';
+import { PubConfig, PubJsonClient } from '#domain/providers/pub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import semver from 'semver';
 
 export class PubClient implements IPackageClient<null> {
 
   constructor(
     readonly config: PubConfig,
-    readonly jsonClient: IJsonHttpClient,
+    readonly pubJsonClient: PubJsonClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("jsonClient", jsonClient);
+    throwUndefinedOrNull("pubJsonClient", pubJsonClient);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -52,9 +51,7 @@ export class PubClient implements IPackageClient<null> {
     const gitDesc = request.parsedDependency.descriptors.getType<PackageGitDescriptor>(
       PackageDescriptorType.git
     );
-    if (gitDesc) {
-      return ClientResponseFactory.createGit();
-    }
+    if (gitDesc) return ClientResponseFactory.createGit();
 
     // parse the version
     const semverSpec = VersionUtils.parseSemver(requestedPackage.version);
@@ -102,11 +99,10 @@ export class PubClient implements IPackageClient<null> {
     packageName: string,
     semverSpec: SemverSpec
   ): Promise<PackageClientResponse> {
-    // fetch package from api
-    const jsonResponse = await this.jsonClient.get(url);
+    // fetch
+    const jsonResponse = await this.pubJsonClient.get(url);
 
-    const packageInfo = jsonResponse.data;
-
+    // process response
     const versionRange = semverSpec.rawVersion;
 
     const resolved = {
@@ -114,15 +110,13 @@ export class PubClient implements IPackageClient<null> {
       version: versionRange,
     };
 
-    // remove redacted versions
-    const liveVersions = packageInfo.versions.filter(pkg => !pkg.retracted);
-
-    // map each package.version in to an array
-    const rawVersions = VersionUtils.extractVersionsFromMap(liveVersions);
+    // sort versions
+    const rawVersions = jsonResponse.data.versions
+      .toSorted(VersionUtils.compareVersionsAndBuilds);
 
     // seperate versions to releases and prereleases
     const { releases, prereleases } = VersionUtils.splitReleasesFromArray(
-      rawVersions.sort(semver.compareLoose),
+      rawVersions,
       this.config.prereleaseTagFilter
     );
 
