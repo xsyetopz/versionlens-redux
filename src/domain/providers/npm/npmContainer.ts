@@ -4,7 +4,6 @@ import {
   addGitHubClient,
   addGithubOptions,
   addHttpOptions,
-  addJsonClient,
   addNpmConfig,
   addNpmPackageClient,
   addNpmRegistryClient,
@@ -23,8 +22,6 @@ export async function configureContainer(
   addGithubOptions(services);
 
   addNpmConfig(services);
-
-  addJsonClient(services);
 
   addGitHubClient(services);
 

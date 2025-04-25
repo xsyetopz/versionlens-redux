@@ -1,6 +1,6 @@
-import { CachingOptions } from '#domain/caching';
-import { HttpOptions, IJsonHttpClient, TClientResponse } from '#domain/clients';
-import {
+import type { CachingOptions } from '#domain/caching';
+import type { HttpOptions, TClientResponse } from '#domain/clients';
+import type {
   GitHubClient,
   GitHubOptions,
   NpaSpec,
@@ -8,7 +8,7 @@ import {
   NpmPackageClient,
   NpmRegistryClient
 } from '#domain/providers/npm';
-import { KeyDictionary } from '#domain/utils';
+import { type KeyDictionary, nameOf } from '#domain/utils';
 
 export enum GitHubFeatures {
   AccessToken = 'accessToken',
@@ -29,11 +29,12 @@ export interface INpmServices {
   npmHttpOpts: HttpOptions;
   npmGitHubOpts: GitHubOptions;
   npmConfig: NpmConfig;
-  githubJsonClient: IJsonHttpClient;
   githubClient: GitHubClient;
   npmRegistryClient: NpmRegistryClient;
   npmClient: NpmPackageClient;
 }
+
+export const NpmService = nameOf<INpmServices>()
 
 export interface INpmRegistry {
   pickRegistry: (spec: NpaSpec, opts: any) => string;

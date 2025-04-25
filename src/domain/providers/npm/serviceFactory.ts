@@ -11,6 +11,7 @@ import {
   NpmFeatures,
   NpmPackageClient,
   NpmRegistryClient,
+  NpmService,
   NpmSuggestionProvider
 } from '#domain/providers/npm';
 import { nameOf } from '#domain/utils';
@@ -18,7 +19,7 @@ import NpmRegistryFetch from 'npm-registry-fetch';
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<INpmServices>().npmCachingOpts,
+    NpmService.npmCachingOpts,
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
@@ -30,7 +31,7 @@ export function addCachingOptions(services: IServiceCollection) {
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<INpmServices>().npmHttpOpts,
+    NpmService.npmHttpOpts,
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
@@ -42,7 +43,7 @@ export function addHttpOptions(services: IServiceCollection) {
 
 export function addGithubOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<INpmServices>().npmGitHubOpts,
+    NpmService.npmGitHubOpts,
     (container: IDomainServices) =>
       new GitHubOptions(
         container.appConfig,
@@ -54,7 +55,7 @@ export function addGithubOptions(services: IServiceCollection) {
 
 export function addNpmConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<INpmServices>().npmConfig,
+    NpmService.npmConfig,
     (container: INpmServices & IDomainServices) =>
       new NpmConfig(
         container.appConfig,
@@ -65,36 +66,27 @@ export function addNpmConfig(services: IServiceCollection) {
   );
 }
 
-export function addJsonClient(services: IServiceCollection) {
-  const serviceName = nameOf<INpmServices>().githubJsonClient;
-  services.addSingleton(
-    serviceName,
-    (container: INpmServices & IDomainServices) =>
-      createJsonClient(
-        container.authorizer,
-        {
-          caching: container.npmCachingOpts,
-          http: container.npmHttpOpts
-        }
-      )
-  );
-}
-
 export function addGitHubClient(services: IServiceCollection) {
-  const serviceName = nameOf<INpmServices>().githubClient;
+  const serviceName = NpmService.githubClient;
   services.addSingleton(
     serviceName,
     (container: INpmServices & IDomainServices) =>
       new GitHubClient(
         container.npmConfig,
-        container.githubJsonClient,
+        createJsonClient(
+          container.authorizer,
+          {
+            caching: container.npmCachingOpts,
+            http: container.npmHttpOpts
+          }
+        ),
         container.loggerFactory.create(serviceName)
       )
   );
 }
 
 export function addNpmRegistryClient(services: IServiceCollection) {
-  const serviceName = nameOf<INpmServices>().npmRegistryClient;
+  const serviceName = NpmService.npmRegistryClient;
   services.addSingleton(
     serviceName,
     (container: INpmServices & IDomainServices) =>
@@ -107,7 +99,7 @@ export function addNpmRegistryClient(services: IServiceCollection) {
 }
 
 export function addNpmPackageClient(services: IServiceCollection) {
-  const serviceName = nameOf<INpmServices>().npmClient;
+  const serviceName = NpmService.npmClient;
   services.addSingleton(
     serviceName,
     (container: INpmServices & IDomainServices) =>
