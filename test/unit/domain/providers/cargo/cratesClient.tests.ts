@@ -1,3 +1,4 @@
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { type JsonHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import { type CargoConfig, CratesClient } from '#domain/providers/cargo';
@@ -6,9 +7,9 @@ import { instance, mock, when } from 'ts-mockito';
 import fixtures from './cratesClient.fixtures';
 
 type TestContext = {
-  configMock: CargoConfig;
-  jsonClientMock: JsonHttpClient;
-  loggerMock: ILogger;
+  configMock: CargoConfig
+  jsonClientMock: JsonHttpClient
+  loggerMock: ILogger
 }
 
 export const cratesClientTests = {
@@ -19,6 +20,10 @@ export const cratesClientTests = {
     this.configMock = mock<CargoConfig>();
     this.jsonClientMock = mock<JsonHttpClient>();
     this.loggerMock = mock<ILogger>();
+
+    const cachingOptsMock = mock<CachingOptions>()
+    when(cachingOptsMock.duration).thenReturn(3000)
+    when(this.configMock.caching).thenReturn(instance(cachingOptsMock))
   },
 
   get: async function (this: TestContext) {
@@ -39,6 +44,7 @@ export const cratesClientTests = {
     const cut = new CratesClient(
       instance(this.configMock),
       instance(this.jsonClientMock),
+      new MemoryExpiryCache('test-cache'),
       instance(this.loggerMock)
     );
 
@@ -47,8 +53,11 @@ export const cratesClientTests = {
 
     // test
     const actual = await cut.get(testPackageName)
+    const actualCached = await cut.get(testPackageName)
+
     // assert
     deepEqual(actual, expectedResp)
+    deepEqual(actualCached, { ...expectedResp, source: ClientResponseSource.cache })
   }
 
 }

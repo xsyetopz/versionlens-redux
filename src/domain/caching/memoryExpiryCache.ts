@@ -1,6 +1,6 @@
-import { throwNotStringOrEmpty } from "@esm-test/guards";
 import { ExpiryCacheEntry, IExpiryCache, MemoryCache } from "#domain/caching";
 import { TAsyncFunction } from '#domain/utils';
+import { throwNotStringOrEmpty } from "@esm-test/guards";
 
 export class MemoryExpiryCache implements IExpiryCache {
 
@@ -25,7 +25,7 @@ export class MemoryExpiryCache implements IExpiryCache {
     return result;
   }
 
-  get<T>(key: string, duration: number): T {
+  get<T>(key: string, duration: number): T | undefined {
     const entry = this.cache.get<ExpiryCacheEntry<T>>(key);
     if (!entry) {
       return undefined;
@@ -41,12 +41,9 @@ export class MemoryExpiryCache implements IExpiryCache {
     return entry.data;
   }
 
-  set<T>(key: string, data: T): T {
+  set<T>(key: string, data: T): T | undefined {
     const createdTime = Date.now();
-    const newEntry = {
-      createdTime,
-      data
-    };
+    const newEntry = { createdTime, data };
     this.cache.set<ExpiryCacheEntry<T>>(key, newEntry);
     return newEntry.data;
   }

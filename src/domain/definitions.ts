@@ -31,6 +31,7 @@ export interface IDomainServices {
   fileWatcherDependencyCache: DependencyCache;
   packageCache: PackageCache;
   shellCache: IExpiryCache;
+  urlRequestCache: IExpiryCache;
   GetSuggestionProvider: GetSuggestionProvider;
   fetchPackages: FetchPackages;
   fetchPackage: FetchPackage;

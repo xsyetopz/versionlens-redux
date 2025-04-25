@@ -1,15 +1,24 @@
-import type { HttpClientResponse, IHttpClient } from '#domain/clients';
+import type { IExpiryCache } from '#domain/caching';
+import { type HttpClientResponse, type IHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import { type MavenApiResponse, getVersionsFromPackageXml } from '#domain/providers/maven';
+import {
+  type MavenApiResponse,
+  type MavenConfig,
+  getVersionsFromPackageXml
+} from '#domain/providers/maven';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 export class MavenHttpClient {
 
   constructor(
+    readonly config: MavenConfig,
     readonly httpClient: IHttpClient,
+    readonly requestCache: IExpiryCache,
     readonly logger: ILogger
   ) {
+    throwUndefinedOrNull('config', config);
     throwUndefinedOrNull('httpClient', httpClient);
+    throwUndefinedOrNull('requestCache', requestCache);
     throwUndefinedOrNull('logger', logger);
   }
 
@@ -17,15 +26,20 @@ export class MavenHttpClient {
     const [group, artifact] = packageName.split(':');
     const search = group.replaceAll('.', '/') + '/' + artifact
     const url = `${repoUrl}${search}/maven-metadata.xml`;
-
+    // check cache
+    const cached = this.requestCache.get<MavenApiResponse>(
+      url,
+      this.config.caching.duration
+    );
+    if (cached) return { ...cached, source: ClientResponseSource.cache };
     try {
+      // fetch
       const httpResponse = await this.httpClient.get(url);
-
-      // reduce the dataset
+      // reduce
       const data = getVersionsFromPackageXml(httpResponse.data);
-
-      // return the response
-      return { ...httpResponse, data };
+      // cache and return
+      const result = { ...httpResponse, data };
+      return this.requestCache.set(url, result);
     } catch (error) {
       const errorResponse = error as HttpClientResponse;
 

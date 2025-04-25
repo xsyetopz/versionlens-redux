@@ -63,6 +63,7 @@ export function addGoHttpClient(services: IServiceCollection) {
             http: container.goHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

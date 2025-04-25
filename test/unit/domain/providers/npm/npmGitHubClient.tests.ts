@@ -4,22 +4,18 @@ import {
   ClientResponseSource
 } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import {
-  type PackageSuggestion,
-  SuggestionCategory,
-  SuggestionStatusText,
-  SuggestionTypes
-} from '#domain/packages';
+import { PackageStatusFactory, UpdateableFactory } from '#domain/packages';
 import { type NpaSpec, type NpmConfig, NpmGitHubClient } from '#domain/providers/npm';
 import { deepEqual, equal } from 'node:assert';
 import npa from 'npm-package-arg';
 import { anything, instance, mock, when } from 'ts-mockito';
-import { githubFixtures } from './npmGitHubClient.fixtures';
+import Fixtures from './npmGitHubClient.fixtures';
 
 type TestContext = {
   configMock: NpmConfig
   githubJsonClientMock: GitHubJsonClient
   loggerMock: ILogger
+  cut: NpmGitHubClient
 }
 
 export const NpmGitHubClientTests = {
@@ -30,6 +26,11 @@ export const NpmGitHubClientTests = {
     this.configMock = mock<NpmConfig>();
     this.githubJsonClientMock = mock<GitHubJsonClient>();
     this.loggerMock = mock<ILogger>();
+    this.cut = new NpmGitHubClient(
+      instance(this.configMock),
+      instance(this.githubJsonClientMock),
+      instance(this.loggerMock)
+    );
 
     when(this.configMock.prereleaseTagFilter).thenReturn([])
   },
@@ -52,22 +53,15 @@ export const NpmGitHubClientTests = {
 
     const testResponse: JsonClientResponse<any> = {
       status: 200,
-      data: githubFixtures.tags,
+      data: Fixtures.tags,
       source: ClientResponseSource.remote
     };
 
     when(this.githubJsonClientMock.getTags(anything(), anything()))
       .thenResolve(testResponse)
 
-    // setup initial call
-    const cut = new NpmGitHubClient(
-      instance(this.configMock),
-      instance(this.githubJsonClientMock),
-      instance(this.loggerMock)
-    );
-
     // test
-    const actual = await cut.fetchGithub(testSpec)
+    const actual = await this.cut.fetchGithub(testSpec)
 
     // assert
     equal(actual.source, 'github')
@@ -76,30 +70,10 @@ export const NpmGitHubClientTests = {
     deepEqual(
       actual.suggestions,
       [
-        <PackageSuggestion>{
-          name: SuggestionStatusText.SatisfiesLatest,
-          category: SuggestionCategory.Match,
-          version: 'v2.5.0',
-          type: SuggestionTypes.status
-        },
-        <PackageSuggestion>{
-          name: SuggestionStatusText.Latest,
-          category: SuggestionCategory.Updateable,
-          version: 'v2.5.0',
-          type: SuggestionTypes.release
-        },
-        <PackageSuggestion>{
-          name: 'rc',
-          category: SuggestionCategory.Updateable,
-          version: 'v2.6.0-rc.1',
-          type: SuggestionTypes.prerelease
-        },
-        <PackageSuggestion>{
-          name: 'preview',
-          category: SuggestionCategory.Updateable,
-          version: 'v2.5.0-preview.1',
-          type: SuggestionTypes.prerelease
-        }
+        PackageStatusFactory.createSatisifiesLatestStatus('v2.5.0'),
+        UpdateableFactory.createLatestUpdateable('v2.5.0'),
+        UpdateableFactory.createTaggedPreleaseUpdateable('rc', 'v2.6.0-rc.1'),
+        UpdateableFactory.createTaggedPreleaseUpdateable('preview', 'v2.5.0-preview.1')
       ]
     )
   },
@@ -123,22 +97,15 @@ export const NpmGitHubClientTests = {
 
     const testResponse: JsonClientResponse<any> = {
       status: 200,
-      data: githubFixtures.tags,
+      data: Fixtures.tags,
       source: ClientResponseSource.remote
     };
 
     when(this.githubJsonClientMock.getTags(anything(), anything()))
       .thenResolve(testResponse)
 
-    // setup initial call
-    const cut = new NpmGitHubClient(
-      instance(this.configMock),
-      instance(this.githubJsonClientMock),
-      instance(this.loggerMock)
-    );
-
     // test
-    const actual = await cut.fetchGithub(testSpec)
+    const actual = await this.cut.fetchGithub(testSpec)
 
     // assert
     equal(actual.source, 'github')
@@ -147,30 +114,10 @@ export const NpmGitHubClientTests = {
     deepEqual(
       actual.suggestions,
       [
-        <PackageSuggestion>{
-          name: SuggestionStatusText.Fixed,
-          category: SuggestionCategory.Match,
-          version: 'v2.0.0',
-          type: SuggestionTypes.status
-        },
-        <PackageSuggestion>{
-          name: SuggestionStatusText.UpdateLatest,
-          category: SuggestionCategory.Updateable,
-          version: 'v2.5.0',
-          type: SuggestionTypes.release
-        },
-        <PackageSuggestion>{
-          name: 'rc',
-          category: SuggestionCategory.Updateable,
-          version: 'v2.6.0-rc.1',
-          type: SuggestionTypes.prerelease
-        },
-        <PackageSuggestion>{
-          name: 'preview',
-          category: SuggestionCategory.Updateable,
-          version: 'v2.5.0-preview.1',
-          type: SuggestionTypes.prerelease
-        }
+        PackageStatusFactory.createFixedStatus('v2.0.0'),
+        UpdateableFactory.createLatestUpdateable('v2.5.0'),
+        UpdateableFactory.createTaggedPreleaseUpdateable('rc', 'v2.6.0-rc.1'),
+        UpdateableFactory.createTaggedPreleaseUpdateable('preview', 'v2.5.0-preview.1'),
       ]
     )
   },
@@ -182,7 +129,7 @@ export const NpmGitHubClientTests = {
       package: {
         path: 'packagepath',
         name: 'core.js',
-        version: 'github:octokit/core.js#166c3497',
+        version: 'github:octokit/core.js#166c349',
       }
     };
 
@@ -194,21 +141,15 @@ export const NpmGitHubClientTests = {
 
     const testResponse: JsonClientResponse<any> = {
       status: 200,
-      data: githubFixtures.commits,
+      data: Fixtures.commits,
       source: ClientResponseSource.remote
     };
 
     when(this.githubJsonClientMock.getCommits(anything(), anything()))
       .thenResolve(testResponse)
 
-    const cut = new NpmGitHubClient(
-      instance(this.configMock),
-      instance(this.githubJsonClientMock),
-      instance(this.loggerMock)
-    );
-
     // test
-    const actual = await cut.fetchGithub(testSpec)
+    const actual = await this.cut.fetchGithub(testSpec)
 
     // assert
     equal(actual.source, 'github')
@@ -217,18 +158,8 @@ export const NpmGitHubClientTests = {
     deepEqual(
       actual.suggestions,
       [
-        <PackageSuggestion>{
-          name: SuggestionStatusText.Fixed,
-          category: SuggestionCategory.Match,
-          version: '166c3497',
-          type: SuggestionTypes.status
-        },
-        <PackageSuggestion>{
-          name: SuggestionStatusText.UpdateLatest,
-          category: SuggestionCategory.Updateable,
-          version: 'df4d9435',
-          type: SuggestionTypes.release
-        }
+        PackageStatusFactory.createFixedStatus('166c349'),
+        UpdateableFactory.createLatestUpdateable('df4d943')
       ]
     )
   },

@@ -1,10 +1,11 @@
-import type { CachingOptions } from '#domain/caching';
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import { createPackageResource } from '#domain/packages';
 import {
   type INpmRegistry,
   type NpaSpec,
+  type NpmClientData,
   type NpmConfig,
   NpmRegistryClient
 } from '#domain/providers/npm';
@@ -14,24 +15,30 @@ import npa from 'npm-package-arg';
 import { anyOfClass, anything, instance, mock, verify, when } from 'ts-mockito';
 
 type TestContext = {
-  cachingOptsMock: CachingOptions
-  loggerMock: ILogger
   configMock: NpmConfig
+  loggerMock: ILogger
   npmRegistryMock: INpmRegistry
+  cut: NpmRegistryClient
 }
 
 export const RequestsTests = {
 
-  [test.title]: NpmRegistryClient.prototype.request.name,
+  [test.title]: NpmRegistryClient.prototype.get.name,
 
   beforeEach: function (this: TestContext) {
-    this.cachingOptsMock = mock<CachingOptions>();
     this.configMock = mock<NpmConfig>()
     this.loggerMock = mock<ILogger>()
     this.npmRegistryMock = mock<INpmRegistry>()
+    this.cut = new NpmRegistryClient(
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      new MemoryExpiryCache('test-cache'),
+      instance(this.loggerMock)
+    )
 
-    when(this.cachingOptsMock.duration).thenReturn(30000);
-    when(this.configMock.caching).thenReturn(instance(this.cachingOptsMock))
+    const cachingOptsMock = mock<CachingOptions>()
+    when(cachingOptsMock.duration).thenReturn(3000);
+    when(this.configMock.caching).thenReturn(instance(cachingOptsMock))
     when(this.configMock.prereleaseTagFilter).thenReturn([])
     when(this.npmRegistryMock.pickRegistry(anything(), anything()))
       .thenReturn("https://registry.npmjs.org/")
@@ -39,14 +46,14 @@ export const RequestsTests = {
 
   "returns successful responses": async function (this: TestContext) {
     const testResponse = {
-      any: "test success response from npm registry"
+      'dist-tags': {},
+      versions: []
     };
 
-    const expectedResponse = {
+    const expectedResp = {
       source: ClientResponseSource.remote,
       status: 200,
-      data: testResponse,
-      rejected: false
+      data: testResponse
     };
 
     const testPackageRes = createPackageResource(
@@ -64,7 +71,8 @@ export const RequestsTests = {
       testPackageRes.path
     ) as NpaSpec;
 
-    const testClientData = {
+    const testClientData: NpmClientData = {
+      registry: '',
       strictSSL: true,
       proxy: '',
       httpsProxy: ''
@@ -75,14 +83,9 @@ export const RequestsTests = {
     when(this.npmRegistryMock.json(testUrl, testClientData))
       .thenResolve(testResponse);
 
-    const cut = new NpmRegistryClient(
-      instance(this.npmRegistryMock),
-      instance(this.configMock),
-      instance(this.loggerMock)
-    );
-
     // test
-    const actual = await cut.request(testNpaSpec, testClientData);
+    const actual = await this.cut.get(testNpaSpec, testClientData);
+    const actualCached = await this.cut.get(testNpaSpec, testClientData);
 
     // verify
     verify(
@@ -96,10 +99,11 @@ export const RequestsTests = {
     ).once();
 
     // assert
-    assert.deepEqual(actual, expectedResponse);
+    assert.deepEqual(actual, expectedResp);
+    assert.deepEqual(actualCached, { ...expectedResp, source: ClientResponseSource.cache });
   },
 
-  "caches url responses when rejected": async function (this: TestContext) {
+  "throws when rejected": async function (this: TestContext) {
     const testResponse = {
       code: "E404",
       message: "404 Not Found - GET https://registry.npmjs.org/somepackage - Not found",
@@ -130,15 +134,9 @@ export const RequestsTests = {
     when(this.npmRegistryMock.json(anything(), anything()))
       .thenReject(<any>testResponse);
 
-    const cut = new NpmRegistryClient(
-      instance(this.npmRegistryMock),
-      instance(this.configMock),
-      instance(this.loggerMock)
-    );
-
     try {
       // test
-      await cut.request(testNpaSpec, anything());
+      await this.cut.get(testNpaSpec, anything());
       assert.ok(false);
     } catch (actual) {
       // assert

@@ -64,6 +64,7 @@ export function addPubJsonClient(services: IServiceCollection) {
             http: container.pubHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

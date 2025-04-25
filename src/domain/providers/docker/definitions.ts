@@ -1,4 +1,4 @@
-import type { CachingOptions, MemoryExpiryCache } from '#domain/caching';
+import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions, JsonClientResponse } from '#domain/clients';
 import type { DockerClient, DockerConfig, DockerHubClient } from '#domain/providers/docker';
 import { nameOf } from '#domain/utils';
@@ -17,7 +17,6 @@ export interface IDockerServices {
   dockerHttpOpts: HttpOptions
   dockerConfig: DockerConfig
   dockerHubClient: DockerHubClient
-  dockerHubClientCache: MemoryExpiryCache
   dockerClient: DockerClient
 }
 

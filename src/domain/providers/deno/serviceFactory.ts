@@ -65,6 +65,7 @@ export function addJsrClient(services: IServiceCollection) {
             http: container.denoHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

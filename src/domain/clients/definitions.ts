@@ -70,3 +70,9 @@ export interface ShellClientRequestFn {
 export interface IShellClient {
   request: ShellClientRequestFn;
 }
+
+export type GithubTagsApiResult = [{ name: string }]
+
+export type GithubCommitsApiResult = [{ sha: string }]
+
+export type GithubJsonClientResponse = JsonClientResponse<string[]>

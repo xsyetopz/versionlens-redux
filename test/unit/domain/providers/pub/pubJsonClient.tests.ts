@@ -1,3 +1,4 @@
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { type IJsonHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import { type PubConfig, PubJsonClient } from '#domain/providers/pub';
@@ -6,9 +7,9 @@ import { instance, mock, when } from 'ts-mockito';
 import fixtures from './pubJsonClient.fixtures';
 
 type TestContext = {
-  configMock: PubConfig;
-  jsonClientMock: IJsonHttpClient;
-  loggerMock: ILogger;
+  configMock: PubConfig
+  jsonClientMock: IJsonHttpClient
+  loggerMock: ILogger
 }
 
 export const PubJsonClientTests = {
@@ -19,6 +20,10 @@ export const PubJsonClientTests = {
     this.configMock = mock<PubConfig>();
     this.jsonClientMock = mock<IJsonHttpClient>();
     this.loggerMock = mock<ILogger>();
+
+    const cachingOptsMock = mock<CachingOptions>()
+    when(cachingOptsMock.duration).thenReturn(3000)
+    when(this.configMock.caching).thenReturn(instance(cachingOptsMock))
   },
 
   get: async function (this: TestContext) {
@@ -39,6 +44,7 @@ export const PubJsonClientTests = {
     const cut = new PubJsonClient(
       instance(this.configMock),
       instance(this.jsonClientMock),
+      new MemoryExpiryCache('test-cache'),
       instance(this.loggerMock)
     );
 
@@ -47,8 +53,11 @@ export const PubJsonClientTests = {
 
     // test
     const actual = await cut.get(testUrl)
+    const actualCached = await cut.get(testUrl)
+
     // assert
     deepEqual(actual, expectedResp)
+    deepEqual(actualCached, { ...expectedResp, source: ClientResponseSource.cache })
   }
 
 }

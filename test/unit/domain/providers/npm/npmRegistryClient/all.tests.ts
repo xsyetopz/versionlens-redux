@@ -1,2 +1,2 @@
 export * from './fetchPackage.tests';
-export * from './request.tests';
+export * from './get.tests';

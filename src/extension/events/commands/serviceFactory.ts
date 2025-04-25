@@ -1,8 +1,5 @@
 import type { IDomainServices } from '#domain';
-import { MemoryExpiryCache } from '#domain/caching';
-import type { IServiceCollection, IServiceProvider } from '#domain/di';
-import type { IDockerServices } from '#domain/providers/docker';
-import { nameOf } from '#domain/utils';
+import type { IServiceCollection } from '#domain/di';
 import {
   type IExtensionServices,
   ExtensionServiceName,
@@ -24,15 +21,10 @@ export function addOnClearCache(services: IServiceCollection) {
     serviceName,
     (container: IDomainServices) => {
       // create the event handler
-      const dockerServices = container.serviceProvider.getService<IServiceProvider>('docker')
-      const dockerRequestCache = dockerServices.getService<MemoryExpiryCache>(
-        nameOf<IDockerServices>().dockerHubClientCache
-      );
-
       const handler = new OnClearCache(
         container.packageCache,
         container.shellCache,
-        dockerRequestCache,
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       );
 

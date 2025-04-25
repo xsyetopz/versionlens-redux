@@ -11,6 +11,7 @@ import {
   addShellCache,
   addSuggestionPackageCache,
   addSuggestionProviders,
+  addUrlRequestCache,
 } from '#domain';
 import type { TConfigSectionResolver } from '#domain/configuration';
 import type { IServiceCollection } from '#domain/di';
@@ -32,6 +33,7 @@ export function addDomainServices(
   addFileWatcherDependencyCache(services);
   addSuggestionPackageCache(services);
   addShellCache(services);
+  addUrlRequestCache(services);
 
   // logging
   addLoggerFactory(services);

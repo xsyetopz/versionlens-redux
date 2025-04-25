@@ -1,4 +1,11 @@
-import type { IJsonHttpClient, JsonClientResponse } from '#domain/clients';
+import type { CachingOptions, IExpiryCache } from '#domain/caching';
+import {
+  type GithubCommitsApiResult,
+  type GithubJsonClientResponse,
+  type GithubTagsApiResult,
+  type IJsonHttpClient,
+  ClientResponseSource
+} from '#domain/clients';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const defaultHeaders = {
@@ -7,29 +14,58 @@ const defaultHeaders = {
 
 export class GitHubJsonClient {
 
-  constructor(readonly jsonClient: IJsonHttpClient) {
-    throwUndefinedOrNull("jsonClient", jsonClient);
+  constructor(
+    readonly caching: CachingOptions,
+    readonly jsonClient: IJsonHttpClient,
+    readonly requestCache: IExpiryCache
+  ) {
+    throwUndefinedOrNull('caching', caching);
+    throwUndefinedOrNull('jsonClient', jsonClient);
+    throwUndefinedOrNull('requestCache', requestCache);
   }
 
-  async getTags(user: string, project: string): Promise<JsonClientResponse<string[]>> {
+  async getTags(user: string, project: string): Promise<GithubJsonClientResponse> {
     const tagsRepoUrl = `https://api.github.com/repos/${user}/${project}/tags`;
-    const jsonResponse = await this.jsonClient.get(tagsRepoUrl, {}, defaultHeaders);
+    // check cache
+    const cached = this.requestCache.get<GithubJsonClientResponse>(
+      tagsRepoUrl,
+      this.caching.duration
+    );
+    if (cached) return { ...cached, source: ClientResponseSource.cache };
+    // fetch
+    const jsonResponse = await this.jsonClient.get<GithubTagsApiResult>(
+      tagsRepoUrl,
+      {},
+      defaultHeaders
+    );
+    // reduce
     const tags = jsonResponse.data ?? [];
-    return {
-      ...jsonResponse,
-      data: tags.map((tag: any) => tag.name)
-    };
+    const data = tags.map(tag => tag.name);
+    // cache and return
+    const result = { ...jsonResponse, data };
+    return this.requestCache.set(tagsRepoUrl, result);
   }
 
-  async getCommits(user: string, project: string): Promise<JsonClientResponse<string[]>> {
+  async getCommits(user: string, project: string): Promise<GithubJsonClientResponse> {
     const commitsRepoUrl = `https://api.github.com/repos/${user}/${project}/commits`;
-    const jsonResponse = await this.jsonClient.get(commitsRepoUrl, {}, defaultHeaders);
-    const commitInfos = <[]>jsonResponse.data
-    const data = commitInfos.map((commit: any) => commit.sha);
-    return {
-      ...jsonResponse,
-      data
-    }
+    // check cache
+    const cached = this.requestCache.get<GithubJsonClientResponse>(
+      commitsRepoUrl,
+      this.caching.duration
+    );
+    if (cached) return { ...cached, source: ClientResponseSource.cache };
+    // fetch
+    const jsonResponse = await this.jsonClient.get<GithubCommitsApiResult>(
+      commitsRepoUrl,
+      {},
+      defaultHeaders
+    );
+    // reduce
+    const commits = jsonResponse.data ?? []
+    const data = commits.map((commit: any) => commit.sha.substring(0, 7));
+    // cache and return
+    const result = { ...jsonResponse, data };
+    return this.requestCache.set(commitsRepoUrl, result);
   }
 
 }

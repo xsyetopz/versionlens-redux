@@ -1,6 +1,7 @@
-import { type IJsonHttpClient, ClientResponseSource, JsonClientResponse } from '#domain/clients';
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
+import { type IJsonHttpClient, type JsonClientResponse, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import { NuGetClient } from '#domain/providers/dotnet';
+import { type DotNetConfig, NuGetClient } from '#domain/providers/dotnet';
 import { RegistryProtocols } from '#domain/utils';
 import { deepEqual, equal } from 'node:assert';
 import {
@@ -15,8 +16,10 @@ import {
 import Fixtures from './nugetClient.fixtures';
 
 type TestContext = {
-  jsonClientMock: IJsonHttpClient;
-  loggerMock: ILogger;
+  configMock: DotNetConfig
+  jsonClientMock: IJsonHttpClient
+  loggerMock: ILogger
+  cut: NuGetClient
 }
 
 export const NuGetClientTests = {
@@ -24,8 +27,19 @@ export const NuGetClientTests = {
   title: NuGetClient.name,
 
   beforeEach: function (this: TestContext) {
+    this.configMock = mock<DotNetConfig>();
     this.jsonClientMock = mock<IJsonHttpClient>();
     this.loggerMock = mock<ILogger>();
+    this.cut = new NuGetClient(
+      instance(this.configMock),
+      instance(this.jsonClientMock),
+      new MemoryExpiryCache('test-cache'),
+      instance(this.loggerMock)
+    );
+
+    const cachingOptsMock = mock<CachingOptions>()
+    when(cachingOptsMock.duration).thenReturn(3000)
+    when(this.configMock.caching).thenReturn(instance(cachingOptsMock))
   },
 
   get: {
@@ -44,13 +58,16 @@ export const NuGetClientTests = {
         source: ClientResponseSource.remote,
         status: 200
       }
-      const cut = new NuGetClient(instance(this.jsonClientMock), instance(this.loggerMock));
+
       when(this.jsonClientMock.get(testUrl)).thenResolve(testResp)
 
       // test
-      const actual = await cut.get(testPackageName, [testApiUrl])
+      const actual = await this.cut.get(testPackageName, [testApiUrl])
+      const actualCached = await this.cut.get(testPackageName, [testApiUrl])
+
       // assert
       deepEqual(actual, expectedResp)
+      deepEqual(actualCached, { ...expectedResp, source: ClientResponseSource.cache })
     },
     "attempts fallback url when 404": async function (this: TestContext) {
       const testPackageName = 'test-package-name'
@@ -75,18 +92,18 @@ export const NuGetClientTests = {
       when(this.jsonClientMock.get(`${successUrl}/${testPackageName}/index.json`))
         .thenResolve(successResp as any)
 
-      const cut = new NuGetClient(instance(this.jsonClientMock), instance(this.loggerMock))
-
       // test
-      const actual = await cut.get(testPackageName, [failUrl, successUrl])
+      const actual = await this.cut.get(testPackageName, [failUrl, successUrl])
+      const actualCached = await this.cut.get(testPackageName, [failUrl, successUrl])
 
       // assert
       deepEqual(actual, successResp)
+      deepEqual(actualCached, { ...successResp, source: ClientResponseSource.cache })
     }
   },
 
   fetchResource: {
-    "": async function (this: TestContext) {
+    "returns the package resource from a list of resources": async function (this: TestContext) {
       const testSource = {
         enabled: true,
         machineWide: false,
@@ -102,10 +119,9 @@ export const NuGetClientTests = {
 
       const expected = 'https://api.nuget.org/v3-flatcontainer1/';
       when(this.jsonClientMock.get(anything())).thenResolve(mockResponse)
-      const cut = new NuGetClient(instance(this.jsonClientMock), instance(this.loggerMock))
 
       // test
-      const actual = await cut.fetchResource(testSource);
+      const actual = await this.cut.fetchResource(testSource);
 
       // verify
       verify(
@@ -143,10 +159,8 @@ export const NuGetClientTests = {
 
       when(this.jsonClientMock.get(anything())).thenReject(<any>errorResponse);
 
-      const cut = new NuGetClient(instance(this.jsonClientMock), instance(this.loggerMock));
-
       // test
-      const actual = await cut.fetchResource(testSource)
+      const actual = await this.cut.fetchResource(testSource)
 
       // verify
       verify(

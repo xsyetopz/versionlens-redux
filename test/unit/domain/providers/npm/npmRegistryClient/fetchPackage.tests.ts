@@ -1,13 +1,10 @@
-import type { CachingOptions } from '#domain/caching';
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import type { ILogger } from '#domain/logging';
 import {
   type PackageClientRequest,
-  type PackageSuggestion,
   createPackageResource,
   PackageDependency,
-  SuggestionCategory,
-  SuggestionStatusText,
-  SuggestionTypes
+  PackageStatusFactory
 } from '#domain/packages';
 import {
   createPackageNameDesc,
@@ -29,10 +26,12 @@ import { anything, instance, mock, when } from 'ts-mockito';
 import Fixtures from './npmRegistryClient.fixtures';
 
 type TestContext = {
-  cachingOptsMock: CachingOptions
-  loggerMock: ILogger
-  configMock: NpmConfig
   npmRegistryMock: INpmRegistry
+  configMock: NpmConfig
+  requestCache: MemoryExpiryCache
+  loggerMock: ILogger
+  cachingOptsMock: CachingOptions
+  cut: NpmRegistryClient
 }
 
 export const fetchPackageTests = {
@@ -42,8 +41,15 @@ export const fetchPackageTests = {
   beforeEach: function (this: TestContext) {
     this.cachingOptsMock = mock<CachingOptions>()
     this.configMock = mock<NpmConfig>()
+    this.requestCache = new MemoryExpiryCache('test-cache')
     this.loggerMock = mock<ILogger>()
     this.npmRegistryMock = mock<INpmRegistry>()
+    this.cut = new NpmRegistryClient(
+      instance(this.npmRegistryMock),
+      instance(this.configMock),
+      this.requestCache,
+      instance(this.loggerMock)
+    )
 
     when(this.configMock.caching).thenReturn(instance(this.cachingOptsMock))
     when(this.configMock.prereleaseTagFilter).thenReturn([])
@@ -88,14 +94,8 @@ export const fetchPackageTests = {
     when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentRegistryRange)
 
-    const cut = new NpmRegistryClient(
-      instance(this.npmRegistryMock),
-      instance(this.configMock),
-      instance(this.loggerMock)
-    )
-
     // test
-    const actual = await cut.fetchPackage(testRequest, npaSpec)
+    const actual = await this.cut.fetchPackage(testRequest, npaSpec)
 
     // assert
     assert.equal(actual.source, 'registry')
@@ -141,14 +141,8 @@ export const fetchPackageTests = {
     when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentRegistryVersion)
 
-    const cut = new NpmRegistryClient(
-      instance(this.npmRegistryMock),
-      instance(this.configMock),
-      instance(this.loggerMock)
-    )
-
     // test
-    const actual = await cut.fetchPackage(testRequest, npaSpec)
+    const actual = await this.cut.fetchPackage(testRequest, npaSpec)
 
     // assert
     assert.equal(actual.source, 'registry')
@@ -193,25 +187,14 @@ export const fetchPackageTests = {
     when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentCappedToLatestTaggedVersion)
 
-    const cut = new NpmRegistryClient(
-      instance(this.npmRegistryMock),
-      instance(this.configMock),
-      instance(this.loggerMock)
-    )
-
     // test
-    const actual = await cut.fetchPackage(testRequest, npaSpec)
+    const actual = await this.cut.fetchPackage(testRequest, npaSpec)
 
     // assert
     assert.deepEqual(
       actual.suggestions,
       [
-        <PackageSuggestion>{
-          name: SuggestionStatusText.Latest,
-          category: SuggestionCategory.Latest,
-          version: testPackageRes.version,
-          type: SuggestionTypes.status
-        }
+        PackageStatusFactory.createMatchesLatestStatus(testPackageRes.version)
       ]
     )
   },
@@ -253,14 +236,8 @@ export const fetchPackageTests = {
     when(this.npmRegistryMock.json(anything(), anything()))
       .thenResolve(Fixtures.packumentRegistryAlias)
 
-    const cut = new NpmRegistryClient(
-      instance(this.npmRegistryMock),
-      instance(this.configMock),
-      instance(this.loggerMock)
-    )
-
     // test
-    const actual = await cut.fetchPackage(testRequest, npaSpec)
+    const actual = await this.cut.fetchPackage(testRequest, npaSpec)
 
     // assert
     assert.equal(actual.source, 'registry')

@@ -1,3 +1,4 @@
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { type IHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import { type PypiConfig, PypiHttpClient } from '#domain/providers/pypi';
@@ -6,9 +7,9 @@ import { instance, mock, when } from 'ts-mockito';
 import fixtures from './pypiHttpClient.fixtures';
 
 type TestContext = {
-  configMock: PypiConfig;
-  httpClientMock: IHttpClient;
-  loggerMock: ILogger;
+  configMock: PypiConfig
+  httpClientMock: IHttpClient
+  loggerMock: ILogger
 }
 
 export const PypiHttpClientTests = {
@@ -19,6 +20,10 @@ export const PypiHttpClientTests = {
     this.configMock = mock<PypiConfig>();
     this.httpClientMock = mock<IHttpClient>();
     this.loggerMock = mock<ILogger>();
+
+    const cachingOptsMock = mock<CachingOptions>()
+    when(cachingOptsMock.duration).thenReturn(3000)
+    when(this.configMock.caching).thenReturn(instance(cachingOptsMock))
   },
 
   get: async function (this: TestContext) {
@@ -39,6 +44,7 @@ export const PypiHttpClientTests = {
     const cut = new PypiHttpClient(
       instance(this.configMock),
       instance(this.httpClientMock),
+      new MemoryExpiryCache('test-cache'),
       instance(this.loggerMock)
     );
 
@@ -47,8 +53,11 @@ export const PypiHttpClientTests = {
 
     // test
     const actual = await cut.get(testPackageName)
+    const actualCached = await cut.get(testPackageName)
+
     // assert
     deepEqual(actual, expectedResp)
+    deepEqual(actualCached, { ...expectedResp, source: ClientResponseSource.cache })
   }
 
 }

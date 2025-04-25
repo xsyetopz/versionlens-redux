@@ -60,13 +60,15 @@ export function addNpmGitHubClient(services: IServiceCollection) {
       new NpmGitHubClient(
         container.npmConfig,
         new GitHubJsonClient(
+          container.cachingOptions,
           createJsonClient(
             container.authorizer,
             {
               caching: container.npmCachingOpts,
               http: container.npmHttpOpts
             }
-          )
+          ),
+          container.urlRequestCache
         ),
         container.loggerFactory.create(serviceName)
       )
@@ -81,6 +83,7 @@ export function addNpmRegistryClient(services: IServiceCollection) {
       new NpmRegistryClient(
         NpmRegistryFetch,
         container.npmConfig,
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

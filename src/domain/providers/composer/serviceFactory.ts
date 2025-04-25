@@ -64,6 +64,7 @@ export function addPackagistClient(services: IServiceCollection) {
             http: container.composerHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

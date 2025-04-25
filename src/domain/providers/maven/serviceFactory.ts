@@ -74,6 +74,7 @@ export function addMavenHttpClient(services: IServiceCollection) {
     serviceName,
     (container: IMavenServices & IDomainServices) =>
       new MavenHttpClient(
+        container.mavenConfig,
         createHttpClient(
           container.authorizer,
           {
@@ -81,6 +82,7 @@ export function addMavenHttpClient(services: IServiceCollection) {
             http: container.mavenHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

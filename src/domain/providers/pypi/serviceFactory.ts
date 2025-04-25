@@ -64,6 +64,7 @@ export function addPypiHttpClient(services: IServiceCollection) {
             http: container.pypiHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

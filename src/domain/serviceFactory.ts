@@ -74,6 +74,12 @@ export function addShellCache(services: IServiceCollection) {
   services.addSingleton(serviceName, new MemoryExpiryCache(serviceName));
 }
 
+export function addUrlRequestCache(services: IServiceCollection) {
+  const serviceName = DomainServiceName.urlRequestCache;
+  services.addSingleton(serviceName, new MemoryExpiryCache(serviceName)
+  );
+}
+
 export function addGetSuggestionProviderUseCase(services: IServiceCollection) {
   const serviceName = DomainServiceName.GetSuggestionProvider;
   services.addSingleton(

@@ -64,6 +64,7 @@ export function addCratesClient(services: IServiceCollection) {
             http: container.cargoHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

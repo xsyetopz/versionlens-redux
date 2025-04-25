@@ -1,14 +1,15 @@
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { type JsonHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import { GoHttpClient, type GoConfig } from '#domain/providers/golang';
+import { type GoConfig, GoHttpClient } from '#domain/providers/golang';
 import { deepEqual } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
 import fixtures from './goHttpClient.fixtures';
 
 type TestContext = {
-  configMock: GoConfig;
-  jsonClientMock: JsonHttpClient;
-  loggerMock: ILogger;
+  configMock: GoConfig
+  jsonClientMock: JsonHttpClient
+  loggerMock: ILogger
 }
 
 export const GoHttpClientTests = {
@@ -19,6 +20,11 @@ export const GoHttpClientTests = {
     this.configMock = mock<GoConfig>();
     this.jsonClientMock = mock<JsonHttpClient>();
     this.loggerMock = mock<ILogger>();
+
+    const cachingOptsMock = mock<CachingOptions>()
+    when(cachingOptsMock.duration).thenReturn(3000)
+    when(this.configMock.caching).thenReturn(instance(cachingOptsMock))
+
   },
 
   get: async function (this: TestContext) {
@@ -39,6 +45,7 @@ export const GoHttpClientTests = {
     const cut = new GoHttpClient(
       instance(this.configMock),
       instance(this.jsonClientMock),
+      new MemoryExpiryCache('test-cache'),
       instance(this.loggerMock)
     );
 
@@ -47,8 +54,11 @@ export const GoHttpClientTests = {
 
     // test
     const actual = await cut.get(testPackageName)
+    const actualCached = await cut.get(testPackageName)
+
     // assert
     deepEqual(actual, expectedResp)
+    deepEqual(actualCached, { ...expectedResp, source: ClientResponseSource.cache })
   }
 
 }

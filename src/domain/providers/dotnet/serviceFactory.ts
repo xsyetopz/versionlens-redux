@@ -87,6 +87,7 @@ export function addNuGetClient(services: IServiceCollection) {
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
       new NuGetClient(
+        container.dotnetConfig,
         createJsonClient(
           container.authorizer,
           {
@@ -94,6 +95,7 @@ export function addNuGetClient(services: IServiceCollection) {
             http: container.dotnetHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );

@@ -1,4 +1,5 @@
-import type { IHttpClient } from '#domain/clients';
+import type { IExpiryCache } from '#domain/caching';
+import { type IHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import type { GoApiClientResponse, GoConfig } from '#domain/providers/golang';
 import { throwUndefinedOrNull } from '@esm-test/guards';
@@ -8,24 +9,32 @@ export class GoHttpClient {
   constructor(
     readonly config: GoConfig,
     readonly httpClient: IHttpClient,
+    readonly requestCache: IExpiryCache,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
     throwUndefinedOrNull('httpClient', httpClient);
+    throwUndefinedOrNull('requestCache', requestCache);
     throwUndefinedOrNull('logger', logger);
   }
 
   async get(packageName: string): Promise<GoApiClientResponse> {
     const url = this.config.apiUrl.replace('{base-module}', packageName.toLowerCase());
+    // check cache
+    const cached = this.requestCache.get<GoApiClientResponse>(
+      url,
+      this.config.caching.duration
+    );
+    if (cached) return { ...cached, source: ClientResponseSource.cache };
+    // fetch
     const httpResponse = await this.httpClient.get(url);
-
-    // reduce the dataset
+    // reduce
     const data = {
       versions: httpResponse.data.split('\n').filter(x => !!x)
     };
-
-    // return the response
-    return { ...httpResponse, data };
+    // cache and return
+    const result = { ...httpResponse, data };
+    return this.requestCache.set(url, result);
   }
 
 }

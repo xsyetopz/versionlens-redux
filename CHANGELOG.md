@@ -1,3 +1,24 @@
+# 1.21.0-prerelease
+
+  ### All
+
+  - Caching improvements
+
+  ### Npm
+
+  - Removed the `versionlens.github.accessToken` setting which was deprecated in 1.16.0. <br>
+    This was replaced by the built in [authorization](https://gitlab.com/versionlens/vscode-versionlens/-/blob/master/docs/authorization.md) feature of version lens.
+
+  - Fixed github #commits not showing version suggestions
+
+  ### Docker
+
+  - Fixed version descriptor handler missing error
+
+  ### Maven
+
+  - Added repository url fallback recursion
+
 # 1.20.1
 
   ### Dart (pub)

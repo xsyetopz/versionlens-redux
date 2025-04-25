@@ -34,7 +34,6 @@ export default {
       {
         sha: "f099459fd01be79187275ddf47d77a2797188c6a"
       },
-
       {
         sha: "166c3497967489e61a1d532b79b8fe750fd5ba56"
       },
@@ -49,11 +48,11 @@ export default {
       },
     ],
     expected: [
-      "f099459fd01be79187275ddf47d77a2797188c6a",
-      "166c3497967489e61a1d532b79b8fe750fd5ba56",
-      "37250168e2ecaab477c962071d2024e89ebb1844",
-      "6a3fb5a4dec4588b746ac3bf14d0704498e7b948",
-      "df4d9435a320c0345ff2930ec71a007f3a320211",
+      "f099459",
+      "166c349",
+      "3725016",
+      "6a3fb5a",
+      "df4d943",
     ]
   }
 }

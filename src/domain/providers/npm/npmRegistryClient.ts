@@ -1,3 +1,4 @@
+import type { IExpiryCache } from '#domain/caching';
 import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
@@ -26,11 +27,13 @@ export class NpmRegistryClient {
   constructor(
     readonly npmRegistryFetch: INpmRegistry,
     readonly config: NpmConfig,
+    readonly requestCache: IExpiryCache,
     readonly logger: ILogger
   ) {
-    throwUndefinedOrNull("npmRegistryFetch", npmRegistryFetch);
-    throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("logger", logger);
+    throwUndefinedOrNull('npmRegistryFetch', npmRegistryFetch);
+    throwUndefinedOrNull('config', config);
+    throwUndefinedOrNull('requestCache', requestCache);
+    throwUndefinedOrNull('logger', logger);
   }
 
   async fetchPackage(
@@ -46,7 +49,7 @@ export class NpmRegistryClient {
     const requestedPackage = request.parsedDependency.package;
 
     // fetch the package from the npm's registry
-    const response = await this.request(spec, request.clientData);
+    const response = await this.get(spec, request.clientData);
 
     let versionRange = spec.rawSpec;
 
@@ -63,7 +66,7 @@ export class NpmRegistryClient {
     const packumentResponse = response.data;
 
     // extract raw versions and sort
-    const rawVersions = Object.keys(packumentResponse.versions || {})
+    const rawVersions = packumentResponse.versions
       .sort(VersionUtils.compareVersionsAndBuilds);
 
     // seperate versions to releases and prereleases
@@ -73,7 +76,7 @@ export class NpmRegistryClient {
     );
 
     // extract prereleases from dist tags
-    const distTags = packumentResponse['dist-tags'] || {};
+    const distTags = packumentResponse['dist-tags'];
     const latestTaggedVersion = distTags['latest'];
 
     // extract releases
@@ -130,11 +133,17 @@ export class NpmRegistryClient {
 
   }
 
-  async request(npaSpec: NpaSpec, clientData: any): Promise<NpmRegistryClientResponse> {
+  async get(npaSpec: NpaSpec, clientData: NpmClientData): Promise<NpmRegistryClientResponse> {
     try {
       const registry = this.npmRegistryFetch.pickRegistry(npaSpec, clientData);
       const url = `${ensureEndSlash(registry)}${npaSpec.escapedName}`;
-
+      // check cache
+      const cached = this.requestCache.get<NpmRegistryClientResponse>(
+        url,
+        this.config.caching.duration
+      );
+      if (cached) return { ...cached, source: ClientResponseSource.cache };
+      // fetch
       this.logger.debug(
         "url: {url}, strict-ssl: {strictSSL}, proxy: {proxy}, https-proxy: {httpsProxy}",
         new URL(url),
@@ -142,16 +151,18 @@ export class NpmRegistryClient {
         clientData.proxy ? new URL(clientData.proxy) : '',
         clientData.httpsProxy ? new URL(clientData.httpsProxy) : ''
       );
-
       const registryResponse = await this.npmRegistryFetch.json(url, clientData);
-      const result: NpmRegistryClientResponse = {
-        source: ClientResponseSource.remote,
+      // reduce
+      const result = {
         status: 200,
-        data: registryResponse,
-        rejected: false
-      };
-
-      return result;
+        source: ClientResponseSource.remote,
+        data: {
+          ['dist-tags']: registryResponse['dist-tags'] ?? {},
+          versions: Object.keys(registryResponse.versions ?? {})
+        }
+      } as NpmRegistryClientResponse;
+      // cache and return
+      return this.requestCache.set(url, result);
     } catch (error) {
       const result: NpmRegistryClientResponse = {
         source: ClientResponseSource.remote,
@@ -159,10 +170,8 @@ export class NpmRegistryClient {
         data: error.message,
         rejected: true
       };
-
       throw result;
     }
-
   }
 
 }

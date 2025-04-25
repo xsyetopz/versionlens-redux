@@ -29,9 +29,9 @@ export interface IExpiryCache {
 
   getOrCreate<T>(key: string, methodToCache: TAsyncFunction<T>, duration: number): Promise<T>;
 
-  get<T>(key: string, duration: number): T;
+  get<T>(key: string, duration: number): T | undefined;
 
-  set<T>(key: string, data: T): T;
+  set<T>(key: string, data: T): T | undefined;
 
   clear(): void;
 

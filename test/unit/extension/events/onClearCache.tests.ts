@@ -8,7 +8,7 @@ import { instance, mock, verify } from 'ts-mockito';
 type TestContext = {
   mockPackageCache: PackageCache
   mockShellCache: IExpiryCache
-  mockDockerHubCache: IExpiryCache
+  mockUrlRequestCache: IExpiryCache
   mockLogger: ILogger
 }
 
@@ -19,7 +19,7 @@ export const onClearCacheTests = {
   beforeEach: function (this: TestContext) {
     this.mockPackageCache = mock<PackageCache>();
     this.mockShellCache = mock<IExpiryCache>();
-    this.mockDockerHubCache = mock<IExpiryCache>();
+    this.mockUrlRequestCache = mock<IExpiryCache>();
     this.mockLogger = mock<ILogger>();
   },
 
@@ -27,7 +27,7 @@ export const onClearCacheTests = {
     const testEvent = new OnClearCache(
       instance(this.mockPackageCache),
       instance(this.mockShellCache),
-      instance(this.mockDockerHubCache),
+      instance(this.mockUrlRequestCache),
       instance(this.mockLogger)
     );
 
@@ -38,7 +38,7 @@ export const onClearCacheTests = {
     verify(this.mockLogger.debug("Clearing package caches")).once();
     verify(this.mockPackageCache.clear()).once();
     verify(this.mockShellCache.clear()).once();
-    verify(this.mockDockerHubCache.clear()).once();
+    verify(this.mockUrlRequestCache.clear()).once();
   },
 
 };

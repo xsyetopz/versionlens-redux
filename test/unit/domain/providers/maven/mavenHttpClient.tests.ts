@@ -1,13 +1,20 @@
-import { type IHttpClient, type JsonClientResponse, ClientResponseSource } from '#domain/clients';
+import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
+import {
+  type IHttpClient,
+  type JsonClientResponse,
+  ClientResponseSource
+} from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import { MavenHttpClient } from '#domain/providers/maven';
+import { MavenConfig, MavenHttpClient } from '#domain/providers/maven';
 import { deepEqual } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
 import Fixtures from './mavenHttpClient.fixtures';
 
 type TestContext = {
-  httpClientMock: IHttpClient;
-  loggerMock: ILogger;
+  configMock: MavenConfig
+  httpClientMock: IHttpClient
+  loggerMock: ILogger
+  cut: MavenHttpClient
 }
 
 export const MavenHttpClientTests = {
@@ -15,8 +22,19 @@ export const MavenHttpClientTests = {
   title: MavenHttpClient.name,
 
   beforeEach: function (this: TestContext) {
-    this.httpClientMock = mock<IHttpClient>();
+    this.configMock = mock<MavenConfig>()
+    this.httpClientMock = mock<IHttpClient>()
     this.loggerMock = mock<ILogger>();
+    this.cut = new MavenHttpClient(
+      instance(this.configMock),
+      instance(this.httpClientMock),
+      new MemoryExpiryCache('test-cache'),
+      instance(this.loggerMock)
+    );
+
+    const cachingOptsMock = mock<CachingOptions>()
+    when(cachingOptsMock.duration).thenReturn(3000)
+    when(this.configMock.caching).thenReturn(instance(cachingOptsMock))
   },
 
   get: {
@@ -37,15 +55,17 @@ export const MavenHttpClientTests = {
         source: ClientResponseSource.remote,
         status: 200
       }
-      const cut = new MavenHttpClient(instance(this.httpClientMock), instance(this.loggerMock));
+
       when(this.httpClientMock.get(testUrl)).thenResolve(testResp)
 
       // test
-      const actual = await cut.get(testPackageName, [testRepoUrl])
+      const actual = await this.cut.get(testPackageName, [testRepoUrl])
+      const actualCached = await this.cut.get(testPackageName, [testRepoUrl])
+
       // assert
       deepEqual(actual, expectedResp)
+      deepEqual(actualCached, { ...expectedResp, source: ClientResponseSource.cache })
     },
-
     "attempts fallback url when 404": async function (this: TestContext) {
       const testGroup = 'junit'
       const testArtifact = 'junit'
@@ -71,13 +91,13 @@ export const MavenHttpClientTests = {
       when(this.httpClientMock.get(`${successUrl}${testGroup}/${testArtifact}/maven-metadata.xml`))
         .thenResolve(successResp as any)
 
-      const cut = new MavenHttpClient(instance(this.httpClientMock), instance(this.loggerMock))
-
       // test
-      const actual = await cut.get(testPackageName, [failUrl, successUrl])
+      const actual = await this.cut.get(testPackageName, [failUrl, successUrl])
+      const actualCached = await this.cut.get(testPackageName, [failUrl, successUrl])
 
       // assert
       deepEqual(actual, successResp)
+      deepEqual(actualCached, { ...successResp, source: ClientResponseSource.cache })
     }
   },
 

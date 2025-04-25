@@ -92,7 +92,7 @@ export class NpmGitHubClient {
 
     const jsonResponse = await this.githubClient.getCommits(user, project);
 
-    const commits = jsonResponse.data;
+    const commits = jsonResponse.data.toReversed();
 
     const source: PackageSourceType = PackageSourceType.Github;
 
@@ -113,7 +113,7 @@ export class NpmGitHubClient {
       commit => commit.indexOf(versionRange) > -1
     );
 
-    const latestCommit = commits[commits.length - 1].substr(0, 8);
+    const latestCommit = commits[commits.length - 1];
 
     const noMatch = commitIndex === -1;
 

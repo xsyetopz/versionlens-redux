@@ -1,4 +1,5 @@
-import type { IJsonHttpClient } from '#domain/clients';
+import type { IExpiryCache } from '#domain/caching';
+import { type IJsonHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import type {
   CargoConfig,
@@ -12,25 +13,34 @@ export class CratesClient {
   constructor(
     readonly config: CargoConfig,
     readonly jsonClient: IJsonHttpClient,
+    readonly requestCache: IExpiryCache,
     readonly logger: ILogger
   ) {
-    throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("jsonClient", jsonClient);
-    throwUndefinedOrNull("logger", logger);
+    throwUndefinedOrNull('config', config);
+    throwUndefinedOrNull('jsonClient', jsonClient);
+    throwUndefinedOrNull('requestCache', requestCache);
+    throwUndefinedOrNull('logger', logger);
   }
 
   async get(packageName: string): Promise<CratesPackageVersionsResponse> {
     const url = `${this.config.apiUrl}${packageName}/versions`;
+    // check cache
+    const cached = this.requestCache.get<CratesPackageVersionsResponse>(
+      url,
+      this.config.caching.duration
+    );
+    if (cached) return { ...cached, source: ClientResponseSource.cache };
+    // fetch
     const jsonResponse = await this.jsonClient.get(url) as CratesPackageVersionsResponse;
-
-    // reduce the dataset
+    // reduce
     const data = {
       versions: jsonResponse.data.versions.map<CratesPackageVersionEntry>(
         x => ({ num: x.num, yanked: x.yanked })
       )
     };
-    // return the response
-    return { ...jsonResponse, data };
+    // cache and return
+    const result = { ...jsonResponse, data };
+    return this.requestCache.set(url, result);
   }
 
 }

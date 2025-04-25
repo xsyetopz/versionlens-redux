@@ -1,17 +1,16 @@
 import type { CachingOptions } from '#domain/caching';
-import type { ClientResponse, HttpOptions } from '#domain/clients';
+import type { HttpOptions, JsonClientResponse } from '#domain/clients';
 import type {
   NpmConfig,
   NpmGitHubClient,
   NpmPackageClient,
   NpmRegistryClient
 } from '#domain/providers/npm';
-import { type KeyDictionary, nameOf } from '#domain/utils';
+import { nameOf } from '#domain/utils';
 
 export enum NpmFeatures {
   Caching = 'npm.caching',
   Http = 'npm.http',
-  Github = 'npm.github',
   DependencyProperties = 'npm.dependencyProperties',
   FilePatterns = 'npm.files',
   OnSaveChangesTask = 'npm.onSaveChanges',
@@ -56,9 +55,14 @@ export type NpaSpec = {
   raw: string,
 }
 
+export type NpmRegistryApiResult = {
+  'dist-tags': { [tag: string]: string }
+  versions: { [version: string]: any }
+}
+
 export interface INpmRegistry {
   pickRegistry: (spec: NpaSpec, opts: any) => string;
-  json: (url: string, opts: any) => Promise<any>;
+  json: (url: string, opts: any) => Promise<NpmRegistryApiResult>;
 }
 
 export type TNpmCliConfigParams = {
@@ -79,10 +83,10 @@ export type NpmClientData = {
   strictSSL: boolean
 }
 
-export type NpmRegistryData = {
-  name: string;
-  versions: KeyDictionary<any>;
-  "dist-tags": KeyDictionary<string>;
+
+export type NpmRegistryClientResult = {
+  'dist-tags': { [tag: string]: string }
+  versions: string[]
 }
 
-export type NpmRegistryClientResponse = ClientResponse<number, NpmRegistryData>
+export type NpmRegistryClientResponse = JsonClientResponse<NpmRegistryClientResult>

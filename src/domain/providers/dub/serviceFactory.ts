@@ -64,6 +64,7 @@ export function addDubJsonClient(services: IServiceCollection) {
             http: container.dubHttpOpts
           }
         ),
+        container.urlRequestCache,
         container.loggerFactory.create(serviceName)
       )
   );
