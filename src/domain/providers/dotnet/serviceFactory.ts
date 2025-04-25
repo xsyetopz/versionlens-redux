@@ -90,28 +90,19 @@ export function addCliClient(services: IServiceCollection) {
   );
 }
 
-export function addJsonClient(services: IServiceCollection) {
-  const serviceName = DotNetService.dotnetJsonClient;
-  services.addSingleton(
-    serviceName,
-    (container: IDotNetServices & IDomainServices) =>
-      createJsonClient(
-        container.authorizer,
-        {
-          caching: container.dotnetCachingOpts,
-          http: container.dotnetHttpOpts
-        }
-      )
-  );
-}
-
 export function addNuGetClient(services: IServiceCollection) {
   const serviceName = DotNetService.nugetClient;
   services.addSingleton(
     serviceName,
     (container: IDotNetServices & IDomainServices) =>
       new NuGetClient(
-        container.dotnetJsonClient,
+        createJsonClient(
+          container.authorizer,
+          {
+            caching: container.dotnetCachingOpts,
+            http: container.dotnetHttpOpts
+          }
+        ),
         container.loggerFactory.create(serviceName)
       )
   );

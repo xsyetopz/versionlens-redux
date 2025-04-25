@@ -2,10 +2,9 @@ import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import {
   addCachingOptions,
   addCliClient,
+  addDotnetClient,
   addDotNetConfig,
   addHttpOptions,
-  addJsonClient,
-  addDotnetClient,
   addNuGetClient,
   addNugetOptions,
   addProcessClient,
@@ -28,8 +27,6 @@ export async function configureContainer(
   addProcessClient(services);
 
   addCliClient(services);
-
-  addJsonClient(services);
 
   addDotnetClient(services);
 

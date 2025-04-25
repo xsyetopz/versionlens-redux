@@ -1,7 +1,6 @@
 import type { CachingOptions } from '#domain/caching';
 import type {
   HttpOptions,
-  IJsonHttpClient,
   IShellClient,
   JsonClientResponse
 } from '#domain/clients';
@@ -75,7 +74,6 @@ export interface IDotNetServices {
   dotnetConfig: DotNetConfig;
   dotnetShellClient: IShellClient;
   dotnetCli: DotNetCli;
-  dotnetJsonClient: IJsonHttpClient;
   nugetClient: NuGetClient;
   dotnetClient: DotnetClient;
 }
