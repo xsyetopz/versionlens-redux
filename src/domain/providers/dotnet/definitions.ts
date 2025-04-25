@@ -80,5 +80,3 @@ export type NugetApiResult = {
 }
 
 export type NugetApiResponse = JsonClientResponse<NugetApiResult>
-
-export type JsrClientResponse = JsonClientResponse<string[]>
