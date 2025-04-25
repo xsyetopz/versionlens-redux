@@ -1,14 +1,13 @@
 import type { IDomainServices } from '#domain';
 import { CachingOptions } from '#domain/caching';
-import { createJsonClient, HttpOptions } from '#domain/clients';
+import { createJsonClient, GitHubJsonClient, HttpOptions } from '#domain/clients';
 import type { IServiceCollection } from '#domain/di';
 import type { IProviderServices } from '#domain/providers';
 import {
   type INpmServices,
-  GitHubClient,
-  GitHubOptions,
   NpmConfig,
   NpmFeatures,
+  NpmGitHubClient,
   NpmPackageClient,
   NpmRegistryClient,
   NpmService,
@@ -41,18 +40,6 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
-export function addGithubOptions(services: IServiceCollection) {
-  services.addSingleton(
-    NpmService.npmGitHubOpts,
-    (container: IDomainServices) =>
-      new GitHubOptions(
-        container.appConfig,
-        NpmFeatures.Github,
-        'github'
-      )
-  );
-}
-
 export function addNpmConfig(services: IServiceCollection) {
   services.addSingleton(
     NpmService.npmConfig,
@@ -60,25 +47,26 @@ export function addNpmConfig(services: IServiceCollection) {
       new NpmConfig(
         container.appConfig,
         container.npmCachingOpts,
-        container.npmHttpOpts,
-        container.npmGitHubOpts
+        container.npmHttpOpts
       )
   );
 }
 
-export function addGitHubClient(services: IServiceCollection) {
-  const serviceName = NpmService.githubClient;
+export function addNpmGitHubClient(services: IServiceCollection) {
+  const serviceName = NpmService.npmGithubClient;
   services.addSingleton(
     serviceName,
     (container: INpmServices & IDomainServices) =>
-      new GitHubClient(
+      new NpmGitHubClient(
         container.npmConfig,
-        createJsonClient(
-          container.authorizer,
-          {
-            caching: container.npmCachingOpts,
-            http: container.npmHttpOpts
-          }
+        new GitHubJsonClient(
+          createJsonClient(
+            container.authorizer,
+            {
+              caching: container.npmCachingOpts,
+              http: container.npmHttpOpts
+            }
+          )
         ),
         container.loggerFactory.create(serviceName)
       )
@@ -106,7 +94,7 @@ export function addNpmPackageClient(services: IServiceCollection) {
       new NpmPackageClient(
         container.npmConfig,
         container.npmRegistryClient,
-        container.githubClient,
+        container.npmGithubClient,
         container.loggerFactory.create(serviceName)
       )
   );

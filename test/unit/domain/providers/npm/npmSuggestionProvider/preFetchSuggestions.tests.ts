@@ -1,7 +1,6 @@
 import type { ILogger } from '#domain/logging';
 import {
   type TNpmClientData,
-  GitHubOptions,
   NpmConfig,
   NpmPackageClient,
   NpmSuggestionProvider
@@ -31,7 +30,6 @@ type AllTestContext = {
 }
 
 type TestContext = {
-  githubOptsMock: GitHubOptions,
   clientMock: NpmPackageClient,
   configMock: NpmConfig,
   loggerMock: ILogger
@@ -54,11 +52,9 @@ export const NpmSuggestionProviderTests = {
   preFetchSuggestions: {
 
     beforeEach: async function (this: TestContext) {
-      this.githubOptsMock = mock<GitHubOptions>();
       this.clientMock = mock<NpmPackageClient>();
       this.configMock = mock<NpmConfig>();
       this.loggerMock = mock<ILogger>();
-      when(this.configMock.github).thenReturn(instance(this.githubOptsMock));
       when(this.clientMock.config).thenReturn(instance(this.configMock));
     },
 

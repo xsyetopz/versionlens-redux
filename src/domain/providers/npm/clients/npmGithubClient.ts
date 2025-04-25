@@ -1,4 +1,4 @@
-import type { IJsonHttpClient } from '#domain/clients';
+import type { GitHubJsonClient } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type PackageClientResponse,
@@ -14,19 +14,15 @@ import { type NpaSpec, NpmConfig } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import semver from 'semver';
 
-const defaultHeaders = {
-  accept: 'application\/vnd.github.v3+json'
-};
-
-export class GitHubClient {
+export class NpmGitHubClient {
 
   constructor(
     readonly config: NpmConfig,
-    readonly jsonClient: IJsonHttpClient,
+    readonly githubClient: GitHubJsonClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("jsonClient", jsonClient);
+    throwUndefinedOrNull("githubClient", githubClient);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -49,22 +45,12 @@ export class GitHubClient {
   }
 
   async fetchTags(npaSpec: NpaSpec): Promise<PackageClientResponse> {
-    // todo pass in auth
     const { user, project } = npaSpec.hosted;
-    const tagsRepoUrl = `https://api.github.com/repos/${user}/${project}/tags`;
-    const query = {};
-    const headers = this.getHeaders();
-
-    const jsonResponse = await this.jsonClient.get(tagsRepoUrl, query, headers);
-
-    const { compareLoose } = semver;
+    const jsonResponse = await this.githubClient.getTags(user, project)
 
     // extract versions
-    const tags = jsonResponse.data as [];
-
-    const rawVersions = tags.map((tag: any) => tag.name);
-
-    const allVersions = VersionUtils.filterSemverVersions(rawVersions).sort(compareLoose);
+    const allVersions = VersionUtils.filterSemverVersions(jsonResponse.data)
+      .sort(VersionUtils.compareVersionsAndBuilds);
 
     const source: PackageSourceType = PackageSourceType.Github;
 
@@ -102,17 +88,11 @@ export class GitHubClient {
   }
 
   async fetchCommits(npaSpec: NpaSpec): Promise<PackageClientResponse> {
-    // todo pass in auth
     const { user, project } = npaSpec.hosted;
-    const commitsRepoUrl = `https://api.github.com/repos/${user}/${project}/commits`;
-    const query = {};
-    const headers = this.getHeaders();
 
-    const jsonResponse = await this.jsonClient.get(commitsRepoUrl, query, headers);
+    const jsonResponse = await this.githubClient.getCommits(user, project);
 
-    const commitInfos = <[]>jsonResponse.data
-
-    const commits = commitInfos.map((commit: any) => commit.sha);
+    const commits = jsonResponse.data;
 
     const source: PackageSourceType = PackageSourceType.Github;
 
@@ -170,14 +150,6 @@ export class GitHubClient {
       suggestions,
       gitSpec: npaSpec.saveSpec
     };
-  }
-
-  getHeaders() {
-    const userHeaders = {};
-    if (this.config.github.accessToken && this.config.github.accessToken.length > 0) {
-      (<any>userHeaders).authorization = `token ${this.config.github.accessToken}`;
-    }
-    return Object.assign({}, userHeaders, defaultHeaders);
   }
 
 }

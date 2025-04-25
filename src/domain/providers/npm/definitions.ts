@@ -1,18 +1,13 @@
 import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions, TClientResponse } from '#domain/clients';
 import type {
-  GitHubClient,
-  GitHubOptions,
   NpaSpec,
   NpmConfig,
+  NpmGitHubClient,
   NpmPackageClient,
   NpmRegistryClient
 } from '#domain/providers/npm';
 import { type KeyDictionary, nameOf } from '#domain/utils';
-
-export enum GitHubFeatures {
-  AccessToken = 'accessToken',
-}
 
 export enum NpmFeatures {
   Caching = 'npm.caching',
@@ -27,9 +22,8 @@ export enum NpmFeatures {
 export interface INpmServices {
   npmCachingOpts: CachingOptions;
   npmHttpOpts: HttpOptions;
-  npmGitHubOpts: GitHubOptions;
   npmConfig: NpmConfig;
-  githubClient: GitHubClient;
+  npmGithubClient: NpmGitHubClient;
   npmRegistryClient: NpmRegistryClient;
   npmClient: NpmPackageClient;
 }
@@ -66,12 +60,3 @@ export type TNpmRegistryData = {
 }
 
 export type TNpmRegistryClientResponse = TClientResponse<number, TNpmRegistryData>
-
-export type TJsrApiItem = {
-  latest: string
-  versions: {
-    [version: string]: {
-      yanked?: boolean
-    }
-  }
-}

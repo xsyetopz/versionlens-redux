@@ -1,5 +1,5 @@
 import { ClientResponseSource } from '#domain/clients';
-import { ILogger } from '#domain/logging';
+import type { ILogger } from '#domain/logging';
 import {
   type PackageClientRequest,
   type PackageSuggestion,
@@ -17,10 +17,10 @@ import {
   PackageDescriptor
 } from '#domain/parsers';
 import {
-  GitHubClient,
-  NpmConfig,
+  type NpmConfig,
+  type NpmGitHubClient,
+  type NpmRegistryClient,
   NpmPackageClient,
-  NpmRegistryClient
 } from '#domain/providers/npm';
 import { fileDir } from '#test/utils';
 import assert from 'node:assert';
@@ -30,7 +30,7 @@ const testDir = fileDir();
 
 let configMock: NpmConfig;
 let npmRegistryClientMock: NpmRegistryClient;
-let githubClientMock: GitHubClient;
+let githubClientMock: NpmGitHubClient;
 let loggerMock: ILogger;
 
 export const fetchPackageTests = {
@@ -38,9 +38,9 @@ export const fetchPackageTests = {
   title: NpmPackageClient.prototype.fetchPackage.name,
 
   beforeEach: () => {
-    configMock = mock(NpmConfig);
-    npmRegistryClientMock = mock(NpmRegistryClient);
-    githubClientMock = mock(GitHubClient);
+    configMock = mock<NpmConfig>();
+    npmRegistryClientMock = mock<NpmRegistryClient>();
+    githubClientMock = mock<NpmGitHubClient>();
     loggerMock = mock<ILogger>();
   },
 

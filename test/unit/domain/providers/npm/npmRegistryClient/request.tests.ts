@@ -3,7 +3,6 @@ import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import { createPackageResource } from '#domain/packages';
 import {
-  type GitHubOptions,
   type INpmRegistry,
   type NpaSpec,
   type NpmConfig,
@@ -16,7 +15,6 @@ import { anyOfClass, anything, instance, mock, verify, when } from 'ts-mockito';
 
 type TestContext = {
   cachingOptsMock: CachingOptions
-  githubOptsMock: GitHubOptions
   loggerMock: ILogger
   configMock: NpmConfig
   npmRegistryMock: INpmRegistry
@@ -27,7 +25,6 @@ export const RequestsTests = {
   [test.title]: NpmRegistryClient.prototype.request.name,
 
   beforeEach: function (this: TestContext) {
-    this.githubOptsMock = mock<GitHubOptions>();
     this.cachingOptsMock = mock<CachingOptions>();
     this.configMock = mock<NpmConfig>()
     this.loggerMock = mock<ILogger>()
@@ -35,7 +32,6 @@ export const RequestsTests = {
 
     when(this.cachingOptsMock.duration).thenReturn(30000);
     when(this.configMock.caching).thenReturn(instance(this.cachingOptsMock))
-    when(this.configMock.github).thenReturn(instance(this.githubOptsMock))
     when(this.configMock.prereleaseTagFilter).thenReturn([])
     when(this.npmRegistryMock.pickRegistry(anything(), anything()))
       .thenReturn("https://registry.npmjs.org/")

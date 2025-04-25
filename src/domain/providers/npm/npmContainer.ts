@@ -1,10 +1,9 @@
-import { IServiceCollection, IServiceProvider } from '#domain/di';
+import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import {
   addCachingOptions,
-  addGitHubClient,
-  addGithubOptions,
   addHttpOptions,
   addNpmConfig,
+  addNpmGitHubClient,
   addNpmPackageClient,
   addNpmRegistryClient,
   addSuggestionProvider
@@ -19,11 +18,9 @@ export async function configureContainer(
 
   addHttpOptions(services);
 
-  addGithubOptions(services);
-
   addNpmConfig(services);
 
-  addGitHubClient(services);
+  addNpmGitHubClient(services);
 
   addNpmRegistryClient(services);
 

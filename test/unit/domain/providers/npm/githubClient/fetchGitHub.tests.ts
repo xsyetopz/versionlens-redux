@@ -1,8 +1,7 @@
 import {
-  type IJsonHttpClient,
+  type GitHubJsonClient,
   type JsonClientResponse,
-  ClientResponseSource,
-  JsonHttpClient
+  ClientResponseSource
 } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
@@ -11,37 +10,31 @@ import {
   SuggestionStatusText,
   SuggestionTypes
 } from '#domain/packages';
-import {
-  type NpaSpec,
-  GitHubClient,
-  GitHubOptions,
-  NpmConfig
-} from '#domain/providers/npm';
-import { deepEqual, equal, notEqual } from 'node:assert';
+import { type NpaSpec, type NpmConfig, NpmGitHubClient } from '#domain/providers/npm';
+import { deepEqual, equal } from 'node:assert';
 import npa from 'npm-package-arg';
-import { anything, capture, instance, mock, when } from 'ts-mockito';
+import { anything, instance, mock, when } from 'ts-mockito';
 import { githubFixtures } from './fetchGitHub.fixtures';
 
-let githubOptsMock: GitHubOptions;
-let configMock: NpmConfig;
-let loggerMock: ILogger;
-let jsonClientMock: IJsonHttpClient;
+type TestContext = {
+  configMock: NpmConfig
+  githubJsonClientMock: GitHubJsonClient
+  loggerMock: ILogger
+}
 
-export const fetchGithubTests = {
+export const NpmGitHubClientTests = {
 
-  title: GitHubClient.prototype.fetchGithub.name,
+  title: NpmGitHubClient.name,
 
-  beforeEach: () => {
-    githubOptsMock = mock(GitHubOptions);
-    configMock = mock(NpmConfig);
-    jsonClientMock = mock(JsonHttpClient);
-    loggerMock = mock<ILogger>();
+  beforeEach: function (this: TestContext) {
+    this.configMock = mock<NpmConfig>();
+    this.githubJsonClientMock = mock<GitHubJsonClient>();
+    this.loggerMock = mock<ILogger>();
 
-    when(configMock.github).thenReturn(instance(githubOptsMock))
-    when(configMock.prereleaseTagFilter).thenReturn([])
+    when(this.configMock.prereleaseTagFilter).thenReturn([])
   },
 
-  'returns a #semver:x.x.x. package': async () => {
+  'returns a #semver:x.x.x. package': async function (this: TestContext) {
     const testRequest: any = {
       providerName: 'testnpmprovider',
       package: {
@@ -63,14 +56,14 @@ export const fetchGithubTests = {
       source: ClientResponseSource.remote
     };
 
-    when(jsonClientMock.get(anything(), anything(), anything()))
+    when(this.githubJsonClientMock.getTags(anything(), anything()))
       .thenResolve(testResponse)
 
     // setup initial call
-    const cut = new GitHubClient(
-      instance(configMock),
-      instance(jsonClientMock),
-      instance(loggerMock)
+    const cut = new NpmGitHubClient(
+      instance(this.configMock),
+      instance(this.githubJsonClientMock),
+      instance(this.loggerMock)
     );
 
     // test
@@ -111,7 +104,7 @@ export const fetchGithubTests = {
     )
   },
 
-  'returns a #x.x.x': async () => {
+  'returns a #x.x.x': async function (this: TestContext) {
 
     const testRequest: any = {
       providerName: 'testnpmprovider',
@@ -134,14 +127,14 @@ export const fetchGithubTests = {
       source: ClientResponseSource.remote
     };
 
-    when(jsonClientMock.get(anything(), anything(), anything()))
+    when(this.githubJsonClientMock.getTags(anything(), anything()))
       .thenResolve(testResponse)
 
     // setup initial call
-    const cut = new GitHubClient(
-      instance(configMock),
-      instance(jsonClientMock),
-      instance(loggerMock)
+    const cut = new NpmGitHubClient(
+      instance(this.configMock),
+      instance(this.githubJsonClientMock),
+      instance(this.loggerMock)
     );
 
     // test
@@ -182,7 +175,7 @@ export const fetchGithubTests = {
     )
   },
 
-  'returns a #sha commit': async () => {
+  'returns a #sha commit': async function (this: TestContext) {
 
     const testRequest: any = {
       providerName: 'testnpmprovider',
@@ -205,13 +198,13 @@ export const fetchGithubTests = {
       source: ClientResponseSource.remote
     };
 
-    when(jsonClientMock.get(anything(), anything(), anything()))
+    when(this.githubJsonClientMock.getCommits(anything(), anything()))
       .thenResolve(testResponse)
 
-    const cut = new GitHubClient(
-      instance(configMock),
-      instance(jsonClientMock),
-      instance(loggerMock)
+    const cut = new NpmGitHubClient(
+      instance(this.configMock),
+      instance(this.githubJsonClientMock),
+      instance(this.loggerMock)
     );
 
     // test
@@ -239,48 +232,5 @@ export const fetchGithubTests = {
       ]
     )
   },
-
-  'sets auth token in headers': async () => {
-
-    const testRequest: any = {
-      providerName: 'testnpmprovider',
-      package: {
-        path: 'packagepath',
-        name: 'core.js',
-        version: 'github:octokit/core.js#166c3497',
-      }
-    };
-
-    const testSpec = npa.resolve(
-      testRequest.package.name,
-      testRequest.package.version,
-      testRequest.package.path
-    ) as NpaSpec;
-
-    const testToken = 'testToken';
-
-    const testResponse: JsonClientResponse<any> = {
-      status: 200,
-      data: githubFixtures.commits,
-      source: ClientResponseSource.remote
-    };
-
-    when(jsonClientMock.get(anything(), anything(), anything()))
-      .thenResolve(testResponse)
-
-    when(githubOptsMock.accessToken).thenReturn(testToken);
-
-    const cut = new GitHubClient(
-      instance(configMock),
-      instance(jsonClientMock),
-      instance(loggerMock)
-    );
-
-    await cut.fetchGithub(testSpec)
-
-    const [, , actualHeaders] = capture(jsonClientMock.get).first();
-    notEqual(actualHeaders, undefined)
-    equal(actualHeaders!['authorization'], 'token ' + testToken);
-  }
 
 }

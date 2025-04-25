@@ -2,7 +2,7 @@ import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions } from '#domain/clients';
 import type { IFrozenOptions } from '#domain/configuration';
 import type { IProviderConfig } from '#domain/providers';
-import { type GitHubOptions, NpmFeatures } from '#domain/providers/npm';
+import { NpmFeatures } from '#domain/providers/npm';
 import { nameOf } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
@@ -13,13 +13,11 @@ export class NpmConfig implements IProviderConfig {
   constructor(
     readonly config: IFrozenOptions,
     readonly caching: CachingOptions,
-    readonly http: HttpOptions,
-    readonly github: GitHubOptions,
+    readonly http: HttpOptions
   ) {
     throwUndefinedOrNull(def.config, config);
     throwUndefinedOrNull(def.caching, caching);
     throwUndefinedOrNull(def.http, http);
-    throwUndefinedOrNull(def.github, github);
   }
 
   readonly fileLanguage = ['json', 'jsonc'];

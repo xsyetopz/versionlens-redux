@@ -12,9 +12,9 @@ import {
 import {
   type NpaSpec,
   type TNpmClientData,
-  GitHubClient,
   NpaTypes,
   NpmConfig,
+  NpmGitHubClient,
   NpmRegistryClient,
   convertNpmErrorToResponse,
   createNpmSuggestionFromErrorCode
@@ -27,12 +27,12 @@ export class NpmPackageClient implements IPackageClient<TNpmClientData> {
   constructor(
     readonly config: NpmConfig,
     readonly npmRegistryClient: NpmRegistryClient,
-    readonly githubClient: GitHubClient,
+    readonly npmGithubClient: NpmGitHubClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
     throwUndefinedOrNull("npmRegistryClient", npmRegistryClient);
-    throwUndefinedOrNull("githubClient", githubClient);
+    throwUndefinedOrNull("npmGithubClient", npmGithubClient);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -87,7 +87,7 @@ export class NpmPackageClient implements IPackageClient<TNpmClientData> {
         }
 
         // resolve tags, committishes
-        return await this.githubClient.fetchGithub(npaSpec);
+        return await this.npmGithubClient.fetchGithub(npaSpec);
       }
 
       // otherwise return registry result

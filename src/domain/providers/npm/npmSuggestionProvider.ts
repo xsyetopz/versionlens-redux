@@ -99,12 +99,6 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
   }
 
   async preFetchSuggestions(projectPath: string, packagePath: string): Promise<TNpmClientData> {
-    if (this.config.github.accessToken &&
-      this.config.github.accessToken.length > 0) {
-      // defrost github parameters
-      this.config.github.defrost();
-    }
-
     // path to user .npmrc
     const userConfigPath = process.env.NPM_CONFIG_USERCONFIG || resolve(homedir(), '.npmrc');
 

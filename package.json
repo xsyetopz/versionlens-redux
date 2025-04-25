@@ -819,16 +819,6 @@
           "minItems": 0,
           "default": [],
           "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prereleases' icon is activated."
-        },
-        "versionlens.github.accessToken": {
-          "deprecated": true,
-          "deprecationMessage": "Will be removed in a future release. Use the built in authorization instead.",
-          "type": [
-            "null",
-            "string"
-          ],
-          "default": "",
-          "description": "[Deprecated] See Use the built in authorization instead. https://gitlab.com/versionlens/vscode-versionlens/-/blob/master/docs/authorization.md\n\nUsed for making basic read only github api requests. To generate a token see https://help.github.com/articles/creating-an-access-token-for-command-line-use/#creating-a-token. When no token is provided then access to the github api is rate limited to 60 requests every 10 minutes or so."
         }
       }
     }

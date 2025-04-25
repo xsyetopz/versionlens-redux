@@ -16,7 +16,6 @@ import {
   PackageDescriptor
 } from '#domain/parsers';
 import {
-  type GitHubOptions,
   type INpmRegistry,
   type NpaSpec,
   type NpmConfig,
@@ -31,7 +30,6 @@ import Fixtures from './npmRegistryClient.fixtures';
 
 type TestContext = {
   cachingOptsMock: CachingOptions
-  githubOptsMock: GitHubOptions
   loggerMock: ILogger
   configMock: NpmConfig
   npmRegistryMock: INpmRegistry
@@ -42,14 +40,12 @@ export const fetchPackageTests = {
   [test.title]: NpmRegistryClient.prototype.fetchPackage.name,
 
   beforeEach: function (this: TestContext) {
-    this.githubOptsMock = mock<GitHubOptions>();
     this.cachingOptsMock = mock<CachingOptions>()
     this.configMock = mock<NpmConfig>()
     this.loggerMock = mock<ILogger>()
     this.npmRegistryMock = mock<INpmRegistry>()
 
     when(this.configMock.caching).thenReturn(instance(this.cachingOptsMock))
-    when(this.configMock.github).thenReturn(instance(this.githubOptsMock))
     when(this.configMock.prereleaseTagFilter).thenReturn([])
     when(this.npmRegistryMock.pickRegistry(anything(), anything()))
       .thenReturn("https://registry.npmjs.org/")
