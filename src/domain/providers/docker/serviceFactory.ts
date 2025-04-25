@@ -9,13 +9,14 @@ import {
   DockerConfig,
   DockerFeatures,
   DockerHubClient,
+  DockerService,
   DockerSuggestionProvider
 } from '#domain/providers/docker';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDockerServices>().dockerCachingOpts,
+    DockerService.dockerCachingOpts,
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
@@ -27,7 +28,7 @@ export function addCachingOptions(services: IServiceCollection) {
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDockerServices>().dockerHttpOpts,
+    DockerService.dockerHttpOpts,
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
@@ -39,7 +40,7 @@ export function addHttpOptions(services: IServiceCollection) {
 
 export function addDockerConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IDockerServices>().dockerConfig,
+    DockerService.dockerConfig,
     (container: IDockerServices & IDomainServices) =>
       new DockerConfig(
         container.appConfig,
@@ -49,23 +50,8 @@ export function addDockerConfig(services: IServiceCollection) {
   );
 }
 
-export function addJsonClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDockerServices>().dockerJsonClient;
-  services.addSingleton(
-    serviceName,
-    (container: IDockerServices & IDomainServices) =>
-      createJsonClient(
-        container.authorizer,
-        {
-          caching: container.dockerCachingOpts,
-          http: container.dockerHttpOpts
-        }
-      )
-  );
-}
-
 export function addDockerHubCache(services: IServiceCollection) {
-  const serviceName = nameOf<IDockerServices>().dockerHubClientCache;
+  const serviceName = DockerService.dockerHubClientCache;
   services.addSingleton(
     serviceName,
     () => new MemoryExpiryCache(serviceName)
@@ -73,13 +59,19 @@ export function addDockerHubCache(services: IServiceCollection) {
 }
 
 export function addDockerHubClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDockerServices>().dockerHubClient;
+  const serviceName = DockerService.dockerHubClient;
   services.addSingleton(
     serviceName,
     (container: IDockerServices & IDomainServices) =>
       new DockerHubClient(
         container.dockerConfig,
-        container.dockerJsonClient,
+        createJsonClient(
+          container.authorizer,
+          {
+            caching: container.dockerCachingOpts,
+            http: container.dockerHttpOpts
+          }
+        ),
         container.dockerHubClientCache,
         container.loggerFactory.create(serviceName)
       )
@@ -87,7 +79,7 @@ export function addDockerHubClient(services: IServiceCollection) {
 }
 
 export function addDockerClient(services: IServiceCollection) {
-  const serviceName = nameOf<IDockerServices>().dockerClient;
+  const serviceName = DockerService.dockerClient;
   services.addSingleton(
     serviceName,
     (container: IDockerServices & IDomainServices) =>

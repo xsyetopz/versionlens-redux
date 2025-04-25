@@ -1,6 +1,7 @@
 import type { CachingOptions, MemoryExpiryCache } from '#domain/caching';
-import type { HttpOptions, JsonClientResponse, JsonHttpClient } from '#domain/clients';
+import type { HttpOptions, JsonClientResponse } from '#domain/clients';
 import type { DockerClient, DockerConfig, DockerHubClient } from '#domain/providers/docker';
+import { nameOf } from '#domain/utils';
 
 export enum DockerFeatures {
   Caching = 'docker.caching',
@@ -15,11 +16,12 @@ export interface IDockerServices {
   dockerCachingOpts: CachingOptions
   dockerHttpOpts: HttpOptions
   dockerConfig: DockerConfig
-  dockerJsonClient: JsonHttpClient
   dockerHubClient: DockerHubClient
   dockerHubClientCache: MemoryExpiryCache
   dockerClient: DockerClient
 }
+
+export const DockerService = nameOf<IDockerServices>()
 
 export type DockerHubRepository = {
   name: string

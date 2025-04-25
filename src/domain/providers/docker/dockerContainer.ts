@@ -6,7 +6,6 @@ import {
   addDockerHubCache,
   addDockerHubClient,
   addHttpOptions,
-  addJsonClient,
   addSuggestionProvider
 } from '#domain/providers/docker';
 
@@ -20,8 +19,6 @@ export async function configureContainer(
   addHttpOptions(services);
 
   addDockerConfig(services);
-
-  addJsonClient(services);
 
   addDockerHubCache(services);
 
