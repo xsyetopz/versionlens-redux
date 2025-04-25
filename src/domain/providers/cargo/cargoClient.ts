@@ -95,11 +95,11 @@ export class CargoClient implements IPackageClient<null> {
       version: versionRange,
     };
 
-    const responseVersions = jsonResponse.data;
-    let rawVersions = responseVersions.versions
+    // filter and sort versions
+    const rawVersions = jsonResponse.data.versions
       .filter(p => p.yanked === false)
-      .reverse()
-      .map(p => p.num);
+      .map(p => p.num)
+      .toSorted(VersionUtils.compareVersionsAndBuilds);
 
     // extract semver versions only
     const semverVersions = VersionUtils.filterSemverVersions(rawVersions);
