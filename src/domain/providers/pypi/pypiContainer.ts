@@ -1,10 +1,10 @@
-import { IServiceCollection, IServiceProvider } from '#domain/di';
+import type { IServiceCollection, IServiceProvider } from '#domain/di';
 import {
   addCachingOptions,
-  addHttpClient,
   addHttpOptions,
   addPypiClient,
   addPypiConfig,
+  addPypiHttpClient,
   addSuggestionProvider
 } from '#domain/providers/pypi';
 
@@ -19,7 +19,7 @@ export async function configureContainer(
 
   addPypiConfig(services);
 
-  addHttpClient(services);
+  addPypiHttpClient(services);
 
   addPypiClient(services);
 

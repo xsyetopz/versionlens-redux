@@ -4,17 +4,19 @@ import { createHttpClient, HttpOptions } from '#domain/clients';
 import type { IServiceCollection } from '#domain/di';
 import type { IProviderServices } from '#domain/providers';
 import {
-  type IPypiService,
+  type IPypiServices,
   PypiClient,
   PypiConfig,
   PypiFeatures,
+  PypiHttpClient,
+  PypiService,
   PypiSuggestionProvider
 } from '#domain/providers/pypi';
 import { nameOf } from '#domain/utils';
 
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IPypiService>().pypiCachingOpts,
+    PypiService.pypiCachingOpts,
     (container: IDomainServices) =>
       new CachingOptions(
         container.appConfig,
@@ -26,7 +28,7 @@ export function addCachingOptions(services: IServiceCollection) {
 
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IPypiService>().pypiHttpOpts,
+    PypiService.pypiHttpOpts,
     (container: IDomainServices) =>
       new HttpOptions(
         container.appConfig,
@@ -38,8 +40,8 @@ export function addHttpOptions(services: IServiceCollection) {
 
 export function addPypiConfig(services: IServiceCollection) {
   services.addSingleton(
-    nameOf<IPypiService>().pypiConfig,
-    (container: IPypiService & IDomainServices) =>
+    PypiService.pypiConfig,
+    (container: IPypiServices & IDomainServices) =>
       new PypiConfig(
         container.appConfig,
         container.pypiCachingOpts,
@@ -48,26 +50,30 @@ export function addPypiConfig(services: IServiceCollection) {
   );
 }
 
-export function addHttpClient(services: IServiceCollection) {
-  const serviceName = nameOf<IPypiService>().pypiHttpClient;
+export function addPypiHttpClient(services: IServiceCollection) {
+  const serviceName = PypiService.pypiHttpClient;
   services.addSingleton(
     serviceName,
-    (container: IPypiService & IDomainServices) =>
-      createHttpClient(
-        container.authorizer,
-        {
-          caching: container.pypiCachingOpts,
-          http: container.pypiHttpOpts
-        }
+    (container: IPypiServices & IDomainServices) =>
+      new PypiHttpClient(
+        container.pypiConfig,
+        createHttpClient(
+          container.authorizer,
+          {
+            caching: container.pypiCachingOpts,
+            http: container.pypiHttpOpts
+          }
+        ),
+        container.loggerFactory.create(serviceName)
       )
   );
 }
 
 export function addPypiClient(services: IServiceCollection) {
-  const serviceName = nameOf<IPypiService>().pypiClient;
+  const serviceName = PypiService.pypiClient;
   services.addSingleton(
     serviceName,
-    (container: IPypiService & IDomainServices) =>
+    (container: IPypiServices & IDomainServices) =>
       new PypiClient(
         container.pypiConfig,
         container.pypiHttpClient,
@@ -79,7 +85,7 @@ export function addPypiClient(services: IServiceCollection) {
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,
-    (container: IPypiService & IDomainServices) =>
+    (container: IPypiServices & IDomainServices) =>
       new PypiSuggestionProvider(
         container.pypiClient,
         container.pypiConfig,

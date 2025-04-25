@@ -1,4 +1,4 @@
-import type { HttpClientResponse, IHttpClient } from '#domain/clients';
+import type { HttpClientResponse } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type IPackageClient,
@@ -14,10 +14,9 @@ import {
 import {
   type PackageGitDescriptor,
   type PackagePathDescriptor,
-  PackageDescriptorType,
-  XmlDoc
+  PackageDescriptorType
 } from '#domain/parsers';
-import { PypiConfig } from '#domain/providers/pypi';
+import { PypiConfig, PypiHttpClient } from '#domain/providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { coerce } from 'semver';
 
@@ -25,11 +24,11 @@ export class PypiClient implements IPackageClient<null> {
 
   constructor(
     readonly config: PypiConfig,
-    readonly httpClient: IHttpClient,
+    readonly pypiHttpClient: PypiHttpClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
-    throwUndefinedOrNull("httpClient", httpClient);
+    throwUndefinedOrNull("pypiHttpClient", pypiHttpClient);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -58,9 +57,8 @@ export class PypiClient implements IPackageClient<null> {
 
     // fetch package suggestions from api
     const semverSpec = VersionUtils.parseSemver(requestedPackage.version);
-    const url = this.config.apiUrl.replace('{name}', requestedPackage.name);
     try {
-      return await this.createRemotePackageDocument(url, request, semverSpec)
+      return await this.createRemotePackageDocument(request, semverSpec)
     } catch (error) {
       const errorResponse = error as HttpClientResponse;
 
@@ -84,30 +82,22 @@ export class PypiClient implements IPackageClient<null> {
   }
 
   async createRemotePackageDocument<TClientData>(
-    url: string,
     request: PackageClientRequest<TClientData>,
     semverSpec: SemverSpec
   ): Promise<PackageClientResponse> {
-
-    // fetch package from api
-    const httpResponse = await this.httpClient.get(url);
-
+    // fetch 
     const requestPackage = request.parsedDependency.package;
-    const versionRange = semverSpec.rawVersion;
+    const httpResponse = await this.pypiHttpClient.get(requestPackage.name);
 
+    // process response
+    const versionRange = semverSpec.rawVersion;
     const resolved = {
       name: requestPackage.name,
       version: versionRange,
     };
 
-    const xmlDoc = new XmlDoc()
-    xmlDoc.parse(httpResponse.data)
-    const rawVersions = xmlDoc.findExactPaths("rss.channel.item.title")
-      .map(x => x.text)
-      .reverse();
-
     // extract semver versions only
-    const semverVersions = VersionUtils.filterSemverVersions(rawVersions)
+    const semverVersions = VersionUtils.filterSemverVersions(httpResponse.data)
       .map(x => coerce(x, VersionUtils.loosePrereleases).toString())
       .toSorted(VersionUtils.compareVersionsAndBuilds);
 
@@ -126,7 +116,7 @@ export class PypiClient implements IPackageClient<null> {
 
     return {
       source: PackageSourceType.Registry,
-      responseStatus: ClientResponseFactory.mapStatusFromHttpResponse(httpResponse),
+      responseStatus: ClientResponseFactory.mapStatusFromJsonResponse(httpResponse),
       type: semverSpec.type,
       resolved,
       suggestions,

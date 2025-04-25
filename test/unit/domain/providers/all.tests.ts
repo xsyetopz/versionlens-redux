@@ -7,3 +7,4 @@ export * as GoProvider from './golang/index.tests';
 export * as MavenProvider from './maven/index.tests';
 export * as NpmProvider from './npm/index.tests';
 export * as PubProvider from './pub/index.tests';
+export * as PypiProvider from './pypi/index.tests';

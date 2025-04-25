@@ -1,6 +1,7 @@
-import { CachingOptions } from '#domain/caching';
-import { HttpOptions, IHttpClient } from '#domain/clients';
-import { PypiClient, PypiConfig } from '#domain/providers/pypi';
+import type { CachingOptions } from '#domain/caching';
+import type { HttpOptions, JsonClientResponse } from '#domain/clients';
+import type { PypiClient, PypiConfig, PypiHttpClient } from '#domain/providers/pypi';
+import { nameOf } from '#domain/utils';
 
 export enum PypiFeatures {
   Caching = 'pypi.caching',
@@ -12,10 +13,14 @@ export enum PypiFeatures {
   PrereleaseTagFilter = 'pypi.prereleaseTagFilter',
 }
 
-export interface IPypiService {
+export interface IPypiServices {
   pypiCachingOpts: CachingOptions;
   pypiHttpOpts: HttpOptions;
   pypiConfig: PypiConfig;
-  pypiHttpClient: IHttpClient;
+  pypiHttpClient: PypiHttpClient;
   pypiClient: PypiClient;
 }
+
+export const PypiService = nameOf<IPypiServices>()
+
+export type PypiHttpClientResponse = JsonClientResponse<string[]>
