@@ -89,10 +89,12 @@ export default {
           image: 'alpine:3'
         data:
           image: postrgres
-        custom-default:
+        custom-build:
+          build: .
+        custom-context-default:
           build:
             context: .
-        custom:
+        custom-context-dockerfile:
           build:
             context: .
             dockerfile: custom.dockerfile
@@ -131,24 +133,32 @@ export default {
       new PackageDependency(
         createPackageResource('./dockerfile', './dockerfile', 'test/path/compose.yaml'),
         new PackageDescriptor([
-          createPackageNameDesc('./dockerfile', createTextRange(206, 207)),
-          createPackagePathDescType('./dockerfile', createTextRange(206, 207)),
+          createPackageNameDesc('./dockerfile', createTextRange(183, 184)),
+          createPackagePathDescType('./dockerfile', createTextRange(183, 184)),
+          createPackageParentDescType('services.*')
+        ])
+      ),
+      new PackageDependency(
+        createPackageResource('./dockerfile', './dockerfile', 'test/path/compose.yaml'),
+        new PackageDescriptor([
+          createPackageNameDesc('./dockerfile', createTextRange(255, 256)),
+          createPackagePathDescType('./dockerfile', createTextRange(255, 256)),
           createPackageParentDescType('services.*')
         ])
       ),
       new PackageDependency(
         createPackageResource('./custom.dockerfile', './custom.dockerfile', 'test/path/compose.yaml'),
         new PackageDescriptor([
-          createPackageNameDesc('./custom.dockerfile', createTextRange(262, 263)),
-          createPackagePathDescType('./custom.dockerfile', createTextRange(262, 263)),
+          createPackageNameDesc('./custom.dockerfile', createTextRange(330, 331)),
+          createPackagePathDescType('./custom.dockerfile', createTextRange(330, 331)),
           createPackageParentDescType('services.*')
         ])
       ),
       new PackageDependency(
         createPackageResource('123456', '', 'test/path/compose.yaml'),
         new PackageDescriptor([
-          createPackageNameDesc('123456', createTextRange(345, 351)),
-          createPackageVersionDesc('', createTextRange(351), ':'),
+          createPackageNameDesc('123456', createTextRange(413, 419)),
+          createPackageVersionDesc('', createTextRange(419), ':'),
           createPackageParentDescType('services.*')
         ])
       )

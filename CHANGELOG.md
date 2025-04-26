@@ -9,11 +9,15 @@
   - Removed the `versionlens.github.accessToken` setting which was deprecated in 1.16.0. <br>
     This was replaced by the built in [authorization](https://gitlab.com/versionlens/vscode-versionlens/-/blob/master/docs/authorization.md) feature of version lens.
 
-  - Fixed github #commits not showing version suggestions
+  - Fixed github `#commit` not showing version suggestions
 
   ### Docker
 
   - Fixed version descriptor handler missing error
+
+  - Fixed 'valueNode.get is not a function' error
+
+    Relates to [#389](https://gitlab.com/versionlens/vscode-versionlens/-/issues/389)
 
   ### Maven
 

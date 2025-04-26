@@ -13,6 +13,7 @@ import {
   parsePackagesYaml
 } from '#domain/parsers';
 import { DockerfileParser } from 'dockerfile-ast';
+import { isScalar } from 'yaml';
 
 export function parseDockerCompose(
   packagePath: string,
@@ -158,6 +159,13 @@ export function createBuildDescFromYamlNode(valueNode: any): PackageBuildDescrip
   }
 
   let dockerfile = 'dockerfile'
+  if (isScalar(valueNode)) {
+    return {
+      type: 'build',
+      pathDesc: createPackagePathDescType(`${valueNode.value}/${dockerfile}`, valueRange)
+    }
+  }
+
   const dockerfileNode = valueNode.get('dockerfile', true)
   if (dockerfileNode) dockerfile = dockerfileNode.value
 
