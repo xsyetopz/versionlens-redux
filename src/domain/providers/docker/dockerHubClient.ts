@@ -15,7 +15,7 @@ export class DockerHubClient {
   constructor(
     readonly config: DockerConfig,
     readonly jsonClient: IJsonHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<DockerHubListClientResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -29,10 +29,7 @@ export class DockerHubClient {
       .replace('{namespace}', namespace)
       .replace('{repository}', repository);
     // check cache
-    const cached = this.requestCache.get<DockerHubListClientResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const results: DockerHubRepository[] = [];

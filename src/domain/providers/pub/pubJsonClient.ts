@@ -13,7 +13,7 @@ export class PubJsonClient {
   constructor(
     readonly config: PubConfig,
     readonly jsonClient: IJsonHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<PubJsonClientResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -24,10 +24,7 @@ export class PubJsonClient {
 
   async get(url: string): Promise<PubJsonClientResponse> {
     // check cache
-    const cached = this.requestCache.get<PubJsonClientResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const jsonResponse = await this.jsonClient.get<PubApiPackageResult>(url);

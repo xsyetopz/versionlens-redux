@@ -9,7 +9,7 @@ export class GoHttpClient {
   constructor(
     readonly config: GoConfig,
     readonly httpClient: IHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<GoApiClientResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -21,10 +21,7 @@ export class GoHttpClient {
   async get(packageName: string): Promise<GoApiClientResponse> {
     const url = this.config.apiUrl.replace('{base-module}', packageName.toLowerCase());
     // check cache
-    const cached = this.requestCache.get<GoApiClientResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const httpResponse = await this.httpClient.get(url);

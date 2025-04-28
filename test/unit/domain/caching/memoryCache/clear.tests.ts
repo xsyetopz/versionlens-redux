@@ -11,7 +11,7 @@ export const clearTests = {
   [test.title]: MemoryCache.prototype.clear.name,
 
   beforeEach: function (this: TestContext) {
-    this.testCache = new MemoryCache("clearTests");
+    this.testCache = new MemoryCache<string>("clearTests");
   },
 
   clearsAllCachedValues: function (this: TestContext) {
@@ -22,7 +22,7 @@ export const clearTests = {
     this.testCache.clear();
 
     for (let i = 0; i < 10; i++) {
-      const actual = this.testCache.get<string>(`key${i}`);
+      const actual = this.testCache.get(`key${i}`);
       assert.equal(actual, undefined);
     }
   }

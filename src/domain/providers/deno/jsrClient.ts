@@ -9,7 +9,7 @@ export class JsrClient {
   constructor(
     readonly config: DenoConfig,
     readonly jsonClient: IJsonHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<JsrClientResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
@@ -21,10 +21,7 @@ export class JsrClient {
   async get(packageName: string): Promise<JsrClientResponse> {
     const url = `https://jsr.io/${packageName}/meta.json`;
     // check cache
-    const cached = this.requestCache.get<JsrClientResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const jsonResponse = await this.jsonClient.get<JsrApiResult>(url);

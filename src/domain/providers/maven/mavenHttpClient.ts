@@ -13,7 +13,7 @@ export class MavenHttpClient {
   constructor(
     readonly config: MavenConfig,
     readonly httpClient: IHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<MavenApiResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -27,10 +27,7 @@ export class MavenHttpClient {
     const search = group.replaceAll('.', '/') + '/' + artifact
     const url = `${repoUrl}${search}/maven-metadata.xml`;
     // check cache
-    const cached = this.requestCache.get<MavenApiResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     try {
       // fetch

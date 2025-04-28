@@ -1,10 +1,10 @@
-import { ExpiryCacheEntry, IExpiryCache, MemoryCache } from "#domain/caching";
-import { TAsyncFunction } from '#domain/utils';
+import { type ExpiryCacheEntry, type IExpiryCache, MemoryCache } from "#domain/caching";
+import type { AsyncFunction } from '#domain/utils';
 import { throwNotStringOrEmpty } from "@esm-test/guards";
 
-export class MemoryExpiryCache implements IExpiryCache {
+export class MemoryExpiryCache<T = any> implements IExpiryCache<T> {
 
-  cache: MemoryCache;
+  cache: MemoryCache<ExpiryCacheEntry<T>>;
 
   constructor(readonly cacheName: string) {
     throwNotStringOrEmpty("cacheName", cacheName);
@@ -12,12 +12,12 @@ export class MemoryExpiryCache implements IExpiryCache {
     this.cache = new MemoryCache(cacheName);
   }
 
-  async getOrCreate<T>(
+  async getOrCreate(
     key: string,
-    methodToCache: TAsyncFunction<T>,
+    methodToCache: AsyncFunction<T>,
     duration: number
   ): Promise<T> {
-    const cached = this.get<T>(key, duration);
+    const cached = this.get(key, duration);
     const result = cached != undefined
       ? cached
       : this.set(key, await methodToCache());
@@ -25,11 +25,9 @@ export class MemoryExpiryCache implements IExpiryCache {
     return result;
   }
 
-  get<T>(key: string, duration: number): T | undefined {
-    const entry = this.cache.get<ExpiryCacheEntry<T>>(key);
-    if (!entry) {
-      return undefined;
-    }
+  get(key: string, duration: number): T | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
 
     // check if the entry has expired
     if (Date.now() >= entry.createdTime + duration) {
@@ -41,10 +39,10 @@ export class MemoryExpiryCache implements IExpiryCache {
     return entry.data;
   }
 
-  set<T>(key: string, data: T): T | undefined {
+  set(key: string, data: T): T | undefined {
     const createdTime = Date.now();
     const newEntry = { createdTime, data };
-    this.cache.set<ExpiryCacheEntry<T>>(key, newEntry);
+    this.cache.set(key, newEntry);
     return newEntry.data;
   }
 

@@ -17,7 +17,7 @@ export class GitHubJsonClient {
   constructor(
     readonly caching: CachingOptions,
     readonly jsonClient: IJsonHttpClient,
-    readonly requestCache: IExpiryCache
+    readonly requestCache: IExpiryCache<GithubJsonClientResponse>
   ) {
     throwUndefinedOrNull('caching', caching);
     throwUndefinedOrNull('jsonClient', jsonClient);
@@ -27,10 +27,7 @@ export class GitHubJsonClient {
   async getTags(user: string, project: string): Promise<GithubJsonClientResponse> {
     const tagsRepoUrl = `https://api.github.com/repos/${user}/${project}/tags`;
     // check cache
-    const cached = this.requestCache.get<GithubJsonClientResponse>(
-      tagsRepoUrl,
-      this.caching.duration
-    );
+    const cached = this.requestCache.get(tagsRepoUrl, this.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const jsonResponse = await this.jsonClient.get<GithubTagsApiResult>(
@@ -49,7 +46,7 @@ export class GitHubJsonClient {
   async getCommits(user: string, project: string): Promise<GithubJsonClientResponse> {
     const commitsRepoUrl = `https://api.github.com/repos/${user}/${project}/commits`;
     // check cache
-    const cached = this.requestCache.get<GithubJsonClientResponse>(
+    const cached = this.requestCache.get(
       commitsRepoUrl,
       this.caching.duration
     );

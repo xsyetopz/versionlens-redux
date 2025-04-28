@@ -1,24 +1,20 @@
+import type { ICache } from '#domain/caching';
+import type { AsyncFunction } from '#domain/utils';
 import { throwNotStringOrEmpty, throwUndefinedOrNull } from '@esm-test/guards';
-import { ICache } from '#domain/caching';
-import { TAsyncFunction } from '#domain/utils';
 
-type CacheMap = {
-  [key: string]: any;
-};
+export class MemoryCache<T> implements ICache<T> {
 
-export class MemoryCache implements ICache {
-
-  cacheMap: CacheMap;
+  cacheMap: Map<string, T>;
 
   constructor(readonly cacheName: string) {
     throwNotStringOrEmpty("cacheName", cacheName);
 
     this.cacheName = cacheName
-    this.cacheMap = {};
+    this.cacheMap = new Map();
   }
 
-  async getOrCreate<T>(key: string, methodToCache: TAsyncFunction<T>): Promise<T> {
-    const cached = this.get<T>(key);
+  async getOrCreate(key: string, methodToCache: AsyncFunction<T>): Promise<T | undefined> {
+    const cached = this.get(key);
     const result = cached != undefined
       ? cached
       : this.set(key, await methodToCache());
@@ -26,28 +22,28 @@ export class MemoryCache implements ICache {
     return result;
   }
 
-  get<T>(key: string): T {
+  get(key: string): T | undefined {
     throwUndefinedOrNull("key", key);
-    const value = this.cacheMap[key];
+    const value = this.cacheMap.get(key);
     return value;
   }
 
-  set<T>(key: string, value: T): T {
+  set(key: string, value: T): T {
     throwUndefinedOrNull("key", key);
-    this.cacheMap[key] = value;
+    this.cacheMap.set(key, value);
     return value;
   }
 
   remove(key: string): void {
-    delete this.cacheMap[key];
+    this.cacheMap.delete(key);
   }
 
   clear(): void {
-    this.cacheMap = {};
+    this.cacheMap.clear();
   }
 
-  static createKey(...keyParts: string[]) {
-    return keyParts.join("->");
+  [Symbol.iterator]() {
+    return this.cacheMap.entries()
   }
 
 }

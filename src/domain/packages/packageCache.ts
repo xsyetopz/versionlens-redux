@@ -1,6 +1,6 @@
 import { type IExpiryCache, MemoryExpiryCache } from '#domain/caching';
 import type { PackageClientResponse, PackageResource } from "#domain/packages";
-import type { KeyDictionary, TAsyncFunction } from '#domain/utils';
+import type { KeyDictionary, AsyncFunction } from '#domain/utils';
 import { throwUndefinedOrNull } from "@esm-test/guards";
 
 export class PackageCache {
@@ -18,7 +18,7 @@ export class PackageCache {
   getOrCreate(
     providerName: string,
     packageRes: PackageResource,
-    methodToCache: TAsyncFunction<PackageClientResponse>,
+    methodToCache: AsyncFunction<PackageClientResponse>,
     duration: number
   ): Promise<PackageClientResponse> {
     // get the packages map for the provider

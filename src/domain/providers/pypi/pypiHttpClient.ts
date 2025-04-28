@@ -10,7 +10,7 @@ export class PypiHttpClient {
   constructor(
     readonly config: PypiConfig,
     readonly httpClient: IHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<PypiHttpClientResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -22,10 +22,7 @@ export class PypiHttpClient {
   async get(packageName: string): Promise<PypiHttpClientResponse> {
     const url = this.config.apiUrl.replace('{name}', packageName);
     // check cache
-    const cached = this.requestCache.get<PypiHttpClientResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const httpResponse = await this.httpClient.get(url);

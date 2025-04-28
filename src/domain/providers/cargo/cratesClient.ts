@@ -13,7 +13,7 @@ export class CratesClient {
   constructor(
     readonly config: CargoConfig,
     readonly jsonClient: IJsonHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<CratesPackageVersionsResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -25,10 +25,7 @@ export class CratesClient {
   async get(packageName: string): Promise<CratesPackageVersionsResponse> {
     const url = `${this.config.apiUrl}${packageName}/versions`;
     // check cache
-    const cached = this.requestCache.get<CratesPackageVersionsResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const jsonResponse = await this.jsonClient.get(url) as CratesPackageVersionsResponse;

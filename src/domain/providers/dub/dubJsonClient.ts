@@ -11,7 +11,7 @@ export class DubJsonClient {
   constructor(
     readonly config: DubConfig,
     readonly jsonClient: IJsonHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<DubJsonClientResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -23,10 +23,7 @@ export class DubJsonClient {
   async get(packageName: string): Promise<DubJsonClientResponse> {
     const url = `${this.config.apiUrl}${encodeURIComponent(packageName)}/info`;
     // check cache
-    const cached = this.requestCache.get<DubJsonClientResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     const jsonResponse = await this.jsonClient.get<DubApiResult>(url, query);

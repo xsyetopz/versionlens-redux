@@ -1,17 +1,17 @@
+import { type ICache, MemoryCache } from '#domain/caching';
+import type { PackageDependency } from "#domain/packages";
+import type { KeyDictionary } from '#domain/utils';
 import { throwUndefinedOrNull } from "@esm-test/guards";
-import { ICache, MemoryCache } from '#domain/caching';
-import { PackageDependency } from "#domain/packages";
-import { KeyDictionary } from '#domain/utils';
 
 export class DependencyCache {
 
-  readonly providerMaps: KeyDictionary<ICache> = {};
+  readonly providerMaps: KeyDictionary<ICache<PackageDependency[]>> = {};
 
   constructor(providerNames: Array<string>) {
     throwUndefinedOrNull("providerNames", providerNames);
 
     providerNames.forEach(
-      k => this.providerMaps[k] = new MemoryCache(`${k}-dependency-cache`)
+      k => this.providerMaps[k] = new MemoryCache<PackageDependency[]>(`${k}-dependency-cache`)
     );
   }
 

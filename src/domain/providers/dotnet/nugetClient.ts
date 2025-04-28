@@ -20,7 +20,7 @@ export class NuGetClient {
   constructor(
     readonly config: DotNetConfig,
     readonly jsonClient: IJsonHttpClient,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<NugetApiResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
@@ -33,10 +33,7 @@ export class NuGetClient {
     const url = ensureEndSlash(resourceUrl)
       + `${packageName.toLowerCase()}/index.json`;
     // check cache
-    const cached = this.requestCache.get<NugetApiResponse>(
-      url,
-      this.config.caching.duration
-    );
+    const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
     try {

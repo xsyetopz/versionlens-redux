@@ -16,7 +16,7 @@ export class NpmRegistryClient {
   constructor(
     readonly npmRegistryFetch: INpmRegistry,
     readonly config: NpmConfig,
-    readonly requestCache: IExpiryCache,
+    readonly requestCache: IExpiryCache<NpmRegistryClientResponse>,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('npmRegistryFetch', npmRegistryFetch);
@@ -30,10 +30,7 @@ export class NpmRegistryClient {
       const registry = this.npmRegistryFetch.pickRegistry(npaSpec, clientData);
       const url = `${ensureEndSlash(registry)}${npaSpec.escapedName}`;
       // check cache
-      const cached = this.requestCache.get<NpmRegistryClientResponse>(
-        url,
-        this.config.caching.duration
-      );
+      const cached = this.requestCache.get(url, this.config.caching.duration);
       if (cached) return { ...cached, source: ClientResponseSource.cache };
       // fetch
       this.logger.debug(
