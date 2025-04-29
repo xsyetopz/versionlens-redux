@@ -99,16 +99,25 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
   }
 
   async onFileAdd(provider: ISuggestionProvider, uri: Uri) {
+    const matched = isMatch(uri.fsPath, defaultExcludes, { dot: true })
+    if (matched) return;
+
     this.logger.trace("file added '{uri}'", uri.toString());
     await this.updateCacheFromFile(provider, uri.fsPath);
   }
 
   private async onFileCreate(provider: ISuggestionProvider, uri: Uri) {
+    const matched = isMatch(uri.fsPath, defaultExcludes, { dot: true })
+    if (matched) return;
+
     this.logger.trace("file created '{uri}'", uri.toString());
     await this.updateCacheFromFile(provider, uri.fsPath);
   }
 
   private onFileDelete(provider: ISuggestionProvider, uri: Uri) {
+    const matched = isMatch(uri.fsPath, defaultExcludes, { dot: true })
+    if (matched) return;
+
     this.logger.trace("file removed '{uri}'", uri.toString());
     this.dependencyCache.remove(provider.name, uri.fsPath);
   }
