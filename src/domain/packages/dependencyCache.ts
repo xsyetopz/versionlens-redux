@@ -23,6 +23,11 @@ export class DependencyCache {
     return packageFilesCache.get(packageFilePath);
   }
 
+  getFilePaths(providerName: string): string[] {
+    const packageFilesCache = this.providerMaps[providerName];
+    return [...packageFilesCache.keys()];
+  }
+
   set(providerName: string, packageFilePath: string, dependencies: PackageDependency[]): void {
     // get the package file cache for the provider
     const packageFilesCache = this.providerMaps[providerName];

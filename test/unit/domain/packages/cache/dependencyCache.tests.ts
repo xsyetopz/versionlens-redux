@@ -1,4 +1,4 @@
-import assert from "node:assert";
+import assert, { deepEqual } from "node:assert";
 import { DependencyCache, PackageDependency } from '#domain/packages';
 import { test } from "mocha-ui-esm";
 import { anything, instance, mock, verify, when } from "ts-mockito";
@@ -44,6 +44,19 @@ export const dependencyCacheTests = {
     // assert
     const removed = cache.get(this.testProviderName, this.testPackageFilePath);
     assert.equal(removed, undefined);
+  },
+
+  getFilePaths: function (this: TestContext) {
+    const testPaths = [
+      'some/path1/package.json',
+      'some/path2/package.json',
+      'some/path3/package.json'
+    ]
+    const cache = new DependencyCache([this.testProviderName])
+    testPaths.forEach(x => cache.set(this.testProviderName, x, []))
+
+    // test
+    deepEqual(cache.getFilePaths(this.testProviderName), testPaths)
   },
 
   getDependenciesWithFallback: {

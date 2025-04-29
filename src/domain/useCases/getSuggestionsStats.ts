@@ -38,8 +38,7 @@ export class GetSuggestionsStats extends Disposable {
 
     const map = this.providers.flatMap(
       provider => {
-        const filePathCache = this.dependencyCache.providerMaps[provider.name];
-        const filePaths = [...filePathCache.keys()];
+        const filePaths = this.dependencyCache.getFilePaths(provider.name);
         return filePaths.map(filePath => ({ provider, filePath }));
       }
     );
