@@ -1,4 +1,4 @@
-# 1.21.1-prerelease
+# 1.21.2-prerelease
 
   ### All
 
@@ -10,11 +10,18 @@
 
     ![image](https://gitlab.com/-/project/19418059/uploads/e6b0f3e7aab7510c615b8df88f90a770/image.png)
 
+
+  - Changed version ranges that satisfy the latest version to be in the 'latest' category
+
+    > **NOTE** This change only affects how the indicator is shown
+
+    ![image](https://gitlab.com/-/project/19418059/uploads/33c9e26243d0679eace167ebb13e2e1d/image.png)
+
   - Caching improvements
 
   ### Npm
 
-  - Removed the `versionlens.github.accessToken` setting which was deprecated in 1.16.0. <br>
+  - Removed the `versionlens.github.accessToken` setting which was deprecated in 1.16.0.<br>
     This was replaced by the built in [authorization](https://gitlab.com/versionlens/vscode-versionlens/-/blob/master/docs/authorization.md) feature of version lens.
 
   - Fixed github `#commit` not showing version suggestions
