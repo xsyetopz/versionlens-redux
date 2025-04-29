@@ -11,7 +11,7 @@ type TestContext = {
   mockGetSuggestions: GetSuggestions
   mockLogger: ILogger
   testProviders: ISuggestionProvider[]
-  ucut: GetSuggestionsStats
+  useCase: GetSuggestionsStats
 }
 
 export const GetSuggestionsStatsTests = {
@@ -23,7 +23,7 @@ export const GetSuggestionsStatsTests = {
     this.mockGetSuggestions = mock<GetSuggestions>()
     this.mockLogger = mock<ILogger>()
     this.testProviders = [{ name: 'test1' }, { name: 'test2' }, { name: 'test3' }] as any
-    this.ucut = new GetSuggestionsStats(
+    this.useCase = new GetSuggestionsStats(
       this.testProviders,
       instance(this.mockDependencyCache),
       instance(this.mockGetSuggestions),
@@ -38,7 +38,7 @@ export const GetSuggestionsStatsTests = {
     when(this.mockDependencyCache.getFilePaths(anything())).thenReturn([])
 
     // test
-    const actual = await this.ucut.execute(false);
+    const actual = await this.useCase.execute(false);
 
     // assert
     verify(
@@ -54,7 +54,7 @@ export const GetSuggestionsStatsTests = {
     when(this.mockDependencyCache.getFilePaths(anything())).thenReturn(testFilePaths)
 
     // test
-    const actual = await this.ucut.execute(false);
+    const actual = await this.useCase.execute(false);
 
     // assert
     verify(
@@ -72,7 +72,7 @@ export const GetSuggestionsStatsTests = {
       .thenResolve(Fixtures.test)
 
     // test
-    const actual = await this.ucut.execute(false);
+    const actual = await this.useCase.execute(false);
 
     // assert
     verify(
@@ -84,8 +84,7 @@ export const GetSuggestionsStatsTests = {
     ).times(3)
 
     deepEqual(actual, Fixtures.expected)
+    deepEqual(this.useCase.cache.get('stats'), Fixtures.expected)
   }
-
-
 
 }
