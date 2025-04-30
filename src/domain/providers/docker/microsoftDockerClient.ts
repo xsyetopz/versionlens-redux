@@ -8,7 +8,7 @@ import type {
 } from '#domain/providers/docker';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
-export class MicrosoftHubClient {
+export class MicrosoftDockerClient {
 
   constructor(
     readonly config: DockerConfig,
@@ -22,12 +22,13 @@ export class MicrosoftHubClient {
     throwUndefinedOrNull('logger', logger);
   }
 
-  async get(repository: string, namespace: string = 'library'): Promise<DockerClientResponse> {
+  async get(repository: string, namespace: string): Promise<DockerClientResponse> {
     const url = `https://mcr.microsoft.com/api/v1/catalog/${namespace}/${repository}/tags?reg=mar`;
     // check cache
     const cached = this.requestCache.get(url, this.config.caching.duration);
     if (cached) return { ...cached, source: ClientResponseSource.cache };
     // fetch
+    this.logger.debug('Fetching from {Url}', new URL(url));
     const jsonResponse = await this.jsonClient.get<DockerRepository[]>(url);
     // reduce
     const result = {

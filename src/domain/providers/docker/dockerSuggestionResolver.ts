@@ -20,7 +20,7 @@ import {
   type DockerClientResponse,
   type DockerConfig,
   type DockerHubClient,
-  type MicrosoftHubClient,
+  type MicrosoftDockerClient,
   createVersionMapper,
   findSimilarBuild
 } from '#domain/providers/docker';
@@ -31,12 +31,12 @@ export class DockerSuggestionResolver {
   constructor(
     readonly config: DockerConfig,
     readonly dockerHubClient: DockerHubClient,
-    readonly microsoftHubClient: MicrosoftHubClient,
+    readonly microsoftDockerClient: MicrosoftDockerClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
     throwUndefinedOrNull('dockerHubClient', dockerHubClient);
-    throwUndefinedOrNull('microsoftHubClient', microsoftHubClient);
+    throwUndefinedOrNull('microsoftDockerClient', microsoftDockerClient);
     throwUndefinedOrNull('logger', logger);
   }
 
@@ -67,7 +67,7 @@ export class DockerSuggestionResolver {
     }
 
     const jsonResponse = registry.length > 0
-      ? await this.microsoftHubClient.get(repo, namespace)
+      ? await this.microsoftDockerClient.get(repo, namespace)
       : await this.dockerHubClient.get(repo, namespace);
 
     return this.parseResponse(requestedPackage, jsonResponse);

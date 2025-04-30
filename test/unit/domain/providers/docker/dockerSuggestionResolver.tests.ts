@@ -15,7 +15,7 @@ import {
   type DockerConfig,
   type DockerHubClient,
   DockerSuggestionResolver,
-  MicrosoftHubClient
+  MicrosoftDockerClient
 } from '#domain/providers/docker';
 import { deepEqual, equal } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
@@ -24,7 +24,7 @@ import fixtures from './dockerSuggestionResolver.fixtures';
 type TestContext = {
   configMock: DockerConfig;
   dockerHubClientMock: DockerHubClient;
-  microsoftHubClientMock: MicrosoftHubClient;
+  microsoftDockerClientMock: MicrosoftDockerClient;
   loggerMock: ILogger;
   cut: DockerSuggestionResolver
 }
@@ -36,12 +36,12 @@ export const DockerSuggestionResolverTests = {
   beforeEach: function (this: TestContext) {
     this.configMock = mock<DockerConfig>();
     this.dockerHubClientMock = mock<DockerHubClient>();
-    this.microsoftHubClientMock = mock<MicrosoftHubClient>();
+    this.microsoftDockerClientMock = mock<MicrosoftDockerClient>();
     this.loggerMock = mock<ILogger>();
     this.cut = new DockerSuggestionResolver(
       instance(this.configMock),
       instance(this.dockerHubClientMock),
-      instance(this.microsoftHubClientMock),
+      instance(this.microsoftDockerClientMock),
       instance(this.loggerMock)
     );
   },

@@ -11,7 +11,7 @@ import {
   DockerService,
   DockerSuggestionProvider,
   DockerSuggestionResolver,
-  MicrosoftHubClient
+  MicrosoftDockerClient
 } from '#domain/providers/docker';
 import { nameOf } from '#domain/utils';
 
@@ -71,12 +71,12 @@ export function addDockerHubClient(services: IServiceCollection) {
   );
 }
 
-export function addMicrosoftHubClient(services: IServiceCollection) {
-  const serviceName = DockerService.microsoftHubClient;
+export function addMicrosoftDockerClient(services: IServiceCollection) {
+  const serviceName = DockerService.microsoftDockerClient;
   services.addSingleton(
     serviceName,
     (container: IDockerServices & IDomainServices) =>
-      new MicrosoftHubClient(
+      new MicrosoftDockerClient(
         container.dockerConfig,
         createJsonClient(
           container.authorizer,
@@ -99,7 +99,7 @@ export function addDockerClient(services: IServiceCollection) {
       new DockerSuggestionResolver(
         container.dockerConfig,
         container.dockerHubClient,
-        container.microsoftHubClient,
+        container.microsoftDockerClient,
         container.loggerFactory.create(serviceName)
       )
   );

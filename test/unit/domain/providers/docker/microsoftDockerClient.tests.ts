@@ -1,10 +1,10 @@
 import { type CachingOptions, MemoryExpiryCache } from '#domain/caching';
 import { type JsonHttpClient, ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
-import { type DockerConfig, DockerHubClient, MicrosoftHubClient } from '#domain/providers/docker';
+import { type DockerConfig, MicrosoftDockerClient } from '#domain/providers/docker';
 import { deepEqual } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
-import fixtures from './microsoftHubClient.fixtures';
+import fixtures from './microsoftDockerClient.fixtures';
 
 type TestContext = {
   configMock: DockerConfig;
@@ -12,9 +12,9 @@ type TestContext = {
   loggerMock: ILogger;
 }
 
-export const MicrosoftHubClientTests = {
+export const MicrosoftDockerClientTests = {
 
-  title: DockerHubClient.name,
+  title: MicrosoftDockerClient.name,
 
   beforeEach: function (this: TestContext) {
     this.configMock = mock<DockerConfig>();
@@ -41,7 +41,7 @@ export const MicrosoftHubClientTests = {
       source: ClientResponseSource.remote,
       status: 200
     }
-    const cut = new MicrosoftHubClient(
+    const cut = new MicrosoftDockerClient(
       instance(this.configMock),
       instance(this.jsonClientMock),
       new MemoryExpiryCache('test-cache'),

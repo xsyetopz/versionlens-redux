@@ -4,7 +4,7 @@ import type {
   DockerConfig,
   DockerHubClient,
   DockerSuggestionResolver,
-  MicrosoftHubClient
+  MicrosoftDockerClient
 } from '#domain/providers/docker';
 import { nameOf } from '#domain/utils';
 
@@ -21,7 +21,7 @@ export interface IDockerServices {
   dockerHttpOpts: HttpOptions
   dockerConfig: DockerConfig
   dockerHubClient: DockerHubClient
-  microsoftHubClient: MicrosoftHubClient
+  microsoftDockerClient: MicrosoftDockerClient
   dockerSuggestionResolver: DockerSuggestionResolver
 }
 

@@ -5,7 +5,7 @@ import {
   addDockerConfig,
   addDockerHubClient,
   addHttpOptions,
-  addMicrosoftHubClient,
+  addMicrosoftDockerClient,
   addSuggestionProvider
 } from '#domain/providers/docker';
 
@@ -22,7 +22,7 @@ export async function configureContainer(
 
   addDockerHubClient(services);
 
-  addMicrosoftHubClient(services);
+  addMicrosoftDockerClient(services);
 
   addDockerClient(services);
 
