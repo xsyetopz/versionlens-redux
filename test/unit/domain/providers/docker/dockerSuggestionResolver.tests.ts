@@ -2,6 +2,7 @@ import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
   type PackageClientRequest,
+  type PackageSuggestion,
   createPackageResource,
   PackageDependency
 } from '#domain/packages';
@@ -14,8 +15,9 @@ import {
 import {
   type DockerConfig,
   type DockerHubClient,
-  DockerSuggestionResolver,
-  MicrosoftDockerClient
+  type DockerRepository,
+  type MicrosoftDockerClient,
+  DockerSuggestionResolver
 } from '#domain/providers/docker';
 import { deepEqual, equal } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
@@ -46,61 +48,39 @@ export const DockerSuggestionResolverTests = {
     );
   },
 
-  fetchPackage: {
-    "creates latest status with build suggestions": async function (this: TestContext) {
-      const testNs = 'library'
-      const testRepo = 'node'
-      const testRequest = {
-        providerName: 'docker',
-        attempt: 1,
-        clientData: null,
-        parsedDependency: new PackageDependency(
-          createPackageResource(testRepo, '23', 'test/path'),
-          new PackageDescriptor([
-            createPackageNameDesc(testRepo, createTextRange(1, 20)),
-            createPackageVersionDesc('23', createTextRange(25, 30)),
-          ])
-        )
-      } as PackageClientRequest<null>
+  fromRegistry: {
+    "case $i: returns suggestion statuses from DockerRepository arrays": [
+      ['23', fixtures.node.test, fixtures.node.expected1],
+      ['22-bookworm', fixtures.node.test, fixtures.node.expected2],
+      ['21', fixtures.node.test, fixtures.node.expected3],
+      async function (this: TestContext, testTag: string, testData: DockerRepository[], expected: PackageSuggestion[]) {
+        const testNs = 'library'
+        const testRepo = 'node'
+        const testRequest = {
+          providerName: 'docker',
+          attempt: 1,
+          clientData: null,
+          parsedDependency: new PackageDependency(
+            createPackageResource(testRepo, testTag, 'test/path'),
+            new PackageDescriptor([
+              createPackageNameDesc(testRepo, createTextRange(1, 20)),
+              createPackageVersionDesc(testTag, createTextRange(25, 30)),
+            ])
+          )
+        } as PackageClientRequest<null>
 
-      when(this.dockerHubClientMock.get(testRepo, testNs))
-        .thenResolve({
-          data: fixtures.test,
-          source: ClientResponseSource.remote,
-          status: 200
-        })
+        when(this.dockerHubClientMock.get(testRepo, testNs))
+          .thenResolve({
+            data: testData,
+            source: ClientResponseSource.remote,
+            status: 200
+          })
 
-      const actual = await this.cut.fromRegistry(testRequest.parsedDependency)
-      equal(actual.suggestions.length, 2)
-      deepEqual(actual.suggestions, fixtures.expected1)
-    },
-    "creates fixed status with latest and build suggestions": async function (this: TestContext) {
-      const testNs = 'library'
-      const testRepo = 'node'
-      const testRequest = {
-        providerName: 'docker',
-        attempt: 1,
-        clientData: null,
-        parsedDependency: new PackageDependency(
-          createPackageResource(testRepo, '22-bookworm', 'test/path'),
-          new PackageDescriptor([
-            createPackageNameDesc(testRepo, createTextRange(1, 20)),
-            createPackageVersionDesc('22-bookworm', createTextRange(25, 30)),
-          ])
-        )
-      } as PackageClientRequest<null>
-
-      when(this.dockerHubClientMock.get(testRepo, testNs))
-        .thenResolve({
-          data: fixtures.test,
-          source: ClientResponseSource.remote,
-          status: 200
-        })
-
-      const actual = await this.cut.fromRegistry(testRequest.parsedDependency)
-      equal(actual.suggestions.length, 3)
-      deepEqual(actual.suggestions, fixtures.expected2)
-    }
+        const actual = await this.cut.fromRegistry(testRequest.parsedDependency)
+        equal(actual.suggestions.length, expected.length)
+        deepEqual(actual.suggestions, expected)
+      }
+    ]
   }
 
 }

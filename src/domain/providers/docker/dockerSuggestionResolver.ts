@@ -6,6 +6,7 @@ import {
   ClientResponseFactory,
   createSuggestions,
   PackageSourceType,
+  PackageStatusFactory,
   PackageVersionType,
   SuggestionCategory,
   UpdateableFactory,
@@ -79,10 +80,14 @@ export class DockerSuggestionResolver {
 
     const tagged = Object.keys(tagMap);
     let versionRange = pkg.version || latest || '';
-    if (tagged.includes(versionRange)) versionRange = tagMap[versionRange];
+    const tagExists = tagged.includes(versionRange)
+    if (tagExists) versionRange = tagMap[versionRange];
 
     // analyse suggestions
-    let suggestions = createSuggestions(versionRange, releases, []);
+    const suggestions = createSuggestions(versionRange, releases, []);
+
+    // ensure we dont match non-existing versions
+    if (tagExists === false) suggestions[0] = PackageStatusFactory.createNoMatchStatus()
 
     const buildSuggestion = suggestions.find(x => x.category === SuggestionCategory.Build);
     if (!buildSuggestion && versionMap[versionRange] !== undefined) {

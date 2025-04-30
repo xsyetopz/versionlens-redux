@@ -50,7 +50,7 @@ export function createDigestMapper(dockerTags: DockerRepository[]): DockerDigest
   return { tagMap, digestMap };
 }
 
-const extractRe = /(?:(?:^(?<major>\d{1,3})(?:(?<minor>[.]\d+|)(?<patch>[.]\d+|))|)(?:$|[\s-])|)(?<tags>.*)/gm
+const extractRe = /(?:(?:^(?<major>\d{1,4})(?:(?<minor>[.]\d+|)(?<patch>[.]\d+|))|)(?:$|[\s-])|)(?<tags>.*)/gm
 export function extract(dockerTag: string): DockerVersion {
   let version = '';
   let tag = '';
@@ -143,7 +143,6 @@ function createReverseLookup(versionMap: Record<string, string[]>, digestMapper:
   // find other related tags
   for (const version in versionMap) {
     const tags = versionMap[version];
-    if (version.includes('+')) continue;
     for (const tag of tags) {
       const digest = digestMapper.tagMap[tag];
       const names = digestMapper.digestMap[digest];

@@ -33,6 +33,8 @@
 
   - Added microsoft artifact registry support e.g. `mcr.microsoft.com/dotnet/sdk`
 
+  - Prevented non matching tags appearing as matched suggestions
+
   - Fixed version descriptor handler missing error
 
   - Fixed 'valueNode.get is not a function' error
