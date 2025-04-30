@@ -22,12 +22,16 @@
 
   ### Npm
 
+  - Stopped showing 'not supported' suggestions for `workspace:` aliases
+
   - Removed the `versionlens.github.accessToken` setting which was deprecated in 1.16.0.<br>
     This was replaced by the built in [authorization](https://gitlab.com/versionlens/vscode-versionlens/-/blob/master/docs/authorization.md) feature of version lens.
 
   - Fixed github `#commit` not showing version suggestions
 
   ### Docker
+
+  - Added microsoft artifact registry support e.g. `mcr.microsoft.com/dotnet/sdk`
 
   - Fixed version descriptor handler missing error
 
