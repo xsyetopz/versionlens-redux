@@ -24,10 +24,10 @@ import { instance, mock, when } from 'ts-mockito';
 import fixtures from './dockerSuggestionResolver.fixtures';
 
 type TestContext = {
-  configMock: DockerConfig;
-  dockerHubClientMock: DockerHubClient;
-  microsoftDockerClientMock: MicrosoftDockerClient;
-  loggerMock: ILogger;
+  configMock: DockerConfig
+  dockerHubClientMock: DockerHubClient
+  microsoftDockerClientMock: MicrosoftDockerClient
+  loggerMock: ILogger
   cut: DockerSuggestionResolver
 }
 
@@ -50,9 +50,11 @@ export const DockerSuggestionResolverTests = {
 
   fromRegistry: {
     "case $i: returns suggestion statuses from DockerRepository arrays": [
-      ['23', fixtures.node.test, fixtures.node.expected1],
-      ['22-bookworm', fixtures.node.test, fixtures.node.expected2],
-      ['21', fixtures.node.test, fixtures.node.expected3],
+      ['23', fixtures.node.test, fixtures.node.expectLatestStatusWithBuildSuggestions],
+      ['22-bookworm', fixtures.node.test, fixtures.node.expectFixedWithSuggestions],
+      ['21', fixtures.node.test, fixtures.node.expectNoMatchWithSuggestions],
+      ['latest', fixtures.mssql.test, fixtures.mssql.expectLatestStatusWithBuildSuggestions],
+      ['', fixtures.mssql.test, fixtures.mssql.expectNoMatchWithLatestSuggestion],
       async function (this: TestContext, testTag: string, testData: DockerRepository[], expected: PackageSuggestion[]) {
         const testNs = 'library'
         const testRepo = 'node'

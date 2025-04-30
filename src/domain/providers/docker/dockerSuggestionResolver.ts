@@ -9,8 +9,7 @@ import {
   PackageStatusFactory,
   PackageVersionType,
   SuggestionCategory,
-  UpdateableFactory,
-  VersionUtils
+  UpdateableFactory
 } from '#domain/packages';
 import {
   type PackagePathDescriptor,
@@ -60,7 +59,7 @@ export class DockerSuggestionResolver {
   async fromRegistry(dependency: PackageDependency): Promise<PackageClientResponse> {
     const requestedPackage = dependency.package;
     const registryDesc = dependency.descriptors.getType<PackageRegistryDescriptor>('registry');
-    const registry = registryDesc?.registry ?? ''
+    const registry = registryDesc?.registry ?? '';
     let namespace = 'library';
     let repo = requestedPackage.name;
     if (requestedPackage.name.includes('/')) {
@@ -80,35 +79,37 @@ export class DockerSuggestionResolver {
 
     const tagged = Object.keys(tagMap);
     let versionRange = pkg.version || latest || '';
-    const tagExists = tagged.includes(versionRange)
+    const tagExists = tagged.includes(versionRange);
     if (tagExists) versionRange = tagMap[versionRange];
 
     // analyse suggestions
     const suggestions = createSuggestions(versionRange, releases, []);
 
     // ensure we dont match non-existing versions
-    if (tagExists === false) suggestions[0] = PackageStatusFactory.createNoMatchStatus()
+    if (tagExists === false && pkg.version !== '') {
+      suggestions[0] = PackageStatusFactory.createNoMatchStatus();
+    }
 
     const buildSuggestion = suggestions.find(x => x.category === SuggestionCategory.Build);
     if (!buildSuggestion && versionMap[versionRange] !== undefined) {
-      suggestions.push(UpdateableFactory.createBuildUpdateable(''))
+      suggestions.push(UpdateableFactory.createBuildUpdateable(''));
     }
 
     // map suggestion text back to the real docker tags
     for (const suggestion of suggestions) {
       switch (suggestion.category) {
         case SuggestionCategory.Build:
-          const uniqueVersions: Record<string, boolean> = {}
+          const uniqueVersions: Record<string, boolean> = {};
           if (suggestion.version.length > 0) {
-            const buildVersions = suggestion.version.split(',')
+            const buildVersions = suggestion.version.split(',');
             for (const v of buildVersions) {
-              const tags = versionMap[v]
-              for (const tag of tags) uniqueVersions[tag] = true
+              const tags = versionMap[v];
+              for (const tag of tags) uniqueVersions[tag] = true;
             }
           }
 
-          const additionalTags = versionMap[versionRange] ?? []
-          for (const tag of additionalTags) uniqueVersions[tag] = true
+          const additionalTags = versionMap[versionRange] ?? [];
+          for (const tag of additionalTags) uniqueVersions[tag] = true;
 
           suggestion.version = Object.keys(uniqueVersions)
             .toSorted((a, b) => {
@@ -118,18 +119,25 @@ export class DockerSuggestionResolver {
                 ? 1
                 : a < b ? -1 : 0
             })
-            .join(',')
+            .join(',');
           break;
         case SuggestionCategory.Latest:
         case SuggestionCategory.Match:
-          suggestion.version = VersionUtils.stripBuild(suggestion.version)!
+          if (suggestion.version.includes('+')) {
+            const tags = versionMap[suggestion.version];
+            suggestion.version = tags[tags.length - 1];
+          }
           break;
         case SuggestionCategory.Updateable:
-          const suggestionBuilds = versionMap[suggestion.version] ?? []
-          const similarBuild = findSimilarBuild(pkg.version, suggestionBuilds)
-          suggestion.version = similarBuild !== null
-            ? similarBuild
-            : VersionUtils.stripBuild(suggestion.version)!
+          const suggestionBuilds = versionMap[suggestion.version] ?? [];
+          const similarBuild = findSimilarBuild(pkg.version, suggestionBuilds);
+          if (similarBuild !== null)
+            suggestion.version = similarBuild;
+          else if (suggestion.version.includes('+'))
+            suggestion.version = suggestion.name === 'latest' && tagMap['latest']
+              ? 'latest'
+              : suggestionBuilds[suggestionBuilds.length - 1];
+          break;
       }
     }
 
