@@ -1,6 +1,7 @@
 // Place your settings in this file to overwrite default and user settings.
 {
   "versionlens.logging.level": "debug",
+  "versionlens.suggestions.showSuggestionsStats": true,
   "versionlens.caching.duration": 3,
   "versionlens.suggestions.showOnStartup": false,
   "versionlens.suggestions.showPrereleasesOnStartup": false,
