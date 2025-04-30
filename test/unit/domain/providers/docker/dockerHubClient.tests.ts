@@ -30,8 +30,7 @@ export const dockerHubClientTests = {
     // setup
     const testNs = 'library'
     const testRepo = 'node'
-    const testUrlTemplate = 'https://api/{namespace}/{repository}/tags'
-    const testUrl = testUrlTemplate.replace('{namespace}', testNs).replace('{repository}', testRepo)
+    const testUrl = `https://hub.docker.com/v2/namespaces/${testNs}/repositories/${testRepo}/tags`
     const testResp = {
       data: fixtures.test,
       source: ClientResponseSource.remote,
@@ -49,7 +48,6 @@ export const dockerHubClientTests = {
       instance(this.loggerMock)
     );
 
-    when(this.configMock.apiUrl).thenReturn(testUrlTemplate)
     when(this.jsonClientMock.get(testUrl, anything())).thenResolve(testResp)
 
     // test

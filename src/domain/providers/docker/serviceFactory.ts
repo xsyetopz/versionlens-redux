@@ -10,7 +10,8 @@ import {
   DockerHubClient,
   DockerService,
   DockerSuggestionProvider,
-  DockerSuggestionResolver
+  DockerSuggestionResolver,
+  MicrosoftHubClient
 } from '#domain/providers/docker';
 import { nameOf } from '#domain/utils';
 
@@ -70,6 +71,26 @@ export function addDockerHubClient(services: IServiceCollection) {
   );
 }
 
+export function addMicrosoftHubClient(services: IServiceCollection) {
+  const serviceName = DockerService.microsoftHubClient;
+  services.addSingleton(
+    serviceName,
+    (container: IDockerServices & IDomainServices) =>
+      new MicrosoftHubClient(
+        container.dockerConfig,
+        createJsonClient(
+          container.authorizer,
+          {
+            caching: container.dockerCachingOpts,
+            http: container.dockerHttpOpts
+          }
+        ),
+        container.urlRequestCache,
+        container.loggerFactory.create(serviceName)
+      )
+  );
+}
+
 export function addDockerClient(services: IServiceCollection) {
   const serviceName = DockerService.dockerSuggestionResolver;
   services.addSingleton(
@@ -78,6 +99,7 @@ export function addDockerClient(services: IServiceCollection) {
       new DockerSuggestionResolver(
         container.dockerConfig,
         container.dockerHubClient,
+        container.microsoftHubClient,
         container.loggerFactory.create(serviceName)
       )
   );

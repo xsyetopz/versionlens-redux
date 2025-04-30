@@ -6,12 +6,14 @@ import {
   type YamlParserOptions,
   createPackageNameDesc,
   createPackagePathDescType,
+  createPackageRegistryDescType,
   createPackageVersionDesc,
   createTextRange,
   isNodeQuoted,
   PackageDescriptor,
   parsePackagesYaml
 } from '#domain/parsers';
+import { trimEndSlash } from '#domain/utils';
 import { DockerfileParser } from 'dockerfile-ast';
 import { isScalar } from 'yaml';
 
@@ -29,13 +31,22 @@ export function parseDockerCompose(
 
     let nameDesc
     let versionDesc
+    let registryDesc
     if (imageDesc) {
       nameDesc = imageDesc.nameDesc
       versionDesc = imageDesc.versionDesc
+      registryDesc = imageDesc.registry && createPackageRegistryDescType(imageDesc.registry)
     } else if (buildDesc) {
       nameDesc = createPackageNameDesc(buildDesc.pathDesc.path, buildDesc.pathDesc.pathRange)
     } else
       continue
+
+    const descriptor = new PackageDescriptor([
+      nameDesc,
+      versionDesc ?? buildDesc.pathDesc,
+      parentDesc,
+    ]);
+    if (registryDesc) descriptor.addType(registryDesc);
 
     packageDependencies.push(
       new PackageDependency(
@@ -44,11 +55,7 @@ export function parseDockerCompose(
           versionDesc ? versionDesc.version : buildDesc.pathDesc.path,
           packagePath
         ),
-        new PackageDescriptor([
-          nameDesc,
-          versionDesc ?? buildDesc.pathDesc,
-          parentDesc
-        ])
+        descriptor
       )
     );
   }
@@ -70,6 +77,7 @@ export function parseDockerfile(packagePath: string, packageText: string): Array
     const imageNameRange = from.getImageNameRange();
     if (imageName === null || imageNameRange === null) continue;
 
+    const imageRegistry = from.getRegistry();
     const imageTag = from.getImageTag() ?? '';
     let imageTagRange = from.getImageTagRange()
 
@@ -92,6 +100,12 @@ export function parseDockerfile(packagePath: string, packageText: string): Array
       versionStart + imageTagRange!.end.character
     );
 
+    const descriptor = new PackageDescriptor([
+      createPackageNameDesc(imageName, nameRange),
+      createPackageVersionDesc(imageTag, versionRange, hasTag ? '' : ':'),
+    ]);
+    if (imageRegistry) descriptor.addType(createPackageRegistryDescType(imageRegistry));
+
     packageDependencies.push(
       new PackageDependency(
         createPackageResource(
@@ -99,10 +113,7 @@ export function parseDockerfile(packagePath: string, packageText: string): Array
           imageTag,
           packagePath
         ),
-        new PackageDescriptor([
-          createPackageNameDesc(imageName, nameRange),
-          createPackageVersionDesc(imageTag, versionRange, hasTag ? '' : ':'),
-        ])
+        descriptor
       )
     );
   }
@@ -110,6 +121,7 @@ export function parseDockerfile(packagePath: string, packageText: string): Array
   return packageDependencies;
 }
 
+const imageRegEx = /(?<registry>[^/]+[/]|)(?<image>[^:]+|)(?<tag>:.+|)/
 export function createImageDescFromYamlNode(valueNode: any): PackageImageDescriptor | undefined {
   if (!valueNode.value) return
 
@@ -123,10 +135,16 @@ export function createImageDescFromYamlNode(valueNode: any): PackageImageDescrip
     valueRange.end--;
   }
 
-  const [image, tag] = valueNode.value.toString().split(':');
+  const match = imageRegEx.exec(valueNode.value.toString())
+  if (match === null) return
+
+  let { registry, image, tag } = match.groups;
+  tag = tag.replace(':', '')
+
+  const start = valueRange.start + registry.length;
   const imageRange = {
-    start: valueRange.start,
-    end: valueRange.start + image.length
+    start: start,
+    end: start + image.length
   };
   const tagRange = tag
     ? {
@@ -141,7 +159,8 @@ export function createImageDescFromYamlNode(valueNode: any): PackageImageDescrip
   return {
     type: 'image',
     nameDesc: createPackageNameDesc(image, imageRange),
-    versionDesc: createPackageVersionDesc(tag ?? '', tagRange, tag ? '' : ':')
+    versionDesc: createPackageVersionDesc(tag ?? '', tagRange, tag ? '' : ':'),
+    registry: registry ? trimEndSlash(registry) : undefined
   };
 }
 

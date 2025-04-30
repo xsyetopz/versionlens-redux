@@ -73,8 +73,8 @@ export class DockerSuggestionProvider implements ISuggestionProvider {
       return ClientResponseFactory.createNotSupported()
     }
 
-    // fetch from docker hub
-    return await this.resolver.fromDockerHub(requestedPackage);
+    // fetch from registry
+    return await this.resolver.fromRegistry(dependency);
   }
 
 }

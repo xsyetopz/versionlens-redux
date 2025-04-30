@@ -8,7 +8,8 @@ export enum PackageDescriptorType {
   ignoreChanges = "ignoreChanges",
   projectVersion = "projectVersion",
   image = "image",
-  build = 'build'
+  build = 'build',
+  registry = 'registry'
 }
 
 export type PackageTextRange = {
@@ -48,6 +49,10 @@ export type PackageGitDescriptor = PackageType & {
   gitPath?: string
 }
 
+export type PackageRegistryDescriptor = PackageType & {
+  registry: string
+}
+
 export type PackageParentDescriptor = PackageType & {
   path: string
 }
@@ -59,6 +64,7 @@ export type PackageProjectVersionDescriptor = PackageType & {}
 export type PackageImageDescriptor = PackageType & {
   nameDesc: PackageNameDescriptor
   versionDesc: PackageVersionDescriptor
+  registry: string
 }
 
 export type PackageBuildDescriptor = PackageType & {
@@ -75,3 +81,4 @@ export type PackageTypeDescriptor = PackageNameDescriptor
   | PackageProjectVersionDescriptor
   | PackageImageDescriptor
   | PackageBuildDescriptor
+  | PackageRegistryDescriptor

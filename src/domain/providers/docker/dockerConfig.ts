@@ -26,10 +26,6 @@ export class DockerConfig implements IProviderConfig {
     return this.config.get(DockerFeatures.FilePatterns)!;
   }
 
-  get apiUrl(): string {
-    return this.config.get(DockerFeatures.ApiUrl)!;
-  }
-
   get onSaveChangesTask(): string | null {
     return this.config.get(DockerFeatures.OnSaveChangesTask) ?? null;
   }

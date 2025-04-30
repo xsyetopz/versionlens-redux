@@ -682,11 +682,6 @@
           ],
           "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
         },
-        "versionlens.docker.apiUrl": {
-          "type": "string",
-          "default": "https://hub.docker.com/v2/namespaces/{namespace}/repositories/{repository}/tags",
-          "description": "Defines the docker api to use for image tag searching."
-        },
         "versionlens.maven.onSaveChanges": {
           "type": "string",
           "default": null,

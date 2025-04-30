@@ -3,6 +3,7 @@ import {
   createPackageNameDesc,
   createPackageParentDescType,
   createPackagePathDescType,
+  createPackageRegistryDescType,
   createPackageVersionDesc,
   createTextRange,
   PackageDescriptor
@@ -100,6 +101,8 @@ export default {
             dockerfile: custom.dockerfile
         image-number:
           image: 123456
+        image-registry:
+          image: mcr.microsoft.com/dotnet/sdk:7.0
         empty-image:
           image:
         empty-build:
@@ -161,7 +164,16 @@ export default {
           createPackageVersionDesc('', createTextRange(419), ':'),
           createPackageParentDescType('services.*')
         ])
-      )
+      ),
+      new PackageDependency(
+        createPackageResource('dotnet/sdk', '7.0', 'test/path/compose.yaml'),
+        new PackageDescriptor([
+          createPackageNameDesc('dotnet/sdk', createTextRange(479, 489)),
+          createPackageVersionDesc('7.0', createTextRange(490, 493)),
+          createPackageParentDescType('services.*'),
+          createPackageRegistryDescType('mcr.microsoft.com')
+        ])
+      ),
     ]
   }
 }

@@ -1,12 +1,16 @@
 import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions, JsonClientResponse } from '#domain/clients';
-import type { DockerConfig, DockerHubClient, DockerSuggestionResolver } from '#domain/providers/docker';
+import type {
+  DockerConfig,
+  DockerHubClient,
+  DockerSuggestionResolver,
+  MicrosoftHubClient
+} from '#domain/providers/docker';
 import { nameOf } from '#domain/utils';
 
 export enum DockerFeatures {
   Caching = 'docker.caching',
   Http = 'docker.http',
-  ApiUrl = 'docker.apiUrl',
   FilePatterns = 'docker.files',
   OnSaveChangesTask = 'docker.onSaveChanges',
   // PrereleaseTagFilter = 'docker.prereleaseTagFilter'
@@ -17,6 +21,7 @@ export interface IDockerServices {
   dockerHttpOpts: HttpOptions
   dockerConfig: DockerConfig
   dockerHubClient: DockerHubClient
+  microsoftHubClient: MicrosoftHubClient
   dockerSuggestionResolver: DockerSuggestionResolver
 }
 

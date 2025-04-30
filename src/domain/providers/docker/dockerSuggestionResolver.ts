@@ -11,10 +11,16 @@ import {
   UpdateableFactory,
   VersionUtils
 } from '#domain/packages';
-import { type PackagePathDescriptor, PackageDescriptorType } from '#domain/parsers';
+import {
+  type PackagePathDescriptor,
+  PackageDescriptorType,
+  PackageRegistryDescriptor
+} from '#domain/parsers';
 import {
   type DockerConfig,
   type DockerHubClient,
+  type DockerHubListClientResponse,
+  type MicrosoftHubClient,
   createVersionMapper,
   findSimilarBuild
 } from '#domain/providers/docker';
@@ -25,10 +31,12 @@ export class DockerSuggestionResolver {
   constructor(
     readonly config: DockerConfig,
     readonly dockerHubClient: DockerHubClient,
+    readonly microsoftHubClient: MicrosoftHubClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull('config', config);
     throwUndefinedOrNull('dockerHubClient', dockerHubClient);
+    throwUndefinedOrNull('microsoftHubClient', microsoftHubClient);
     throwUndefinedOrNull('logger', logger);
   }
 
@@ -48,14 +56,24 @@ export class DockerSuggestionResolver {
     );
   }
 
-  async fromDockerHub(pkg: PackageResource): Promise<PackageClientResponse> {
-    let namespace = 'library'
-    let repo = pkg.name
-    if (pkg.name.includes('/')) {
-      [namespace, repo] = pkg.name.split('/');
+  async fromRegistry(dependency: PackageDependency): Promise<PackageClientResponse> {
+    const requestedPackage = dependency.package;
+    const registryDesc = dependency.descriptors.getType<PackageRegistryDescriptor>('registry');
+    const registry = registryDesc?.registry ?? ''
+    let namespace = 'library';
+    let repo = requestedPackage.name;
+    if (requestedPackage.name.includes('/')) {
+      [namespace, repo] = requestedPackage.name.split('/');
     }
-    const jsonResponse = await this.dockerHubClient.get(repo, namespace);
 
+    const jsonResponse = registry.length > 0
+      ? await this.microsoftHubClient.get(repo, namespace)
+      : await this.dockerHubClient.get(repo, namespace);
+
+    return this.parseResponse(requestedPackage, jsonResponse);
+  }
+
+  private async parseResponse(pkg: PackageResource, jsonResponse: DockerHubListClientResponse): Promise<PackageClientResponse> {
     // map docker tags to semver
     const { versionMap, tagMap, releases, latest } = createVersionMapper(jsonResponse.data);
 

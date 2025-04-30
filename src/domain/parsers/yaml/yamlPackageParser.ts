@@ -8,15 +8,23 @@ import {
   isNodeQuoted,
   PackageDescriptor
 } from '#domain/parsers';
-import { KeyDictionary } from '#domain/utils';
-import { Document, isMap, isScalar, Pair, ParsedNode, parseDocument, YAMLMap } from 'yaml';
+import type { KeyDictionary } from '#domain/utils';
+import {
+  type Document,
+  type Pair,
+  type ParsedNode,
+  type YAMLMap,
+  isMap,
+  isScalar,
+  parseDocument
+} from 'yaml';
 import { findPair } from 'yaml/util';
 
 export function parsePackagesYaml(
   yaml: string,
   options: YamlParserOptions
 ): Array<PackageDescriptor> {
-  const yamlDoc = parseDocument(yaml)
+  const yamlDoc = parseDocument(yaml);
   if (!yamlDoc || !yamlDoc.contents || yamlDoc.errors.length > 0) return [];
 
   return parsePackageNodes(yamlDoc, options);
@@ -52,11 +60,11 @@ function descendChildNodes(
   complexTypeHandlers: KeyDictionary<YamlTypeDescriptorHandler>
 ): Array<PackageDescriptor> {
   const matchedDependencies: Array<PackageDescriptor> = [];
-  const createVersionDescFromYamlNode = complexTypeHandlers['version']
+  const createVersionDescFromYamlNode = complexTypeHandlers['version'];
 
   for (const pair of pairs) {
     const { key: keyNode, value: valueNode } = pair;
-    const isScalarValue = isScalar(valueNode)
+    const isScalarValue = isScalar(valueNode);
     const isQuotedType = isScalarValue && isNodeQuoted(valueNode);
 
     // parse string properties

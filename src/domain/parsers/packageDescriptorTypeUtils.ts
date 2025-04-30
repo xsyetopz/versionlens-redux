@@ -6,6 +6,7 @@ import {
   type PackageParentDescriptor,
   type PackagePathDescriptor,
   type PackageProjectVersionDescriptor,
+  type PackageRegistryDescriptor,
   type PackageTextRange,
   type PackageVersionDescriptor,
   PackageDescriptorType
@@ -82,4 +83,11 @@ export function createIgnoreChangesDesc(): PackageIgnoreChangesDescriptor {
 
 export function createProjectVersionTypeDesc(): PackageProjectVersionDescriptor {
   return { type: PackageDescriptorType.projectVersion }
+}
+
+export function createPackageRegistryDescType(registry: string): PackageRegistryDescriptor {
+  return {
+    type: PackageDescriptorType.registry,
+    registry
+  };
 }
