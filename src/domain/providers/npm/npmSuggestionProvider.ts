@@ -19,7 +19,7 @@ import {
   createVersionDescFromJsonNode,
   parsePackagesJson
 } from '#domain/parsers';
-import { ISuggestionProvider } from '#domain/providers';
+import type { ISuggestionProvider } from '#domain/providers';
 import {
   type NpaSpec,
   type NpmClientData,
@@ -150,9 +150,11 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
 
   async fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse> {
     let source: PackageSourceType;
-
     try {
       const requestedPackage = request.parsedDependency.package;
+      const isWorkspaceAlias = requestedPackage.version.startsWith('workspace:');
+      if (isWorkspaceAlias) return ClientResponseFactory.createNoSuggestions();
+
       const npaSpec = npa.resolve(
         requestedPackage.name,
         requestedPackage.version,
