@@ -82,7 +82,7 @@ export interface IExtensionServices {
   logOutputChannel: LogOutputChannel
   versionLensProviders: Array<SuggestionCodeLensProvider>
   editorDependencyCache: DependencyCache
-  packageFileWatcher: PackageFileWatcher;
+  packageFileWatcher: PackageFileWatcher
 
   // vscode
   editorConfig: EditorConfig

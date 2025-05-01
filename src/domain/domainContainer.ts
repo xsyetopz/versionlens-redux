@@ -1,6 +1,7 @@
 import {
   addAppConfig,
   addCachingOptions,
+  addEventScheduler,
   addFetchPackageSuggestionsUseCase,
   addFetchProjectSuggestionsUseCase,
   addFileSystemStorage,
@@ -25,6 +26,7 @@ export function addDomainServices(
 ) {
   addAppConfig(services, configSection, configResolver);
   addFileSystemStorage(services);
+  addEventScheduler(services);
 
   // options
   addHttpOptions(services);

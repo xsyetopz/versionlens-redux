@@ -15,30 +15,31 @@ import type {
   GetSuggestions,
   GetSuggestionsStats
 } from '#domain/useCases';
-import { nameOf } from '#domain/utils';
+import { type EventScheduler, nameOf } from '#domain/utils';
 
 export interface IDomainServices {
-  serviceCollectionFactory: IServiceCollectionFactory;
-  serviceProvider: IServiceProvider;
-  authorizer: IAuthorizer;
-  appConfig: Config;
-  loggerSinks: ILoggerSink[];
-  loggerFactory: LoggerFactory;
-  httpOptions: HttpOptions;
-  cachingOptions: CachingOptions;
-  storage: IStorage,
-  providerNames: Array<string>;
-  suggestionProviders: Array<ISuggestionProvider>;
-  fileWatcherDependencyCache: DependencyCache;
-  packageCache: PackageCache;
-  shellCache: IExpiryCache;
-  urlRequestCache: IExpiryCache;
-  GetSuggestionProvider: GetSuggestionProvider;
-  fetchPackages: FetchPackages;
-  fetchPackage: FetchPackage;
-  getSuggestions: GetSuggestions;
-  getDependencyChanges: GetDependencyChanges;
-  getSuggestionsStats: GetSuggestionsStats;
+  serviceCollectionFactory: IServiceCollectionFactory
+  serviceProvider: IServiceProvider
+  authorizer: IAuthorizer
+  appConfig: Config
+  loggerSinks: ILoggerSink[]
+  loggerFactory: LoggerFactory
+  httpOptions: HttpOptions
+  cachingOptions: CachingOptions
+  storage: IStorage
+  providerNames: Array<string>
+  suggestionProviders: Array<ISuggestionProvider>
+  eventScheduler: EventScheduler
+  fileWatcherDependencyCache: DependencyCache
+  packageCache: PackageCache
+  shellCache: IExpiryCache
+  urlRequestCache: IExpiryCache
+  GetSuggestionProvider: GetSuggestionProvider
+  fetchPackages: FetchPackages
+  fetchPackage: FetchPackage
+  getSuggestions: GetSuggestions
+  getDependencyChanges: GetDependencyChanges
+  getSuggestionsStats: GetSuggestionsStats
 }
 
 export const DomainServiceName = nameOf<IDomainServices>()

@@ -139,33 +139,31 @@ export function addOnRefreshSuggestionsStats(services: IServiceCollection) {
         container.loggerFactory.create(serviceName)
       );
 
-      // schedule every 180 seconds
-      const intervalHandle = setInterval(
-        async () => event.execute(false),
-        180 * 1000
-      );
-
       // register disposables
       event.disposables.push(
+        statusBarItem as any,
         // register as a vscode command
         commands.registerCommand(
           SuggestionCommandFeatures.OnRefreshSuggestionsStats,
           event.execute,
           event
-        ),
-        statusBarItem as any,
-        {
-          dispose: () => {
-            clearInterval(intervalHandle);
-          }
-        } as any
+        )
       );
 
       // register as a onTextDocumentSave event
       container.onTextDocumentSave.registerListener(() => event.execute(false), event, 1);
 
-      // run first time
-      setTimeout(() => event.execute(false), 5000);
+      // schedule refresh
+      container.eventScheduler.scheduleEvent(
+        event.execute,
+        {
+          thisArg: event,
+          rate: 300 * 1000,     // every 5 minutes
+          immediate: true,
+          immediateDelay: 5 * 1000  // wait 5 seconds before first run
+        },
+        false
+      );
 
       return event;
     },

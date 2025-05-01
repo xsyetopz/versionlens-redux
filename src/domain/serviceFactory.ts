@@ -13,6 +13,7 @@ import {
   GetSuggestionProvider,
   GetSuggestionsStats
 } from '#domain/useCases';
+import { EventScheduler } from '#domain/utils';
 
 export function addAppConfig(
   services: IServiceCollection,
@@ -137,5 +138,13 @@ export function addGetSuggestionsStatsUseCase(services: IServiceCollection) {
         container.getSuggestions,
         container.loggerFactory.create(serviceName)
       )
+  );
+}
+
+export function addEventScheduler(services: IServiceCollection) {
+  const serviceName = DomainServiceName.eventScheduler;
+  services.addSingleton(
+    serviceName,
+    () => new EventScheduler()
   );
 }
