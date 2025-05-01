@@ -64,7 +64,7 @@ export const GetSuggestionsStatsTests = {
     deepEqual(actual, [])
   },
 
-  "returns counts of statuses": async function (this: TestContext) {
+  "returns counts of stats": async function (this: TestContext) {
     const testFilePaths = ['test/path1']
 
     when(this.mockDependencyCache.getFilePaths(anything())).thenReturn(testFilePaths)
@@ -80,7 +80,7 @@ export const GetSuggestionsStatsTests = {
     ).times(3);
 
     verify(
-      this.mockLogger.debug("Fetching suggestion stats for {PackageFilePath}", 'test/path1')
+      this.mockLogger.debug("queueing suggestion stats for {PackageFilePath}", 'test/path1')
     ).times(3)
 
     deepEqual(actual, Fixtures.expected)

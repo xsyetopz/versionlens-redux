@@ -36,23 +36,31 @@ export class GetSuggestionsStats extends Disposable {
       if (cached) return cached;
     }
 
-    const map = this.providers.flatMap(
+    const providerProjectFiles = this.providers.flatMap(
       provider => {
         const filePaths = this.dependencyCache.getFilePaths(provider.name);
         return filePaths.map(filePath => ({ provider, filePath }));
       }
     );
 
-    const stats: SuggestionsStats[] = []
-    for (const { provider, filePath } of map) {
-      this.logger.debug("Fetching suggestion stats for {PackageFilePath}", filePath)
-      const suggestions = await this.getSuggestions.execute(
-        provider,
-        filePath,
-        filePath,
-        false
-      );
+    // create promise queue
+    const suggestionPromises = providerProjectFiles.map(
+      ({ provider, filePath }) => {
+        this.logger.debug("queueing suggestion stats for {PackageFilePath}", filePath)
+        return this.getSuggestions.execute(
+          provider,
+          filePath,
+          filePath,
+          false
+        )
+      }
+    );
 
+    // parallel fetch promises
+    const resolvedSuggestions = await Promise.all(suggestionPromises)
+
+    const stats: SuggestionsStats[] = []
+    for (const suggestions of resolvedSuggestions) {
       const statuses = suggestions
         .filter(x => x.suggestion.type === SuggestionTypes.status)
         .map(x => x.suggestion);
@@ -71,9 +79,10 @@ export class GetSuggestionsStats extends Disposable {
       }
 
       if (noMatches + updates + errors > 0) {
+        const firstSuggestion = suggestions[0];
         stats.push({
-          filePath,
-          providerName: provider.name,
+          filePath: firstSuggestion.parsedDependency.package.path,
+          providerName: firstSuggestion.providerName,
           noMatches,
           errors,
           updates

@@ -5,7 +5,7 @@ import { OnRefreshSuggestionsStats } from '#extension/events';
 import type { SuggestionsOptions } from '#extension/suggestions';
 import { equal } from 'assert';
 import { test } from 'mocha-ui-esm';
-import { instance, mock, verify, when } from 'ts-mockito';
+import { anyNumber, instance, mock, verify, when } from 'ts-mockito';
 import type { StatusBarItem } from 'vscode';
 
 type TestContext = {
@@ -74,9 +74,14 @@ export const OnRefreshSuggestionsStatsTests = {
     // test
     await this.testEvent.execute(false);
     // verify
-    verify(this.mockLogger.info("Fetching all suggestion stats")).once();
+    verify(this.mockLogger.info("fetching all suggestion stats")).once();
     verify(this.mockStatusBarItem.show()).once();
-    verify(this.mockLogger.info("Completed fetching all suggestion stats")).once();
+    verify(
+      this.mockLogger.info(
+        "completed fetching all suggestion stats ({duration} ms)",
+        anyNumber()
+      )
+    ).once();
     // assert
     equal(this.testStatusBarItem.text, `🟡${testStats.updates} 🔴${testStats.errors} ⚪${testStats.noMatches}`)
   },

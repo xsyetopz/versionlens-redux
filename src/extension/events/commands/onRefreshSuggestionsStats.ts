@@ -29,7 +29,9 @@ export class OnRefreshSuggestionsStats extends Disposable {
       return;
     }
 
-    this.logger.info("Fetching all suggestion stats");
+    this.logger.info("fetching all suggestion stats");
+    // capture start time
+    const startedAt = performance.now();
     const stats = await this.getSuggestionsStats.execute(useCache);
 
     let noMatches = 0;
@@ -48,7 +50,13 @@ export class OnRefreshSuggestionsStats extends Disposable {
     ];
     this.statusBarItem.text = builder.join(' ');
     this.statusBarItem.show();
-    this.logger.info("Completed fetching all suggestion stats");
+
+    // report completed duration
+    const completedAt = performance.now();
+    this.logger.info(
+      "completed fetching all suggestion stats ({duration} ms)",
+      Math.floor(completedAt - startedAt)
+    );
   }
 
 }
