@@ -1,13 +1,12 @@
 import { ClientResponseSource } from '#domain/clients';
 import type { ILogger } from '#domain/logging';
 import {
+  type PackageClientRequest,
+  type PackageClientResponse,
   type PackageSuggestion,
   createPackageResource,
-  PackageClientRequest,
-  PackageClientResponse,
   PackageDependency,
   PackageSourceType,
-  PackageStatusFactory,
   SuggestionCategory,
   SuggestionStatusText,
   SuggestionTypes
@@ -30,7 +29,7 @@ import { fileDir } from '#test/utils';
 import assert, { deepEqual, fail } from 'node:assert';
 import npa from 'npm-package-arg';
 import { instance, mock, when } from 'ts-mockito';
-import Fixtures from './npmRegistryClient.fixtures';
+import Fixtures from './npmSuggestionResolver.fixtures';
 
 const testDir = fileDir();
 
@@ -194,60 +193,57 @@ export const NpmSuggestionResolverTests = {
       assert.equal(actual.resolved?.name, 'pacote')
       assert.equal(actual.resolved?.version, '11.1.9')
     },
-    'returns capped latest versions': async function (this: TestContext) {
-      const testPackageRes = createPackageResource(
-        // package name
-        'npm-package-arg',
-        // package version
-        '7.0.0',
-        // package path
-        'packagepath',
-      );
+    'case $i: returns capped latest versions': [
+      ['7.0.0', Fixtures.cappedToLatestTaggedRelease],
+      ['*', Fixtures.cappedToLatestTaggedRelease],
+      ['1.0.0-rc.1', Fixtures.cappedToLatestTaggedPrerelease],
+      ['*', Fixtures.cappedToLatestTaggedPrerelease],
+      async function (this: TestContext, testVersion: string, fixture: any) {
+        const testPackageRes = createPackageResource(
+          // package name
+          'npm-package-arg',
+          // package version
+          testVersion,
+          // package path
+          'packagepath',
+        );
+        const testClientData: NpmClientData = {
+          registry: 'https://registry.npmjs.org/',
+          strictSSL: true
+        };
+        const testRequest: PackageClientRequest<NpmClientData> = {
+          providerName: 'testnpmprovider',
+          clientData: testClientData,
+          parsedDependency: new PackageDependency(
+            testPackageRes,
+            new PackageDescriptor([
+              createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
+              createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
+            ]),
+          ),
+          attempt: 1
+        }
+        const testNpaSpec = npa.resolve(
+          testPackageRes.name,
+          testPackageRes.version,
+          testPackageRes.path
+        ) as NpaSpec;
 
-      const testClientData: NpmClientData = {
-        registry: 'https://registry.npmjs.org/',
-        strictSSL: true
-      };
+        when(this.npmRegistryClientMock.get(testNpaSpec, testClientData))
+          .thenResolve(
+            {
+              data: fixture.test,
+              source: ClientResponseSource.remote,
+              status: 200
+            }
+          )
 
-      const testRequest: PackageClientRequest<NpmClientData> = {
-        providerName: 'testnpmprovider',
-        clientData: testClientData,
-        parsedDependency: new PackageDependency(
-          testPackageRes,
-          new PackageDescriptor([
-            createPackageNameDesc(testPackageRes.name, createTextRange(0, 0)),
-            createPackageVersionDesc(testPackageRes.version, createTextRange(1, 1)),
-          ]),
-        ),
-        attempt: 1
+        // test
+        const actual = await this.cut.fromRegistry(testRequest, testNpaSpec)
+        // assert
+        assert.deepEqual(actual.suggestions, fixture.expected)
       }
-
-      const testNpaSpec = npa.resolve(
-        testPackageRes.name,
-        testPackageRes.version,
-        testPackageRes.path
-      ) as NpaSpec;
-
-      when(this.npmRegistryClientMock.get(testNpaSpec, testClientData))
-        .thenResolve(
-          {
-            data: Fixtures.packumentCappedToLatestTaggedVersion,
-            source: ClientResponseSource.remote,
-            status: 200
-          }
-        )
-
-      // test
-      const actual = await this.cut.fromRegistry(testRequest, testNpaSpec)
-
-      // assert
-      assert.deepEqual(
-        actual.suggestions,
-        [
-          PackageStatusFactory.createMatchesLatestStatus(testPackageRes.version)
-        ]
-      )
-    },
+    ],
     'returns a registry version package': async function (this: TestContext) {
       const testPackageRes = createPackageResource(
         // package name

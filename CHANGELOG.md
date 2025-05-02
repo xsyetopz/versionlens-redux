@@ -29,6 +29,8 @@
 
   - Fixed github `#commit` not showing version suggestions
 
+  - Fixed cases where only prereleases have been published but were shown as 'no match' for blank or '*' entries
+
   ### Docker
 
   - Added microsoft artifact registry support e.g. `mcr.microsoft.com/dotnet/sdk`

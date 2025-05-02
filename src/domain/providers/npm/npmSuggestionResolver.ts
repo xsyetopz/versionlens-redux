@@ -20,6 +20,7 @@ import {
   NpaTypes
 } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
+import { prerelease } from 'semver';
 
 export class NpmSuggestionResolver {
 
@@ -96,34 +97,33 @@ export class NpmSuggestionResolver {
       this.config.prereleaseTagFilter
     );
 
-    // extract prereleases from dist tags
+    // extract latest from dist tags
     const distTags = packumentResponse['dist-tags'];
     const latestTaggedVersion = distTags['latest'];
-
-    // extract releases
-    if (latestTaggedVersion) {
+    const latestIsPrerelease = prerelease(latestTaggedVersion) !== null;
+    if (latestTaggedVersion && latestIsPrerelease)
+      // cap prereleases to the latest tagged version
+      prereleases = VersionUtils.lteFromArray(prereleases, latestTaggedVersion);
+    else if (latestTaggedVersion)
       // cap the releases to the latest tagged version
-      releases = VersionUtils.lteFromArray(
-        releases,
-        latestTaggedVersion
-      );
-    }
+      releases = VersionUtils.lteFromArray(releases, latestTaggedVersion);
 
     // use 'latest' tagged version from author?
     const suggestLatestVersion = latestTaggedVersion || (
-      releases.length > 0 ?
+      releases.length > 0
         // suggest latest release?
-        releases[releases.length - 1] :
-        // no suggestion
-        null
+        ? releases[releases.length - 1]
+        // suggest latest prerelease?
+        : prereleases.length > 0
+          ? prereleases[prereleases.length - 1]
+          // no suggestion
+          : null
     );
 
     if (npaSpec.type === NpaTypes.Tag) {
-
       // get the tagged version. eg latest|next
       versionRange = distTags[requestedPackage.version];
       if (!versionRange) {
-
         // No match
         return ClientResponseFactory.createNoMatch(
           PackageSourceType.Registry,
@@ -131,14 +131,12 @@ export class NpmSuggestionResolver {
           responseStatus,
           suggestLatestVersion
         );
-
       }
-
     }
 
     // analyse suggestions
     const suggestions = createSuggestions(
-      versionRange,
+      versionRange === '*' ? suggestLatestVersion : versionRange,
       releases,
       prereleases,
       suggestLatestVersion
