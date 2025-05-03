@@ -90,7 +90,13 @@ export class GetSuggestionsStats extends Disposable {
       }
     }
 
-    return this.cache.set('stats', stats);
+    return this.cache.set('stats', stats.toSorted(compareStats));
   }
 
+}
+
+function compareStats(a: SuggestionsStats, b: SuggestionsStats) {
+  return a.filePath > b.filePath
+    ? 1
+    : a.filePath < b.filePath ? -1 : 0
 }
