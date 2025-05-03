@@ -1,7 +1,7 @@
 // Place your settings in this file to overwrite default and user settings.
 {
   "versionlens.logging.level": "debug",
-  "versionlens.suggestions.showSuggestionsStats": true,
+  "versionlens.suggestions.showSuggestionsStats": false,
   "versionlens.caching.duration": 3,
   "versionlens.suggestions.showOnStartup": false,
   "versionlens.suggestions.showPrereleasesOnStartup": false,
@@ -21,9 +21,11 @@
     "jspm.optionalDependencies",
     "pnpm.overrides",
     "pnpm.overrides.*",
+    "catalog",
+    "catalogs.*.*",
     "customDependencies"
   ],
-  "versionlens.npm.files": "**/{package.json,web-module.json}",
+  "versionlens.npm.files": "**/{package.json,web-module.json,pnpm-workspace.yaml}",
   "versionlens.npm.onSaveChanges": "smoke npm install",
   "files.associations": {
     "*.json": "json"

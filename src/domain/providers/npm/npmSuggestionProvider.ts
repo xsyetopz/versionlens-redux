@@ -15,9 +15,12 @@ import {
   type JsonParserOptions,
   type PackageNameDescriptor,
   type PackageVersionDescriptor,
+  type YamlParserOptions,
   PackageDescriptorType,
   createVersionDescFromJsonNode,
-  parsePackagesJson
+  createVersionDescFromYamlNode,
+  parsePackagesJson,
+  parsePackagesYaml
 } from '#domain/parsers';
 import type { ISuggestionProvider } from '#domain/providers';
 import {
@@ -40,9 +43,13 @@ import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import npa from 'npm-package-arg';
 
-const complexTypeHandlers: KeyDictionary<JsonPackageTypeHandler> = {
+const jsonComplexTypeHandlers: KeyDictionary<JsonPackageTypeHandler> = {
   [PackageDescriptorType.version]: createVersionDescFromJsonNode
 };
+
+const yamlComplexTypeHandlers = {
+  [PackageDescriptorType.version]: createVersionDescFromYamlNode
+}
 
 export class NpmSuggestionProvider implements ISuggestionProvider {
 
@@ -65,52 +72,9 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     packageText: string,
     dependencyProperties = this.config.dependencyProperties
   ): Array<PackageDependency> {
-    const options: JsonParserOptions = {
-      includePropNames: dependencyProperties,
-      complexTypeHandlers,
-      customDescriptorHandler
-    };
-
-    const parsedPackages = parsePackagesJson(packageText, options);
-
-    const packageDependencies = [];
-
-    for (const descriptors of parsedPackages) {
-
-      const nameDesc = descriptors.getType<PackageNameDescriptor>(
-        PackageDescriptorType.name
-      );
-
-      // handle any pnpm override dependency selectors in the name
-      let name = nameDesc.name;
-      const atIndex = name.indexOf('@');
-      if (atIndex > 0) {
-        name = name.slice(0, atIndex);
-      }
-
-      // map the version descriptor to a package dependency
-      if (descriptors.hasType(PackageDescriptorType.version)) {
-        const versionDesc = descriptors.getType<PackageVersionDescriptor>(
-          PackageDescriptorType.version
-        );
-
-        packageDependencies.push(
-          new PackageDependency(
-            createPackageResource(
-              name,
-              versionDesc.version,
-              packagePath
-            ),
-            descriptors
-          )
-        );
-
-        continue;
-      }
-
-    }
-
-    return packageDependencies;
+    return packagePath.endsWith('pnpm-workspace.yaml')
+      ? parsePnpmWorkspace(packagePath, packageText, dependencyProperties)
+      : parsePackageJson(packagePath, packageText, dependencyProperties)
   }
 
   async preFetchSuggestions(projectPath: string, packagePath: string): Promise<NpmClientData> {
@@ -152,9 +116,6 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     let source: PackageSourceType;
     try {
       const requestedPackage = request.parsedDependency.package;
-      const isWorkspaceAlias = requestedPackage.version.startsWith('workspace:');
-      if (isWorkspaceAlias) return ClientResponseFactory.createNoSuggestions();
-
       const npaSpec = npa.resolve(
         requestedPackage.name,
         requestedPackage.version,
@@ -214,4 +175,94 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
 
   }
 
+}
+
+function parsePackageJson(packagePath: string, packageText: string, dependencyProps: string[]) {
+  const options: JsonParserOptions = {
+    includePropNames: dependencyProps,
+    complexTypeHandlers: jsonComplexTypeHandlers,
+    customDescriptorHandler
+  };
+
+  const parsedPackages = parsePackagesJson(packageText, options);
+  const packageDependencies = [];
+  for (const descriptors of parsedPackages) {
+    const nameDesc = descriptors.getType<PackageNameDescriptor>(
+      PackageDescriptorType.name
+    );
+
+    // handle any pnpm override dependency selectors in the name
+    let name = nameDesc.name;
+    const atIndex = name.indexOf('@');
+    if (atIndex > 0) {
+      name = name.slice(0, atIndex);
+    }
+
+    // map the version descriptor to a package dependency
+    if (descriptors.hasType(PackageDescriptorType.version)) {
+      const versionDesc = descriptors.getType<PackageVersionDescriptor>(
+        PackageDescriptorType.version
+      );
+
+      if (['catalog:', 'workspace:'].some(x => versionDesc.version.startsWith(x))) {
+        continue;
+      }
+
+      packageDependencies.push(
+        new PackageDependency(
+          createPackageResource(
+            name,
+            versionDesc.version,
+            packagePath
+          ),
+          descriptors
+        )
+      );
+
+      continue;
+    }
+
+  }
+
+  return packageDependencies;
+}
+
+function parsePnpmWorkspace(packagePath: string, packageText: string, dependencyProps: string[]) {
+  const options: YamlParserOptions = {
+    includePropNames: dependencyProps,
+    complexTypeHandlers: yamlComplexTypeHandlers
+  };
+
+  const parsedPackages = parsePackagesYaml(packageText, options);
+
+  const packageDependencies = [];
+
+  for (const descriptors of parsedPackages) {
+    const nameDesc = descriptors.getType<PackageNameDescriptor>(
+      PackageDescriptorType.name
+    );
+
+    // map the version descriptor to a package dependency
+    if (descriptors.hasType(PackageDescriptorType.version)) {
+      const versionType = descriptors.getType<PackageVersionDescriptor>(
+        PackageDescriptorType.version
+      );
+
+      packageDependencies.push(
+        new PackageDependency(
+          createPackageResource(
+            nameDesc.name,
+            versionType.version,
+            packagePath
+          ),
+          descriptors
+        )
+      );
+
+      //   continue;
+    }
+
+  } // end map loop
+
+  return packageDependencies;
 }

@@ -20,7 +20,7 @@ export class NpmConfig implements IProviderConfig {
     throwUndefinedOrNull(def.http, http);
   }
 
-  readonly fileLanguage = ['json', 'jsonc'];
+  readonly fileLanguage = ['yaml', 'json', 'jsonc'];
 
   get filePatterns(): string {
     return this.config.get(NpmFeatures.FilePatterns);

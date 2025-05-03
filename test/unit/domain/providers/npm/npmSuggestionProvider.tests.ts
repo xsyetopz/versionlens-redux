@@ -25,13 +25,10 @@ const testPathParts = [
 const testPackagePath = path.resolve(...testPathParts)
 const testProjectPath = path.resolve(...testPathParts.slice(0, 2))
 
-type AllTestContext = {
-  testPath: string
-}
-
 type TestContext = {
-  resolverMock: NpmSuggestionResolver,
-  configMock: NpmConfig,
+  testPath: string
+  resolverMock: NpmSuggestionResolver
+  configMock: NpmConfig
   loggerMock: ILogger
 }
 
@@ -39,24 +36,29 @@ export const NpmSuggestionProviderTests = {
 
   [test.title]: NpmSuggestionProvider.name,
 
-  beforeAll: async function (this: AllTestContext) {
+  beforeAll: async function (this: TestContext) {
     this.testPath = await createDir(...testPathParts);
     assert.ok(await fileExists(this.testPath))
+
+    this.resolverMock = mock<NpmSuggestionResolver>();
+    this.configMock = mock<NpmConfig>();
+    this.loggerMock = mock<ILogger>();
+    when(this.resolverMock.config).thenReturn(instance(this.configMock));
   },
 
-  afterAll: async function (this: AllTestContext) {
+  afterAll: async function (this: TestContext) {
     await removeDir(...testPathParts);
     assert.equal(await fileExists(this.testPath), false)
   },
 
-  preFetchSuggestions: {
+  beforeEach: async function (this: TestContext) {
+    this.resolverMock = mock<NpmSuggestionResolver>();
+    this.configMock = mock<NpmConfig>();
+    this.loggerMock = mock<ILogger>();
+    when(this.resolverMock.config).thenReturn(instance(this.configMock));
+  },
 
-    beforeEach: async function (this: TestContext) {
-      this.resolverMock = mock<NpmSuggestionResolver>();
-      this.configMock = mock<NpmConfig>();
-      this.loggerMock = mock<ILogger>();
-      when(this.resolverMock.config).thenReturn(instance(this.configMock));
-    },
+  preFetchSuggestions: {
 
     "returns client data using .npmrc settings $1": [
       ["when userconfig is from env", true],
@@ -231,4 +233,47 @@ export const NpmSuggestionProviderTests = {
     },
 
   },
+
+  parseDependencies: {
+    "case $i: matches package.json": [
+      Fixtures.parseDependencies.json.matchesPackageManagerExpressions,
+      Fixtures.parseDependencies.json.matchesPackageManagerShaExpressions,
+      Fixtures.parseDependencies.json.matchesPackageManagerShaPrereleaseExpressions,
+      function (this: TestContext, testFixture: any) {
+        const testDepProps = ['packageManager'];
+        const put = new NpmSuggestionProvider(
+          instance(this.resolverMock),
+          instance(this.configMock),
+          instance(this.loggerMock)
+        );
+        // test
+        const results = put.parseDependencies(
+          'test/path/package.json',
+          testFixture.test,
+          testDepProps
+        );
+        // assert
+        assert.deepEqual(results, testFixture.expected);
+      },
+    ],
+    "case $i: matches pnpm-workspace.yaml": function (this: TestContext) {
+      const testDepProps = [
+        'catalog',
+        'catalogs.*.*'
+      ];
+      const put = new NpmSuggestionProvider(
+        instance(this.resolverMock),
+        instance(this.configMock),
+        instance(this.loggerMock)
+      );
+      // test
+      const results = put.parseDependencies(
+        'test/path/pnpm-workspace.yaml',
+        Fixtures.parseDependencies.yaml.test,
+        testDepProps
+      )
+      // assert
+      assert.deepEqual(results, Fixtures.parseDependencies.yaml.expected);
+    },
+  }
 }

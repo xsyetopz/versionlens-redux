@@ -1,5 +1,4 @@
 export * as NpmGithubClient from './npmGitHubClient.tests';
-export * as NpmParser from './npmJsonParser.tests';
 export * as NpmRegistryClient from './npmRegistryClient.tests';
 export * as NpmSuggestionProvider from './npmSuggestionProvider.tests';
 export * as NpmSuggestionResolver from './npmSuggestionResolver.tests';
