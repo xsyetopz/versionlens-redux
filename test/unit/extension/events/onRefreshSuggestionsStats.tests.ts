@@ -83,7 +83,8 @@ export const OnRefreshSuggestionsStatsTests = {
       )
     ).once();
     // assert
-    equal(this.testStatusBarItem.text, `🟡${testStats.updates} 🔴${testStats.errors} ⚪${testStats.noMatches}`)
+    equal(this.testStatusBarItem.text, `V ${testStats.updates + testStats.errors + testStats.noMatches}`)
+    equal(this.testStatusBarItem.tooltip, `🟡${testStats.updates} 🔴${testStats.errors} ⚪${testStats.noMatches}`)
   },
 
 };

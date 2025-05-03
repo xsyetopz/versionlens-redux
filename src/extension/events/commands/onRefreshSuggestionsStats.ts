@@ -29,6 +29,8 @@ export class OnRefreshSuggestionsStats extends Disposable {
       return;
     }
 
+    const handle = startStatusBarProgress(this.statusBarItem);
+
     this.logger.info("fetching all suggestion stats");
     // capture start time
     const startedAt = performance.now();
@@ -43,13 +45,17 @@ export class OnRefreshSuggestionsStats extends Disposable {
       errors += stat.errors;
     }
 
-    const builder: string[] = [
+    // stop progress
+    clearInterval(handle)
+
+    // update status item text
+    this.statusBarItem.text = `V ${updates + errors + noMatches}`;
+    const tooltipBuilder: string[] = [
       `${this.options.indicators.Match}${updates}`,
       `${this.options.indicators.Error}${errors}`,
       `${this.options.indicators.NoMatch}${noMatches}`
     ];
-    this.statusBarItem.text = builder.join(' ');
-    this.statusBarItem.show();
+    this.statusBarItem.tooltip = tooltipBuilder.join(' ');
 
     // report completed duration
     const completedAt = performance.now();
@@ -58,5 +64,18 @@ export class OnRefreshSuggestionsStats extends Disposable {
       Math.floor(completedAt - startedAt)
     );
   }
+}
 
+const progressChars = ['◷', '◶', '◵', '◴'];
+function startStatusBarProgress(statusBarItem: StatusBarItem) {
+  let pos = 0;
+  statusBarItem.text = `V ${progressChars[pos]}`
+  statusBarItem.show();
+  return setInterval(
+    () => {
+      statusBarItem.text = `V ${progressChars[pos]}`
+      pos = (pos + 1) % progressChars.length
+    },
+    200
+  );
 }

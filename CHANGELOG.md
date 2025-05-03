@@ -4,13 +4,13 @@
 
   - Added status bar text showing the count of updates, errors and no matches
 
-    ![image](https://gitlab.com/-/project/19418059/uploads/90aa1273e014b1bb87658d2760eede86/image.png)
+    ![image](https://gitlab.com/-/project/19418059/uploads/1ae413e5232f78d225f9efea8674d877/image.png)
 
-    Clicking the status info gives a file picker for each package\project file
+    Clicking the status info opens a file picker showing dependency stats for each package\project file in the workspace
 
-    ![image](https://gitlab.com/-/project/19418059/uploads/e6b0f3e7aab7510c615b8df88f90a770/image.png)
+    ![image](https://gitlab.com/-/project/19418059/uploads/d5bbecee061d6e0b765f292c6d201a5c/image.png)
 
-    Can be disabled by changing `versionlens.suggestions.showSuggestionsStats` setting to `false`
+    Can be disabled by setting `versionlens.suggestions.showSuggestionsStats` to `false`
 
   - Changed version ranges that satisfy the latest version to be in the 'latest' category
 

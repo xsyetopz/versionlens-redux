@@ -45,7 +45,7 @@ export class OnShowSuggestionsStatsDetails extends Disposable {
     const selected = await this.window.showQuickPick(
       items,
       {
-        title: 'Suggestion statistics overview',
+        title: 'Dependency suggestions available',
         placeHolder: "Choose a file to view or press escape to cancel",
       }
     );
