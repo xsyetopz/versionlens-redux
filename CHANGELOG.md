@@ -1,4 +1,4 @@
-# 1.21.2-prerelease
+# 1.21.3-prerelease
 
   ### All
 
@@ -8,7 +8,7 @@
 
     Clicking the status info opens a file picker showing dependency stats for each package\project file in the workspace
 
-    ![image](https://gitlab.com/-/project/19418059/uploads/d5bbecee061d6e0b765f292c6d201a5c/image.png)
+    ![image](https://gitlab.com/-/project/19418059/uploads/1b93074b8d2d86e2f53c99a5dcaf9092/image.png)
 
     Can be disabled by setting `versionlens.suggestions.showSuggestionsStats` to `false`
 
