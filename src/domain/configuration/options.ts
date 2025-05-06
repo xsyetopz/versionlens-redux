@@ -19,7 +19,7 @@ export abstract class Options implements IOptions {
 
   getOrDefault<T>(key: string, defaultValue: T): T {
     // attempt to get the section value
-    const value: T = this.get(key);
+    const value = this.get<T>(key);
 
     // return key value
     if (value !== null && value !== undefined) return value;
