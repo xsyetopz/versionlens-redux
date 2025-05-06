@@ -7,11 +7,13 @@ export enum RegistryProtocols {
   https = 'https:',
 }
 
+type RegistryProtocolName = keyof typeof RegistryProtocols;
+
 export function getProtocolFromUrl(url: string): RegistryProtocols {
   const sourceUrl = parse(url);
   const registryProtocol = sourceUrl.protocol === null
     ? RegistryProtocols.file
-    : RegistryProtocols[sourceUrl.protocol.substring(0, sourceUrl.protocol.length - 1)];
+    : RegistryProtocols[sourceUrl.protocol.substring(0, sourceUrl.protocol.length - 1) as RegistryProtocolName];
 
   return registryProtocol || RegistryProtocols.file;
 }

@@ -14,9 +14,9 @@ export const EventSchedulerTests = {
       immediate: false
     }
     const testScheduler = new EventScheduler()
-    
+
     let counter = 0
-    const testEvent = async function (arg1: string) {
+    const testEvent = async function (this: string, arg1: string) {
       // assert
       equal(this, testOptions.thisArg)
       equal(arg1, testArg1)
@@ -48,7 +48,7 @@ export const EventSchedulerTests = {
     const testScheduler = new EventScheduler()
 
     let counter = 0
-    const testEvent = async function (arg1: string) {
+    const testEvent = async function (this: string, arg1: string) {
       // assert
       equal(this, testOptions.thisArg)
       equal(arg1, testArg1)
