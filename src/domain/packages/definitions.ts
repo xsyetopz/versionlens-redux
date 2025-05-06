@@ -36,13 +36,13 @@ export type PackageResponse = {
 };
 
 export type PackageVersions = {
-  releases: Array<string>,
+  releases: Array<string>
   prereleases: Array<string>
 }
 
 export type SemverSpec = {
-  rawVersion: string,
-  type: PackageVersionType,
+  rawVersion: string
+  type: PackageVersionType | null
 };
 
 export enum PackageSourceType {

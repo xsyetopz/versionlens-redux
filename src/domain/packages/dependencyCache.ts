@@ -15,7 +15,7 @@ export class DependencyCache {
     );
   }
 
-  get(providerName: string, packageFilePath: string): PackageDependency[] {
+  get(providerName: string, packageFilePath: string): PackageDependency[] | undefined {
     // get the package file cache for the provider
     const packageFilesCache = this.providerMaps[providerName];
 
@@ -63,6 +63,7 @@ export class DependencyCache {
       const dependencies = cache.get(providerName, packageFilePath);
       if (dependencies) return dependencies;
     }
+    return [];
   }
 
 }

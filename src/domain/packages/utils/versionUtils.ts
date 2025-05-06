@@ -35,9 +35,7 @@ export function filterPrereleaseTags(
   );
 }
 
-export function extractTaggedVersions(
-  versions: Array<string>
-): Array<PackageNameVersion> {
+export function extractTaggedVersions(versions: Array<string>): Array<PackageNameVersion> {
   const results: Array<PackageNameVersion> = [];
   versions.forEach(function (version) {
     const prereleaseComponents = prerelease(version);
@@ -45,12 +43,13 @@ export function extractTaggedVersions(
     if (isPrerelease === false) return;
 
     const regexResult = formatTagNameRegex.exec(prereleaseComponents[0]);
+    if (regexResult === null) return;
 
     let name = regexResult[0].toLowerCase();
     // capture cases like x.x.x-x.x.x
     if (!name) name = prereleaseComponents.join('.');
 
-    results.push({ name, version })
+    results.push({ name, version });
   });
 
   return results;
@@ -106,10 +105,9 @@ export function parseSemver(packageVersion: string): SemverSpec {
   const isRange = validRange(packageVersion, loosePrereleases);
   return {
     rawVersion: packageVersion,
-    type: !!isVersion ?
-      PackageVersionType.Version :
-      !!isRange ? PackageVersionType.Range :
-        null,
+    type: isVersion !== null
+      ? PackageVersionType.Version
+      : isRange !== null ? PackageVersionType.Range : null
   };
 }
 

@@ -10,8 +10,8 @@ const commonReleaseIdentities = [
   ['sp']
 ];
 
-export function friendlifyPrereleaseName(prereleaseName: string): string {
-  const filteredNames = [];
+export function friendlifyPrereleaseName(prereleaseName: string): string | null {
+  const filteredNames: string[] = [];
   commonReleaseIdentities.forEach(
     function (group) {
       return group.forEach(
@@ -25,7 +25,7 @@ export function friendlifyPrereleaseName(prereleaseName: string): string {
     }
   );
 
-  return (filteredNames.length === 0)
+  return filteredNames.length === 0
     ? null
     : filteredNames[0];
 }

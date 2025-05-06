@@ -3,7 +3,7 @@ import {
   SuggestionIncrements,
   UpdateableFactory
 } from '#domain/packages';
-import { inc, valid, prerelease } from 'semver';
+import { inc, prerelease, valid } from 'semver';
 
 export function getProjectVersionSuggestions(projectVersion: string): PackageSuggestion[] {
   if (!valid(projectVersion)) projectVersion = '0.0.0';
@@ -18,7 +18,7 @@ export function getProjectVersionSuggestions(projectVersion: string): PackageSug
       SuggestionIncrements.patch
     ];
 
-  const releaseSuggestions = [];
+  const releaseSuggestions: PackageSuggestion[] = [];
   releaseIncrements.forEach(name => {
     const versionInc = inc(projectVersion, name);
     const suggestion = UpdateableFactory.createNextMaxUpdateable(
