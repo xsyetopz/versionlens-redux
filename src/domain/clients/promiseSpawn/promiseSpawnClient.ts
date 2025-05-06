@@ -56,7 +56,7 @@ export class PromiseSpawnClient implements IShellClient {
         `\tcmd: ${cmd}\n`
         + `\targs: ${args}\n`
         + `\tcwd: ${cwd}\n`,
-        error
+        error as Error
       );
     }
 

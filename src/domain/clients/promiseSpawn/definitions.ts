@@ -1,10 +1,10 @@
-export type TPromiseSpawnOptions = {
+type PromiseSpawnOptions = {
   cwd?: string,
   stdioString?: boolean,
   stdio?: string
 };
 
-export type TPromiseSpawnResult = {
+type PromiseSpawnResult = {
   code: any,
   stdout: any,
   stderr: any,
@@ -15,6 +15,6 @@ export type TPromiseSpawnResult = {
 export type PromiseSpawnFn = (
   cmd: string,
   args?: Array<string>,
-  opts?: TPromiseSpawnOptions,
+  opts?: PromiseSpawnOptions,
   extra?: any
-) => Promise<TPromiseSpawnResult>;
+) => Promise<PromiseSpawnResult>;
