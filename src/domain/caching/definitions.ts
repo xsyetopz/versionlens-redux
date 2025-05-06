@@ -8,9 +8,9 @@ export interface ICache<T = any> {
 
   cacheName: string;
 
-  getOrCreate(key: string, methodToCache: AsyncFunction<T>): Promise<T>;
+  getOrCreate(key: string, methodToCache: AsyncFunction<T>): Promise<T | undefined>;
 
-  get(key: string): T;
+  get(key: string): T | undefined;
 
   set(key: string, value: T): T;
 
