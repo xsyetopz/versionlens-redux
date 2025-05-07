@@ -30,9 +30,9 @@ export class PypiHttpClient {
     const xmlDoc = new XmlDoc()
     xmlDoc.parse(httpResponse.data)
     const data = xmlDoc.findExactPaths("rss.channel.item.title")
-      .map(x => x.text)
+      .map(x => x.text!);
     // cache and return
-    const result = { ...httpResponse, data };
+    const result: PypiHttpClientResponse = { ...httpResponse, data };
     return this.requestCache.set(url, result);
   }
 
