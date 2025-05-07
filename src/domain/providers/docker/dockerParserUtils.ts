@@ -25,21 +25,21 @@ export function parseDockerCompose(
   const packageDependencies: Array<PackageDependency> = [];
   const parsedPackages = parsePackagesYaml(packageText, options);
   for (const descriptors of parsedPackages) {
-    const parentDesc = descriptors.getType<PackageParentDescriptor>('parent')
+    const parentDesc = descriptors.getType<PackageParentDescriptor>('parent');
     const imageDesc = descriptors.getType<PackageImageDescriptor>('image');
     const buildDesc = descriptors.getType<PackageBuildDescriptor>('build');
 
-    let nameDesc
-    let versionDesc
-    let registryDesc
+    let nameDesc;
+    let versionDesc;
+    let registryDesc;
     if (imageDesc) {
-      nameDesc = imageDesc.nameDesc
-      versionDesc = imageDesc.versionDesc
-      registryDesc = imageDesc.registry && createPackageRegistryDescType(imageDesc.registry)
+      nameDesc = imageDesc.nameDesc;
+      versionDesc = imageDesc.versionDesc;
+      registryDesc = imageDesc.registry && createPackageRegistryDescType(imageDesc.registry);
     } else if (buildDesc) {
-      nameDesc = createPackageNameDesc(buildDesc.pathDesc.path, buildDesc.pathDesc.pathRange)
+      nameDesc = createPackageNameDesc(buildDesc.pathDesc.path, buildDesc.pathDesc.pathRange);
     } else
-      continue
+      continue;
 
     const descriptor = new PackageDescriptor([
       nameDesc,
@@ -79,7 +79,7 @@ export function parseDockerfile(packagePath: string, packageText: string): Array
 
     const imageRegistry = from.getRegistry();
     const imageTag = from.getImageTag() ?? '';
-    let imageTagRange = from.getImageTagRange()
+    let imageTagRange = from.getImageTagRange();
 
     const hasTag = !!imageTagRange;
     if (hasTag === false) {
@@ -123,7 +123,7 @@ export function parseDockerfile(packagePath: string, packageText: string): Array
 
 const imageRegEx = /(?<registry>[^/]+[/]|)(?<image>[^:]+|)(?<tag>:.+|)/
 export function createImageDescFromYamlNode(valueNode: any): PackageImageDescriptor | undefined {
-  if (!valueNode.value) return
+  if (!valueNode.value) return;
 
   const valueRange = {
     start: valueNode.range[0],
@@ -135,11 +135,11 @@ export function createImageDescFromYamlNode(valueNode: any): PackageImageDescrip
     valueRange.end--;
   }
 
-  const match = imageRegEx.exec(valueNode.value.toString())
-  if (match === null) return
+  const match = imageRegEx.exec(valueNode.value.toString());
+  if (match === null) return;
 
-  let { registry, image, tag } = match.groups;
-  tag = tag.replace(':', '')
+  let { registry, image, tag } = match.groups!;
+  tag = tag.replace(':', '');
 
   const start = valueRange.start + registry.length;
   const imageRange = {
@@ -165,7 +165,7 @@ export function createImageDescFromYamlNode(valueNode: any): PackageImageDescrip
 }
 
 export function createBuildDescFromYamlNode(valueNode: any): PackageBuildDescriptor | undefined {
-  if (valueNode.value === null) return
+  if (valueNode.value === null) return;
 
   const valueRange = {
     start: valueNode.range[0],
@@ -177,23 +177,24 @@ export function createBuildDescFromYamlNode(valueNode: any): PackageBuildDescrip
     valueRange.end--;
   }
 
-  let dockerfile = 'dockerfile'
+  let dockerfile = 'dockerfile';
   if (isScalar(valueNode)) {
     return {
       type: 'build',
       pathDesc: createPackagePathDescType(`${valueNode.value}/${dockerfile}`, valueRange)
-    }
+    };
   }
 
-  const dockerfileNode = valueNode.get('dockerfile', true)
-  if (dockerfileNode) dockerfile = dockerfileNode.value
+  const dockerfileNode = valueNode.get('dockerfile', true);
+  if (dockerfileNode) dockerfile = dockerfileNode.value;
 
-  let pathDesc = undefined
-  const contextNode = valueNode.get('context', true)
-  if (contextNode) pathDesc = createPackagePathDescType(
-    `${contextNode.value}/${dockerfile}`,
-    createTextRange(contextNode.range[0], contextNode.range[1])
-  )
-
-  return { type: 'build', pathDesc }
+  let pathDesc = undefined;
+  const contextNode = valueNode.get('context', true);
+  if (contextNode) {
+    pathDesc = createPackagePathDescType(
+      `${contextNode.value}/${dockerfile}`,
+      createTextRange(contextNode.range[0], contextNode.range[1])
+    );
+    return { type: 'build', pathDesc };
+  }
 }

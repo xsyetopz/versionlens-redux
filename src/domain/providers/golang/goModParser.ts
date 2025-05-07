@@ -17,10 +17,10 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
 
   while ((match = re.exec(text)) !== null) {
     const packageName = match[1];
-    const [packageStart] = match.indices[1];
+    const [packageStart] = match.indices![1];
 
     const version = match[2];
-    const [versionStart, versionEnd] = match.indices[2];
+    const [versionStart, versionEnd] = match.indices![2];
 
     const skip =
       // pseudo module

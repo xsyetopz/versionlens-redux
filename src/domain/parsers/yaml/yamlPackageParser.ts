@@ -43,7 +43,8 @@ function parsePackageNodes(
     if (found.length === 0) continue;
 
     if (incPropName === 'version') {
-      matchedDependencies.push(getPackageProjectVersionDesc(rootNode.contents as YAMLMap));
+      const versionDesc = getPackageProjectVersionDesc(rootNode.contents as YAMLMap)
+      versionDesc && matchedDependencies.push(versionDesc);
       continue;
     }
 

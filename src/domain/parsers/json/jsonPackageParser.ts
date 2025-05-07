@@ -42,8 +42,7 @@ function parsePackageNodes(
       continue;
     }
 
-    const hasChildren = found.node.children && found.node.children.length > 0;
-    if (hasChildren) {
+    if (found.node.children && found.node.children.length > 0) {
       const matched = descendChildNodes(found.path, found.node.children, complexTypeHandlers);
       matchedDependencies.push.apply(matchedDependencies, matched);
       continue;

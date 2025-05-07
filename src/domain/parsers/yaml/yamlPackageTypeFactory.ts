@@ -54,7 +54,7 @@ export function createVersionDescFromYamlNode(
   );
 }
 
-export function getPackageProjectVersionDesc(map: YAMLMap<any, any>): PackageDescriptor {
+export function getPackageProjectVersionDesc(map: YAMLMap<any, any>): PackageDescriptor | undefined {
   for (const node of map.items) {
     if (node.key.value === 'version') {
       const isQuoted = isNodeQuoted(node.value);

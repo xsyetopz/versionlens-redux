@@ -59,7 +59,7 @@ export function mapChildrenToDescriptor(
   parentNode: XmlNode,
   childNodes: XmlNode[],
   propertyNodes: XmlNode[]
-): PackageDescriptor {
+): PackageDescriptor | undefined {
   // get the name descriptor
   const nameDesc = createNameDescFromXmlNodes(parentNode, childNodes, propertyNodes);
   if (!nameDesc) return;

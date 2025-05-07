@@ -64,7 +64,7 @@ export type PackageProjectVersionDescriptor = PackageType & {}
 export type PackageImageDescriptor = PackageType & {
   nameDesc: PackageNameDescriptor
   versionDesc: PackageVersionDescriptor
-  registry: string
+  registry?: string
 }
 
 export type PackageBuildDescriptor = PackageType & {

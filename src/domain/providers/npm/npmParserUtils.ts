@@ -1,4 +1,5 @@
 import {
+  type PackagePathDescriptor,
   type PackageVersionDescriptor,
   PackageDescriptor,
   createIgnoreChangesDesc,
@@ -45,12 +46,17 @@ function createPackageManagerVersionFromJsonNode(valueNode: JsonC.Node): Package
   return versionDesc;
 }
 
-export function customDescriptorHandler(path: string, node: JsonC.Node) {
+export function customDescriptorHandler(
+  path: string,
+  node: JsonC.Node
+): PackageDescriptor | undefined {
   if (node.type !== 'string') return;
 
-  const parent = node.parent.children[0];
+  const children = node.parent?.children
+  if (!children) return;
 
-  switch (parent.value) {
+  const firstChild = children[0];
+  switch (firstChild.value) {
     case 'packageManager':
       return createPackageManagerDesc(path, node);
     case 'version':
@@ -58,7 +64,9 @@ export function customDescriptorHandler(path: string, node: JsonC.Node) {
   }
 }
 
-export function createNpmVersionDescFromJsonNode(valueNode: JsonC.Node) {
+export function createNpmVersionDescFromJsonNode(
+  valueNode: JsonC.Node
+): PackagePathDescriptor | PackageVersionDescriptor {
   const { value: version } = valueNode;
   if (version.startsWith('file:'))
     return createPathDescFromJsonNode(valueNode)

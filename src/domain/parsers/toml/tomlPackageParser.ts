@@ -90,7 +90,7 @@ function parseComplexNode(
   nameNode: AST.TOMLKeyValue,
   valueNode: AST.TOMLInlineTable,
   options: TomlParserOptions
-): PackageDescriptor {
+): PackageDescriptor | undefined {
   const packageDesc = new PackageDescriptor([]);
   const complexTypeHandlers = options.complexTypeHandlers;
 
