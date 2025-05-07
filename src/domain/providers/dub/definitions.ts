@@ -24,7 +24,7 @@ export interface IDubServices {
 export const DubService = nameOf<IDubServices>()
 
 export type DubApiResult = {
-  versions: [{ version }]
+  versions: [{ version: string }]
 }
 
 export type DubJsonClientResponse = JsonClientResponse<string[]>
