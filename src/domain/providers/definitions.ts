@@ -12,8 +12,8 @@ import type {
 export interface IProviderConfig {
   readonly fileLanguage: string | string[]
   readonly filePatterns: string
-  readonly caching?: CachingOptions
-  readonly http?: HttpOptions
+  readonly caching: CachingOptions
+  readonly http: HttpOptions
   readonly fileExcludePatterns?: string[]
   readonly onSaveChangesTask?: string | null
 }
@@ -36,7 +36,7 @@ export interface ISuggestionProvider {
    * Providers can return custom client data that will be sent with each suggestion fetch request
    * @param packagePath 
    */
-  preFetchSuggestions?(projectPath: string, packagePath: string): Promise<any>;
+  preFetchSuggestions?(projectPath: string, packagePath: string): Promise<any | undefined>;
 
   fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse>;
 }
