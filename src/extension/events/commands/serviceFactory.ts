@@ -162,9 +162,9 @@ export function addOnRefreshSuggestionsStats(services: IServiceCollection) {
         event.execute,
         {
           thisArg: event,
-          rate: 300 * 1000,     // every 5 minutes
+          rate: 15 * 60 * 1000,     // every 15 minutes
           immediate: true,
-          immediateDelay: 5 * 1000  // wait 5 seconds before first run
+          immediateDelay: 3 * 1000  // wait 3 seconds before first run
         },
         false
       );
