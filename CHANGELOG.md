@@ -1,4 +1,4 @@
-# 1.21.5-prerelease
+# 1.22.0
 
   ### All
 
@@ -12,6 +12,10 @@
 
     Can be disabled by setting `versionlens.suggestions.showSuggestionsStats` to `false`
 
+    Can be refreshed by pressing `ctrl+p` and typing `VersionLens: Refresh all suggestions stats`
+
+    > **NOTE** The status bar automatically refreshes every 15 minutes
+
   - Changed version ranges that satisfy the latest version to be in the 'latest' category
 
     > **NOTE** This change only affects how the indicator is shown
@@ -22,7 +26,7 @@
 
   ### Pnpm
 
-  - Added `pnpn-workspace` yaml file analysis
+  - Added `pnpm-workspace.yml` file analysis
 
     ![image](https://gitlab.com/-/project/19418059/uploads/968fb115f05fee97b54532ae7e36d1bd/image.png)
 
@@ -36,8 +40,6 @@
     This was replaced by the built in [authorization](https://gitlab.com/versionlens/vscode-versionlens/-/blob/master/docs/authorization.md) feature of version lens.
 
   - Fixed github `#commit` not showing version suggestions
-
-  - Fixed cases where only prereleases have been published but were shown as 'no match' for blank or '*' entries
 
   ### Docker
 
