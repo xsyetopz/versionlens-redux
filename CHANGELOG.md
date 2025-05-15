@@ -1,3 +1,18 @@
+# 1.22.1
+
+  ### All
+
+  - Fixed large projects intermittently hitting performance issues when trying to save package.json files.<br><br>
+  `versionlens.suggestions.showSuggestionsStats` is now set to `false` by default until this issue is resolved in a future version.
+
+    Relates to [#391](https://gitlab.com/versionlens/vscode-versionlens/-/issues/391)
+
+  ### Php (composer)
+
+  - Fixed errors when the packagist api returns shorter version types. e.g. 'v1.9'
+
+    Relates to [#390](https://gitlab.com/versionlens/vscode-versionlens/-/issues/390)
+
 # 1.22.0
 
   ### All
