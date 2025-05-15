@@ -13,7 +13,7 @@ COPY / $TARGET_PATH
 WORKDIR $TARGET_PATH
 
 # update npm to latest
-RUN npm install -g npm @vscode/vsce ovsx js-build-tasks
+RUN npm install -g npm @vscode/vsce@v3.3.2 ovsx js-build-tasks
 
 # install dependencies
 RUN npm ci
