@@ -8,7 +8,6 @@ import type {
   OnErrorClick,
   OnFileLinkClick,
   OnPackageDependenciesChanged,
-  OnPreSaveChanges,
   OnProviderEditorActivated,
   OnProviderTextDocumentChange,
   OnProviderTextDocumentClose,
@@ -110,8 +109,7 @@ export interface IExtensionServices {
   onTogglePrereleases: OnTogglePrereleases
   onErrorClick: OnErrorClick
 
-  // install events
-  onPreSaveChanges: OnPreSaveChanges
+  // install event
   onSaveChanges: OnSaveChanges
 
   // provider events

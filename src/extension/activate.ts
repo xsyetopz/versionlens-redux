@@ -86,8 +86,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     serviceNames.onToggleReleases,
     serviceNames.onTogglePrereleases,
     // install events
-    serviceNames.onPreSaveChanges, // will instantiate onTextDocumentSave
-    serviceNames.onSaveChanges,
+    serviceNames.onSaveChanges, // will instantiate onTextDocumentSave
     // provider document events
     serviceNames.onProviderEditorActivated, // will instantiate onActiveTextEditorChange
     serviceNames.onProviderTextDocumentChange, // will instantiate onTextDocumentChange

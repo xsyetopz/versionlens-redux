@@ -9,7 +9,6 @@ export * from './commands/onShowSuggestionsStatsDetails';
 export * from './editorTitleBar/onErrorClick';
 export * from './editorTitleBar/onTogglePrereleases';
 export * from './editorTitleBar/onToggleReleases';
-export * from './install/onPreSaveChanges';
 export * from './install/onSaveChanges';
 export * from './provider/onProviderEditorActivated';
 export * from './provider/onProviderTextDocumentChange';

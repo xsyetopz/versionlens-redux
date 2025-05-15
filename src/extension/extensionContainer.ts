@@ -21,7 +21,6 @@ import {
   addOnErrorClick,
   addOnFileLinkClick,
   addOnPackageDependenciesChanged,
-  addOnPreSaveChanges,
   addOnProviderEditorActivated,
   addOnProviderTextDocumentChange,
   addOnProviderTextDocumentClose,
@@ -124,8 +123,7 @@ function addExtensionServices(
   addOnToggleReleases(services);
   addOnTogglePrereleases(services);
 
-  // install events
-  addOnPreSaveChanges(services);
+  // install event
   addOnSaveChanges(services);
 
   // provider events

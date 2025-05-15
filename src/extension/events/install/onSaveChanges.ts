@@ -1,9 +1,10 @@
 import type { ILogger } from '#domain/logging';
+import { DependencyCache } from '#domain/packages';
 import type { ISuggestionProvider } from '#domain/providers';
 import type { IDisposable } from '#domain/utils';
 import type { IVersionLensState } from '#extension';
+import type { IVsCodeTasks } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
-import type { IVsCodeTasks } from 'src/extension/vscode/definitions';
 import type { Task } from 'vscode';
 
 export class OnSaveChanges {
@@ -16,16 +17,31 @@ export class OnSaveChanges {
   } as const
 
   constructor(
+    readonly fileWatcherDependencyCache: DependencyCache,
+    readonly editorDependencyCache: DependencyCache,
     readonly tasks: IVsCodeTasks,
     readonly state: IVersionLensState,
     readonly logger: ILogger
   ) {
+    throwUndefinedOrNull('fileWatcherDependencyCache', fileWatcherDependencyCache);
+    throwUndefinedOrNull('editorDependencyCache', editorDependencyCache);
     throwUndefinedOrNull("tasks", tasks);
     throwUndefinedOrNull("state", state);
     throwUndefinedOrNull("logger", logger);
   }
 
   async execute(provider: ISuggestionProvider, packageFilePath: string): Promise<void> {
+    // update the file watcher dependencies
+    const deps = this.editorDependencyCache.get(provider.name, packageFilePath) ?? [];
+    this.fileWatcherDependencyCache.set(provider.name, packageFilePath, deps)
+
+    // remove the packageFilePath from editor dependency cache
+    this.editorDependencyCache.remove(provider.name, packageFilePath);
+    this.logger.debug(
+      "cleared editor dependency cache for {packageFilePath}",
+      packageFilePath
+    );
+
     // check we have a task to run
     if (!provider.config.onSaveChangesTask) {
       this.logger.info(OnSaveChanges.log.skipSaveChangesTask, provider.name);
@@ -65,8 +81,7 @@ export class OnSaveChanges {
     );
 
     // reset outdated flag
-    if (exitCode === 0)
-      await this.state.showOutdated.change(false);
+    if (exitCode === 0) await this.state.showOutdated.change(false);
   }
 
   private async executeTask(task: Task): Promise<number | undefined> {
