@@ -215,12 +215,12 @@
         {
           "command": "versionlens.icons.showPrereleaseVersions",
           "when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
-          "group": "navigation@2"
+          "group": "navigation@1"
         },
         {
           "command": "versionlens.icons.hidePrereleaseVersions",
           "when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
-          "group": "navigation@2"
+          "group": "navigation@1"
         }
       ]
     },
