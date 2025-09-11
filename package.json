@@ -71,7 +71,7 @@
     "c8": "10.1.3",
     "esbuild": "0.25.4",
     "js-build-tasks": "1.0.0-rc.18",
-    "mocha": "11.4.0",
+    "mocha": "11.7.2",
     "mocha-ui-esm": "1.0.0-beta.14",
     "rimraf": "6.0.1",
     "source-map-support": "0.5.21",
