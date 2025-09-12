@@ -1,3 +1,11 @@
+# 1.22.3
+
+  ### All
+
+  - Prevented editor icons being separated by the 'Open Changes' icon
+
+    ![image](https://gitlab.com/-/project/19418059/uploads/b4bc33a50893077f03fd25e93f3e8074/image.png)
+
 # 1.22.2
 
   ### All
