@@ -101,12 +101,10 @@ export class NpmSuggestionResolver {
     const distTags = packumentResponse['dist-tags'];
     const latestTaggedVersion = distTags['latest'];
     const latestIsPrerelease = prerelease(latestTaggedVersion) !== null;
-    if (latestTaggedVersion && latestIsPrerelease)
-      // cap prereleases to the latest tagged version
-      prereleases = VersionUtils.lteFromArray(prereleases, latestTaggedVersion);
-    else if (latestTaggedVersion)
+    if (latestTaggedVersion && latestIsPrerelease === false) {
       // cap the releases to the latest tagged version
       releases = VersionUtils.lteFromArray(releases, latestTaggedVersion);
+    }
 
     // use 'latest' tagged version from author?
     const suggestLatestVersion = latestTaggedVersion || (

@@ -107,23 +107,4 @@ export default {
       PackageStatusFactory.createMatchesLatestStatus('7.0.0')
     ]
   },
-  cappedToLatestTaggedPrerelease: {
-    test: {
-      "name": "npm-package-arg",
-      "dist-tags": {
-        "latest": "1.0.0-rc.1"
-      },
-      "versions": [
-        "1.0.0-beta.1",
-        "1.0.0-beta.2",
-        "1.0.0-beta.3",
-        "1.0.0-beta.4",
-        "1.0.0-rc.1",
-        "1.0.0-rc.2",
-      ]
-    },
-    expected: [
-      PackageStatusFactory.createMatchesLatestStatus('1.0.0-rc.1')
-    ]
-  },
 }

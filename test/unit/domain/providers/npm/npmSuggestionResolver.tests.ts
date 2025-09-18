@@ -195,8 +195,6 @@ export const NpmSuggestionResolverTests = {
     'case $i: returns capped latest versions': [
       ['7.0.0', Fixtures.cappedToLatestTaggedRelease],
       ['*', Fixtures.cappedToLatestTaggedRelease],
-      ['1.0.0-rc.1', Fixtures.cappedToLatestTaggedPrerelease],
-      ['*', Fixtures.cappedToLatestTaggedPrerelease],
       async function (this: TestContext, testVersion: string, fixture: any) {
         const testPackageRes = createPackageResource(
           // package name
