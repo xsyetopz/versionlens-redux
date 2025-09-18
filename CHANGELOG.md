@@ -1,3 +1,11 @@
+# 1.23.4
+
+  ### Npm
+
+  - Prevented latest dist tag capping pre-releases when latest tag is a pre-release
+
+    Relates to [#393](https://gitlab.com/versionlens/vscode-versionlens/-/issues/393)
+
 # 1.22.3
 
   ### All
