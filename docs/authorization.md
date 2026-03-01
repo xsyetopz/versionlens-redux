@@ -2,113 +2,100 @@
 
 ## Contents
 
-- [Automatically authenticating packages](#automatically-authenticating-packages)
-- [Package registries that do not emit 401](#package-registries-that-do-not-emit-a-401-status-code)
-- [Clearing authentication data](#clearing-url-authentication-data)
-- [How your data is stored](#how-your-data-is-stored)
+- [Automatic Authentication](#automatic-authentication-steps)
+- [Manual Authentication (Registries without 401 errors)](#manual-authentication-registries-without-401-errors)
+- [Clearing Stored Credentials](#clearing-stored-credentials)
+- [Data Storage & Security](#data-storage--security)
 
-## Automatically authenticating packages
+---
 
-By default, when versionlens detects a 401 status code it will prompt you for authentication credentials.
+## Automatic Authentication
 
-> **NOTE**
->
-> - Interactive authorization isn't available for Npm registries because npm uses `@npmcli/config` with npmrc files to authorize requests.
-> However it can be used with `github:` prefixed packages.
-> - Be aware that the github api does not emit 401 status codes for private packages. See [Package registries that do not emit a 401 status code](#package-registries-that-do-not-emit-a-401-status-code) for setting up private packages with the github api.
+By default, when VersionLens detects a `401 Unauthorized` status code during a package request, it will automatically prompt you for credentials.
 
-- **Step 1: Confirm the authorization url**
+> **Note:**
+> *   **NPM Registries:** Interactive authorization is not available because NPM uses its own configuration (`.npmrc`) for authentication. However, it **can** be used for `github:` prefixed packages in `package.json`.
+> *   **GitHub API:** The GitHub API does not emit 401 status codes for private packages. If you are working with private GitHub repositories, see the [Manual Authentication](#manual-authentication-registries-without-401-errors) section.
 
-  This url is used to match package request urls and provide them with your credentials.
+### Automatic Authentication Steps
 
-  Authorization urls must:
-    - be in the same domain as the package request url
-    - partially match the package request url e.g. `packageRequestUrl.startsWith(authorizationUrl)`
+1.  **Confirm the Authorization URL**
+    This URL is used to match package requests with your credentials.
+    *   It must be in the same domain as the package request.
+    *   The request URL must start with the authorization URL e.g. `packageRequestUrl.startsWith(authorizationUrl)`.
+    *   The default value is the domain host of the package request url.
+        >
+        > The default values should work fine in a lot of cases but you will need to override this value if you need to use a registry provider that hosts multiple registries on the same domain e.g. gitlab
 
-  The default value is the domain host of the package request url.
+    *Example:*
+    ```js
+    // Authorization URL (Overridden)
+    'https://gitlab.com/api/v4/projects/user/project'
 
-  > **NOTE**
-  >
-  > - The default value should work fine in a lot of cases but you will need to override this value if you need to use a registry provider that hosts multiple registries on the same domain e.g. gitlab
-  >
-  >   example:
-  >   ```js
-  >   // package request url
-  >   'https://gitlab.com/api/v4/projects/some-user/some-project-id/packages/nuget/download/some.package.name/index.json'
-  >
-  >   // authorization url (entered in this prompt step)
-  >   'https://gitlab.com/api/v4/projects/some-user/some-project-id'
-  >   ```
+    // Example Package Request URL made by version lens
+    'https://gitlab.com/api/v4/projects/user/project/packages/nuget/download/some.package.name/index.json'
+    ```
 
-- **Step 2: Choose an authentication scheme**
+2.  **Choose an Authentication Scheme**
+    *   **Basic Auth:** Standard username and password.
+    *   **Custom:** A raw authentication header value e.g. `Bearer YOUR_API_TOKEN`.
 
-  Supported schemes are
-  - Basic Auth (username and password)
-  - Custom (raw authentication header value e.g. `Bearer {YOUR_API_TOKEN}`)
+3.  **Enter Credentials**
+    Provide the requested username, password, or token. VersionLens will securely store these for future requests. [See data storage & security for more info](#data-storage--security)
 
-- **Step 3: Enter your authentication credentials**
+---
 
-  Depending on the scheme you have choose you will be prompted for consent and your credentials e.g. username and password
+## Manual Authentication (Registries without 401 errors)
 
-## Package registries that do not emit a 401 status code
+If a registry fails silently (without emitting a 401 status code), you can manually add an authorization entry:
 
-When a package registry doesn't emit a 401 status code you can add an authorization url manually by pressing `ctrl+p` then typing `VersionLens: Add url authentication`.
+1.  Open the **Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`).
+2.  Type and select `VersionLens: Add url authentication`.
+    >
+    > Authorization urls must:
+    > - be in the same domain as the package request url
+    > - partially match the package request url e.g. `packageRequestUrl.startsWith(authorizationUrl)`
+    >
+    >   example:
+    >   ```js
+    >   // package request url
+    >   'https://api.github.com/repos/owner-or-org/some-repo/tags'
+    >
+    >   // authorization url (entered in this prompt step)
+    >   'https://api.github.com/repos/owner-or-org/some-repo'
+    >   ```
 
-- **Step 1: Confirm the authorization url**
+3.  Follow the [**Automatic Authentication Steps**](#automatic-authentication-steps) starting from **Step 2**.
 
-  This url is used to match package request urls and provide them with your credentials.
+---
 
-  Authorization urls must:
-    - be in the same domain as the package request url
-    - partially match the package request url e.g. `packageRequestUrl.startsWith(authorizationUrl)`
+## Clearing Stored Credentials
 
-  >   example:
-  >   ```js
-  >   // package request url
-  >   'https://api.github.com/repos/owner-or-org/some-repo/tags'
-  >
-  >   // authorization url (entered in this prompt step)
-  >   'https://api.github.com/repos/owner-or-org/some-repo'
-  >   ```
+To remove stored credentials:
 
-- **Step 2: Choose an authentication scheme**
+1.  Open the **Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`).
+2.  Type and select `VersionLens: Remove url authentication`.
+    ![Remove Auth](../images/docs/authorization/remove-url-authentication-data.png)
+3.  Select the URL(s) you wish to clear and press **OK**.
 
-  Supported schemes are
-  - Basic Auth (username and password)
-  - Custom (raw authentication header value e.g. `Bearer {YOUR_API_TOKEN}`)
+> If you have a file open that requires the removed credentials, VersionLens will prompt you to re-authorize when it needs to fetch suggestions. (if you dismiss this prompt then the url will be re-added to the url authentication data and marked as unconsented)
 
-- **Step 3: Enter your authentication credentials**
+---
 
-  Depending on the scheme you have choose you will be prompted for consent and your credentials e.g. username and password
+## Data Storage & Security
 
-## Clearing Url Authentication Data
+VersionLens handles your credentials with care:
 
-To clear credentials
+*   **Sensitive Data:** Credentials (tokens, passwords) are stored in the [VS Code SecretStorage](https://code.visualstudio.com/api/extension-capabilities/common-capabilities#data-storage), which uses the OS keychain e.g. Keychain Access on macOS, Windows Credential Locker.
+*   **Non-Sensitive Metadata:** Metadata (URLs, labels, schemes) is stored in the [VS Code WorkspaceState](https://code.visualstudio.com/api/extension-capabilities/common-capabilities#data-storage), making it unique to each workspace.
 
-- Press `ctrl+p` then type `Remove url authentication`.
-
-  ![alt text](../images/docs/authorization/remove-url-authentication-data.png)
-
-- Choose the url(s) you want to clear and press `ok`
-
-  > **NOTE**
-  >
-  > If you have a project\package file opened when running this command and one of the packages needs re-authorization with the same removed url then you will be prompted to re-enter authorization. (if you dismiss this prompt then the url will be re-added to the url authentication data and marked as unconsented)
-
-## How your data is stored
-
-  - Credentials are stored in the [ExtensionContext.secrets](https://code.visualstudio.com/api/extension-capabilities/common-capabilities#data-storage) storage
-
-  - Non-sensitive authentication info (per url) is stored in the [ExtensionContext.workspaceState](https://code.visualstudio.com/api/extension-capabilities/common-capabilities#data-storage) storage (e.g. unique per workspace).<br> Use `versionlens.authorization.removeUrlAuthentication` to clear authentication info
-
-### What workspace data is stored
-
-```js
+### Stored Metadata Schema
+```json
 {
-  url: string,
-  scheme: string,
-  protocol: string,
-  label: string,
-  status: string
+  "url": "string",
+  "scheme": "string",
+  "protocol": "string",
+  "label": "string",
+  "status": "string"
 }
 ```

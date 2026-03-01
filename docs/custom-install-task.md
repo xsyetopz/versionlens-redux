@@ -1,50 +1,58 @@
-# How to setup a custom install task
+# How to Setup a Custom Install Task
 
-You can define a task that will run when you save a package document. This task will only run when there are dependency changes detected.
+VersionLens allows you to define a task that automatically runs when you save a package document, but only when dependency changes are detected. This is useful for automatically running `npm install`, `composer install`, etc.
 
-> **NOTE**
->
-> If your provider already detects changes and automatically installs packages (i.e. dotnet [c# extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)) then you won't need to have a custom install task
+> **Note:** Many extensions (like the C# extension for Dotnet) already detect changes and automatically restore packages. In such cases, you do not need a custom VersionLens task.
 
-To setup the install task, it needs to be defined in your tasks.json. <br>
-This is done by setting the install task label in `versionlens.{provider}.onSaveChanges` entry in your `settings.json` file.
+---
 
-**Example**
+## Configuration
 
-```js
-// in your settings.json
-{ 
-  "versionlens.npm.onSaveChanges": "versionlens npm install" // task label name 
-}
-```
+Setting up a custom install task requires two steps: defining the task in VS Code and linking it in VersionLens settings.
 
-```js
-// in your tasks.json
+### Step 1: Define the Task in `tasks.json`
+
+Create or update your `.vscode/tasks.json` file. Ensure you set the `options.cwd` to `${fileDirname}` so the command runs in the correct directory. [built-in predefined variables reference](https://code.visualstudio.com/docs/editor/variables-reference)
+
+**Example: NPM Install Task**
+```json
 {
-  "label": "versionlens npm install", // task label name
-  "command": "npm",
-  "type": "shell",
-  "args": ["install"],
-  "options": {
-    // sets the cwd to the current file dir
-    "cwd": "${fileDirname}"
-  },
-  // customizable settings
-  "presentation": {
-    "echo": true,
-    "reveal": "always",
-    "panel": "shared",
-    "clear": true,
-  },
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "VersionLens: NPM Install",
+      "command": "npm",
+      "type": "shell",
+      "args": ["install"],
+      "options": {
+        "cwd": "${fileDirname}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    }
+  ]
 }
 ```
 
-> **NOTE**
->
-> - Ensure to set the `task.options.cwd` to the [built-in predefined variable](https://code.visualstudio.com/docs/editor/variables-reference) called `${fileDirname}` when running an install task
-> - Optionally you can add the task to your **user** `tasks.json` file if you dont want to define the task for every project. This is done by pressing `ctrl+p` then selecting `Tasks: Open User Tasks`. 
+### Step 2: Link the Task in `settings.json`
 
-> **TROUBLESHOOTING**
->
-> - Will not run anything when the `onSaveChanges` setting is set to the default value of `null`
-> - If the specified task is not found then vscode (by default) will prompt which task you want to run (this will never be saved in to your versionlens settings).
+Link the task label to the specific VersionLens provider in your VS Code `settings.json`.
+
+```json
+{
+  "versionlens.npm.onSaveChanges": "VersionLens: NPM Install"
+}
+```
+
+---
+
+## Tips & Troubleshooting
+
+*   **Global Tasks:** If you want the task to be available across all projects, add it to your **User Tasks** (`Ctrl+Shift+P` > `Tasks: Open User Tasks`).
+*   **Predefined Variables:** Always use `${fileDirname}` for `cwd` to ensure the install command runs relative to the `package.json` (or equivalent) being saved.
+*   **Task Not Found:** If VersionLens cannot find the task specified in `settings.json`, VS Code will display a prompt asking you to select a task. This selection will not be saved to VersionLens settings.
+*   **Disabled by Default:** The `onSaveChanges` setting is `null` by default, meaning no task will run until configured.

@@ -1,126 +1,112 @@
-# Version Lens for Visual Studio Code
+# VersionLens for Visual Studio Code
 
-[![Badge for version for Visual Studio Code extension](https://img.shields.io/visual-studio-marketplace/v/pflannery.vscode-versionlens?style=flat-square&color=blue
-)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens&wt.mc_id=vscode-versionlens-gitlab)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/pflannery.vscode-versionlens?style=flat-square&color=blue
-)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/pflannery.vscode-versionlens?style=flat-square&color=blue
-)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/pflannery.vscode-versionlens?style=flat-square&color=blue)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/pflannery.vscode-versionlens?style=flat-square&color=blue)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/pflannery.vscode-versionlens?style=flat-square&color=blue)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
 [![The ISC license](https://img.shields.io/badge/license-ISC-orange.png?style=flat-square&color=blue)](http://opensource.org/licenses/ISC)
 
 This project is `active`, not sponsored or funded.
 
 [![BuyMeACoffee](https://www.buymeacoffee.com/assets/img/custom_images/purple_img.png)](https://www.buymeacoffee.com/peterf)
 
-This extension shows __version__ information when opening a package or project file in vscode. <br> It abides by [semver rules](https://semver.org/) and uses the [Node Semver](https://github.com/npm/node-semver) package to compare and sort versions.
+VersionLens shows __version__ information when opening a package or project file in VS Code. It abides by [semver rules](https://semver.org/) and uses the [Node Semver](https://github.com/npm/node-semver) package to compare and sort versions.
 
 ![Show releases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-releases.gif)
 
-The following languages are supported:
-
-- cargo (rust) https://doc.rust-lang.org/cargo/
-- composer (php) https://getcomposer.org/
-- deno (jsr) https://deno.com/
-- docker https://www.docker.com/
-- dotnet https://www.dotnetfoundation.org/
-- dub https://code.dlang.org/
-- maven (java) https://maven.apache.org/
-- npm (node) https://www.npmjs.com/
-  - jspm https://jspm.org/
-  - pnpm https://pnpm.io/
-- pub (dart) https://pub.dev/
-- python https://pypi.org/
-
-> NOTE
->
-> TOML needs an extenstion that registers the TOML language with vscode. e.g. https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml
-
 ## Contents
 
+- [Supported Languages & Ecosystems](#supported-languages--ecosystems)
 - [How do I see version information for a package?](#how-do-i-see-version-information-for-a-package)
 - [Pre-release versions](#can-i-see-pre-release-versions)
 - [What do the suggestion links mean?](./docs/suggestion-overview.md)
 - [Will this extension install packages for me?](#will-this-extension-install-packages-for-me)
 - [How do I authorize packages that need credentials?](./docs/authorization.md)
 - [How do I install this extension?](#how-do-i-install-this-extension)
-  - [Can I install this extension manually?](#can-i-install-this-extension-manually)
-  - [I'm not able to install this extention](#im-not-able-to-install-this-extention)
 - [How do I troubleshoot this extension?](#how-do-i-troubleshoot-this-extension)
+
+### Supported Languages & Ecosystems
+
+VersionLens supports a wide range of ecosystems:
+
+- **Cargo (Rust):** [crates.io](https://doc.rust-lang.org/cargo/)
+- **Composer (PHP):** [packagist.org](https://getcomposer.org/)
+- **Deno (JSR/NPM):** [deno.com](https://deno.com/)
+- **Docker:** [Docker Hub / MCR](https://www.docker.com/)
+- **Dotnet:** [NuGet](https://www.dotnetfoundation.org/)
+- **Dub (D):** [code.dlang.org](https://code.dlang.org/)
+- **Go:** [proxy.golang.org](https://go.dev/)
+- **Maven (Java):** [Maven Central](https://maven.apache.org/)
+- **NPM (Node):** [npmjs.com](https://www.npmjs.com/), JSPM, PNPM
+- **Pub (Dart/Flutter):** [pub.dev](https://pub.dev/)
+- **Python:** [PyPI](https://pypi.org/)
+
+> **Note:** TOML files require an extension that registers the TOML language with VS Code (e.g., [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)).
 
 ## How do I see version information for a package?
 
-Click the V icon in the package\project file toolbar.
+Select the **V** icon in the package/project file toolbar.
 
-You can also choose the default startup state by setting `versionlens.suggestions.showOnStartup`
+You can also set the default startup state using `versionlens.suggestions.showOnStartup` in your settings.
 
 ## Can I see pre-release versions?
 
-Yes, click on the tag icon in the package\project file toolbar.
+Yes, select the **tag** icon in the package/project file toolbar.
 
-You can also choose the default startup state by setting `versionlens.suggestions.showPrereleasesOnStartup`
+You can also set the default startup state using `versionlens.suggestions.showPrereleasesOnStartup`.
 
 ![Show prereleases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-prereleases.gif)
 
 ## Will this extension install packages for me?
 
-Yes, you can define a task that will run when you save a package document.
+Yes, you can define a custom task that runs when you save a package document.
 
-To set this up follow the [custom task install guide](./docs/custom-install-task.md)
+To set this up, follow the [Custom Install Task Guide](./docs/custom-install-task.md).
 
 ## How do I install this extension?
 
-Follow this link on [how to install vscode extensions](https://code.visualstudio.com/docs/editor/extension-gallery)
+Install via the [VS Code Extension Gallery](https://code.visualstudio.com/docs/editor/extension-gallery).
 
-### Can I install this extension manually?
+### Manual Installation
+Visit the [Releases page](https://gitlab.com/versionlens/vscode-versionlens/-/releases) for VSIX instructions.
 
-Yes goto the [release page for instructions](https://gitlab.com/versionlens/vscode-versionlens/-/releases)
+### Installation Troubleshooting
+If you are unable to install the extension, try a clean install:
 
-### I'm not able to install this extention
+1. Shut down VS Code.
+2. Delete the extension folder: `{home}/.vscode/extensions/pflannery.vscode-versionlens`.
+3. Restart VS Code and reinstall.
 
-Try a clean install:
-
-- Shut down vscode
-- Delete the extension folder `{home}/.vscode/extensions/pflannery.vscode-versionlens`
-- Open vscode and try reinstalling the extension again
-
-  > **NOTE**
-  >
-  > If the installation still fails then have a look for errors in the output channel and choose the `Log (Extension Host)` in the drop down.
-  > 
-  > ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-host-log.png)
+> **Note:** Check the `Log (Extension Host)` in the Output channel for specific errors during installation.
+> ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-host-log.png)
 
 ## How do I troubleshoot this extension?
 
-- This plugin won't work unless you have `"editor.codeLens": true` enabled in your settings. (`true` is the default)
+*   **CodeLens Enabled:** Ensure `"editor.codeLens": true` is set in your settings.
+*   **Action Icons:** Ensure `"workbench.editor.editorActionsLocation": "hidden"` is **not** set.
+*   **Clear Cache:** Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `VersionLens: Clear cache`.
+    *   Cache duration is managed by `versionlens.caching.duration` (default is 3 minutes).
+*   **Logging:** Set your log level to `debug` via the Command Palette (`Developer: Set Log Level`) or the `VersionLens` output channel.
+    ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-log.png)
+*   **Developer Tools:** If no logs are visible, check for errors in the VS Code Developer Tools (`Help > Toggle Developer Tools`).
 
-- Version lens uses editor action icons so make sure you don't have `"workbench.editor.editorActionsLocation": "hidden"` set
+## Commands & Settings
 
-- Try resetting the cache by running the clear cache command (ctrl+p then type "Clear Cache") 
-  This setting can be changed using `versionlens.caching.duration`. 
+### Useful Commands
+| Command | Description |
+| ------- | ----------- |
+| `VersionLens: Clear cache` | Clears all cached package suggestions. |
+| `VersionLens: Add url authentication` | Manually add credentials for a registry. |
+| `VersionLens: Remove url authentication` | Remove stored registry credentials. |
 
-  You can try setting this value to `0` when doing tests 
-  but recommended to keep around 3 minutes for normal usage.
-
-- Version lens writes a log to an output channel in vscode.
-
-  If you're experiencing issues then set your log level to `debug`.
-
-  You can change the log level by either 
-  - `ctrl+p` then type `Developer: Set Log Level`; or
-  - via the `VersionLens` output log window
-
-  > **NOTE**
-  >
-  > You may need to restart vscode if your issue is a start up problem.
-
-  You can find the `VersionLens` output channel as seen in this picture:
-
-  ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-log.png)
-
-- In the worst case no logs are output. There maybe an error in the developer tools of vscode. You can open the dev tools from the `help menu` in vscode
+### Key Settings
+| Setting | Default | Description |
+| ------- | ------- | ----------- |
+| `versionlens.suggestions.showOnStartup` | `false` | Show version lenses when a file is opened. |
+| `versionlens.suggestions.showPrereleasesOnStartup` | `false` | Show prerelease suggestions on startup. |
+| `versionlens.caching.duration` | `3` | Cache duration in minutes. |
 
 ## License
 
-Licensed under ISC
+Licensed under [ISC](http://opensource.org/licenses/ISC).
 
 Copyright &copy; 2016+ [contributors](https://gitlab.com/versionlens/vscode-versionlens/-/graphs/master)
