@@ -5,6 +5,8 @@
   - Added a custom install toolbar action that runs the configured `onSaveChanges` task for the active package manager.
     Can be disabled by setting `versionlens.suggestions.showCustomInstallAction` to `false`.
 
+  - Fixed an issue where saving changes during a running custom installation prevented subsequent install attempts until additional modifications were made.
+
 # 1.22.4
 
   ### Npm

@@ -60,6 +60,15 @@ export class OnSaveChanges {
       packageFilePath
     );
 
+    // reset outdated flag
+    await this.state.showOutdated.change(false);
+
+    // check we have a task to run
+    if (!provider.config.onSaveChangesTask) {
+      this.logger.info(OnSaveChanges.log.skipSaveChangesTask, provider.name);
+      return;
+    }
+
     // execute the task
     const exitCode = await this.runTask(provider);
 
@@ -70,8 +79,8 @@ export class OnSaveChanges {
       exitCode
     );
 
-    // reset outdated flag
-    if (exitCode === 0) await this.state.showOutdated.change(false);
+    // if the task failed set outdated back to true
+    if (exitCode !== 0) await this.state.showOutdated.change(true);
   }
 
   /**
@@ -79,12 +88,6 @@ export class OnSaveChanges {
    * @param provider The suggestion provider.
    */
   async runTask(provider: ISuggestionProvider): Promise<number | undefined> {
-    // check we have a task to run
-    if (!provider.config.onSaveChangesTask) {
-      this.logger.info(OnSaveChanges.log.skipSaveChangesTask, provider.name);
-      return;
-    }
-
     // fetch the custom task for the provider
     const availableTasks = await this.tasks.fetchTasks();
     const filteredTasks = availableTasks.filter(

@@ -13,6 +13,7 @@ type TestContext = {
   mockEditorDependencyCache: DependencyCache
   mockVsCodeTasks: IVsCodeTasks
   mockVersionLensState: IVersionLensState
+  mockShowOutdated: IContextState<boolean>
   mockLogger: ILogger
   mockProvider: ISuggestionProvider
   mockConfig: IProviderConfig
@@ -27,11 +28,13 @@ export const onSaveChangesTests = {
     this.mockEditorDependencyCache = mock<DependencyCache>();
     this.mockVsCodeTasks = mock<IVsCodeTasks>();
     this.mockVersionLensState = mock<IVersionLensState>();
+    this.mockShowOutdated = mock<IContextState<boolean>>();
     this.mockLogger = mock<ILogger>();
 
     this.mockProvider = mock<ISuggestionProvider>();
     this.mockConfig = mock<IProviderConfig>();
     when(this.mockProvider.config).thenReturn(instance(this.mockConfig))
+    when(this.mockVersionLensState.showOutdated).thenReturn(instance(this.mockShowOutdated));
   },
 
   "updates file watcher dependency cache": async function (this: TestContext) {
@@ -81,6 +84,7 @@ export const onSaveChangesTests = {
         testPackageFilePath
       )
     ).once();
+    verify(this.mockShowOutdated.change(false)).once();
   },
 
   "skips task execution when onSaveChangesTask is not defined": async function (this: TestContext) {
@@ -106,6 +110,7 @@ export const onSaveChangesTests = {
     // verify
     verify(this.mockVsCodeTasks.fetchTasks()).never();
     verify(this.mockLogger.info(OnSaveChanges.log.skipSaveChangesTask, testProvider.name)).once();
+    verify(this.mockShowOutdated.change(false)).once();
   },
 
   "logs error when the specified onSaveChangesTask is not found": async function (this: TestContext) {
@@ -120,7 +125,8 @@ export const onSaveChangesTests = {
       instance(this.mockLogger)
     );
 
-    when(this.mockConfig.onSaveChangesTask).thenReturn('versionlens-install-task')
+    const testTaskName = 'versionlens-install-task';
+    when(this.mockConfig.onSaveChangesTask).thenReturn(testTaskName)
     when(this.mockProvider.name).thenReturn(testProviderName)
     when(this.mockVsCodeTasks.fetchTasks() as Promise<Task[]>)
       .thenResolve([]);
@@ -138,6 +144,8 @@ export const onSaveChangesTests = {
       )
     ).once();
     verify(this.mockVsCodeTasks.executeTask(anything())).never();
+    verify(this.mockShowOutdated.change(false)).once();
+    verify(this.mockShowOutdated.change(true)).once();
   },
 
   "case $i: executes onSaveChangesTask": [
@@ -149,7 +157,6 @@ export const onSaveChangesTests = {
       const testProvider = instance(this.mockProvider)
       const testTaskName = 'versionlens-install-task'
       const testTask = { name: testTaskName }
-      // const expectedExitCode = 0
       const testEvent = new OnSaveChanges(
         instance(this.mockFileWatcherDependencyCache),
         instance(this.mockEditorDependencyCache),
@@ -169,9 +176,6 @@ export const onSaveChangesTests = {
             })
           }
         )
-
-      const mockOutdatedState = mock<IContextState<boolean>>()
-      when(this.mockVersionLensState.showOutdated).thenReturn(instance(mockOutdatedState));
 
       // test
       await testEvent.execute(testProvider, testPackageFilePath);
@@ -194,10 +198,8 @@ export const onSaveChangesTests = {
         )
       ).once();
 
-      if (expectedExitCode === 0)
-        verify(mockOutdatedState.change(anything())).once();
-      else
-        verify(mockOutdatedState.change(anything())).never();
+      verify(this.mockShowOutdated.change(false)).once();
+      verify(this.mockShowOutdated.change(true)).times(expectedExitCode === 0 ? 0 : 1);
     }
   ],
 
