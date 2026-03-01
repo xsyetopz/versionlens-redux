@@ -5,7 +5,7 @@
     "./test",
   ],
   "compilerOptions": {
-    "strict": false,
+    "strict": true,
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",

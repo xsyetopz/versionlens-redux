@@ -115,7 +115,7 @@ export const parseVersionSpecTests = {
 
   'returns true for four segment versions': () => {
     const actual = parseVersionSpec("1.0.0.1");
-    assert.ok(actual.spec.hasFourSegments);
+    assert.ok(actual.spec && actual.spec.hasFourSegments);
   }
 
 }

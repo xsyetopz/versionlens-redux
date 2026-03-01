@@ -67,7 +67,7 @@ export async function createNpmRegistryClientData(
  * @returns An HttpClientResponse representation of the error.
  */
 export function convertNpmErrorToResponse(
-  error,
+  error: any,
   source: ClientResponseSource
 ): HttpClientResponse {
   return {
@@ -108,7 +108,15 @@ export function createNpmSuggestionFromErrorCode(npmErrorCode: string): PackageS
         }];
       }
 
-      return [PackageStatusFactory.createFromHttpStatus(errorNum)];
+      const suggestion = PackageStatusFactory.createFromHttpStatus(errorNum);
+      return [
+        suggestion || {
+          name: npmErrorCode,
+          category: SuggestionCategory.Error,
+          version: '',
+          type: SuggestionTypes.status
+        }
+      ];
   }
 }
 
@@ -168,6 +176,8 @@ export function npmReplaceVersion(suggestionUpdate: SuggestionUpdate): string {
  * @returns The updated dependency string.
  */
 function replaceGitVersion(suggestionUpdate: SuggestionUpdate): string {
+  if (!suggestionUpdate.fetchedVersion) return suggestionUpdate.parsedVersion;
+
   return suggestionUpdate.parsedVersion.replace(
     suggestionUpdate.fetchedVersion,
     suggestionUpdate.suggestionVersion
@@ -180,6 +190,10 @@ function replaceGitVersion(suggestionUpdate: SuggestionUpdate): string {
  * @returns The updated dependency string.
  */
 function replaceAliasVersion(suggestionUpdate: SuggestionUpdate): string {
+  if (!suggestionUpdate.fetchedVersion || !suggestionUpdate.fetchedName) {
+    return suggestionUpdate.parsedVersion;
+  }
+
   // preserve the leading symbol from the existing version
   const preservedLeadingVersion = VersionUtils.preserveLeadingRange(
     suggestionUpdate.fetchedVersion,

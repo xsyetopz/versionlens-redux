@@ -57,7 +57,7 @@ export const ComposerSuggestionResolverTests = {
           // package path
           'packagepath',
         );
-        const testSpec = VersionUtils.parseSemver(testPackageRes.version);
+        const testSpec = VersionUtils.parseSemver(testPackageRes.version)!;
         const testRequest: PackageClientRequest<null> = {
           providerName: 'test-composer-provider',
           clientData: null,

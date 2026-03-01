@@ -138,7 +138,7 @@ export type SuggestionUpdate = {
   /** The source of the package. */
   packageSource: PackageSourceType,
   /** The type of version requested. */
-  packageVersionType: PackageVersionType,
+  packageVersionType: PackageVersionType | null,
 
   /** The original package name in the file. */
   parsedName: string,

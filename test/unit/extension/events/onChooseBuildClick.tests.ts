@@ -1,5 +1,12 @@
 import type { ILogger } from '#domain/logging';
-import { createPackageResource, PackageDependency, SuggestionCategory, SuggestionTypes } from '#domain/packages';
+import {
+  createPackageResource,
+  PackageDependency,
+  PackageSourceType,
+  PackageVersionType,
+  SuggestionCategory,
+  SuggestionTypes
+} from '#domain/packages';
 import { createPackageNameDesc, createPackageVersionDesc, createTextRange, PackageDescriptor } from '#domain/parsers';
 import type { IContextState, ISuggestionCodeLens, IVersionLensState } from '#extension';
 import { OnChooseBuildClick } from '#extension/events';
@@ -62,6 +69,8 @@ export const onChooseBuildClickTests = {
         category: SuggestionCategory.Build
       },
       providerName: 'test-provider',
+      packageSource: PackageSourceType.Registry,
+      type: PackageVersionType.Version,
       parsedDependency: new PackageDependency(
         createPackageResource('test-name', testVersion, 'test/path'),
         new PackageDescriptor([
@@ -107,6 +116,8 @@ export const onChooseBuildClickTests = {
         category: SuggestionCategory.Latest
       },
       providerName: 'test-provider',
+      packageSource: PackageSourceType.Registry,
+      type: PackageVersionType.Version,
       parsedDependency: new PackageDependency(
         createPackageResource('test-name', testPkgVersion, 'test/path'),
         new PackageDescriptor([

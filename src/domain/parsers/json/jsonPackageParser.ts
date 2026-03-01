@@ -163,7 +163,7 @@ function findNodesAtLocation(jsonTree: JsonC.Node, expression: string): FoundNod
   if (pathSegments[pathSegments.length - 1] !== "*") {
     return {
       path: expression,
-      node: JsonC.findNodeAtLocation(jsonTree, pathSegments)
+      node: JsonC.findNodeAtLocation(jsonTree, pathSegments) || null
     }
   }
 
@@ -185,7 +185,8 @@ function findNodesAtLocation(jsonTree: JsonC.Node, expression: string): FoundNod
     .filter(x => x.children && x.children.length === 2)
     .flat()
     .filter(x => x.children && x.children[1].type === "object")
-    .flatMap(x => x.children && x.children[1].children);
+    .flatMap(x => x.children && x.children[1].children)
+    .filter((x): x is JsonC.Node => x !== undefined);
 
   return {
     path: segmentsWithoutStar.join("."),

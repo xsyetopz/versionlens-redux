@@ -31,5 +31,5 @@ export type FoundNode = {
   /** The path to the node. */
   path: string,
   /** The node or array of nodes found. */
-  node: JsonC.Node | Array<JsonC.Node>
+  node: JsonC.Node | Array<JsonC.Node> | null
 }

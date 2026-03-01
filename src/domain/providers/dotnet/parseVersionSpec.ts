@@ -25,7 +25,7 @@ export function parseVersionSpec(rawVersion: string): DotNetVersionSpec {
     ? PackageVersionType.Version
     : isValidRange ? PackageVersionType.Range : null
 
-  const resolvedVersion = spec ? version : '';
+  const resolvedVersion = (spec && version) ? version : '';
 
   return {
     type,

@@ -8,6 +8,8 @@ import {
   PackageDependency,
   PackageSourceType,
   PackageStatusFactory,
+  SuggestionCategory,
+  SuggestionTypes,
   createPackageResource
 } from '#domain/packages';
 import {
@@ -201,7 +203,7 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
    * @returns A promise resolving to the package client response containing suggestions.
    */
   async fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse> {
-    let source: PackageSourceType;
+    let source: PackageSourceType = PackageSourceType.Registry;
     try {
       const requestedPackage = request.parsedDependency.package;
       const npaSpec = npa.resolve(
@@ -213,6 +215,8 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
       switch (npaSpec.type) {
         case NpaTypes.Directory:
           source = PackageSourceType.Directory
+          return await this.resolver.fromFileProtocol(requestedPackage);
+
         case NpaTypes.File:
           source = PackageSourceType.File
           return await this.resolver.fromFileProtocol(requestedPackage);
@@ -231,10 +235,10 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
           return await this.resolver.fromRegistry(request, npaSpec)
       }
 
-    } catch (response) {
+    } catch (response: any) {
       this.logger.debug("Caught exception from {source}: {error}", source, response);
 
-      if (!response.data) {
+      if (!response?.data) {
         response = convertNpmErrorToResponse(
           response,
           ClientResponseSource.remote
@@ -242,17 +246,22 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
       }
 
       const status = response.status
-      const statusIsNumber = Number.isInteger(status);
       let suggestions: Array<PackageSuggestion>;
+      if (typeof status === 'number' && Number.isInteger(status)) {
+        const suggestion = status === 128
+          ? PackageStatusFactory.createNotFoundStatus()
+          : PackageStatusFactory.createFromHttpStatus(status);
 
-      if (statusIsNumber)
-        suggestions = [
-          status === 128
-            ? PackageStatusFactory.createNotFoundStatus()
-            : PackageStatusFactory.createFromHttpStatus(status)
-        ];
-      else
+        suggestions = [suggestion ?? {
+          name: status.toString(),
+          category: SuggestionCategory.Error,
+          version: '',
+          type: SuggestionTypes.status
+        }];
+      } else {
+        // status is likely a string (e.g., 'E404', 'ENOTFOUND')
         suggestions = createNpmSuggestionFromErrorCode(status);
+      }
 
       return ClientResponseFactory.create(
         source,

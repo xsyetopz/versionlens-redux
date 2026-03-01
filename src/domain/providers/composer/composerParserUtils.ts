@@ -8,7 +8,7 @@ import * as JsonC from 'jsonc-parser';
  * @returns A package version descriptor if the node is a 'version' property, otherwise undefined.
  */
 export function createComposerProjectVersionDesc(path: string, node: JsonC.Node) {
-  if (node.type !== 'string') return;
+  if (node.type !== 'string' || !node.parent || !node.parent.children) return;
 
   const parent = node.parent.children[0];
 

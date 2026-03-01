@@ -93,6 +93,8 @@ function descendChildNodes(
       const nameDesc = createNameDescFromYamlNode(keyNode);
       // create the version descriptor
       const versionDesc = createVersionDescFromYamlNode(valueNode, isQuotedType);
+      if (!versionDesc) continue;
+
       // create the parent path desc
       const parentDesc = createPackageParentDescType(path);
       // create the package descriptor

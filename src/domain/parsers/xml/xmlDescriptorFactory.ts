@@ -31,7 +31,7 @@ export function createVersionDescFromXmlElem(keyNode: XmlNode): PackageVersionDe
   const versionText = keyNode.text ?? '';
   const versionRange = {
     start: keyNode.tagOpenEnd,
-    end: keyNode.tagCloseStart
+    end: keyNode.tagCloseStart ?? keyNode.tagOpenEnd
   };
   return createPackageVersionDesc(versionText, versionRange);
 }

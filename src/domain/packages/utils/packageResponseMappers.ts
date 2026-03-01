@@ -10,6 +10,8 @@ export function mapToSuggestionUpdate(packageResponse: PackageResponse): Suggest
   let parsedVersionPrepend = "";
   let parsedVersionAppend = "";
 
+  if (!packageResponse.suggestion) throw new Error("packageResponse.suggestion is required");
+
   if (packageResponse.parsedDependency.descriptors.hasType(PackageDescriptorType.version)) {
     const versionDesc = packageResponse.parsedDependency.descriptors.getType<PackageVersionDescriptor>(PackageDescriptorType.version);
     parsedVersionPrepend = versionDesc.versionPrepend;

@@ -3,6 +3,7 @@ import {
   PackageDependency,
   PackageResponse,
   PackageSourceType,
+  PackageVersionType,
   SuggestionCategory,
   SuggestionTypes
 } from '#domain/packages';
@@ -20,6 +21,7 @@ export const npmReplaceVersionTests = {
       order: 0,
       providerName: 'testreplace',
       packageSource: PackageSourceType.Github,
+      type: PackageVersionType.Version,
       parsedDependency: <PackageDependency>{
         nameRange: createTextRange(0, 0),
         versionRange: createTextRange(1, 1),

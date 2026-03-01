@@ -68,7 +68,7 @@ export class NpmRegistryClient {
       } as NpmRegistryClientResponse;
       // cache and return
       return this.requestCache.set(url, result);
-    } catch (error) {
+    } catch (error: any) {
       const result: NpmRegistryClientResponse = {
         source: ClientResponseSource.remote,
         status: error.code,

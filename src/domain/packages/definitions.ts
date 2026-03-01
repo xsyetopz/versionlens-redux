@@ -54,11 +54,11 @@ export type PackageResponse = {
   /** The original parsed dependency. */
   parsedDependency: PackageDependency,
   /** The package data fetched from the registry. */
-  fetchedPackage?: PackageNameVersion;
+  fetchedPackage?: PackageNameVersion | null;
   /** The source of the package (e.g., Registry, Git). */
-  packageSource?: PackageSourceType;
+  packageSource: PackageSourceType;
   /** The type of the package version. */
-  type?: PackageVersionType;
+  type: PackageVersionType | null;
   /** The specific suggestion for this package. */
   suggestion?: PackageSuggestion;
   /** The display order of the suggestion. */
@@ -135,9 +135,9 @@ export type PackageClientResponse = {
   /** The status of the response. */
   responseStatus?: PackageClientResponseStatus;
   /** The type of version requested. */
-  type: PackageVersionType;
+  type: PackageVersionType | null;
   /** The resolved package name and version if successful. */
-  resolved?: PackageNameVersion;
+  resolved?: PackageNameVersion | null;
   /** The list of suggestions generated for this package. */
   suggestions: Array<PackageSuggestion>;
   /** Optional Git-specific specification. */
