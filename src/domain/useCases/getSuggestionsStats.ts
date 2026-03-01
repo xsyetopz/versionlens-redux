@@ -6,17 +6,36 @@ import type { GetSuggestions } from '#domain/useCases';
 import { Disposable } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Represents the summary of suggestions for a specific package file.
+ */
 export type SuggestionsStats = {
+  /** The path to the package file. */
   filePath: string
+  /** The name of the suggestion provider. */
   providerName: string
+  /** Number of dependencies with no matching versions. */
   noMatches: number
+  /** Number of dependencies with available updates. */
   updates: number
+  /** Number of dependencies that failed to fetch. */
   errors: number
 }
 
+/**
+ * Use case for generating a summary of suggestions across all watched package files.
+ */
 export class GetSuggestionsStats extends Disposable {
+  /** Internal cache for stats results. */
   readonly cache = new MemoryCache<SuggestionsStats[]>('stats-cache')
 
+  /**
+   * Initializes a new instance of the GetSuggestionsStats class.
+   * @param providers The list of active suggestion providers.
+   * @param dependencyCache The cache of parsed dependencies.
+   * @param getSuggestions The use case for retrieving suggestions.
+   * @param logger The logger to use.
+   */
   constructor(
     readonly providers: ISuggestionProvider[],
     readonly dependencyCache: DependencyCache,
@@ -30,6 +49,11 @@ export class GetSuggestionsStats extends Disposable {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Executes the suggestion stats use case.
+   * @param useCache Whether to return the cached result if available.
+   * @returns A promise resolving to an array of suggestion stats.
+   */
   async execute(useCache: boolean): Promise<SuggestionsStats[]> {
     if (useCache) {
       const cached = this.cache.get('stats');
@@ -95,6 +119,9 @@ export class GetSuggestionsStats extends Disposable {
 
 }
 
+/**
+ * Comparison function used to sort suggestion stats by file path.
+ */
 function compareStats(a: SuggestionsStats, b: SuggestionsStats) {
   return a.filePath > b.filePath
     ? 1

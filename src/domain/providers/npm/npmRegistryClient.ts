@@ -11,8 +11,18 @@ import {
 import { ensureEndSlash } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching package data from an NPM registry.
+ */
 export class NpmRegistryClient {
 
+  /**
+   * Initializes a new instance of the NpmRegistryClient class.
+   * @param npmRegistryFetch The low-level NPM registry fetcher.
+   * @param config The configuration for the NPM provider.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly npmRegistryFetch: INpmRegistry,
     readonly config: NpmConfig,
@@ -25,6 +35,12 @@ export class NpmRegistryClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches the packument for a package from the registry.
+   * @param npaSpec The NPM package specification.
+   * @param clientData The NPM client data including registry URL and SSL options.
+   * @returns A promise resolving to the NPM registry client response.
+   */
   async get(npaSpec: NpaSpec, clientData: NpmClientData): Promise<NpmRegistryClientResponse> {
     try {
       const registry = this.npmRegistryFetch.pickRegistry(npaSpec, clientData);

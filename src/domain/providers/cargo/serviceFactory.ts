@@ -14,6 +14,10 @@ import {
 } from "#domain/providers/cargo";
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers Cargo caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     CargoService.cargoCachingOpts,
@@ -26,6 +30,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers Cargo HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     CargoService.cargoHttpOpts,
@@ -38,6 +46,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Cargo configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCargoConfig(services: IServiceCollection) {
   services.addSingleton(
     CargoService.cargoConfig,
@@ -50,6 +62,10 @@ export function addCargoConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Crates client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCratesClient(services: IServiceCollection) {
   const serviceName = CargoService.cratesClient;
   services.addSingleton(
@@ -70,6 +86,10 @@ export function addCratesClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Cargo suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCargoSuggestionResolver(services: IServiceCollection) {
   const serviceName = CargoService.cargoSuggestionResolver;
   services.addSingleton(
@@ -83,6 +103,10 @@ export function addCargoSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Cargo suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

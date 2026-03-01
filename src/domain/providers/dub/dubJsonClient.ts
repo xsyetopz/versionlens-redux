@@ -6,8 +6,18 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 
 const query = { minimize: 'true' }
 
+/**
+ * Client for fetching package version data from the Dub registry.
+ */
 export class DubJsonClient {
 
+  /**
+   * Initializes a new instance of the DubJsonClient class.
+   * @param config The configuration for the Dub provider.
+   * @param jsonClient The HTTP client for JSON requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: DubConfig,
     readonly jsonClient: IJsonHttpClient,
@@ -20,6 +30,11 @@ export class DubJsonClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches version information for a given package from the Dub registry.
+   * @param packageName The name of the package.
+   * @returns A promise resolving to the Dub JSON client response.
+   */
   async get(packageName: string): Promise<DubJsonClientResponse> {
     const url = `${this.config.apiUrl}${encodeURIComponent(packageName)}/info`;
     // check cache

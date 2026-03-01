@@ -11,8 +11,17 @@ import type { ComposerConfig, PackagistClient } from '#domain/providers/composer
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { coerce } from 'semver';
 
+/**
+ * Resolves package suggestions for Composer dependencies from the Packagist registry.
+ */
 export class ComposerSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the ComposerSuggestionResolver class.
+   * @param config The configuration for the Composer provider.
+   * @param packagistClient The client used to interact with Packagist.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: ComposerConfig,
     readonly packagistClient: PackagistClient,
@@ -23,6 +32,12 @@ export class ComposerSuggestionResolver {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Resolves suggestions from the Packagist registry.
+   * @param request The package client request.
+   * @param semverSpec The parsed semver specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fromPackagist(
     request: PackageClientRequest<null>,
     semverSpec: SemverSpec

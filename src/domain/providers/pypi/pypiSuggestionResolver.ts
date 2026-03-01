@@ -14,8 +14,17 @@ import { PypiConfig, PypiHttpClient } from '#domain/providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { coerce } from 'semver';
 
+/**
+ * Resolves package suggestions for PyPi dependencies from various sources like registries, local paths, or Git.
+ */
 export class PypiSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the PypiSuggestionResolver class.
+   * @param config The configuration for the PyPi provider.
+   * @param pypiHttpClient The client used to interact with PyPi.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: PypiConfig,
     readonly pypiHttpClient: PypiHttpClient,
@@ -26,6 +35,12 @@ export class PypiSuggestionResolver {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Resolves suggestions for a local path dependency.
+   * @param dependency The package dependency.
+   * @param pathDesc The path descriptor.
+   * @returns A promise resolving to the package client response.
+   */
   fromPath(dependency: PackageDependency, pathDesc: PackagePathDescriptor): Promise<PackageClientResponse> {
     return ClientResponseFactory.createDirectory(
       dependency.package.name,
@@ -34,10 +49,20 @@ export class PypiSuggestionResolver {
     );
   }
 
+  /**
+   * Resolves suggestions for a Git dependency.
+   * @returns The package client response for a Git dependency.
+   */
   fromGit(): PackageClientResponse {
     return ClientResponseFactory.createGit();
   }
 
+  /**
+   * Resolves suggestions from the PyPi API.
+   * @param request The package client request.
+   * @param semverSpec The parsed semver specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fromPypiApi(
     request: PackageClientRequest<null>,
     semverSpec: SemverSpec

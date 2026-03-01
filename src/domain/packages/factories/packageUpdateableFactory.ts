@@ -7,6 +7,12 @@ import {
 } from '#domain/packages';
 import { prerelease } from 'semver';
 
+/**
+ * Creates an updateable suggestion for the latest version.
+ * @param requestedVersion Optional version string to suggest.
+ * @param name Optional name for the suggestion.
+ * @returns A package updateable suggestion.
+ */
 export function createLatestUpdateable(requestedVersion?: string, name?: string): PackageSuggestion {
   const isPrerelease = prerelease(requestedVersion);
 
@@ -27,6 +33,12 @@ export function createLatestUpdateable(requestedVersion?: string, name?: string)
   };
 }
 
+/**
+ * Creates an updateable suggestion for the next maximum version (e.g., minor or patch).
+ * @param requestedVersion The version string.
+ * @param name The name of the update (e.g., 'minor', 'patch').
+ * @returns A package updateable suggestion.
+ */
 export function createNextMaxUpdateable(requestedVersion: string, name: string): PackageSuggestion {
   return {
     name,
@@ -36,6 +48,11 @@ export function createNextMaxUpdateable(requestedVersion: string, name: string):
   };
 }
 
+/**
+ * Creates a suggestion to update the build component of a version.
+ * @param requestedVersion The version string with the new build data.
+ * @returns A package updateable suggestion.
+ */
 export function createBuildUpdateable(requestedVersion: string): PackageSuggestion {
   return {
     name: SuggestionStatusText.UpdateBuild,
@@ -45,6 +62,12 @@ export function createBuildUpdateable(requestedVersion: string): PackageSuggesti
   };
 }
 
+/**
+ * Creates an updateable suggestion for a specific tagged prerelease.
+ * @param name The name of the prerelease tag (e.g., 'beta').
+ * @param version The version string.
+ * @returns A package updateable suggestion.
+ */
 export function createTaggedPreleaseUpdateable(name: string, version: string): PackageSuggestion {
   return createSuggestion(
     name,

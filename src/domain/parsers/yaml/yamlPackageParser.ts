@@ -20,6 +20,12 @@ import {
 } from 'yaml';
 import { findPair } from 'yaml/util';
 
+/**
+ * Parses package descriptors from a YAML string.
+ * @param yaml The YAML content to parse.
+ * @param options Parser options.
+ * @returns An array of Identified package descriptors.
+ */
 export function parsePackagesYaml(
   yaml: string,
   options: YamlParserOptions
@@ -30,6 +36,12 @@ export function parsePackagesYaml(
   return parsePackageNodes(yamlDoc, options);
 }
 
+/**
+ * Parses package nodes from a root YAML document.
+ * @param rootNode The root YAML document.
+ * @param options Parser options.
+ * @returns An array of Identified package descriptors.
+ */
 function parsePackageNodes(
   rootNode: Document.Parsed<ParsedNode>,
   options: YamlParserOptions
@@ -55,6 +67,13 @@ function parsePackageNodes(
   return matchedDependencies;
 }
 
+/**
+ * Descends into child nodes to extract package descriptors.
+ * @param path The current path in the YAML tree.
+ * @param pairs The pairs to process.
+ * @param complexTypeHandlers Map of complex type handlers.
+ * @returns An array of Identified package descriptors.
+ */
 function descendChildNodes(
   path: string,
   pairs: Array<Pair<string, any>>,

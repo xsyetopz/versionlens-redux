@@ -1,6 +1,11 @@
 import type { PackageResponse, SuggestionUpdate } from '#domain/packages';
 import { type PackageVersionDescriptor, PackageDescriptorType } from '#domain/parsers';
 
+/**
+ * Maps a PackageResponse to a SuggestionUpdate object.
+ * @param packageResponse The package response to map.
+ * @returns A SuggestionUpdate object.
+ */
 export function mapToSuggestionUpdate(packageResponse: PackageResponse): SuggestionUpdate {
   let parsedVersionPrepend = "";
   let parsedVersionAppend = "";

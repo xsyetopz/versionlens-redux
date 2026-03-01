@@ -10,6 +10,11 @@ import { throwNotStringOrEmpty, throwUndefinedOrNull } from '@esm-test/guards';
  */
 export class Config implements IFrozenOptions {
 
+  /**
+   * Initializes a new instance of the Config class.
+   * @param resolver The function that reads from the configuration source.
+   * @param section The section key fetched from the configuration source data.
+   */
   constructor(resolver: ConfigSectionResolver, section: string) {
     throwUndefinedOrNull('resolver', resolver);
     throwNotStringOrEmpty('section', section);
@@ -20,22 +25,29 @@ export class Config implements IFrozenOptions {
   }
 
   /**
-   * Cached configuration
+   * Cached configuration.
    */
   protected frozen: IConfig | null;
 
   /**
-   * The section key fetched from the configuration source data
+   * The section key fetched from the configuration source data.
    * 
    * @example `versionlens`
    */
   section: string;
 
   /**
-   * The function that reads from the configuration source
+   * The function that reads from the configuration source.
    */
   resolver: ConfigSectionResolver;
 
+  /**
+   * Gets a configuration value.
+   * @template T The type of the value.
+   * @param key The configuration key.
+   * @param defaultValue Optional default value if the key is not found.
+   * @returns The configuration value or undefined.
+   */
   get<T>(key: string, defaultValue?: T): T | undefined {
     if (this.frozen === null) {
       this.frozen = this.resolver(this.section);
@@ -44,6 +56,10 @@ export class Config implements IFrozenOptions {
     return this.frozen.get(key, defaultValue);
   }
 
+  /**
+   * Clears the cached configuration so the next call to get(key)
+   * will read from the raw configuration source.
+   */
   defrost() {
     this.frozen = null;
   }

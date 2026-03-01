@@ -2,11 +2,10 @@ import { asValue, AwilixContainer, Resolver } from "awilix";
 import { KeyDictionary } from '#domain/utils';
 
 /**
- * Resolves async services using proxy injection mode
- * 
- * @param container 
- * @param asyncSingletons 
- * @returns {Promise<KeyDictionary<Resolver<any>>>}
+ * Resolves and registers asynchronous services as values in the container.
+ * @param container The Awilix container.
+ * @param asyncSingletons A dictionary of async singleton factory functions.
+ * @returns A promise resolving to a dictionary of Awilix resolvers.
  */
 export async function registerAsyncSingletons(
   container: AwilixContainer<any>,

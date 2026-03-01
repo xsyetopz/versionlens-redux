@@ -9,6 +9,11 @@ import {
 import { Nullable } from '#domain/utils';
 import semver from 'semver';
 
+/**
+ * Creates a status suggestion based on an HTTP status code.
+ * @param status The HTTP status code or error code.
+ * @returns A package status suggestion, or null if the status is not handled.
+ */
 export function createFromHttpStatus(status: number | string): Nullable<PackageSuggestion> {
 
   if (status == 400)
@@ -25,6 +30,10 @@ export function createFromHttpStatus(status: number | string): Nullable<PackageS
   return null;
 }
 
+/**
+ * Creates a 'not found' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createNotFoundStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NotFound,
@@ -34,6 +43,10 @@ export function createNotFoundStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates an 'internal server error' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createInternalServerErrorStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.InternalServerError,
@@ -43,6 +56,10 @@ export function createInternalServerErrorStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'connection refused' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createConnectionRefusedStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.ConnectionRefused,
@@ -52,6 +69,10 @@ export function createConnectionRefusedStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'connection reset' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createConnectionResetStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.ConnectionReset,
@@ -61,6 +82,10 @@ export function createConnectionResetStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'forbidden' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createForbiddenStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.Forbidden,
@@ -70,6 +95,10 @@ export function createForbiddenStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'not authorized' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createNotAuthorizedStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NotAuthorized,
@@ -79,6 +108,10 @@ export function createNotAuthorizedStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'bad request' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createBadRequestStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.BadRequest,
@@ -88,6 +121,11 @@ export function createBadRequestStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'directory not found' status suggestion.
+ * @param path The path that was not found.
+ * @returns A package status suggestion.
+ */
 export function createDirectoryNotFoundStatus(path: string): PackageSuggestion {
   return {
     name: SuggestionStatusText.NotFound,
@@ -97,6 +135,11 @@ export function createDirectoryNotFoundStatus(path: string): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a status suggestion for a local directory.
+ * @param path The path to the directory.
+ * @returns A package status suggestion.
+ */
 export function createDirectoryStatus(path: string): PackageSuggestion {
   return {
     name: 'file://',
@@ -106,6 +149,11 @@ export function createDirectoryStatus(path: string): PackageSuggestion {
   };
 }
 
+/**
+ * Creates an 'invalid version' status suggestion.
+ * @param requestedVersion The version that was found to be invalid.
+ * @returns A package status suggestion.
+ */
 export function createInvalidStatus(requestedVersion: string): PackageSuggestion {
   return {
     name: SuggestionStatusText.InvalidVersion,
@@ -115,10 +163,18 @@ export function createInvalidStatus(requestedVersion: string): PackageSuggestion
   };
 }
 
+/**
+ * Creates an 'invalid range' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createInvalidRangeStatus(): PackageSuggestion {
   return createInvalidStatus('range')
 }
 
+/**
+ * Creates a 'not supported' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createNotSupportedStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NotSupported,
@@ -128,6 +184,10 @@ export function createNotSupportedStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'no match' status suggestion.
+ * @returns A package status suggestion.
+ */
 export function createNoMatchStatus(): PackageSuggestion {
   return {
     name: SuggestionStatusText.NoMatch,
@@ -137,6 +197,11 @@ export function createNoMatchStatus(): PackageSuggestion {
   };
 }
 
+/**
+ * Creates a 'matches latest' status suggestion.
+ * @param latestVersion The latest version string.
+ * @returns A package status suggestion.
+ */
 export function createMatchesLatestStatus(latestVersion: string): PackageSuggestion {
   const isPrerelease = semver.prerelease(latestVersion);
 
@@ -152,6 +217,11 @@ export function createMatchesLatestStatus(latestVersion: string): PackageSuggest
   };
 }
 
+/**
+ * Creates a 'satisfies latest' status suggestion.
+ * @param latestVersion The latest version string.
+ * @returns A package status suggestion.
+ */
 export function createSatisifiesLatestStatus(latestVersion: string): PackageSuggestion {
   return createSuggestion(
     SuggestionStatusText.SatisfiesLatest,
@@ -161,6 +231,11 @@ export function createSatisifiesLatestStatus(latestVersion: string): PackageSugg
   )
 }
 
+/**
+ * Creates a 'satisfies' status suggestion.
+ * @param satisfiesVersion The version that satisfies the range.
+ * @returns A package status suggestion.
+ */
 export function createSatisifiesStatus(satisfiesVersion: string): PackageSuggestion {
   return createSuggestion(
     SuggestionStatusText.Satisfies,
@@ -170,6 +245,11 @@ export function createSatisifiesStatus(satisfiesVersion: string): PackageSuggest
   )
 }
 
+/**
+ * Creates a 'fixed' status suggestion.
+ * @param version The fixed version string.
+ * @returns A package status suggestion.
+ */
 export function createFixedStatus(version: string): PackageSuggestion {
   return createSuggestion(
     SuggestionStatusText.Fixed,

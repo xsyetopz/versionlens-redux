@@ -19,12 +19,25 @@ import {
   createContainer
 } from 'awilix';
 
+/**
+ * Awilix-based implementation of the IServiceCollection interface.
+ */
 export class AwilixServiceCollection implements IServiceCollection {
 
+  /** Map of registered Awilix resolvers. */
   private resolvers: KeyDictionary<TServiceResolver<any>> = {};
 
+  /** Map of registered asynchronous singletons. */
   private asyncSingletons: KeyDictionary<any> = {};
 
+  /**
+   * Registers a singleton service.
+   * @param name The unique name of the service.
+   * @param resolver The resolver or value for the service.
+   * @param isDisposable Whether the service should be disposed of when the container is disposed.
+   * @param injectionMode The injection mode to use.
+   * @returns The service collection for chaining.
+   */
   addSingleton<T>(
     name: string,
     resolver: TServiceResolver<T>,
@@ -35,6 +48,14 @@ export class AwilixServiceCollection implements IServiceCollection {
     return this;
   }
 
+  /**
+   * Registers a scoped service.
+   * @param name The unique name of the service.
+   * @param resolver The resolver or value for the service.
+   * @param isDisposable Whether the service should be disposed of when the scope is disposed.
+   * @param injectionMode The injection mode to use.
+   * @returns The service collection for chaining.
+   */
   addScoped<T>(
     name: string,
     resolver: TServiceResolver<T>,
@@ -45,11 +66,21 @@ export class AwilixServiceCollection implements IServiceCollection {
     return this;
   }
 
+  /**
+   * Builds the root service provider.
+   * @returns A promise resolving to the service provider.
+   */
   build(): Promise<IServiceProvider> {
     const container: AwilixContainer<any> = createContainer();
     return this.buildAwilixContainer("root", container);
   }
 
+  /**
+   * Builds a child service provider with its own scope.
+   * @param name The name of the child scope.
+   * @param serviceProvider The parent service provider.
+   * @returns A promise resolving to the child service provider.
+   */
   async buildChild(
     name: string,
     serviceProvider: IServiceProvider
@@ -62,6 +93,9 @@ export class AwilixServiceCollection implements IServiceCollection {
     );
   }
 
+  /**
+   * Internal method to add a service registration.
+   */
   private add<T>(
     name: string,
     resolver: TServiceResolver<T>,
@@ -93,6 +127,9 @@ export class AwilixServiceCollection implements IServiceCollection {
     return this;
   }
 
+  /**
+   * Internal method to configure and build the Awilix container.
+   */
   private async buildAwilixContainer(
     name: string,
     container: AwilixContainer<any>

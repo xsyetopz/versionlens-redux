@@ -11,6 +11,11 @@ const INCOMPAT_BUILD = "+incompatible";
 const PREPEND_V = "v";
 const re = /(\S+(?<!retract))\s*((?=v\d+\.\d+\.\d+).[^/ \n]*)/gd
 
+/**
+ * Parses a go.mod file content and extracts package dependencies.
+ * @param text The content of the go.mod file.
+ * @returns An array of Identified package descriptors.
+ */
 export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
   const matchedDependencies: Array<PackageDescriptor> = [];
   let match
@@ -45,6 +50,12 @@ export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
   return matchedDependencies;
 }
 
+/**
+ * Creates a package name descriptor for a Go module.
+ * @param name The package name.
+ * @param start The start position in the text.
+ * @returns A package name descriptor.
+ */
 function createGoNameDescType(name: string, start: number): PackageNameDescriptor {
   const nameRange: PackageTextRange = {
     start,
@@ -54,6 +65,13 @@ function createGoNameDescType(name: string, start: number): PackageNameDescripto
   return createPackageNameDesc(name, nameRange);
 }
 
+/**
+ * Creates a package version descriptor for a Go module version.
+ * @param version The version string.
+ * @param start The start position in the text.
+ * @param end The end position in the text.
+ * @returns A package version descriptor.
+ */
 function createGoVersionDescType(version: string, start: number, end: number): PackageVersionDescriptor {
   const versionRange = {
     start,

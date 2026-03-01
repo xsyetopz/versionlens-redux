@@ -8,6 +8,13 @@ import {
 } from '#domain/packages';
 import { compare, inc, major, maxSatisfying } from 'semver';
 
+/**
+ * Generates suggestions for release versions (stable updates).
+ * @param fixedOrRangedVersion The current version range in the file.
+ * @param parsed The parsed version information.
+ * @param releases The list of available release versions.
+ * @returns An array of release suggestions (latest, major, minor, patch).
+ */
 export function getReleaseSuggestions(
   fixedOrRangedVersion: string,
   parsed: ParsedVersion,

@@ -3,10 +3,20 @@ import type { PackageClientResponse, PackageResource } from "#domain/packages";
 import type { KeyDictionary, AsyncFunction } from '#domain/utils';
 import { throwUndefinedOrNull } from "@esm-test/guards";
 
+/**
+ * Caches package suggestion responses, keyed by provider and package version.
+ */
 export class PackageCache {
 
+  /**
+   * Internal maps of caches for each provider.
+   */
   readonly providerMaps: KeyDictionary<KeyDictionary<IExpiryCache>> = {};
 
+  /**
+   * Initializes a new instance of the PackageCache class.
+   * @param providerNames List of provider names to initialize caches for.
+   */
   constructor(providerNames: Array<string>) {
     throwUndefinedOrNull("providerNames", providerNames);
 
@@ -15,6 +25,14 @@ export class PackageCache {
     );
   }
 
+  /**
+   * Gets a cached suggestion response or creates it by calling the provided method.
+   * @param providerName The name of the provider.
+   * @param packageRes The package resource information.
+   * @param methodToCache The async method to call if the response is not cached.
+   * @param duration The cache duration in milliseconds.
+   * @returns A promise resolving to the package client response.
+   */
   getOrCreate(
     providerName: string,
     packageRes: PackageResource,
@@ -38,6 +56,9 @@ export class PackageCache {
     );
   }
 
+  /**
+   * Clears all cached package suggestion responses.
+   */
   clear(): void {
     // get the provider names
     const providerNames = Object.keys(this.providerMaps);

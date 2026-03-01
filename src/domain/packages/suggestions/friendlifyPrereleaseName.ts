@@ -1,3 +1,6 @@
+/**
+ * Common release identity tags used to normalize prerelease names.
+ */
 const commonReleaseIdentities = [
   ['legacy'],
   ['alpha', 'preview', 'a'],
@@ -10,6 +13,11 @@ const commonReleaseIdentities = [
   ['sp']
 ];
 
+/**
+ * Normalizes a prerelease version name into a friendlier format (e.g., 'alpha', 'beta').
+ * @param prereleaseName The raw prerelease version string.
+ * @returns The normalized tag name, or null if no common identity matches.
+ */
 export function friendlifyPrereleaseName(prereleaseName: string): string | null {
   const filteredNames: string[] = [];
   commonReleaseIdentities.forEach(

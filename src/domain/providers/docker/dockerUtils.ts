@@ -7,6 +7,11 @@ import {
 } from '#domain/providers/docker';
 import { coerce, gt, maxSatisfying } from 'semver';
 
+/**
+ * Creates a version mapper that translates Docker tags to semver versions.
+ * @param dockerTags The list of Docker repository tags.
+ * @returns A Docker version mapper.
+ */
 export function createVersionMapper(dockerTags: DockerRepository[]): DockerVersionMapper {
   const digestMapper = createDigestMapper(dockerTags)
   const versionMap = coerceDockerTagsToSemver(Object.keys(digestMapper.tagMap), digestMapper);
@@ -39,6 +44,11 @@ export function createVersionMapper(dockerTags: DockerRepository[]): DockerVersi
   };
 }
 
+/**
+ * Creates a digest mapper from a list of Docker tags.
+ * @param dockerTags The list of Docker repository tags.
+ * @returns A Docker digest mapper.
+ */
 export function createDigestMapper(dockerTags: DockerRepository[]): DockerDigestMapper {
   const tagMap: Record<string, string> = {};
   const digestMap: Record<string, string[]> = {};
@@ -51,6 +61,11 @@ export function createDigestMapper(dockerTags: DockerRepository[]): DockerDigest
 }
 
 const extractRe = /(?:(?:^(?<major>\d{1,4})(?:(?<minor>[.]\d+|)(?<patch>[.]\d+|))|)(?:$|[\s-])|)(?<tags>.*)/gm
+/**
+ * Extracts version and tag components from a Docker tag string.
+ * @param dockerTag The original Docker tag.
+ * @returns A Docker version object.
+ */
 export function extract(dockerTag: string): DockerVersion {
   let version = '';
   let tag = '';
@@ -68,6 +83,12 @@ export function extract(dockerTag: string): DockerVersion {
   return { version, tag };
 }
 
+/**
+ * Coerces Docker tags to semver strings.
+ * @param dockerTags The list of Docker tags.
+ * @param digestMapper The digest mapper.
+ * @returns A record mapping coerced semver versions to Docker tags.
+ */
 function coerceDockerTagsToSemver(dockerTags: string[], digestMapper: DockerDigestMapper) {
   const versionToTagMap: Record<string, string[]> = {};
 
@@ -131,6 +152,12 @@ function coerceDockerTagsToSemver(dockerTags: string[], digestMapper: DockerDige
   return versionToTagMap;
 }
 
+/**
+ * Creates a reverse lookup map from semver versions to tag names.
+ * @param versionMap The version to tag mapping.
+ * @param digestMapper The digest mapper.
+ * @returns A record mapping tag names to semver versions.
+ */
 function createReverseLookup(versionMap: Record<string, string[]>, digestMapper: DockerDigestMapper) {
   const tagMap: Record<string, string> = {};
 
@@ -158,6 +185,12 @@ function createReverseLookup(versionMap: Record<string, string[]>, digestMapper:
 }
 
 const removeNumbersRegEx = /[0-9]/g
+/**
+ * Finds a similar build tag from a list of options.
+ * @param version The reference version string.
+ * @param matchBuilds The list of build options.
+ * @returns The most similar build tag or null.
+ */
 export function findSimilarBuild(version: string, matchBuilds: string[]): string | null {
   const strippedVersion = version.replaceAll(removeNumbersRegEx, '');
   const similarBuild = matchBuilds.filter(x => x.replaceAll(removeNumbersRegEx, '') === strippedVersion)

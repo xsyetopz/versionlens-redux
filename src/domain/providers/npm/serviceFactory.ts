@@ -16,6 +16,10 @@ import {
 import { nameOf } from '#domain/utils';
 import NpmRegistryFetch from 'npm-registry-fetch';
 
+/**
+ * Registers NPM caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     NpmService.npmCachingOpts,
@@ -28,6 +32,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers NPM HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     NpmService.npmHttpOpts,
@@ -40,6 +48,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the NPM configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addNpmConfig(services: IServiceCollection) {
   services.addSingleton(
     NpmService.npmConfig,
@@ -52,6 +64,10 @@ export function addNpmConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the NPM GitHub client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addNpmGitHubClient(services: IServiceCollection) {
   const serviceName = NpmService.npmGithubClient;
   services.addSingleton(
@@ -75,6 +91,10 @@ export function addNpmGitHubClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the NPM registry client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addNpmRegistryClient(services: IServiceCollection) {
   const serviceName = NpmService.npmRegistryClient;
   services.addSingleton(
@@ -89,6 +109,10 @@ export function addNpmRegistryClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the NPM suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addNpmSuggestionResolver(services: IServiceCollection) {
   const serviceName = NpmService.npmSuggestionResolver;
   services.addSingleton(
@@ -103,6 +127,10 @@ export function addNpmSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the NPM suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

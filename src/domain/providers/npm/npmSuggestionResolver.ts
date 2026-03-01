@@ -22,8 +22,18 @@ import {
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { prerelease } from 'semver';
 
+/**
+ * Resolves package suggestions for NPM dependencies from various sources like registries, GitHub, or local files.
+ */
 export class NpmSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the NpmSuggestionResolver class.
+   * @param config The configuration for the NPM provider.
+   * @param npmRegistryClient The client for fetching from NPM registries.
+   * @param npmGithubClient The client for fetching from GitHub.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: NpmConfig,
     readonly npmRegistryClient: NpmRegistryClient,
@@ -36,10 +46,20 @@ export class NpmSuggestionResolver {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Resolves suggestions for a 'file:' protocol dependency.
+   * @param pkg The package resource.
+   * @returns A promise resolving to the package client response.
+   */
   async fromFileProtocol(pkg: PackageResource): Promise<PackageClientResponse> {
     return await ClientResponseFactory.createDirectoryFromFileProtocol(pkg);
   }
 
+  /**
+   * Resolves suggestions for a Git dependency.
+   * @param npaSpec The NPM package specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fromGit(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     if (!npaSpec.hosted) {
       // could not resolve
@@ -58,6 +78,12 @@ export class NpmSuggestionResolver {
     return await this.npmGithubClient.fetchGithub(npaSpec);
   }
 
+  /**
+   * Resolves suggestions from an NPM registry.
+   * @param request The package client request.
+   * @param npaSpec The NPM package specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fromRegistry(
     request: PackageClientRequest<NpmClientData>,
     npaSpec: NpaSpec

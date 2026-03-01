@@ -26,8 +26,18 @@ import {
 } from '#domain/providers/docker';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Resolves package suggestions for Docker images from various sources like Docker Hub, Microsoft Docker Registry, or local paths.
+ */
 export class DockerSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the DockerSuggestionResolver class.
+   * @param config The configuration for the Docker provider.
+   * @param dockerHubClient The client for Docker Hub.
+   * @param microsoftDockerClient The client for Microsoft Docker Registry.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: DockerConfig,
     readonly dockerHubClient: DockerHubClient,
@@ -40,6 +50,11 @@ export class DockerSuggestionResolver {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Resolves suggestions for a local path dependency (e.g., build context).
+   * @param dependency The package dependency.
+   * @returns A promise resolving to the package client response.
+   */
   async fromPath(dependency: PackageDependency) {
     const requestedPackage = dependency.package;
 
@@ -56,6 +71,11 @@ export class DockerSuggestionResolver {
     );
   }
 
+  /**
+   * Resolves suggestions from a Docker registry (Docker Hub or Microsoft).
+   * @param dependency The package dependency.
+   * @returns A promise resolving to the package client response.
+   */
   async fromRegistry(dependency: PackageDependency): Promise<PackageClientResponse> {
     const requestedPackage = dependency.package;
     const registryDesc = dependency.descriptors.getType<PackageRegistryDescriptor>('registry');
@@ -73,6 +93,12 @@ export class DockerSuggestionResolver {
     return this.parseResponse(requestedPackage, jsonResponse);
   }
 
+  /**
+   * Parses the response from the Docker registry and creates suggestions.
+   * @param pkg The package resource.
+   * @param jsonResponse The Docker client response.
+   * @returns A promise resolving to the package client response.
+   */
   private async parseResponse(pkg: PackageResource, jsonResponse: DockerClientResponse): Promise<PackageClientResponse> {
     // map docker tags to semver
     const { versionMap, tagMap, releases, latest } = createVersionMapper(jsonResponse.data);

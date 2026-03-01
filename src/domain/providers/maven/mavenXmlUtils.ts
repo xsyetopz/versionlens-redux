@@ -1,5 +1,10 @@
 import { XmlDoc } from '#domain/parsers';
 
+/**
+ * Extracts version strings from a Maven package XML (maven-metadata.xml).
+ * @param packageXml The content of the XML file.
+ * @returns An array of version strings.
+ */
 export function getVersionsFromPackageXml(packageXml: string): Array<string> {
   const document = new XmlDoc();
   document.parse(packageXml);
@@ -10,6 +15,11 @@ export function getVersionsFromPackageXml(packageXml: string): Array<string> {
   return versionNodes.map(x => x.text);
 }
 
+/**
+ * Extracts repository URLs from Maven settings XML output.
+ * @param stdout The stdout from the 'mvn help:effective-settings' command.
+ * @returns An array of repository URLs.
+ */
 export function extractReposUrlsFromXml(stdout: string): Array<string> {
   const regex = /<\?xml(.+\r?\n?)+\/settings>/gm;
   const xmlString = regex.exec(stdout.toString())[0];

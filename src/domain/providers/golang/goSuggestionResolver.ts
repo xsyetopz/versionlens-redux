@@ -14,8 +14,17 @@ import type { GoConfig, GoHttpClient } from '#domain/providers/golang';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { coerce, compareLoose } from 'semver';
 
+/**
+ * Resolves package suggestions for Go dependencies from various sources like Go proxies, local paths, or Git.
+ */
 export class GoSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the GoSuggestionResolver class.
+   * @param config The configuration for the Go provider.
+   * @param goHttpClient The client used to interact with the Go proxy.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: GoConfig,
     readonly goHttpClient: GoHttpClient,
@@ -26,6 +35,12 @@ export class GoSuggestionResolver {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Resolves suggestions for a local path dependency.
+   * @param dep The package dependency.
+   * @param pathDesc The path descriptor.
+   * @returns The package client response for a directory dependency.
+   */
   fromPath(dep: PackageDependency, pathDesc: PackagePathDescriptor) {
     return ClientResponseFactory.createDirectory(
       dep.package.name,
@@ -34,10 +49,20 @@ export class GoSuggestionResolver {
     );
   }
 
+  /**
+   * Resolves suggestions for a Git dependency.
+   * @returns The package client response for a Git dependency.
+   */
   fromGit() {
     return ClientResponseFactory.createGit();
   }
 
+  /**
+   * Resolves suggestions from the Go API (proxy).
+   * @param request The package client request.
+   * @param semverSpec The parsed semver specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fromGoApi<TClientData>(
     request: PackageClientRequest<TClientData>,
     semverSpec: SemverSpec

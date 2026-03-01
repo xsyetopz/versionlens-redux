@@ -10,8 +10,17 @@ import type { FetchPackages } from '#domain/useCases';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { dirname } from 'node:path';
 
+/**
+ * Use case for retrieving version suggestions for a package file.
+ */
 export class GetSuggestions {
 
+  /**
+   * Initializes a new instance of the GetSuggestions class.
+   * @param fetchPackages The use case for batch fetching package data.
+   * @param dependencyCaches The caches to search for parsed dependencies.
+   * @param logger The logger to use.
+   */
   constructor(
     readonly fetchPackages: FetchPackages,
     readonly dependencyCaches: DependencyCache[],
@@ -22,6 +31,14 @@ export class GetSuggestions {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Executes the get suggestions use case.
+   * @param provider The suggestion provider for the file.
+   * @param projectPath The path to the project.
+   * @param packageFilePath The path to the package file.
+   * @param includePrereleases Whether to include prerelease versions in suggestions.
+   * @returns A promise resolving to an array of package responses.
+   */
   async execute(
     provider: ISuggestionProvider,
     projectPath: string,

@@ -9,6 +9,12 @@ import {
 import type { KeyDictionary } from '#domain/utils';
 import * as JsonC from 'jsonc-parser';
 
+/**
+ * Parses package descriptors from a JSON string.
+ * @param json The JSON content to parse.
+ * @param options Parser options.
+ * @returns An array of Identified package descriptors.
+ */
 export function parsePackagesJson(
   json: string,
   options: JsonParserOptions
@@ -25,6 +31,12 @@ export function parsePackagesJson(
   return parsePackageNodes(rootNode, options);
 }
 
+/**
+ * Parses package nodes from a root JSON node.
+ * @param rootNode The root JSON node.
+ * @param options Parser options.
+ * @returns An array of Identified package descriptors.
+ */
 function parsePackageNodes(
   rootNode: JsonC.Node,
   options: JsonParserOptions
@@ -57,6 +69,13 @@ function parsePackageNodes(
   return matchedDependencies;
 }
 
+/**
+ * Descends into child nodes to extract package descriptors.
+ * @param path The current path in the JSON tree.
+ * @param nodes The nodes to process.
+ * @param complexTypeHandlers Map of complex type handlers.
+ * @returns An array of Identified package descriptors.
+ */
 function descendChildNodes(
   path: string,
   nodes: Array<JsonC.Node>,
@@ -130,6 +149,13 @@ function descendChildNodes(
   return matchedDependencies;
 }
 
+/**
+ * Finds nodes at a specific location in the JSON tree based on an expression.
+ * Supports wildcard '*' at the end of the expression.
+ * @param jsonTree The root JSON node.
+ * @param expression The path expression.
+ * @returns A FoundNode object or undefined.
+ */
 function findNodesAtLocation(jsonTree: JsonC.Node, expression: string): FoundNode | undefined {
   const pathSegments: Array<JsonC.Segment> = expression.split(".");
 

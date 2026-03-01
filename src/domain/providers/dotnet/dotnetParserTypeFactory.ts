@@ -6,6 +6,11 @@ import {
   createPackageVersionDesc
 } from '#domain/parsers';
 
+/**
+ * Creates a package name descriptor from an XML attribute (Include or Update).
+ * @param node The XML node.
+ * @returns A package name descriptor or undefined.
+ */
 export function createNameDescFromXmlAttr(node: XmlNode): PackageNameDescriptor | undefined {
   const includeAttr = node.attributes.include || node.attributes.update;
   if (!includeAttr) return undefined;
@@ -18,6 +23,11 @@ export function createNameDescFromXmlAttr(node: XmlNode): PackageNameDescriptor 
   return createPackageNameDesc(includeAttr.value, nameRange);
 }
 
+/**
+ * Creates a package version descriptor from an XML attribute (Version or VersionOverride).
+ * @param keyNode The XML node.
+ * @returns A package version descriptor or undefined.
+ */
 export function createVersionDescFromXmlAttr(keyNode: XmlNode): PackageVersionDescriptor | undefined {
   const versionAttr = keyNode.attributes.version || keyNode.attributes.versionoverride;
   if (!versionAttr) return undefined;
@@ -30,6 +40,11 @@ export function createVersionDescFromXmlAttr(keyNode: XmlNode): PackageVersionDe
   return createPackageVersionDesc(versionAttr.value, versionRange);
 }
 
+/**
+ * Creates a package name descriptor for an Sdk attribute.
+ * @param node The XML node.
+ * @returns A package name descriptor or undefined.
+ */
 export function createSdkNameDescFromXmlAttr(node: XmlNode): PackageNameDescriptor | undefined {
   const nameAttr = node.attributes.name;
   if (!nameAttr) return undefined;
@@ -42,6 +57,11 @@ export function createSdkNameDescFromXmlAttr(node: XmlNode): PackageNameDescript
   return createPackageNameDesc(nameAttr.value, nameRange);
 }
 
+/**
+ * Creates a blank package version descriptor for an XML node that lacks a version attribute.
+ * @param node The XML node.
+ * @returns A package version descriptor with a wildcard version and appropriate prepend/append text.
+ */
 export function createBlankVersionDescFromXmlAttr(node: XmlNode): PackageVersionDescriptor {
   const end = node.isSelfClosing ? node.tagCloseStart! : node.tagOpenEnd - 1;
   const versionRange = {

@@ -9,6 +9,12 @@ import {
 } from '#domain/parsers';
 import { type AST, parseTOML } from "toml-eslint-parser";
 
+/**
+ * Parses package descriptors from a TOML string.
+ * @param toml The TOML content to parse.
+ * @param options Parser options.
+ * @returns An array of Identified package descriptors.
+ */
 export function parsePackagesToml(
   toml: string,
   options: TomlParserOptions
@@ -25,6 +31,12 @@ export function parsePackagesToml(
   }
 }
 
+/**
+ * Parses package nodes from a TOML table.
+ * @param bodyNode The top-level TOML table node.
+ * @param options Parser options.
+ * @returns An array of Identified package descriptors.
+ */
 function parsePackageNodes(
   bodyNode: AST.TOMLTopLevelTable,
   options: TomlParserOptions
@@ -77,6 +89,12 @@ function parsePackageNodes(
   return matchedDependencies;
 }
 
+/**
+ * Parses a simple key-value pair in TOML.
+ * @param node The TOML key-value node.
+ * @param isNameFromTable Whether the package name should be derived from the table name.
+ * @returns A package descriptor.
+ */
 function parseSimpleNode(node: AST.TOMLKeyValue, isNameFromTable: boolean): PackageDescriptor {
   // add the name descriptor
   const nameDesc = createNameDescFromTomlNode(node.key, isNameFromTable);
@@ -86,6 +104,13 @@ function parseSimpleNode(node: AST.TOMLKeyValue, isNameFromTable: boolean): Pack
   return new PackageDescriptor([nameDesc, versionDesc]);
 }
 
+/**
+ * Parses a complex inline table node in TOML.
+ * @param nameNode The TOML key-value node containing the name.
+ * @param valueNode The TOML inline table node.
+ * @param options Parser options.
+ * @returns A package descriptor or undefined.
+ */
 function parseComplexNode(
   nameNode: AST.TOMLKeyValue,
   valueNode: AST.TOMLInlineTable,

@@ -15,8 +15,18 @@ import type {
 import { ensureEndSlash } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching package version data from NuGet.
+ */
 export class NuGetClient {
 
+  /**
+   * Initializes a new instance of the NuGetClient class.
+   * @param config The configuration for the DotNet provider.
+   * @param jsonClient The HTTP client for JSON requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: DotNetConfig,
     readonly jsonClient: IJsonHttpClient,
@@ -29,6 +39,12 @@ export class NuGetClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches version information for a given package from NuGet, trying multiple resource URLs if necessary.
+   * @param packageName The name of the package.
+   * @param resourceUrls The list of resource URLs to try.
+   * @returns A promise resolving to the NuGet API response.
+   */
   async get(packageName: string, [resourceUrl, ...fallbacks]: string[]): Promise<NugetApiResponse> {
     const url = ensureEndSlash(resourceUrl)
       + `${packageName.toLowerCase()}/index.json`;
@@ -64,6 +80,11 @@ export class NuGetClient {
     }
   }
 
+  /**
+   * Fetches the PackageBaseAddress service endpoint from a NuGet source.
+   * @param source The DotNet source information.
+   * @returns A promise resolving to the service endpoint URL string.
+   */
   async fetchResource(source: DotNetSource): Promise<string> {
     this.logger.debug(
       "Requesting PackageBaseAddressService from {url}",

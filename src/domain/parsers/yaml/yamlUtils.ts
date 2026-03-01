@@ -2,6 +2,13 @@ import { Document, isCollection, Pair, YAMLMap, YAMLSeq } from 'yaml';
 
 type YamlCollection = YAMLMap<string, any> | YAMLSeq
 
+/**
+ * Finds YAML pairs at a specific path within a document or collection.
+ * Supports wildcard '*' in path segments.
+ * @param root The root document or collection to search.
+ * @param path The array of path segments.
+ * @returns An array of matching YAML pairs.
+ */
 export function findByPath(root: YamlCollection | Document, path: Array<string>): Array<Pair<string, any>>;
 export function findByPath(root: any, [key, ...rest]: string[]): Array<Pair<string, any>> {
   const results: Array<Pair<string, any>> = [];

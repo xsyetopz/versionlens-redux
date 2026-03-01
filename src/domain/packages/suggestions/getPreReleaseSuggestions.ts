@@ -5,6 +5,12 @@ import {
   filterPrereleasesGtMinRange
 } from '#domain/packages';
 
+/**
+ * Generates suggestions for prerelease versions.
+ * @param fixedOrRangedVersion The current version range in the file.
+ * @param prereleases The list of available prerelease versions.
+ * @returns An array of prerelease suggestions.
+ */
 export function getPreReleaseSuggestions(
   fixedOrRangedVersion: string,
   prereleases: string[]

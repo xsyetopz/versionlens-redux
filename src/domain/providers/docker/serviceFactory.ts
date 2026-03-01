@@ -15,6 +15,10 @@ import {
 } from '#domain/providers/docker';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers Docker caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     DockerService.dockerCachingOpts,
@@ -27,6 +31,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers Docker HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     DockerService.dockerHttpOpts,
@@ -39,6 +47,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Docker configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDockerConfig(services: IServiceCollection) {
   services.addSingleton(
     DockerService.dockerConfig,
@@ -51,6 +63,10 @@ export function addDockerConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Docker Hub client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDockerHubClient(services: IServiceCollection) {
   const serviceName = DockerService.dockerHubClient;
   services.addSingleton(
@@ -71,6 +87,10 @@ export function addDockerHubClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Microsoft Docker client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addMicrosoftDockerClient(services: IServiceCollection) {
   const serviceName = DockerService.microsoftDockerClient;
   services.addSingleton(
@@ -91,6 +111,10 @@ export function addMicrosoftDockerClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Docker suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDockerClient(services: IServiceCollection) {
   const serviceName = DockerService.dockerSuggestionResolver;
   services.addSingleton(
@@ -105,6 +129,10 @@ export function addDockerClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Docker suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

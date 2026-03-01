@@ -8,8 +8,18 @@ import type {
 } from '#domain/providers/cargo';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching package version data from Crates.io.
+ */
 export class CratesClient {
 
+  /**
+   * Initializes a new instance of the CratesClient class.
+   * @param config The configuration for the Cargo provider.
+   * @param jsonClient The HTTP client for JSON requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: CargoConfig,
     readonly jsonClient: IJsonHttpClient,
@@ -22,6 +32,11 @@ export class CratesClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches version information for a given package from Crates.io.
+   * @param packageName The name of the package.
+   * @returns A promise resolving to the package versions response.
+   */
   async get(packageName: string): Promise<CratesPackageVersionsResponse> {
     const url = `${this.config.apiUrl}${packageName}/versions`;
     // check cache

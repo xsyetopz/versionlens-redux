@@ -23,10 +23,22 @@ import type { ISuggestionProvider } from '#domain/providers';
 import type { PypiConfig, PypiSuggestionResolver } from '#domain/providers/pypi';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Provides suggestions for PyPi dependencies by parsing TOML files and resolving package versions.
+ */
 export class PypiSuggestionProvider implements ISuggestionProvider {
 
+  /**
+   * The name of the suggestion provider.
+   */
   readonly name: string = 'pypi';
 
+  /**
+   * Initializes a new instance of the PypiSuggestionProvider class.
+   * @param resolver The resolver used to fetch suggestions.
+   * @param config The configuration for the PyPi provider.
+   * @param logger The logger for this provider.
+   */
   constructor(
     readonly resolver: PypiSuggestionResolver,
     readonly config: PypiConfig,
@@ -37,6 +49,12 @@ export class PypiSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Parses dependencies from a PyPi file.
+   * @param packagePath The path to the package file.
+   * @param packageText The content of the package file.
+   * @returns An array of identified package dependencies.
+   */
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency> {
     const options: TomlParserOptions = {
       includePropNames: this.config.dependencyProperties,
@@ -118,6 +136,11 @@ export class PypiSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
+  /**
+   * Fetches suggestions for a given package request.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response containing suggestions.
+   */
   async fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse> {
     for (const type in request.parsedDependency.descriptors.types) {
       switch (type) {

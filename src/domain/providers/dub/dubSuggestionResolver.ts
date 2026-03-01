@@ -14,8 +14,17 @@ import type { DubConfig, DubJsonClient } from '#domain/providers/dub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { valid } from 'semver';
 
+/**
+ * Resolves package suggestions for Dub dependencies from the Dub registry.
+ */
 export class DubSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the DubSuggestionResolver class.
+   * @param config The configuration for the Dub provider.
+   * @param dubJsonClient The client used to interact with the Dub registry.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: DubConfig,
     readonly dubJsonClient: DubJsonClient,
@@ -26,6 +35,12 @@ export class DubSuggestionResolver {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Resolves suggestions from the Dub API.
+   * @param request The package client request.
+   * @param semverSpec The parsed semver specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fromDubApi(
     request: PackageClientRequest<null>,
     semverSpec: SemverSpec
@@ -65,6 +80,13 @@ export class DubSuggestionResolver {
 
 }
 
+/**
+ * Parses release and prerelease versions into package suggestions.
+ * @param versionRange The current version range.
+ * @param releases The list of release versions.
+ * @param prereleases The list of prerelease versions.
+ * @returns An array of package suggestions.
+ */
 function parseSuggestions(
   versionRange: string,
   releases: string[],

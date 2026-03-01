@@ -8,6 +8,12 @@ import {
   validRange
 } from 'semver';
 
+/**
+ * Filters prerelease versions that are greater than the minimum version of a given range.
+ * @param versionRange The version range to compare against.
+ * @param prereleases The list of prerelease versions to filter.
+ * @returns An array of filtered prerelease versions.
+ */
 export function filterPrereleasesGtMinRange(
   versionRange: string,
   prereleases: Array<string>

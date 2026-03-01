@@ -14,6 +14,10 @@ import {
 } from '#domain/providers/composer';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers Composer caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     ComposerService.composerCachingOpts,
@@ -26,6 +30,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers Composer HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     ComposerService.composerHttpOpts,
@@ -38,6 +46,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Composer configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addComposerConfig(services: IServiceCollection) {
   services.addSingleton(
     ComposerService.composerConfig,
@@ -50,6 +62,10 @@ export function addComposerConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Packagist client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addPackagistClient(services: IServiceCollection) {
   const serviceName = ComposerService.packagistClient;
   services.addSingleton(
@@ -70,6 +86,10 @@ export function addPackagistClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Composer suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addComposerSuggestionResolver(services: IServiceCollection) {
   const serviceName = ComposerService.composerSuggestionResolver;
   services.addSingleton(
@@ -83,6 +103,10 @@ export function addComposerSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Composer suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

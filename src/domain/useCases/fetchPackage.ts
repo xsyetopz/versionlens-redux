@@ -15,8 +15,16 @@ import { PackageDescriptorType } from '#domain/parsers';
 import type { ISuggestionProvider } from '#domain/providers';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Use case for fetching suggestions for a single package.
+ */
 export class FetchPackage {
 
+  /**
+   * Initializes a new instance of the FetchPackage class.
+   * @param packageCache The cache for package suggestion responses.
+   * @param logger The logger to use.
+   */
   constructor(
     private readonly packageCache: PackageCache,
     private readonly logger: ILogger
@@ -25,6 +33,12 @@ export class FetchPackage {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Executes the fetch package use case.
+   * @param provider The suggestion provider to use.
+   * @param request The package client request.
+   * @returns A promise resolving to an array of package responses.
+   */
   async execute(
     provider: ISuggestionProvider,
     request: PackageClientRequest<any>
@@ -75,6 +89,12 @@ export class FetchPackage {
     );
   }
 
+  /**
+   * Performs the actual fetch operation using the provider.
+   * @param provider The suggestion provider.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response.
+   */
   async fetch(
     provider: ISuggestionProvider,
     request: PackageClientRequest<any>

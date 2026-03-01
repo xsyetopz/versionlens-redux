@@ -17,6 +17,12 @@ import { definitions, flatten, shorthands } from '@npmcli/config/lib/definitions
 import dotenv from 'dotenv';
 import { resolve } from 'node:path';
 
+/**
+ * Creates flattened NPM client configuration data using @npmcli/config.
+ * @param packagePath The path to the package directory.
+ * @param options The configuration parameters.
+ * @returns A promise resolving to the flattened NPM client data.
+ */
 export async function createNpmRegistryClientData(
   packagePath: string,
   options: TNpmCliConfigParams
@@ -54,6 +60,12 @@ export async function createNpmRegistryClientData(
   return npmCliConfig.flat;
 }
 
+/**
+ * Converts an NPM error object into an HttpClientResponse.
+ * @param error The error object.
+ * @param source The client response source.
+ * @returns An HttpClientResponse representation of the error.
+ */
 export function convertNpmErrorToResponse(
   error,
   source: ClientResponseSource
@@ -65,6 +77,11 @@ export function convertNpmErrorToResponse(
   }
 }
 
+/**
+ * Creates package suggestions based on an NPM error code.
+ * @param npmErrorCode The NPM error code string.
+ * @returns An array of package suggestions.
+ */
 export function createNpmSuggestionFromErrorCode(npmErrorCode: string): PackageSuggestion[] {
   switch (npmErrorCode) {
     case 'ECONNREFUSED':
@@ -95,6 +112,12 @@ export function createNpmSuggestionFromErrorCode(npmErrorCode: string): PackageS
   }
 }
 
+/**
+ * Resolves the full path to a dotfile (like .npmrc) by checking multiple directories.
+ * @param dotFileName The name of the dotfile.
+ * @param cwds The directories to search in.
+ * @returns A promise resolving to the full path of the dotfile, or an empty string.
+ */
 export async function resolveDotFilePath(
   dotFileName: string,
   cwds: Array<string>
@@ -108,11 +131,21 @@ export async function resolveDotFilePath(
   return '';
 }
 
+/**
+ * Parses a .env file and returns its content as a dictionary.
+ * @param envPath The path to the .env file.
+ * @returns A promise resolving to a dictionary of environment variables.
+ */
 export async function getDotEnv(envPath: string): Promise<KeyStringDictionary> {
   // return the parsed env object
   return dotenv.parse(await readFile(envPath));
 }
 
+/**
+ * Custom function to replace versions in NPM package files, handling GitHub and Alias versions.
+ * @param suggestionUpdate The suggestion update information.
+ * @returns The new version string.
+ */
 export function npmReplaceVersion(suggestionUpdate: SuggestionUpdate): string {
   if (suggestionUpdate.packageSource === PackageSourceType.Github) {
     return replaceGitVersion(suggestionUpdate);
@@ -129,6 +162,11 @@ export function npmReplaceVersion(suggestionUpdate: SuggestionUpdate): string {
   );
 }
 
+/**
+ * Replaces a version in a GitHub dependency string.
+ * @param suggestionUpdate The suggestion update information.
+ * @returns The updated dependency string.
+ */
 function replaceGitVersion(suggestionUpdate: SuggestionUpdate): string {
   return suggestionUpdate.parsedVersion.replace(
     suggestionUpdate.fetchedVersion,
@@ -136,6 +174,11 @@ function replaceGitVersion(suggestionUpdate: SuggestionUpdate): string {
   )
 }
 
+/**
+ * Replaces a version in an NPM alias dependency string.
+ * @param suggestionUpdate The suggestion update information.
+ * @returns The updated dependency string.
+ */
 function replaceAliasVersion(suggestionUpdate: SuggestionUpdate): string {
   // preserve the leading symbol from the existing version
   const preservedLeadingVersion = VersionUtils.preserveLeadingRange(

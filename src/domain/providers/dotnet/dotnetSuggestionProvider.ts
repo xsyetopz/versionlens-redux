@@ -24,10 +24,24 @@ import {
 import { RegistryProtocols } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Provides suggestions for DotNet dependencies by parsing XML files and resolving package versions.
+ */
 export class DotNetSuggestionProvider implements ISuggestionProvider {
 
+  /**
+   * The name of the suggestion provider.
+   */
   readonly name: string = 'dotnet';
 
+  /**
+   * Initializes a new instance of the DotNetSuggestionProvider class.
+   * @param resolver The resolver used to fetch suggestions.
+   * @param dotnetCli The client for interacting with the DotNet CLI.
+   * @param nugetClient The client for fetching NuGet package data.
+   * @param config The configuration for the DotNet provider.
+   * @param logger The logger for this provider.
+   */
   constructor(
     readonly resolver: DotnetSuggestionResolver,
     readonly dotnetCli: DotNetCli,
@@ -42,6 +56,12 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Custom function to replace versions in DotNet files.
+   * @param suggestionUpdate The suggestion update information.
+   * @param newVersion The new version string.
+   * @returns The updated line text.
+   */
   suggestionReplaceFn(suggestionUpdate: SuggestionUpdate, newVersion: string): string {
     const insert = suggestionUpdate.parsedVersionPrepend.length > 2;
     return defaultReplaceFn(
@@ -53,6 +73,12 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
     );
   }
 
+  /**
+   * Parses dependencies from a DotNet file.
+   * @param packagePath The path to the package file.
+   * @param packageText The content of the package file.
+   * @returns An array of identified package dependencies.
+   */
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency> {
     const parsedPackages = parseDotNetPackagesXml(
       packageText,
@@ -85,6 +111,12 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
+  /**
+   * Pre-fetches suggestion data by resolving NuGet service URLs.
+   * @param projectPath The path to the project.
+   * @param packagePath The path to the package file.
+   * @returns A promise resolving to the NuGet client data containing service URLs.
+   */
   async preFetchSuggestions(projectPath: string, packagePath: string): Promise<NuGetClientData | undefined> {
     // ensure latest nuget sources from settings
     this.config.nugetOptions.defrost();
@@ -115,6 +147,11 @@ export class DotNetSuggestionProvider implements ISuggestionProvider {
     return { serviceUrls };
   }
 
+  /**
+   * Fetches suggestions for a given package request.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response containing suggestions.
+   */
   async fetchSuggestions(request: PackageClientRequest<NuGetClientData>): Promise<PackageClientResponse> {
     return await this.resolver.fromNuGet(request);
   }

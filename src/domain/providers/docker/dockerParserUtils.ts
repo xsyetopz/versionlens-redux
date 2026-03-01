@@ -17,6 +17,13 @@ import { trimEndSlash } from '#domain/utils';
 import { DockerfileParser } from 'dockerfile-ast';
 import { isScalar } from 'yaml';
 
+/**
+ * Parses Docker Compose files to identify dependencies.
+ * @param packagePath The path to the Docker Compose file.
+ * @param packageText The content of the file.
+ * @param options YAML parser options.
+ * @returns An array of Identified package dependencies.
+ */
 export function parseDockerCompose(
   packagePath: string,
   packageText: string,
@@ -64,6 +71,12 @@ export function parseDockerCompose(
 }
 
 const eofRegEx = /\n/g
+/**
+ * Parses Dockerfiles to identify FROM dependencies.
+ * @param packagePath The path to the Dockerfile.
+ * @param packageText The content of the file.
+ * @returns An array of Identified package dependencies.
+ */
 export function parseDockerfile(packagePath: string, packageText: string): Array<PackageDependency> {
   const eofPositions = [0];
   eofRegEx.lastIndex = 0;
@@ -122,6 +135,11 @@ export function parseDockerfile(packagePath: string, packageText: string): Array
 }
 
 const imageRegEx = /(?<registry>[^/]+[/]|)(?<image>[^:]+|)(?<tag>:.+|)/
+/**
+ * Creates an image descriptor from a YAML node.
+ * @param valueNode The YAML node representing the image.
+ * @returns A package image descriptor or undefined.
+ */
 export function createImageDescFromYamlNode(valueNode: any): PackageImageDescriptor | undefined {
   if (!valueNode.value) return;
 
@@ -164,6 +182,11 @@ export function createImageDescFromYamlNode(valueNode: any): PackageImageDescrip
   };
 }
 
+/**
+ * Creates a build descriptor from a YAML node.
+ * @param valueNode The YAML node representing the build configuration.
+ * @returns A package build descriptor or undefined.
+ */
 export function createBuildDescFromYamlNode(valueNode: any): PackageBuildDescriptor | undefined {
   if (valueNode.value === null) return;
 

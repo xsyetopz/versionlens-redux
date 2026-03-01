@@ -9,6 +9,12 @@ import {
   createVersionDescFromXmlNodes
 } from '#domain/providers/maven';
 
+/**
+ * Parses a Maven project file (XML) and extracts package dependencies.
+ * @param xml The content of the XML file.
+ * @param includePropertyNames The property names to include in the search.
+ * @returns An array of Identified package descriptors.
+ */
 export function parseMavenPackagesXml(
   xml: string,
   includePropertyNames: Array<string>
@@ -25,6 +31,13 @@ export function parseMavenPackagesXml(
   return extractDependenciesFromNodes(document, propertyNodes, includePropertyNames);
 }
 
+/**
+ * Extracts dependencies from XML nodes.
+ * @param doc The XML document.
+ * @param propertyNodes The list of property nodes for variable substitution.
+ * @param includePropNames The property names to include.
+ * @returns An array of Identified package descriptors.
+ */
 export function extractDependenciesFromNodes(
   doc: XmlDoc,
   propertyNodes: XmlNode[],
@@ -55,6 +68,13 @@ export function extractDependenciesFromNodes(
   return matchedDependencies;
 }
 
+/**
+ * Maps child nodes of a dependency to a package descriptor.
+ * @param parentNode The parent XML node.
+ * @param childNodes The child XML nodes.
+ * @param propertyNodes The list of property nodes.
+ * @returns A package descriptor or undefined if mapping failed.
+ */
 export function mapChildrenToDescriptor(
   parentNode: XmlNode,
   childNodes: XmlNode[],

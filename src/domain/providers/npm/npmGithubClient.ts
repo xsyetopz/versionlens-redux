@@ -14,8 +14,17 @@ import { type NpaSpec, NpmConfig } from '#domain/providers/npm';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import semver from 'semver';
 
+/**
+ * Client for fetching package version data for NPM dependencies hosted on GitHub.
+ */
 export class NpmGitHubClient {
 
+  /**
+   * Initializes a new instance of the NpmGitHubClient class.
+   * @param config The configuration for the NPM provider.
+   * @param githubClient The GitHub JSON client.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: NpmConfig,
     readonly githubClient: GitHubJsonClient,
@@ -26,6 +35,11 @@ export class NpmGitHubClient {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Fetches data for a GitHub-hosted NPM package, resolving tags or commits as appropriate.
+   * @param npaSpec The NPM package specification.
+   * @returns A promise resolving to the package client response.
+   */
   fetchGithub(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     const { validRange } = semver;
 
@@ -44,6 +58,11 @@ export class NpmGitHubClient {
     return this.fetchCommits(npaSpec);
   }
 
+  /**
+   * Fetches tags for a GitHub repository and maps them to semver suggestions.
+   * @param npaSpec The NPM package specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fetchTags(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     const { user, project } = npaSpec.hosted;
     const jsonResponse = await this.githubClient.getTags(user, project)
@@ -87,6 +106,11 @@ export class NpmGitHubClient {
     };
   }
 
+  /**
+   * Fetches commits for a GitHub repository and identifies if the current committish is latest.
+   * @param npaSpec The NPM package specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fetchCommits(npaSpec: NpaSpec): Promise<PackageClientResponse> {
     const { user, project } = npaSpec.hosted;
 

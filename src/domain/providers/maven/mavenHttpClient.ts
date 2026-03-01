@@ -8,8 +8,18 @@ import {
 } from '#domain/providers/maven';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching package version data from Maven repositories.
+ */
 export class MavenHttpClient {
 
+  /**
+   * Initializes a new instance of the MavenHttpClient class.
+   * @param config The configuration for the Maven provider.
+   * @param httpClient The HTTP client for making requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: MavenConfig,
     readonly httpClient: IHttpClient,
@@ -22,6 +32,12 @@ export class MavenHttpClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches version information for a given package from Maven repositories, trying multiple URLs if necessary.
+   * @param packageName The name of the package.
+   * @param repoUrls The list of repository URLs to try.
+   * @returns A promise resolving to the Maven API response.
+   */
   async get(packageName: string, [repoUrl, ...fallbacks]: string[]): Promise<MavenApiResponse> {
     const [group, artifact] = packageName.split(':');
     const search = group.replaceAll('.', '/') + '/' + artifact

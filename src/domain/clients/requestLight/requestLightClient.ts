@@ -16,8 +16,17 @@ export const httpClientDefaultHeaders = {
   'user-agent': 'vscode-versionlens (gitlab.com/versionlens/vscode-versionlens)'
 };
 
+/**
+ * Client for making HTTP requests using the request-light library, with authorization support.
+ */
 export class RequestLightClient implements IHttpClient {
 
+  /**
+   * Initializes a new instance of the RequestLightClient class.
+   * @param requestLight The low-level XHR request client.
+   * @param authorizer The authorizer for handling credentials.
+   * @param options HTTP client options.
+   */
   constructor(
     readonly requestLight: IXhrRequest,
     readonly authorizer: IAuthorizer,
@@ -28,6 +37,13 @@ export class RequestLightClient implements IHttpClient {
     throwUndefinedOrNull('options', options);
   }
 
+  /**
+   * Performs a GET request using request-light.
+   * @param baseUrl The base URL for the request.
+   * @param query Optional query parameters.
+   * @param headers Optional HTTP headers.
+   * @returns A promise resolving to the HTTP client response.
+   */
   async get(
     baseUrl: string,
     query: QueryDictionary = {},

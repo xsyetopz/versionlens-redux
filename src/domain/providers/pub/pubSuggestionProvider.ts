@@ -39,10 +39,22 @@ const complexTypeHandlers = {
   [PackageDescriptorType.git]: createGitDescFromYamlNode
 }
 
+/**
+ * Provides suggestions for Pub dependencies by parsing YAML files and resolving versions from the Pub registry.
+ */
 export class PubSuggestionProvider implements ISuggestionProvider {
 
+  /**
+   * The name of the suggestion provider.
+   */
   readonly name: string = 'pub';
 
+  /**
+   * Initializes a new instance of the PubSuggestionProvider class.
+   * @param resolver The resolver used to fetch suggestions.
+   * @param config The configuration for the Pub provider.
+   * @param logger The logger for this provider.
+   */
   constructor(
     readonly resolver: PubSuggestionResolver,
     readonly config: PubConfig,
@@ -53,6 +65,12 @@ export class PubSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Custom function to replace versions in Pub files.
+   * @param suggestionUpdate The suggestion update information.
+   * @param newVersion The new version string.
+   * @returns The updated line text.
+   */
   suggestionReplaceFn(suggestionUpdate: SuggestionUpdate, newVersion: string): string {
     return defaultReplaceFn(
       suggestionUpdate,
@@ -61,6 +79,12 @@ export class PubSuggestionProvider implements ISuggestionProvider {
     );
   }
 
+  /**
+   * Parses dependencies from a Pub file.
+   * @param packagePath The path to the package file.
+   * @param packageText The content of the package file.
+   * @returns An array of identified package dependencies.
+   */
   parseDependencies(
     packagePath: string,
     packageText: string
@@ -143,6 +167,11 @@ export class PubSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
+  /**
+   * Fetches suggestions for a given package request.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response containing suggestions.
+   */
   async fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse> {
     for (const type in request.parsedDependency.descriptors.types) {
       switch (type) {

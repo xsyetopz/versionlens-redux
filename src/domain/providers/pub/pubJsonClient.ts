@@ -8,8 +8,18 @@ import type {
 } from '#domain/providers/pub';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching package version data from the Pub registry.
+ */
 export class PubJsonClient {
 
+  /**
+   * Initializes a new instance of the PubJsonClient class.
+   * @param config The configuration for the Pub provider.
+   * @param jsonClient The HTTP client for JSON requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: PubConfig,
     readonly jsonClient: IJsonHttpClient,
@@ -22,6 +32,11 @@ export class PubJsonClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches version information for a given package URL from the Pub registry.
+   * @param url The API URL for the package.
+   * @returns A promise resolving to the Pub JSON client response.
+   */
   async get(url: string): Promise<PubJsonClientResponse> {
     // check cache
     const cached = this.requestCache.get(url, this.config.caching.duration);

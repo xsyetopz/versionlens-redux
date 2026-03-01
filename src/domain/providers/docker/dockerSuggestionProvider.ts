@@ -28,10 +28,22 @@ const parserOptions: YamlParserOptions = {
   }
 };
 
+/**
+ * Provides suggestions for Docker images by parsing Dockerfiles and Docker Compose files.
+ */
 export class DockerSuggestionProvider implements ISuggestionProvider {
 
+  /**
+   * The name of the suggestion provider.
+   */
   readonly name: string = 'docker';
 
+  /**
+   * Initializes a new instance of the DockerSuggestionProvider class.
+   * @param resolver The resolver used to fetch suggestions.
+   * @param config The configuration for the Docker provider.
+   * @param logger The logger for this provider.
+   */
   constructor(
     readonly resolver: DockerSuggestionResolver,
     readonly config: DockerConfig,
@@ -42,6 +54,12 @@ export class DockerSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Custom function to replace versions in Docker files.
+   * @param suggestionUpdate The suggestion update information.
+   * @param newVersion The new version string.
+   * @returns The updated line text.
+   */
   suggestionReplaceFn(suggestionUpdate: SuggestionUpdate, newVersion: string): string {
     const insert = suggestionUpdate.parsedVersionPrepend.length > 0;
     return defaultReplaceFn(
@@ -53,12 +71,23 @@ export class DockerSuggestionProvider implements ISuggestionProvider {
     );
   }
 
+  /**
+   * Parses dependencies from a Docker file.
+   * @param packagePath The path to the package file.
+   * @param packageText The content of the package file.
+   * @returns An array of identified package dependencies.
+   */
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency> {
     return (packagePath.endsWith('yaml') || packagePath.endsWith('yml'))
       ? parseDockerCompose(packagePath, packageText, parserOptions)
       : parseDockerfile(packagePath, packageText);
   }
 
+  /**
+   * Fetches suggestions for a given package request.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response containing suggestions.
+   */
   async fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse> {
     const dependency = request.parsedDependency
     const requestedPackage = dependency.package;

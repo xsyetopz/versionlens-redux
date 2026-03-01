@@ -31,10 +31,22 @@ const complexTypeHandlers: KeyDictionary<JsonPackageTypeHandler> = {
   "repository": createRepoDescFromJsonNode
 };
 
+/**
+ * Provides suggestions for Dub dependencies by parsing JSON files and resolving package versions.
+ */
 export class DubSuggestionProvider implements ISuggestionProvider {
 
+  /**
+   * The name of the suggestion provider.
+   */
   readonly name: string = 'dub';
 
+  /**
+   * Initializes a new instance of the DubSuggestionProvider class.
+   * @param resolver The resolver used to fetch suggestions.
+   * @param config The configuration for the Dub provider.
+   * @param logger The logger for this provider.
+   */
   constructor(
     readonly resolver: DubSuggestionResolver,
     readonly config: DubConfig,
@@ -45,6 +57,12 @@ export class DubSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Parses dependencies from a Dub file.
+   * @param packagePath The path to the package file.
+   * @param packageText The content of the package file.
+   * @returns An array of identified package dependencies.
+   */
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency> {
     const options: JsonParserOptions = {
       includePropNames: this.config.dependencyProperties,
@@ -86,6 +104,11 @@ export class DubSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
+  /**
+   * Fetches suggestions for a given package request.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response containing suggestions.
+   */
   async fetchSuggestions(request: PackageClientRequest<null>): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const semverSpec = VersionUtils.parseSemver(requestedPackage.version);

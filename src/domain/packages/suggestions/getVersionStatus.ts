@@ -1,5 +1,10 @@
 import { PackageStatusFactory, ParsedVersion } from '#domain/packages';
 
+/**
+ * Determines the status suggestion for a parsed version.
+ * @param parsed The parsed version information.
+ * @returns A package status suggestion (e.g., 'latest', 'satisfies', 'fixed').
+ */
 export function getVersionStatus(parsed: ParsedVersion) {
   if (parsed.hasInvalidRange) {
     return PackageStatusFactory.createInvalidRangeStatus();

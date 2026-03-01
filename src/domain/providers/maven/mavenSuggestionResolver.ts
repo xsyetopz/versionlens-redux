@@ -16,8 +16,17 @@ import type {
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { valid } from 'semver';
 
+/**
+ * Resolves package suggestions for Maven dependencies from various Maven registries.
+ */
 export class MavenSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the MavenSuggestionResolver class.
+   * @param config The configuration for the Maven provider.
+   * @param mavenHttpClient The client used to interact with Maven repositories.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: MavenConfig,
     readonly mavenHttpClient: MavenHttpClient,
@@ -28,6 +37,13 @@ export class MavenSuggestionResolver {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Resolves suggestions from the Maven API (repositories).
+   * @param repos The list of repository URLs to search.
+   * @param request The package client request.
+   * @param semverSpec The parsed semver specification.
+   * @returns A promise resolving to the package client response.
+   */
   async fromMavenApi(
     repos: string[],
     request: PackageClientRequest<MavenClientData>,

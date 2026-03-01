@@ -5,6 +5,11 @@ import {
 } from '#domain/packages';
 import { inc, prerelease, valid } from 'semver';
 
+/**
+ * Generates version increment suggestions for the project's own version.
+ * @param projectVersion The current version of the project.
+ * @returns An array of increment suggestions (major, minor, patch, etc.).
+ */
 export function getProjectVersionSuggestions(projectVersion: string): PackageSuggestion[] {
   if (!valid(projectVersion)) projectVersion = '0.0.0';
 

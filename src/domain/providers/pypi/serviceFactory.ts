@@ -14,6 +14,10 @@ import {
 } from '#domain/providers/pypi';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers PyPi caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     PypiService.pypiCachingOpts,
@@ -26,6 +30,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers PyPi HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     PypiService.pypiHttpOpts,
@@ -38,6 +46,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the PyPi configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addPypiConfig(services: IServiceCollection) {
   services.addSingleton(
     PypiService.pypiConfig,
@@ -50,6 +62,10 @@ export function addPypiConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the PyPi HTTP client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addPypiHttpClient(services: IServiceCollection) {
   const serviceName = PypiService.pypiHttpClient;
   services.addSingleton(
@@ -70,6 +86,10 @@ export function addPypiHttpClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the PyPi suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addPypiSuggestionResolver(services: IServiceCollection) {
   const serviceName = PypiService.pypiSuggestionResolver;
   services.addSingleton(
@@ -83,6 +103,10 @@ export function addPypiSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the PyPi suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

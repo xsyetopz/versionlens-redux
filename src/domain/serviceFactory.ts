@@ -15,6 +15,12 @@ import {
 } from '#domain/useCases';
 import { EventScheduler } from '#domain/utils';
 
+/**
+ * Registers the application configuration as a singleton.
+ * @param services The service collection to add to.
+ * @param configSection The name of the configuration section.
+ * @param configSectionResolver The function to resolve configuration values.
+ */
 export function addAppConfig(
   services: IServiceCollection,
   configSection: string,
@@ -26,6 +32,10 @@ export function addAppConfig(
   )
 }
 
+/**
+ * Registers global HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     DomainServiceName.httpOptions,
@@ -33,6 +43,10 @@ export function addHttpOptions(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers global caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     DomainServiceName.cachingOptions,
@@ -40,10 +54,18 @@ export function addCachingOptions(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the file system storage provider as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addFileSystemStorage(services: IServiceCollection) {
   services.addSingleton(DomainServiceName.storage, new FileSystemStorage());
 }
 
+/**
+ * Registers initialized suggestion providers as a singleton.
+ * @param services The service collection to add to.
+ */
 export async function addSuggestionProviders(services: IServiceCollection) {
   services.addSingleton(
     DomainServiceName.suggestionProviders,
@@ -57,6 +79,10 @@ export async function addSuggestionProviders(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the file watcher dependency cache as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addFileWatcherDependencyCache(services: IServiceCollection) {
   services.addSingleton(
     DomainServiceName.fileWatcherDependencyCache,
@@ -64,6 +90,10 @@ export function addFileWatcherDependencyCache(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the suggestion package cache as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionPackageCache(services: IServiceCollection) {
   services.addSingleton(
     DomainServiceName.packageCache,
@@ -71,17 +101,29 @@ export function addSuggestionPackageCache(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the shell command result cache as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addShellCache(services: IServiceCollection) {
   const serviceName = DomainServiceName.shellCache;
   services.addSingleton(serviceName, new MemoryExpiryCache(serviceName));
 }
 
+/**
+ * Registers the URL request cache as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addUrlRequestCache(services: IServiceCollection) {
   const serviceName = DomainServiceName.urlRequestCache;
   services.addSingleton(serviceName, new MemoryExpiryCache(serviceName)
   );
 }
 
+/**
+ * Registers the GetSuggestionProvider use case as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addGetSuggestionProviderUseCase(services: IServiceCollection) {
   const serviceName = DomainServiceName.GetSuggestionProvider;
   services.addSingleton(
@@ -90,6 +132,10 @@ export function addGetSuggestionProviderUseCase(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the GetDependencyChanges use case as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addGetDependencyChangesUseCase(services: IServiceCollection) {
   const serviceName = DomainServiceName.getDependencyChanges;
   services.addSingleton(
@@ -103,6 +149,10 @@ export function addGetDependencyChangesUseCase(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the FetchPackages use case as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addFetchProjectSuggestionsUseCase(services: IServiceCollection) {
   const serviceName = DomainServiceName.fetchPackages;
   services.addSingleton(
@@ -115,6 +165,10 @@ export function addFetchProjectSuggestionsUseCase(services: IServiceCollection) 
   );
 }
 
+/**
+ * Registers the FetchPackage use case as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addFetchPackageSuggestionsUseCase(services: IServiceCollection) {
   const serviceName = DomainServiceName.fetchPackage;
   services.addSingleton(
@@ -127,6 +181,10 @@ export function addFetchPackageSuggestionsUseCase(services: IServiceCollection) 
   );
 }
 
+/**
+ * Registers the GetSuggestionsStats use case as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addGetSuggestionsStatsUseCase(services: IServiceCollection) {
   const serviceName = DomainServiceName.getSuggestionsStats;
   services.addSingleton(
@@ -141,6 +199,10 @@ export function addGetSuggestionsStatsUseCase(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the event scheduler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addEventScheduler(services: IServiceCollection) {
   const serviceName = DomainServiceName.eventScheduler;
   services.addSingleton(

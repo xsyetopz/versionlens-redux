@@ -14,6 +14,10 @@ import {
 } from '#domain/providers/dub';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers Dub caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     DubService.dubCachingOpts,
@@ -26,6 +30,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers Dub HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     DubService.dubHttpOpts,
@@ -38,6 +46,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Dub configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDubConfig(services: IServiceCollection) {
   services.addSingleton(
     DubService.dubConfig,
@@ -50,6 +62,10 @@ export function addDubConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Dub JSON client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDubJsonClient(services: IServiceCollection) {
   const serviceName = DubService.dubJsonClient;
   services.addSingleton(
@@ -70,6 +86,10 @@ export function addDubJsonClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Dub suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDubSuggestionResolver(services: IServiceCollection) {
   const serviceName = DubService.dubSuggestionResolver;
   services.addSingleton(
@@ -83,6 +103,10 @@ export function addDubSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Dub suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

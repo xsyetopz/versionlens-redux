@@ -8,8 +8,18 @@ import type {
 } from '#domain/providers/docker';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching Docker image tag data from the Microsoft Container Registry (MCR).
+ */
 export class MicrosoftDockerClient {
 
+  /**
+   * Initializes a new instance of the MicrosoftDockerClient class.
+   * @param config The configuration for the Docker provider.
+   * @param jsonClient The HTTP client for JSON requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: DockerConfig,
     readonly jsonClient: IJsonHttpClient,
@@ -22,6 +32,12 @@ export class MicrosoftDockerClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches tags and their digests for a given repository from the Microsoft Container Registry.
+   * @param repository The name of the repository.
+   * @param namespace The namespace for the repository.
+   * @returns A promise resolving to the Docker client response.
+   */
   async get(repository: string, namespace: string): Promise<DockerClientResponse> {
     const url = `https://mcr.microsoft.com/api/v1/catalog/${namespace}/${repository}/tags?reg=mar`;
     // check cache

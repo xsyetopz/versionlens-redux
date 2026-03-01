@@ -6,6 +6,13 @@ import {
   createPackageVersionDesc
 } from '#domain/parsers';
 
+/**
+ * Creates a package name descriptor from Maven XML nodes (groupId and artifactId).
+ * @param parentNode The parent node.
+ * @param nodes The child nodes.
+ * @param propertyNodes The list of property nodes for resolution.
+ * @returns A package name descriptor or undefined if nodes are missing.
+ */
 export function createNameDescFromXmlNodes(
   parentNode: XmlNode,
   nodes: XmlNode[],
@@ -29,6 +36,12 @@ export function createNameDescFromXmlNodes(
   return createPackageNameDesc(`${groupIdNode.text}:${artifactIdNode.text}`, nameRange);
 }
 
+/**
+ * Creates a package version descriptor from Maven XML nodes.
+ * @param nodes The child nodes.
+ * @param propertyNodes The list of property nodes for resolution.
+ * @returns A package version descriptor or undefined if version node is missing.
+ */
 export function createVersionDescFromXmlNodes(
   nodes: XmlNode[],
   propertyNodes: XmlNode[]
@@ -48,6 +61,12 @@ export function createVersionDescFromXmlNodes(
   return createPackageVersionDesc(version, versionRange);
 }
 
+/**
+ * Resolves a node to its corresponding property node if it uses property substitution syntax.
+ * @param node The node to check.
+ * @param propertyNodes The list of property nodes.
+ * @returns The resolved property node or the original node.
+ */
 function nodeOrPropertyNode(node: XmlNode, propertyNodes: XmlNode[]): XmlNode {
   let propertyNode: XmlNode | null = null;
   const nodeText = node.text?.trim() ?? '';

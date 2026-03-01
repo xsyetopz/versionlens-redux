@@ -4,8 +4,16 @@ import type { ISuggestionProvider } from '#domain/providers';
 import { FetchPackage } from '#domain/useCases';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Use case for fetching suggestions for multiple packages in parallel.
+ */
 export class FetchPackages {
 
+  /**
+   * Initializes a new instance of the FetchPackages class.
+   * @param fetchPackage The use case for fetching a single package.
+   * @param logger The logger to use.
+   */
   constructor(
     private readonly fetchPackage: FetchPackage,
     private readonly logger: ILogger
@@ -14,6 +22,14 @@ export class FetchPackages {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Executes the fetch packages use case.
+   * @param provider The suggestion provider to use.
+   * @param projectPath The path to the project.
+   * @param packagePath The path to the package file.
+   * @param parsedPackages The list of parsed dependencies to fetch.
+   * @returns A promise resolving to a flattened array of package responses.
+   */
   async execute(
     provider: ISuggestionProvider,
     projectPath: string,

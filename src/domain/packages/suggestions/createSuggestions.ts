@@ -7,6 +7,14 @@ import {
   parseVersion
 } from '#domain/packages';
 
+/**
+ * Creates an array of package suggestions based on the requested version and available versions.
+ * @param requestedVersion The version string requested in the package file.
+ * @param releases The list of available release versions.
+ * @param prereleases The list of available prerelease versions.
+ * @param distTagVersion Optional version associated with a distribution tag (e.g., 'latest').
+ * @returns An array of package suggestions.
+ */
 export function createSuggestions(
   requestedVersion: string,
   releases: string[],

@@ -8,6 +8,14 @@ import {
   validRange
 } from 'semver';
 
+/**
+ * Parses a requested version against lists of release and prerelease versions.
+ * @param requestedVersion The version string requested in the package file.
+ * @param releases The list of available release versions.
+ * @param prereleases The list of available prerelease versions.
+ * @param distTagVersion Optional version associated with a distribution tag (e.g., 'latest').
+ * @returns A ParsedVersion object containing detailed version state.
+ */
 export function parseVersion(
   requestedVersion: string,
   releases: string[],

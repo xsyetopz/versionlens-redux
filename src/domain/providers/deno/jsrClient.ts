@@ -4,8 +4,18 @@ import type { ILogger } from '#domain/logging';
 import type { DenoConfig, JsrApiResult, JsrClientResponse } from '#domain/providers/deno';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching package version data from JSR.
+ */
 export class JsrClient {
 
+  /**
+   * Initializes a new instance of the JsrClient class.
+   * @param config The configuration for the Deno provider.
+   * @param jsonClient The HTTP client for JSON requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: DenoConfig,
     readonly jsonClient: IJsonHttpClient,
@@ -18,6 +28,11 @@ export class JsrClient {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Fetches version information for a given package from JSR.
+   * @param packageName The name of the package.
+   * @returns A promise resolving to the package versions response.
+   */
   async get(packageName: string): Promise<JsrClientResponse> {
     const url = `https://jsr.io/${packageName}/meta.json`;
     // check cache

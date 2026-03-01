@@ -31,10 +31,22 @@ const complexTypeHandlers: KeyDictionary<JsonPackageTypeHandler> = {
   [PackageDescriptorType.version]: createVersionDescFromJsonNode
 };
 
+/**
+ * Provides suggestions for Composer dependencies by parsing JSON files and resolving package versions.
+ */
 export class ComposerSuggestionProvider implements ISuggestionProvider {
 
+  /**
+   * The name of the suggestion provider.
+   */
   readonly name: string = 'composer';
 
+  /**
+   * Initializes a new instance of the ComposerSuggestionProvider class.
+   * @param resolver The resolver used to fetch suggestions.
+   * @param config The configuration for the Composer provider.
+   * @param logger The logger for this provider.
+   */
   constructor(
     readonly resolver: ComposerSuggestionResolver,
     readonly config: ComposerConfig,
@@ -45,6 +57,12 @@ export class ComposerSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Parses dependencies from a Composer file.
+   * @param packagePath The path to the package file.
+   * @param packageText The content of the package file.
+   * @returns An array of identified package dependencies.
+   */
   parseDependencies(packagePath: string, packageText: string): Array<PackageDependency> {
     const options: JsonParserOptions = {
       includePropNames: this.config.dependencyProperties,
@@ -80,6 +98,11 @@ export class ComposerSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
+  /**
+   * Fetches suggestions for a given package request.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response containing suggestions.
+   */
   async fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse> {
     const requestedPackage = request.parsedDependency.package;
     const semverSpec = VersionUtils.parseSemver(requestedPackage.version);

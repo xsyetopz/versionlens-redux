@@ -12,6 +12,10 @@ import {
 } from '#domain/providers/pnpm';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers PNPM caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     PnpmService.pnpmCachingOpts,
@@ -24,6 +28,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers PNPM HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     PnpmService.pnpmHttpOpts,
@@ -36,6 +44,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the PNPM configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addPnpmConfig(services: IServiceCollection) {
   services.addSingleton(
     PnpmService.pnpmConfig,
@@ -48,6 +60,10 @@ export function addPnpmConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the PNPM suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

@@ -15,6 +15,10 @@ import {
 import { INpmServices } from '#domain/providers/npm';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers Deno caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     DenoService.denoCachingOpts,
@@ -27,6 +31,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers Deno HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     DenoService.denoHttpOpts,
@@ -39,6 +47,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Deno configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDenoConfig(services: IServiceCollection) {
   services.addSingleton(
     DenoService.denoConfig,
@@ -51,6 +63,10 @@ export function addDenoConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the JSR client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addJsrClient(services: IServiceCollection) {
   const serviceName = DenoService.jsrClient;
   services.addSingleton(
@@ -71,6 +87,10 @@ export function addJsrClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Deno suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDenoSuggestionResolver(services: IServiceCollection) {
   const serviceName = DenoService.denoClient;
   services.addSingleton(
@@ -87,6 +107,10 @@ export function addDenoSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Deno suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

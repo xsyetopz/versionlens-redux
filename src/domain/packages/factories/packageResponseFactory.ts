@@ -7,6 +7,14 @@ import {
   PackageVersionType,
 } from '#domain/packages';
 
+/**
+ * Creates an array of PackageResponse objects from a successful fetch response.
+ * @template TClientData Type of the client data.
+ * @param providerName The name of the provider.
+ * @param request The original client request.
+ * @param response The response from the fetch operation.
+ * @returns An array of package responses, one for each suggestion.
+ */
 export function createSuccess<TClientData>(
   providerName: string,
   request: PackageClientRequest<TClientData>,
@@ -28,6 +36,13 @@ export function createSuccess<TClientData>(
   );
 }
 
+/**
+ * Creates a PackageResponse for a project version dependency.
+ * @param providerName The name of the provider.
+ * @param request The original client request.
+ * @param suggestion The version suggestion.
+ * @returns A package response.
+ */
 export function createProjectVersionPackageResponse(
   providerName: string,
   request: PackageClientRequest<any>,

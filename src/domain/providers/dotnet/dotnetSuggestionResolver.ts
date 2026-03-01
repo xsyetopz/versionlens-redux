@@ -16,8 +16,17 @@ import {
 } from '#domain/providers/dotnet';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Resolves package suggestions for DotNet dependencies from the NuGet registry.
+ */
 export class DotnetSuggestionResolver {
 
+  /**
+   * Initializes a new instance of the DotnetSuggestionResolver class.
+   * @param config The configuration for the DotNet provider.
+   * @param nugetClient The client used to interact with NuGet.
+   * @param logger The logger for this resolver.
+   */
   constructor(
     readonly config: DotNetConfig,
     readonly nugetClient: NuGetClient,
@@ -28,6 +37,11 @@ export class DotnetSuggestionResolver {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Resolves suggestions from the NuGet registry.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response.
+   */
   async fromNuGet(request: PackageClientRequest<NuGetClientData>): Promise<PackageClientResponse> {
     // fetch
     const requestedPackage = request.parsedDependency.package;

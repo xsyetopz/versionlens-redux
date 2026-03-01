@@ -8,6 +8,11 @@ export const Lf = '\n';
 const fsReadFile = util.promisify(fs.readFile);
 const access = util.promisify(fs.access);
 
+/**
+ * Checks if a file exists at the specified absolute path.
+ * @param absFilePath The absolute path to the file.
+ * @returns A promise resolving to true if the file exists, otherwise false.
+ */
 export async function fileExists(absFilePath: string): Promise<boolean> {
   try {
     await access(absFilePath);
@@ -17,6 +22,11 @@ export async function fileExists(absFilePath: string): Promise<boolean> {
   }
 }
 
+/**
+ * Reads the content of a file as a UTF-8 string.
+ * @param absFilePath The absolute path to the file.
+ * @returns A promise resolving to the file content.
+ */
 export function readFile(absFilePath: string): Promise<string> {
   return fsReadFile(absFilePath, "utf8")
 }

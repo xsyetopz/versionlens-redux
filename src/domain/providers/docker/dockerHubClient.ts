@@ -19,8 +19,18 @@ export type DockerHubListReposResult = {
   results: DockerHubRepoResult[]
 }
 
+/**
+ * Client for fetching Docker image tag data from Docker Hub.
+ */
 export class DockerHubClient {
 
+  /**
+   * Initializes a new instance of the DockerHubClient class.
+   * @param config The configuration for the Docker provider.
+   * @param jsonClient The HTTP client for JSON requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: DockerConfig,
     readonly jsonClient: IJsonHttpClient,
@@ -33,6 +43,12 @@ export class DockerHubClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches active tags and their digests for a given repository from Docker Hub.
+   * @param repository The name of the repository.
+   * @param namespace The namespace (defaults to 'library').
+   * @returns A promise resolving to the Docker client response.
+   */
   async get(repository: string, namespace: string = 'library'): Promise<DockerClientResponse> {
     const url = `https://hub.docker.com/v2/namespaces/${namespace}/repositories/${repository}/tags`;
     // check cache

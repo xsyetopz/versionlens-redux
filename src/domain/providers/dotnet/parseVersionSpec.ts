@@ -2,6 +2,11 @@ import { PackageVersionType, VersionUtils } from '#domain/packages';
 import type { DotNetVersionSpec, NugetVersionSpec } from '#domain/providers/dotnet';
 import { parse, valid, validRange } from 'semver';
 
+/**
+ * Parses a NuGet version string into a DotNetVersionSpec.
+ * @param rawVersion The raw version string.
+ * @returns The parsed version specification.
+ */
 export function parseVersionSpec(rawVersion: string): DotNetVersionSpec {
   const spec = buildVersionSpec(rawVersion);
 
@@ -30,6 +35,11 @@ export function parseVersionSpec(rawVersion: string): DotNetVersionSpec {
   };
 }
 
+/**
+ * Expands short NuGet versions (e.g., '1.0' to '1.0.0').
+ * @param value The version string.
+ * @returns The expanded version string.
+ */
 function expandShortVersion(value: string) {
   if (!value ||
     value.indexOf('[') !== -1 ||
@@ -60,6 +70,11 @@ function expandShortVersion(value: string) {
   return fmtValue;
 }
 
+/**
+ * Builds a NuGet version specification from a string.
+ * @param value The version string.
+ * @returns The NuGet version specification or null if parsing failed.
+ */
 function buildVersionSpec(value: string): NugetVersionSpec | null {
   let formattedValue = expandShortVersion(value.trim());
   if (!formattedValue) return null;
@@ -149,6 +164,11 @@ function buildVersionSpec(value: string): NugetVersionSpec | null {
   return versionSpec;
 }
 
+/**
+ * Converts a NuGet version specification back into a semver range string.
+ * @param versionSpec The NuGet version specification.
+ * @returns The range string.
+ */
 function convertVersionSpecToString(versionSpec: NugetVersionSpec) {
   // x.x.x cases
   if (versionSpec.version

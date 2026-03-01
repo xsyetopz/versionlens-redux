@@ -45,10 +45,22 @@ const jsonComplexTypeHandlers: KeyDictionary<JsonPackageTypeHandler> = {
   [PackageDescriptorType.version]: createNpmVersionDescFromJsonNode
 };
 
+/**
+ * Provides suggestions for NPM dependencies by parsing package.json files and resolving versions from registries or GitHub.
+ */
 export class NpmSuggestionProvider implements ISuggestionProvider {
 
+  /**
+   * The name of the suggestion provider.
+   */
   readonly name: string = 'npm';
 
+  /**
+   * Initializes a new instance of the NpmSuggestionProvider class.
+   * @param resolver The resolver used to fetch suggestions.
+   * @param config The configuration for the NPM provider.
+   * @param logger The logger for this provider.
+   */
   constructor(
     readonly resolver: NpmSuggestionResolver,
     readonly config: NpmConfig,
@@ -59,8 +71,18 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * The function used to replace versions in the file.
+   */
   suggestionReplaceFn = npmReplaceVersion;
 
+  /**
+   * Parses dependencies from an NPM package file.
+   * @param packagePath The path to the package file.
+   * @param packageText The content of the package file.
+   * @param dependencyProps Optional property names to include in parsing.
+   * @returns An array of identified package dependencies.
+   */
   parseDependencies(
     packagePath: string,
     packageText: string,
@@ -132,6 +154,12 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     return packageDependencies;
   }
 
+  /**
+   * Pre-fetches suggestion data by resolving .npmrc and .env files.
+   * @param projectPath The path to the project.
+   * @param packagePath The path to the package file.
+   * @returns A promise resolving to the NPM client data.
+   */
   async preFetchSuggestions(projectPath: string, packagePath: string): Promise<NpmClientData> {
     // path to user .npmrc
     const userConfigPath = process.env.NPM_CONFIG_USERCONFIG || resolve(homedir(), '.npmrc');
@@ -167,6 +195,11 @@ export class NpmSuggestionProvider implements ISuggestionProvider {
     return createNpmRegistryClientData(packagePath, npmCliConfigData)
   }
 
+  /**
+   * Fetches suggestions for a given package request.
+   * @param request The package client request.
+   * @returns A promise resolving to the package client response containing suggestions.
+   */
   async fetchSuggestions(request: PackageClientRequest<any>): Promise<PackageClientResponse> {
     let source: PackageSourceType;
     try {

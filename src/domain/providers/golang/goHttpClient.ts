@@ -4,8 +4,18 @@ import type { ILogger } from '#domain/logging';
 import type { GoApiClientResponse, GoConfig } from '#domain/providers/golang';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for fetching package version data from a Go proxy or registry.
+ */
 export class GoHttpClient {
 
+  /**
+   * Initializes a new instance of the GoHttpClient class.
+   * @param config The configuration for the Go provider.
+   * @param httpClient The HTTP client for making requests.
+   * @param requestCache The cache for registry responses.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: GoConfig,
     readonly httpClient: IHttpClient,
@@ -18,6 +28,11 @@ export class GoHttpClient {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches version information for a given package.
+   * @param packageName The name of the package.
+   * @returns A promise resolving to the Go API client response.
+   */
   async get(packageName: string): Promise<GoApiClientResponse> {
     const url = this.config.apiUrl.replace('{base-module}', packageName.toLowerCase());
     // check cache

@@ -15,6 +15,10 @@ import {
 } from '#domain/providers/maven';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers Maven caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     MavenService.mavenCachingOpts,
@@ -27,6 +31,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers Maven HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     MavenService.mavenHttpOpts,
@@ -39,6 +47,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Maven configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addMavenConfig(services: IServiceCollection) {
   services.addSingleton(
     MavenService.mavenConfig,
@@ -51,6 +63,10 @@ export function addMavenConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the MvnCli client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addMvnCliClient(services: IServiceCollection) {
   const serviceName = MavenService.mvnCli;
   services.addSingleton(
@@ -68,6 +84,10 @@ export function addMvnCliClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Maven HTTP client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addMavenHttpClient(services: IServiceCollection) {
   const serviceName = MavenService.mavenHttpClient;
   services.addSingleton(
@@ -88,6 +108,10 @@ export function addMavenHttpClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Maven suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addMavenSuggestionResolver(services: IServiceCollection) {
   const serviceName = MavenService.mavenSuggestionResolver;
   services.addSingleton(
@@ -101,6 +125,10 @@ export function addMavenSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the Maven suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

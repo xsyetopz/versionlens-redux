@@ -11,6 +11,12 @@ import {
 import type { YAMLMap } from 'yaml';
 import { findPair } from 'yaml/util';
 
+/**
+ * Creates a version descriptor for a Pub dependency, handling the 'any' keyword.
+ * @param valueNode The YAML node representing the version.
+ * @param isQuoteType Whether the node value is quoted.
+ * @returns A package version descriptor.
+ */
 export function createPubVersionDescFromYamlNode(
   valueNode: any,
   isQuoteType: boolean
@@ -19,6 +25,12 @@ export function createPubVersionDescFromYamlNode(
   return createVersionDescFromYamlNode(valueNode, isQuoteType)
 }
 
+/**
+ * Creates a path descriptor from a YAML node.
+ * @param valueNode The YAML node representing the path.
+ * @param isQuoteType Whether the node value is quoted.
+ * @returns A package path descriptor.
+ */
 export function createPathDescFromYamlNode(
   valueNode: any,
   isQuoteType: boolean
@@ -37,6 +49,12 @@ export function createPathDescFromYamlNode(
   return createPackagePathDescType(valueNode.value, pathRange);
 }
 
+/**
+ * Creates a hosted descriptor from a YAML node.
+ * @param valueNode The YAML node representing the hosted configuration.
+ * @param isQuoteType Whether the node value is quoted.
+ * @returns A package hosted descriptor or undefined.
+ */
 export function createHostedDescFromYamlNode(
   valueNode: any,
   isQuoteType: boolean
@@ -70,6 +88,12 @@ export function createHostedDescFromYamlNode(
   return createPackageHostedDescType(hostUrl, hostPackageName)
 }
 
+/**
+ * Creates a Git descriptor from a YAML node.
+ * @param valueNode The YAML node representing the Git configuration.
+ * @param isQuoteType Whether the node value is quoted.
+ * @returns A package Git descriptor or undefined.
+ */
 export function createGitDescFromYamlNode(
   valueNode: any,
   isQuoteType: boolean

@@ -8,6 +8,11 @@ import {
   createProjectVersionTypeDesc
 } from '#domain/parsers';
 
+/**
+ * Creates a package name descriptor from an XML element.
+ * @param keyNode The XML node representing the element.
+ * @returns A package name descriptor.
+ */
 export function createNameDescFromXmlElem(keyNode: XmlNode): PackageNameDescriptor {
   const nameRange = {
     start: keyNode.tagOpenStart,
@@ -17,6 +22,11 @@ export function createNameDescFromXmlElem(keyNode: XmlNode): PackageNameDescript
   return createPackageNameDesc(keyNode.name, nameRange);
 }
 
+/**
+ * Creates a package version descriptor from an XML element.
+ * @param keyNode The XML node representing the element.
+ * @returns A package version descriptor.
+ */
 export function createVersionDescFromXmlElem(keyNode: XmlNode): PackageVersionDescriptor {
   const versionText = keyNode.text ?? '';
   const versionRange = {
@@ -26,6 +36,11 @@ export function createVersionDescFromXmlElem(keyNode: XmlNode): PackageVersionDe
   return createPackageVersionDesc(versionText, versionRange);
 }
 
+/**
+ * Creates a package descriptor for the project's own version from an XML element.
+ * @param node The XML node.
+ * @returns A package descriptor for the project version.
+ */
 export function createProjectVersionDescFromXmlElem(node: XmlNode): PackageDescriptor {
   const nameDesc = createNameDescFromXmlElem(node);
   const versionDesc = createVersionDescFromXmlElem(node);

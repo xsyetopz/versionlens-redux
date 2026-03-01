@@ -6,6 +6,12 @@ import {
   createVersionDescFromXmlAttr
 } from '#domain/providers/dotnet';
 
+/**
+ * Parses a DotNet project file (XML) and extracts package dependencies.
+ * @param xml The content of the XML file.
+ * @param includePropertyNames The property names to include in the search.
+ * @returns An array of Identified package descriptors.
+ */
 export function parseDotNetPackagesXml(
   xml: string,
   includePropertyNames: Array<string>
@@ -19,6 +25,12 @@ export function parseDotNetPackagesXml(
   return parsePackageNodes(document, includePropertyNames);
 }
 
+/**
+ * Parses package nodes from an XML document.
+ * @param doc The XML document.
+ * @param includePropNames The property names to include.
+ * @returns An array of Identified package descriptors.
+ */
 export function parsePackageNodes(
   doc: XmlDoc,
   includePropNames: string[]

@@ -16,6 +16,10 @@ import {
 } from '#domain/providers/dotnet';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Registers DotNet caching options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCachingOptions(services: IServiceCollection) {
   services.addSingleton(
     DotNetService.dotnetCachingOpts,
@@ -28,6 +32,10 @@ export function addCachingOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers DotNet HTTP options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addHttpOptions(services: IServiceCollection) {
   services.addSingleton(
     DotNetService.dotnetHttpOpts,
@@ -40,6 +48,10 @@ export function addHttpOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers NuGet options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addNugetOptions(services: IServiceCollection) {
   services.addSingleton(
     DotNetService.nugetOpts,
@@ -51,6 +63,10 @@ export function addNugetOptions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the DotNet configuration as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDotNetConfig(services: IServiceCollection) {
   services.addSingleton(
     DotNetService.dotnetConfig,
@@ -64,6 +80,10 @@ export function addDotNetConfig(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the DotNet CLI client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addCliClient(services: IServiceCollection) {
   const serviceName = DotNetService.dotnetCli;
   services.addSingleton(
@@ -81,6 +101,10 @@ export function addCliClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the NuGet client as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addNuGetClient(services: IServiceCollection) {
   const serviceName = DotNetService.nugetClient;
   services.addSingleton(
@@ -101,6 +125,10 @@ export function addNuGetClient(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the DotNet suggestion resolver as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addDotnetSuggestionResolver(services: IServiceCollection) {
   const serviceName = DotNetService.dotnetSuggestionResolver;
   services.addSingleton(
@@ -114,6 +142,10 @@ export function addDotnetSuggestionResolver(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the DotNet suggestion provider as a scoped service.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionProvider(services: IServiceCollection) {
   services.addScoped(
     nameOf<IProviderServices>().suggestionProvider,

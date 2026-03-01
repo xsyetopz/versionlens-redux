@@ -8,6 +8,13 @@ import type {
 } from '#domain/providers';
 import { nameOf } from '#domain/utils';
 
+/**
+ * Imports multiple suggestion providers by name.
+ * @param serviceProvider The root service provider.
+ * @param providerNames An array of provider names to import.
+ * @param logger The logger to use.
+ * @returns A promise resolving to an array of imported suggestion providers.
+ */
 export function importSuggestionProviders(
   serviceProvider: IServiceProvider,
   providerNames: Array<string>,
@@ -31,6 +38,13 @@ export function importSuggestionProviders(
   return Promise.all(promises);
 }
 
+/**
+ * Imports a single suggestion provider by name and configures its container.
+ * @param serviceProvider The root service provider.
+ * @param providerName The name of the provider to import.
+ * @param logger The logger to use.
+ * @returns A promise resolving to the imported suggestion provider.
+ */
 export async function importSuggestionProvider(
   serviceProvider: IServiceProvider,
   providerName: string,

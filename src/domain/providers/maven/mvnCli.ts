@@ -4,8 +4,17 @@ import { type MavenConfig, type MavenRepository, extractReposUrlsFromXml } from 
 import { getProtocolFromUrl } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Client for interacting with the Maven CLI.
+ */
 export class MvnCli {
 
+  /**
+   * Initializes a new instance of the MvnCli class.
+   * @param config The configuration for the Maven provider.
+   * @param shellClient The shell client for executing commands.
+   * @param logger The logger for this client.
+   */
   constructor(
     readonly config: MavenConfig,
     readonly shellClient: IShellClient,
@@ -16,6 +25,11 @@ export class MvnCli {
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Fetches the configured Maven repositories using 'mvn help:effective-settings'.
+   * @param cwd The current working directory.
+   * @returns A promise resolving to an array of Maven repositories.
+   */
   async fetchRepositories(cwd: string): Promise<Array<MavenRepository>> {
     let repos: Array<string>;
 
