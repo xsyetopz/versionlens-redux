@@ -9,6 +9,10 @@ import { SuggestionCodeLensProvider, SuggestionsOptions } from '#extension/sugge
 import { EditorConfig } from '#extension/vscode';
 import { EventEmitter, languages, workspace, type DocumentFilter } from 'vscode';
 
+/**
+ * Registers the VS Code editor configuration adapter as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addEditorConfig(services: IServiceCollection) {
   services.addSingleton(
     ExtensionServiceName.editorConfig,
@@ -16,6 +20,10 @@ export function addEditorConfig(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the suggestion configuration options as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addSuggestionOptions(services: IServiceCollection) {
   services.addSingleton(
     ExtensionServiceName.suggestionOptions,
@@ -23,6 +31,10 @@ export function addSuggestionOptions(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the collective extension state as a singleton and applies defaults.
+ * @param services The service collection to add to.
+ */
 export function addVersionLensState(services: IServiceCollection) {
   services.addSingleton(
     ExtensionServiceName.versionLensState,
@@ -34,6 +46,10 @@ export function addVersionLensState(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the extension instance as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addVersionLensExtension(services: IServiceCollection) {
   const projectPath = workspace.workspaceFolders && workspace.workspaceFolders.length > 0
     ? workspace.workspaceFolders[0].uri.fsPath
@@ -51,6 +67,11 @@ export function addVersionLensExtension(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers and initializes all ecosystem-specific CodeLens providers.
+ * Each provider is registered with VS Code using document filters.
+ * @param services The service collection to add to.
+ */
 export function addVersionLensProviders(services: IServiceCollection) {
   services.addSingleton(
     ExtensionServiceName.versionLensProviders,
@@ -91,6 +112,10 @@ export function addVersionLensProviders(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the static list of supported provider names as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addProviderNames(services: IServiceCollection) {
   services.addSingleton(
     DomainServiceName.providerNames,
@@ -111,6 +136,10 @@ export function addProviderNames(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the cache for document-level dependencies as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addEditorDependencyCache(services: IServiceCollection) {
   services.addSingleton(
     ExtensionServiceName.editorDependencyCache,
@@ -119,6 +148,10 @@ export function addEditorDependencyCache(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the GetSuggestions use case as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addGetSuggestionsUseCase(services: IServiceCollection) {
   const serviceName = DomainServiceName.getSuggestions;
   services.addSingleton(

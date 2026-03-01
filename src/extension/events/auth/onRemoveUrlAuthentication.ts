@@ -9,8 +9,19 @@ import {
 } from '#extension/authorization';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Event handler for removing URL-based authentication.
+ */
 export class OnRemoveUrlAuthentication extends Disposable {
 
+  /**
+   * Initializes a new instance of the OnRemoveUrlAuthentication class.
+   * @param authProviders Map of authentication providers.
+   * @param urlAuthStore Store for URL authentication metadata.
+   * @param packageCache Cache for package suggestions.
+   * @param interactions UI interactions handler.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly authProviders: KeyDictionary<AuthenticationProvider>,
     readonly urlAuthStore: UrlAuthenticationStore,
@@ -26,6 +37,10 @@ export class OnRemoveUrlAuthentication extends Disposable {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Executes the remove authentication workflow.
+   * Prompts the user to select URLs to remove, clears them from storage and secrets, then clears the package cache.
+   */
   async execute() {
     // get all the url authentications
     const data = this.urlAuthStore.getAll();

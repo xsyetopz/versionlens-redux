@@ -4,6 +4,10 @@ import { type IExtensionServices, ExtensionServiceName } from '#extension';
 import { OnSaveChanges } from '#extension/events';
 import { tasks } from 'vscode';
 
+/**
+ * Registers the onSaveChanges event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnSaveChanges(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onSaveChanges
   services.addSingleton(

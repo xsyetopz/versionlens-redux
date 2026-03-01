@@ -7,8 +7,19 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { relative } from 'node:path';
 import type { QuickPickItem } from 'vscode';
 
+/**
+ * Event handler for showing detailed suggestion statistics in a QuickPick.
+ */
 export class OnShowSuggestionsStatsDetails extends Disposable {
 
+  /**
+   * Initializes a new instance of the OnShowSuggestionsStatsDetails class.
+   * @param getSuggestionsStats Use case for retrieving statistics.
+   * @param extension The extension instance.
+   * @param window VS Code window interface.
+   * @param construct Factory for VS Code constructs.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly getSuggestionsStats: GetSuggestionsStats,
     readonly extension: VersionLensExtension,
@@ -22,6 +33,10 @@ export class OnShowSuggestionsStatsDetails extends Disposable {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Fetches stats and displays them in a grouped QuickPick list.
+   * Selecting an item opens the corresponding package file.
+   */
   async execute() {
     const stats = await this.getSuggestionsStats.execute(true);
     const grouped = Object.groupBy(stats, x => x.providerName);

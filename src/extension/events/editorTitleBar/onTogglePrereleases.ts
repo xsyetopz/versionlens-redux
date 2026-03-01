@@ -4,8 +4,17 @@ import { VersionLensState } from '#extension/state';
 import { SuggestionCodeLensProvider } from '#extension/suggestions';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Event handler for toggling the display of prerelease versions.
+ */
 export class OnTogglePrereleases extends Disposable {
 
+  /**
+   * Initializes a new instance of the OnTogglePrereleases class.
+   * @param suggestionCodeLensProviders List of active code lens providers.
+   * @param state Extension state.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly suggestionCodeLensProviders: SuggestionCodeLensProvider[],
     readonly state: VersionLensState,
@@ -18,8 +27,8 @@ export class OnTogglePrereleases extends Disposable {
   }
 
   /**
-   * Shows or hides version pre-release info
-   * @param toggle
+   * Shows or hides version pre-release info.
+   * @param toggle Whether to show prereleases.
    */
   async execute(toggle: boolean): Promise<void> {
     this.logger.debug("toggle version pre-releases = {toggle}", toggle);

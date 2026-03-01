@@ -5,13 +5,24 @@ import { AsyncEmitter } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import type { TextDocument } from 'vscode';
 
+/**
+ * Event signature for when a provider-supported document is closed.
+ */
 export type ProviderTextDocumentClosedEvent = (
   provider: ISuggestionProvider,
   packageFilePath: string
 ) => Promise<void>;
 
+/**
+ * Handles the VS Code text document close event.
+ */
 export class OnTextDocumentClose extends AsyncEmitter<ProviderTextDocumentClosedEvent> {
 
+  /**
+   * Initializes a new instance of the OnTextDocumentClose class.
+   * @param getSuggestionProvider Use case for identifying suggestion providers.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly getSuggestionProvider: GetSuggestionProvider,
     readonly logger: ILogger
@@ -21,6 +32,11 @@ export class OnTextDocumentClose extends AsyncEmitter<ProviderTextDocumentClosed
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Executes when a document is closed.
+   * Fires the provider-specific closed event if the document was supported.
+   * @param document The closed VS Code text document.
+   */
   async execute(document: TextDocument): Promise<void> {
     // we can't check for an active provider here
     // because its already been de-activated before this event is called

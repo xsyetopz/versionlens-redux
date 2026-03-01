@@ -7,6 +7,10 @@ import {
   OnProviderTextDocumentClose
 } from '#extension/events';
 
+/**
+ * Registers the onProviderEditorActivated event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnProviderEditorActivated(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onProviderEditorActivated;
   services.addSingleton(
@@ -28,6 +32,10 @@ export function addOnProviderEditorActivated(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onProviderTextDocumentChange event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnProviderTextDocumentChange(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onProviderTextDocumentChange;
   services.addSingleton(
@@ -50,6 +58,10 @@ export function addOnProviderTextDocumentChange(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onProviderTextDocumentClose event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnProviderTextDocumentClose(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onProviderTextDocumentClose
   services.addSingleton(

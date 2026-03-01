@@ -17,6 +17,10 @@ import { SuggestionInteractions } from '#extension/suggestions';
 import { commands, env, StatusBarAlignment, window, workspace } from 'vscode';
 import { VsCodeConstructionFactory } from '../../vscode/vsCodeConstructFactory';
 
+/**
+ * Registers the onClearCache command handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnClearCache(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onClearCache;
   services.addSingleton(
@@ -43,6 +47,10 @@ export function addOnClearCache(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onFileLinkClick command handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnFileLinkClick(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onFileLinkClick;
   services.addSingleton(
@@ -69,6 +77,10 @@ export function addOnFileLinkClick(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onUpdateDependencyClick command handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnUpdateDependencyClick(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onUpdateDependencyClick;
   services.addSingleton(
@@ -95,6 +107,10 @@ export function addOnUpdateDependencyClick(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onChooseBuildClick command handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnChooseBuildClick(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onChooseBuildClick;
   services.addSingleton(
@@ -122,6 +138,10 @@ export function addOnChooseBuildClick(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onRefreshSuggestionsStats command handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnRefreshSuggestionsStats(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onRefreshSuggestionsStats;
   services.addSingleton(
@@ -174,6 +194,10 @@ export function addOnRefreshSuggestionsStats(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onShowSuggestionsStatsDetails command handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnShowSuggestionsStatsDetails(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onShowSuggestionsStatsDetails;
   services.addSingleton(

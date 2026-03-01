@@ -14,17 +14,33 @@ import type { IVsCodeWindow } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import type { QuickPickItem } from 'vscode';
 
+/**
+ * Quick pick item for selecting an authentication provider.
+ */
 export type ProviderQuickPickItem = QuickPickItem & {
+  /** The display label for the provider. */
   providerLabel: string,
+  /** The authentication scheme supported by the provider. */
   providerScheme: AuthenticationScheme
 }
 
+/**
+ * Handles user interactions for authentication, such as showing input boxes and quick picks.
+ */
 export class AuthenticationInteractions {
 
+  /**
+   * Initializes a new instance of the AuthenticationInteractions class.
+   * @param window The VS Code window interface.
+   */
   constructor(readonly window: IVsCodeWindow) {
     throwUndefinedOrNull('window', window);
   }
 
+  /**
+   * Prompts the user to enter an authorization URL.
+   * @returns A promise resolving to the entered URL, or undefined if cancelled.
+   */
   async enterAuthorizationUrl(): Promise<string | undefined> {
     const authUrl = await this.window.showInputBox({
       ignoreFocusOut: true,
@@ -42,6 +58,12 @@ export class AuthenticationInteractions {
     return trimEndSlash(authUrl);
   }
 
+  /**
+   * Prompts the user to confirm or modify an authorization URL for a specific request.
+   * @param url The suggested authorization URL.
+   * @param requestUrl The original request URL.
+   * @returns A promise resolving to the confirmed URL, or undefined if cancelled.
+   */
   async confirmAuthorziationUrl(url: string, requestUrl: string): Promise<string | undefined> {
     const inputUrl = await this.window.showInputBox({
       ignoreFocusOut: true,
@@ -78,6 +100,11 @@ export class AuthenticationInteractions {
     return authUrl;
   }
 
+  /**
+   * Prompts the user to choose an authentication scheme for a URL.
+   * @param url The URL to authenticate.
+   * @returns A promise resolving to the selected authentication data, or undefined if cancelled.
+   */
   async chooseAuthenticationScheme(url: string): Promise<UrlAuthenticationData | undefined> {
     const pickItems: ProviderQuickPickItem[] = Array.from(
       authenticationProviders,
@@ -113,6 +140,11 @@ export class AuthenticationInteractions {
     );
   }
 
+  /**
+   * Prompts the user for basic authentication credentials.
+   * @param url The URL to authenticate.
+   * @returns A promise resolving to the base64 encoded credentials, or undefined if cancelled.
+   */
   async enterBasicAuthDetails(url: string): Promise<string | undefined> {
     // prompt for the username
     const username = await this.window.showInputBox({
@@ -144,6 +176,11 @@ export class AuthenticationInteractions {
     return btoa(`${username}:${password}`);
   }
 
+  /**
+   * Prompts the user for a custom authorization value.
+   * @param url The URL to authenticate.
+   * @returns A promise resolving to the entered value, or undefined if cancelled.
+   */
   async enterCustomAuthValue(url: string): Promise<string | undefined> {
     // prompt for the value
     const value = await this.window.showInputBox({
@@ -156,6 +193,11 @@ export class AuthenticationInteractions {
     return value ? value : undefined;
   }
 
+  /**
+   * Prompts the user to select which stored credentials to clear.
+   * @param urlAuthData The list of stored authentication data.
+   * @returns A promise resolving to the list of selected data to clear.
+   */
   async chooseUrlAuthToClear(urlAuthData: UrlAuthenticationData[]): Promise<UrlAuthenticationData[]> {
     const pickItems: QuickPickItem[] = Array.from(
       urlAuthData,
@@ -199,6 +241,12 @@ export class AuthenticationInteractions {
     return results;
   }
 
+  /**
+   * Prompts the user to retry a failed operation.
+   * @param message The message to display.
+   * @param detail Optional detail for the message.
+   * @returns A promise resolving to true if the user chose to retry, otherwise false.
+   */
   async promptRetry(message: string, detail: string = ""): Promise<boolean> {
     const choice = await this.window.showInformationMessage(
       message,
@@ -209,6 +257,12 @@ export class AuthenticationInteractions {
     return !!choice;
   }
 
+  /**
+   * Prompts the user with a Yes/Cancel question.
+   * @param message The message to display.
+   * @param detail Optional detail for the message.
+   * @returns A promise resolving to true if the user chose Yes, otherwise false.
+   */
   async promptYesCancel(message: string, detail: string = ""): Promise<boolean> {
     const choice = await this.window.showInformationMessage(
       message,
@@ -219,6 +273,11 @@ export class AuthenticationInteractions {
     return !!choice;
   }
 
+  /**
+   * Warns the user about using an unsecure (HTTP) URL for authentication.
+   * @param url The URL in question.
+   * @returns A promise resolving to true if the user chose to proceed, otherwise false.
+   */
   async promptUnsecured(url: string): Promise<boolean> {
     const choice = await this.window.showWarningMessage(
       AuthPrompt.unsecureAuthorizationUrl(url),

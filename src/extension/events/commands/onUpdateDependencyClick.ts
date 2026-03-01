@@ -5,8 +5,18 @@ import type { ISuggestionCodeLens, IVersionLensState } from '#extension';
 import type { IVsCodeConstructFactory, IVsCodeWorkspace } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Event handler for when an update dependency suggestion is clicked.
+ */
 export class OnUpdateDependencyClick extends Disposable {
 
+  /**
+   * Initializes a new instance of the OnUpdateDependencyClick class.
+   * @param construct Factory for VS Code constructs.
+   * @param workspace VS Code workspace interface.
+   * @param state Extension state.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly construct: IVsCodeConstructFactory,
     readonly workspace: IVsCodeWorkspace,
@@ -21,8 +31,9 @@ export class OnUpdateDependencyClick extends Disposable {
   }
 
   /**
-   * Executes when a codelens update suggestion is clicked
-   * @param codeLens
+   * Executes when a codelens update suggestion is clicked.
+   * Applies the version update to the document using a WorkspaceEdit.
+   * @param codeLens The clicked code lens.
    */
   async execute(codeLens: ISuggestionCodeLens): Promise<void> {
     if (this.state.codeLensReplace.value === false) return;

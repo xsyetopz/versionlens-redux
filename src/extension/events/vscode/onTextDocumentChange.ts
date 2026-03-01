@@ -7,14 +7,26 @@ import { TextDocumentChangeReason } from '#extension/vscode';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import type { TextDocumentChangeEvent } from 'vscode';
 
+/**
+ * Event signature for when a provider-supported document content changes.
+ */
 export type ProviderTextDocumentChangeEvent = (
   provider: ISuggestionProvider,
   packageFilePath: string,
   newContent: string
 ) => Promise<void>;
 
+/**
+ * Handles the VS Code text document change event.
+ */
 export class OnTextDocumentChange extends AsyncEmitter<ProviderTextDocumentChangeEvent> {
 
+  /**
+   * Initializes a new instance of the OnTextDocumentChange class.
+   * @param getSuggestionProvider Use case for identifying suggestion providers.
+   * @param state Extension state.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly getSuggestionProvider: GetSuggestionProvider,
     readonly state: VersionLensState,
@@ -26,6 +38,11 @@ export class OnTextDocumentChange extends AsyncEmitter<ProviderTextDocumentChang
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Executes when a document's content changes.
+   * Filters for relevant changes and fires the provider-specific event.
+   * @param e The VS Code text document change event.
+   */
   async execute(e: TextDocumentChangeEvent): Promise<void> {
     // ensure we have an active provider
     if (!this.state.providerActive.value) return;

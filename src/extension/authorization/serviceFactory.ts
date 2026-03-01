@@ -11,6 +11,12 @@ import {
 } from '#extension/authorization';
 import { type Memento, type SecretStorage, window } from 'vscode';
 
+/**
+ * Registers the authentication providers as a singleton in the service collection.
+ * @param services The service collection to add to.
+ * @param resourceFolderPath The path to the resources folder.
+ * @param secrets The VS Code secret storage.
+ */
 export function addAuthenticationProviders(
   services: IServiceCollection,
   resourceFolderPath: string,
@@ -34,6 +40,10 @@ export function addAuthenticationProviders(
   );
 }
 
+/**
+ * Registers the authentication interactions as a singleton in the service collection.
+ * @param services The service collection to add to.
+ */
 export function addAuthenticationInteractions(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.authenticationInteractions;
   services.addSingleton(
@@ -42,6 +52,11 @@ export function addAuthenticationInteractions(services: IServiceCollection) {
   );
 }
 
+/**
+ * Registers the URL authentication store as a singleton in the service collection.
+ * @param services The service collection to add to.
+ * @param workspaceState The VS Code workspace memento.
+ */
 export function addUrlAuthenticationStore(
   services: IServiceCollection,
   workspaceState: Memento
@@ -53,6 +68,10 @@ export function addUrlAuthenticationStore(
   );
 }
 
+/**
+ * Registers the authorizer as a singleton in the service collection.
+ * @param services The service collection to add to.
+ */
 export function addAuthorizer(services: IServiceCollection) {
   const serviceName = DomainServiceName.authorizer;
   services.addSingleton(

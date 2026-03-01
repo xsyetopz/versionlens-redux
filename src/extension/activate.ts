@@ -13,8 +13,16 @@ import { type ExtensionContext, type LogOutputChannel, window } from 'vscode';
 import { configureContainer } from './extensionContainer';
 import type { PackageFileWatcher } from './watcher';
 
+/**
+ * The root service provider for the extension.
+ */
 let serviceProvider: IServiceProvider;
 
+/**
+ * Activates the VersionLens extension.
+ * This is the entry point called by VS Code when the extension is loaded.
+ * @param context The VS Code extension context.
+ */
 export async function activate(context: ExtensionContext): Promise<void> {
   // get the resource folder path (opened folder or single file)
   const resourceFolderPath = await getResourceFolderPath(context);
@@ -102,10 +110,20 @@ export async function activate(context: ExtensionContext): Promise<void> {
     .execute(window.activeTextEditor)
 }
 
+/**
+ * Deactivates the VersionLens extension.
+ * Called by VS Code when the extension is being shut down.
+ */
 export async function deactivate() {
   await serviceProvider.dispose();
 }
 
+/**
+ * Resolves the path to the resource folder for the current context.
+ * Uses the workspace storage URI or the path of the active text editor.
+ * @param context The extension context.
+ * @returns A promise resolving to the resource folder path.
+ */
 async function getResourceFolderPath(context: ExtensionContext): Promise<string> {
   if (context.storageUri) return context.storageUri.path;
   const resourceFilePath = window.activeTextEditor!.document.uri.path;

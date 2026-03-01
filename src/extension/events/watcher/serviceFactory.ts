@@ -2,6 +2,10 @@ import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
 import { ExtensionServiceName, OnPackageDependenciesChanged, type IExtensionServices } from '#extension';
 
+/**
+ * Registers the onPackageDependenciesChanged event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnPackageDependenciesChanged(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onPackageDependenciesChanged
   services.addSingleton(

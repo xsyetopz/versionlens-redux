@@ -4,6 +4,10 @@ import { ExtensionServiceName, IconCommandFeatures, type IExtensionServices } fr
 import { OnErrorClick, OnTogglePrereleases, OnToggleReleases } from '#extension/events';
 import { commands, window } from 'vscode';
 
+/**
+ * Registers the onErrorClick event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnErrorClick(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onErrorClick;
   services.addSingleton(
@@ -30,6 +34,10 @@ export function addOnErrorClick(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onToggleReleases event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnToggleReleases(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onToggleReleases;
   services.addSingleton(
@@ -60,6 +68,10 @@ export function addOnToggleReleases(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onTogglePrereleases event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnTogglePrereleases(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onTogglePrereleases;
   services.addSingleton(

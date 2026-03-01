@@ -15,8 +15,18 @@ import {
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import { parse } from 'node:url';
 
+/**
+ * VS Code implementation of the IAuthorizer interface.
+ */
 export class Authorizer implements IAuthorizer {
 
+  /**
+   * Initializes a new instance of the Authorizer class.
+   * @param urlAuthStore The store for URL authentication metadata.
+   * @param providers The map of authentication providers.
+   * @param interactions The user interaction handler.
+   * @param logger The logger instance.
+   */
   constructor(
     readonly urlAuthStore: UrlAuthenticationStore,
     readonly providers: KeyDictionary<AuthenticationProvider>,
@@ -29,6 +39,9 @@ export class Authorizer implements IAuthorizer {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Checks if a URL has a valid authorization configuration.
+   */
   hasAuthorizationUrl(url: string): boolean {
     const urlAuthInfo = this.urlAuthStore.get(url);
     if (urlAuthInfo === undefined) return false;
@@ -38,6 +51,9 @@ export class Authorizer implements IAuthorizer {
     return true;
   }
 
+  /**
+   * Resolves the canonical authorization URL for a given service URL.
+   */
   getAuthorizationUrl(url: string): string {
     // look for url in the user defined registry urls
     const entries = this.urlAuthStore.getAll();
@@ -50,6 +66,9 @@ export class Authorizer implements IAuthorizer {
     return `${parsedBaseUrl.protocol}//${parsedBaseUrl.host}`;
   }
 
+  /**
+   * Gets the authorization token for a URL.
+   */
   async getToken(url: string): Promise<string | undefined> {
     // get the persisted url auth info
     const urlAuthInfo = this.urlAuthStore.get(url);
@@ -69,6 +88,9 @@ export class Authorizer implements IAuthorizer {
       : `${urlAuthInfo.scheme} ${accessToken}`;
   }
 
+  /**
+   * Prompts the user for credentials for a URL and a request URL.
+   */
   async getCredentials(url: string, requestUrl: string): Promise<boolean> {
     // check url isn't already unconsented
     const existingUrlAuthData = this.urlAuthStore.get(url);
@@ -105,6 +127,9 @@ export class Authorizer implements IAuthorizer {
     return await this.authenticate(urlAuthData);
   }
 
+  /**
+   * Retries authentication for a URL.
+   */
   async retryCredentials(url: string): Promise<boolean> {
     const urlAuthData = this.urlAuthStore.get(url);
 
@@ -127,6 +152,9 @@ export class Authorizer implements IAuthorizer {
     return await this.authenticate(urlAuthData);
   }
 
+  /**
+   * Internal method to perform authentication using the selected scheme.
+   */
   private async authenticate(urlAuthData: UrlAuthenticationData): Promise<boolean> {
     const didCreate = await this.providers[urlAuthData.scheme].create(urlAuthData.url);
     if (didCreate)

@@ -4,6 +4,10 @@ import { AuthorizationCommandFeatures, ExtensionServiceName, type IExtensionServ
 import { OnAddUrlAuthentication, OnRemoveUrlAuthentication } from '#extension/events';
 import { commands } from 'vscode';
 
+/**
+ * Registers the onAddUrlAuthentication event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnAddUrlAuthentication(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onAddUrlAuthentication;
   services.addSingleton(
@@ -31,6 +35,10 @@ export function addOnAddUrlAuthentication(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onRemoveUrlAuthentication event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnRemoveUrlAuthentication(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onRemoveUrlAuthentication;
   services.addSingleton(

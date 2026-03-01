@@ -34,127 +34,229 @@ import type { EditorConfig, IVsCodeConstructFactory } from '#extension/vscode';
 import type { PackageFileWatcher } from '#extension/watcher';
 import type { LogOutputChannel, Range, Uri } from 'vscode';
 
+/**
+ * Enum for authorization-related command identifiers.
+ */
 export enum AuthorizationCommandFeatures {
+  /** Command to add a new URL-based authentication. */
   OnAddUrlAuthentication = "versionlens.authorization.addUrlAuthentication",
+  /** Command to remove an existing URL-based authentication. */
   OnRemoveUrlAuthentication = "versionlens.authorization.removeUrlAuthentication"
 }
 
+/**
+ * Enum for icon-related command identifiers in the editor title bar.
+ */
 export enum IconCommandFeatures {
+  /** Command to show the log output when an error occurs. */
   ShowError = 'versionlens.icons.showError',
+  /** Command to show prerelease versions. */
   ShowPrereleaseVersions = 'versionlens.icons.showPrereleaseVersions',
+  /** Command to hide prerelease versions. */
   HidePrereleaseVersions = 'versionlens.icons.hidePrereleaseVersions',
+  /** Command to show version lenses. */
   ShowVersionLenses = 'versionlens.icons.showVersionLenses',
+  /** Command to hide version lenses. */
   HideVersionLenses = 'versionlens.icons.hideVersionLenses'
 }
 
+/**
+ * Enum for VS Code context key names used for state synchronization.
+ */
 export enum StateFeatures {
+  /** Whether version lenses are visible. */
   Show = 'versionlens.show',
+  /** Whether prerelease versions are visible. */
   ShowPrereleases = 'versionlens.showPrereleases',
+  /** Whether suggestion statistics are visible. */
   ShowSuggestionsStats = 'versionlens.showSuggestionsStats',
+  /** Whether the document has outdated dependencies. */
   ShowOutdated = 'versionlens.showOutdated',
+  /** The name of the currently active provider. */
   ProviderActive = 'versionlens.providerActive',
+  /** Counter for busy providers. */
   ProviderBusy = 'versionlens.providerBusy',
+  /** Whether a provider error occurred. */
   ProviderError = 'versionlens.providerError',
+  /** Whether code lens replacement is enabled. */
   CodeLenReplace = 'versionlens.codeLensReplace'
 }
 
+/**
+ * Enum for suggestion-related command identifiers.
+ */
 export enum SuggestionCommandFeatures {
+  /** Command triggered when a version suggestion is clicked. */
   OnUpdateDependencyClick = 'versionlens.suggestions.updateDependencyClick',
+  /** Command triggered when a file link suggestion is clicked. */
   OnFileLinkClick = "versionlens.suggestions.fileLinkClick",
+  /** Command triggered when a build selection suggestion is clicked. */
   OnChooseBuildClick = "versionlens.suggestions.chooseBuildClick",
+  /** Command to clear all extension caches. */
   OnClearCache = "versionlens.suggestions.clearCache",
+  /** Command to refresh the suggestion statistics. */
   OnRefreshSuggestionsStats = "versionlens.suggestions.refreshStats",
+  /** Command to show detailed suggestion statistics. */
   OnShowSuggestionsStatDetails = "versionlens.suggestions.showStatsDetails"
 }
 
+/**
+ * Enum for suggestion-related configuration setting keys.
+ */
 export enum SuggestionFeatures {
+  /** Key for showing version lenses on startup. */
   ShowOnStartup = 'suggestions.showOnStartup',
+  /** Key for showing prereleases on startup. */
   ShowPrereleasesOnStartup = 'suggestions.showPrereleasesOnStartup',
+  /** Key for showing suggestion statistics in the status bar. */
   ShowSuggestionsStats = 'suggestions.showSuggestionsStats',
+  /** Key for the suggestion category indicators. */
   Indicators = 'suggestions.indicators',
 }
 
+/**
+ * Defines the services available in the extension layer.
+ */
 export interface IExtensionServices {
+  /** Suggestion configuration options. */
   suggestionOptions: SuggestionsOptions
+  /** The extension instance. */
   extension: VersionLensExtension
+  /** The collective extension state. */
   versionLensState: VersionLensState
+  /** The VS Code log output channel. */
   logOutputChannel: LogOutputChannel
+  /** The collection of active version lens providers. */
   versionLensProviders: Array<SuggestionCodeLensProvider>
+  /** Cache for dependencies being edited. */
   editorDependencyCache: DependencyCache
+  /** The package file watcher. */
   packageFileWatcher: PackageFileWatcher
 
-  // vscode
+  // vscode adapters
+  /** VS Code editor configuration. */
   editorConfig: EditorConfig
+  /** Factory for VS Code constructs. */
   vsCodeConstructFactory: IVsCodeConstructFactory
 
-  // auth
+  // authorization services
+  /** Map of authentication providers. */
   authenticationProviders: KeyDictionary<AuthenticationProvider>
+  /** Handler for authentication UI interactions. */
   authenticationInteractions: AuthenticationInteractions
+  /** Store for URL authentication metadata. */
   urlAuthenticationStore: UrlAuthenticationStore
 
-  // auth events
+  // event handlers
+  /** Handler for adding URL authentication. */
   onAddUrlAuthentication: OnAddUrlAuthentication
+  /** Handler for removing URL authentication. */
   onRemoveUrlAuthentication: OnRemoveUrlAuthentication
 
-  // command events
+  /** Handler for clearing caches. */
   onClearCache: OnClearCache
+  /** Handler for refreshing suggestion stats. */
   onRefreshSuggestionsStats: OnRefreshSuggestionsStats
+  /** Handler for showing suggestion stat details. */
   onShowSuggestionsStatsDetails: OnShowSuggestionsStatsDetails
+  /** Handler for file link clicks. */
   onFileLinkClick: OnFileLinkClick
+  /** Handler for dependency update clicks. */
   onUpdateDependencyClick: OnUpdateDependencyClick
+  /** Handler for build selection clicks. */
   onChooseBuildClick: OnChooseBuildClick
 
-  // editorTitleBar events
+  /** Handler for toggling release visibility. */
   onToggleReleases: OnToggleReleases
+  /** Handler for toggling prerelease visibility. */
   onTogglePrereleases: OnTogglePrereleases
+  /** Handler for clicking the error icon. */
   onErrorClick: OnErrorClick
 
-  // install event
+  /** Handler for document save events. */
   onSaveChanges: OnSaveChanges
 
-  // provider events
+  /** Handler for provider-supported editor activation. */
   onProviderEditorActivated: OnProviderEditorActivated
+  /** Handler for provider-supported document changes. */
   onProviderTextDocumentChange: OnProviderTextDocumentChange
+  /** Handler for provider-supported document close. */
   onProviderTextDocumentClose: OnProviderTextDocumentClose
 
-  // vscode events
+  /** Handler for VS Code active editor change events. */
   onActiveTextEditorChange: OnActiveTextEditorChange
+  /** Handler for VS Code document change events. */
   onTextDocumentChange: OnTextDocumentChange
+  /** Handler for VS Code document close events. */
   onTextDocumentClose: OnTextDocumentClose
+  /** Handler for VS Code document save events. */
   onTextDocumentSave: OnTextDocumentSave
 
-  // watcher events
+  /** Handler for package dependency changes. */
   onPackageDependenciesChanged: OnPackageDependenciesChanged
 }
 
+/**
+ * Service name constants for extension layer services.
+ */
 export const ExtensionServiceName = nameOf<IExtensionServices>()
 
+/**
+ * Interface for the collective state of the extension.
+ */
 export interface IVersionLensState {
+  /** Whether version lenses are shown. */
   show: IContextState<boolean>
+  /** Whether prereleases are shown. */
   showPrereleases: IContextState<boolean>
+  /** Whether suggestion stats are shown. */
   showSuggestionsStats: IContextState<boolean>
+  /** Whether outdated dependencies are present. */
   showOutdated: IContextState<boolean>
+  /** The currently active provider. */
   providerActive: IContextState<string | null>
+  /** The busy state counter. */
   providerBusy: IContextState<number>
+  /** Whether a provider error occurred. */
   providerError: IContextState<boolean>
+  /** Whether code lens replacement is enabled. */
   codeLensReplace: IContextState<boolean>
+  /** Applies default state values. */
   applyDefaults(): Promise<void>
+  /** Increments the busy state. */
   increaseBusyState(): Promise<void>
+  /** Decrements the busy state. */
   decreaseBusyState(): Promise<void>
+  /** Clears the busy state. */
   clearBusyState(): Promise<void>
+  /** Sets the error state. */
   setErrorState(): Promise<void>
+  /** Clears the error state. */
   clearErrorState(): Promise<void>
+  /** Enables or disables code lens replacement. */
   enableCodeLensReplace(state: boolean): Promise<void>
 }
 
+/**
+ * Interface for a piece of state synced with a VS Code context key.
+ */
 export interface IContextState<T> {
+  /** Gets the current value. */
   get value(): T
+  /** Updates the value and synchronizes with VS Code. */
   change(newValue: T): Promise<T>
 }
 
+/**
+ * Interface representing a suggestion-based code lens.
+ */
 export interface ISuggestionCodeLens {
+  /** The range to replace in the document. */
   replaceRange: Range,
+  /** The underlying package suggestion data. */
   packageResponse: PackageResponse,
+  /** The URI of the document containing the lens. */
   documentUrl: Uri,
+  /** The function used to generate the replacement version string. */
   replaceVersionFn: SuggestionReplaceFunction
 }

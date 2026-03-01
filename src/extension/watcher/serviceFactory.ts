@@ -4,6 +4,10 @@ import { ExtensionServiceName, type IExtensionServices } from '#extension';
 import { PackageFileWatcher } from '#extension/watcher';
 import { workspace } from 'vscode';
 
+/**
+ * Registers the package file watcher as a singleton in the service collection.
+ * @param services The service collection to add to.
+ */
 export function addPackageFileWatcher(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.packageFileWatcher;
   services.addSingleton(

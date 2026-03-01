@@ -8,6 +8,9 @@ import { throwUndefinedOrNull } from '@esm-test/guards';
 import { isMatch } from 'micromatch';
 import type { Uri } from 'vscode';
 
+/**
+ * Default glob patterns to exclude from file watching.
+ */
 export const defaultExcludes = [
   '**/node_modules/**',
   '**/bower_components/**',
@@ -16,8 +19,20 @@ export const defaultExcludes = [
   '**/.vscode/**'
 ];
 
+/**
+ * Watches the workspace for changes to package files and maintains the dependency cache.
+ */
 export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChangedEvent> {
 
+  /**
+   * Initializes a new instance of the PackageFileWatcher class.
+   * @param getDependencyChanges Use case for detecting dependency changes.
+   * @param providers List of active suggestion providers.
+   * @param dependencyCache Cache for storing parsed dependencies.
+   * @param editorConfig VS Code editor configuration.
+   * @param workspace VS Code workspace adapter.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly getDependencyChanges: GetDependencyChanges,
     readonly providers: ISuggestionProvider[],
@@ -35,6 +50,10 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     throwUndefinedOrNull("logger", logger);
   }
 
+  /**
+   * Scans the workspace folders for supported package files and starts watching them.
+   * @returns A promise that resolves when the initial scan is complete.
+   */
   async watchFolder(): Promise<void> {
     const startedAt = performance.now();
 
@@ -56,6 +75,11 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     this.watch();
   }
 
+  /**
+   * Adds a specific file to the watch list.
+   * @param file The URI of the file to watch.
+   * @returns A promise that resolves when the file has been processed.
+   */
   async watchFile(file: Uri): Promise<void> {
     const matched = this.providers.filter(
       provider => isMatch(file.fsPath, provider.config.filePatterns, { dot: true })
@@ -79,6 +103,9 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     this.watch();
   }
 
+  /**
+   * Sets up VS Code file system watchers for all active providers.
+   */
   watch(): void {
     // watch files
     this.providers.forEach(provider => {
@@ -99,6 +126,11 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     });
   }
 
+  /**
+   * Handles a file being added to the watch list.
+   * @param provider The provider associated with the file.
+   * @param uri The URI of the added file.
+   */
   async onFileAdd(provider: ISuggestionProvider, uri: Uri) {
     const matched = isMatch(uri.fsPath, defaultExcludes, { dot: true })
     if (matched) return;
@@ -107,6 +139,9 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     await this.updateCacheFromFile(provider, uri.fsPath);
   }
 
+  /**
+   * Handles a file creation event.
+   */
   private async onFileCreate(provider: ISuggestionProvider, uri: Uri) {
     const matched = isMatch(uri.fsPath, defaultExcludes, { dot: true })
     if (matched) return;
@@ -115,6 +150,9 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     await this.updateCacheFromFile(provider, uri.fsPath);
   }
 
+  /**
+   * Handles a file deletion event.
+   */
   private onFileDelete(provider: ISuggestionProvider, uri: Uri) {
     const matched = isMatch(uri.fsPath, defaultExcludes, { dot: true })
     if (matched) return;
@@ -123,6 +161,12 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     this.dependencyCache.remove(provider.name, uri.fsPath);
   }
 
+  /**
+   * Handles a file change event.
+   * Fires the dependency changed event if changes were detected.
+   * @param provider The provider associated with the file.
+   * @param uri The URI of the changed file.
+   */
   async onFileChange(provider: ISuggestionProvider, uri: Uri) {
     const matched = isMatch(uri.fsPath, defaultExcludes, { dot: true })
     if (matched) return;
@@ -142,6 +186,9 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     }
   }
 
+  /**
+   * Parses dependencies from a file and updates the cache.
+   */
   private async updateCacheFromFile(
     provider: ISuggestionProvider,
     packageFilePath: string
@@ -157,6 +204,9 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
     return result;
   }
 
+  /**
+   * Searches for project files matching a provider's configuration.
+   */
   private async findProviderFiles(provider: ISuggestionProvider) {
     // capture start time
     const startedAt = performance.now();
@@ -189,6 +239,11 @@ export class PackageFileWatcher extends AsyncEmitter<OnPackageDependenciesChange
   }
 }
 
+/**
+ * Combines multiple glob patterns into a single brace-enclosed pattern.
+ * @param patterns The list of glob patterns.
+ * @returns A single glob pattern string.
+ */
 export function mapToSinglePattern(patterns: string[]): string {
   return `{${patterns.join(',')}}`;
 }

@@ -2,6 +2,13 @@ import { type PackageResponse, SuggestionReplaceFunction } from '#domain/package
 import { SuggestionCodeLens } from '#extension/suggestions';
 import { type TextDocument, Range, Uri } from 'vscode';
 
+/**
+ * Creates an array of SuggestionCodeLens objects from a list of package responses.
+ * @param document The VS Code text document.
+ * @param suggestions The list of package version suggestions.
+ * @param replaceVersionFn The function used to generate replacement version strings.
+ * @returns An array of initialized code lenses.
+ */
 export function createFromPackageResponses(
   document: TextDocument,
   suggestions: Array<PackageResponse>,
@@ -18,6 +25,10 @@ export function createFromPackageResponses(
   );
 }
 
+/**
+ * Creates a single SuggestionCodeLens from a package response.
+ * Calculates the appropriate document ranges for display and replacement.
+ */
 function createFromPackageResponse(
   packageResponse: PackageResponse,
   document: TextDocument,

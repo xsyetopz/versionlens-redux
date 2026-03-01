@@ -9,6 +9,10 @@ import {
 } from '#extension/events';
 import { window, workspace } from 'vscode';
 
+/**
+ * Registers the onActiveTextEditorChange event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnActiveTextEditorChange(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onActiveTextEditorChange;
   services.addSingleton(
@@ -30,6 +34,10 @@ export function addOnActiveTextEditorChange(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onTextDocumentChange event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnTextDocumentChange(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onTextDocumentChange;
   services.addSingleton(
@@ -51,6 +59,10 @@ export function addOnTextDocumentChange(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onTextDocumentClose event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnTextDocumentClose(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onTextDocumentClose;
   services.addSingleton(
@@ -71,6 +83,10 @@ export function addOnTextDocumentClose(services: IServiceCollection) {
   )
 }
 
+/**
+ * Registers the onTextDocumentSave event handler as a singleton.
+ * @param services The service collection to add to.
+ */
 export function addOnTextDocumentSave(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onTextDocumentSave;
   services.addSingleton(

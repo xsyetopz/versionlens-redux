@@ -49,6 +49,13 @@ import {
 import { VersionLensExtension } from './versionLensExtension';
 import { addPackageFileWatcher } from './watcher/serviceFactory';
 
+/**
+ * Configures the dependency injection container for the entire extension.
+ * This includes domain services and extension-specific services.
+ * @param context The VS Code extension context.
+ * @param resourceFolderPath The path to the resource folder for the current context.
+ * @returns A promise resolving to the initialized service provider.
+ */
 export async function configureContainer(
   context: ExtensionContext,
   resourceFolderPath: string
@@ -78,6 +85,13 @@ export async function configureContainer(
   return await services.build();
 }
 
+/**
+ * Registers all extension-level services and event handlers.
+ * @param services The service collection to add to.
+ * @param resourceFolderPath The path to the resource folder.
+ * @param workspaceState The VS Code workspace memento.
+ * @param secrets The VS Code secret storage.
+ */
 function addExtensionServices(
   services: IServiceCollection,
   resourceFolderPath: string,

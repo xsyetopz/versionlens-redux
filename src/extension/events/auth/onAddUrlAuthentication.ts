@@ -9,8 +9,19 @@ import {
 } from '#extension/authorization';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Event handler for adding URL-based authentication.
+ */
 export class OnAddUrlAuthentication extends Disposable {
 
+  /**
+   * Initializes a new instance of the OnAddUrlAuthentication class.
+   * @param authProviders Map of authentication providers.
+   * @param urlAuthStore Store for URL authentication metadata.
+   * @param packageCache Cache for package suggestions.
+   * @param interactions UI interactions handler.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly authProviders: KeyDictionary<AuthenticationProvider>,
     readonly urlAuthStore: UrlAuthenticationStore,
@@ -26,6 +37,10 @@ export class OnAddUrlAuthentication extends Disposable {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Executes the add authentication workflow.
+   * Prompts the user for URL, scheme, and credentials, then clears the package cache.
+   */
   async execute() {
     // prompt for the authorization url
     const authUrl = await this.interactions.enterAuthorizationUrl();

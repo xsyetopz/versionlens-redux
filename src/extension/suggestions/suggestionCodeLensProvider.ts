@@ -19,8 +19,19 @@ import type {
 
 const def = nameOf<SuggestionCodeLensProvider>();
 
+/**
+ * VS Code CodeLens provider for package version suggestions.
+ */
 export class SuggestionCodeLensProvider extends Disposable implements CodeLensProvider {
 
+  /**
+   * Initializes a new instance of the SuggestionCodeLensProvider class.
+   * @param extension The extension instance.
+   * @param suggestionProvider The underlying suggestion provider for a specific ecosystem.
+   * @param getSuggestions Use case for retrieving version suggestions.
+   * @param notifyCodeLensesChanged EventEmitter to notify VS Code when lenses need refreshing.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly extension: VersionLensExtension,
     readonly suggestionProvider: ISuggestionProvider,
@@ -39,17 +50,30 @@ export class SuggestionCodeLensProvider extends Disposable implements CodeLensPr
     this.onDidChangeCodeLenses = notifyCodeLensesChanged.event;
   }
 
+  /** The name of the suggestion provider. */
   providerName: string;
 
+  /** Event that fires when code lenses change. */
   onDidChangeCodeLenses: Event<void>;
 
+  /** Gets the extension state. */
   get state(): VersionLensState { return this.extension.state; }
 
+  /**
+   * Triggers a refresh of all version lenses.
+   */
   refreshCodeLenses() {
     // notify vscode to refresh version lenses
     this.notifyCodeLensesChanged.fire();
   }
 
+  /**
+   * Provides the initial list of code lenses for a document.
+   * Fetches suggestions and converts them to lenses.
+   * @param document The VS Code text document.
+   * @param token A cancellation token.
+   * @returns A promise resolving to an array of code lenses.
+   */
   async provideCodeLenses(document: TextDocument, token: CancellationToken): Promise<CodeLens[]> {
     if (this.state.show.value === false) return [];
 
@@ -94,6 +118,13 @@ export class SuggestionCodeLensProvider extends Disposable implements CodeLensPr
     );
   }
 
+  /**
+   * Resolves the command for a code lens.
+   * Evaluates the suggestion and assigns the appropriate VS Code command.
+   * @param codeLens The code lens to resolve.
+   * @param token A cancellation token.
+   * @returns A promise resolving to the fully resolved code lens.
+   */
   async resolveCodeLens(codeLens: CodeLens, token: CancellationToken): Promise<CodeLens | undefined> {
     if (codeLens instanceof SuggestionCodeLens) {
       // evaluate the code lens
@@ -109,6 +140,9 @@ export class SuggestionCodeLensProvider extends Disposable implements CodeLensPr
     return codeLens;
   }
 
+  /**
+   * Internal method to evaluate a code lens and assign its command.
+   */
   evaluateCodeLens(codeLens: SuggestionCodeLens) {
     return CommandFactory.createSuggestedVersionCommand(
       codeLens,
@@ -116,6 +150,9 @@ export class SuggestionCodeLensProvider extends Disposable implements CodeLensPr
     );
   }
 
+  /**
+   * Disposes of the provider resources.
+   */
   async dispose() {
     await this.disposable.dispose();
     const providerName = this.suggestionProvider.name;

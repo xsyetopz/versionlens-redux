@@ -6,8 +6,19 @@ import type { SuggestionsOptions } from '#extension/suggestions';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 import type { StatusBarItem } from 'vscode';
 
+/**
+ * Event handler for refreshing suggestion statistics shown in the status bar.
+ */
 export class OnRefreshSuggestionsStats extends Disposable {
 
+  /**
+   * Initializes a new instance of the OnRefreshSuggestionsStats class.
+   * @param statusBarItem The VS Code status bar item to update.
+   * @param getSuggestionsStats Use case for calculating statistics.
+   * @param state Extension state.
+   * @param options Suggestion configuration options.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly statusBarItem: StatusBarItem,
     readonly getSuggestionsStats: GetSuggestionsStats,
@@ -23,6 +34,10 @@ export class OnRefreshSuggestionsStats extends Disposable {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Refreshes the statistics and updates the status bar item.
+   * @param useCache Whether to use cached stats if available.
+   */
   async execute(useCache: boolean) {
     if (this.state.showSuggestionsStats.value === false) {
       this.statusBarItem.hide();

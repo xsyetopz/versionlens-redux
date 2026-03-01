@@ -4,8 +4,17 @@ import { VersionLensState } from '#extension/state';
 import { SuggestionCodeLensProvider } from '#extension/suggestions';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
+/**
+ * Event handler for toggling the display of version lenses (releases).
+ */
 export class OnToggleReleases extends Disposable {
 
+  /**
+   * Initializes a new instance of the OnToggleReleases class.
+   * @param suggestionCodeLensProviders List of active code lens providers.
+   * @param state Extension state.
+   * @param logger Logger instance.
+   */
   constructor(
     readonly suggestionCodeLensProviders: SuggestionCodeLensProvider[],
     readonly state: VersionLensState,
@@ -18,8 +27,8 @@ export class OnToggleReleases extends Disposable {
   }
 
   /**
-   * Shows or hides version release info
-   * @param toggle
+   * Shows or hides version release info.
+   * @param toggle Whether to show version lenses.
    */
   async execute(toggle: boolean): Promise<void> {
     this.logger.debug("toggle version releases = {toggle}", toggle);
