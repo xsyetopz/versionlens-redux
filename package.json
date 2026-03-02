@@ -264,7 +264,7 @@
         },
         "versionlens.suggestions.showCustomInstallAction": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Show the custom install action in the editor toolbar when a custom install task is configured for the active package manager."
         },
         "versionlens.suggestions.indicators": {
