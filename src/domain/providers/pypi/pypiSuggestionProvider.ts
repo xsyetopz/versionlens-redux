@@ -50,6 +50,13 @@ export class PypiSuggestionProvider implements ISuggestionProvider {
     throwUndefinedOrNull('logger', logger);
   }
 
+  /**
+   * Handles the replacement of Python version constraints.
+   * Preserves or converts operators (e.g., < to <=) and handles multi-constraint strings.
+   * @param suggestion The suggestion being applied.
+   * @param newVersion The new version string.
+   * @returns The updated version string with operators.
+   */
   suggestionReplaceFn(suggestion: SuggestionUpdate, newVersion: string): string {
     const { parsedVersion } = suggestion;
 

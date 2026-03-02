@@ -160,6 +160,11 @@ function parseComplexNode(
   return packageDesc;
 }
 
+/**
+ * Parses a TOML array containing PEP 508 dependency strings.
+ * @param arrayNode The TOML array node.
+ * @returns An array of package descriptors.
+ */
 function parseArrayNode(
   arrayNode: AST.TOMLArray
 ): Array<PackageDescriptor> {

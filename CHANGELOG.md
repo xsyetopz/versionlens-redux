@@ -7,6 +7,15 @@
 
   - Fixed an issue where saving changes during a running custom installation prevented subsequent install attempts until additional modifications were made.
 
+  ### Python (pypi)
+
+  - Added support for parsing TOML array values in `pyproject.toml` to support the PEP 621 standard used by `uv` and `poetry >= 2.0.0`.
+    This includes parsing of `dependencies` and `project.optional-dependencies` arrays.
+
+    Thanks to [amerino.informatica](https://gitlab.com/amerino.informatica)
+
+    Relates to [#380](https://gitlab.com/versionlens/vscode-versionlens/-/issues/380)
+
 # 1.22.4
 
   ### Npm
