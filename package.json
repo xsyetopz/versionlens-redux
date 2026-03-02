@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@types/eslint": "9.6.1",
-    "@types/micromatch": "4.0.9",
+    "@types/micromatch": "4.0.10",
     "@types/mocha": "10.0.10",
     "@types/node": "22.19.13",
     "@types/npm-package-arg": "6.1.4",
