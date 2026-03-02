@@ -18,7 +18,7 @@
   },
   "author": "Peter Flannery",
   "license": "ISC",
-  "version": "1.23.0-beta.1",
+  "version": "1.23.0-prerelease",
   "publisher": "pflannery",
   "displayName": "Version Lens",
   "icon": "images/logo.png",
