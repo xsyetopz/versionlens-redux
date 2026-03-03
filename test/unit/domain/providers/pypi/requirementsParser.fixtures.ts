@@ -23,6 +23,7 @@ pkg2~=1.0
 pkg3===1.0
 pkg4!=1.0
 pkg5
+pkg6==1.2.3 # this is a comment
 `,
     expected: [
       new PackageDependency(
@@ -86,6 +87,13 @@ pkg5
         new PackageDescriptor([
           createPackageNameDesc('pkg5', createTextRange(112)),
           createPackageVersionDesc('*', createTextRange(116))
+        ])
+      ),
+      new PackageDependency(
+        createPackageResource('pkg6', '==1.2.3', 'test.txt'),
+        new PackageDescriptor([
+          createPackageNameDesc('pkg6', createTextRange(117)),
+          createPackageVersionDesc('==1.2.3', createTextRange(121, 128))
         ])
       )
     ]
