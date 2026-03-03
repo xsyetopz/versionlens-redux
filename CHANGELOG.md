@@ -1,4 +1,4 @@
-# 1.23.0-prerelease
+# 1.23.1-prerelease
 
   ### All
 
@@ -8,6 +8,10 @@
   - Fixed an issue where saving changes during a running custom installation prevented subsequent install attempts until additional modifications were made.
 
   ### Python (pypi)
+
+  - Added requirements.txt support to the pypi provider
+
+    Relates to [#57](https://gitlab.com/versionlens/vscode-versionlens/-/issues/57)
 
   - Added support for parsing TOML array values in `pyproject.toml` to support the PEP 621 standard used by `uv` and `poetry >= 2.0.0`.
     This includes parsing of `dependencies` and `project.optional-dependencies` arrays.
