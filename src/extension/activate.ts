@@ -86,6 +86,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     serviceNames.onClearCache,
     serviceNames.onFileLinkClick,
     serviceNames.onUpdateDependencyClick,
+    serviceNames.onUpdateDependenciesLatest,
     serviceNames.onChooseBuildClick,
     serviceNames.onSortDependencies,
     serviceNames.onRefreshSuggestionsStats,

@@ -23,6 +23,7 @@ VersionLens shows __version__ information when opening a package or project file
 - [How do I authorize packages that need credentials?](./docs/authorization.md)
 - [How do I install this extension?](#how-do-i-install-this-extension)
 - [How do I troubleshoot this extension?](#how-do-i-troubleshoot-this-extension)
+- [Commands & Settings](./docs/commands-and-settings.md)
 - [Development Guide](./docs/development.md)
 
 ### Supported Languages & Ecosystems
@@ -92,19 +93,7 @@ If you are unable to install the extension, try a clean install:
 
 ## Commands & Settings
 
-### Useful Commands
-| Command | Description |
-| ------- | ----------- |
-| `VersionLens: Clear cache` | Clears all cached package suggestions. |
-| `VersionLens: Add url authentication` | Manually add credentials for a registry. |
-| `VersionLens: Remove url authentication` | Remove stored registry credentials. |
-
-### Key Settings
-| Setting | Default | Description |
-| ------- | ------- | ----------- |
-| `versionlens.suggestions.showOnStartup` | `false` | Show version lenses when a file is opened. |
-| `versionlens.suggestions.showPrereleasesOnStartup` | `false` | Show prerelease suggestions on startup. |
-| `versionlens.caching.duration` | `3` | Cache duration in minutes. |
+For a full list of available commands and configuration options, see the [Commands & Settings Guide](./docs/commands-and-settings.md).
 
 ## License
 

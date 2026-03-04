@@ -13,6 +13,7 @@ import {
   OnRefreshSuggestionsStats,
   OnShowSuggestionsStatsDetails,
   OnSortDependenciesClick,
+  OnUpdateDependenciesLatestClick,
   OnUpdateDependencyClick
 } from '#extension/events';
 import { SuggestionInteractions } from '#extension/suggestions';
@@ -162,6 +163,38 @@ export function addOnSortDependenciesClick(services: IServiceCollection) {
       // register the vscode command
       handler.disposable = commands.registerCommand(
         IconCommandFeatures.OnSortDependencies,
+        () => handler.execute(window.activeTextEditor),
+        handler
+      );
+
+      return handler;
+    },
+    true
+  )
+}
+
+/**
+ * Registers the onUpdateDependenciesLatestClick command handler as a singleton.
+ * @param services The service collection to add to.
+ */
+export function addOnUpdateDependenciesLatestClick(services: IServiceCollection) {
+  const serviceName = ExtensionServiceName.onUpdateDependenciesLatest;
+  services.addSingleton(
+    serviceName,
+    (container: IDomainServices & IExtensionServices) => {
+      // create the event handler
+      const handler = new OnUpdateDependenciesLatestClick(
+        container.extension,
+        new VsCodeConstructionFactory(),
+        workspace,
+        container.versionLensState,
+        container.GetSuggestionProvider,
+        container.getSuggestions
+      );
+
+      // register the vscode command
+      handler.disposable = commands.registerCommand(
+        IconCommandFeatures.OnUpdateDependenciesLatest,
         () => handler.execute(window.activeTextEditor),
         handler
       );

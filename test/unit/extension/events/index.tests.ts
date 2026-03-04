@@ -11,5 +11,6 @@ export * from './onRefreshSuggestionsStats.tests';
 export * from './onRemoveUrlAuthentication.tests';
 export * from './onSaveChanges.tests';
 export * from './onSortDependenciesClick.tests';
+export * from './onUpdateDependenciesLatestClick.tests';
 export * from './onTextDocumentChange.tests';
 export * from './onUpdateDependencyClick.tests';

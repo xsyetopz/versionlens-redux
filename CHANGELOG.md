@@ -1,4 +1,4 @@
-# 1.23.2-prerelease
+# 1.23.3-prerelease
 
   ### All
 
@@ -9,7 +9,9 @@
 
     - Added `Sort dependencies alphabetically` action to the `secondary` toolbar group and command palette. Dependencies will be sorted per group.
 
-      ![image](https://gitlab.com/-/project/19418059/uploads/df88fa0ade9f78be946fb278f4602ee6/image.png)
+    - Added `Update dependencies to latest` action to the `secondary` toolbar group. This will update all dependencies that have a newer latest version available.
+
+    ![image](https://gitlab.com/-/project/19418059/uploads/79083a4043ee828ef11e9159f1fc92c4/image.png)
 
   - Fixed an issue where saving changes during a running custom installation prevented subsequent install attempts until additional modifications were made.
 

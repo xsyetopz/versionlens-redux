@@ -118,6 +118,11 @@
         }
       },
       {
+        "command": "versionlens.icons.updateDependenciesLatest",
+        "title": "Update dependencies to latest",
+        "category": "VersionLens"
+      },
+      {
         "command": "versionlens.icons.sortDependencies",
         "title": "Sort dependencies alphabetically",
         "category": "VersionLens",
@@ -253,6 +258,11 @@
         {
           "command": "versionlens.icons.onCustomInstall",
           "when": "versionlens.showCustomInstall && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "secondary"
+        },
+        {
+          "command": "versionlens.icons.updateDependenciesLatest",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
           "group": "secondary"
         },
         {

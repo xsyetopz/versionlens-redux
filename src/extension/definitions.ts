@@ -1,5 +1,6 @@
 import type { DependencyCache, PackageResponse, SuggestionReplaceFunction } from '#domain/packages';
 import { nameOf, type KeyDictionary } from '#domain/utils';
+import type { GetSuggestions } from '#domain/useCases';
 import type {
   OnActiveTextEditorChange,
   OnAddUrlAuthentication,
@@ -17,6 +18,7 @@ import type {
   OnSaveChanges,
   OnShowSuggestionsStatsDetails,
   OnSortDependenciesClick,
+  OnUpdateDependenciesLatestClick,
   OnTextDocumentChange,
   OnTextDocumentClose,
   OnTextDocumentSave,
@@ -63,7 +65,9 @@ export enum IconCommandFeatures {
   /** Command to execute a custom install task. */
   OnCustomInstall = 'versionlens.icons.onCustomInstall',
   /** Command to sort dependencies alphabetically. */
-  OnSortDependencies = 'versionlens.icons.sortDependencies'
+  OnSortDependencies = 'versionlens.icons.sortDependencies',
+  /** Command to update all dependencies to their latest versions. */
+  OnUpdateDependenciesLatest = 'versionlens.icons.updateDependenciesLatest'
 }
 
 /**
@@ -134,6 +138,8 @@ export enum SuggestionFeatures {
 export interface IExtensionServices {
   /** Suggestion configuration options. */
   suggestionOptions: SuggestionsOptions
+  /** The use case for retrieving version suggestions. */
+  getSuggestions: GetSuggestions
   /** The extension instance. */
   extension: VersionLensExtension
   /** The collective extension state. */
@@ -173,6 +179,8 @@ export interface IExtensionServices {
   onRefreshSuggestionsStats: OnRefreshSuggestionsStats
   /** Handler for sorting dependencies alphabetically. */
   onSortDependencies: OnSortDependenciesClick
+  /** Handler for updating all dependencies to their latest versions. */
+  onUpdateDependenciesLatest: OnUpdateDependenciesLatestClick
   /** Handler for showing suggestion stat details. */
   onShowSuggestionsStatsDetails: OnShowSuggestionsStatsDetails
   /** Handler for file link clicks. */

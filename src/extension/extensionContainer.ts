@@ -30,6 +30,7 @@ import {
   addOnSaveChanges,
   addOnShowSuggestionsStatsDetails,
   addOnSortDependenciesClick,
+  addOnUpdateDependenciesLatestClick,
   addOnTextDocumentChange,
   addOnTextDocumentClose,
   addOnTextDocumentSave,
@@ -132,6 +133,7 @@ function addExtensionServices(
   addOnUpdateDependencyClick(services);
   addOnChooseBuildClick(services);
   addOnSortDependenciesClick(services);
+  addOnUpdateDependenciesLatestClick(services);
   addOnRefreshSuggestionsStats(services);
   addOnShowSuggestionsStatsDetails(services);
 
