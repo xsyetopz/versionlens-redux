@@ -1,17 +1,16 @@
 import {
-  type PackageNameDescriptor,
-  type PackageTextRange,
-  type PackageVersionDescriptor,
   PackageDescriptor,
+  createPackageGroupDesc,
   createPackageNameDesc,
   createPackageVersionDesc,
-  createPackageGroupDesc,
   createTextRange
 } from '#domain/parsers';
 
 const INCOMPAT_BUILD = "+incompatible";
 const PREPEND_V = "v";
-const re = /(\S+(?<!retract))\s*((?=v\d+\.\d+\.\d+).[^/ \n]*)/gd
+
+// https://go.dev/ref/mod#go-mod-file
+const DIRECTIVES = ['require', 'replace', 'exclude'];
 
 /**
  * Parses a go.mod file content and extracts package dependencies.
@@ -20,78 +19,137 @@ const re = /(\S+(?<!retract))\s*((?=v\d+\.\d+\.\d+).[^/ \n]*)/gd
  */
 export function parsePackagesGoMod(text: string): Array<PackageDescriptor> {
   const matchedDependencies: Array<PackageDescriptor> = [];
-  let match
+  const lines = text.match(/[^\r\n]*(\r?\n|$)/g) || [];
 
-  while ((match = re.exec(text)) !== null) {
-    const packageName = match[1];
-    const [packageStart] = match.indices![1];
+  let currentBlock: string | null = null;
+  let currentOffset = 0;
 
-    const version = match[2];
-    const [versionStart, versionEnd] = match.indices![2];
+  for (const line of lines) {
+    const trimmedLine = line.trim();
 
-    const skip =
-      // pseudo module
-      version.split("-").length === 3
-      // retract [,]
-      || packageName.indexOf("[") !== -1;
+    // skip empty lines and comments at start of line
+    if (trimmedLine.length === 0 || trimmedLine.startsWith('//')) {
+      currentOffset += line.length;
+      continue;
+    }
 
-    if (skip) continue;
+    // check if we are entering or leaving a block
+    if (trimmedLine.endsWith('(')) {
+      const keyword = trimmedLine.slice(0, -1).trim();
+      if (DIRECTIVES.includes(keyword)) {
+        currentBlock = keyword;
+      }
+      currentOffset += line.length;
+      continue;
+    }
 
-    // create the package descriptor
-    const nameDesc = createGoNameDescType(packageName, packageStart);
-    const versionDesc = createGoVersionDescType(
-      version.trim(),
-      versionStart,
-      versionEnd
-    );
+    if (trimmedLine === ')') {
+      currentBlock = null;
+      currentOffset += line.length;
+      continue;
+    }
 
-    // create the group descriptor
-    const groupDesc = createPackageGroupDesc(
-      'dependencies',
-      createTextRange(packageStart, versionEnd)
-    );
+    // handle single line directives or block content
+    let keyword = currentBlock;
+    let content = trimmedLine;
 
-    const packageDesc = new PackageDescriptor([nameDesc, versionDesc, groupDesc]);
-    matchedDependencies.push(packageDesc);
+    if (!currentBlock) {
+      const spaceIndex = trimmedLine.indexOf(' ');
+      if (spaceIndex !== -1) {
+        const potentialKeyword = trimmedLine.substring(0, spaceIndex);
+        if (DIRECTIVES.includes(potentialKeyword)) {
+          keyword = potentialKeyword;
+          content = trimmedLine.substring(spaceIndex + 1).trim();
+        }
+      }
+    }
+
+    if (keyword && content.length > 0) {
+      parseDirective(
+        keyword,
+        content,
+        line,
+        currentOffset,
+        matchedDependencies
+      );
+    }
+
+    currentOffset += line.length;
   }
 
   return matchedDependencies;
 }
 
-/**
- * Creates a package name descriptor for a Go module.
- * @param name The package name.
- * @param start The start position in the text.
- * @returns A package name descriptor.
- */
-function createGoNameDescType(name: string, start: number): PackageNameDescriptor {
-  const nameRange: PackageTextRange = {
-    start,
-    end: start
-  };
+function parseDirective(
+  keyword: string,
+  content: string,
+  line: string,
+  lineOffset: number,
+  matchedDependencies: Array<PackageDescriptor>
+) {
+  // remove inline comments
+  const commentIndex = content.indexOf('//');
+  const cleanContent = (commentIndex !== -1 
+    ? content.substring(0, commentIndex) 
+    : content).trim();
 
-  return createPackageNameDesc(name, nameRange);
-}
+  if (cleanContent.length === 0) return;
 
-/**
- * Creates a package version descriptor for a Go module version.
- * @param version The version string.
- * @param start The start position in the text.
- * @param end The end position in the text.
- * @returns A package version descriptor.
- */
-function createGoVersionDescType(version: string, start: number, end: number): PackageVersionDescriptor {
-  const versionRange = {
-    start,
-    end
-  };
+  const parts = cleanContent.split(/\s+/);
+  if (parts.length < 1) return;
+  const packageName = parts[0];
+  const version = parts.length > 1 ? parts[1] : '';
 
-  const append = version.endsWith(INCOMPAT_BUILD) ? INCOMPAT_BUILD : "";
+  // pseudo module check (v0.0.0-yyyymmddhhmmss-abcdefabcdef)
+  if (version && version.split("-").length === 3) return;
 
-  return createPackageVersionDesc(
-    version,
-    versionRange,
-    PREPEND_V,
-    append
+  let nameStart = 0;
+  if (packageName) {
+    // find offsets in the original line
+    const nameIndex = line.indexOf(packageName);
+    if (nameIndex === -1) return;
+    nameStart = lineOffset + nameIndex;
+  }
+
+  let versionStart = 0;
+  let versionEnd = 0;
+  if (version) {
+    const versionIndex = line.indexOf(version, packageName ? (line.indexOf(packageName) + packageName.length) : 0);
+    if (versionIndex !== -1) {
+      versionStart = lineOffset + versionIndex;
+      versionEnd = versionStart + version.length;
+    }
+  }
+
+  // create the package descriptors
+  const descriptors: any[] = [];
+  if (packageName) {
+    descriptors.push(
+      createPackageNameDesc(
+        packageName,
+        createTextRange(nameStart, nameStart + packageName.length)
+      )
+    );
+  }
+
+  if (version) {
+    descriptors.push(
+      createPackageVersionDesc(
+        version,
+        createTextRange(versionStart, versionEnd),
+        PREPEND_V,
+        version.endsWith(INCOMPAT_BUILD) ? INCOMPAT_BUILD : ""
+      )
+    );
+  }
+
+  // create the group descriptor for sorting
+  const groupStart = packageName ? nameStart : versionStart;
+  const groupDesc = createPackageGroupDesc(
+    keyword,
+    createTextRange(groupStart, versionEnd || (nameStart + packageName.length))
   );
+  descriptors.push(groupDesc);
+
+  matchedDependencies.push(new PackageDescriptor(descriptors));
 }

@@ -38,9 +38,9 @@ export interface IProviderConfig {
    */
   readonly onSaveChangesTask?: string | null
   /**
-   * The property names that contain dependencies in package files.
+   * Optional property names that contain dependencies in package files.
    */
-  readonly dependencyProperties: Array<string>
+  readonly dependencyProperties?: Array<string>
 }
 
 /**

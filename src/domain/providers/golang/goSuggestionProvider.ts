@@ -75,10 +75,9 @@ export class GoSuggestionProvider implements ISuggestionProvider {
     const packageDependencies = [];
 
     for (const descriptors of parsedPackages) {
-
-      const nameDesc = descriptors.getType<PackageNameDescriptor>(
-        PackageDescriptorType.name
-      );
+      const nameDesc = descriptors.hasType(PackageDescriptorType.name)
+        ? descriptors.getType<PackageNameDescriptor>(PackageDescriptorType.name)
+        : null;
 
       // map the version descriptor to a package dependency
       if (descriptors.hasType(PackageDescriptorType.version)) {
@@ -89,7 +88,7 @@ export class GoSuggestionProvider implements ISuggestionProvider {
         packageDependencies.push(
           new PackageDependency(
             createPackageResource(
-              nameDesc.name,
+              nameDesc ? nameDesc.name : '',
               versionDesc.version,
               packagePath
             ),
@@ -99,7 +98,6 @@ export class GoSuggestionProvider implements ISuggestionProvider {
 
         continue;
       }
-
     } // end map loop
 
     return packageDependencies;

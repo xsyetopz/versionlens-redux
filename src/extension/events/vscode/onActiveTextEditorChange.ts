@@ -71,7 +71,7 @@ export class OnActiveTextEditorChange extends AsyncEmitter<ProviderEditorActivat
     await this.state.showCustomInstall.change(hasCustomInstall);
 
     // update sort alphabetically state
-    const showSortAlphabetically = activeProvider.config.dependencyProperties.length > 0;
+    const showSortAlphabetically = activeProvider.config.dependencyProperties?.length !== 0;
     await this.state.showSortAlphabetically.change(showSortAlphabetically);
 
     // fire activated event

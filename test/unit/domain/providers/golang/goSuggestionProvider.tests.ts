@@ -1,8 +1,9 @@
 import type { ILogger } from '#domain/logging';
 import { type GoConfig, type GoSuggestionResolver, GoSuggestionProvider } from '#domain/providers/golang';
+import { test } from 'mocha-ui-esm';
 import { deepEqual, equal } from 'node:assert';
 import { instance, mock } from 'ts-mockito';
-import fixtures from './goSuggestionProvider.fixtures';
+import Fixtures from './goSuggestionProvider.fixtures';
 
 type TestContext = {
   resolverMock: GoSuggestionResolver
@@ -13,7 +14,7 @@ type TestContext = {
 
 export const goSuggestionProviderTests = {
 
-  title: GoSuggestionProvider.name,
+  [test.title]: GoSuggestionProvider.name,
 
   beforeEach: function (this: TestContext) {
     this.resolverMock = mock<GoSuggestionResolver>()
@@ -44,11 +45,18 @@ export const goSuggestionProviderTests = {
     equal(actual.length, 0);
   },
 
-  "parses go.mod dependencies": function (this: TestContext) {
-    // test
-    const actual = this.put.parseDependencies('test/path/go.mod', fixtures.test)
-    // assert
-    deepEqual(actual, fixtures.expected)
+  "parses go.mod dependencies": {
+    "case $i: $1": [
+      Fixtures.case1,
+      function (this: TestContext, fixture: any) {
+        // setup
+        const { test, expected } = fixture;
+        // test
+        const actual = this.put.parseDependencies('test/path/go.mod', test);
+        // assert
+        deepEqual(actual, expected);
+      }
+    ]
   },
 
 }

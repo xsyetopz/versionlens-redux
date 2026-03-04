@@ -23,10 +23,12 @@ export class PackageDependency {
   ) {
     this.package = packageRes;
     this.descriptors = descriptors;
-    this.nameRange = descriptors.getType<PackageNameDescriptor>('name')?.nameRange
     this.versionRange = descriptors.getType<PackageVersionDescriptor>('version')?.versionRange
       ?? descriptors.getType<PackagePathDescriptor>('path')?.pathRange
-      ?? this.nameRange
+      ?? descriptors.getType<PackageNameDescriptor>('name')?.nameRange;
+
+    this.nameRange = descriptors.getType<PackageNameDescriptor>('name')?.nameRange
+      ?? this.versionRange;
   }
 
   /**
@@ -60,10 +62,10 @@ export class PackageDependency {
    * @returns True if all text ranges are identical, otherwise false.
    */
   rangeEquals(other: PackageDependency) {
-    return other.versionRange.start === this.versionRange.start
-      && other.versionRange.end === this.versionRange.end
-      && other.nameRange.start === this.nameRange.start
-      && other.nameRange.end === this.nameRange.end;
+    return other.versionRange?.start === this.versionRange?.start
+      && other.versionRange?.end === this.versionRange?.end
+      && other.nameRange?.start === this.nameRange?.start
+      && other.nameRange?.end === this.nameRange?.end;
   }
 
 };
