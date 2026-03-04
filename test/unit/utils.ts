@@ -1,4 +1,3 @@
-import { PackageDependency } from '#domain/packages';
 import fs from 'node:fs';
 import path from 'node:path';
 import util from 'node:util';
@@ -52,31 +51,4 @@ export const createFile = (filePath: string, content: string): Promise<void> => 
 
 export const removeFile = (filePath: string): Promise<void> => {
   return fsUnlink(filePath);
-}
-
-export async function delay(delay: number) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      try {
-        resolve(null);
-      } catch (err) {
-        reject(err);
-      }
-    }, delay);
-  });
-}
-
-export function packageDependenciesToString(suggestions: PackageDependency[]) {
-  const builder = []
-  for (const item of suggestions) {
-    builder.push('new PackageDependency(')
-    builder.push(`createPackageResource('${item.package.name}', '${item.package.version}', '${item.package.path}'),`)
-    builder.push('new PackageDescriptor([')
-    builder.push(`createPackageNameDesc('${item.package.name}', createTextRange(${item.nameRange.start}, ${item.nameRange.end})),`)
-    builder.push(`createPackageVersionDesc('${item.package.version}', createTextRange(${item.versionRange.start}, ${item.versionRange.end})),`)
-    builder.push('])')
-    builder.push('),')
-  }
-
-  return builder.join('\n')
 }
