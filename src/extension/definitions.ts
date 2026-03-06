@@ -1,6 +1,6 @@
 import type { DependencyCache, PackageResponse, SuggestionReplaceFunction } from '#domain/packages';
-import { nameOf, type KeyDictionary } from '#domain/utils';
 import type { GetSuggestions } from '#domain/useCases';
+import { nameOf, type KeyDictionary } from '#domain/utils';
 import type {
   OnActiveTextEditorChange,
   OnAddUrlAuthentication,
@@ -18,12 +18,12 @@ import type {
   OnSaveChanges,
   OnShowSuggestionsStatsDetails,
   OnSortDependenciesClick,
-  OnUpdateDependenciesLatestClick,
   OnTextDocumentChange,
   OnTextDocumentClose,
   OnTextDocumentSave,
   OnTogglePrereleases,
   OnToggleReleases,
+  OnUpdateDependenciesLatestClick,
   OnUpdateDependencyClick,
   VersionLensExtension
 } from '#extension';
@@ -39,35 +39,47 @@ import type { PackageFileWatcher } from '#extension/watcher';
 import type { LogOutputChannel, Range, Uri } from 'vscode';
 
 /**
- * Enum for authorization-related command identifiers.
+ * Enum for command identifiers in the editor.
  */
-export enum AuthorizationCommandFeatures {
+export enum EditorEvent {
+  /** Command to show the log output when an error occurs. */
+  OnShowError = 'versionlens.editor.onShowError',
+  /** Command to show prerelease versions. */
+  OnShowPrereleaseVersions = 'versionlens.editor.onShowPrereleaseVersions',
+  /** Command to hide prerelease versions. */
+  OnHidePrereleaseVersions = 'versionlens.editor.onHidePrereleaseVersions',
+  /** Command to show version lenses. */
+  OnShowVersionLenses = 'versionlens.editor.onShowVersionLenses',
+  /** Command to hide version lenses. */
+  OnHideVersionLenses = 'versionlens.editor.onHideVersionLenses',
+  /** Command to execute a custom install task. */
+  OnCustomInstall = 'versionlens.editor.onCustomInstall',
   /** Command to add a new URL-based authentication. */
-  OnAddUrlAuthentication = "versionlens.authorization.addUrlAuthentication",
+  OnAddUrlAuthentication = "versionlens.editor.onAddUrlAuthentication",
   /** Command to remove an existing URL-based authentication. */
-  OnRemoveUrlAuthentication = "versionlens.authorization.removeUrlAuthentication"
+  OnRemoveUrlAuthentication = "versionlens.editor.onRemoveUrlAuthentication",
+  /** Command to sort dependencies alphabetically. */
+  OnSortDependencies = 'versionlens.editor.onSortDependencies',
+  /** Command to update all dependencies to their latest versions. */
+  OnUpdateDependenciesLatest = 'versionlens.editor.onUpdateDependenciesLatest'
 }
 
 /**
- * Enum for icon-related command identifiers in the editor title bar.
+ * Enum for suggestion-related command identifiers.
  */
-export enum IconCommandFeatures {
-  /** Command to show the log output when an error occurs. */
-  ShowError = 'versionlens.icons.showError',
-  /** Command to show prerelease versions. */
-  ShowPrereleaseVersions = 'versionlens.icons.showPrereleaseVersions',
-  /** Command to hide prerelease versions. */
-  HidePrereleaseVersions = 'versionlens.icons.hidePrereleaseVersions',
-  /** Command to show version lenses. */
-  ShowVersionLenses = 'versionlens.icons.showVersionLenses',
-  /** Command to hide version lenses. */
-  HideVersionLenses = 'versionlens.icons.hideVersionLenses',
-  /** Command to execute a custom install task. */
-  OnCustomInstall = 'versionlens.icons.onCustomInstall',
-  /** Command to sort dependencies alphabetically. */
-  OnSortDependencies = 'versionlens.icons.sortDependencies',
-  /** Command to update all dependencies to their latest versions. */
-  OnUpdateDependenciesLatest = 'versionlens.icons.updateDependenciesLatest'
+export enum SuggestionEvent {
+  /** Command triggered when a version suggestion is clicked. */
+  OnUpdateDependency = 'versionlens.suggestion.onUpdateDependency',
+  /** Command triggered when a file link suggestion is clicked. */
+  OnFileLink = "versionlens.suggestion.onFileLink",
+  /** Command triggered when a build selection suggestion is clicked. */
+  OnChooseBuild = "versionlens.suggestion.onChooseBuild",
+  /** Command to clear all extension caches. */
+  OnClearCache = "versionlens.suggestion.onClearCache",
+  /** Command to refresh the suggestion statistics. */
+  OnRefreshSuggestionsStats = "versionlens.suggestion.onRefreshStats",
+  /** Command to show detailed suggestion statistics. */
+  OnShowSuggestionsStatDetails = "versionlens.suggestion.onShowStatsDetails"
 }
 
 /**
@@ -76,6 +88,8 @@ export enum IconCommandFeatures {
 export enum StateFeatures {
   /** Whether version lenses are visible. */
   Show = 'versionlens.show',
+  /** Setting to enable/disable specific package providers. If empty, all providers are enabled. */
+  EnabledProviders = 'versionlens.enabledProviders',
   /** Whether prerelease versions are visible. */
   ShowPrereleases = 'versionlens.showPrereleases',
   /** Whether suggestion statistics are visible. */
@@ -94,24 +108,6 @@ export enum StateFeatures {
   ShowCustomInstall = 'versionlens.showCustomInstall',
   /** Whether to show the alphabetical sort icon. */
   ShowSortAlphabetically = 'versionlens.showSortAlphabetically'
-}
-
-/**
- * Enum for suggestion-related command identifiers.
- */
-export enum SuggestionCommandFeatures {
-  /** Command triggered when a version suggestion is clicked. */
-  OnUpdateDependencyClick = 'versionlens.suggestions.updateDependencyClick',
-  /** Command triggered when a file link suggestion is clicked. */
-  OnFileLinkClick = "versionlens.suggestions.fileLinkClick",
-  /** Command triggered when a build selection suggestion is clicked. */
-  OnChooseBuildClick = "versionlens.suggestions.chooseBuildClick",
-  /** Command to clear all extension caches. */
-  OnClearCache = "versionlens.suggestions.clearCache",
-  /** Command to refresh the suggestion statistics. */
-  OnRefreshSuggestionsStats = "versionlens.suggestions.refreshStats",
-  /** Command to show detailed suggestion statistics. */
-  OnShowSuggestionsStatDetails = "versionlens.suggestions.showStatsDetails"
 }
 
 /**

@@ -3,8 +3,8 @@ import type { IServiceCollection } from '#domain/di';
 import {
   type IExtensionServices,
   ExtensionServiceName,
-  IconCommandFeatures,
-  SuggestionCommandFeatures
+  EditorEvent,
+  SuggestionEvent
 } from '#extension';
 import {
   OnChooseBuildClick,
@@ -39,7 +39,7 @@ export function addOnClearCache(services: IServiceCollection) {
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        SuggestionCommandFeatures.OnClearCache,
+        SuggestionEvent.OnClearCache,
         handler.execute,
         handler
       );
@@ -69,7 +69,7 @@ export function addOnFileLinkClick(services: IServiceCollection) {
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        SuggestionCommandFeatures.OnFileLinkClick,
+        SuggestionEvent.OnFileLink,
         handler.execute,
         handler
       );
@@ -99,7 +99,7 @@ export function addOnUpdateDependencyClick(services: IServiceCollection) {
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        SuggestionCommandFeatures.OnUpdateDependencyClick,
+        SuggestionEvent.OnUpdateDependency,
         handler.execute,
         handler
       );
@@ -130,7 +130,7 @@ export function addOnChooseBuildClick(services: IServiceCollection) {
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        SuggestionCommandFeatures.OnChooseBuildClick,
+        SuggestionEvent.OnChooseBuild,
         handler.execute,
         handler
       );
@@ -162,7 +162,7 @@ export function addOnSortDependenciesClick(services: IServiceCollection) {
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        IconCommandFeatures.OnSortDependencies,
+        EditorEvent.OnSortDependencies,
         () => handler.execute(window.activeTextEditor),
         handler
       );
@@ -194,7 +194,7 @@ export function addOnUpdateDependenciesLatestClick(services: IServiceCollection)
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        IconCommandFeatures.OnUpdateDependenciesLatest,
+        EditorEvent.OnUpdateDependenciesLatest,
         () => handler.execute(window.activeTextEditor),
         handler
       );
@@ -215,7 +215,7 @@ export function addOnRefreshSuggestionsStats(services: IServiceCollection) {
     serviceName,
     (container: IDomainServices & IExtensionServices) => {
       const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
-      statusBarItem.command = SuggestionCommandFeatures.OnShowSuggestionsStatDetails;
+      statusBarItem.command = SuggestionEvent.OnShowSuggestionsStatDetails;
 
       // create the event handler
       const event = new OnRefreshSuggestionsStats(
@@ -231,7 +231,7 @@ export function addOnRefreshSuggestionsStats(services: IServiceCollection) {
         statusBarItem as any,
         // register as a vscode command
         commands.registerCommand(
-          SuggestionCommandFeatures.OnRefreshSuggestionsStats,
+          SuggestionEvent.OnRefreshSuggestionsStats,
           event.execute,
           event
         )
@@ -281,7 +281,7 @@ export function addOnShowSuggestionsStatsDetails(services: IServiceCollection) {
 
       // register the vscode command
       event.disposable = commands.registerCommand(
-        SuggestionCommandFeatures.OnShowSuggestionsStatDetails,
+        SuggestionEvent.OnShowSuggestionsStatDetails,
         event.execute,
         event
       );

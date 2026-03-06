@@ -1,6 +1,6 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { ExtensionServiceName, IconCommandFeatures, type IExtensionServices } from '#extension';
+import { ExtensionServiceName, EditorEvent, type IExtensionServices } from '#extension';
 import {
   OnCustomInstallClick,
   OnErrorClick,
@@ -28,7 +28,7 @@ export function addOnCustomInstallClick(services: IServiceCollection) {
 
       // register the vscode commands
       event.disposable = commands.registerCommand(
-        IconCommandFeatures.OnCustomInstall,
+        EditorEvent.OnCustomInstall,
         event.execute,
         event
       );
@@ -58,7 +58,7 @@ export function addOnErrorClick(services: IServiceCollection) {
 
       // register the vscode commands
       event.disposable = commands.registerCommand(
-        IconCommandFeatures.ShowError,
+        EditorEvent.OnShowError,
         event.execute,
         event
       );
@@ -88,11 +88,11 @@ export function addOnToggleReleases(services: IServiceCollection) {
       // register the vscode commands
       event.disposables.push(
         commands.registerCommand(
-          IconCommandFeatures.ShowVersionLenses,
+          EditorEvent.OnShowVersionLenses,
           event.execute.bind(event, true)
         ),
         commands.registerCommand(
-          IconCommandFeatures.HideVersionLenses,
+          EditorEvent.OnHideVersionLenses,
           event.execute.bind(event, false)
         ),
       );
@@ -122,11 +122,11 @@ export function addOnTogglePrereleases(services: IServiceCollection) {
       // register the vscode commands
       event.disposables.push(
         commands.registerCommand(
-          IconCommandFeatures.ShowPrereleaseVersions,
+          EditorEvent.OnShowPrereleaseVersions,
           event.execute.bind(event, true)
         ),
         commands.registerCommand(
-          IconCommandFeatures.HidePrereleaseVersions,
+          EditorEvent.OnHidePrereleaseVersions,
           event.execute.bind(event, false)
         )
       );

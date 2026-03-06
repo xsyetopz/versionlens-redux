@@ -2,6 +2,7 @@
 
 - [Clear Cache](#clear-cache)
 - [Bulk Updates](#bulk-updates)
+- [Sorting Dependencies](#sorting-dependencies)
 - [Custom Install Task](#custom-install-task)
 - [Registry Authorization](#registry-authorization)
 - [Key Settings](#key-settings)
@@ -28,6 +29,16 @@ This command is available in the:
 
 When executed, it will identify all dependencies with an **Updateable** status that are currently behind the **Latest** version and update their version strings in the document.
 
+### Sorting Dependencies
+
+**Command:** `VersionLens: Sort dependencies alphabetically`
+
+Sorts all dependencies in the active file alphabetically within their respective groups (e.g., `dependencies`, `devDependencies`, or Ruby `group :production`).
+
+This command is available in the:
+- **Editor Toolbar:** In the `...` (secondary) menu.
+- **Command Palette:** `Ctrl+Shift+P` / `Cmd+Shift+P` then type `VersionLens: Sort dependencies alphabetically`.
+
 ### Custom Install Task
 
 **Command:** `VersionLens: Run custom install task`
@@ -52,6 +63,7 @@ For more details on managing credentials, see the [Authorization Guide](./author
 
 | Setting | Default | Description |
 | ------- | ------- | ----------- |
+| `versionlens.enabledProviders` | `[]` | Controls which package managers versionlens should enable e.g. ['npm', 'dotnet']. If empty, all providers are enabled. |
 | `versionlens.suggestions.showOnStartup` | `false` | Show version lenses when a file is opened. |
 | `versionlens.suggestions.showPrereleasesOnStartup` | `false` | Show prerelease suggestions on startup. |
 | `versionlens.caching.duration` | `3` | Cache duration in minutes. |

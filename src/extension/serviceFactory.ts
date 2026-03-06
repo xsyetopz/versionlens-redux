@@ -120,23 +120,36 @@ export function addVersionLensProviders(services: IServiceCollection) {
  * @param services The service collection to add to.
  */
 export function addProviderNames(services: IServiceCollection) {
+  const allProviders = [
+    'cargo',
+    'composer',
+    'docker',
+    'dotnet',
+    'dub',
+    'maven',
+    'npm',
+    'deno',
+    'pnpm',
+    'pub',
+    'pypi',
+    'golang',
+    'ruby'
+  ];
+
   services.addSingleton(
     DomainServiceName.providerNames,
-    [
-      'cargo',
-      'composer',
-      'docker',
-      'dotnet',
-      'dub',
-      'maven',
-      'npm',
-      'deno',
-      'pnpm',
-      'pub',
-      'pypi',
-      'golang',
-      'ruby'
-    ]
+    () => {
+      // TODO: Goal: Use a strongly typed way to get the enabledProviders setting
+      const enabledProviders = workspace.getConfiguration('versionlens')
+        .get<string[]>('enabledProviders') || [];
+
+      if (enabledProviders.length > 0) {
+        // Filter to ensure only supported providers are included
+        return allProviders.filter(name => enabledProviders.includes(name));
+      }
+
+      return allProviders;
+    }
   )
 }
 

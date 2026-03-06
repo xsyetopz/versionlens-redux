@@ -4,7 +4,7 @@ import {
   SuggestionTypes
 } from '#domain/packages';
 import type { KeyDictionary } from '#domain/utils';
-import { SuggestionCommandFeatures } from '#extension';
+import { SuggestionEvent } from '#extension';
 import { SuggestionCodeLens } from '#extension/suggestions';
 import * as os from 'node:os';
 
@@ -29,7 +29,7 @@ export function createStatusCommand(status: string, codeLens: SuggestionCodeLens
 export function createUpdateableCommand(title: string, codeLens: SuggestionCodeLens) {
   return codeLens.setCommand(
     title,
-    SuggestionCommandFeatures.OnUpdateDependencyClick,
+    SuggestionEvent.OnUpdateDependency,
     [codeLens]
   );
 }
@@ -50,7 +50,7 @@ export function createInvalidCommand(codeLens: SuggestionCodeLens) {
  * @returns The updated code lens.
  */
 export function createDirectoryLinkCommand(title: string, codeLens: SuggestionCodeLens) {
-  const cmd = SuggestionCommandFeatures.OnFileLinkClick as string;
+  const cmd = SuggestionEvent.OnFileLink as string;
   return codeLens.setCommand(title, cmd, [codeLens]);
 }
 
@@ -61,7 +61,7 @@ export function createDirectoryLinkCommand(title: string, codeLens: SuggestionCo
  * @returns The updated code lens.
  */
 export function createChooseBuildCommand(title: string, codeLens: SuggestionCodeLens) {
-  const cmd = SuggestionCommandFeatures.OnChooseBuildClick as string;
+  const cmd = SuggestionEvent.OnChooseBuild as string;
   return codeLens.setCommand(title, cmd, [codeLens]);
 }
 

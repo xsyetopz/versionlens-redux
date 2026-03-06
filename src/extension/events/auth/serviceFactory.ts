@@ -1,6 +1,6 @@
 import type { IDomainServices } from '#domain';
 import type { IServiceCollection } from '#domain/di';
-import { AuthorizationCommandFeatures, ExtensionServiceName, type IExtensionServices } from '#extension';
+import { EditorEvent, ExtensionServiceName, type IExtensionServices } from '#extension';
 import { OnAddUrlAuthentication, OnRemoveUrlAuthentication } from '#extension/events';
 import { commands } from 'vscode';
 
@@ -24,7 +24,7 @@ export function addOnAddUrlAuthentication(services: IServiceCollection) {
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        AuthorizationCommandFeatures.OnAddUrlAuthentication,
+        EditorEvent.OnAddUrlAuthentication,
         handler.execute,
         handler
       );
@@ -55,7 +55,7 @@ export function addOnRemoveUrlAuthentication(services: IServiceCollection) {
 
       // register the vscode command
       handler.disposable = commands.registerCommand(
-        AuthorizationCommandFeatures.OnRemoveUrlAuthentication,
+        EditorEvent.OnRemoveUrlAuthentication,
         handler.execute,
         handler
       );

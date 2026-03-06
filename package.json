@@ -104,13 +104,13 @@
   "contributes": {
     "commands": [
       {
-        "command": "versionlens.icons.showError",
+        "command": "versionlens.editor.onShowError",
         "title": "An error has occurred. Click to see the log for details.",
         "category": "VersionLens",
         "icon": "images/icons/toggle-death.svg"
       },
       {
-        "command": "versionlens.icons.onCustomInstall",
+        "command": "versionlens.editor.onCustomInstall",
         "title": "Run custom install task",
         "category": "VersionLens",
         "icon": {
@@ -119,12 +119,12 @@
         }
       },
       {
-        "command": "versionlens.icons.updateDependenciesLatest",
+        "command": "versionlens.editor.onUpdateDependenciesLatest",
         "title": "Update dependencies to latest",
         "category": "VersionLens"
       },
       {
-        "command": "versionlens.icons.sortDependencies",
+        "command": "versionlens.editor.onSortDependencies",
         "title": "Sort dependencies alphabetically",
         "category": "VersionLens",
         "icon": {
@@ -133,7 +133,7 @@
         }
       },
       {
-        "command": "versionlens.icons.showVersionLenses",
+        "command": "versionlens.editor.onShowVersionLenses",
         "title": "Show releases versions",
         "category": "VersionLens",
         "icon": {
@@ -142,13 +142,13 @@
         }
       },
       {
-        "command": "versionlens.icons.hideVersionLenses",
+        "command": "versionlens.editor.onHideVersionLenses",
         "title": "Hide releases versions",
         "category": "VersionLens",
         "icon": "images/icons/toggle-active.svg"
       },
       {
-        "command": "versionlens.icons.showPrereleaseVersions",
+        "command": "versionlens.editor.onShowPrereleaseVersions",
         "title": "Show prereleases versions",
         "category": "VersionLens",
         "icon": {
@@ -157,7 +157,7 @@
         }
       },
       {
-        "command": "versionlens.icons.hidePrereleaseVersions",
+        "command": "versionlens.editor.onHidePrereleaseVersions",
         "title": "Hide prereleases versions",
         "category": "VersionLens",
         "icon": "images/icons/tag-active.svg"
@@ -170,22 +170,22 @@
         "icon": "images/icons/toggle-active-progress.svg"
       },
       {
-        "command": "versionlens.suggestions.clearCache",
+        "command": "versionlens.suggestion.onClearCache",
         "title": "Clear cache",
         "category": "VersionLens"
       },
       {
-        "command": "versionlens.authorization.addUrlAuthentication",
+        "command": "versionlens.editor.onAddUrlAuthentication",
         "title": "Add url authentication",
         "category": "VersionLens"
       },
       {
-        "command": "versionlens.authorization.removeUrlAuthentication",
+        "command": "versionlens.editor.onRemoveUrlAuthentication",
         "title": "Remove url authentication",
         "category": "VersionLens"
       },
       {
-        "command": "versionlens.suggestions.refreshStats",
+        "command": "versionlens.suggestion.onRefreshStats",
         "title": "Refresh all suggestions stats",
         "category": "VersionLens"
       }
@@ -193,51 +193,51 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "versionlens.icons.showPrereleaseVersions",
+          "command": "versionlens.editor.onShowPrereleaseVersions",
           "when": "versionlens.show && versionlens.providerActive"
         },
         {
-          "command": "versionlens.icons.hidePrereleaseVersions",
+          "command": "versionlens.editor.onHidePrereleaseVersions",
           "when": "versionlens.show && versionlens.providerActive"
         },
         {
-          "command": "versionlens.icons.showVersionLenses",
+          "command": "versionlens.editor.onShowVersionLenses",
           "when": "versionlens.show && versionlens.providerActive"
         },
         {
-          "command": "versionlens.icons.hideVersionLenses",
+          "command": "versionlens.editor.onHideVersionLenses",
           "when": "versionlens.show && versionlens.providerActive"
         },
         {
-          "command": "versionlens.suggestions.refreshStats",
+          "command": "versionlens.suggestion.onRefreshStats",
           "when": "versionlens.showSuggestionsStats"
         },
         {
-          "command": "versionlens.icons.onCustomInstall",
+          "command": "versionlens.editor.onCustomInstall",
           "when": "versionlens.showCustomInstall && versionlens.providerActive"
         },
         {
-          "command": "versionlens.icons.sortDependencies",
+          "command": "versionlens.editor.onSortDependencies",
           "when": "versionlens.showSortAlphabetically && versionlens.providerActive"
         },
         {
-          "command": "versionlens.icons.showError",
+          "command": "versionlens.editor.onShowError",
           "when": "false"
         }
       ],
       "editor/title": [
         {
-          "command": "versionlens.icons.showError",
+          "command": "versionlens.editor.onShowError",
           "when": "versionlens.providerError && versionlens.providerActive && textCompareEditorVisible == false",
           "group": "navigation@1"
         },
         {
-          "command": "versionlens.icons.showVersionLenses",
+          "command": "versionlens.editor.onShowVersionLenses",
           "when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
           "group": "navigation@1"
         },
         {
-          "command": "versionlens.icons.hideVersionLenses",
+          "command": "versionlens.editor.onHideVersionLenses",
           "when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
           "group": "navigation@1"
         },
@@ -247,27 +247,27 @@
           "group": "navigation@1"
         },
         {
-          "command": "versionlens.icons.showPrereleaseVersions",
+          "command": "versionlens.editor.onShowPrereleaseVersions",
           "when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
           "group": "navigation@1.1"
         },
         {
-          "command": "versionlens.icons.hidePrereleaseVersions",
+          "command": "versionlens.editor.onHidePrereleaseVersions",
           "when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
           "group": "navigation@1.1"
         },
         {
-          "command": "versionlens.icons.onCustomInstall",
+          "command": "versionlens.editor.onCustomInstall",
           "when": "versionlens.showCustomInstall && versionlens.providerActive && textCompareEditorVisible == false",
           "group": "secondary"
         },
         {
-          "command": "versionlens.icons.updateDependenciesLatest",
+          "command": "versionlens.editor.onUpdateDependenciesLatest",
           "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
           "group": "secondary"
         },
         {
-          "command": "versionlens.icons.sortDependencies",
+          "command": "versionlens.editor.onSortDependencies",
           "when": "versionlens.showSortAlphabetically && versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
           "group": "secondary"
         }
@@ -282,6 +282,29 @@
     "configuration": {
       "title": "VersionLens",
       "properties": {
+        "versionlens.enabledProviders": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "cargo",
+              "composer",
+              "deno",
+              "docker",
+              "dotnet",
+              "dub",
+              "golang",
+              "maven",
+              "npm",
+              "pnpm",
+              "pub",
+              "pypi",
+              "ruby"
+            ]
+          },
+          "default": [],
+          "description": "Defines a list of providers to enable. If empty, all providers are enabled."
+        },
         "versionlens.suggestions.showOnStartup": {
           "type": "boolean",
           "default": false,

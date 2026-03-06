@@ -1,10 +1,12 @@
-# 1.23.4-prerelease
+# 1.23.5-prerelease
 
   ### Ruby (gem)
 
   - Added `Gemfile` support to the ruby provider
 
   ### All
+
+  - Added `versionlens.enabledProviders` setting to enable/disable specific package providers. If empty, all providers are enabled.
 
   - New Menu Actions
 
