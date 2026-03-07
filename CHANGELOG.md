@@ -1,8 +1,27 @@
-# 1.23.5-prerelease
+# 1.24.0
 
   ### Ruby (gem)
 
-  - Added `Gemfile` support to the ruby provider
+  - Added `Gemfile` support for ruby
+    
+    Relates to [#256](https://gitlab.com/versionlens/vscode-versionlens/-/issues/256)
+
+  ### Python (pypi)
+
+  - Added requirements.txt support to the pypi provider
+
+    Relates to [#57](https://gitlab.com/versionlens/vscode-versionlens/-/issues/57)
+
+  - Added support for parsing TOML array values in `pyproject.toml` to support the PEP 621 standard used by `uv` and `poetry >= 2.0.0`.
+    This includes parsing of `dependencies` and `project.optional-dependencies` arrays.
+
+    Thanks to [amerino.informatica](https://gitlab.com/amerino.informatica)
+
+    Relates to [#380](https://gitlab.com/versionlens/vscode-versionlens/-/issues/380)
+
+  ### Pub
+
+    - Fixed a bug where inserting a package version failed if the colon was missing a trailing space
 
   ### All
 
@@ -20,19 +39,6 @@
     ![image](https://gitlab.com/-/project/19418059/uploads/79083a4043ee828ef11e9159f1fc92c4/image.png)
 
   - Fixed an issue where saving changes during a running custom installation prevented subsequent install attempts until additional modifications were made.
-
-  ### Python (pypi)
-
-  - Added requirements.txt support to the pypi provider
-
-    Relates to [#57](https://gitlab.com/versionlens/vscode-versionlens/-/issues/57)
-
-  - Added support for parsing TOML array values in `pyproject.toml` to support the PEP 621 standard used by `uv` and `poetry >= 2.0.0`.
-    This includes parsing of `dependencies` and `project.optional-dependencies` arrays.
-
-    Thanks to [amerino.informatica](https://gitlab.com/amerino.informatica)
-
-    Relates to [#380](https://gitlab.com/versionlens/vscode-versionlens/-/issues/380)
 
 # 1.22.4
 
