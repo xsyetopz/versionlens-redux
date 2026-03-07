@@ -84,7 +84,7 @@ export class VersionLensState implements IVersionLensState {
    * Decrements the provider busy counter.
    */
   async decreaseBusyState(): Promise<void> {
-    await this.providerBusy.change(this.providerBusy.value - 1);
+    await this.providerBusy.change(Math.max(0, this.providerBusy.value - 1));
   }
 
   /**

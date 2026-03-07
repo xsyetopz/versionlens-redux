@@ -104,11 +104,15 @@ export class SuggestionCodeLensProvider extends Disposable implements CodeLensPr
       );
     } catch (error) {
       await this.state.setErrorState();
-      await this.state.clearBusyState()
+      await this.state.clearBusyState();
       return Promise.reject(error);
+    } finally {
+      await this.state.decreaseBusyState();
+      this.logger.debug(
+        "finished fetching suggestions for {providerName}",
+        this.providerName
+      );
     }
-
-    await this.state.decreaseBusyState();
 
     // convert suggestions in to code lenses
     return createFromPackageResponses(
