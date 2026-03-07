@@ -1,3 +1,9 @@
+# next
+
+  ### Npm
+
+  - [bun] Included `workspaces.catalog` and `workspaces.catalogs.*` in the default `versionlens.npm.dependencyProperties` list.
+
 # 1.24.1
 
   ### Python (pypi)
