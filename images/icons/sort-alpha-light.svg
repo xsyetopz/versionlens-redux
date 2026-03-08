@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <path fill="black" d="M1 1h6v2H1V1zm0 4h4v2H1V5zm0 4h2v2H1V9zm10-8l-3 3h2v8h2V4h2l-3-3z"/>
-  <text stroke="none" fill="black" x="1" y="15" font-family="Verdana" font-size="5px">
-    AZ
-  </text>
-</svg>
