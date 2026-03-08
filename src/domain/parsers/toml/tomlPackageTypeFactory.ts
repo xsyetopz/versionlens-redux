@@ -12,7 +12,6 @@ import {
   createProjectVersionTypeDesc
 } from '#domain/parsers';
 import { AST } from 'toml-eslint-parser';
-import { TOMLKeyValue, TOMLTable } from 'toml-eslint-parser/lib/ast';
 
 /**
  * Gets the map of handlers for complex TOML types.
@@ -34,7 +33,7 @@ export function getTomlComplexTypeHandlers() {
  */
 export function createNameDescFromTomlNode(keyNode: AST.TOMLKey, isNameFromTable: boolean): PackageNameDescriptor {
   const nameNode = isNameFromTable
-    ? (keyNode.parent.parent as TOMLTable).key.keys[1] as AST.TOMLBare
+    ? (keyNode.parent.parent as AST.TOMLTable).key.keys[1] as AST.TOMLBare
     : keyNode.keys[0] as AST.TOMLBare;
 
   const nameRange = {
@@ -96,7 +95,7 @@ export function createGitDescFromTomlNode(valueNode: AST.TOMLValue): PackageGitD
  * @param keyValue The TOML key-value node.
  * @returns A package descriptor for the project version.
  */
-export function createProjectVersionDescFromTomlNode(keyValue: TOMLKeyValue): PackageDescriptor {
+export function createProjectVersionDescFromTomlNode(keyValue: AST.TOMLKeyValue): PackageDescriptor {
   return new PackageDescriptor([
     createNameDescFromTomlNode(keyValue.key, false),
     createVersionDescFromTomlNode(keyValue.value as AST.TOMLValue),
