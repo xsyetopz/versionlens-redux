@@ -65,7 +65,7 @@
     "@types/eslint": "9.6.1",
     "@types/micromatch": "4.0.10",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.19.13",
+    "@types/node": "22.19.15",
     "@types/npm-package-arg": "6.1.4",
     "@types/sax": "1.2.7",
     "@types/source-map-support": "0.5.10",
