@@ -14,6 +14,9 @@ import {
   OnShowSuggestionsStatsDetails,
   OnSortDependenciesClick,
   OnUpdateDependenciesLatestClick,
+  OnUpdateDependenciesMajorClick,
+  OnUpdateDependenciesMinorClick,
+  OnUpdateDependenciesPatchClick,
   OnUpdateDependencyClick
 } from '#extension/events';
 import { SuggestionInteractions } from '#extension/suggestions';
@@ -195,6 +198,102 @@ export function addOnUpdateDependenciesLatestClick(services: IServiceCollection)
       // register the vscode command
       handler.disposable = commands.registerCommand(
         EditorEvent.OnUpdateDependenciesLatest,
+        () => handler.execute(window.activeTextEditor),
+        handler
+      );
+
+      return handler;
+    },
+    true
+  )
+}
+
+/**
+ * Registers the onUpdateDependenciesMajorClick command handler as a singleton.
+ * @param services The service collection to add to.
+ */
+export function addOnUpdateDependenciesMajorClick(services: IServiceCollection) {
+  const serviceName = ExtensionServiceName.onUpdateDependenciesMajor;
+  services.addSingleton(
+    serviceName,
+    (container: IDomainServices & IExtensionServices) => {
+      // create the event handler
+      const handler = new OnUpdateDependenciesMajorClick(
+        container.extension,
+        new VsCodeConstructionFactory(),
+        workspace,
+        container.versionLensState,
+        container.GetSuggestionProvider,
+        container.getSuggestions
+      );
+
+      // register the vscode command
+      handler.disposable = commands.registerCommand(
+        EditorEvent.OnUpdateDependenciesMajor,
+        () => handler.execute(window.activeTextEditor),
+        handler
+      );
+
+      return handler;
+    },
+    true
+  )
+}
+
+/**
+ * Registers the onUpdateDependenciesMinorClick command handler as a singleton.
+ * @param services The service collection to add to.
+ */
+export function addOnUpdateDependenciesMinorClick(services: IServiceCollection) {
+  const serviceName = ExtensionServiceName.onUpdateDependenciesMinor;
+  services.addSingleton(
+    serviceName,
+    (container: IDomainServices & IExtensionServices) => {
+      // create the event handler
+      const handler = new OnUpdateDependenciesMinorClick(
+        container.extension,
+        new VsCodeConstructionFactory(),
+        workspace,
+        container.versionLensState,
+        container.GetSuggestionProvider,
+        container.getSuggestions
+      );
+
+      // register the vscode command
+      handler.disposable = commands.registerCommand(
+        EditorEvent.OnUpdateDependenciesMinor,
+        () => handler.execute(window.activeTextEditor),
+        handler
+      );
+
+      return handler;
+    },
+    true
+  )
+}
+
+/**
+ * Registers the onUpdateDependenciesPatchClick command handler as a singleton.
+ * @param services The service collection to add to.
+ */
+export function addOnUpdateDependenciesPatchClick(services: IServiceCollection) {
+  const serviceName = ExtensionServiceName.onUpdateDependenciesPatch;
+  services.addSingleton(
+    serviceName,
+    (container: IDomainServices & IExtensionServices) => {
+      // create the event handler
+      const handler = new OnUpdateDependenciesPatchClick(
+        container.extension,
+        new VsCodeConstructionFactory(),
+        workspace,
+        container.versionLensState,
+        container.GetSuggestionProvider,
+        container.getSuggestions
+      );
+
+      // register the vscode command
+      handler.disposable = commands.registerCommand(
+        EditorEvent.OnUpdateDependenciesPatch,
         () => handler.execute(window.activeTextEditor),
         handler
       );

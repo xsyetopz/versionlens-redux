@@ -26,29 +26,29 @@
     "vscode": ">=1.90.0"
   },
   "keywords": [
-  "versions",
-  "packages",
-  "dependencies",
-  "references",
-  "c#,composer,csharp,dart,deno,docker,dotnet,dub,f#,fsharp,go,java,jspm,maven,npm,nuget,pnpm,pub,pypi,python,ruby"
+    "versions",
+    "packages",
+    "dependencies",
+    "references",
+    "c#,composer,csharp,dart,deno,docker,dotnet,dub,f#,fsharp,go,java,jspm,maven,npm,nuget,pnpm,pub,pypi,python,ruby"
   ],
   "categories": [
-  "Programming Languages",
-  "Other"
+    "Programming Languages",
+    "Other"
   ],
   "activationEvents": [
-  "onLanguage:jsonc",
-  "onLanguage:json",
-  "onLanguage:xml",
-  "onLanguage:toml",
-  "onLanguage:yaml",
-  "onLanguage:go.mod",
-  "onLanguage:dockerfile",
-  "onLanguage:dockercompose",
-  "onLanguage:pip-requirements",
-  "onLanguage:plaintext",
-  "onLanguage:ruby",
-  "onFileSystem:versionlens"
+    "onLanguage:jsonc",
+    "onLanguage:json",
+    "onLanguage:xml",
+    "onLanguage:toml",
+    "onLanguage:yaml",
+    "onLanguage:go.mod",
+    "onLanguage:dockerfile",
+    "onLanguage:dockercompose",
+    "onLanguage:pip-requirements",
+    "onLanguage:plaintext",
+    "onLanguage:ruby",
+    "onFileSystem:versionlens"
   ],
   "scripts": {
     "fresh": "task",
@@ -104,35 +104,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "versionlens.editor.onShowError",
-        "title": "An error has occurred. Click to see the log for details.",
-        "category": "VersionLens",
-        "icon": "images/icons/toggle-death.svg"
-      },
-      {
-        "command": "versionlens.editor.onCustomInstall",
-        "title": "Run custom install task",
-        "category": "VersionLens",
-        "icon": {
-          "dark": "images/icons/install.svg",
-          "light": "images/icons/install-light.svg"
-        }
-      },
-      {
-        "command": "versionlens.editor.onUpdateDependenciesLatest",
-        "title": "Update dependencies to latest",
-        "category": "VersionLens"
-      },
-      {
-        "command": "versionlens.editor.onSortDependencies",
-        "title": "Sort dependencies alphabetically",
-        "category": "VersionLens",
-        "icon": {
-          "dark": "images/icons/sort-alpha.svg",
-          "light": "images/icons/sort-alpha-light.svg"
-        }
-      },
-      {
         "command": "versionlens.editor.onShowVersionLenses",
         "title": "Show releases versions",
         "category": "VersionLens",
@@ -146,6 +117,19 @@
         "title": "Hide releases versions",
         "category": "VersionLens",
         "icon": "images/icons/toggle-active.svg"
+      },
+      {
+        "command": "versionlens.editor.onShowError",
+        "title": "An error has occurred. Click to see the log for details.",
+        "category": "VersionLens",
+        "icon": "images/icons/toggle-death.svg"
+      },
+      {
+        "command": "versionlens.icons.showingProgress",
+        "enablement": "false",
+        "title": "Analyzing dependencies...",
+        "category": "VersionLens",
+        "icon": "images/icons/toggle-active-progress.svg"
       },
       {
         "command": "versionlens.editor.onShowPrereleaseVersions",
@@ -163,13 +147,6 @@
         "icon": "images/icons/tag-active.svg"
       },
       {
-        "command": "versionlens.icons.showingProgress",
-        "enablement": "false",
-        "title": "Analyzing dependencies...",
-        "category": "VersionLens",
-        "icon": "images/icons/toggle-active-progress.svg"
-      },
-      {
         "command": "versionlens.suggestion.onClearCache",
         "title": "Clear cache",
         "category": "VersionLens"
@@ -185,13 +162,50 @@
         "category": "VersionLens"
       },
       {
-        "command": "versionlens.suggestion.onRefreshStats",
-        "title": "Refresh all suggestions stats",
+        "command": "versionlens.editor.onCustomInstall",
+        "title": "Run custom install task",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onSortDependencies",
+        "title": "Sort dependencies alphabetically",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesLatest",
+        "title": "Update dependencies to latest",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesMajor",
+        "title": "Update dependencies (major-only)",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesMinor",
+        "title": "Update dependencies (minor-only)",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesPatch",
+        "title": "Update dependencies (patch-only)",
         "category": "VersionLens"
       }
     ],
     "menus": {
       "commandPalette": [
+        {
+          "command": "versionlens.editor.onShowVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onHideVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onShowError",
+          "when": "false"
+        },
         {
           "command": "versionlens.editor.onShowPrereleaseVersions",
           "when": "versionlens.show && versionlens.providerActive"
@@ -201,36 +215,15 @@
           "when": "versionlens.show && versionlens.providerActive"
         },
         {
-          "command": "versionlens.editor.onShowVersionLenses",
-          "when": "versionlens.show && versionlens.providerActive"
-        },
-        {
-          "command": "versionlens.editor.onHideVersionLenses",
-          "when": "versionlens.show && versionlens.providerActive"
-        },
-        {
-          "command": "versionlens.suggestion.onRefreshStats",
-          "when": "versionlens.showSuggestionsStats"
-        },
-        {
           "command": "versionlens.editor.onCustomInstall",
           "when": "versionlens.showCustomInstall && versionlens.providerActive"
         },
         {
           "command": "versionlens.editor.onSortDependencies",
           "when": "versionlens.showSortAlphabetically && versionlens.providerActive"
-        },
-        {
-          "command": "versionlens.editor.onShowError",
-          "when": "false"
         }
       ],
       "editor/title": [
-        {
-          "command": "versionlens.editor.onShowError",
-          "when": "versionlens.providerError && versionlens.providerActive && textCompareEditorVisible == false",
-          "group": "navigation@1"
-        },
         {
           "command": "versionlens.editor.onShowVersionLenses",
           "when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
@@ -239,6 +232,11 @@
         {
           "command": "versionlens.editor.onHideVersionLenses",
           "when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.editor.onShowError",
+          "when": "versionlens.providerError && versionlens.providerActive && textCompareEditorVisible == false",
           "group": "navigation@1"
         },
         {
@@ -259,17 +257,32 @@
         {
           "command": "versionlens.editor.onCustomInstall",
           "when": "versionlens.showCustomInstall && versionlens.providerActive && textCompareEditorVisible == false",
-          "group": "secondary"
-        },
-        {
-          "command": "versionlens.editor.onUpdateDependenciesLatest",
-          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
-          "group": "secondary"
+          "group": "secondary_versionlens_tool@0"
         },
         {
           "command": "versionlens.editor.onSortDependencies",
           "when": "versionlens.showSortAlphabetically && versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
-          "group": "secondary"
+          "group": "secondary_versionlens_tool@1"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesLatest",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@0"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesMajor",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@1"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesMinor",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@2"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesPatch",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@3"
         }
       ]
     },

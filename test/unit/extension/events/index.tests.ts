@@ -12,5 +12,8 @@ export * from './onRemoveUrlAuthentication.tests';
 export * from './onSaveChanges.tests';
 export * from './onSortDependenciesClick.tests';
 export * from './onUpdateDependenciesLatestClick.tests';
+export * from './onUpdateDependenciesMajorClick.tests';
+export * from './onUpdateDependenciesMinorClick.tests';
+export * from './onUpdateDependenciesPatchClick.tests';
 export * from './onTextDocumentChange.tests';
 export * from './onUpdateDependencyClick.tests';

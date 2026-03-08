@@ -24,6 +24,9 @@ import type {
   OnTogglePrereleases,
   OnToggleReleases,
   OnUpdateDependenciesLatestClick,
+  OnUpdateDependenciesMajorClick,
+  OnUpdateDependenciesMinorClick,
+  OnUpdateDependenciesPatchClick,
   OnUpdateDependencyClick,
   VersionLensExtension
 } from '#extension';
@@ -61,7 +64,13 @@ export enum EditorEvent {
   /** Command to sort dependencies alphabetically. */
   OnSortDependencies = 'versionlens.editor.onSortDependencies',
   /** Command to update all dependencies to their latest versions. */
-  OnUpdateDependenciesLatest = 'versionlens.editor.onUpdateDependenciesLatest'
+  OnUpdateDependenciesLatest = 'versionlens.editor.onUpdateDependenciesLatest',
+  /** Command to update all dependencies to their latest major versions. */
+  OnUpdateDependenciesMajor = 'versionlens.editor.onUpdateDependenciesMajor',
+  /** Command to update all dependencies to their latest minor versions. */
+  OnUpdateDependenciesMinor = 'versionlens.editor.onUpdateDependenciesMinor',
+  /** Command to update all dependencies to their latest patch versions. */
+  OnUpdateDependenciesPatch = 'versionlens.editor.onUpdateDependenciesPatch'
 }
 
 /**
@@ -177,6 +186,12 @@ export interface IExtensionServices {
   onSortDependencies: OnSortDependenciesClick
   /** Handler for updating all dependencies to their latest versions. */
   onUpdateDependenciesLatest: OnUpdateDependenciesLatestClick
+  /** Handler for updating all dependencies to their latest major versions. */
+  onUpdateDependenciesMajor: OnUpdateDependenciesMajorClick
+  /** Handler for updating all dependencies to their latest minor versions. */
+  onUpdateDependenciesMinor: OnUpdateDependenciesMinorClick
+  /** Handler for updating all dependencies to their latest patch versions. */
+  onUpdateDependenciesPatch: OnUpdateDependenciesPatchClick
   /** Handler for showing suggestion stat details. */
   onShowSuggestionsStatsDetails: OnShowSuggestionsStatsDetails
   /** Handler for file link clicks. */

@@ -31,6 +31,9 @@ import {
   addOnShowSuggestionsStatsDetails,
   addOnSortDependenciesClick,
   addOnUpdateDependenciesLatestClick,
+  addOnUpdateDependenciesMajorClick,
+  addOnUpdateDependenciesMinorClick,
+  addOnUpdateDependenciesPatchClick,
   addOnTextDocumentChange,
   addOnTextDocumentClose,
   addOnTextDocumentSave,
@@ -134,6 +137,9 @@ function addExtensionServices(
   addOnChooseBuildClick(services);
   addOnSortDependenciesClick(services);
   addOnUpdateDependenciesLatestClick(services);
+  addOnUpdateDependenciesMajorClick(services);
+  addOnUpdateDependenciesMinorClick(services);
+  addOnUpdateDependenciesPatchClick(services);
   addOnRefreshSuggestionsStats(services);
   addOnShowSuggestionsStatsDetails(services);
 

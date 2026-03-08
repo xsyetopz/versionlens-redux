@@ -4,6 +4,18 @@
 
   - [bun] Included `workspaces.catalog` and `workspaces.catalogs.*` in the default `versionlens.npm.dependencyProperties` list.
 
+  ### All
+
+  - New Menu Actions
+
+    - Added `Update dependencies (major-only)` action to the `secondary` toolbar group. This will update all dependencies that have a newer major version available.
+
+    - Added `Update dependencies (minor-only)` action to the `secondary` toolbar group. This will update all dependencies that have a newer minor version available.
+
+    - Added `Update dependencies (patch-only)` action to the `secondary` toolbar group. This will update all dependencies that have a newer patch version available.
+
+    ![image](https://gitlab.com/-/project/19418059/uploads/dae7abdd645a447c0b6d245c196ef219/image.png)
+
 # 1.24.1
 
   ### Python (pypi)
