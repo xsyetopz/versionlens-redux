@@ -1,6 +1,6 @@
 import type { CachingOptions } from '#domain/caching';
 import type { HttpOptions, JsonClientResponse } from '#domain/clients';
-import type { RubyConfig, RubyHttpClient, RubySuggestionResolver } from '#domain/providers/ruby';
+import type { RubyConfig, RubyGitHubClient, RubyHttpClient, RubySuggestionResolver } from '#domain/providers/ruby';
 import { nameOf } from '#domain/utils';
 
 /**
@@ -35,6 +35,10 @@ export interface IRubyServices {
    * HTTP client for fetching from Ruby.
    */
   rubyHttpClient: RubyHttpClient;
+  /**
+   * GitHub client for fetching from GitHub.
+   */
+  rubyGithubClient: RubyGitHubClient;
   /**
    * Resolver for Ruby suggestions.
    */

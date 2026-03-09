@@ -246,6 +246,20 @@ export function createSatisifiesStatus(satisfiesVersion: string): PackageSuggest
 }
 
 /**
+ * Creates a 'fixed branch' status suggestion.
+ * @param branch The branch name.
+ * @returns A package status suggestion.
+ */
+export function createFixedBranchStatus(branch: string): PackageSuggestion {
+  return createSuggestion(
+    SuggestionStatusText.FixedBranch,
+    SuggestionCategory.Match,
+    branch,
+    SuggestionTypes.status
+  );
+}
+
+/**
  * Creates a 'fixed' status suggestion.
  * @param version The fixed version string.
  * @returns A package status suggestion.

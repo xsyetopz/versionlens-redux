@@ -1,5 +1,6 @@
 import {
   type PackageGitDescriptor,
+  type PackageGitHubDescriptor,
   type PackageGroupDescriptor,
   type PackageHostedDescriptor,
   type PackageIgnoreChangesDescriptor,
@@ -54,18 +55,41 @@ export function createPackageVersionDesc(
  * @param gitUrl The Git repository URL.
  * @param gitPath Optional path within the repository.
  * @param gitRef Optional reference (branch, tag, commit).
+ * @param gitRange Optional range of the Git specification in the text.
  * @returns A Git descriptor.
  */
 export function createPackageGitDescType(
   gitUrl: string,
   gitPath: string = '',
-  gitRef: string = ''
+  gitRef: string = '',
+  gitRange?: PackageTextRange
 ): PackageGitDescriptor {
   return {
     type: PackageDescriptorType.git,
     gitUrl,
+    gitRef,
     gitPath,
-    gitRef
+    gitRange
+  }
+}
+
+/**
+ * Creates a GitHub dependency descriptor.
+ * @param githubUrl The GitHub repository URL.
+ * @param githubRef Optional reference (branch, tag, commit).
+ * @param githubRange Optional range of the GitHub specification in the text.
+ * @returns A GitHub descriptor.
+ */
+export function createPackageGitHubDescType(
+  githubUrl: string,
+  githubRef: string = '',
+  githubRange?: PackageTextRange
+): PackageGitHubDescriptor {
+  return {
+    type: PackageDescriptorType.github,
+    githubUrl,
+    githubRef,
+    githubRange
   }
 }
 

@@ -4,6 +4,7 @@ import {
   addHttpOptions,
   addRubyConfig,
   addRubyHttpClient,
+  addRubyGitHubClient,
   addRubySuggestionResolver,
   addSuggestionProvider
 } from '#domain/providers/ruby';
@@ -26,6 +27,8 @@ export async function configureContainer(
   addRubyConfig(services);
 
   addRubyHttpClient(services);
+
+  addRubyGitHubClient(services);
 
   addRubySuggestionResolver(services);
 

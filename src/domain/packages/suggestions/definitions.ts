@@ -54,6 +54,7 @@ export enum SuggestionStatusText {
   Latest = 'latest',
   LatestIsPrerelease = 'latest prerelease',
   Fixed = 'fixed',
+  FixedBranch = 'fixed branch',
   UpdateLatest = 'latest',
   UpdateMajor = 'major',
   UpdateMinor = 'minor',

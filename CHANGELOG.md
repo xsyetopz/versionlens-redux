@@ -1,4 +1,4 @@
-# 1.25.0-prerelease
+# 1.25.1-prerelease
 
   ### Bun
 
@@ -9,6 +9,10 @@
   ### Yarn
 
   - Added .yarnrc.yml `catalog` codelens suggestions
+
+  ### Ruby
+
+  - Added github shortcode support
 
   ### All
 

@@ -9,9 +9,13 @@ import {
   type PackageDependency,
   type SuggestionUpdate
 } from '#domain/packages';
-import { PackageDescriptorType, type PackagePathDescriptor } from '#domain/parsers';
+import {
+  PackageDescriptorType,
+  type PackageGitHubDescriptor,
+  type PackagePathDescriptor
+} from '#domain/parsers';
 import type { ISuggestionProvider } from '#domain/providers';
-import { RubyConfig, RubySuggestionResolver, parseGemfile } from '#domain/providers/ruby';
+import { RubyConfig, RubySuggestionResolver, parseGemfile, rubyReplaceVersion } from '#domain/providers/ruby';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 /**
@@ -48,22 +52,11 @@ export class RubySuggestionProvider implements ISuggestionProvider {
   /**
    * Handles the replacement of Ruby version constraints.
    * @param suggestion The suggestion being applied.
-   * @param newVersion The new version string.
+   * @param _newVersion The new version string.
    * @returns The updated version string with operators.
    */
-  suggestionReplaceFn(suggestion: SuggestionUpdate, newVersion: string): string {
-    const insert = suggestion.parsedVersionPrepend.length > 1;
-    if (insert) {
-      return `${suggestion.parsedVersionPrepend}${newVersion}${suggestion.parsedVersionAppend}`;
-    }
-
-    const match = operatorRegex.exec(suggestion.parsedVersion);
-    if (match) {
-      const operator = match[0];
-      return `${operator}${newVersion}`;
-    }
-
-    return newVersion;
+  suggestionReplaceFn(suggestion: SuggestionUpdate, _newVersion: string): string {
+    return rubyReplaceVersion(suggestion, operatorRegex);
   }
 
   /**
@@ -92,6 +85,21 @@ export class RubySuggestionProvider implements ISuggestionProvider {
         requestedPackage.name,
         requestedPackage.path,
         pathDesc.path
+      );
+    }
+
+    if (descriptors.hasType(PackageDescriptorType.github)) {
+      const githubDesc = descriptors.getType<PackageGitHubDescriptor>(
+        PackageDescriptorType.github
+      );
+
+      // detect if we are using a tag
+      const isTag = requestedPackage.version.includes('tag:');
+
+      return await this.resolver.fromGitHub(
+        githubDesc.githubUrl, 
+        githubDesc.githubRef || '',
+        isTag
       );
     }
 

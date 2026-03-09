@@ -1,0 +1,18 @@
+source 'https://rubygems.org'
+
+# 1. Using a Git Tag
+# Best for: Stable versions/releases that aren't on RubyGems.
+gem 'rspec-rails', github: 'rspec/rspec-rails', tag: 'v6.1.5'
+
+# 2. Using a Specific Branch (Label)
+# Best for: Feature testing or using a specific development track.
+gem 'rails', github: 'rails/rails', ref: '13c9eff'
+
+# 3. Using a Specific Commit SHA
+# Best for: Maximum precision and security. This ensures your code 
+# never changes unless you manually update the SHA.
+gem 'devise', github: 'heartcombo/devise', ref: 'c9e655e'
+
+# 4. Using the shorthand for GitHub private/public repos
+# (Equivalent to :git => 'https://github.com/thoughtbot/factory_bot.git')
+gem 'factory_bot', github: 'thoughtbot/factory_bot', ref: 'd3d6b85'

@@ -8,11 +8,12 @@ import {
   VersionUtils,
   createSuggestions
 } from '#domain/packages';
-import { RubyConfig, RubyHttpClient } from '#domain/providers/ruby';
+import { RubyConfig, RubyGitHubClient, RubyHttpClient } from '#domain/providers/ruby';
+import { parseGitHubRepo } from '#domain/utils';
 import { throwUndefinedOrNull } from '@esm-test/guards';
 
 /**
- * Resolves package suggestions for Ruby dependencies from the RubyGems registry.
+ * Resolves package suggestions for Ruby dependencies from the RubyGems registry or GitHub.
  */
 export class RubySuggestionResolver {
 
@@ -20,15 +21,18 @@ export class RubySuggestionResolver {
    * Initializes a new instance of the RubySuggestionResolver class.
    * @param config The configuration for the Ruby provider.
    * @param rubyHttpClient The client used to interact with RubyGems.
+   * @param githubClient The client used to interact with GitHub.
    * @param logger The logger for this resolver.
    */
   constructor(
     readonly config: RubyConfig,
     readonly rubyHttpClient: RubyHttpClient,
+    readonly githubClient: RubyGitHubClient,
     readonly logger: ILogger
   ) {
     throwUndefinedOrNull("config", config);
     throwUndefinedOrNull("rubyHttpClient", rubyHttpClient);
+    throwUndefinedOrNull("githubClient", githubClient);
     throwUndefinedOrNull("logger", logger);
   }
 
@@ -57,6 +61,44 @@ export class RubySuggestionResolver {
    */
   fromGit(): PackageClientResponse {
     return ClientResponseFactory.createGit();
+  }
+
+  /**
+   * Resolves suggestions from a Git repository.
+   * @param gitUrl The Git URL.
+   * @param gitRef The Git reference (optional).
+   * @param isTag Whether the reference is a tag.
+   * @returns A promise resolving to the package client response.
+   */
+  async fromGitHub(gitUrl: string, gitRef: string, isTag: boolean = false): Promise<PackageClientResponse> {
+    const repo = parseGitHubRepo(gitUrl);
+    if (!repo) return ClientResponseFactory.createGit();
+
+    if (isTag) {
+      // resolve as tag
+      return await this.githubClient.fetchTags(
+        repo.user,
+        repo.project,
+        gitRef,
+        this.config.prereleaseTagFilter
+      );
+    }
+
+    if (!gitRef) {
+      // resolve commits (suggests latest)
+      return await this.githubClient.fetchCommits(
+        repo.user,
+        repo.project,
+        ''
+      );
+    }
+
+    // fall back to resolving as commit
+    return await this.githubClient.fetchCommits(
+      repo.user,
+      repo.project,
+      gitRef
+    );
   }
 
   /**

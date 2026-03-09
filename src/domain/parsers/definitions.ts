@@ -10,6 +10,8 @@ export enum PackageDescriptorType {
   path = "path",
   /** A Git URL for the package. */
   git = "git",
+  /** A GitHub shorthand for the package. */
+  github = "github",
   /** A hosted registry URL for the package. */
   hosted = "hosted",
   /** Indicates that changes should be ignored. */
@@ -94,10 +96,24 @@ export type PackageHostedDescriptor = PackageType & {
 export type PackageGitDescriptor = PackageType & {
   /** The Git repository URL. */
   gitUrl: string
+  /** Optional range of the Git specification. */
+  gitRange?: PackageTextRange
   /** Optional Git reference (branch, tag, commit). */
   gitRef?: string
   /** Optional path within the Git repository. */
   gitPath?: string
+}
+
+/**
+ * Descriptor for a GitHub dependency.
+ */
+export type PackageGitHubDescriptor = PackageType & {
+  /** The GitHub repository URL. */
+  githubUrl: string
+  /** Optional range of the GitHub specification. */
+  githubRange?: PackageTextRange
+  /** Optional reference (branch, tag, commit). */
+  githubRef?: string
 }
 
 /**
@@ -156,6 +172,7 @@ export type PackageTypeDescriptor = PackageNameDescriptor
   | PackagePathDescriptor
   | PackageHostedDescriptor
   | PackageGitDescriptor
+  | PackageGitHubDescriptor
   | PackageIgnoreChangesDescriptor
   | PackageProjectVersionDescriptor
   | PackageImageDescriptor

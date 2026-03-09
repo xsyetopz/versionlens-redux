@@ -7,6 +7,7 @@ import {
   createPackageVersionDesc,
   createPackagePathDescType,
   createPackageGitDescType,
+  createPackageGitHubDescType,
   createPackageGroupDesc,
   createTextRange,
   PackageDescriptor,
@@ -23,13 +24,13 @@ const gemNameRegex = /^\s*gem\s+(['"])(?<name>[^'"]+)\1/;
 /**
  * Regexes for gem options
  */
-const versionRegex = /,\s*(['"])(?<version>[^'"]+)\1/;
+const versionRegex = /,\s*(['"])(?<version>[^'"]*)\1/;
 const pathRegex = /,\s*path:\s*(['"])(?<path>[^'"]+)\1/;
 const gitRegex = /,\s*git:\s*(['"])(?<git>[^'"]+)\1/;
 const githubRegex = /,\s*github:\s*(['"])(?<github>[^'"]+)\1/;
-const refRegex = /,\s*ref:\s*(['"])(?<ref>[^'"]+)\1/;
-const branchRegex = /,\s*branch:\s*(['"])(?<branch>[^'"]+)\1/;
-const tagRegex = /,\s*tag:\s*(['"])(?<tag>[^'"]+)\1/;
+const refRegex = /,\s*ref:\s*(['"])(?<ref>[^'"]*)\1/;
+const branchRegex = /,\s*branch:\s*(['"])(?<branch>[^'"]*)\1/;
+const tagRegex = /,\s*tag:\s*(['"])(?<tag>[^'"]*)\1/;
 
 /**
  * Regex for group start
@@ -96,18 +97,46 @@ export function parseGemfile(
         const gitMatch = gitRegex.exec(line);
         const githubMatch = githubRegex.exec(line);
         const versionMatch = versionRegex.exec(line);
-        const refMatch = refRegex.exec(line) || branchRegex.exec(line) || tagRegex.exec(line);
+        
+        const tagMatch = tagRegex.exec(line);
+        const branchMatch = branchRegex.exec(line);
+        const refMatchOnly = refRegex.exec(line);
+        const refMatch = tagMatch || branchMatch || refMatchOnly;
 
-        if (githubMatch) {
-          const githubUrl = `https://github.com/${githubMatch.groups!.github}.git`;
-          const gitRef = refMatch ? (refMatch.groups!.ref || refMatch.groups!.branch || refMatch.groups!.tag) : '';
-          descriptors.push(createPackageGitDescType(githubUrl, '', gitRef));
-          manifestVersion = githubMatch.groups!.github;
-        } else if (gitMatch) {
-          const gitUrl = gitMatch.groups!.git;
-          const gitRef = refMatch ? (refMatch.groups!.ref || refMatch.groups!.branch || refMatch.groups!.tag) : '';
-          descriptors.push(createPackageGitDescType(gitUrl, '', gitRef));
-          manifestVersion = gitUrl;
+        if (githubMatch || gitMatch) {
+          const isGithub = !!githubMatch;
+          const match = isGithub ? githubMatch : gitMatch;
+          const url = isGithub ? match!.groups!.github : match!.groups!.git;
+          const githubUrl = isGithub ? `https://github.com/${url}.git` : url;
+          
+          let gitRef = '';
+          if (tagMatch) {
+            gitRef = tagMatch.groups!.tag;
+          } else if (branchMatch) {
+            gitRef = branchMatch.groups!.branch;
+          } else if (refMatchOnly) {
+            gitRef = refMatchOnly.groups!.ref;
+          }
+          
+          const optionName = isGithub ? 'github:' : 'git:';
+          const startInLine = line.indexOf(optionName);
+          let endInLine = line.indexOf(match![0]) + match![0].length;
+          if (refMatch) {
+            endInLine = Math.max(endInLine, line.indexOf(refMatch[0]) + refMatch[0].length);
+          }
+          
+          const gitRange = createTextRange(
+            currentOffset + startInLine,
+            currentOffset + endInLine
+          );
+
+          if (isGithub) {
+            descriptors.push(createPackageGitHubDescType(githubUrl, gitRef, gitRange));
+          } else {
+            descriptors.push(createPackageGitDescType(githubUrl, '', gitRef, gitRange));
+          }
+
+          manifestVersion = line.substring(startInLine, endInLine);
         } else if (pathMatch) {
           const rawPath = pathMatch.groups!.path;
           const pathStartInLine = line.indexOf(rawPath, line.indexOf('path:'));

@@ -7,6 +7,7 @@ import {
   createPackageVersionDesc,
   createPackagePathDescType,
   createPackageGitDescType,
+  createPackageGitHubDescType,
   createPackageGroupDesc,
   createTextRange,
   PackageDescriptor
@@ -93,18 +94,18 @@ gem 'sqlite3', git: "https://github.com/sparklemotion/sqlite3-ruby.git"
 `,
     expected: [
       new PackageDependency(
-        createPackageManifest('rails', 'https://github.com/rails/rails.git', 'Gemfile'),
+        createPackageManifest('rails', "git: 'https://github.com/rails/rails.git'", 'Gemfile'),
         new PackageDescriptor([
           createPackageNameDesc('rails', createTextRange(1)),
-          createPackageGitDescType('https://github.com/rails/rails.git'),
+          createPackageGitDescType('https://github.com/rails/rails.git', '', '', createTextRange(14, 55)),
           createPackageGroupDesc('dependencies', createTextRange(1, 55))
         ])
       ),
       new PackageDependency(
-        createPackageManifest('sqlite3', 'https://github.com/sparklemotion/sqlite3-ruby.git', 'Gemfile'),
+        createPackageManifest('sqlite3', 'git: "https://github.com/sparklemotion/sqlite3-ruby.git"', 'Gemfile'),
         new PackageDescriptor([
           createPackageNameDesc('sqlite3', createTextRange(56)),
-          createPackageGitDescType('https://github.com/sparklemotion/sqlite3-ruby.git'),
+          createPackageGitDescType('https://github.com/sparklemotion/sqlite3-ruby.git', '', '', createTextRange(71, 127)),
           createPackageGroupDesc('dependencies', createTextRange(56, 127))
         ])
       )
@@ -119,19 +120,54 @@ gem 'sqlite3', github: "sparklemotion/sqlite3-ruby"
 `,
     expected: [
       new PackageDependency(
-        createPackageManifest('rails', 'rails/rails', 'Gemfile'),
+        createPackageManifest('rails', "github: 'rails/rails'", 'Gemfile'),
         new PackageDescriptor([
           createPackageNameDesc('rails', createTextRange(1)),
-          createPackageGitDescType('https://github.com/rails/rails.git'),
+          createPackageGitHubDescType('https://github.com/rails/rails.git', '', createTextRange(14, 35)),
           createPackageGroupDesc('dependencies', createTextRange(1, 35))
         ])
       ),
       new PackageDependency(
-        createPackageManifest('sqlite3', 'sparklemotion/sqlite3-ruby', 'Gemfile'),
+        createPackageManifest('sqlite3', 'github: "sparklemotion/sqlite3-ruby"', 'Gemfile'),
         new PackageDescriptor([
           createPackageNameDesc('sqlite3', createTextRange(36)),
-          createPackageGitDescType('https://github.com/sparklemotion/sqlite3-ruby.git'),
+          createPackageGitHubDescType('https://github.com/sparklemotion/sqlite3-ruby.git', '', createTextRange(51, 87)),
           createPackageGroupDesc('dependencies', createTextRange(36, 87))
+        ])
+      )
+    ]
+  },
+
+  // parses github reference dependencies from Gemfile
+  githubRefs: {
+    test: `
+gem 'rspec-rails', github: 'rspec/rspec-rails', tag: 'v6.0.1'
+gem 'rails', github: 'rails/rails', branch: 'main'
+gem 'devise', github: 'heartcombo/devise', ref: 'a1b2c3d4e5f6'
+`,
+    expected: [
+      new PackageDependency(
+        createPackageManifest('rspec-rails', "github: 'rspec/rspec-rails', tag: 'v6.0.1'", 'Gemfile'),
+        new PackageDescriptor([
+          createPackageNameDesc('rspec-rails', createTextRange(1)),
+          createPackageGitHubDescType('https://github.com/rspec/rspec-rails.git', 'v6.0.1', createTextRange(20, 62)),
+          createPackageGroupDesc('dependencies', createTextRange(1, 62))
+        ])
+      ),
+      new PackageDependency(
+        createPackageManifest('rails', "github: 'rails/rails', branch: 'main'", 'Gemfile'),
+        new PackageDescriptor([
+          createPackageNameDesc('rails', createTextRange(63)),
+          createPackageGitHubDescType('https://github.com/rails/rails.git', 'main', createTextRange(76, 113)),
+          createPackageGroupDesc('dependencies', createTextRange(63, 113))
+        ])
+      ),
+      new PackageDependency(
+        createPackageManifest('devise', "github: 'heartcombo/devise', ref: 'a1b2c3d4e5f6'", 'Gemfile'),
+        new PackageDescriptor([
+          createPackageNameDesc('devise', createTextRange(114)),
+          createPackageGitHubDescType('https://github.com/heartcombo/devise.git', 'a1b2c3d4e5f6', createTextRange(128, 176)),
+          createPackageGroupDesc('dependencies', createTextRange(114, 176))
         ])
       )
     ]
@@ -146,26 +182,26 @@ gem 'rails', git: 'git://github.com/rails/rails.git', tag: 'v2.3.5'
 `,
     expected: [
       new PackageDependency(
-        createPackageManifest('rails', 'git://github.com/rails/rails.git', 'Gemfile'),
+        createPackageManifest('rails', "git: 'git://github.com/rails/rails.git', ref: '4aded'", 'Gemfile'),
         new PackageDescriptor([
           createPackageNameDesc('rails', createTextRange(1)),
-          createPackageGitDescType('git://github.com/rails/rails.git', '', '4aded'),
+          createPackageGitDescType('git://github.com/rails/rails.git', '', '4aded', createTextRange(14, 67)),
           createPackageGroupDesc('dependencies', createTextRange(1, 67))
         ])
       ),
       new PackageDependency(
-        createPackageManifest('rails', 'git://github.com/rails/rails.git', 'Gemfile'),
+        createPackageManifest('rails', "git: 'git://github.com/rails/rails.git', branch: '2-3-stable'", 'Gemfile'),
         new PackageDescriptor([
           createPackageNameDesc('rails', createTextRange(68)),
-          createPackageGitDescType('git://github.com/rails/rails.git', '', '2-3-stable'),
+          createPackageGitDescType('git://github.com/rails/rails.git', '', '2-3-stable', createTextRange(81, 142)),
           createPackageGroupDesc('dependencies', createTextRange(68, 142))
         ])
       ),
       new PackageDependency(
-        createPackageManifest('rails', 'git://github.com/rails/rails.git', 'Gemfile'),
+        createPackageManifest('rails', "git: 'git://github.com/rails/rails.git', tag: 'v2.3.5'", 'Gemfile'),
         new PackageDescriptor([
           createPackageNameDesc('rails', createTextRange(143)),
-          createPackageGitDescType('git://github.com/rails/rails.git', '', 'v2.3.5'),
+          createPackageGitDescType('git://github.com/rails/rails.git', '', 'v2.3.5', createTextRange(156, 210)),
           createPackageGroupDesc('dependencies', createTextRange(143, 210))
         ])
       )

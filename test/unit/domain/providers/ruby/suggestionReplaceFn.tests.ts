@@ -16,6 +16,7 @@ export const RubySuggestionReplaceFnTests = {
       (fixture: any) => {
         // setup
         const { suggestion, newVersion, expected } = fixture;
+        suggestion.suggestionVersion = newVersion;
 
         const resolverMock = mock(RubySuggestionResolver);
         const configMock = mock(RubyConfig);
@@ -28,10 +29,7 @@ export const RubySuggestionReplaceFnTests = {
         );
 
         // test
-        const actual = cut.suggestionReplaceFn(
-          suggestion as SuggestionUpdate,
-          newVersion
-        );
+        const actual = cut.suggestionReplaceFn(suggestion as SuggestionUpdate, newVersion);
 
         // assert
         equal(actual, expected);

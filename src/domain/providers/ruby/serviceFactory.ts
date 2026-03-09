@@ -1,12 +1,13 @@
 import type { IDomainServices } from '#domain';
 import { CachingOptions } from '#domain/caching';
-import { createJsonClient, HttpOptions } from '#domain/clients';
+import { createJsonClient, GitHubJsonClient, HttpOptions } from '#domain/clients';
 import type { IServiceCollection } from '#domain/di';
 import type { IProviderServices } from '#domain/providers';
 import {
   type IRubyServices,
   RubyConfig,
   RubyFeatures,
+  RubyGitHubClient,
   RubyHttpClient,
   RubyService,
   RubySuggestionProvider,
@@ -87,6 +88,30 @@ export function addRubyHttpClient(services: IServiceCollection) {
 }
 
 /**
+ * Registers the Ruby GitHub client as a singleton.
+ * @param services The service collection to add to.
+ */
+export function addRubyGitHubClient(services: IServiceCollection) {
+  services.addSingleton(
+    RubyService.rubyGithubClient,
+    (container: IRubyServices & IDomainServices) =>
+      new RubyGitHubClient(
+        new GitHubJsonClient(
+          container.cachingOptions,
+          createJsonClient(
+            container.authorizer,
+            {
+              caching: container.rubyCachingOpts,
+              http: container.rubyHttpOpts
+            }
+          ),
+          container.urlRequestCache
+        )
+      )
+  );
+}
+
+/**
  * Registers the Ruby suggestion resolver as a singleton.
  * @param services The service collection to add to.
  */
@@ -98,6 +123,7 @@ export function addRubySuggestionResolver(services: IServiceCollection) {
       new RubySuggestionResolver(
         container.rubyConfig,
         container.rubyHttpClient,
+        container.rubyGithubClient,
         container.loggerFactory.create(serviceName)
       )
   );

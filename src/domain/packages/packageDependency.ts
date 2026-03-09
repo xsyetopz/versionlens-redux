@@ -1,10 +1,13 @@
 import type { PackageManifest } from '#domain/packages';
-import type {
-  PackageDescriptor,
-  PackageNameDescriptor,
-  PackagePathDescriptor,
-  PackageTextRange,
-  PackageVersionDescriptor
+import {
+  type PackageDescriptor,
+  type PackageGitDescriptor,
+  type PackageGitHubDescriptor,
+  type PackageNameDescriptor,
+  type PackagePathDescriptor,
+  type PackageTextRange,
+  type PackageVersionDescriptor,
+  PackageDescriptorType
 } from '#domain/parsers';
 
 /**
@@ -23,11 +26,13 @@ export class PackageDependency {
   ) {
     this.package = packageRes;
     this.descriptors = descriptors;
-    this.versionRange = descriptors.getType<PackageVersionDescriptor>('version')?.versionRange
-      ?? descriptors.getType<PackagePathDescriptor>('path')?.pathRange
-      ?? descriptors.getType<PackageNameDescriptor>('name')?.nameRange;
+    this.versionRange = descriptors.getType<PackageVersionDescriptor>(PackageDescriptorType.version)?.versionRange
+      ?? descriptors.getType<PackagePathDescriptor>(PackageDescriptorType.path)?.pathRange
+      ?? descriptors.getType<PackageGitDescriptor>(PackageDescriptorType.git)?.gitRange
+      ?? descriptors.getType<PackageGitHubDescriptor>(PackageDescriptorType.github)?.githubRange
+      ?? descriptors.getType<PackageNameDescriptor>(PackageDescriptorType.name)?.nameRange;
 
-    this.nameRange = descriptors.getType<PackageNameDescriptor>('name')?.nameRange
+    this.nameRange = descriptors.getType<PackageNameDescriptor>(PackageDescriptorType.name)?.nameRange
       ?? this.versionRange;
   }
 
