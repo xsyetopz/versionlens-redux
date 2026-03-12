@@ -1,16 +1,26 @@
-# 1.25.2-prerelease
+# 1.26.0
 
   ### All
 
   - Integrated vulnerability information from [OSV.dev](https://osv.dev).
-    - Vulnerable packages are highlighted with red squiggles in the editor.
-    - Added `versionlens.suggestions.showVulnerabilities` setting to enable/disable this feature (defaults to `true`).
 
-    ![image](https://gitlab.com/-/project/19418059/uploads/bf09de5a9f3ba0148d2cc8acea595694/image.png)
+     ![image](https://gitlab.com/-/project/19418059/uploads/bf09de5a9f3ba0148d2cc8acea595694/image.png)
+
+    - Vulnerable packages are highlighted with red squiggles in the editor and listed in the problems tab.
+    - Added `versionlens.suggestions.showVulnerabilities` setting to enable/disable this feature (defaults to `true`).
 
     Relates to [#124](https://gitlab.com/versionlens/vscode-versionlens/-/issues/124)
 
-# 1.25.1-prerelease
+  - **New Secondary Menu Actions**
+    - Added `Show release version` and `Show prerelease version` toggle actions.
+
+      Relates to [#406](https://gitlab.com/versionlens/vscode-versionlens/-/issues/406)
+
+    - Added `Update dependencies (major-only)`.
+    - Added `Update dependencies (minor-only)`.
+    - Added `Update dependencies (patch-only)`.
+
+    ![image](https://gitlab.com/-/project/19418059/uploads/9e92e0f00d98aa319a633c134b3e194a/image.png)
 
   ### Bun
 
@@ -25,19 +35,6 @@
   ### Ruby
 
   - Added github shortcode support
-
-  ### All
-
-  - **New Secondary Menu Actions**
-    - Added `Show release version` and `Show prerelease version` toggle actions.
-
-      Relates to [#406](https://gitlab.com/versionlens/vscode-versionlens/-/issues/406)
-
-    - Added `Update dependencies (major-only)`.
-    - Added `Update dependencies (minor-only)`.
-    - Added `Update dependencies (patch-only)`.
-
-    ![image](https://gitlab.com/-/project/19418059/uploads/9e92e0f00d98aa319a633c134b3e194a/image.png)
 
 # 1.24.1
 
