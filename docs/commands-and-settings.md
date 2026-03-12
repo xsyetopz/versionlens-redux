@@ -88,4 +88,5 @@ For more details on managing credentials, see the [Authorization Guide](./author
 | `versionlens.enabledProviders` | `[]` | Controls which package managers versionlens should enable e.g. ['npm', 'dotnet', 'docker']. If empty, all providers are enabled. **Requires VS Code restart when changed.** |
 | `versionlens.suggestions.showOnStartup` | `false` | Show version lenses when a file is opened. |
 | `versionlens.suggestions.showPrereleasesOnStartup` | `false` | Show prerelease suggestions on startup. |
+| `versionlens.suggestions.showVulnerabilities` | `true` | Show package vulnerabilities as red squiggles in the editor. |
 | `versionlens.caching.duration` | `3` | Cache duration in minutes. |

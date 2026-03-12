@@ -18,6 +18,7 @@ VersionLens shows __version__ information when opening a package or project file
 - [Supported Languages & Ecosystems](#supported-languages--ecosystems)
 - [How do I see version information for a package?](#how-do-i-see-version-information-for-a-package)
 - [Pre-release versions](#can-i-see-pre-release-versions)
+- [Can I check for package vulnerabilities?](#can-i-check-for-package-vulnerabilities)
 - [What do the suggestion links mean?](./docs/suggestion-overview.md)
 - [Will this extension install packages for me?](#will-this-extension-install-packages-for-me)
 - [How do I authorize packages that need credentials?](./docs/authorization.md)
@@ -62,6 +63,14 @@ Yes, select the **tag** icon in the package/project file toolbar.
 You can also set the default startup state using `versionlens.suggestions.showPrereleasesOnStartup`.
 
 ![Show prereleases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-prereleases.gif)
+
+## Can I check for package vulnerabilities?
+
+VersionLens integrates with [OSV.dev](https://osv.dev) to highlight vulnerable packages directly in your manifest files. 
+
+If a vulnerability is found for your current version, a **red squiggle** will appear under the version. Hovering over the version will show the vulnerability details and a direct link to the advisory.
+
+> **Note:** This feature is enabled by default and can be toggled using the `versionlens.suggestions.showVulnerabilities` setting.
 
 ## Will this extension install packages for me?
 
