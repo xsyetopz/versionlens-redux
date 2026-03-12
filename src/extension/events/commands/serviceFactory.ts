@@ -31,12 +31,13 @@ export function addOnClearCache(services: IServiceCollection) {
   const serviceName = ExtensionServiceName.onClearCache;
   services.addSingleton(
     serviceName,
-    (container: IDomainServices) => {
+    (container: IDomainServices & IExtensionServices) => {
       // create the event handler
       const handler = new OnClearCache(
         container.packageCache,
         container.shellCache,
         container.urlRequestCache,
+        container.vulnerabilityProvider,
         container.loggerFactory.create(serviceName)
       );
 
