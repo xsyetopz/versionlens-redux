@@ -2,9 +2,9 @@
 
   ### All
 
-  - Integrated vulnerability information from [OSV.dev](https://osv.dev) to provide visual feedback for vulnerable packages.
-    - Vulnerable packages are now highlighted with red squiggles in the editor.
-    - Added `versionlens.suggestions.showVulnerabilities` setting to enable/disable the feature (defaults to `true`).
+  - Integrated vulnerability information from [OSV.dev](https://osv.dev).
+    - Vulnerable packages are highlighted with red squiggles in the editor.
+    - Added `versionlens.suggestions.showVulnerabilities` setting to enable/disable this feature (defaults to `true`).
 
     ![image](https://gitlab.com/-/project/19418059/uploads/bf09de5a9f3ba0148d2cc8acea595694/image.png)
 
