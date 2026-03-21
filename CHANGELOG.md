@@ -1,3 +1,9 @@
+# 1.26.1
+
+  ### All
+
+  - Prevented changing project version when executing the update dependencies menu commands for major, minor and patch
+
 # 1.26.0
 
   ### All
