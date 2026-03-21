@@ -6,6 +6,7 @@ import {
   defaultReplaceFn,
   mapToSuggestionUpdate
 } from '#domain/packages';
+import { PackageDescriptorType } from '#domain/parsers';
 import { GetSuggestionProvider, GetSuggestions } from '#domain/useCases';
 import { Disposable } from '#domain/utils';
 import { IVersionLensState, VersionLensExtension } from '#extension';
@@ -98,6 +99,10 @@ export abstract class OnUpdateDependenciesClick extends Disposable {
     const rangesToEdit: Record<string, SuggestionEdit> = {};
     for (const packageResponse of suggestions) {
       if (!packageResponse || !packageResponse.suggestion) continue;
+
+      // don't update the project version
+      const { descriptors } = packageResponse.parsedDependency;
+      if (descriptors.hasType(PackageDescriptorType.projectVersion)) continue;
 
       // only update available releases
       const suggestion = packageResponse.suggestion;
