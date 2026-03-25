@@ -8,6 +8,8 @@ import {
 } from '#domain/packages';
 import {
   createPackageNameDesc,
+  createPackagePathDescType,
+  createPackageRegistryDescType,
   createPackageVersionDesc,
   createTextRange,
   PackageDescriptor
@@ -19,7 +21,9 @@ import {
   type MicrosoftDockerClient,
   DockerSuggestionResolver
 } from '#domain/providers/docker';
-import { deepEqual, equal } from 'node:assert';
+import assert, { deepEqual, equal } from 'node:assert';
+import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { instance, mock, when } from 'ts-mockito';
 import fixtures from './dockerSuggestionResolver.fixtures';
 
@@ -29,6 +33,7 @@ type TestContext = {
   microsoftDockerClientMock: MicrosoftDockerClient
   loggerMock: ILogger
   cut: DockerSuggestionResolver
+  testContextPath: string
 }
 
 export const DockerSuggestionResolverTests = {
@@ -46,6 +51,70 @@ export const DockerSuggestionResolverTests = {
       instance(this.microsoftDockerClientMock),
       instance(this.loggerMock)
     );
+  },
+
+  'fromPath: returns a directory suggestion for build context': async function (this: TestContext) {
+    const testPackageName = 'node';
+    const testPath = './docker/context';
+    const testPackageFilePath = resolve('./project/package.json');
+    const fullContextPath = resolve(dirname(testPackageFilePath), testPath);
+
+    // ensure directory exists
+    if (!existsSync(fullContextPath)) mkdirSync(fullContextPath, { recursive: true });
+
+    const testPackageMan = createPackageManifest(
+      testPackageName,
+      'latest',
+      testPackageFilePath
+    );
+    
+    const testPathDesc = createPackagePathDescType(
+      testPath,
+      createTextRange(1, 10)
+    );
+
+    const testDependency = new PackageDependency(
+        testPackageMan,
+        new PackageDescriptor([testPathDesc])
+    );
+
+    // test
+    const actual = await this.cut.fromPath(testDependency);
+
+    // cleanup
+    rmSync(dirname(fullContextPath), { recursive: true, force: true });
+
+    // assert
+    assert.equal(actual.source, 'file');
+    assert.equal(actual.resolved?.name, testPackageName);
+    assert.equal(actual.resolved?.version, fullContextPath);
+  },
+
+  'fromRegistry: switches to microsoft client when registry is specified': async function (this: TestContext) {
+    const testTag = 'latest';
+    const testRegistry = 'mcr.microsoft.com';
+    const testPackageMan = createPackageManifest('mssql/server', testTag, 'test/path');
+    
+    const testRegistryDesc = createPackageRegistryDescType(testRegistry);
+
+    const testDependency = new PackageDependency(
+        testPackageMan,
+        new PackageDescriptor([testRegistryDesc])
+    );
+
+    when(this.microsoftDockerClientMock.get('server', 'mssql'))
+      .thenResolve({
+        data: fixtures.mssql.test,
+        source: ClientResponseSource.remote,
+        status: 200
+      });
+
+    // test
+    const actual = await this.cut.fromRegistry(testDependency);
+
+    // assert
+    assert.equal(actual.source, 'registry');
+    assert.equal(actual.resolved?.name, 'mssql/server');
   },
 
   fromRegistry: {
