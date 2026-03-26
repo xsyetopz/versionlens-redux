@@ -4,6 +4,7 @@ import {
   type PackageClientRequest,
   createPackageManifest,
   PackageDependency,
+  PackageSourceType,
   VersionUtils
 } from '#domain/packages';
 import {
@@ -17,7 +18,7 @@ import {
   type PackagistClient,
   ComposerSuggestionResolver
 } from '#domain/providers/composer';
-import { deepEqual } from 'node:assert';
+import assert, { deepEqual } from 'node:assert';
 import { instance, mock, when } from 'ts-mockito';
 import Fixtures from './composerSuggestionResolver.fixtures';
 
@@ -82,7 +83,53 @@ export const ComposerSuggestionResolverTests = {
 
         // assert
         deepEqual(actual.suggestions, expected)
-      },
-    ]
+      }
+    ],
+
+    'fromPackagist: returns suggestions for version ranges': async function (this: TestContext) {
+      const testPackageName = 'test-package';
+      const testVersion = '^1.0.0';
+      const testPackageMan = createPackageManifest(
+        testPackageName,
+        testVersion,
+        'packagepath'
+      );
+
+      const testRequest: any = {
+        parsedDependency: new PackageDependency(
+          testPackageMan,
+          new PackageDescriptor([
+            createPackageNameDesc(testPackageName, createTextRange(0)),
+            createPackageVersionDesc(testVersion, createTextRange(1)),
+          ])
+        )
+      };
+
+      const testSpec: any = {
+        type: 'range',
+        rawVersion: testVersion
+      }
+
+      const testReleases = ['1.0.0', '1.1.0', '1.2.0'];
+      const testResponse: any = {
+        source: ClientResponseSource.remote,
+        status: 200,
+        data: {
+          packages: {
+            [testPackageName]: testReleases.map(version => ({ version }))
+          }
+        }
+      };
+      when(this.packagistClientMock.get(testPackageName))
+        .thenResolve(testResponse);
+
+      // test
+      const actual = await this.cut.fromPackagist(testRequest, testSpec)
+
+      // assert
+      assert.equal(actual.source, PackageSourceType.Registry)
+      assert.equal(actual.type, testSpec.type)
+      assert.ok(actual.suggestions.length > 0)
+    }
   }
 }
