@@ -150,7 +150,7 @@ export interface IExtensionServices {
   /** The VS Code log output channel. */
   logOutputChannel: LogOutputChannel
   /** The collection of active version lens providers. */
-  versionLensProviders: Array<SuggestionCodeLensProvider>
+  suggestionCodeLensProviders: Array<SuggestionCodeLensProvider>
   /** Cache for dependencies being edited. */
   editorDependencyCache: DependencyCache
   /** The package file watcher. */

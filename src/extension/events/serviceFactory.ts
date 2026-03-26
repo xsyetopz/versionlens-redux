@@ -310,7 +310,7 @@ function addEditorTitleBarEventServices(services: ServiceCollection<IExtensionSe
     c => {
       // create the event handler
       const event = new OnCustomInstallClick(
-        c.versionLensProviders,
+        c.suggestionCodeLensProviders,
         c.extension.state,
         c.onSaveChanges,
         c.loggerFactory(OnCustomInstallClick)
@@ -354,7 +354,7 @@ function addEditorTitleBarEventServices(services: ServiceCollection<IExtensionSe
     c => {
       // create the event handler
       const event = new OnToggleReleases(
-        c.versionLensProviders,
+        c.suggestionCodeLensProviders,
         c.extension.state,
         c.loggerFactory(OnToggleReleases)
       );
@@ -380,7 +380,7 @@ function addEditorTitleBarEventServices(services: ServiceCollection<IExtensionSe
     c => {
       // create the event handler
       const event = new OnTogglePrereleases(
-        c.versionLensProviders,
+        c.suggestionCodeLensProviders,
         c.extension.state,
         c.loggerFactory(OnTogglePrereleases)
       );

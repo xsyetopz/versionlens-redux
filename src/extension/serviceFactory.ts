@@ -44,11 +44,6 @@ export function addExtensionServices(services: ServiceCollection<IExtensionServi
   services.addSingletonFactory(ExtensionServiceName.editorConfig, () => new EditorConfig(workspace))
 
   services.addSingletonFactory(
-    ExtensionServiceName.suggestionOptions,
-    c => new SuggestionsOptions(c.appConfig, 'suggestions')
-  )
-
-  services.addSingletonFactory(
     ExtensionServiceName.versionLensState,
     c => new VersionLensState(c.suggestionOptions)
   )
@@ -68,80 +63,10 @@ export function addExtensionServices(services: ServiceCollection<IExtensionServi
     )
   )
 
-  addVulnerabilityServices(services);
-
-  services.addSingletonFactory(
-    ExtensionServiceName.versionLensProviders,
-    c => {
-      const extension = c.extension;
-      const getSuggestions = c.getSuggestions;
-      const suggestionProviders = c.suggestionProviders;
-      const loggerFactory = c.loggerFactory;
-      return suggestionProviders.map(
-        suggestionProvider => {
-          const provider = new SuggestionCodeLensProvider(
-            extension,
-            suggestionProvider,
-            getSuggestions,
-            new EventEmitter(),
-            loggerFactory(`${suggestionProvider.name}CodeLensProvider`)
-          );
-
-          // map FileMatcher to DocumentFilter
-          const fileLanguage = suggestionProvider.config.fileLanguage instanceof Array
-            ? suggestionProvider.config.fileLanguage
-            : [suggestionProvider.config.fileLanguage];
-
-          const selectors: DocumentFilter[] = [];
-          for (const language of fileLanguage) {
-            selectors.push({
-              language,
-              pattern: suggestionProvider.config.filePatterns,
-              scheme: 'file'
-            });
-          }
-
-          // register codelens provider with vscode
-          provider.disposable = languages.registerCodeLensProvider(selectors, provider);
-
-          return provider;
-        }
-      )
-    }
-  )
-
-  services.addSingletonFactory(
-    DomainServiceName.providerNames,
-    () => {
-      const allProviders = Object.keys(Providers)
-
-      // TODO: Goal: Use a strongly typed way to get the enabledProviders setting
-      const enabledProviders = workspace.getConfiguration('versionlens')
-        .get<string[]>('enabledProviders') || [];
-
-      if (enabledProviders.length > 0) {
-        // Filter to ensure only supported providers are included
-        return allProviders.filter(name => enabledProviders.includes(name));
-      }
-
-      return allProviders;
-    }
-  )
-
-  services.addSingletonFactory(
-    DomainServiceName.getSuggestions,
-    c => new GetSuggestions(
-      c.fetchPackages,
-      [
-        c.editorDependencyCache,
-        c.fileWatcherDependencyCache
-      ],
-      c.loggerFactory(GetSuggestions)
-    )
-  );
 }
 
-export function addOptionServices(services: ServiceCollection<IDomainServices>) {
+export function addOptionServices(services: ServiceCollection<IExtensionServices & IDomainServices>) {
+
   services.addSingletonFactory(
     DomainServiceName.httpOptions,
     c => new HttpOptions(c.appConfig, 'http')
@@ -151,6 +76,12 @@ export function addOptionServices(services: ServiceCollection<IDomainServices>) 
     DomainServiceName.cachingOptions,
     c => new CachingOptions(c.appConfig, 'caching')
   )
+
+  services.addSingletonFactory(
+    ExtensionServiceName.suggestionOptions,
+    c => new SuggestionsOptions(c.appConfig, 'suggestions')
+  )
+
 }
 
 export function addCachingServices(services: ServiceCollection<IDomainServices & IExtensionServices>) {
@@ -206,12 +137,7 @@ export function addStorageServices(services: ServiceCollection<IDomainServices &
 
 }
 
-export function addUseCaseServices(services: ServiceCollection<IDomainServices>) {
-
-  services.addSingletonFactory(
-    DomainServiceName.GetSuggestionProvider,
-    c => new GetSuggestionProvider(c.suggestionProviders)
-  );
+export function addUseCaseServices(services: ServiceCollection<IExtensionServices & IDomainServices>) {
 
   services.addSingletonFactory(
     DomainServiceName.getDependencyChanges,
@@ -232,11 +158,6 @@ export function addUseCaseServices(services: ServiceCollection<IDomainServices>)
     c => new FetchPackage(c.packageCache, c.loggerFactory(FetchPackage))
   );
 
-  services.addSingletonFactory(
-    DomainServiceName.getVulnerabilities,
-    c => new GetVulnerabilities(c.osvClient, c.loggerFactory(GetVulnerabilities))
-  );
-
   services.addSingletonFactory(DomainServiceName.sortDependencies, () => new SortDependencies());
 
 }
@@ -246,6 +167,7 @@ export function addUseCaseServices(services: ServiceCollection<IDomainServices>)
  * @param services The service collection to add to.
  */
 export function addClientServices(services: ServiceCollection<IDomainServices>) {
+
   services.addSingletonFactory(
     DomainServiceName.osvClient,
     c => new OsvClient(
@@ -254,19 +176,50 @@ export function addClientServices(services: ServiceCollection<IDomainServices>) 
       c.osvRequestCache
     )
   );
+
 }
 
 /**
  * Registers initialized suggestion providers as a singleton.
  * @param services The service collection to add to.
  */
-export function addSuggestionProviders(services: ServiceCollection<IDomainServices>) {
+export function addSuggestionServices(services: ServiceCollection<IExtensionServices & IDomainServices>) {
   const providerNames = Object.keys(Providers) as Array<keyof typeof Providers>;
 
-  // register each provider's services
-  for (const name of providerNames) {
-    (Providers[name] as any).registerServices(services);
-  }
+  services.addSingletonFactory(
+    DomainServiceName.GetSuggestionProvider,
+    c => new GetSuggestionProvider(c.suggestionProviders)
+  );
+
+  services.addSingletonFactory(
+    DomainServiceName.getSuggestions,
+    c => new GetSuggestions(
+      c.fetchPackages,
+      [
+        c.editorDependencyCache,
+        c.fileWatcherDependencyCache
+      ],
+      c.loggerFactory(GetSuggestions)
+    )
+  );
+
+  services.addSingletonFactory(
+    DomainServiceName.providerNames,
+    () => {
+      const allProviders = Object.keys(Providers)
+
+      // TODO: Goal: Use a strongly typed way to get the enabledProviders setting
+      const enabledProviders = workspace.getConfiguration('versionlens')
+        .get<string[]>('enabledProviders') || [];
+
+      if (enabledProviders.length > 0) {
+        // Filter to ensure only supported providers are included
+        return allProviders.filter(name => enabledProviders.includes(name));
+      }
+
+      return allProviders;
+    }
+  )
 
   // register the suggestionProviders array factory
   services.addSingletonFactory(
@@ -275,11 +228,63 @@ export function addSuggestionProviders(services: ServiceCollection<IDomainServic
       .filter(name => providerNames.includes(name as any))
       .map(name => (c as any)[`${name}.suggestionProvider`]),
   );
+
+
+  services.addSingletonFactory(
+    ExtensionServiceName.suggestionCodeLensProviders,
+    c => {
+      const extension = c.extension;
+      const getSuggestions = c.getSuggestions;
+      const suggestionProviders = c.suggestionProviders;
+      const loggerFactory = c.loggerFactory;
+      return suggestionProviders.map(
+        suggestionProvider => {
+          const provider = new SuggestionCodeLensProvider(
+            extension,
+            suggestionProvider,
+            getSuggestions,
+            new EventEmitter(),
+            loggerFactory(`${suggestionProvider.name}CodeLensProvider`)
+          );
+
+          // map FileMatcher to DocumentFilter
+          const fileLanguage = suggestionProvider.config.fileLanguage instanceof Array
+            ? suggestionProvider.config.fileLanguage
+            : [suggestionProvider.config.fileLanguage];
+
+          const selectors: DocumentFilter[] = [];
+          for (const language of fileLanguage) {
+            selectors.push({
+              language,
+              pattern: suggestionProvider.config.filePatterns,
+              scheme: 'file'
+            });
+          }
+
+          // register codelens provider with vscode
+          provider.disposable = languages.registerCodeLensProvider(selectors, provider);
+
+          return provider;
+        }
+      )
+    }
+  )
+
+  // register each provider's services
+  for (const name of providerNames) {
+    (Providers[name] as any).registerServices(services);
+  }
+
 }
 
 export function addVulnerabilityServices(
   services: ServiceCollection<IExtensionServices & IDomainServices>
 ) {
+
+  services.addSingletonFactory(
+    DomainServiceName.getVulnerabilities,
+    c => new GetVulnerabilities(c.osvClient, c.loggerFactory(GetVulnerabilities))
+  );
 
   services.addSingletonFactory(
     ExtensionServiceName.vulnerabilityProvider,

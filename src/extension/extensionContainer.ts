@@ -16,8 +16,9 @@ import {
   addExtensionServices,
   addOptionServices,
   addStorageServices,
-  addSuggestionProviders,
-  addUseCaseServices
+  addSuggestionServices,
+  addUseCaseServices,
+  addVulnerabilityServices
 } from './serviceFactory';
 import { VersionLensExtension } from './versionLensExtension';
 
@@ -44,7 +45,8 @@ export function configureContainer(
   addCachingServices(services);
   addAuthenticationServices(services, resourceFolderPath, context.secrets, context.workspaceState);
   addEventServices(services);
-  addSuggestionProviders(services);
+  addSuggestionServices(services);
+  addVulnerabilityServices(services);
 
   // register the service provider itself
   services.addServiceProvider(DomainServiceName.serviceProvider);
