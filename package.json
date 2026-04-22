@@ -84,7 +84,7 @@
   "dependencies": {
     "@esm-test/guards": "1.0.0-beta.11",
     "@js-injection/service-provider": "1.0.1",
-    "@npmcli/config": "10.8.0",
+    "@npmcli/config": "10.8.1",
     "@npmcli/promise-spawn": "9.0.1",
     "dockerfile-ast": "0.7.1",
     "dotenv": "17.3.1",
