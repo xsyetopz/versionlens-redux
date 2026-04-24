@@ -11,7 +11,7 @@ This project is `active`, not sponsored or funded.
 
 VersionLens shows __version__ information when opening a package or project file in VS Code. It abides by [semver rules](https://semver.org/) and uses the [Node Semver](https://github.com/npm/node-semver) package to compare and sort versions.
 
-![Show releases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-releases.gif)
+![Show releases](images/faq/show-releases.gif)
 
 ## Contents
 
@@ -62,7 +62,7 @@ Yes, select the **tag** icon in the package/project file toolbar.
 
 You can also set the default startup state using `versionlens.suggestions.showPrereleasesOnStartup`.
 
-![Show prereleases](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/show-prereleases.gif)
+![Show prereleases](images/faq/show-prereleases.gif)
 
 ## Can I check for package vulnerabilities?
 
@@ -95,7 +95,7 @@ If you are unable to install the extension, try a clean install:
 3. Restart VS Code and reinstall.
 
 > **Note:** Check the `Log (Extension Host)` in the Output channel for specific errors during installation.
-> ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-host-log.png)
+> ![image](images/faq/ext-host-log.png)
 
 ## How do I troubleshoot this extension?
 
@@ -104,7 +104,7 @@ If you are unable to install the extension, try a clean install:
 *   **Clear Cache:** Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `VersionLens: Clear cache`.
     *   Cache duration is managed by `versionlens.caching.duration` (default is 3 minutes).
 *   **Logging:** Set your log level to `debug` via the Command Palette (`Developer: Set Log Level`) or the `VersionLens` output channel.
-    ![image](https://gitlab.com/versionlens/vscode-versionlens/-/raw/master/images/faq/ext-log.png)
+    ![image](images/faq/ext-log.png)
 *   **Developer Tools:** If no logs are visible, check for errors in the VS Code Developer Tools (`Help > Toggle Developer Tools`).
 
 ## Commands & Settings
