@@ -1,120 +1,96 @@
 # VersionLens for Visual Studio Code
 
-[![Version](https://img.shields.io/visual-studio-marketplace/v/pflannery.vscode-versionlens?style=flat-square&color=blue)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/pflannery.vscode-versionlens?style=flat-square&color=blue)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/pflannery.vscode-versionlens?style=flat-square&color=blue)](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens)
-[![The ISC license](https://img.shields.io/badge/license-ISC-orange.png?style=flat-square&color=blue)](http://opensource.org/licenses/ISC)
+VersionLens shows package version information directly in VS Code dependency manifests, using a Rust core for parsing, version comparison, and registry lookups.
 
-This project is `active`, not sponsored or funded.
-
-[![BuyMeACoffee](https://www.buymeacoffee.com/assets/img/custom_images/purple_img.png)](https://www.buymeacoffee.com/peterf)
-
-VersionLens shows __version__ information when opening a package or project file in VS Code. It abides by [semver rules](https://semver.org/) and uses Rust version parsing to compare and sort versions.
+[![CI](https://github.com/xsyetopz/vscode-versionlens/actions/workflows/ci.yml/badge.svg)](https://github.com/xsyetopz/vscode-versionlens/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/xsyetopz/vscode-versionlens?include_prereleases)](https://github.com/xsyetopz/vscode-versionlens/releases)
+[![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
 ![Show releases](images/faq/show-releases.gif)
 
-## Contents
+## Use it when
 
-1. [VersionLens for Visual Studio Code](#versionlens-for-visual-studio-code)
-   1. [Contents](#contents)
-      1. [Supported Languages \& Ecosystems](#supported-languages--ecosystems)
-   2. [How do I see version information for a package?](#how-do-i-see-version-information-for-a-package)
-   3. [Can I see pre-release versions?](#can-i-see-pre-release-versions)
-   4. [Can I check for package vulnerabilities?](#can-i-check-for-package-vulnerabilities)
-   5. [Will this extension install packages for me?](#will-this-extension-install-packages-for-me)
-   6. [How do I install this extension?](#how-do-i-install-this-extension)
-      1. [Manual Installation](#manual-installation)
-      2. [Installation Troubleshooting](#installation-troubleshooting)
-   7. [How do I troubleshoot this extension?](#how-do-i-troubleshoot-this-extension)
-   8. [Commands \& Settings](#commands--settings)
-   9. [License](#license)
+- you want CodeLens version hints while editing dependency files;
+- you want to see whether a dependency is current, outdated, fixed, or constrained;
+- you want prerelease versions available on demand;
+- you want vulnerability warnings from OSV.dev surfaced in the editor.
 
-### Supported Languages & Ecosystems
+## Supported languages and ecosystems
 
-VersionLens supports a wide range of ecosystems:
+VersionLens supports these manifest ecosystems in this repository:
 
-- **Cargo (Rust):** [crates.io](https://doc.rust-lang.org/cargo/)
-- **Composer (PHP):** [packagist.org](https://getcomposer.org/)
-- **Deno (JSR/NPM):** [deno.com](https://deno.com/)
-- **Docker:** [Docker Hub / MCR](https://www.docker.com/)
-- **Dotnet:** [NuGet](https://www.dotnetfoundation.org/)
-- **Dub (D):** [code.dlang.org](https://code.dlang.org/)
-- **Go:** [proxy.golang.org](https://go.dev/)
-- **Maven (Java):** [Maven Central](https://maven.apache.org/)
-- **NPM/Bun (Node):** [npmjs.com](https://www.npmjs.com/), Bun, JSPM, PNPM
-- **Pub (Dart/Flutter):** [pub.dev](https://pub.dev/)
-- **Python:** [PyPI](https://pypi.org/)
-- **Ruby:** [rubygems.org](https://rubygems.org/)
+| Ecosystem | Registry/source |
+| --- | --- |
+| Cargo / Rust | crates.io |
+| Composer / PHP | Packagist |
+| Deno | Deno, JSR, npm |
+| Docker | Docker Hub / Microsoft Container Registry |
+| .NET | NuGet |
+| Dub / D | code.dlang.org |
+| Go | proxy.golang.org |
+| Maven / Java | Maven Central |
+| npm / Bun / pnpm / JSPM | npm-compatible registries |
+| Pub / Dart / Flutter | pub.dev |
+| Python | PyPI |
+| Ruby | RubyGems |
 
-> **Note:** TOML files require an extension that registers the TOML language with VS Code (e.g., [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)).
+TOML files require a VS Code extension that registers the TOML language, such as Even Better TOML.
 
-## How do I see version information for a package?
+## Show version information
 
-Select the **V** icon in the package/project file toolbar.
+Open a supported manifest and select the **V** icon in the editor toolbar.
 
-> You can also find this in the editor `...` (secondary) menu as **Show release versions**.
+You can also use the editor `...` menu item **Show release versions**, or set `versionlens.suggestions.showOnStartup` in VS Code settings.
 
-You can also set the default startup state using `versionlens.suggestions.showOnStartup` in your settings.
+## Show prerelease versions
 
-## Can I see pre-release versions?
+Select the **tag** icon in the editor toolbar, or use **Show prerelease versions** from the editor `...` menu.
 
-Yes, select the **tag** icon in the package/project file toolbar.
-
-> You can also find this in the editor `...` (secondary) menu as **Show prerelease versions**.
-
-You can also set the default startup state using `versionlens.suggestions.showPrereleasesOnStartup`.
+You can also set `versionlens.suggestions.showPrereleasesOnStartup`.
 
 ![Show prereleases](images/faq/show-prereleases.gif)
 
-## Can I check for package vulnerabilities?
+## Vulnerability checks
 
-VersionLens integrates with [OSV.dev](https://osv.dev) to highlight vulnerable packages directly in your manifest files.
+VersionLens integrates with OSV.dev to highlight vulnerable packages in manifest files.
 
-*   **Editor Diagnostics:** If a vulnerability is found for your current version, a **red squiggle** will appear. Hovering over the version will show the vulnerability details and a direct link to the advisory.
-*   **Update Safeguards:** If you click to update to a version that is known to be vulnerable, a **modal confirmation** will appear to prevent accidental updates to insecure versions.
-*   **Visual Indicators:** Updatable versions with known vulnerabilities are marked with a `⚠️` indicator in the CodeLens title.
+- **Editor diagnostics:** vulnerable versions are marked in the editor.
+- **Update safeguards:** updates to known vulnerable versions require confirmation.
+- **Visual indicators:** updatable versions with known vulnerabilities are marked in the CodeLens text.
 
-> **Note:** This feature is enabled by default and can be toggled using the `versionlens.suggestions.showVulnerabilities` setting.
+This feature is controlled by `versionlens.suggestions.showVulnerabilities`.
 
-## Will this extension install packages for me?
+## Custom install task
 
-Yes, you can define a custom task that runs when you save a package document.
+VersionLens can run a custom install task when you save a package document. Configure it with the `versionlens.customInstallCommand` and related `versionlens.showCustomInstall` settings in VS Code.
 
-To set this up, follow the [Custom Install Task Guide](./docs/custom-install-task.md).
+## Install
 
-## How do I install this extension?
+Download a VSIX from the [GitHub releases page](https://github.com/xsyetopz/vscode-versionlens/releases), then install it from VS Code:
 
-Install via the [VS Code Extension Gallery](https://code.visualstudio.com/docs/editor/extension-gallery).
+1. Open the Extensions view.
+2. Select `...`.
+3. Select **Install from VSIX...**.
+4. Choose the downloaded `.vsix` file.
 
-### Manual Installation
-Visit the [Releases page](https://gitlab.com/versionlens/vscode-versionlens/-/releases) for VSIX instructions.
+## Troubleshooting
 
-### Installation Troubleshooting
-If you are unable to install the extension, try a clean install:
+- **No CodeLens:** ensure `"editor.codeLens": true` is set.
+- **Toolbar icons missing:** ensure `"workbench.editor.editorActionsLocation": "hidden"` is not set.
+- **Stale results:** run **VersionLens: Clear cache** from the Command Palette.
+- **Cache duration:** configure `versionlens.cacheTtlSeconds`.
+- **Logs:** set log level to `debug` through **Developer: Set Log Level** or the `VersionLens` output channel.
 
-1. Shut down VS Code.
-2. Delete the extension folder: `{home}/.vscode/extensions/pflannery.vscode-versionlens`.
-3. Restart VS Code and reinstall.
+![Extension host log](images/faq/ext-host-log.jpg)
 
-> **Note:** Check the `Log (Extension Host)` in the Output channel for specific errors during installation.
-> ![image](images/faq/ext-host-log.jpg)
+![Extension log](images/faq/ext-log.jpg)
 
-## How do I troubleshoot this extension?
+If logs do not explain the issue, check VS Code Developer Tools with **Help > Toggle Developer Tools**.
 
-*   **CodeLens Enabled:** Ensure `"editor.codeLens": true` is set in your settings.
-*   **Action Icons:** Ensure `"workbench.editor.editorActionsLocation": "hidden"` is **not** set.
-*   **Clear Cache:** Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `VersionLens: Clear cache`.
-    *   Cache duration is managed by `versionlens.cacheTtlSeconds` (default is 180 seconds).
-*   **Logging:** Set your log level to `debug` via the Command Palette (`Developer: Set Log Level`) or the `VersionLens` output channel.
-    ![image](images/faq/ext-log.jpg)
-*   **Developer Tools:** If no logs are visible, check for errors in the VS Code Developer Tools (`Help > Toggle Developer Tools`).
+## Repository
 
-## Commands & Settings
-
-For a full list of available commands and configuration options, see the [Commands & Settings Guide](./docs/commands-and-settings.md).
+Source, issues, releases, contributor instructions, and CI live at <https://github.com/xsyetopz/vscode-versionlens>.
 
 ## License
 
-Licensed under [ISC](http://opensource.org/licenses/ISC).
-
-Copyright &copy; 2016+ [contributors](https://gitlab.com/versionlens/vscode-versionlens/-/graphs/master)
+ISC. See [LICENSE](LICENSE).
