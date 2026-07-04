@@ -53,6 +53,7 @@ impl VersionLensSession {
 
         if suggestion.status == SuggestionStatus::Current
             && dependency.ecosystem != Ecosystem::Docker
+            && suggestion.choices.is_empty()
         {
             if let Some(build_lens) = build_choice_code_lens_payload(
                 dependency,
@@ -155,14 +156,11 @@ fn choice_has_cached_vulnerabilities(
     session.target_update_has_cached_vulnerabilities(Some(&suggestion))
 }
 
-fn shows_update_choice_lenses(dependency: &Dependency, status: SuggestionStatus) -> bool {
-    if status == SuggestionStatus::Current {
-        return dependency.ecosystem == Ecosystem::Docker;
-    }
-
+fn shows_update_choice_lenses(_dependency: &Dependency, status: SuggestionStatus) -> bool {
     matches!(
         status,
-        SuggestionStatus::UpdateAvailable
+        SuggestionStatus::Current
+            | SuggestionStatus::UpdateAvailable
             | SuggestionStatus::Invalid
             | SuggestionStatus::InvalidRange
             | SuggestionStatus::NoMatch
