@@ -1,0 +1,23 @@
+[package]
+name = "versionlens-suggestions"
+description = "Suggestion resolution for Version Lens."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+version.workspace = true
+
+[dependencies]
+serde.workspace = true
+semver.workspace = true
+versionlens-parsers.workspace = true
+versionlens-versions.workspace = true
+
+[dev-dependencies]
+versionlens-vscode-model.workspace = true
+
+[lints]
+workspace = true

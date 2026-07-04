@@ -1,0 +1,966 @@
+{
+  "name": "vscode-versionlens",
+  "displayName": "Version Lens",
+  "description": "Shows the latest version for each package using code lens",
+  "publisher": "pflannery",
+  "private": true,
+  "preview": false,
+  "version": "1.28.0",
+  "main": "./dist/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/versionlens/vscode-versionlens.git"
+  },
+  "author": "Peter Flannery",
+  "license": "ISC",
+  "icon": "images/logo.png",
+  "keywords": [
+    "versions",
+    "packages",
+    "dependencies",
+    "references",
+    "c#,composer,csharp,dart,deno,docker,dotnet,dub,f#,fsharp,go,java,jspm,maven,npm,nuget,pnpm,pub,pypi,python,ruby"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "engines": {
+    "vscode": ">=1.90.0"
+  },
+  "activationEvents": [
+    "onLanguage:jsonc",
+    "onLanguage:json",
+    "onLanguage:xml",
+    "onLanguage:toml",
+    "onLanguage:yaml",
+    "onLanguage:go.mod",
+    "onLanguage:dockerfile",
+    "onLanguage:dockercompose",
+    "onLanguage:pip-requirements",
+    "onLanguage:plaintext",
+    "onLanguage:ruby",
+    "onFileSystem:versionlens",
+    "onCommand:versionlens.editor.onShowVersionLenses",
+    "onCommand:versionlens.editor.onHideVersionLenses",
+    "onCommand:versionlens.editor.onShowError",
+    "onCommand:versionlens.icons.showingProgress",
+    "onCommand:versionlens.editor.onShowPrereleaseVersions",
+    "onCommand:versionlens.editor.onHidePrereleaseVersions",
+    "onCommand:versionlens.suggestion.onClearCache",
+    "onCommand:versionlens.editor.onAddUrlAuthentication",
+    "onCommand:versionlens.editor.onRemoveUrlAuthentication",
+    "onCommand:versionlens.editor.onCustomInstall",
+    "onCommand:versionlens.editor.onSortDependencies",
+    "onCommand:versionlens.editor.onUpdateDependenciesLatest",
+    "onCommand:versionlens.editor.onUpdateDependenciesMajor",
+    "onCommand:versionlens.editor.onUpdateDependenciesMinor",
+    "onCommand:versionlens.editor.onUpdateDependenciesPatch"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "versionlens.editor.onShowVersionLenses",
+        "title": "Show release versions",
+        "category": "VersionLens",
+        "icon": {
+          "dark": "images/icons/toggle-inactive.svg",
+          "light": "images/icons/toggle-inactive-light.svg"
+        }
+      },
+      {
+        "command": "versionlens.editor.onHideVersionLenses",
+        "title": "Hide release versions",
+        "category": "VersionLens",
+        "icon": "images/icons/toggle-active.svg"
+      },
+      {
+        "command": "versionlens.editor.onShowError",
+        "title": "An error has occurred. Click to see the log for details.",
+        "category": "VersionLens",
+        "icon": "images/icons/toggle-death.svg"
+      },
+      {
+        "command": "versionlens.icons.showingProgress",
+        "enablement": "false",
+        "title": "Analyzing dependencies...",
+        "category": "VersionLens",
+        "icon": "images/icons/toggle-active-progress.svg"
+      },
+      {
+        "command": "versionlens.editor.onShowPrereleaseVersions",
+        "title": "Show prerelease versions",
+        "category": "VersionLens",
+        "icon": {
+          "dark": "images/icons/tag-inactive.svg",
+          "light": "images/icons/tag-inactive-light.svg"
+        }
+      },
+      {
+        "command": "versionlens.editor.onHidePrereleaseVersions",
+        "title": "Hide prerelease versions",
+        "category": "VersionLens",
+        "icon": "images/icons/tag-active.svg"
+      },
+      {
+        "command": "versionlens.suggestion.onClearCache",
+        "title": "Clear cache",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onAddUrlAuthentication",
+        "title": "Add url authentication",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onRemoveUrlAuthentication",
+        "title": "Remove url authentication",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onCustomInstall",
+        "title": "Run custom install task",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onSortDependencies",
+        "title": "Sort dependencies alphabetically",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesLatest",
+        "title": "Update dependencies to latest",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesMajor",
+        "title": "Update dependencies (major-only)",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesMinor",
+        "title": "Update dependencies (minor-only)",
+        "category": "VersionLens"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesPatch",
+        "title": "Update dependencies (patch-only)",
+        "category": "VersionLens"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "versionlens.editor.onShowVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onHideVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onShowError",
+          "when": "false"
+        },
+        {
+          "command": "versionlens.editor.onShowPrereleaseVersions",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onHidePrereleaseVersions",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onCustomInstall",
+          "when": "versionlens.showCustomInstall && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onSortDependencies",
+          "when": "versionlens.showSortAlphabetically && versionlens.providerActive"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "versionlens.editor.onShowVersionLenses",
+          "when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.editor.onHideVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.editor.onShowError",
+          "when": "versionlens.providerError && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.icons.showingProgress",
+          "when": "versionlens.providerBusy && versionlens.providerActive && versionlens.providerError == false && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.editor.onShowPrereleaseVersions",
+          "when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "navigation@1.1"
+        },
+        {
+          "command": "versionlens.editor.onHidePrereleaseVersions",
+          "when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "navigation@1.1"
+        },
+        {
+          "command": "versionlens.editor.onShowVersionLenses",
+          "when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@1"
+        },
+        {
+          "command": "versionlens.editor.onHideVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@1"
+        },
+        {
+          "command": "versionlens.editor.onShowPrereleaseVersions",
+          "when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@2"
+        },
+        {
+          "command": "versionlens.editor.onHidePrereleaseVersions",
+          "when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@2"
+        },
+        {
+          "command": "versionlens.editor.onCustomInstall",
+          "when": "versionlens.showCustomInstall && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_tool@0"
+        },
+        {
+          "command": "versionlens.editor.onSortDependencies",
+          "when": "versionlens.showSortAlphabetically && versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_tool@1"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesLatest",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@0"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesMajor",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@1"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesMinor",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@2"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesPatch",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@3"
+        }
+      ]
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": "versionlens:/versionlens.multi-registries.json",
+        "url": "./src/schema/versionlens.multi-registries.json"
+      }
+    ],
+    "configuration": {
+      "title": "VersionLens",
+      "properties": {
+        "versionlens.suggestions.showOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show version suggestions by default on vscode start up."
+        },
+        "versionlens.suggestions.showPrereleasesOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show version prerelease suggestions by default on vscode start up."
+        },
+        "versionlens.cargo.files": {
+          "type": "string",
+          "default": "**/Cargo.toml",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.composer.files": {
+          "type": "string",
+          "default": "**/composer.json",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.deno.files": {
+          "type": "string",
+          "default": "**/{deno.json,deno.jsonc}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.docker.files": {
+          "type": "string",
+          "default": "**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.dotnet.files": {
+          "type": "string",
+          "default": "**/{*.csproj,*.fsproj,*.vbproj,project.json,*.targets,*.props}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.dub.files": {
+          "type": "string",
+          "default": "**/{dub.json,dub.selections.json}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.golang.files": {
+          "type": "string",
+          "default": "**/go.mod",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.maven.files": {
+          "type": "string",
+          "default": "**/pom.xml",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.npm.files": {
+          "type": "string",
+          "default": "**/package.json",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.pnpm.files": {
+          "type": "string",
+          "default": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yaml,.yarnrc.yml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.pypi.files": {
+          "type": "string",
+          "default": "**/{Pipfile,pyproject.toml,*requirements*.txt}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.pub.files": {
+          "type": "string",
+          "default": "**/{pubspec.yaml,pubspec.yml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.ruby.files": {
+          "type": "string",
+          "default": "**/Gemfile",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.cargo.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.composer.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.deno.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.dotnet.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.dub.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.golang.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.maven.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.npm.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.pypi.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.pub.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.ruby.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.suggestions.showVulnerabilities": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show package vulnerabilities as red squiggles in the editor."
+        },
+        "versionlens.suggestions.showSuggestionsStats": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the stats of all suggestions in the status bar."
+        },
+        "versionlens.suggestions.indicators": {
+          "type": "object",
+          "default": {
+            "Directory": "📁 ",
+            "Error": "🔴",
+            "Latest": "🟢",
+            "SatisfiesLatest": "🟢",
+            "NoMatch": "⚪",
+            "Match": "🟡",
+            "Updateable": "↑ ",
+            "UpdateableVulnerable": "⚠️",
+            "Build": "≌ "
+          },
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "indicator": {
+              "type": "string"
+            }
+          },
+          "description": "The indicators used when showing version suggestion statuses."
+        },
+        "versionlens.npm.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "packageManager",
+            "dependencies",
+            "devDependencies",
+            "peerDependencies",
+            "optionalDependencies",
+            "overrides",
+            "overrides.*",
+            "jspm.dependencies",
+            "jspm.devDependencies",
+            "jspm.peerDependencies",
+            "jspm.optionalDependencies",
+            "pnpm.overrides",
+            "pnpm.overrides.*"
+          ],
+          "description": "Defines which properties in package.json should be parsed by this extension"
+        },
+        "versionlens.deno.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "imports"
+          ],
+          "description": "Defines which properties in deno.json should be parsed by this extension"
+        },
+        "versionlens.pnpm.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "catalog",
+            "catalogs.*.*",
+            "overrides",
+            "packageExtensions.*.dependencies",
+            "packageExtensions.*.devDependencies",
+            "packageExtensions.*.peerDependencies",
+            "packageExtensions.*.optionalDependencies"
+          ],
+          "description": "Defines which properties in pnpm-workspace.yaml should be parsed by this extension"
+        },
+        "versionlens.pub.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "dependencies",
+            "dev_dependencies",
+            "dependency_overrides"
+          ],
+          "description": "Defines which properties in pubspec.yaml should be parsed by this extension"
+        },
+        "versionlens.dotnet.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "Project.Sdk",
+            "Project.PropertyGroup.Version",
+            "Project.PropertyGroup.AssemblyVersion",
+            "Project.ItemGroup.GlobalPackageReference",
+            "Project.ItemGroup.PackageReference",
+            "Project.ItemGroup.PackageVersion",
+            "Project.ItemGroup.DotNetCliToolReference"
+          ],
+          "description": "Defines which project properties should be parsed by this extension"
+        },
+        "versionlens.dotnet.nuget.sources": {
+          "type": "array",
+          "items": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "default": [],
+          "description": "Defines which nuget source to use for package searching. Has to be a v3 'service index' endpoint. e.g. https://api.nuget.org/v3/index.json. Defaults to the sources output by `dotnet nuget list source`"
+        },
+        "versionlens.dub.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies",
+            "versions"
+          ],
+          "description": "Defines which properties in dub.json should be parsed by this extension"
+        },
+        "versionlens.cargo.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "package",
+            "dependencies",
+            "dependencies.*",
+            "dev-dependencies",
+            "dev-dependencies.*",
+            "build-dependencies",
+            "build-dependencies.*",
+            "workspace.dependencies",
+            "workspace.dependencies.*"
+          ],
+          "description": "Defines which properties in cargo.toml should be parsed by this extension"
+        },
+        "versionlens.composer.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "require",
+            "require-dev"
+          ],
+          "description": "Defines which properties in composer.json should be parsed by this extension"
+        },
+        "versionlens.maven.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "project.version",
+            "project.dependencies.dependency",
+            "project.parent"
+          ],
+          "description": "Defines which properties in pom.xml should be parsed by this extension"
+        },
+        "versionlens.pypi.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "project",
+            "packages",
+            "dev-packages",
+            "tool.poetry.dependencies",
+            "tool.poetry.group.*.dependencies",
+            "project.optional-dependencies"
+          ],
+          "description": "Defines which properties in pyproject.toml should be parsed by this extension"
+        },
+        "versionlens.enabledProviders": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "cargo",
+              "composer",
+              "deno",
+              "docker",
+              "dotnet",
+              "dub",
+              "golang",
+              "maven",
+              "npm",
+              "pnpm",
+              "pub",
+              "pypi",
+              "ruby"
+            ]
+          },
+          "default": [],
+          "description": "Defines a list of providers to enable. If empty, all providers are enabled. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "default": 3,
+          "description": "Specifies how long (in minutes) version suggestions will be cached. Setting the duration to 0 will disable caching."
+        },
+        "versionlens.cargo.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.composer.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.deno.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.docker.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.dotnet.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.dub.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.golang.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.maven.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.npm.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.pub.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.pypi.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.ruby.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.http.strictSSL": {
+          "type": [
+            "boolean"
+          ],
+          "default": true,
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned."
+        },
+        "versionlens.cargo.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.composer.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.deno.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.docker.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.dotnet.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.dub.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.golang.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.maven.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.pub.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.pypi.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.ruby.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.npm.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.deno.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.pub.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.dotnet.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.dub.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.cargo.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.composer.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.maven.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.pypi.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.golang.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.ruby.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.cargo.apiUrl": {
+          "type": "string",
+          "default": "https://crates.io/api/v1/crates",
+          "description": "Defines the api to use for crate package searching."
+        },
+        "versionlens.composer.apiUrl": {
+          "type": "string",
+          "default": "https://repo.packagist.org/p2",
+          "description": "Defines the api to use for composer package searching."
+        },
+        "versionlens.dub.apiUrl": {
+          "type": "string",
+          "default": "https://code.dlang.org/api/packages",
+          "description": "Defines the api to use for dub package searching."
+        },
+        "versionlens.golang.apiUrl": {
+          "type": "string",
+          "default": "https://proxy.golang.org/{base-module}/@v/list",
+          "description": "Defines the api to use for go package searching."
+        },
+        "versionlens.maven.apiUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Defines the api to use for maven package searching."
+        },
+        "versionlens.pypi.apiUrl": {
+          "type": "string",
+          "default": "https://pypi.org/rss/project/{name}/releases.xml",
+          "description": "Defines the api to use for pypi package searching."
+        },
+        "versionlens.pub.apiUrl": {
+          "type": "string",
+          "default": "https://pub.dev/api/packages",
+          "description": "Defines the pub api to use for package searching."
+        },
+        "versionlens.ruby.apiUrl": {
+          "type": "string",
+          "default": "https://rubygems.org/api/v1/versions/{name}.json",
+          "description": "Defines the api to use for ruby package searching."
+        }
+      }
+    }
+  }
+}

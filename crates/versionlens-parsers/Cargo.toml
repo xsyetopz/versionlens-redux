@@ -1,0 +1,24 @@
+[package]
+name = "versionlens-parsers"
+description = "Manifest and document parsers for Version Lens."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+version.workspace = true
+
+[dependencies]
+base64.workspace = true
+jsonc-parser.workspace = true
+marked-yaml.workspace = true
+quick-xml.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml_edit.workspace = true
+versionlens-vscode-model.workspace = true
+
+[lints]
+workspace = true

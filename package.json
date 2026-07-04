@@ -1,18 +1,54 @@
 {
-  "name": "vscode-versionlens",
+  "name": "@versionlens/workspace",
   "private": true,
   "version": "0.1.0",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "native:build": "cargo build --workspace",
+    "build": "bun scripts/build-extension.mjs",
+    "biome:check": "bunx biome check . --write --unsafe --max-diagnostics 16384",
+    "biome:format": "bunx biome format . --write --max-diagnostics 16384",
+    "biome:lint": "bunx biome lint . --write --max-diagnostics 16384",
+    "check": "bun run check:toolchain && bun run check:biome && bun run check:rustfmt && bun run check:workspace-layout && bun run check:test-layout && bun run check:vscode-adapter && bun run check:package-parity && bun run check:vsix-freshness && bun run check:data-objects && bun run check:entrypoints && bun run check:source-lines && bun run check:rust-test-layout && bun run check:rust-production-constraints && bun run check:typescript-style && bun run check:napi-boundary && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace && bun run test:extension && bun run test:napi",
+    "check:biome": "bunx biome check . --max-diagnostics 16384",
+    "check:clippy": "cargo clippy --workspace --all-targets",
+    "check:data-objects": "bun scripts/check-data-object-fields.mjs",
+    "check:entrypoints": "bun scripts/check-entrypoints.mjs",
+    "check:extension-build": "bun scripts/build-extension.mjs --check",
+    "check:napi-boundary": "bun scripts/check-napi-boundary.mjs",
+    "check:rust-production-constraints": "bun scripts/check-rust-production-constraints.mjs",
+    "check:rust-test-layout": "bun scripts/check-rust-test-layout.mjs",
+    "check:rustfmt": "cargo fmt --all -- --check",
+    "check:source-lines": "bun scripts/check-source-lines.mjs",
+    "check:test-layout": "bun scripts/check-test-layout.mjs",
+    "check:toolchain": "bun scripts/check-toolchain.mjs",
+    "check:typescript-style": "bun scripts/check-typescript-style.mjs",
+    "check:vsix-freshness": "bun scripts/check-vsix-freshness.mjs",
+    "check:vscode-adapter": "bun scripts/check-vscode-adapter.mjs",
+    "check:workspace-layout": "bun scripts/check-workspace-layout.mjs",
+    "native:build": "cargo build -p versionlens-napi && bun scripts/build-native.mjs",
     "native:test": "cargo test --workspace",
-    "typecheck": "bunx tsc --noEmit -p packages/vscode-extension/tsconfig.json"
+    "package": "bun run vscode:prepublish && cd packages/vscode-extension && bunx vsce package --no-dependencies",
+    "test": "bun run test:extension && bun run test:napi",
+    "test:extension": "bun scripts/test-extension.mjs",
+    "test:napi": "bun run native:build && bun test tests/napi",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/vscode-extension/tsconfig.json",
+    "vscode:prepublish": "bun run native:build:release && bun run build",
+    "native:build:release": "cargo build -p versionlens-napi --release && bun scripts/build-native.mjs --release",
+    "check:package-parity": "bun scripts/check-package-parity.mjs"
   },
   "devDependencies": {
-    "@types/node": "26.0.1",
+    "@biomejs/biome": "^2.5.2",
+    "@types/bun": "^1.3.14",
+    "@types/node": "26.1.0",
     "@types/vscode": "^1.75.0",
-    "typescript": "6.0.3"
-  }
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^6.0.3"
+  },
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "@vscode/vsce-sign",
+    "keytar"
+  ]
 }

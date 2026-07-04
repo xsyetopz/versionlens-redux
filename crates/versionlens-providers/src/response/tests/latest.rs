@@ -1,0 +1,731 @@
+use super::{
+    assert_latest, latest_version_for_requirement, latest_version_from_response,
+    latest_version_from_response_with_prereleases, latest_version_with_tags, npm_build_versions,
+    release_versions_from_response,
+};
+use versionlens_parsers::Ecosystem;
+
+#[test]
+fn reads_latest_versions_from_json_registry_responses() {
+    for (ecosystem, package, body, expected) in [
+        (
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"1.0.228"}}"#,
+            "1.0.228",
+        ),
+        (
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"1.0.229"},"versions":[{"num":"1.0.229","yanked":true},{"num":"1.0.228","yanked":false}]}"#,
+            "1.0.228",
+        ),
+        (
+            Ecosystem::Npm,
+            "typescript",
+            r#"{"dist-tags":{"latest":"6.0.3"}}"#,
+            "6.0.3",
+        ),
+        (
+            Ecosystem::Npm,
+            "octokit/core.js",
+            r#"[{"name":"v2.5.0"},{"name":"v2.0.0"}]"#,
+            "v2.5.0",
+        ),
+        (
+            Ecosystem::Npm,
+            "owner/commit",
+            r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+            "abcdef1",
+        ),
+        (
+            Ecosystem::Npm,
+            "owner/short-commit",
+            r#"[{"sha":"123"}]"#,
+            "123",
+        ),
+        (
+            Ecosystem::Deno,
+            "@std/assert",
+            r#"{"versions":{"1.0.0":{"yanked":true},"1.1.0":{},"1.2.0-rc.1":{},"1.0.3":{}}}"#,
+            "1.1.0",
+        ),
+        (
+            Ecosystem::Deno,
+            "@std/assert",
+            r#"{"latest":"1.3.0","versions":{"1.2.0":{},"1.3.0":{}}}"#,
+            "1.3.0",
+        ),
+        (
+            Ecosystem::Dotnet,
+            "Newtonsoft.Json",
+            r#"{"versions":["13.0.1","14.0.0-beta.1","13.0.3"]}"#,
+            "13.0.3",
+        ),
+        (
+            Ecosystem::Docker,
+            "node",
+            r#"{"results":[{"name":"20","tag_status":"active","digest":"sha256-20"},{"name":"22-beta","tag_status":"active","digest":"sha256-22"},{"name":"18","tag_status":"inactive","digest":"sha256-18"}]}"#,
+            "20",
+        ),
+        (
+            Ecosystem::Python,
+            "flask",
+            r#"{"info":{"version":"3.0.0"}}"#,
+            "3.0.0",
+        ),
+        (
+            Ecosystem::Python,
+            "flask",
+            r#"{"info":{"version":"3.1.0"},"releases":{"3.0.0":[{"yanked":false}],"3.1.0":[{"yanked":true}]}}"#,
+            "3.0.0",
+        ),
+        (
+            Ecosystem::Pub,
+            "http",
+            r#"{"versions":[{"version":"1.0.0"},{"version":"1.2.0","retracted":true},{"version":"1.1.0"},{"version":"2.0.0-dev.1"}]}"#,
+            "1.1.0",
+        ),
+        (
+            Ecosystem::Ruby,
+            "rails",
+            r#"[{"number":"8.0.0"},{"number":"8.1.0.beta1"},{"number":"8.0.4"}]"#,
+            "8.0.4",
+        ),
+        (
+            Ecosystem::Ruby,
+            "rspec/rspec-rails",
+            r#"[{"name":"v6.1.0"},{"name":"v6.0.1"}]"#,
+            "v6.1.0",
+        ),
+        (
+            Ecosystem::Ruby,
+            "rspec/rspec-core",
+            r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+            "abcdef1",
+        ),
+    ] {
+        assert_latest(ecosystem, package, body, expected);
+    }
+}
+
+#[test]
+fn reads_latest_versions_from_normalized_github_commit_arrays() {
+    for ecosystem in [Ecosystem::Npm, Ecosystem::Ruby] {
+        assert_latest(
+            ecosystem,
+            "owner/string-commit",
+            r#"["abcdef1234567890","1234567890abcdef"]"#,
+            "abcdef1",
+        );
+    }
+}
+
+#[test]
+fn github_tag_responses_ignore_non_semver_names() {
+    for ecosystem in [Ecosystem::Npm, Ecosystem::Ruby] {
+        assert_latest(
+            ecosystem,
+            "owner/repo",
+            r#"[{"name":"release-5.6.8"},{"name":"v2.0.0"},{"name":"build-9.0.0"}]"#,
+            "v2.0.0",
+        );
+    }
+}
+
+#[test]
+fn reads_ruby_versions_from_normalized_string_arrays() {
+    assert_latest(
+        Ecosystem::Ruby,
+        "rails",
+        r#"["1.0.0","1.1.0","2.0.0-alpha"]"#,
+        "1.1.0",
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Ruby,
+            "rails",
+            r#"["1.0.0","1.1.0","2.0.0-alpha"]"#,
+            true,
+        ),
+        Some("2.0.0-alpha".to_owned())
+    );
+}
+
+#[test]
+fn reads_deno_versions_from_normalized_string_arrays() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Deno,
+            "@std/assert",
+            r#"["0.215.0","0.212.0","1.0.6","0.198.0","0.196.0","1.1.0-rc.2"]"#,
+        ),
+        Some("1.0.6".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Deno,
+            "@std/assert",
+            r#"["0.215.0","0.212.0","1.0.6","0.198.0","0.196.0","1.1.0-rc.2"]"#,
+            true,
+        ),
+        Some("1.1.0-rc.2".to_owned())
+    );
+}
+
+#[test]
+fn reads_cargo_versions_from_normalized_string_arrays() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"versions":["1.0.20","1.0.19","1.1.0-beta.1"]}"#,
+        ),
+        Some("1.0.20".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Cargo,
+            "serde",
+            r#"["1.0.20","1.0.19","1.1.0-beta.1"]"#,
+            true,
+        ),
+        Some("1.1.0-beta.1".to_owned())
+    );
+}
+
+#[test]
+fn reads_go_versions_from_normalized_version_arrays() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Go,
+            "go.uber.org/zap",
+            r#"{"versions":["v0.32.3","v0.19.10","v0.26.0","v0.23.0-alpha.3"]}"#,
+        ),
+        Some("v0.32.3".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Go,
+            "github.com/docker/cli",
+            r#"["v26.1.3+incompatible","v27.0.0+incompatible"]"#,
+        ),
+        Some("v27.0.0".to_owned())
+    );
+}
+
+#[test]
+fn reads_python_versions_from_normalized_string_arrays() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Python,
+            "pip",
+            r#"["25.0.1","25.0","24.3.1","24.3","24.2"]"#,
+        ),
+        Some("25.0.1".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Python,
+            "pip",
+            r#"{"versions":["25.0.1","25.0","26.0.0rc1"]}"#,
+            true,
+        ),
+        Some("26.0.0rc1".to_owned())
+    );
+}
+
+#[test]
+fn extracts_python_and_ruby_versions_for_update_choices() {
+    assert_eq!(
+        release_versions_from_response(
+            Ecosystem::Python,
+            r#"{"versions":["24.3.1","25.0.0","26.0.0rc1"]}"#,
+        ),
+        [
+            "24.3.1".to_owned(),
+            "25.0.0".to_owned(),
+            "26.0.0-rc.1".to_owned()
+        ]
+    );
+    assert_eq!(
+        release_versions_from_response(Ecosystem::Ruby, r#"["1.0.0","1.1.0-pre.1","1.0.1"]"#,),
+        [
+            "1.0.0".to_owned(),
+            "1.0.1".to_owned(),
+            "1.1.0-pre.1".to_owned()
+        ]
+    );
+}
+
+#[test]
+fn reads_maven_versions_from_normalized_string_arrays() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Maven,
+            "junit:junit",
+            r#"["4.13-rc-1","4.13-rc-2","4.13","4.13.1","4.13.2"]"#,
+        ),
+        Some("4.13.2".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Maven,
+            "junit:junit",
+            r#"["4.13-rc-1","4.13-rc-2","4.13","4.13.1","4.13.2","4.14.0-rc.1"]"#,
+            true,
+        ),
+        Some("4.14.0-rc.1".to_owned())
+    );
+}
+
+#[test]
+fn reads_maven_release_versions_for_update_choices() {
+    assert_eq!(
+        release_versions_from_response(
+            Ecosystem::Maven,
+            r#"<metadata><versioning><versions><version>1.0.0</version><version>2.0.0-M1</version><version>1.0.1</version><version>ignored</version></versions></versioning></metadata>"#
+        ),
+        [
+            "1.0.0".to_owned(),
+            "1.0.1".to_owned(),
+            "2.0.0-M1".to_owned()
+        ]
+    );
+}
+
+#[test]
+fn reads_npm_release_versions_in_upstream_compare_build_order() {
+    assert_eq!(
+        release_versions_from_response(
+            Ecosystem::Npm,
+            r#"{"versions":{"2.0.0":{},"1.0.0+build.10":{},"1.0.0+build.2":{},"1.0.0":{}}}"#,
+        ),
+        [
+            "1.0.0".to_owned(),
+            "1.0.0+build.2".to_owned(),
+            "1.0.0+build.10".to_owned(),
+            "2.0.0".to_owned()
+        ]
+    );
+}
+
+#[test]
+fn reads_npm_versions_from_normalized_string_arrays() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Npm,
+            "npm-package-arg",
+            r#"{"dist-tags":{"latest":"7.0.0"},"versions":["6.0.0","6.1.0","7.0.0","8.0.0","8.0.1"]}"#,
+        ),
+        Some("7.0.0".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Npm,
+            "pacote",
+            r#"{"dist-tags":{"latest":"11.1.9"},"versions":["11.1.9","12.0.0-beta.1"]}"#,
+            true,
+        ),
+        Some("11.1.9".to_owned())
+    );
+}
+
+#[test]
+fn reads_npm_build_versions_for_matching_release() {
+    assert_eq!(
+        npm_build_versions(
+            r#"{"versions":{"1.0.0":{},"1.0.0+build.1":{},"1.0.0+build.2":{},"1.1.0+build.1":{}}}"#,
+            "1.0.0+build.1",
+        ),
+        [
+            "1.0.0".to_owned(),
+            "1.0.0+build.1".to_owned(),
+            "1.0.0+build.2".to_owned()
+        ]
+    );
+}
+
+#[test]
+fn reads_npm_build_versions_from_normalized_string_arrays() {
+    assert_eq!(
+        npm_build_versions(
+            r#"{"versions":["1.0.0","1.0.0+build.1","1.0.0+build.2","1.1.0+build.1"]}"#,
+            "1.0.0+build.1",
+        ),
+        [
+            "1.0.0".to_owned(),
+            "1.0.0+build.1".to_owned(),
+            "1.0.0+build.2".to_owned()
+        ]
+    );
+}
+
+#[test]
+fn reads_npm_build_versions_in_upstream_compare_build_order() {
+    assert_eq!(
+        npm_build_versions(
+            r#"{"versions":{"1.0.0+build.10":{},"1.0.0+build.2":{},"1.0.0":{},"1.1.0+build.1":{}}}"#,
+            "1.0.0+build.2",
+        ),
+        [
+            "1.0.0".to_owned(),
+            "1.0.0+build.2".to_owned(),
+            "1.0.0+build.10".to_owned()
+        ]
+    );
+}
+
+#[test]
+fn pub_latest_field_is_used_when_version_list_has_no_allowed_release() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Pub,
+            "http",
+            r#"{"latest":{"version":"1.2.3"},"versions":[]}"#,
+        ),
+        Some("1.2.3".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Pub,
+            "http",
+            r#"{"latest":{"version":"1.2.3"},"versions":[{"version":"2.0.0-dev.1"}]}"#,
+        ),
+        Some("1.2.3".to_owned())
+    );
+}
+
+#[test]
+fn reads_pub_versions_from_normalized_string_arrays() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Pub,
+            "http",
+            r#"{"versions":["0.1.0","0.1.1","0.1.2","1.0.0-dev.1"]}"#,
+        ),
+        Some("0.1.2".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Pub,
+            "http",
+            r#"{"versions":["0.1.0","0.1.1","0.1.2","1.0.0-dev.1"]}"#,
+            true,
+        ),
+        Some("1.0.0-dev.1".to_owned())
+    );
+}
+
+#[test]
+fn cargo_crate_metadata_prefers_max_stable_version() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"2.0.0-alpha.1","max_stable_version":"1.0.228"}}"#,
+        ),
+        Some("1.0.228".to_owned())
+    );
+}
+
+#[test]
+fn cargo_crate_metadata_is_used_when_version_list_has_no_allowed_release() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"2.0.0-alpha.1","max_stable_version":"1.0.228"},"versions":[{"num":"2.0.0-alpha.1","yanked":false},{"num":"1.0.229","yanked":true}]}"#,
+        ),
+        Some("1.0.228".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"2.0.0-alpha.1","max_stable_version":"1.0.228"},"versions":[{"num":"2.0.0-alpha.2","yanked":true}]}"#,
+            true,
+        ),
+        Some("2.0.0-alpha.1".to_owned())
+    );
+}
+
+#[test]
+fn cargo_crate_metadata_uses_max_version_when_prereleases_are_visible() {
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"2.0.0-alpha.1","max_stable_version":"1.0.228"}}"#,
+            true,
+        ),
+        Some("2.0.0-alpha.1".to_owned())
+    );
+}
+
+#[test]
+fn deno_latest_field_falls_back_when_yanked_or_prerelease() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Deno,
+            "@std/assert",
+            r#"{"latest":"1.3.0","versions":{"1.2.0":{},"1.3.0":{"yanked":true}}}"#,
+        ),
+        Some("1.2.0".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Deno,
+            "@std/assert",
+            r#"{"latest":"1.3.0-rc.1","versions":{"1.2.0":{},"1.3.0-rc.1":{}}}"#,
+        ),
+        Some("1.2.0".to_owned())
+    );
+}
+
+#[test]
+fn reads_latest_versions_from_dub_registry_responses() {
+    assert_latest(
+        Ecosystem::Dub,
+        "vibe-d",
+        r#"{"versions":[{"version":"~master"},{"version":"1.0.0"},{"version":"1.1.0-beta.1"},{"version":"1.0.2"}]}"#,
+        "1.0.2",
+    );
+    assert_eq!(
+        latest_version_for_requirement(
+            Ecosystem::Dub,
+            "vibe-d",
+            "~master",
+            r#"{"versions":[{"version":"~master"},{"version":"0.9.0"},{"version":"0.8.0"}]}"#,
+        )
+        .as_deref(),
+        Some("~master")
+    );
+    assert_latest(
+        Ecosystem::Dub,
+        "vibe-d",
+        r#"["~master","1.0.0","1.1.0-beta.1","1.0.2"]"#,
+        "1.0.2",
+    );
+    assert_eq!(
+        latest_version_for_requirement(
+            Ecosystem::Dub,
+            "vibe-d",
+            "~master",
+            r#"["~master","0.9.0","0.8.0"]"#,
+        )
+        .as_deref(),
+        Some("~master")
+    );
+    assert_latest(
+        Ecosystem::Dub,
+        "vibe-d",
+        r#"{"versions":[{"version":"~main"}]}"#,
+        "~main",
+    );
+}
+
+#[test]
+fn reads_latest_versions_from_text_registry_responses() {
+    assert_latest(
+        Ecosystem::Go,
+        "go.uber.org/zap",
+        "v1.0.0\nv1.2.0\n",
+        "v1.2.0",
+    );
+    assert_latest(
+        Ecosystem::Go,
+        "go.uber.org/zap",
+        "\nv0.32.3\nv0.19.10\n\nv0.26.0\n",
+        "v0.32.3",
+    );
+    assert_latest(
+        Ecosystem::Go,
+        "github.com/docker/cli",
+        "v26.1.3+incompatible\nv27.0.0+incompatible\n",
+        "v27.0.0",
+    );
+    assert_latest(
+        Ecosystem::Maven,
+        "org.springframework:spring-core",
+        r#"<metadata><versioning><versions><version>5.0.0</version><version>6.0.0-M1</version><version>5.3.1</version></versions></versioning></metadata>"#,
+        "5.3.1",
+    );
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Maven,
+            "org.springframework:spring-core",
+            r#"<metadata><versioning><release>6.1.1</release><latest>6.2.0-M1</latest></versioning></metadata>"#,
+        ),
+        None
+    );
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Maven,
+            "org.springframework:spring-core",
+            r#"<metadata><versioning><latest>6.1.2</latest></versioning></metadata>"#,
+        ),
+        None
+    );
+    assert_latest(
+        Ecosystem::Python,
+        "flask",
+        r#"<rss><channel><item><title>Flask 2.3.3</title></item><item><title>Flask 3.0.0</title></item></channel></rss>"#,
+        "3.0.0",
+    );
+    assert_latest(
+        Ecosystem::Python,
+        "pip",
+        r#"<rss><channel><item><title>25.0.1</title></item><item><title>24.3.1</title></item></channel></rss>"#,
+        "25.0.1",
+    );
+}
+
+#[test]
+fn python_rss_two_segment_latest_is_coerced_to_three_segments() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Python,
+            "pip",
+            r#"<rss><channel><item><title>25.0</title></item><item><title>24.3</title></item></channel></rss>"#,
+        ),
+        Some("25.0.0".to_owned())
+    );
+}
+
+#[test]
+fn ignores_invalid_python_rss_responses() {
+    assert_eq!(
+        latest_version_from_response(Ecosystem::Python, "pip", "<rss>"),
+        None
+    );
+}
+
+#[test]
+fn falls_back_when_registry_latest_tag_is_prerelease() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"2.0.0-alpha.1"},"versions":[{"num":"1.0.228","yanked":false},{"num":"2.0.0-alpha.1","yanked":false}]}"#,
+        ),
+        Some("1.0.228".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Python,
+            "flask",
+            r#"{"info":{"version":"4.0.0rc1"},"releases":{"3.0.0":[],"4.0.0rc1":[]}}"#,
+        ),
+        Some("3.0.0".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Pub,
+            "http",
+            r#"{"latest":{"version":"2.0.0-dev.1"}}"#,
+        ),
+        None
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Pub,
+            "http",
+            r#"{"latest":{"version":"2.0.0-dev.1"}}"#,
+            true,
+        ),
+        Some("2.0.0-dev.1".to_owned())
+    );
+}
+
+#[test]
+fn npm_latest_dist_tag_uses_prerelease_tagged_version() {
+    assert_eq!(
+        latest_version_from_response(
+            Ecosystem::Npm,
+            "typescript",
+            r#"{"dist-tags":{"latest":"7.0.0-beta.1"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#,
+        ),
+        Some("7.0.0-beta.1".to_owned())
+    );
+}
+
+#[test]
+fn can_pick_prerelease_versions() {
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"1.0.228"},"versions":[{"num":"2.0.0-alpha.1","yanked":true},{"num":"1.1.0-beta.1","yanked":false},{"num":"1.0.228","yanked":false}]}"#,
+            true,
+        ),
+        Some("1.1.0-beta.1".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Dotnet,
+            "Newtonsoft.Json",
+            r#"{"versions":["13.0.1","14.0.0-beta.1","13.0.3"]}"#,
+            true,
+        ),
+        Some("14.0.0-beta.1".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Npm,
+            "typescript",
+            r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#,
+            true,
+        ),
+        Some("6.0.3".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Python,
+            "flask",
+            r#"{"info":{"version":"3.0.0"},"releases":{"3.0.0":[],"4.0.0rc1":[]}}"#,
+            true,
+        ),
+        Some("4.0.0rc1".to_owned())
+    );
+    assert_eq!(
+        latest_version_from_response_with_prereleases(
+            Ecosystem::Ruby,
+            "rails",
+            r#"[{"number":"8.0.4"},{"number":"8.1.0.beta1"}]"#,
+            true,
+        ),
+        Some("8.1.0.beta1".to_owned())
+    );
+}
+
+#[test]
+fn filters_prerelease_tags_from_registry_responses() {
+    assert_eq!(
+        latest_version_with_tags(
+            Ecosystem::Npm,
+            "typescript",
+            r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{},"8.0.0-rc.1":{}}}"#,
+            &["beta".to_owned()],
+        ),
+        Some("6.0.3".to_owned())
+    );
+    assert_eq!(
+        latest_version_with_tags(
+            Ecosystem::Deno,
+            "@std/assert",
+            r#"{"versions":{"1.0.0":{},"1.1.0-alpha.1":{},"1.1.0-beta.1":{}}}"#,
+            &["alpha".to_owned()],
+        ),
+        Some("1.1.0-alpha.1".to_owned())
+    );
+    assert_eq!(
+        latest_version_with_tags(
+            Ecosystem::Docker,
+            "node",
+            r#"{"results":[{"name":"24.1.0","tag_status":"active","digest":"sha256-24"},{"name":"25.0.0-beta.1","tag_status":"active","digest":"sha256-beta"},{"name":"25.0.0-rc.1","tag_status":"active","digest":"sha256-rc"}]}"#,
+            &["beta".to_owned()],
+        ),
+        Some("25.0.0-beta.1".to_owned())
+    );
+}

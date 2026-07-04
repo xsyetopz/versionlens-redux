@@ -1,0 +1,155 @@
+[workspace]
+members = [
+  "crates/versionlens-cache",
+  "crates/versionlens-core",
+  "crates/versionlens-edits",
+  "crates/versionlens-http",
+  "crates/versionlens-napi",
+  "crates/versionlens-parsers",
+  "crates/versionlens-providers",
+  "crates/versionlens-suggestions",
+  "crates/versionlens-versions",
+  "crates/versionlens-vscode-model",
+]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.96"
+license = "ISC"
+repository = "https://gitlab.com/versionlens/vscode-versionlens.git"
+readme = "README.md"
+keywords = ["versionlens", "vscode", "dependencies"]
+categories = ["development-tools"]
+version = "0.1.0"
+
+[workspace.dependencies]
+base64 = "0.22.1"
+anyhow = "1.0.103"
+napi = "3.9.4"
+napi-build = "2.3.2"
+napi-derive = "3.5.7"
+jsonc-parser = "0.32.4"
+marked-yaml = "0.8.0"
+quick-xml = "0.41.0"
+semver = "1.0.28"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+thiserror = "2.0.18"
+toml_edit = "0.25.12"
+unicode-normalization = "0.1.25"
+ureq = { version = "3.3.0", default-features = false, features = ["rustls"] }
+versionlens-cache = { path = "crates/versionlens-cache" }
+versionlens-core = { path = "crates/versionlens-core" }
+versionlens-edits = { path = "crates/versionlens-edits" }
+versionlens-http = { path = "crates/versionlens-http" }
+versionlens-parsers = { path = "crates/versionlens-parsers" }
+versionlens-providers = { path = "crates/versionlens-providers" }
+versionlens-suggestions = { path = "crates/versionlens-suggestions" }
+versionlens-versions = { path = "crates/versionlens-versions" }
+versionlens-vscode-model = { path = "crates/versionlens-vscode-model" }
+
+[workspace.lints.rust]
+warnings = { level = "deny", priority = -10 }
+future_incompatible = { level = "deny", priority = -9 }
+rust_2018_idioms = { level = "deny", priority = -9 }
+rust_2024_compatibility = { level = "deny", priority = -9 }
+
+unsafe_code = { level = "warn", priority = 10 }
+unsafe_op_in_unsafe_fn = "deny"
+unsafe_attr_outside_unsafe = "deny"
+missing_unsafe_on_extern = "deny"
+ffi_unwind_calls = "deny"
+
+deprecated = "deny"
+unreachable_pub = "warn"
+unused_crate_dependencies = "warn"
+unused_extern_crates = "deny"
+unused_import_braces = "deny"
+unused_lifetimes = "deny"
+unused_macro_rules = "deny"
+unused_qualifications = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+variant_size_differences = "warn"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -10 }
+correctness = { level = "deny", priority = -9 }
+suspicious = { level = "deny", priority = -9 }
+complexity = { level = "deny", priority = -9 }
+perf = { level = "deny", priority = -9 }
+style = { level = "deny", priority = -9 }
+
+pedantic = { level = "warn", priority = -20 }
+nursery = { level = "warn", priority = -20 }
+cargo = { level = "warn", priority = -20 }
+
+restriction = { level = "allow", priority = -30 }
+
+undocumented_unsafe_blocks = "deny"
+multiple_unsafe_ops_per_block = "deny"
+missing_safety_doc = "deny"
+unnecessary_safety_comment = "deny"
+
+allow_attributes = "deny"
+allow_attributes_without_reason = "deny"
+assigning_clones = "allow"
+collapsible_if = "allow"
+derivable_impls = "allow"
+explicit_iter_loop = "allow"
+fn_params_excessive_bools = "allow"
+map_unwrap_or = "allow"
+multiple_crate_versions = "allow"
+missing_const_for_fn = "allow"
+missing_errors_doc = "allow"
+must_use_candidate = "allow"
+needless_borrow = "allow"
+needless_borrows_for_generic_args = "allow"
+needless_lifetimes = "allow"
+needless_pass_by_value = "allow"
+needless_raw_string_hashes = "allow"
+obfuscated_if_else = "allow"
+option_if_let_else = "allow"
+or_fun_call = "allow"
+question_mark = "allow"
+range_plus_one = "allow"
+redundant_pub_crate = "allow"
+single_option_map = "allow"
+struct_excessive_bools = "allow"
+too_many_arguments = "allow"
+trivially_copy_pass_by_ref = "allow"
+unnecessary_lazy_evaluations = "allow"
+unnecessary_struct_initialization = "allow"
+unnested_or_patterns = "allow"
+use_self = "allow"
+
+unwrap_used = "deny"
+expect_used = "warn"
+panic = "warn"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+print_stdout = "warn"
+print_stderr = "warn"
+
+large_enum_variant = "deny"
+large_stack_arrays = "warn"
+large_stack_frames = "warn"
+large_types_passed_by_value = "warn"
+
+items_after_test_module = "deny"
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+debug = 0
+incremental = false
+
+[profile.release-with-checks]
+inherits = "release"
+overflow-checks = true
+debug-assertions = true

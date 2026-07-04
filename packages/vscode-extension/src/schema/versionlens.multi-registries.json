@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "secret"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S",
+        "description": "HTTP header name."
+      },
+      "secret": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S",
+        "description": "VS Code SecretStorage key containing the header value."
+      },
+      "url": {
+        "type": "string",
+        "pattern": "^https?://",
+        "description": "Registry URL prefix that this header applies to. When omitted, the header is sent to every registry request."
+      }
+    },
+    "additionalProperties": false
+  }
+}

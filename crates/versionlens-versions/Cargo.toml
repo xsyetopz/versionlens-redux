@@ -1,0 +1,17 @@
+[package]
+name = "versionlens-versions"
+description = "Version and range semantics for Version Lens."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+version.workspace = true
+
+[dependencies]
+semver.workspace = true
+
+[lints]
+workspace = true

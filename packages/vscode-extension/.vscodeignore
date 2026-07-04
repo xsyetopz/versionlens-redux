@@ -1,0 +1,10 @@
+.vscode/**
+src/**
+!src/schema/
+!src/schema/versionlens.multi-registries.json
+dist/*.node
+*.vsix
+*.tsbuildinfo
+tsconfig.json
+node_modules/**
+

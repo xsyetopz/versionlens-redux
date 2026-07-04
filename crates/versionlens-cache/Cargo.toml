@@ -1,0 +1,14 @@
+[package]
+name = "versionlens-cache"
+description = "Cache keys and in-memory cache primitives for Version Lens."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true

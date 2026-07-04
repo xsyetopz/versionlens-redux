@@ -1,0 +1,29 @@
+[package]
+name = "versionlens-core"
+description = "Version Lens orchestration contracts and domain model."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+semver.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+versionlens-cache.workspace = true
+versionlens-edits.workspace = true
+versionlens-http.workspace = true
+versionlens-parsers.workspace = true
+versionlens-providers.workspace = true
+versionlens-suggestions.workspace = true
+versionlens-versions.workspace = true
+versionlens-vscode-model.workspace = true
+
+[lints]
+workspace = true
