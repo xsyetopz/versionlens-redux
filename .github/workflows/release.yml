@@ -1,0 +1,54 @@
+name: Release VSIX
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package VSIX
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust toolchain
+        shell: bash
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --component clippy --component rustfmt
+          rustup default "$channel"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build VSIX
+        run: bun run package
+
+      - name: Check VSIX freshness
+        run: bun run check:vsix-freshness
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-versionlens-vsix
+          path: packages/vscode-extension/*.vsix
+          if-no-files-found: error
+
+      - name: Attach VSIX to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/vscode-extension/*.vsix

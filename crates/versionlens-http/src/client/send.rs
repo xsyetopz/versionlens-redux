@@ -1,6 +1,9 @@
 mod response;
 mod retry;
 
+#[cfg(test)]
+mod tests;
+
 use crate::error::HttpError;
 use crate::retry::RetryPolicy;
 

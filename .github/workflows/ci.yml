@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust toolchain
+        shell: bash
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --component clippy --component rustfmt
+          rustup default "$channel"
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Cache Cargo registry and build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check toolchain
+        run: bun run check:toolchain
+
+      - name: Check formatting
+        run: |
+          bun run check:biome
+          bun run check:rustfmt
+
+      - name: Check repository layout
+        run: |
+          bun run check:workspace-layout
+          bun run check:test-layout
+          bun run check:rust-test-layout
+
+      - name: Check extension contracts
+        run: |
+          bun run check:vscode-adapter
+          bun run check:package-parity
+          bun run check:data-objects
+          bun run check:entrypoints
+          bun run check:source-lines
+          bun run check:rust-production-constraints
+          bun run check:typescript-style
+          bun run check:napi-boundary
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Rust checks
+        run: |
+          bun run check:clippy
+          cargo test --workspace
+
+      - name: Build extension
+        run: |
+          bun run check:extension-build
+          bun run package
+          bun run check:vsix-freshness
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-versionlens-vsix
+          path: packages/vscode-extension/*.vsix
+          if-no-files-found: error
