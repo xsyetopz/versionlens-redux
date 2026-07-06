@@ -1,0 +1,74 @@
+name: Zed CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  zed:
+    name: Zed extension
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.0
+        with:
+          submodules: recursive
+
+      - name: Setup Rust toolchain
+        shell: bash
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --component clippy --component rustfmt
+          rustup default "$channel"
+
+      - name: Cache Zed Cargo registry and build outputs
+        uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/zed-extension/target
+          key: ${{ runner.os }}-cargo-zed-${{ hashFiles('packages/zed-extension/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-zed-
+            ${{ runner.os }}-cargo-
+
+      - name: Check Zed extension
+        run: cargo check --manifest-path packages/zed-extension/Cargo.toml --locked
+
+      - name: Test Zed extension
+        run: cargo test --manifest-path packages/zed-extension/Cargo.toml --locked
+
+      - name: Build Zed extension
+        run: cargo build --manifest-path packages/zed-extension/Cargo.toml --release --locked
+
+      - name: Package Zed extension
+        shell: bash
+        run: |
+          mkdir -p dist
+          tar -czf dist/versionlens-redux-zed-extension.tar.gz \
+            -C packages/zed-extension \
+            Cargo.toml Cargo.lock extension.toml src
+
+      - name: Upload Zed artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: versionlens-redux-zed-extension
+          path: dist/versionlens-redux-zed-extension.tar.gz
+          if-no-files-found: error
+
+      - name: Attach Zed package to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3.0.1
+        with:
+          files: dist/versionlens-redux-zed-extension.tar.gz
