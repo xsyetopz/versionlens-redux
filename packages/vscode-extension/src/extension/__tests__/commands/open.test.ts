@@ -30,7 +30,7 @@ mock.module("vscode", () => ({
 }));
 
 test("open dependency opens file paths in the editor", async () => {
-	const { openDependency } = await import("./open.ts");
+	const { openDependency } = await import("../../commands/open.ts");
 	reset();
 	fileType = 1;
 
@@ -43,7 +43,7 @@ test("open dependency opens file paths in the editor", async () => {
 });
 
 test("open dependency opens directory paths externally", async () => {
-	const { openDependency } = await import("./open.ts");
+	const { openDependency } = await import("../../commands/open.ts");
 	reset();
 	fileType = 2;
 

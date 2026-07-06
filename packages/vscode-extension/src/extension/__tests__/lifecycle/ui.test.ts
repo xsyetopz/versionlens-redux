@@ -25,7 +25,7 @@ mock.module("vscode", () => ({
 }));
 
 test("initializes upstream diagnostics and output UI without a status bar item", async () => {
-	const { initializeUi } = await import("./ui.ts");
+	const { initializeUi } = await import("../../lifecycle/ui.ts");
 	const state = {
 		ui: {
 			codeLensRefresh: undefined,

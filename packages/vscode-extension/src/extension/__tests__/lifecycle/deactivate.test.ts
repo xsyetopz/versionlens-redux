@@ -13,7 +13,7 @@ mock.module("vscode", () => ({
 }));
 
 test("deactivation disposes package file watchers and clears lifecycle state", async () => {
-	const { deactivateExtension } = await import("./deactivate.ts");
+	const { deactivateExtension } = await import("../../lifecycle/deactivate.ts");
 	let sessionDisposeCount = 0;
 	let packageWatcherDisposeCount = 0;
 	let externalWatcherDisposeCount = 0;

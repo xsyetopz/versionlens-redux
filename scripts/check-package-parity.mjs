@@ -43,6 +43,7 @@ const approvedMetadataOverrides = new Map([
 	["name", "versionlens-redux"],
 	["displayName", "VersionLens Redux"],
 	["publisher", "xsyetopz"],
+	["version", "0.1.0"],
 	["engines", { vscode: ">=1.75.0" }],
 	[
 		"repository",

@@ -68,7 +68,7 @@ mock.module("vscode", () => ({
 	},
 }));
 
-mock.module("../commands.ts", () => ({
+mock.module("../../commands.ts", () => ({
 	registerCommands: () => [],
 	updateContexts: () => {
 		updateContextCount += 1;
@@ -76,23 +76,25 @@ mock.module("../commands.ts", () => ({
 	},
 }));
 
-mock.module("../diagnostics.ts", () => ({
+mock.module("../../diagnostics.ts", () => ({
 	analyzeDocument: () => analyzeDocumentResult,
 	refreshDiagnostics: (_state: unknown, document: unknown) => {
 		refreshedDocuments.push(document);
 	},
 }));
 
-mock.module("../tasks.ts", () => ({
+mock.module("../../tasks.ts", () => ({
 	handleDidSaveTextDocument: () => undefined,
 }));
 
-mock.module("./refresh-timer.ts", () => ({
+mock.module("../../lifecycle/refresh-timer.ts", () => ({
 	registerRefreshTimer: () => ({ dispose: () => undefined }),
 }));
 
 test("active document edits refresh diagnostics and toolbar contexts", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const document = { uri: { toString: () => "file:///package.json" } };
 	const context = { subscriptions: [] };
 	textDocumentChangeListeners.length = 0;
@@ -125,7 +127,9 @@ test("active document edits refresh diagnostics and toolbar contexts", async () 
 });
 
 test("unsupported text document changes do not refresh diagnostics", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const document = { uri: { toString: () => "file:///README.md" } };
 	const context = { subscriptions: [] };
 	textDocumentChangeListeners.length = 0;
@@ -157,7 +161,9 @@ test("unsupported text document changes do not refresh diagnostics", async () =>
 });
 
 test("empty text document changes without undo or redo do not refresh diagnostics", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const document = { uri: { toString: () => "file:///package.json" } };
 	const context = { subscriptions: [] };
 	textDocumentChangeListeners.length = 0;
@@ -186,7 +192,9 @@ test("empty text document changes without undo or redo do not refresh diagnostic
 });
 
 test("undo and redo text document changes refresh diagnostics without content changes", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const document = { uri: { toString: () => "file:///package.json" } };
 	const context = { subscriptions: [] };
 	textDocumentChangeListeners.length = 0;
@@ -223,7 +231,9 @@ test("undo and redo text document changes refresh diagnostics without content ch
 });
 
 test("supported file closes clear edited snapshots without touching diagnostics", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const uri = { scheme: "file", toString: () => "file:///package.json" };
 	const document = { uri };
 	const context = { subscriptions: [] };
@@ -255,7 +265,9 @@ test("supported file closes clear edited snapshots without touching diagnostics"
 });
 
 test("non-file closes preserve dependency snapshots", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const uri = {
 		scheme: "versionlens",
 		toString: () => "versionlens:/schema.json",
@@ -281,7 +293,9 @@ test("non-file closes preserve dependency snapshots", async () => {
 });
 
 test("unsupported file closes preserve dependency snapshots", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const uri = { scheme: "file", toString: () => "file:///README.md" };
 	const document = { uri };
 	const context = { subscriptions: [] };
@@ -304,7 +318,9 @@ test("unsupported file closes preserve dependency snapshots", async () => {
 });
 
 test("empty active editor changes update toolbar contexts without status UI", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const context = { subscriptions: [] };
 	activeEditorChangeListeners.length = 0;
 	updateContextCount = 0;
@@ -329,7 +345,9 @@ test("empty active editor changes update toolbar contexts without status UI", as
 });
 
 test("registers package file system watchers with extension subscriptions", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const context = { subscriptions: [] };
 	createdWatcherPatterns.length = 0;
 
@@ -351,7 +369,9 @@ test("registers package file system watchers with extension subscriptions", asyn
 });
 
 test("non-file active editor changes update contexts without refreshing diagnostics", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const context = { subscriptions: [] };
 	const document = {
 		uri: { scheme: "versionlens", toString: () => "versionlens:/schema.json" },
@@ -381,7 +401,9 @@ test("non-file active editor changes update contexts without refreshing diagnost
 });
 
 test("unsupported file active editor changes update contexts without refreshing diagnostics", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const context = { subscriptions: [] };
 	const document = {
 		uri: { scheme: "file", toString: () => "file:///workspace/README.md" },
@@ -411,7 +433,9 @@ test("unsupported file active editor changes update contexts without refreshing 
 });
 
 test("supported workspace active editor changes update contexts without refreshing diagnostics", async () => {
-	const { registerExtensionSubscriptions } = await import("./subscriptions.ts");
+	const { registerExtensionSubscriptions } = await import(
+		"../../lifecycle/subscriptions.ts"
+	);
 	const context = { subscriptions: [] };
 	const document = {
 		uri: {

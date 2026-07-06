@@ -29,7 +29,7 @@ mock.module("vscode", () => ({
 	},
 }));
 
-mock.module("./native/module.ts", () => ({
+mock.module("../native/module.ts", () => ({
 	loadNative() {
 		return {
 			createSession(config: unknown) {
@@ -82,7 +82,7 @@ test("dependencyProperties leaves parser defaults in Rust unless configured", as
 		reloadConfigurationState,
 		registryUrls,
 		suggestionIndicators,
-	} = await import("./session.ts");
+	} = await import("../session.ts");
 
 	expect(cacheDurationMinutes()).toBeUndefined();
 	expect(configuredEnabledProviders()).toBeUndefined();

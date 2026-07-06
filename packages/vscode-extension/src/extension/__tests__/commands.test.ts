@@ -22,7 +22,7 @@ import {
 } from "./commands.test-support.ts";
 
 test("updateContexts marks provider active only for supported manifests", async () => {
-	const { updateContexts } = await import("./commands.ts");
+	const { updateContexts } = await import("../commands.ts");
 	testState.activeTextEditor = {
 		document: {
 			uri: { scheme: "file", toString: () => "file:///package.json" },
@@ -64,7 +64,7 @@ test("updateContexts marks provider active only for supported manifests", async 
 });
 
 test("updateContexts disables provider actions for non-file active editors", async () => {
-	const { updateContexts } = await import("./commands.ts");
+	const { updateContexts } = await import("../commands.ts");
 	testState.activeTextEditor = {
 		document: {
 			uri: {
@@ -90,7 +90,7 @@ test("updateContexts disables provider actions for non-file active editors", asy
 });
 
 test("provider busy context is a numeric counter like upstream", async () => {
-	const { setProviderState } = await import("./diagnostics/provider.ts");
+	const { setProviderState } = await import("../diagnostics/provider.ts");
 	const state = commandState(undefined);
 
 	setProviderState(state as never, true, false);
@@ -106,7 +106,7 @@ test("provider busy context is a numeric counter like upstream", async () => {
 });
 
 test("error click clears all provider busy state like upstream", async () => {
-	const { showProviderError } = await import("./commands/error.ts");
+	const { showProviderError } = await import("../commands/error.ts");
 	testState.activeTextEditor = {
 		document: {
 			uri: { scheme: "file", toString: () => "file:///package.json" },
@@ -142,7 +142,7 @@ test("error click clears all provider busy state like upstream", async () => {
 
 test("versionlens configuration changes recreate the native session and refresh active diagnostics", async () => {
 	const { registerExtensionSubscriptions } = await import(
-		"./lifecycle/subscriptions.ts"
+		"../lifecycle/subscriptions.ts"
 	);
 	const document = {
 		uri: { scheme: "file", toString: () => "file:///package.json" },
@@ -223,7 +223,7 @@ test("versionlens configuration changes recreate the native session and refresh 
 });
 
 test("clear cache command clears native cache, diagnostics, and dependency snapshots", async () => {
-	const { registerCommands } = await import("./commands.ts");
+	const { registerCommands } = await import("../commands.ts");
 	let nativeClearCount = 0;
 	let diagnosticsClearCount = 0;
 	testState.activeRefreshCount = 0;
@@ -253,7 +253,7 @@ test("clear cache command clears native cache, diagnostics, and dependency snaps
 });
 
 test("choose build returns before QuickPick when CodeLens replacement is disabled", async () => {
-	const { chooseBuild } = await import("./commands/build.ts");
+	const { chooseBuild } = await import("../commands/build.ts");
 	quickPickItems.length = 0;
 
 	await chooseBuild(
@@ -270,7 +270,7 @@ test("choose build returns before QuickPick when CodeLens replacement is disable
 });
 
 test("version lens toggles refresh registered code lenses", async () => {
-	const { registerCommands } = await import("./commands.ts");
+	const { registerCommands } = await import("../commands.ts");
 	clearRegisteredCommands();
 	testState.codeLensRefreshCount = 0;
 	testState.activeRefreshCount = 0;
@@ -307,7 +307,9 @@ test("version lens toggles refresh registered code lenses", async () => {
 });
 
 test("refresh timer refreshes active diagnostics on schedule", async () => {
-	const { registerRefreshTimer } = await import("./lifecycle/refresh-timer.ts");
+	const { registerRefreshTimer } = await import(
+		"../lifecycle/refresh-timer.ts"
+	);
 	const originalSetInterval = globalThis.setInterval;
 	const originalClearInterval = globalThis.clearInterval;
 	let scheduled:
@@ -352,7 +354,7 @@ test("refresh timer refreshes active diagnostics on schedule", async () => {
 });
 
 test("custom install command only runs for file-backed active editors", async () => {
-	const { registerCommands } = await import("./commands.ts");
+	const { registerCommands } = await import("../commands.ts");
 	executedTasks.length = 0;
 	testState.taskCompletionMode = "auto";
 	clearRegisteredCommands();
@@ -385,7 +387,7 @@ test("custom install command only runs for file-backed active editors", async ()
 });
 
 test("save task ignores unsupported documents without creating snapshots", async () => {
-	const { handleDidSaveTextDocument } = await import("./tasks.ts");
+	const { handleDidSaveTextDocument } = await import("../tasks.ts");
 	executedTasks.length = 0;
 	testState.analyzed = {
 		canSortDependencies: false,
@@ -416,7 +418,7 @@ test("save task ignores unsupported documents without creating snapshots", async
 });
 
 test("save task runs only after dependency signature changes", async () => {
-	const { handleDidSaveTextDocument } = await import("./tasks.ts");
+	const { handleDidSaveTextDocument } = await import("../tasks.ts");
 	executedTasks.length = 0;
 	const startingRefreshCount = testState.refreshCount;
 	testState.taskCompletionMode = "auto";
@@ -453,7 +455,7 @@ test("save task runs only after dependency signature changes", async () => {
 });
 
 test("save task can retry while install is running or failed", async () => {
-	const { handleDidSaveTextDocument } = await import("./tasks.ts");
+	const { handleDidSaveTextDocument } = await import("../tasks.ts");
 	executedTasks.length = 0;
 	testState.taskCompletionMode = "manual";
 	const state = {
@@ -500,7 +502,7 @@ test("save task can retry while install is running or failed", async () => {
 });
 
 test("resolve command applies Rust-produced edits", async () => {
-	const { registerCommands } = await import("./commands.ts");
+	const { registerCommands } = await import("../commands.ts");
 	const applyInputs: unknown[] = [];
 	const startingRefreshCount = testState.refreshCount;
 	appliedEdits.length = 0;
@@ -549,7 +551,7 @@ test("resolve command applies Rust-produced edits", async () => {
 });
 
 test("open dependency command opens Rust-produced local paths", async () => {
-	const { registerCommands } = await import("./commands.ts");
+	const { registerCommands } = await import("../commands.ts");
 	openedExternalUris.length = 0;
 	shownTextDocuments.length = 0;
 	testState.dependencyFileType = 2;
@@ -565,7 +567,7 @@ test("open dependency command opens Rust-produced local paths", async () => {
 });
 
 test("choose build command applies the selected Rust build edit", async () => {
-	const { registerCommands } = await import("./commands.ts");
+	const { registerCommands } = await import("../commands.ts");
 	const applyInputs: unknown[] = [];
 	appliedEdits.length = 0;
 	quickPickItems.length = 0;
@@ -624,7 +626,7 @@ test("choose build command applies the selected Rust build edit", async () => {
 });
 
 test("resolve command confirms vulnerable updates before applying edits", async () => {
-	const { registerCommands } = await import("./commands.ts");
+	const { registerCommands } = await import("../commands.ts");
 	appliedEdits.length = 0;
 	warningMessages.length = 0;
 	testState.warningChoice = undefined;

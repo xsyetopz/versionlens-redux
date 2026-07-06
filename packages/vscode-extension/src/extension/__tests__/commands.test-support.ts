@@ -271,7 +271,7 @@ mock.module("vscode", () => ({
 	},
 }));
 
-mock.module("./native/module.ts", () => ({
+mock.module("../native/module.ts", () => ({
 	loadNative() {
 		return {
 			createSession(config: unknown) {
@@ -294,7 +294,7 @@ function completeTask(name: string, exitCode: number | undefined) {
 	}
 }
 
-mock.module("./diagnostics.ts", () => ({
+mock.module("../diagnostics.ts", () => ({
 	analyzeDocument: () => analyzed,
 	dependencySnapshot: () => dependencySnapshotValue,
 	refreshActiveDiagnostics: () => {
@@ -306,7 +306,7 @@ mock.module("./diagnostics.ts", () => ({
 	setProviderState: () => undefined,
 }));
 
-mock.module("./diagnostics/resolve.ts", () => ({
+mock.module("../diagnostics/resolve.ts", () => ({
 	resolveDocumentForDiagnostics: (
 		state: {
 			session?: { resolveDocument?: (input: unknown) => unknown };

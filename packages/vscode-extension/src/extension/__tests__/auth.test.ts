@@ -29,7 +29,7 @@ mock.module("vscode", () => ({
 }));
 
 test("stores basic auth metadata in workspace state and secret storage", async () => {
-	const { addAuthHeader, authHeaders } = await import("./auth.ts");
+	const { addAuthHeader, authHeaders } = await import("../auth.ts");
 	const context = extensionContext();
 	inputValues = ["https://registry.example.com///", "alice", "s3cret"];
 	quickPickResult = undefined;
@@ -60,7 +60,7 @@ test("stores basic auth metadata in workspace state and secret storage", async (
 });
 
 test("removes selected auth metadata and non-empty secrets", async () => {
-	const { removeAuthHeader } = await import("./auth.ts");
+	const { removeAuthHeader } = await import("../auth.ts");
 	const context = extensionContext({
 		"https://registry.example.com": {
 			label: "Basic Auth",

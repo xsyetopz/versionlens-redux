@@ -87,7 +87,7 @@ mock.module("vscode", () => ({
 	},
 }));
 
-mock.module("./native/module.ts", () => ({
+mock.module("../native/module.ts", () => ({
 	loadNative() {
 		return {
 			createSession(config: unknown) {
@@ -113,7 +113,7 @@ mock.module("./native/module.ts", () => ({
 }));
 
 test("document refresh renders diagnostics without status bar side effects", async () => {
-	const { refreshDiagnostics } = await import("./diagnostics.ts");
+	const { refreshDiagnostics } = await import("../diagnostics.ts");
 	reset();
 	const active = documentStub("file:///workspace/package.json");
 	const background = documentStub("file:///workspace/other/package.json");
@@ -129,7 +129,7 @@ test("document refresh renders diagnostics without status bar side effects", asy
 });
 
 test("dirty diagnostic refresh marks documents outdated when dependencies changed", async () => {
-	const { refreshDiagnostics } = await import("./diagnostics.ts");
+	const { refreshDiagnostics } = await import("../diagnostics.ts");
 	reset();
 	const document = {
 		...documentStub("file:///workspace/package.json"),
@@ -150,7 +150,7 @@ test("dirty diagnostic refresh marks documents outdated when dependencies change
 });
 
 test("dirty diagnostic refresh without saved baseline marks non-empty dependencies outdated", async () => {
-	const { refreshDiagnostics } = await import("./diagnostics.ts");
+	const { refreshDiagnostics } = await import("../diagnostics.ts");
 	reset();
 	const document = {
 		...documentStub("file:///workspace/package.json"),
@@ -167,7 +167,7 @@ test("dirty diagnostic refresh without saved baseline marks non-empty dependenci
 });
 
 test("diagnostic refresh is gated by visible version lenses", async () => {
-	const { refreshDiagnostics } = await import("./diagnostics.ts");
+	const { refreshDiagnostics } = await import("../diagnostics.ts");
 	reset();
 	const document = documentStub("file:///workspace/package.json");
 	let analyzeCount = 0;
@@ -203,7 +203,7 @@ test("diagnostic refresh is gated by visible version lenses", async () => {
 });
 
 test("diagnostic refresh suppresses repeated auth prompts after cancellation", async () => {
-	const { refreshDiagnostics } = await import("./diagnostics.ts");
+	const { refreshDiagnostics } = await import("../diagnostics.ts");
 	reset();
 	workspaceValues["UrlAuthenticationStore"] = {
 		[registryUrl]: {
@@ -247,7 +247,7 @@ test("diagnostic refresh suppresses repeated auth prompts after cancellation", a
 });
 
 test("diagnostic refresh offers authentication when registry auth is required", async () => {
-	const { refreshDiagnostics } = await import("./diagnostics.ts");
+	const { refreshDiagnostics } = await import("../diagnostics.ts");
 	reset();
 	warningChoice = "Add Authentication";
 	inputValues.push(registryUrl, "Bearer token");
@@ -317,7 +317,7 @@ test("diagnostic refresh offers authentication when registry auth is required", 
 });
 
 test("analyze failure decrements only its provider busy operation", async () => {
-	const { analyzeDocument } = await import("./diagnostics/analyze.ts");
+	const { analyzeDocument } = await import("../diagnostics/analyze.ts");
 	reset();
 	const document = documentStub("file:///workspace/package.json");
 	const currentState = state({
@@ -345,7 +345,7 @@ test("analyze failure decrements only its provider busy operation", async () => 
 
 test("resolve failure decrements only its provider busy operation", async () => {
 	const { resolveDocumentForDiagnostics } = await import(
-		"./diagnostics/resolve.ts"
+		"../diagnostics/resolve.ts"
 	);
 	reset();
 	const document = documentStub("file:///workspace/package.json");

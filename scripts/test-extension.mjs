@@ -1,9 +1,12 @@
 #!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const testRoot = "packages/vscode-extension/src";
+const testRoots = [
+	"packages/vscode-extension/src/extension/__tests__",
+	"packages/vscode-extension/tests",
+];
 
 function collectTestFiles(directory) {
 	const files = [];
@@ -18,7 +21,9 @@ function collectTestFiles(directory) {
 	return files;
 }
 
-const testFiles = collectTestFiles(testRoot);
+const testFiles = testRoots
+	.filter((testRoot) => existsSync(testRoot))
+	.flatMap((testRoot) => collectTestFiles(testRoot));
 for (const file of testFiles) {
 	const result = spawnSync("bun", ["test", file], {
 		stdio: "inherit",

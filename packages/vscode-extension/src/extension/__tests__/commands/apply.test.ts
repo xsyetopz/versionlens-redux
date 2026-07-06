@@ -112,7 +112,7 @@ mock.module("vscode", () => ({
 	},
 }));
 
-mock.module("../diagnostics.ts", () => ({
+mock.module("../../diagnostics.ts", () => ({
 	analyzeDocument: () => undefined,
 	dependencySnapshot: () => "",
 	refreshActiveDiagnostics: () => undefined,
@@ -120,7 +120,7 @@ mock.module("../diagnostics.ts", () => ({
 	setProviderState: () => undefined,
 }));
 
-mock.module("../native/module.ts", () => ({
+mock.module("../../native/module.ts", () => ({
 	loadNative() {
 		return {
 			createSession(config: unknown) {
@@ -140,7 +140,7 @@ mock.module("../native/module.ts", () => ({
 }));
 
 test("resolve command offers authentication when registry auth is required", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	warningChoice = "Add Authentication";
 	inputValues.push(registryUrl, "Bearer token");
@@ -196,7 +196,7 @@ test("resolve command offers authentication when registry auth is required", asy
 });
 
 test("resolve command retries and applies edits after adding authentication", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	warningChoice = "Add Authentication";
 	inputValues.push(registryUrl, "Bearer token");
@@ -253,7 +253,7 @@ test("resolve command retries and applies edits after adding authentication", as
 });
 
 test("add auth command reloads the native session with stored headers", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	inputValues.push(registryUrl, "secret-token");
 	quickPickValues.push({ label: "Custom Value", providerScheme: "Custom" });
@@ -294,7 +294,7 @@ test("add auth command reloads the native session with stored headers", async ()
 });
 
 test("sort command bypasses CodeLens replacement gate like upstream", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	const applyInputs: unknown[] = [];
 	const session = {
@@ -338,7 +338,7 @@ test("sort command bypasses CodeLens replacement gate like upstream", async () =
 });
 
 test("single update leaves CodeLens replacement disabled after applying like upstream", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	const document = documentStub("left-pad");
 	const state = commandState({
@@ -368,7 +368,7 @@ test("single update leaves CodeLens replacement disabled after applying like ups
 });
 
 test("bulk update leaves CodeLens replacement disabled when applyEdit rejects like upstream", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	const document = documentStub("left-pad");
 	applyEditBlocker = Promise.reject(new Error("apply failed"));
@@ -398,7 +398,7 @@ test("bulk update leaves CodeLens replacement disabled when applyEdit rejects li
 });
 
 test("resolve command ignores reentry while an edit is pending", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	const document = documentStub("left-pad");
 	const applyInputs: unknown[] = [];
@@ -445,7 +445,7 @@ test("resolve command ignores reentry while an edit is pending", async () => {
 });
 
 test("resolve command logs native failures without applying edits", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	const consoleError = console.error;
 	console.error = () => undefined;
@@ -481,7 +481,7 @@ test("resolve command logs native failures without applying edits", async () => 
 });
 
 test("resolve command forwards CodeLens-selected update commands", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	const applyInputs: unknown[] = [];
 	const selector = "1.2.3\u001f0:12,0:17";
@@ -513,7 +513,7 @@ test("resolve command forwards CodeLens-selected update commands", async () => {
 });
 
 test("bulk update native failure decrements provider busy once like upstream", async () => {
-	const { registerCommands } = await import("../commands.ts");
+	const { registerCommands } = await import("../../commands.ts");
 	reset();
 	const document = documentStub("left-pad");
 	const state = commandState(

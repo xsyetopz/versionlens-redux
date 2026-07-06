@@ -116,17 +116,17 @@ mock.module("vscode", () => ({
 	},
 }));
 
-mock.module("../commands/codelens.ts", () => ({
+mock.module("../../commands/codelens.ts", () => ({
 	refreshCodeLenses: () => {
 		codeLensRefreshCount += 1;
 	},
 }));
 
-mock.module("../commands.ts", () => ({
+mock.module("../../commands.ts", () => ({
 	updateContexts: () => undefined,
 }));
 
-mock.module("../diagnostics.ts", () => ({
+mock.module("../../diagnostics.ts", () => ({
 	refreshDiagnostics: (_state: unknown, doc: unknown) => {
 		refreshedDocuments.push(doc);
 	},
@@ -184,7 +184,9 @@ function reset() {
 
 test("registers VS Code file watchers for configured package-file patterns", async () => {
 	reset();
-	const { registerPackageFileWatchers } = await import("./package-watchers.ts");
+	const { registerPackageFileWatchers } = await import(
+		"../../lifecycle/package-watchers.ts"
+	);
 	const subscriptions: unknown[] = [];
 
 	registerPackageFileWatchers(state() as never, subscriptions as never[]);
@@ -212,7 +214,9 @@ test("registers VS Code file watchers for configured package-file patterns", asy
 test("registers package-file watchers only for enabledProviders like upstream", async () => {
 	reset();
 	versionlensConfig["enabledProviders"] = ["npm"];
-	const { registerPackageFileWatchers } = await import("./package-watchers.ts");
+	const { registerPackageFileWatchers } = await import(
+		"../../lifecycle/package-watchers.ts"
+	);
 
 	registerPackageFileWatchers(state() as never);
 
@@ -223,7 +227,9 @@ test("registers package-file watchers only for enabledProviders like upstream", 
 
 test("initial workspace scan analyzes discovered package files through the native session", async () => {
 	reset();
-	const { scanWorkspacePackageFiles } = await import("./package-watchers.ts");
+	const { scanWorkspacePackageFiles } = await import(
+		"../../lifecycle/package-watchers.ts"
+	);
 	const currentState = state();
 
 	await scanWorkspacePackageFiles(currentState as never);
@@ -253,7 +259,9 @@ test("initial workspace scan analyzes discovered package files through the nativ
 
 test("watcher change refreshes package snapshot and active editor UI when dependencies changed", async () => {
 	reset();
-	const { registerPackageFileWatchers } = await import("./package-watchers.ts");
+	const { registerPackageFileWatchers } = await import(
+		"../../lifecycle/package-watchers.ts"
+	);
 	const currentState = state();
 	const activeDocument = document("file:///workspace/package.json");
 	activeTextEditor = { document: activeDocument };
@@ -279,7 +287,9 @@ test("watcher change refreshes package snapshot and active editor UI when depend
 
 test("watcher delete removes cached package dependency snapshots", async () => {
 	reset();
-	const { registerPackageFileWatchers } = await import("./package-watchers.ts");
+	const { registerPackageFileWatchers } = await import(
+		"../../lifecycle/package-watchers.ts"
+	);
 	const currentState = state();
 	currentState.snapshots.savedDependencies.set(
 		"file:///workspace/package.json",
@@ -311,7 +321,7 @@ test("watcher delete removes cached package dependency snapshots", async () => {
 test("single-file activation analyzes the active file without workspace scanning", async () => {
 	reset();
 	const { initializePackageFileWatching } = await import(
-		"./package-watchers.ts"
+		"../../lifecycle/package-watchers.ts"
 	);
 	const currentState = state();
 	const activeDocument = document("file:///standalone/package.json");
@@ -335,7 +345,9 @@ test("single-file activation analyzes the active file without workspace scanning
 
 test("single-file mode registers an out-of-workspace watcher for the active file", async () => {
 	reset();
-	const { registerPackageFileWatchers } = await import("./package-watchers.ts");
+	const { registerPackageFileWatchers } = await import(
+		"../../lifecycle/package-watchers.ts"
+	);
 	workspaceFolders = undefined;
 	activeTextEditor = { document: document("file:///standalone/package.json") };
 
@@ -351,7 +363,7 @@ test("single-file mode registers an out-of-workspace watcher for the active file
 test("workspace mode watches activated package files outside the workspace", async () => {
 	reset();
 	const { watchActivePackageFileOutsideWorkspace } = await import(
-		"./package-watchers.ts"
+		"../../lifecycle/package-watchers.ts"
 	);
 	const currentState = state();
 	const activeDocument = document("file:///outside/package.json");
@@ -384,7 +396,7 @@ test("disposing package file watchers clears workspace and external watcher stat
 		disposePackageFileWatchers,
 		registerPackageFileWatchers,
 		watchActivePackageFileOutsideWorkspace,
-	} = await import("./package-watchers.ts");
+	} = await import("../../lifecycle/package-watchers.ts");
 	const currentState = state();
 
 	registerPackageFileWatchers(currentState as never, [] as never[]);

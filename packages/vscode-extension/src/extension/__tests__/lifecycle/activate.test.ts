@@ -45,19 +45,19 @@ mock.module("vscode", () => ({
 	},
 }));
 
-mock.module("../commands.ts", () => ({
+mock.module("../../commands.ts", () => ({
 	updateContexts: () => {
 		updateContextCount += 1;
 	},
 }));
 
-mock.module("../diagnostics.ts", () => ({
+mock.module("../../diagnostics.ts", () => ({
 	refreshActiveDiagnostics: () => {
 		refreshDiagnosticsCount += 1;
 	},
 }));
 
-mock.module("../session.ts", () => ({
+mock.module("../../session.ts", () => ({
 	recreateSession: () => {
 		recreateSessionCount += 1;
 		if (recreateSessionError) {
@@ -67,19 +67,19 @@ mock.module("../session.ts", () => ({
 	reloadConfigurationState: () => undefined,
 }));
 
-mock.module("./package-watchers.ts", () => ({
+mock.module("../../lifecycle/package-watchers.ts", () => ({
 	initializePackageFileWatching: () => {
 		packageWatchingCount += 1;
 	},
 }));
 
-mock.module("./subscriptions.ts", () => ({
+mock.module("../../lifecycle/subscriptions.ts", () => ({
 	registerExtensionSubscriptions: () => {
 		subscriptionCount += 1;
 	},
 }));
 
-mock.module("./ui.ts", () => ({
+mock.module("../../lifecycle/ui.ts", () => ({
 	initializeUi: (state: {
 		ui: { outputChannel?: { appendLine(value: string): void } };
 	}) => {
@@ -111,7 +111,7 @@ function reset() {
 test("activation warns when VS Code editor code lenses are disabled", async () => {
 	reset();
 	editorCodeLens = false;
-	const { activateExtension } = await import("./activate.ts");
+	const { activateExtension } = await import("../../lifecycle/activate.ts");
 	const state = { context: undefined, ui: {} };
 
 	await activateExtension(state as never, { subscriptions: [] } as never);
@@ -130,7 +130,7 @@ test("activation warns when VS Code editor code lenses are disabled", async () =
 test("activation registers commands before native session creation can fail", async () => {
 	reset();
 	recreateSessionError = new Error("native session failed");
-	const { activateExtension } = await import("./activate.ts");
+	const { activateExtension } = await import("../../lifecycle/activate.ts");
 	const state = { context: undefined, ui: {} };
 
 	await expect(
@@ -147,7 +147,7 @@ test("activation registers commands before native session creation can fail", as
 
 test("activation does not warn when VS Code editor code lenses are enabled", async () => {
 	reset();
-	const { activateExtension } = await import("./activate.ts");
+	const { activateExtension } = await import("../../lifecycle/activate.ts");
 	const state = { context: undefined, ui: {} };
 
 	await activateExtension(state as never, { subscriptions: [] } as never);
@@ -158,7 +158,7 @@ test("activation does not warn when VS Code editor code lenses are enabled", asy
 test("activation warns when original VersionLens is installed", async () => {
 	reset();
 	originalVersionLensInstalled = true;
-	const { activateExtension } = await import("./activate.ts");
+	const { activateExtension } = await import("../../lifecycle/activate.ts");
 	const state = { context: undefined, ui: {} };
 
 	await activateExtension(state as never, { subscriptions: [] } as never);
@@ -174,7 +174,7 @@ test("activation can disable original VersionLens from the conflict prompt", asy
 	reset();
 	originalVersionLensInstalled = true;
 	warningSelection = "Disable original VersionLens";
-	const { activateExtension } = await import("./activate.ts");
+	const { activateExtension } = await import("../../lifecycle/activate.ts");
 	const state = { context: undefined, ui: {} };
 
 	await activateExtension(state as never, { subscriptions: [] } as never);

@@ -214,14 +214,14 @@ mock.module("vscode", () => ({
 }));
 
 test("documentSelectors stays file-backed like upstream CodeLens providers", async () => {
-	const { documentSelectors } = await import("./documents.ts");
+	const { documentSelectors } = await import("../documents.ts");
 
 	expect(documentSelectors()).not.toContainEqual({ scheme: "versionlens" });
 });
 
 test("documentSelectors uses configured npm file patterns", async () => {
 	configured["npm.files"] = "**/{package.json,web-module.json}";
-	const { documentSelectors } = await import("./documents.ts");
+	const { documentSelectors } = await import("../documents.ts");
 
 	expect(documentSelectors()).toContainEqual({
 		language: "json",
@@ -236,7 +236,7 @@ test("documentSelectors uses configured npm file patterns", async () => {
 });
 
 test("documentSelectors mirrors upstream provider language and file pattern filters", async () => {
-	const { documentSelectors } = await import("./documents.ts");
+	const { documentSelectors } = await import("../documents.ts");
 	configured["npm.files"] = undefined;
 	configured["enabledProviders"] = undefined;
 	const selectors = documentSelectors();
@@ -255,7 +255,7 @@ test("documentSelectors mirrors upstream provider language and file pattern filt
 });
 
 test("documentSelectors filters file-backed providers using enabledProviders like upstream", async () => {
-	const { documentSelectors } = await import("./documents.ts");
+	const { documentSelectors } = await import("../documents.ts");
 	configured["enabledProviders"] = ["npm"];
 	configured["npm.files"] = undefined;
 	const selectors = documentSelectors();
@@ -285,7 +285,7 @@ test("documentSelectors filters file-backed providers using enabledProviders lik
 });
 
 test("code lens provider renders cached Rust code lenses before background resolve", async () => {
-	const { registerCodeLensProvider } = await import("./commands/codelens.ts");
+	const { registerCodeLensProvider } = await import("../commands/codelens.ts");
 	codeLensProviders.length = 0;
 	let resolveDocumentCount = 0;
 	let analyzeDocumentCount = 0;
@@ -374,7 +374,7 @@ test("code lens provider renders cached Rust code lenses before background resol
 });
 
 test("code lens provider reports native resolve failures without blocking cached lenses", async () => {
-	const { registerCodeLensProvider } = await import("./commands/codelens.ts");
+	const { registerCodeLensProvider } = await import("../commands/codelens.ts");
 	codeLensProviders.length = 0;
 	const failure = new Error("resolve failed");
 	const document = {
@@ -413,7 +413,7 @@ test("code lens provider reports native resolve failures without blocking cached
 });
 
 test("code lens provider does not resolve or refresh after lenses are hidden", async () => {
-	const { registerCodeLensProvider } = await import("./commands/codelens.ts");
+	const { registerCodeLensProvider } = await import("../commands/codelens.ts");
 	codeLensProviders.length = 0;
 	let resolveDocumentCount = 0;
 	let refreshCount = 0;
@@ -460,7 +460,7 @@ test("code lens provider does not resolve or refresh after lenses are hidden", a
 });
 
 test("code lens provider rejects when native analyze fails", async () => {
-	const { registerCodeLensProvider } = await import("./commands/codelens.ts");
+	const { registerCodeLensProvider } = await import("../commands/codelens.ts");
 	codeLensProviders.length = 0;
 	const failure = new Error("analyze failed");
 	const document = {
@@ -492,8 +492,8 @@ test("code lens provider rejects when native analyze fails", async () => {
 });
 
 test("code lens command argument carries native payload through the CodeLens object", async () => {
-	const { registerCommands } = await import("./commands.ts");
-	const { registerCodeLensProvider } = await import("./commands/codelens.ts");
+	const { registerCommands } = await import("../commands.ts");
+	const { registerCodeLensProvider } = await import("../commands/codelens.ts");
 	codeLensProviders.length = 0;
 	for (const command of Object.keys(registeredCommands)) {
 		delete registeredCommands[command];
@@ -570,7 +570,7 @@ test("code lens command argument carries native payload through the CodeLens obj
 
 test("code lens provider exposes a refresh event", async () => {
 	const { refreshCodeLenses, registerCodeLensProvider } = await import(
-		"./commands/codelens.ts"
+		"../commands/codelens.ts"
 	);
 	codeLensProviders.length = 0;
 	const state = {
@@ -590,7 +590,7 @@ test("code lens provider exposes a refresh event", async () => {
 });
 
 test("refreshDiagnostics renders upstream vulnerability diagnostics without status UI", async () => {
-	const { refreshDiagnostics } = await import("./diagnostics.ts");
+	const { refreshDiagnostics } = await import("../diagnostics.ts");
 	diagnosticsSets.length = 0;
 	let resolveDocumentCount = 0;
 	const document = {
