@@ -1,4 +1,7 @@
-use semver::Version;
+use versionlens_suggestions::SuggestionStatus::{
+    InvalidRange as StatusInvalidRange, Satisfies as StatusSatisfies,
+    UpdateAvailable as StatusUpdateAvailable,
+};
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
 use versionlens_vscode_model::TextEdit;
 
@@ -29,9 +32,7 @@ pub fn bulk_update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
 fn update_edit_allowed(status: SuggestionStatus) -> bool {
     matches!(
         status,
-        SuggestionStatus::UpdateAvailable
-            | SuggestionStatus::InvalidRange
-            | SuggestionStatus::Satisfies
+        StatusUpdateAvailable | StatusInvalidRange | StatusSatisfies
     )
 }
 
@@ -39,7 +40,7 @@ fn bulk_update_release_allowed(latest: Option<&str>) -> bool {
     let Some(latest) = latest else {
         return false;
     };
-    Version::parse(latest.trim()).map_or(true, |version| version.pre.is_empty())
+    crate::parse_semver(latest.trim()).map_or(true, |version| version.pre.is_empty())
 }
 
 fn suggestion_update_edit(suggestion: &Suggestion) -> Option<TextEdit> {

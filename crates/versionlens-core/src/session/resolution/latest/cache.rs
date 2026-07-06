@@ -4,10 +4,11 @@ use versionlens_suggestions::UpdateChoice;
 use crate::VersionLensSession;
 use crate::cache::latest_cache_key;
 use crate::model::RegistryResponseInput;
-use crate::prerelease::{npm_requirement_may_be_dist_tag, requirement_mentions_prerelease};
+use crate::prerelease::{dependency_allows_prereleases, npm_requirement_may_be_dist_tag};
 use crate::registry::RegistryContext;
 
 use super::LatestLookup;
+use crate::session::cache::CachedLatest;
 
 impl VersionLensSession {
     pub(in crate::session::resolution::latest) fn resolve_cacheable_latest(
@@ -27,7 +28,7 @@ impl VersionLensSession {
                 if let Some(latest) = &lookup.latest {
                     self.cache().insert_with_ttl(
                         key,
-                        crate::session::cache::CachedLatest {
+                        CachedLatest {
                             latest: latest.to_owned(),
                             builds: copied_strings(&lookup.builds),
                             choices: copied_update_choices(&lookup.choices),
@@ -39,8 +40,8 @@ impl VersionLensSession {
             }
             Err(fetch_error) => LatestLookup {
                 latest: None,
-                builds: Vec::new(),
-                choices: Vec::new(),
+                builds: vec![],
+                choices: vec![],
                 fetch_error: Some(fetch_error),
             },
         }
@@ -57,8 +58,8 @@ impl VersionLensSession {
             Ok(lookup) => lookup,
             Err(fetch_error) => LatestLookup {
                 latest: None,
-                builds: Vec::new(),
-                choices: Vec::new(),
+                builds: vec![],
+                choices: vec![],
                 fetch_error: Some(fetch_error),
             },
         }
@@ -71,14 +72,13 @@ impl VersionLensSession {
     ) -> bool {
         !context.has_urls()
             && !npm_requirement_may_be_dist_tag(dependency)
-            && (self.config.show_prereleases
-                || !requirement_mentions_prerelease(&dependency.requirement))
+            && (self.config.show_prereleases || !dependency_allows_prereleases(dependency))
     }
 }
 
-fn cached_latest_lookup(cached: &crate::session::cache::CachedLatest) -> LatestLookup {
+fn cached_latest_lookup(cached: &CachedLatest) -> LatestLookup {
     LatestLookup {
-        latest: Some(String::from(cached.latest.as_str())),
+        latest: Some(cached.latest.as_str().to_owned()),
         builds: copied_strings(&cached.builds),
         choices: copied_update_choices(&cached.choices),
         fetch_error: None,
@@ -88,7 +88,7 @@ fn cached_latest_lookup(cached: &crate::session::cache::CachedLatest) -> LatestL
 fn copied_strings(values: &[String]) -> Vec<String> {
     values
         .iter()
-        .map(|value| String::from(value.as_str()))
+        .map(|value| value.as_str().to_owned())
         .collect()
 }
 
@@ -96,9 +96,9 @@ fn copied_update_choices(choices: &[UpdateChoice]) -> Vec<UpdateChoice> {
     choices
         .iter()
         .map(|choice| UpdateChoice {
-            label: String::from(choice.label.as_str()),
-            version: String::from(choice.version.as_str()),
-            command: String::from(choice.command.as_str()),
+            label: choice.label.as_str().to_owned(),
+            version: choice.version.as_str().to_owned(),
+            command: choice.command.as_str().to_owned(),
         })
         .collect()
 }

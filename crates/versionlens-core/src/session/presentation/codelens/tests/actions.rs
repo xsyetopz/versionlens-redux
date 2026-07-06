@@ -1,29 +1,34 @@
+use std::env::temp_dir;
+use std::fs::create_dir_all;
+use std::fs::remove_dir_all;
+use std::fs::write;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::process::id;
+use std::time::UNIX_EPOCH;
 
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use versionlens_parsers::DocumentInput;
 
-use crate::{ProviderSettings, RegistryResponseInput, SessionConfig, VersionLensSession};
+use crate::{RegistryResponseInput, SessionConfig};
 
-use super::test_indicators;
+use super::{package_file_fixture, test_indicators};
+use versionlens_parsers::Ecosystem::Npm;
 
 #[test]
 fn project_version_code_lenses_offer_stable_bumps() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"version":"1.2.3"}"#.to_owned(),
+        text: package_file_fixture("package-version-1.2.3.json"),
         workspace_root: None,
     };
 
@@ -36,7 +41,7 @@ fn project_version_code_lenses_offer_stable_bumps() {
     let commands = output
         .code_lenses
         .iter()
-        .filter_map(|lens| lens.arguments.get(2).map(String::as_str))
+        .filter_map(|lens| lens.arguments.get(2).map(|value| value.as_str()))
         .collect::<Vec<_>>();
 
     assert_eq!(titles, ["U major 2.0.0", "U minor 1.3.0", "U patch 1.2.4"]);
@@ -45,20 +50,20 @@ fn project_version_code_lenses_offer_stable_bumps() {
 
 #[test]
 fn project_version_code_lenses_offer_prerelease_bumps() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"version":"1.2.3-beta.4"}"#.to_owned(),
+        text: package_file_fixture("package-version-1.2.3-beta.4.json"),
         workspace_root: None,
     };
 
@@ -71,7 +76,7 @@ fn project_version_code_lenses_offer_prerelease_bumps() {
     let commands = output
         .code_lenses
         .iter()
-        .filter_map(|lens| lens.arguments.get(2).map(String::as_str))
+        .filter_map(|lens| lens.arguments.get(2).map(|value| value.as_str()))
         .collect::<Vec<_>>();
 
     assert_eq!(titles, ["U release 1.2.3", "U prerelease 1.2.3-beta.5"]);
@@ -80,20 +85,20 @@ fn project_version_code_lenses_offer_prerelease_bumps() {
 
 #[test]
 fn build_code_lens_chooses_available_build_versions() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0+build.1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0-build.1.json"),
         workspace_root: None,
     };
 
@@ -101,7 +106,7 @@ fn build_code_lens_chooses_available_build_versions() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "1.0.0+build.2" },
               "versions": {
@@ -145,20 +150,20 @@ fn build_code_lens_chooses_available_build_versions() {
 
 #[test]
 fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"3.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-3.0.0.json"),
         workspace_root: None,
     };
 
@@ -166,7 +171,7 @@ fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "3.0.0" },
               "versions": {
@@ -204,20 +209,20 @@ fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
 
 #[test]
 fn build_code_lens_keeps_latest_status_when_current_build_differs_from_latest_build() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"3.0.0+b1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-3.0.0-b1.json"),
         workspace_root: None,
     };
 
@@ -225,7 +230,7 @@ fn build_code_lens_keeps_latest_status_when_current_build_differs_from_latest_bu
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "3.0.0+b2" },
               "versions": {
@@ -263,20 +268,20 @@ fn build_code_lens_keeps_latest_status_when_current_build_differs_from_latest_bu
 
 #[test]
 fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0+build.1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0-build.1.json"),
         workspace_root: None,
     };
 
@@ -284,7 +289,7 @@ fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.0.0+build.2"}}"#.to_owned(),
         }],
     );
@@ -304,25 +309,25 @@ fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
 
 #[test]
 fn directory_code_lens_opens_local_dependency_path() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let root = local_test_root("directory-codelens");
     let app = root.join("app");
     let local = root.join("local");
-    std::fs::create_dir_all(&app).unwrap();
-    std::fs::create_dir_all(&local).unwrap();
+    create_dir_all(&app).unwrap();
+    create_dir_all(&local).unwrap();
     let input = DocumentInput {
         uri: file_uri(&app.join("package.json")),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"local":"file:../local"}}"#.to_owned(),
+        text: package_file_fixture("package-local-file-dependency.json"),
         workspace_root: None,
     };
 
@@ -336,31 +341,35 @@ fn directory_code_lens_opens_local_dependency_path() {
         "versionlens.suggestion.onFileLink"
     );
     assert_eq!(output.code_lenses[0].arguments, [local_path.as_ref()]);
-    std::fs::remove_dir_all(root).unwrap();
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
 fn npm_link_code_lens_opens_package_json_target_path() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let root = local_test_root("npm-link-codelens");
     let app = root.join("app");
     let local = root.join("local");
-    std::fs::create_dir_all(&app).unwrap();
-    std::fs::create_dir_all(&local).unwrap();
-    std::fs::write(local.join("package.json"), "{}").unwrap();
+    create_dir_all(&app).unwrap();
+    create_dir_all(&local).unwrap();
+    write(
+        local.join("package.json"),
+        package_file_fixture("empty-package.json"),
+    )
+    .unwrap();
     let input = DocumentInput {
         uri: file_uri(&app.join("package.json")),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"local":"link:../local"}}"#.to_owned(),
+        text: package_file_fixture("package-local-link-dependency.json"),
         workspace_root: None,
     };
 
@@ -378,25 +387,25 @@ fn npm_link_code_lens_opens_package_json_target_path() {
         "versionlens.suggestion.onFileLink"
     );
     assert_eq!(output.code_lenses[0].arguments, [target_path.as_ref()]);
-    std::fs::remove_dir_all(root).unwrap();
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
 fn missing_directory_code_lens_is_disabled_not_found_status() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///repo/app/package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"local":"file:../local"}}"#.to_owned(),
+        text: package_file_fixture("package-local-file-dependency.json"),
         workspace_root: None,
     };
 
@@ -409,15 +418,15 @@ fn missing_directory_code_lens_is_disabled_not_found_status() {
 }
 
 fn local_test_root(name: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!(
+    let root = temp_dir().join(format!(
         "versionlens-{name}-{}-{}",
-        std::process::id(),
-        SystemTime::now()
+        id(),
+        crate::system_time_now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos()
     ));
-    std::fs::create_dir_all(&root).unwrap();
+    create_dir_all(&root).unwrap();
     root
 }
 

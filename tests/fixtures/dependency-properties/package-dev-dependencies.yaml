@@ -1,0 +1,4 @@
+dependencies:
+  react: ^19.0.0
+devDependencies:
+  typescript: ^6.0.3

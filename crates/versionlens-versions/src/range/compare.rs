@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::cmp::Ordering::Greater as OrderingGreater;
 
 use crate::parse::parse_version;
 
@@ -7,5 +8,5 @@ pub fn compare_versions(left: &str, right: &str) -> Option<Ordering> {
 }
 
 pub fn is_newer(left: &str, right: &str) -> bool {
-    matches!(compare_versions(left, right), Some(Ordering::Greater))
+    matches!(compare_versions(left, right), Some(OrderingGreater))
 }

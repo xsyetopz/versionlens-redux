@@ -1,18 +1,17 @@
-use versionlens_parsers::Ecosystem;
-
 use crate::RegistryUrlConfig;
 
 use super::dotnet_registry_source_urls;
+use versionlens_parsers::Ecosystem::{Cargo, Dotnet};
 
 #[test]
 fn dotnet_registry_urls_are_enriched_from_rust_owned_source_listing() {
     let configured = vec![
         RegistryUrlConfig {
-            ecosystem: Ecosystem::Cargo,
+            ecosystem: Cargo,
             url: "https://mirror.test/crates".to_owned(),
         },
         RegistryUrlConfig {
-            ecosystem: Ecosystem::Dotnet,
+            ecosystem: Dotnet,
             url: " https://configured.nuget/v3/index.json ".to_owned(),
         },
     ];

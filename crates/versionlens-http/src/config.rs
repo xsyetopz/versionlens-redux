@@ -44,20 +44,22 @@ pub struct HttpHeaderInput {
     pub url: Option<String>,
 }
 
+fn http_header_from_input(input: HttpHeaderInput) -> Option<HttpHeader> {
+    let name = input.name.trim();
+    if name.is_empty() {
+        return None;
+    }
+
+    Some(HttpHeader {
+        name: name.to_owned(),
+        value: input.value,
+        url: trim_optional(input.url),
+    })
+}
+
 impl HttpConfig {
     pub fn standard() -> Self {
-        Self {
-            timeout_ms: 10_000,
-            strict_ssl: true,
-            proxy: None,
-            ca_file: None,
-            ca: None,
-            cert_file: None,
-            key_file: None,
-            cert: None,
-            key: None,
-            auth_headers: Vec::new(),
-        }
+        standard_http_config()
     }
 
     pub fn from_input(input: HttpConfigInput) -> Self {
@@ -76,9 +78,24 @@ impl HttpConfig {
                 .auth_headers
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(HttpHeader::from_input)
+                .filter_map(http_header_from_input)
                 .collect(),
         }
+    }
+}
+
+pub fn standard_http_config() -> HttpConfig {
+    HttpConfig {
+        timeout_ms: 10_000,
+        strict_ssl: true,
+        proxy: None,
+        ca_file: None,
+        ca: None,
+        cert_file: None,
+        key_file: None,
+        cert: None,
+        key: None,
+        auth_headers: vec![],
     }
 }
 
@@ -105,3 +122,13 @@ fn trim_optional(value: Option<String>) -> Option<String> {
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) fn http_config_from_input(input: HttpConfigInput) -> HttpConfig {
+    input.into()
+}
+
+impl From<HttpConfigInput> for HttpConfig {
+    fn from(input: HttpConfigInput) -> Self {
+        Self::from_input(input)
+    }
+}

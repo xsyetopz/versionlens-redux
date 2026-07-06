@@ -5,7 +5,7 @@ use crate::status::status_payload;
 
 pub(crate) fn schema_output(input: &DocumentInput) -> AnalyzeDocumentOutput {
     let _ = input;
-    let diagnostics = Vec::new();
+    let diagnostics = vec![];
     let status = status_payload(0, &diagnostics, &[], false);
 
     AnalyzeDocumentOutput {
@@ -13,9 +13,9 @@ pub(crate) fn schema_output(input: &DocumentInput) -> AnalyzeDocumentOutput {
         is_supported_manifest: true,
         active_provider_name: None,
         install_task_config_key: None,
-        dependency_signature: String::new(),
-        dependencies: Vec::new(),
-        code_lenses: Vec::new(),
+        dependency_signature: "".to_owned(),
+        dependencies: vec![],
+        code_lenses: vec![],
         diagnostics,
         status,
     }

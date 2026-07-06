@@ -1,18 +1,20 @@
-use versionlens_http::HttpConfig;
+use serde_json::to_value;
+use std::fs::read_to_string;
+use std::path::PathBuf;
+
 use versionlens_parsers::{DocumentInput, Ecosystem, ManifestKind};
 
-use crate::{
-    DependencyPropertyConfig, ProviderSettings, RegistryResponseInput, SessionConfig,
-    SuggestionIndicators, VersionLensSession,
-};
+use crate::{DependencyPropertyConfig, RegistryResponseInput, SessionConfig, VersionLensSession};
+use versionlens_parsers::Ecosystem::{Deno, Go, Npm};
+use versionlens_parsers::ManifestKind::NpmPackageJson;
 
 #[test]
 fn reports_sort_capability_only_for_supported_documents() {
     let session = standard_session(false);
     let package_json_catalog_session = session_with_dependency_properties(
         false,
-        Ecosystem::Npm,
-        Some(ManifestKind::NpmPackageJson),
+        Npm,
+        Some(NpmPackageJson),
         &["workspaces.catalogs.*"],
     );
     let input = |uri: &str, language_id: &str, text: &str| DocumentInput {
@@ -25,59 +27,63 @@ fn reports_sort_capability_only_for_supported_documents() {
     let requirements = session.analyze_document(input(
         "file:///requirements.txt",
         "pip-requirements",
-        "zeta==1\nalpha==1\n",
+        package_file_fixture("requirements-unsorted.txt").as_str(),
     ));
     let package_json = session.analyze_document(input(
         "file:///package.json",
         "json",
-        r#"{"dependencies":{"left-pad":"1.0.0"}}"#,
+        package_file_fixture("package-single-line.json").as_str(),
     ));
     let multiline_package_json = session.analyze_document(input(
         "file:///package.json",
         "json",
-        "{\n  \"dependencies\": {\n    \"zeta\": \"1\",\n    \"alpha\": \"1\"\n  }\n}",
+        package_file_fixture("package-dependencies-unsorted.json").as_str(),
     ));
     let package_json_with_metadata = session.analyze_document(input(
         "file:///package.json",
         "json",
-        "{\n  \"version\": \"1.0.0\",\n  \"packageManager\": \"pnpm@9.0.0\",\n  \"dependencies\": {\n    \"zeta\": \"1\",\n    \"alpha\": \"1\"\n  }\n}",
+        package_file_fixture("package-with-package-manager.json").as_str(),
     ));
     let pubspec = session.analyze_document(input(
         "file:///pubspec.yaml",
         "yaml",
-        "dependencies:\n  zeta: 1\n  alpha: 1\n",
+        package_file_fixture("pubspec-unsorted.yaml").as_str(),
     ));
     let composer = session.analyze_document(input(
         "file:///composer.json",
         "json",
-        "{\n  \"require\": {\n    \"zeta/pkg\": \"1\",\n    \"alpha/pkg\": \"1\"\n  }\n}",
+        package_file_fixture("composer-unsorted.json").as_str(),
     ));
     let pnpm_workspace = session.analyze_document(input(
         "file:///pnpm-workspace.yaml",
         "yaml",
-        "catalogs:\n  react18:\n    react-dom: ^19.2.7\n    react: ^18.3.1\n",
+        package_file_fixture("pnpm-workspace-catalogs-unsorted.yaml").as_str(),
     ));
     let package_json_workspace_catalogs = package_json_catalog_session.analyze_document(input(
         "file:///package.json",
         "json",
-        "{\n  \"workspaces\": {\n    \"catalogs\": {\n      \"react18\": {\n        \"react-dom\": \"^19.2.7\",\n        \"react\": \"^18.3.1\"\n      }\n    }\n  }\n}",
+        package_file_fixture("package-workspace-catalogs-unsorted.json").as_str(),
     ));
     let maven = session.analyze_document(input(
         "file:///pom.xml",
         "xml",
-        "<project>\n  <dependencies>\n    <dependency>\n      <groupId>org.zeta</groupId>\n      <artifactId>zeta</artifactId>\n      <version>1</version>\n    </dependency>\n    <dependency>\n      <groupId>org.alpha</groupId>\n      <artifactId>alpha</artifactId>\n      <version>1</version>\n    </dependency>\n  </dependencies>\n</project>",
+        package_file_fixture("pom-unsorted.xml").as_str(),
     ));
     let dotnet = session.analyze_document(input(
         "file:///app.csproj",
         "xml",
-        "<Project>\n  <ItemGroup>\n    <PackageReference Include=\"Zeta.Package\" Version=\"1\" />\n    <PackageReference Include=\"Alpha.Package\" Version=\"1\" />\n  </ItemGroup>\n</Project>",
+        package_file_fixture("app-unsorted.csproj").as_str(),
     ));
     let go_mod = session.analyze_document(input(
         "file:///go.mod",
         "go.mod",
-        "module example.test/app\n\nrequire (\n\tzeta.example/pkg v1.0.0\n\talpha.example/pkg v1.0.0\n)\n",
+        package_file_fixture("go-unsorted.mod").as_str(),
     ));
-    let empty_package_json = session.analyze_document(input("file:///package.json", "json", "{}"));
+    let empty_package_json = session.analyze_document(input(
+        "file:///package.json",
+        "json",
+        package_file_fixture("empty-package.json").as_str(),
+    ));
     let unsupported = session.analyze_document(input("file:///notes.txt", "plaintext", "hello"));
 
     assert!(requirements.can_sort_dependencies);
@@ -97,13 +103,12 @@ fn reports_sort_capability_only_for_supported_documents() {
 
 #[test]
 fn reports_sort_capability_for_deno_scoped_imports() {
-    let session = session_with_dependency_properties(false, Ecosystem::Deno, None, &["scopes"]);
+    let session = session_with_dependency_properties(false, Deno, None, &["scopes"]);
 
     let output = session.analyze_document(DocumentInput {
         uri: "file:///deno.json".to_owned(),
         language_id: "jsonc".to_owned(),
-        text: "{\n  \"scopes\": {\n    \"https://deno.land/x/app/\": {\n      \"zeta\": \"jsr:@scope/zeta@1.0.0\",\n      \"alpha\": \"jsr:@scope/alpha@1.0.0\"\n    }\n  }\n}"
-            .to_owned(),
+        text: package_file_fixture("deno-scopes-unsorted.json"),
         workspace_root: None,
     });
 
@@ -117,7 +122,7 @@ fn reports_sort_capability_for_gemfile_dependencies() {
     let output = session.analyze_document(DocumentInput {
         uri: "file:///Gemfile".to_owned(),
         language_id: "ruby".to_owned(),
-        text: "gem \"zeta\", \"1.0.0\"\ngem \"alpha\", \"1.0.0\"\n".to_owned(),
+        text: package_file_fixture("Gemfile-unsorted"),
         workspace_root: None,
     });
 
@@ -128,23 +133,55 @@ fn reports_sort_capability_for_gemfile_dependencies() {
 fn analyze_document_reports_active_provider_name_for_supported_manifests() {
     let session = standard_session(false);
 
-    let npm = session.analyze_document(package_json_input("{}"));
+    let npm = session.analyze_document(package_json_input(
+        package_file_fixture("empty-package.json").as_str(),
+    ));
+    let package_json5 = session.analyze_document(DocumentInput {
+        uri: "file:///package.json5".to_owned(),
+        language_id: "json5".to_owned(),
+        text: package_file_fixture("package-provider.json5"),
+        workspace_root: None,
+    });
+    let package_yaml = session.analyze_document(DocumentInput {
+        uri: "file:///package.yaml".to_owned(),
+        language_id: "yaml".to_owned(),
+        text: package_file_fixture("package-provider.yaml"),
+        workspace_root: None,
+    });
+    let deno_import_map = session.analyze_document(DocumentInput {
+        uri: "file:///import_map.json".to_owned(),
+        language_id: "json".to_owned(),
+        text: package_file_fixture("import-map-provider.json"),
+        workspace_root: None,
+    });
+    let jsr = session.analyze_document(DocumentInput {
+        uri: "file:///jsr.json".to_owned(),
+        language_id: "json".to_owned(),
+        text: package_file_fixture("jsr-provider.json"),
+        workspace_root: None,
+    });
     let pnpm = session.analyze_document(DocumentInput {
         uri: "file:///pnpm-workspace.yaml".to_owned(),
         language_id: "yaml".to_owned(),
-        text: "packages:\n  - packages/*\n".to_owned(),
+        text: package_file_fixture("pnpm-workspace-provider.yaml"),
         workspace_root: None,
     });
     let golang = session.analyze_document(DocumentInput {
         uri: "file:///go.mod".to_owned(),
         language_id: "go.mod".to_owned(),
-        text: "module example.test/app\n".to_owned(),
+        text: package_file_fixture("go-provider.mod"),
         workspace_root: None,
     });
     let pypi = session.analyze_document(DocumentInput {
         uri: "file:///requirements.txt".to_owned(),
         language_id: "pip-requirements".to_owned(),
-        text: "requests==2.32.0\n".to_owned(),
+        text: package_file_fixture("requirements-provider.txt"),
+        workspace_root: None,
+    });
+    let ruby_gemspec = session.analyze_document(DocumentInput {
+        uri: "file:///example.gemspec".to_owned(),
+        language_id: "ruby".to_owned(),
+        text: package_file_fixture("example-provider.gemspec"),
         workspace_root: None,
     });
     let unsupported = session.analyze_document(DocumentInput {
@@ -155,9 +192,31 @@ fn analyze_document_reports_active_provider_name_for_supported_manifests() {
     });
 
     assert_eq!(npm.active_provider_name, Some("npm".to_owned()));
+    assert_eq!(package_json5.active_provider_name, Some("npm".to_owned()));
+    assert_eq!(package_yaml.active_provider_name, Some("npm".to_owned()));
+    assert_eq!(
+        deno_import_map.active_provider_name,
+        Some("deno".to_owned())
+    );
+    assert_eq!(jsr.active_provider_name, Some("deno".to_owned()));
     assert_eq!(pnpm.active_provider_name, Some("pnpm".to_owned()));
     assert_eq!(golang.active_provider_name, Some("golang".to_owned()));
     assert_eq!(pypi.active_provider_name, Some("pypi".to_owned()));
+    assert_eq!(ruby_gemspec.active_provider_name, Some("ruby".to_owned()));
+    let terraform = session.analyze_document(DocumentInput {
+        uri: "file:///main.tf".to_owned(),
+        language_id: "terraform".to_owned(),
+        text: package_file_fixture("terraform-provider.tf"),
+        workspace_root: None,
+    });
+    let helm = session.analyze_document(DocumentInput {
+        uri: "file:///Chart.yaml".to_owned(),
+        language_id: "yaml".to_owned(),
+        text: package_file_fixture("Chart-provider.yaml"),
+        workspace_root: None,
+    });
+    assert_eq!(terraform.active_provider_name, Some("terraform".to_owned()));
+    assert_eq!(helm.active_provider_name, Some("helm".to_owned()));
     assert_eq!(unsupported.active_provider_name, None);
 }
 
@@ -168,10 +227,10 @@ fn analyze_document_serializes_dependencies_as_vscode_payloads() {
     let output = session.analyze_document(DocumentInput {
         uri: "file:///go.mod".to_owned(),
         language_id: "go.mod".to_owned(),
-        text: "module example.test/app\n\nrequire example.test/pkg v1.0.0\n".to_owned(),
+        text: package_file_fixture("go-single-require.mod"),
         workspace_root: None,
     });
-    let value = serde_json::to_value(output).unwrap();
+    let value = to_value(output).unwrap();
 
     assert_eq!(value["dependencies"][0]["name"], "example.test/pkg");
     assert_eq!(value["dependencies"][0]["ecosystem"], "golang");
@@ -185,16 +244,16 @@ fn resolve_document_serializes_suggestions_as_vscode_payloads() {
         DocumentInput {
             uri: "file:///go.mod".to_owned(),
             language_id: "go.mod".to_owned(),
-            text: "module example.test/app\n\nrequire example.test/pkg v1.0.0\n".to_owned(),
+            text: package_file_fixture("go-single-require.mod"),
             workspace_root: None,
         },
         &[RegistryResponseInput {
             package: "example.test/pkg".to_owned(),
-            ecosystem: Ecosystem::Go,
+            ecosystem: Go,
             body: "v1.1.0\n".to_owned(),
         }],
     );
-    let value = serde_json::to_value(output).unwrap();
+    let value = to_value(output).unwrap();
 
     assert_eq!(
         value["suggestions"][0]["dependency"]["name"],
@@ -210,7 +269,7 @@ fn deno_non_jsr_npm_imports_produce_no_suggestions_like_upstream() {
     let input = DocumentInput {
         uri: "file:///deno.json".to_owned(),
         language_id: "jsonc".to_owned(),
-        text: r#"{"imports":{"remote":"https://deno.land/std/mod.ts"}}"#.to_owned(),
+        text: package_file_fixture("deno-remote-import.json"),
         workspace_root: None,
     };
 
@@ -226,8 +285,8 @@ fn deno_non_jsr_npm_imports_produce_no_suggestions_like_upstream() {
 #[test]
 fn analyze_document_uses_cached_latest_for_diagnostics() {
     let mut config = standard_config(false);
-    let session = VersionLensSession::new(config.clone());
-    let input = package_json_input(r#"{"dependencies":{"left-pad":"1.0.0"}}"#);
+    let session = crate::version_lens_session(config.clone());
+    let input = package_json_input(package_file_fixture("package-single-line.json").as_str());
 
     session.resolve_document_with_responses(input.clone(), &[registry_response()]);
 
@@ -250,7 +309,7 @@ fn analyze_document_uses_cached_latest_for_diagnostics() {
     );
 
     config.show_suggestion_stats = true;
-    let session = VersionLensSession::new(config);
+    let session = crate::version_lens_session(config);
     session.resolve_document_with_responses(input.clone(), &[registry_response()]);
 
     assert_eq!(
@@ -262,21 +321,20 @@ fn analyze_document_uses_cached_latest_for_diagnostics() {
 #[test]
 fn analyze_document_reports_cached_errors_and_no_matches_in_status() {
     let session = standard_session(true);
-    let input = package_json_input(
-        r#"{"dependencies":{"missing-package":"1.0.0","errored-package":"1.0.0"}}"#,
-    );
+    let input =
+        package_json_input(package_file_fixture("package-missing-and-errored.json").as_str());
 
     session.resolve_document_with_responses(
         input.clone(),
         &[
             RegistryResponseInput {
                 package: "missing-package".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"versions":{}}"#.to_owned(),
             },
             RegistryResponseInput {
                 package: "errored-package".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"status":"E404"}"#.to_owned(),
             },
         ],
@@ -297,7 +355,9 @@ fn analyze_document_reports_cached_errors_and_no_matches_in_status() {
 fn analyze_document_reports_when_sort_is_unavailable() {
     let session = standard_session(false);
 
-    let output = session.analyze_document(package_json_input("{}"));
+    let output = session.analyze_document(package_json_input(
+        package_file_fixture("empty-package.json").as_str(),
+    ));
 
     assert!(!output.can_sort_dependencies);
     assert_eq!(output.install_task_config_key, None);
@@ -311,7 +371,7 @@ fn analyze_document_uses_manifest_for_install_task_key() {
     let output = session.analyze_document(DocumentInput {
         uri: "file:///deno.json".to_owned(),
         language_id: "jsonc".to_owned(),
-        text: r#"{"imports":{"chalk":"npm:chalk@5.3.0"}}"#.to_owned(),
+        text: package_file_fixture("deno-npm-import.json"),
         workspace_root: None,
     });
 
@@ -328,8 +388,7 @@ fn analyze_document_keeps_package_json_install_task_on_npm_provider() {
     let output = session.analyze_document(DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: "{\"packageManager\":\"pnpm@10.0.0\",\"dependencies\":{\"react\":\"18.0.0\"}}"
-            .to_owned(),
+        text: package_file_fixture("package-pnpm-manager.json"),
         workspace_root: None,
     });
 
@@ -346,7 +405,7 @@ fn analyze_document_does_not_offer_install_task_for_pnpm_yaml() {
     let output = session.analyze_document(DocumentInput {
         uri: "file:///pnpm-workspace.yaml".to_owned(),
         language_id: "yaml".to_owned(),
-        text: "catalog:\n  react: ^18.0.0\n".to_owned(),
+        text: package_file_fixture("pnpm-workspace-catalog.yaml"),
         workspace_root: None,
     });
 
@@ -354,20 +413,41 @@ fn analyze_document_does_not_offer_install_task_for_pnpm_yaml() {
     assert_eq!(output.install_task_config_key, None);
 }
 
+fn package_file_fixture(name: &str) -> String {
+    let path = repo_root()
+        .join("tests/fixtures/session/documents")
+        .join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read session documents fixture {}: {error}",
+            path.display()
+        )
+    })
+}
+
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
+}
+
 fn standard_session(show_suggestion_stats: bool) -> VersionLensSession {
-    VersionLensSession::new(standard_config(show_suggestion_stats))
+    crate::version_lens_session(standard_config(show_suggestion_stats))
 }
 
 fn standard_config(show_suggestion_stats: bool) -> SessionConfig {
     SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     }
 }
 
@@ -386,7 +466,7 @@ fn session_with_dependency_properties(
             .map(|property| (*property).to_owned())
             .collect(),
     }];
-    VersionLensSession::new(config)
+    crate::version_lens_session(config)
 }
 
 fn package_json_input(text: &str) -> DocumentInput {
@@ -401,7 +481,7 @@ fn package_json_input(text: &str) -> DocumentInput {
 fn registry_response() -> RegistryResponseInput {
     RegistryResponseInput {
         package: "left-pad".to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
     }
 }

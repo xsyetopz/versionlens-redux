@@ -1,0 +1,5 @@
+[project]
+dependencies = ["requests>=2"]
+
+[tool.uv.sources]
+custom = "1.0.0"

@@ -1,0 +1,3 @@
+{:deps
+ {zeta/zeta {:mvn/version "1.0.0"}
+  alpha/alpha {:mvn/version "1.0.0"}}}

@@ -14,10 +14,16 @@ pub struct NativeSuggestion {
 impl NativeSuggestion {
     pub(super) fn from_core(suggestion: SuggestionPayload) -> Self {
         Self {
-            dependency: NativeDependency::from_core(suggestion.dependency),
+            dependency: suggestion.dependency.into(),
             latest: suggestion.latest,
             status: suggestion.status,
             builds: suggestion.builds,
         }
+    }
+}
+
+impl From<SuggestionPayload> for NativeSuggestion {
+    fn from(value: SuggestionPayload) -> Self {
+        Self::from_core(value)
     }
 }

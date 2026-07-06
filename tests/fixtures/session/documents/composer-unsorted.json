@@ -1,0 +1,6 @@
+{
+  "require": {
+    "zeta/pkg": "1",
+    "alpha/pkg": "1"
+  }
+}

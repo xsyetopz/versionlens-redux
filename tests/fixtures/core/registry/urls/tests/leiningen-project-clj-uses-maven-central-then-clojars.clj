@@ -1,0 +1,1 @@
+(defproject demo "0.1.0" :dependencies [[metosin/malli "0.16.4"]])

@@ -1,20 +1,19 @@
-use std::cmp::Ordering;
-
-use crate::model::UpdateLevel;
+use std::cmp::Ordering::Less as OrderingLess;
 
 use super::requirements::nuget_requirement;
 use super::{
     build_variants, compare_versions, is_dotnet_requirement_parseable, is_newer,
     is_update_available, update_level,
 };
+use crate::model::UpdateLevel::{Major, Minor, Patch};
 
 #[test]
 fn compares_prefixed_versions() {
-    assert_eq!(compare_versions("^1.2.3", "1.2.4"), Some(Ordering::Less));
-    assert_eq!(compare_versions("== 1.2.3", "1.2.4"), Some(Ordering::Less));
-    assert_eq!(compare_versions("==2.32", "2.33.0"), Some(Ordering::Less));
-    assert_eq!(compare_versions(">=1.2.3", "1.2.4"), Some(Ordering::Less));
-    assert_eq!(compare_versions("<= 1.2.3", "1.2.4"), Some(Ordering::Less));
+    assert_eq!(compare_versions("^1.2.3", "1.2.4"), Some(OrderingLess));
+    assert_eq!(compare_versions("== 1.2.3", "1.2.4"), Some(OrderingLess));
+    assert_eq!(compare_versions("==2.32", "2.33.0"), Some(OrderingLess));
+    assert_eq!(compare_versions(">=1.2.3", "1.2.4"), Some(OrderingLess));
+    assert_eq!(compare_versions("<= 1.2.3", "1.2.4"), Some(OrderingLess));
     assert!(is_newer("2.0.0", "~1.9.9"));
 }
 
@@ -24,6 +23,7 @@ fn range_satisfying_latest_is_not_an_update() {
     assert!(!is_update_available("1.18.3", "^v1.18.3"));
     assert!(!is_update_available("1.18.9", "~> v1.18.3"));
     assert!(!is_update_available("2.9.0", ">=2.0.0 <3.0.0"));
+    assert!(!is_update_available("1.2.0", ">= 0.44.0 and < 2.0.0"));
     assert!(!is_update_available("2.9.0", ">=v2.0.0 <v3.0.0"));
     assert!(!is_update_available("3.0.0", "*"));
     assert!(!is_update_available("3.0.0", "any"));
@@ -114,6 +114,7 @@ fn exact_pins_still_update() {
     assert!(is_update_available("2.0.0", "^1.9.9"));
     assert!(is_update_available("1.3.0", "~> 1.2.3"));
     assert!(is_update_available("3.0.0", ">=2.0.0 <3.0.0"));
+    assert!(is_update_available("2.0.0", ">= 0.44.0 and < 2.0.0"));
     assert!(is_update_available("2.0.1", "[1.0.0,2.0.0]"));
     assert!(is_update_available("1.0.0", "(1.0.0,2.0.0)"));
     assert!(is_update_available("2.0.0", "[1.0.0,2.0.0)"));
@@ -146,13 +147,10 @@ fn build_variants_match_upstream_coerced_version_family() {
 
 #[test]
 fn classifies_update_level() {
-    assert_eq!(update_level("2.0.0", "^1.9.9"), Some(UpdateLevel::Major));
-    assert_eq!(update_level("1.3.0", "~1.2.0"), Some(UpdateLevel::Minor));
-    assert_eq!(update_level("1.3.0", ">=1.2.0"), Some(UpdateLevel::Minor));
-    assert_eq!(
-        update_level("3.0.0", ">=2.0.0 <3.0.0"),
-        Some(UpdateLevel::Major)
-    );
-    assert_eq!(update_level("1.2.4", "1.2.3"), Some(UpdateLevel::Patch));
+    assert_eq!(update_level("2.0.0", "^1.9.9"), Some(Major));
+    assert_eq!(update_level("1.3.0", "~1.2.0"), Some(Minor));
+    assert_eq!(update_level("1.3.0", ">=1.2.0"), Some(Minor));
+    assert_eq!(update_level("3.0.0", ">=2.0.0 <3.0.0"), Some(Major));
+    assert_eq!(update_level("1.2.4", "1.2.3"), Some(Patch));
     assert_eq!(update_level("1.2.3", "1.2.3"), None);
 }

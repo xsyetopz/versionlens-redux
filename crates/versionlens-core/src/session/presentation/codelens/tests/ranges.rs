@@ -1,26 +1,26 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use versionlens_parsers::DocumentInput;
 
-use crate::{ProviderSettings, RegistryResponseInput, SessionConfig, VersionLensSession};
+use crate::{RegistryResponseInput, SessionConfig};
 
-use super::test_indicators;
+use super::{package_file_fixture, test_indicators};
+use versionlens_parsers::Ecosystem::Npm;
 
 #[test]
 fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"~1.1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-tilde-1.1.json"),
         workspace_root: None,
     };
 
@@ -28,7 +28,7 @@ fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "2.2.2" },
               "versions": {
@@ -58,7 +58,7 @@ fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();

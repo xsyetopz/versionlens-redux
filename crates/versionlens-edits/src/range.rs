@@ -14,7 +14,7 @@ pub(crate) fn line_range(start_line: usize, end_line: usize, end_text: &str) -> 
 }
 
 fn utf16_code_units(value: &str) -> usize {
-    value.chars().map(char::len_utf16).sum()
+    value.chars().map(|value| value.len_utf16()).sum()
 }
 
 fn to_u32(value: usize) -> u32 {

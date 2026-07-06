@@ -1,14 +1,14 @@
-use versionlens_parsers::{Ecosystem, ManifestKind};
-
 use super::blank_session_config;
 use crate::model::config::{
     NativeDependencyPropertyConfig, NativeFilePatternConfig, NativeProviderCacheConfig,
-    NativeProviderHttpConfig, NativeProviderSettings, NativeRegistryUrl,
+    NativeProviderHttpConfig, NativeProviderSettings, NativeRegistryUrl, NativeSessionConfig,
 };
+use versionlens_parsers::Ecosystem::{Dotnet, Npm};
+use versionlens_parsers::ManifestKind::{ComposerJson, PnpmYaml};
 
 #[test]
 fn pnpm_config_namespace_maps_to_npm_provider() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         enabled_providers: Some(vec!["pnpm".to_owned()]),
         providers: Some(NativeProviderSettings {
             registry_urls: None,
@@ -32,36 +32,30 @@ fn pnpm_config_namespace_maps_to_npm_provider() {
     }
     .into_core();
 
-    assert_eq!(config.enabled_providers[0].ecosystem, Ecosystem::Npm);
-    assert_eq!(
-        config.enabled_providers[0].manifest_kind,
-        Some(ManifestKind::PnpmYaml)
-    );
-    assert_eq!(config.providers.provider_cache[0].ecosystem, Ecosystem::Npm);
+    assert_eq!(config.enabled_providers[0].ecosystem, Npm);
+    assert_eq!(config.enabled_providers[0].manifest_kind, Some(PnpmYaml));
+    assert_eq!(config.providers.provider_cache[0].ecosystem, Npm);
     assert_eq!(
         config.providers.provider_cache[0].manifest_kind,
-        Some(ManifestKind::PnpmYaml)
+        Some(PnpmYaml)
     );
     assert_eq!(config.providers.provider_cache[0].cache_ttl_ms, 120_000);
-    assert_eq!(config.providers.provider_http[0].ecosystem, Ecosystem::Npm);
+    assert_eq!(config.providers.provider_http[0].ecosystem, Npm);
     assert_eq!(
         config.providers.provider_http[0].manifest_kind,
-        Some(ManifestKind::PnpmYaml)
+        Some(PnpmYaml)
     );
     assert_eq!(config.providers.provider_http[0].strict_ssl, Some(false));
-    assert_eq!(
-        config.providers.dependency_properties[0].ecosystem,
-        Ecosystem::Npm
-    );
+    assert_eq!(config.providers.dependency_properties[0].ecosystem, Npm);
     assert_eq!(
         config.providers.dependency_properties[0].manifest_kind,
-        Some(ManifestKind::PnpmYaml)
+        Some(PnpmYaml)
     );
 }
 
 #[test]
 fn provider_fractional_cache_minutes_are_converted_to_milliseconds() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         providers: Some(NativeProviderSettings {
             registry_urls: None,
             prerelease_tag_filters: None,
@@ -82,7 +76,7 @@ fn provider_fractional_cache_minutes_are_converted_to_milliseconds() {
 
 #[test]
 fn registry_urls_are_trimmed_and_blank_urls_are_ignored_in_rust() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         providers: Some(NativeProviderSettings {
             registry_urls: Some(vec![
                 NativeRegistryUrl {
@@ -118,7 +112,7 @@ fn registry_urls_are_trimmed_and_blank_urls_are_ignored_in_rust() {
             .providers
             .registry_urls
             .iter()
-            .filter(|url| url.ecosystem == Ecosystem::Dotnet)
+            .filter(|url| url.ecosystem == Dotnet)
             .map(|url| url.url.as_str())
             .collect::<Vec<_>>(),
         ["https://configured.nuget/v3/index.json"]
@@ -127,7 +121,7 @@ fn registry_urls_are_trimmed_and_blank_urls_are_ignored_in_rust() {
 
 #[test]
 fn file_patterns_are_trimmed_and_mapped_to_manifest_kinds() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         providers: Some(NativeProviderSettings {
             registry_urls: None,
             prerelease_tag_filters: None,
@@ -152,7 +146,7 @@ fn file_patterns_are_trimmed_and_mapped_to_manifest_kinds() {
     assert_eq!(config.providers.file_patterns.len(), 1);
     assert_eq!(
         config.providers.file_patterns[0].manifest_kind,
-        ManifestKind::ComposerJson
+        ComposerJson
     );
     assert_eq!(
         config.providers.file_patterns[0].pattern,

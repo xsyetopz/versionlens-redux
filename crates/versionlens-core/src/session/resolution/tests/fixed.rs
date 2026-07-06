@@ -1,10 +1,14 @@
+use std::env::temp_dir;
+use std::fs::create_dir_all;
+use std::fs::read_to_string;
+use std::fs::remove_dir_all;
+use std::fs::write;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::process::id;
+use std::time::UNIX_EPOCH;
 
-use super::{
-    DocumentInput, Ecosystem, RegistryResponseInput, session_with_dependency_properties,
-    standard_session,
-};
+use super::{DocumentInput, RegistryResponseInput, standard_session};
+use versionlens_parsers::Ecosystem::{Cran, Go, Helm, Maven, Npm, Ruby, Terraform};
 
 mod dotnet;
 mod npm;
@@ -18,12 +22,12 @@ fn missing_local_dependencies_return_directory_not_found_without_registry_lookup
         DocumentInput {
             uri: "file:///repo/project/package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"local":"file:../local"}}"#.to_owned(),
+            text: package_file_fixture("missing-local-dependencies-return-directory-not-found-without-registry-lookup.json"),
             workspace_root: None,
         },
         &[RegistryResponseInput {
             package: "local".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned(),
         }],
     );
@@ -39,18 +43,18 @@ fn ruby_path_dependencies_resolve_as_directories() {
     let root = local_test_root("ruby-directory");
     let app = root.join("app");
     let local = app.join("vendor/local");
-    std::fs::create_dir_all(&local).unwrap();
+    create_dir_all(&local).unwrap();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
             uri: file_uri(&app.join("Gemfile")),
             language_id: "ruby".to_owned(),
-            text: r#"gem "local", path: "vendor/local""#.to_owned(),
+            text: package_file_fixture("ruby-path-dependencies-resolve-as-directories.txt"),
             workspace_root: None,
         },
         &[RegistryResponseInput {
             package: "local".to_owned(),
-            ecosystem: Ecosystem::Ruby,
+            ecosystem: Ruby,
             body: r#"[{"number":"9.9.9"}]"#.to_owned(),
         }],
     );
@@ -61,650 +65,610 @@ fn ruby_path_dependencies_resolve_as_directories() {
         Some("vendor/local")
     );
     assert!(output.edits.is_empty());
-    std::fs::remove_dir_all(root).unwrap();
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
-fn go_replace_local_dependencies_resolve_as_no_match_like_upstream() {
+fn stack_custom_resolver_resolves_as_fixed_without_registry_updates() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///work/stack.yaml".to_owned(),
+            language_id: "yaml".to_owned(),
+            text: package_file_fixture(
+                "stack-custom-resolver-resolves-as-fixed-without-registry-updates.yaml",
+            ),
+            workspace_root: None,
+        },
+        &[],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest,
+        Some("stack resolver".to_owned())
+    );
+}
+
+#[test]
+fn terraform_builtin_provider_resolves_as_fixed_without_registry_updates() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///main.tf".to_owned(),
+            language_id: "terraform".to_owned(),
+            text: package_file_fixture(
+                "terraform-builtin-provider-resolves-as-fixed-without-registry-updates.tf",
+            ),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "terraform.io/builtin/terraform".to_owned(),
+            ecosystem: Terraform,
+            body: r#"{"versions":[{"version":"9.9.9"}]}"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("built-in provider")
+    );
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn helm_local_and_repository_alias_dependencies_resolve_as_fixed_without_registry_updates() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///Chart.yaml".to_owned(),
+            language_id: "yaml".to_owned(),
+            text: package_file_fixture("helm-local-and-repository-alias-dependencies-resolve-as-fixed-without-registry-updates.yaml"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "local".to_owned(),
+            ecosystem: Helm,
+            body: "apiVersion: v1\nentries:\n  local:\n    - version: 9.9.9\n".to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 2);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("local chart"));
+    assert_eq!(output.suggestions[1].status, "fixed");
+    assert_eq!(
+        output.suggestions[1].latest.as_deref(),
+        Some("repository alias")
+    );
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn ansible_git_role_dependencies_resolve_as_fixed_without_registry_updates() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///work/requirements.yml".to_owned(),
+            language_id: "yaml".to_owned(),
+            text: package_file_fixture(
+                "ansible-git-role-dependencies-resolve-as-fixed-without-registry-updates.yml",
+            ),
+            workspace_root: None,
+        },
+        &[],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("git repository")
+    );
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn bazel_non_registry_overrides_resolve_as_fixed_without_registry_updates() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///work/MODULE.bazel".to_owned(),
+            language_id: "starlark".to_owned(),
+            text: package_file_fixture("bazel-non-registry-overrides-resolve-as-fixed-without-registry-updatesMODULE.bazel"),
+            workspace_root: None,
+        },
+        &[],
+    );
+
+    assert_eq!(output.suggestions.len(), 2);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("git repository")
+    );
+    assert_eq!(output.suggestions[1].status, "fixed");
+    assert_eq!(
+        output.suggestions[1].latest.as_deref(),
+        Some("local module")
+    );
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn nix_local_inputs_resolve_as_fixed_without_registry_updates() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///work/flake.nix".to_owned(),
+            language_id: "nix".to_owned(),
+            text: package_file_fixture(
+                "nix-local-inputs-resolve-as-fixed-without-registry-updates.nix",
+            ),
+            workspace_root: None,
+        },
+        &[],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("local flake"));
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn renv_non_repository_packages_resolve_as_fixed_sources() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/app/renv.lock".to_owned(),
+            language_id: "json".to_owned(),
+            text: package_file_fixture(
+                "renv-non-repository-packages-resolve-as-fixed-sources.lock",
+            ),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "localpkg".to_owned(),
+            ecosystem: Cran,
+            body: "Package: localpkg\nVersion: 9.9.9\n".to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("local package")
+    );
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn go_replace_local_dependencies_resolve_as_directories() {
     let session = standard_session();
     let root = local_test_root("go-directory");
     let app = root.join("app");
     let local = root.join("local");
-    std::fs::create_dir_all(&app).unwrap();
-    std::fs::create_dir_all(&local).unwrap();
+    create_dir_all(&app).unwrap();
+    create_dir_all(&local).unwrap();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
             uri: file_uri(&app.join("go.mod")),
             language_id: "go.mod".to_owned(),
-            text: "replace example.test/local => ../local\n".to_owned(),
+            text: package_file_fixture("go-replace-local-dependencies-resolve-as-directories.txt"),
             workspace_root: None,
         },
         &[RegistryResponseInput {
             package: "example.test/local".to_owned(),
-            ecosystem: Ecosystem::Go,
+            ecosystem: Go,
             body: "v9.9.9\n".to_owned(),
         }],
     );
 
-    assert_eq!(output.suggestions[0].status, "noMatch");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("v9.9.9"));
-    assert!(output.edits.is_empty());
-    std::fs::remove_dir_all(root).unwrap();
-}
-
-#[test]
-fn pub_path_dependencies_resolve_as_directories() {
-    let session = standard_session();
-
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/app/pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: "dependencies:\n  http_parser:\n    path: ../../\n".to_owned(),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "http_parser".to_owned(),
-            ecosystem: Ecosystem::Pub,
-            body: r#"{"latest":{"version":"9.9.9"}}"#.to_owned(),
-        }],
-    );
-
     assert_eq!(output.suggestions[0].status, "directory");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("../../"));
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("../local"));
     assert!(output.edits.is_empty());
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
-fn python_direct_url_requirements_resolve_as_blank_versions_like_upstream() {
+fn go_work_use_directories_resolve_as_directories() {
     let session = standard_session();
+    let root = local_test_root("go-work-use-directory");
+    let app = root.join("app");
+    let lib = root.join("lib");
+    create_dir_all(&app).unwrap();
+    create_dir_all(&lib).unwrap();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
-            uri: "file:///repo/requirements.txt".to_owned(),
-            language_id: "pip-requirements".to_owned(),
-            text: "local @ https://example.test/local.whl#sha256=abc\n".to_owned(),
+            uri: file_uri(&root.join("go.work")),
+            language_id: "go.mod".to_owned(),
+            text: package_file_fixture("go-work-use-directories-resolve-as-directories.txt"),
             workspace_root: None,
         },
         &[RegistryResponseInput {
-            package: "local".to_owned(),
-            ecosystem: Ecosystem::Python,
-            body: r#"{"info":{"version":"9.9.9"}}"#.to_owned(),
+            package: "./app".to_owned(),
+            ecosystem: Go,
+            body: "v9.9.9\n".to_owned(),
         }],
     );
 
-    assert_eq!(output.suggestions[0].status, "updateAvailable");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("9.9.9"));
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "==9.9.9");
+    assert_eq!(output.suggestions.len(), 2);
+    assert!(
+        output
+            .suggestions
+            .iter()
+            .all(|suggestion| suggestion.status == "directory")
+    );
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("./app"));
+    assert_eq!(output.suggestions[1].latest.as_deref(), Some("./lib"));
+    assert!(output.edits.is_empty());
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
-fn npm_workspace_and_catalog_dependencies_are_skipped() {
+fn gradle_version_catalog_references_are_fixed_without_registry_updates() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"workspace-only":"workspace:*","catalog-only":"catalog:"}}"#
-                .to_owned(),
+            uri: "file:///repo/gradle/libs.versions.toml".to_owned(),
+            language_id: "toml".to_owned(),
+            text: package_file_fixture("gradle-version-catalog-references-are-fixed-without-registry-updates.versions.toml"),
             workspace_root: None,
         },
-        &[],
+        &[RegistryResponseInput {
+            package: "org.codehaus.groovy:groovy".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>4.0.0</version></versions></versioning></metadata>"#.to_owned(),
+        }],
     );
 
-    assert!(output.suggestions.is_empty());
-    assert!(output.edits.is_empty());
-}
-
-#[test]
-fn npm_bundle_name_arrays_are_fixed() {
-    let session = session_with_dependency_properties(
-        Ecosystem::Npm,
-        &["bundledDependencies", "bundleDependencies"],
-    );
-
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"bundledDependencies":["left-pad"],"bundleDependencies":["right-pad"]}"#
-                .to_owned(),
-            workspace_root: None,
-        },
-        &[
-            RegistryResponseInput {
-                package: "left-pad".to_owned(),
-                ecosystem: Ecosystem::Npm,
-                body: r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned(),
-            },
-            RegistryResponseInput {
-                package: "right-pad".to_owned(),
-                ecosystem: Ecosystem::Npm,
-                body: r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned(),
-            },
-        ],
-    );
-
+    assert_eq!(output.suggestions.len(), 2);
     assert_eq!(output.suggestions[0].status, "fixed");
     assert_eq!(
         output.suggestions[0].latest.as_deref(),
-        Some("bundled dependency")
+        Some("version catalog alias")
     );
     assert_eq!(output.suggestions[1].status, "fixed");
     assert_eq!(
         output.suggestions[1].latest.as_deref(),
-        Some("bundled dependency")
+        Some("version catalog reference")
     );
     assert!(output.edits.is_empty());
 }
 
 #[test]
-fn composer_platform_dependencies_are_fixed() {
+fn gradle_version_catalog_direct_library_versions_use_maven_lookup() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
-            uri: "file:///repo/composer.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"require":{"php":"^8.3","ext-json":"*","phpunit/phpunit":"^10.0"}}"#
-                .to_owned(),
+            uri: "file:///repo/gradle/libs.versions.toml".to_owned(),
+            language_id: "toml".to_owned(),
+            text: package_file_fixture("gradle-version-catalog-direct-library-versions-use-maven-lookup.versions.toml"),
             workspace_root: None,
         },
         &[RegistryResponseInput {
-            package: "phpunit/phpunit".to_owned(),
-            ecosystem: Ecosystem::Composer,
-            body: r#"{"packages":{"phpunit/phpunit":[{"version":"10.5.0"}]}}"#.to_owned(),
+            package: "org.apache.commons:commons-lang3".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>3.17.0</version><version>3.18.0</version></versions></versioning></metadata>"#.to_owned(),
         }],
     );
 
+    assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("^8.3"));
-    assert_eq!(output.suggestions[1].status, "fixed");
-    assert_eq!(output.suggestions[1].latest.as_deref(), Some("*"));
-    assert_eq!(output.suggestions[2].latest.as_deref(), Some("10.5.0"));
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("3.17.0"));
+    assert!(output.edits.is_empty());
 }
 
 #[test]
-fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
+fn sbt_scala_cross_dependencies_without_scala_version_are_fixed() {
     let session = standard_session();
-    let input = DocumentInput {
-        uri: "file:///repo/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: r#"{"require":{"php-parallel-lint/php-parallel-lint":"1.1.1"}}"#.to_owned(),
-        workspace_root: None,
-    };
 
     let output = session.resolve_document_with_responses(
-        input.clone(),
+        DocumentInput {
+            uri: "file:///repo/build.sbt".to_owned(),
+            language_id: "scala".to_owned(),
+            text: package_file_fixture("sbt-scala-cross-dependencies-without-scala-version-are-fixed.sbt"),
+            workspace_root: None,
+        },
         &[RegistryResponseInput {
-            package: "php-parallel-lint/php-parallel-lint".to_owned(),
-            ecosystem: Ecosystem::Composer,
-            body: r#"{
-              "packages": {
-                "php-parallel-lint/php-parallel-lint": [
-                  { "version": "v1.1.0" },
-                  { "version": "v1.1.1" },
-                  { "version": "v1.1.2" },
-                  { "version": "v1.2.0" },
-                  { "version": "v1.2.2" },
-                  { "version": "v2.0.0" },
-                  { "version": "v2.2.2" }
-                ]
-              }
-            }"#
-            .to_owned(),
+            package: "org.typelevel:cats-core".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>2.13.0</version></versions></versioning></metadata>"#.to_owned(),
         }],
     );
 
-    let analysis = session.analyze_document(input);
-    let titles = analysis
-        .code_lenses
-        .iter()
-        .map(|lens| lens.title.as_str())
-        .collect::<Vec<_>>();
-    let arguments = analysis
-        .code_lenses
-        .iter()
-        .skip(1)
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(String::as_str)
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("Scala binary version")
+    );
+    assert!(output.edits.is_empty());
+}
 
+#[test]
+fn sbt_maven_dependencies_use_maven_lookup() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/build.sbt".to_owned(),
+            language_id: "scala".to_owned(),
+            text: package_file_fixture("sbt-maven-dependencies-use-maven-lookup.sbt"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "org.scala-stm:scala-stm_2.13".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>0.9.1</version><version>0.9.2</version></versions></versioning></metadata>"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("0.9.1"));
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn sbt_url_artifact_dependencies_are_fixed_without_registry_updates() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/build.sbt".to_owned(),
+            language_id: "scala".to_owned(),
+            text: package_file_fixture("sbt-url-artifact-dependencies-are-fixed-without-registry-updates.sbt"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "jquery:jquery".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>3.2.2</version></versions></versioning></metadata>"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("package URL"));
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn gradle_build_dependencies_use_maven_lookup() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/build.gradle.kts".to_owned(),
+            language_id: "kotlin".to_owned(),
+            text: package_file_fixture("gradle-build-dependencies-use-maven-lookup.gradle.kts"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "org.springframework:spring-core".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>6.2.8</version><version>6.2.9</version></versions></versioning></metadata>"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("6.2.8"));
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn gradle_plugin_markers_use_maven_lookup() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/settings.gradle".to_owned(),
+            language_id: "groovy".to_owned(),
+            text: package_file_fixture("gradle-plugin-markers-use-maven-lookup.gradle"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin"
+                .to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>0.51.0</version><version>0.52.0</version></versions></versioning></metadata>"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("0.51.0"));
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn gradle_project_and_file_dependencies_are_fixed() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/build.gradle".to_owned(),
+            language_id: "groovy".to_owned(),
+            text: package_file_fixture("gradle-project-and-file-dependencies-are-fixed.gradle"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: ":shared".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>9.9.9</version></versions></versioning></metadata>"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 2);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("local package")
+    );
+    assert_eq!(output.suggestions[1].status, "fixed");
+    assert_eq!(
+        output.suggestions[1].latest.as_deref(),
+        Some("local package")
+    );
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn gradle_kotlin_named_argument_dependencies_use_maven_lookup() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/build.gradle.kts".to_owned(),
+            language_id: "kotlin".to_owned(),
+            text: package_file_fixture("gradle-kotlin-named-argument-dependencies-use-maven-lookup.gradle.kts"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "org.slf4j:slf4j-api".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>2.0.17</version><version>2.0.18</version></versions></versioning></metadata>"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("2.0.17"));
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn clojure_deps_edn_git_and_local_dependencies_are_fixed() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/deps.edn".to_owned(),
+            language_id: "clojure".to_owned(),
+            text: package_file_fixture("clojure-deps-edn-git-and-local-dependencies-are-fixed.edn"),
+            workspace_root: None,
+        },
+        &[
+            RegistryResponseInput {
+                package: "io.github.sally:awesome".to_owned(),
+                ecosystem: Maven,
+                body: r#"<metadata><versioning><versions><version>9.9.9</version></versions></versioning></metadata>"#.to_owned(),
+            },
+            RegistryResponseInput {
+                package: "my.dev:project".to_owned(),
+                ecosystem: Maven,
+                body: r#"<metadata><versioning><versions><version>9.9.9</version></versions></versioning></metadata>"#.to_owned(),
+            },
+        ],
+    );
+
+    assert_eq!(output.suggestions.len(), 2);
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("git repository")
+    );
+    assert_eq!(output.suggestions[1].status, "fixed");
+    assert_eq!(
+        output.suggestions[1].latest.as_deref(),
+        Some("local package")
+    );
+    assert!(output.edits.is_empty());
+}
+
+#[test]
+fn clojure_deps_edn_maven_dependencies_use_maven_lookup() {
+    let session = standard_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: "file:///repo/deps.edn".to_owned(),
+            language_id: "clojure".to_owned(),
+            text: package_file_fixture("clojure-deps-edn-maven-dependencies-use-maven-lookup.edn"),
+            workspace_root: None,
+        },
+        &[RegistryResponseInput {
+            package: "org.clojure:tools.reader".to_owned(),
+            ecosystem: Maven,
+            body: r#"<metadata><versioning><versions><version>1.1.1</version><version>1.2.0</version></versions></versioning></metadata>"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].status, "fixed");
     assert_eq!(output.suggestions[0].latest.as_deref(), Some("1.1.1"));
     assert!(output.edits.is_empty());
-    assert_eq!(
-        titles,
-        [
-            "🟡 fixed 1.1.1",
-            "↑  latest 2.2.2",
-            "↑  minor 1.2.2",
-            "↑  patch 1.1.2"
-        ]
-    );
-    assert_eq!(
-        arguments,
-        [
-            vec!["update", "2.2.2"],
-            vec!["updateMinor", "1.2.2"],
-            vec!["updatePatch", "1.1.2"]
-        ]
-    );
 }
 
 #[test]
-fn missing_fixed_composer_registry_version_resolves_no_match_with_update_choices() {
-    let session = standard_session();
-    let input = DocumentInput {
-        uri: "file:///repo/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: r#"{"require":{"php-parallel-lint/php-parallel-lint":"0.5.0"}}"#.to_owned(),
-        workspace_root: None,
-    };
-
-    let output = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput {
-            package: "php-parallel-lint/php-parallel-lint".to_owned(),
-            ecosystem: Ecosystem::Composer,
-            body: r#"{
-              "packages": {
-                "php-parallel-lint/php-parallel-lint": [
-                  { "version": "v0.5.1" },
-                  { "version": "v0.6.0" },
-                  { "version": "v1.0.0" }
-                ]
-              }
-            }"#
-            .to_owned(),
-        }],
-    );
-
-    let analysis = session.analyze_document(input);
-    let titles = analysis
-        .code_lenses
-        .iter()
-        .map(|lens| lens.title.as_str())
-        .collect::<Vec<_>>();
-    let arguments = analysis
-        .code_lenses
-        .iter()
-        .skip(1)
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(String::as_str)
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
-
-    assert_eq!(output.suggestions[0].status, "noMatch");
-    assert_eq!(output.suggestions[0].latest, None);
-    assert!(output.edits.is_empty());
-    assert_eq!(
-        titles,
-        [
-            "⚪ no match",
-            "↑  latest 1.0.0",
-            "↑  minor 0.6.0",
-            "↑  patch 0.5.1"
-        ]
-    );
-    assert_eq!(
-        arguments,
-        [
-            vec!["update", "1.0.0"],
-            vec!["updateMinor", "0.6.0"],
-            vec!["updatePatch", "0.5.1"]
-        ]
-    );
-}
-
-#[test]
-fn invalid_composer_requirement_resolves_invalid_without_registry_lookup() {
+fn leiningen_project_clj_dependencies_use_maven_lookup() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
-            uri: "file:///repo/composer.json".to_owned(),
-            language_id: "json".to_owned(),
-            text:
-                r#"{"require":{"php-parallel-lint/php-parallel-lint":"definitely-not-a-version"}}"#
-                    .to_owned(),
+            uri: "file:///repo/project.clj".to_owned(),
+            language_id: "clojure".to_owned(),
+            text: package_file_fixture("leiningen-project-clj-dependencies-use-maven-lookup.clj"),
             workspace_root: None,
         },
-        &[RegistryResponseInput {
-            package: "php-parallel-lint/php-parallel-lint".to_owned(),
-            ecosystem: Ecosystem::Composer,
-            body: r#"{"packages":{"php-parallel-lint/php-parallel-lint":[{"version":"v9.9.9"}]}}"#
-                .to_owned(),
-        }],
+        &[
+            RegistryResponseInput {
+                package: "demo".to_owned(),
+                ecosystem: Maven,
+                body: r#"<metadata><versioning><versions><version>0.1.0-SNAPSHOT</version></versions></versioning></metadata>"#.to_owned(),
+            },
+            RegistryResponseInput {
+                package: "org.clojure:clojure".to_owned(),
+                ecosystem: Maven,
+                body: r#"<metadata><versioning><versions><version>1.11.3</version><version>1.12.0</version></versions></versioning></metadata>"#.to_owned(),
+            },
+        ],
     );
 
-    assert_eq!(output.suggestions[0].status, "invalid");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("invalid version")
-    );
+    assert_eq!(output.suggestions.len(), 2);
+    assert_eq!(output.suggestions[0].status, "current");
+    assert_eq!(output.suggestions[1].status, "fixed");
+    assert_eq!(output.suggestions[1].latest.as_deref(), Some("1.11.3"));
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn git_dependencies_are_fixed() {
-    let session = standard_session();
+include!("fixed_jvm.rs");
+include!("fixed_more.rs");
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///Cargo.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: r#"[dependencies]
-remote = { git = "https://example.test/repo.git" }
-"#
-            .to_owned(),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "remote".to_owned(),
-            ecosystem: Ecosystem::Cargo,
-            body: r#"{"crate":{"max_version":"9.9.9"}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("git repository")
-    );
-    assert!(output.edits.is_empty());
+fn package_file_fixture(name: &str) -> String {
+    let path = repo_root()
+        .join("tests/fixtures/session/resolution/tests/fixed")
+        .join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read session resolution fixture {}: {error}",
+            path.display()
+        )
+    })
 }
 
-#[test]
-fn cargo_registry_dependencies_use_workspace_cargo_config_urls() {
-    let root =
-        std::env::temp_dir().join(format!("versionlens-cargo-registry-{}", std::process::id()));
-    std::fs::create_dir_all(root.join(".cargo")).unwrap();
-    std::fs::write(
-        root.join(".cargo/config.toml"),
-        "[registries.private]\nindex = 'https://cargo.example.test/api/'\n",
-    )
-    .unwrap();
-
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("Cargo.toml").display()),
-        language_id: "toml".to_owned(),
-        text: r#"
-[dependencies]
-private = { version = "1.0", registry = "private" }
-"#
-        .to_owned(),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::RegistryContext::from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(dependencies[0].name, "private");
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://cargo.example.test/api/private/versions"]
-    );
-
-    std::fs::remove_dir_all(root).unwrap();
-}
-
-#[test]
-fn cargo_crates_io_source_replacement_uses_workspace_cargo_config_url() {
-    let root =
-        std::env::temp_dir().join(format!("versionlens-cargo-replace-{}", std::process::id()));
-    std::fs::create_dir_all(root.join(".cargo")).unwrap();
-    std::fs::write(
-        root.join(".cargo/config.toml"),
-        "[source.crates-io]\nreplace-with = 'mirror'\n[source.mirror]\nregistry = 'sparse+https://mirror.example.test/api/'\n",
-    )
-    .unwrap();
-
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("Cargo.toml").display()),
-        language_id: "toml".to_owned(),
-        text: "[dependencies]\nserde = \"1.0\"\n".to_owned(),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::RegistryContext::from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(dependencies[0].name, "serde");
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://mirror.example.test/api/serde/versions"]
-    );
-
-    std::fs::remove_dir_all(root).unwrap();
-}
-
-#[test]
-fn npm_dependencies_use_workspace_bunfig_registry_urls() {
-    let root = std::env::temp_dir().join(format!(
-        "versionlens-bunfig-registry-{}",
-        std::process::id()
-    ));
-    std::fs::create_dir_all(&root).unwrap();
-    std::fs::write(
-        root.join("bunfig.toml"),
-        "[install]\nregistry = 'https://registry.example.test/npm'\n[install.scopes]\n'@scope' = { url = 'https://scope.example.test/npm', token = 'secret' }\n",
-    )
-    .unwrap();
-
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0","@scope/pkg":"1.0.0"}}"#.to_owned(),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::RegistryContext::from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://registry.example.test/npm/left-pad"]
-    );
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[1], &context),
-        vec!["https://scope.example.test/npm/@scope%2fpkg"]
-    );
-    assert_eq!(
-        context.auth_headers_for_url(
-            Ecosystem::Npm,
-            "https://scope.example.test/npm/@scope%2fpkg"
-        )[0]
-        .value,
-        "Bearer secret"
-    );
-
-    std::fs::remove_dir_all(root).unwrap();
-}
-
-#[test]
-fn composer_repository_filters_route_matching_packages_only() {
-    let input = DocumentInput {
-        uri: "file:///repo/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: r#"{
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://private.packages.example.test",
-      "only": ["acme/*"],
-      "exclude": ["acme/blocked"]
-    }
-  ],
-  "require": {
-    "acme/private": "1.0.0",
-    "acme/blocked": "1.0.0",
-    "vendor/public": "1.0.0"
-  }
-}"#
-        .to_owned(),
-        workspace_root: None,
-    };
-    let context = crate::registry::RegistryContext::from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(dependencies[0].name, "acme/private");
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://private.packages.example.test/acme/private.json"]
-    );
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[1], &context),
-        vec!["https://repo.packagist.org/p2/acme/blocked.json"]
-    );
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[2], &context),
-        vec!["https://repo.packagist.org/p2/vendor/public.json"]
-    );
-}
-
-#[test]
-fn composer_can_disable_default_packagist_registry() {
-    let input = DocumentInput {
-        uri: "file:///repo/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: r#"{
-  "repositories": {
-    "packagist.org": false,
-    "private": {
-      "type": "composer",
-      "url": "https://private.packages.example.test",
-      "only": ["acme/*"]
-    }
-  },
-  "require": {
-    "acme/private": "1.0.0",
-    "vendor/public": "1.0.0"
-  }
-}"#
-        .to_owned(),
-        workspace_root: None,
-    };
-    let context = crate::registry::RegistryContext::from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://private.packages.example.test/acme/private.json"]
-    );
-    assert!(
-        session
-            .registry_urls_with_context(&dependencies[1], &context)
-            .is_empty()
-    );
-}
-
-#[test]
-fn explicit_docker_registries_return_no_match_from_mcr_shaped_responses() {
-    let session = standard_session();
-
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///compose.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: "services:\n  app:\n    image: registry.example.test/team/app:1.0.0\n".to_owned(),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "team/app".to_owned(),
-            ecosystem: Ecosystem::Docker,
-            body: r#"{"results":[{"name":"2.0.0","images":[{"digest":"sha256:abc"}]}]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions[0].status, "noMatch");
-    assert_eq!(output.suggestions[0].latest, None);
-    assert!(output.edits.is_empty());
-}
-
-#[test]
-fn docker_compose_bare_build_contexts_resolve_as_directories() {
-    let session = standard_session();
-    let root = local_test_root("docker-directory");
-    let local = root.join("backend/dockerfile");
-    std::fs::create_dir_all(&local).unwrap();
-
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: file_uri(&root.join("compose.yaml")),
-            language_id: "yaml".to_owned(),
-            text: "services:\n  app:\n    build: backend\n".to_owned(),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "backend/dockerfile".to_owned(),
-            ecosystem: Ecosystem::Docker,
-            body: r#"{"results":[{"name":"2.0.0","images":[{"digest":"sha256:abc"}]}]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions[0].status, "directory");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("backend/dockerfile")
-    );
-    assert!(output.edits.is_empty());
-    std::fs::remove_dir_all(root).unwrap();
-}
-
-#[test]
-fn npm_git_dependencies_distinguish_hosted_and_unsupported_git() {
-    let session = standard_session();
-
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"devDependencies":{"gitpkgnotfound1":"git+https://git@github.com/testuser/test.git","gitpkgnotfound2":"git+ssh://git@some.com/testuser/test.git","gitpkgnotfound3":"git://example.com/testuser/test"}}"#.to_owned(),
-            workspace_root: None,
-        },
-        &[],
-    );
-
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("git repository")
-    );
-    assert_eq!(output.suggestions[1].status, "notSupported");
-    assert_eq!(output.suggestions[1].latest, None);
-    assert_eq!(output.suggestions[2].status, "notSupported");
-    assert_eq!(output.suggestions[2].latest, None);
-    assert!(output.edits.is_empty());
-}
-
-fn local_test_root(name: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!(
-        "versionlens-{name}-{}-{}",
-        std::process::id(),
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    std::fs::create_dir_all(&root).unwrap();
-    root
-}
-
-fn file_uri(path: &Path) -> String {
-    format!("file://{}", path.to_string_lossy())
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
 }

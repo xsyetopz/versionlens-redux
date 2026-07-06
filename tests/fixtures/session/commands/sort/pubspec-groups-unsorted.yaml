@@ -1,0 +1,6 @@
+dependencies:
+  zeta: 1
+  alpha: 1
+dev_dependencies:
+  z-dev: 1
+  a-dev: 1

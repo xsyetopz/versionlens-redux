@@ -1,14 +1,15 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_parsers::Dependency;
 use versionlens_providers::docker_tag_exists;
 
 use crate::RegistryResponseInput;
 use crate::registry::registry_response_matches;
+use versionlens_parsers::Ecosystem::Docker;
 
 pub(crate) fn docker_response_missing_tag(
     dependency: &Dependency,
     responses: &[RegistryResponseInput],
 ) -> bool {
-    dependency.ecosystem == Ecosystem::Docker
+    dependency.ecosystem == Docker
         && !dependency.requirement.is_empty()
         && responses
             .iter()

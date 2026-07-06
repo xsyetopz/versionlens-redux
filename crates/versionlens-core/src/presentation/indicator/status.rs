@@ -1,4 +1,7 @@
 use versionlens_suggestions::SuggestionStatus;
+use versionlens_suggestions::SuggestionStatus::{
+    BuildAvailable as StatusBuildAvailable, UpdateAvailable as StatusUpdateAvailable,
+};
 
 use crate::SuggestionIndicators;
 
@@ -13,15 +16,11 @@ pub(super) fn suggestion_indicator(
     status: SuggestionStatus,
     has_vulnerabilities: bool,
 ) -> &str {
-    if matches!(
-        status,
-        SuggestionStatus::UpdateAvailable | SuggestionStatus::BuildAvailable
-    ) && has_vulnerabilities
-    {
+    if matches!(status, StatusUpdateAvailable | StatusBuildAvailable) && has_vulnerabilities {
         return update_indicator(indicators, true);
     }
 
-    if status == SuggestionStatus::UpdateAvailable {
+    if status == StatusUpdateAvailable {
         return update_indicator(indicators, false);
     }
 

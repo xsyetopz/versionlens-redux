@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
 
 use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_parsers::Dependency;
+use versionlens_parsers::Ecosystem::Ruby;
 
 pub(in crate::sort) fn dependency_group(dependency: &Dependency) -> &str {
     dependency.group.as_str()
@@ -12,7 +13,7 @@ pub(in crate::sort) fn compare_dependencies(left: &Dependency, right: &Dependenc
 }
 
 fn dependency_sort_name(dependency: &Dependency) -> &str {
-    if dependency.ecosystem == Ecosystem::Ruby
+    if dependency.ecosystem == Ruby
         && let Some(hosted_name) = &dependency.hosted_name
     {
         return hosted_name;
@@ -33,9 +34,9 @@ fn compare_names(left: &str, right: &str) -> Ordering {
 
 fn locale_compare_key(value: &str) -> LocaleCompareKey {
     let mut key = LocaleCompareKey {
-        base: Vec::new(),
-        accents: Vec::new(),
-        case_weights: Vec::new(),
+        base: vec![],
+        accents: vec![],
+        case_weights: vec![],
     };
     for character in value.chars().map(locale_compare_character) {
         key.base.push(character.base);

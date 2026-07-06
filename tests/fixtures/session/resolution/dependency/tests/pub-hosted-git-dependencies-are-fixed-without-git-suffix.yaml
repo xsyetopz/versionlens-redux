@@ -1,0 +1,4 @@
+dependencies:
+  repo:
+    git:
+      url: https://github.com/owner/repo

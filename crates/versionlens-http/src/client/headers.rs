@@ -30,7 +30,7 @@ fn matches_header_url(header: &HttpHeader, url: &str) -> bool {
     header
         .url
         .as_deref()
-        .map(str::trim)
+        .map(|value| value.trim())
         .filter(|pattern| !pattern.is_empty())
         .is_none_or(|pattern| starts_with_ignore_ascii_case(url, pattern))
 }

@@ -1,0 +1,15 @@
+{
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://private.packages.example.test",
+      "only": ["acme/*"],
+      "exclude": ["acme/blocked"]
+    }
+  ],
+  "require": {
+    "acme/private": "1.0.0",
+    "acme/blocked": "1.0.0",
+    "vendor/public": "1.0.0"
+  }
+}

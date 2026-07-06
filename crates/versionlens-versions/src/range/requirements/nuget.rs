@@ -1,5 +1,3 @@
-use semver::VersionReq;
-
 use crate::parse::{parse_padded_version, parse_version};
 
 pub(in crate::range) fn nuget_requirement_satisfies(
@@ -8,7 +6,7 @@ pub(in crate::range) fn nuget_requirement_satisfies(
 ) -> Option<bool> {
     let latest = parse_version(latest)?;
     let requirement = nuget_requirement(requirement)?;
-    VersionReq::parse(&requirement)
+    crate::parse_semver_req(&requirement)
         .map(|requirement| requirement.matches(&latest))
         .ok()
 }
@@ -26,7 +24,7 @@ pub(in crate::range) fn nuget_requirement(requirement: &str) -> Option<String> {
         return normalize_nuget_bound(inner).map(|version| format!("={version}"));
     };
 
-    let mut parts = Vec::new();
+    let mut parts = vec![];
     if let Some(version) = normalize_nuget_bound(min) {
         parts.push(format!(
             "{}{version}",

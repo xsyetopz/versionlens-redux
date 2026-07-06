@@ -1,4 +1,5 @@
 use versionlens_parsers::Dependency;
+use versionlens_suggestions::UpdateChoice;
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
@@ -11,7 +12,7 @@ mod lookup;
 pub(super) struct LatestLookup {
     pub(super) latest: Option<String>,
     pub(super) builds: Vec<String>,
-    pub(super) choices: Vec<versionlens_suggestions::UpdateChoice>,
+    pub(super) choices: Vec<UpdateChoice>,
     pub(super) fetch_error: Option<FetchError>,
 }
 

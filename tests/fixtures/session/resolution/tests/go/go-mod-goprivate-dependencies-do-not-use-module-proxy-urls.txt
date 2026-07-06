@@ -1,0 +1,3 @@
+module example.test/app
+
+require corp.example.com/secret v1.0.0

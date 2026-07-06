@@ -1,7 +1,14 @@
+use semver::Prerelease;
 use semver::Version;
 
+fn parse_prerelease(value: &str) -> Option<Prerelease> {
+    value.parse().ok()
+}
+
 pub(super) fn release_version(mut version: Version) -> Version {
-    version.pre = semver::Prerelease::EMPTY;
+    if let Some(pre) = parse_prerelease("") {
+        version.pre = pre;
+    }
     version
 }
 
@@ -16,6 +23,6 @@ pub(super) fn increment_prerelease(mut version: Version) -> Option<Version> {
         None if pre.is_empty() => "pre.0".to_owned(),
         None => format!("{pre}.0"),
     };
-    version.pre = semver::Prerelease::new(&next_pre).ok()?;
+    version.pre = parse_prerelease(&next_pre)?;
     Some(version)
 }

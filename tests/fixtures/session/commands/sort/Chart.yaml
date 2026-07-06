@@ -1,0 +1,8 @@
+apiVersion: v2
+dependencies:
+  - name: zeta
+    version: 1.0.0
+    repository: https://charts.example.test
+  - name: alpha
+    version: 1.0.0
+    repository: https://charts.example.test

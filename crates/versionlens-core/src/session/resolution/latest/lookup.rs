@@ -86,11 +86,7 @@ fn matching_dependency_response<'a>(
 ) -> Option<&'a RegistryResponseInput> {
     responses
         .iter()
-        .find(|response| matches_dependency_response(response, dependency))
-}
-
-fn matches_dependency_response(response: &RegistryResponseInput, dependency: &Dependency) -> bool {
-    registry_response_matches(response, dependency)
+        .find(|response| registry_response_matches(response, dependency))
 }
 
 impl VersionLensSession {

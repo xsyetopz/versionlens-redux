@@ -1,0 +1,1 @@
+<Project><ItemGroup><PackageReference Include="Test.Package" Version="1.2.3.4" /></ItemGroup></Project>

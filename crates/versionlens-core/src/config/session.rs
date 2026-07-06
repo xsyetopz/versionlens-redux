@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 use versionlens_cache::cache_ttl_ms;
-use versionlens_http::{HttpConfig, HttpConfigInput};
+use versionlens_http::{HttpConfig, HttpConfigInput, standard_http_config};
 
 use super::{
     EnabledProviderConfig, ProviderSettings, ProviderSettingsInput, SuggestionIndicators,
-    SuggestionIndicatorsInput, enabled_provider_config_from_name,
+    SuggestionIndicatorsInput, enabled_provider_config_from_name, standard_suggestion_indicators,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,6 +33,18 @@ pub struct SessionConfigInput {
     pub http: Option<HttpConfigInput>,
 }
 
+fn provider_settings_from_input(input: ProviderSettingsInput) -> ProviderSettings {
+    input.into()
+}
+
+fn suggestion_indicators_from_input(input: SuggestionIndicatorsInput) -> SuggestionIndicators {
+    input.into()
+}
+
+fn http_config_from_input(input: HttpConfigInput) -> HttpConfig {
+    versionlens_http::http_config_from_input(input)
+}
+
 impl SessionConfig {
     pub fn from_input(input: SessionConfigInput) -> Self {
         Self {
@@ -45,19 +57,37 @@ impl SessionConfig {
                 .collect(),
             providers: input
                 .providers
-                .map(ProviderSettings::from_input)
+                .map(provider_settings_from_input)
                 .unwrap_or_default(),
             suggestion_indicators: input
                 .suggestion_indicators
-                .map(SuggestionIndicators::from_input)
-                .unwrap_or_else(SuggestionIndicators::standard),
+                .map(suggestion_indicators_from_input)
+                .unwrap_or_else(standard_suggestion_indicators),
             show_vulnerabilities: input.show_vulnerabilities.unwrap_or(true),
             show_suggestion_stats: input.show_suggestion_stats.unwrap_or(false),
             show_prereleases: input.show_prereleases,
             http: input
                 .http
-                .map(HttpConfig::from_input)
-                .unwrap_or_else(HttpConfig::standard),
+                .map(http_config_from_input)
+                .unwrap_or_else(standard_http_config),
         }
+    }
+}
+
+impl From<SessionConfigInput> for SessionConfig {
+    fn from(input: SessionConfigInput) -> Self {
+        Self::from_input(input)
+    }
+}
+
+impl From<ProviderSettingsInput> for ProviderSettings {
+    fn from(input: ProviderSettingsInput) -> Self {
+        Self::from_input(input)
+    }
+}
+
+impl From<SuggestionIndicatorsInput> for SuggestionIndicators {
+    fn from(input: SuggestionIndicatorsInput) -> Self {
+        Self::from_input(input)
     }
 }

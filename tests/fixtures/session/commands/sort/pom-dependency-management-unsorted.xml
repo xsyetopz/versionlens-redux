@@ -1,0 +1,16 @@
+<project>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.zeta</groupId>
+        <artifactId>zeta</artifactId>
+        <version>1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.alpha</groupId>
+        <artifactId>alpha</artifactId>
+        <version>1</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

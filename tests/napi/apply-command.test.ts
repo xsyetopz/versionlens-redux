@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 
 function native() {
 	return require("../../packages/vscode-extension/native/versionlens_napi.node");
@@ -19,7 +20,7 @@ test("applyCommand sorts requirements dependencies", () => {
 		command: "sort",
 		document: {
 			languageId: "pip-requirements",
-			text: "zeta==1\n# keep\nalpha==1\n",
+			text: packageFileFixture("requirements-unsorted.txt"),
 			uri: "file:///requirements.txt",
 		},
 	});
@@ -37,7 +38,7 @@ test("applyCommand updates project version", () => {
 		dependencyName: "1.2.3",
 		document: {
 			languageId: "json",
-			text: '{"version":"1.2.3","dependencies":{"left-pad":"1.0.0"}}',
+			text: packageFileFixture("package-project-version.json"),
 			uri: "file:///package.json",
 		},
 	});
@@ -51,7 +52,7 @@ test("resolveDocument is callable without registry work", async () => {
 
 	const output = await session.resolveDocument({
 		languageId: "json",
-		text: '{"dependencies":{"local":"workspace:*"}}',
+		text: packageFileFixture("package-workspace-local.json"),
 		uri: "file:///package.json",
 	});
 
@@ -70,7 +71,7 @@ test("disposeSession releases the native Rust session", async () => {
 	const session = createSession();
 	const input = {
 		languageId: "json",
-		text: '{"dependencies":{"left-pad":"1.0.0"}}',
+		text: packageFileFixture("package-left-pad.json"),
 		uri: "file:///package.json",
 	};
 
@@ -93,7 +94,7 @@ test("analyzeDocument can disable vulnerability diagnostics", () => {
 
 	const output = session.analyzeDocument({
 		languageId: "json",
-		text: '{"dependencies":{"left-pad":"1.0.0"}}',
+		text: packageFileFixture("package-left-pad.json"),
 		uri: "file:///package.json",
 	});
 
@@ -115,7 +116,7 @@ test("analyzeDocument omits native missing-suggestion code lens payloads", () =>
 
 	const output = session.analyzeDocument({
 		languageId: "json",
-		text: '{"dependencies":{"left-pad":"1.0.0"}}',
+		text: packageFileFixture("package-left-pad.json"),
 		uri: "file:///package.json",
 	});
 
@@ -127,10 +128,14 @@ test("analyzeDocument omits schema diagnostics across N-API", () => {
 
 	const output = session.analyzeDocument({
 		languageId: "json",
-		text: '{"npm":{"url":"not a url"}}',
+		text: packageFileFixture("versionlens-schema.json"),
 		uri: "versionlens:/versionlens.multi-registries.json",
 	});
 
 	expect(output.isSupportedManifest).toBe(true);
 	expect(output.diagnostics).toHaveLength(0);
 });
+
+function packageFileFixture(name: string): string {
+	return readFileSync(`${process.cwd()}/tests/fixtures/napi/${name}`, "utf8");
+}

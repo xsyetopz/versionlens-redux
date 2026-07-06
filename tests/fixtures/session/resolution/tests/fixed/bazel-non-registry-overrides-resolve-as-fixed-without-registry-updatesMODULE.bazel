@@ -1,0 +1,2 @@
+git_override(module_name = "rules_local", remote = "https://github.com/example/rules_local.git", commit = "abc123")
+local_path_override(module_name = "local_rules", path = "../local_rules")

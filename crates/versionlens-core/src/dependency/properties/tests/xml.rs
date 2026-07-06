@@ -1,29 +1,14 @@
-use super::{DocumentInput, Ecosystem, session_with_properties};
+use super::{DocumentInput, package_file_fixture, session_with_properties};
+use versionlens_parsers::Ecosystem::{Dotnet, Maven};
 
 #[test]
 fn maven_dependency_properties_filter_before_extraction() {
-    let session = session_with_properties(Ecosystem::Maven, &["project.parent"]);
+    let session = session_with_properties(Maven, &["project.parent"]);
 
     let output = session.analyze_document(DocumentInput {
         uri: "file:///pom.xml".to_owned(),
         language_id: "xml".to_owned(),
-        text: r#"
-<project>
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.0</version>
-  </parent>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.2</version>
-    </dependency>
-  </dependencies>
-</project>
-"#
-        .to_owned(),
+        text: package_file_fixture("maven-parent-filter.pom.xml"),
         workspace_root: None,
     });
 
@@ -36,12 +21,12 @@ fn maven_dependency_properties_filter_before_extraction() {
 
 #[test]
 fn dotnet_project_sdk_matches_dependency_properties() {
-    let session = session_with_properties(Ecosystem::Dotnet, &["Project.Sdk"]);
+    let session = session_with_properties(Dotnet, &["Project.Sdk"]);
 
     let output = session.analyze_document(DocumentInput {
         uri: "file:///app.csproj".to_owned(),
         language_id: "xml".to_owned(),
-        text: r#"<Project><Sdk Name="Microsoft.NET.Sdk" Version="8.0.100" /></Project>"#.to_owned(),
+        text: package_file_fixture("dotnet-sdk.csproj"),
         workspace_root: None,
     });
 
@@ -51,21 +36,12 @@ fn dotnet_project_sdk_matches_dependency_properties() {
 
 #[test]
 fn dotnet_dependency_properties_filter_before_extraction() {
-    let session =
-        session_with_properties(Ecosystem::Dotnet, &["Project.ItemGroup.PackageReference"]);
+    let session = session_with_properties(Dotnet, &["Project.ItemGroup.PackageReference"]);
 
     let output = session.analyze_document(DocumentInput {
         uri: "file:///app.csproj".to_owned(),
         language_id: "xml".to_owned(),
-        text: r#"
-<Project>
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageVersion Include="Serilog" Version="3.1.1" />
-  </ItemGroup>
-</Project>
-"#
-        .to_owned(),
+        text: package_file_fixture("dotnet-package-reference.csproj"),
         workspace_root: None,
     });
 
@@ -75,24 +51,12 @@ fn dotnet_dependency_properties_filter_before_extraction() {
 
 #[test]
 fn dotnet_project_json_dependency_properties_match_json_paths() {
-    let session = session_with_properties(Ecosystem::Dotnet, &["frameworks.*.dependencies"]);
+    let session = session_with_properties(Dotnet, &["frameworks.*.dependencies"]);
 
     let output = session.analyze_document(DocumentInput {
         uri: "file:///project.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{
-  "dependencies": {
-    "Newtonsoft.Json": "13.0.1"
-  },
-  "frameworks": {
-    "net472": {
-      "dependencies": {
-        "System.Text.Json": "8.0.5"
-      }
-    }
-  }
-}"#
-        .to_owned(),
+        text: package_file_fixture("dotnet-project.json"),
         workspace_root: None,
     });
 
@@ -101,5 +65,70 @@ fn dotnet_project_json_dependency_properties_match_json_paths() {
     assert_eq!(
         output.dependencies[0].group,
         "frameworks.net472.dependencies"
+    );
+}
+
+#[test]
+fn dotnet_packages_config_dependency_properties_match_package_entries() {
+    let session = session_with_properties(Dotnet, &["packages.package"]);
+
+    let output = session.analyze_document(DocumentInput {
+        uri: "file:///packages.config".to_owned(),
+        language_id: "xml".to_owned(),
+        text: package_file_fixture("packages.config"),
+        workspace_root: None,
+    });
+
+    assert_eq!(output.dependencies.len(), 1);
+    assert_eq!(output.dependencies[0].group, "packages.package");
+    assert_eq!(output.dependencies[0].name, "jQuery");
+}
+
+#[test]
+fn dotnet_paket_dependency_properties_match_paket_groups() {
+    let session = session_with_properties(Dotnet, &["paket.dependencies"]);
+
+    let output = session.analyze_document(DocumentInput {
+        uri: "file:///paket.dependencies".to_owned(),
+        language_id: "plaintext".to_owned(),
+        text: package_file_fixture("paket.dependencies"),
+        workspace_root: None,
+    });
+
+    assert_eq!(output.dependencies.len(), 1);
+    assert_eq!(output.dependencies[0].group, "paket.dependencies");
+    assert_eq!(output.dependencies[0].name, "Newtonsoft.Json");
+}
+
+#[test]
+fn maven_plugin_dependency_properties_match_plugin_paths() {
+    let session = session_with_properties(
+        Maven,
+        &[
+            "project.build.plugins.plugin",
+            "project.build.pluginManagement.plugins.plugin",
+        ],
+    );
+
+    let output = session.analyze_document(DocumentInput {
+        uri: "file:///pom.xml".to_owned(),
+        language_id: "xml".to_owned(),
+        text: package_file_fixture("maven-plugins.pom.xml"),
+        workspace_root: None,
+    });
+
+    assert_eq!(output.dependencies.len(), 2);
+    assert_eq!(output.dependencies[0].group, "project.build.plugins.plugin");
+    assert_eq!(
+        output.dependencies[0].name,
+        "org.apache.maven.plugins:maven-compiler-plugin"
+    );
+    assert_eq!(
+        output.dependencies[1].group,
+        "project.build.pluginManagement.plugins.plugin"
+    );
+    assert_eq!(
+        output.dependencies[1].name,
+        "org.codehaus.mojo:versions-maven-plugin"
     );
 }

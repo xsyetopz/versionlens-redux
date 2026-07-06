@@ -1,14 +1,15 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_parsers::Dependency;
 
 use super::dependency_end_line;
 use super::whitespace::leading_whitespace_len;
+use versionlens_parsers::Ecosystem::{Maven, Pub};
 
 pub(in crate::sort::slots) fn sort_slot_start(
     lines: &[&str],
     line: usize,
     dependency: &Dependency,
 ) -> usize {
-    if dependency.ecosystem != Ecosystem::Pub {
+    if dependency.ecosystem != Pub {
         return line;
     }
 
@@ -24,7 +25,7 @@ pub(in crate::sort::slots) fn sort_slot_end(
     line: usize,
     dependency: &Dependency,
 ) -> usize {
-    if dependency.ecosystem != Ecosystem::Pub {
+    if dependency.ecosystem != Pub {
         return non_pub_sort_slot_end(line, dependency);
     }
 
@@ -40,7 +41,7 @@ pub(in crate::sort::slots) fn sort_slot_end(
 }
 
 fn non_pub_sort_slot_end(line: usize, dependency: &Dependency) -> usize {
-    if dependency.ecosystem == Ecosystem::Maven {
+    if dependency.ecosystem == Maven {
         return usize::try_from(dependency_end_line(dependency)).unwrap_or(line);
     }
 

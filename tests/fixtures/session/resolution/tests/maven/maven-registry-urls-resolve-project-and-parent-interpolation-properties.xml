@@ -1,0 +1,15 @@
+<project>
+  <parent>
+    <groupId>org.parent</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>3.4.5</version>
+  </parent>
+  <artifactId>child-app</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>runtime</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+  </dependencies>
+</project>

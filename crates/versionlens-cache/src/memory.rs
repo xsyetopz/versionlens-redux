@@ -14,16 +14,17 @@ impl<T> MemoryCache<T> {
     pub fn new(ttl: Duration) -> Self {
         Self {
             ttl,
-            entries: HashMap::new(),
+            entries: crate::default(),
         }
     }
 
     pub fn insert(&mut self, key: CacheKey, value: T) {
-        self.entries.insert(key, CacheEntry::new(value, self.ttl));
+        self.entries
+            .insert(key, crate::cache_entry(value, self.ttl));
     }
 
     pub fn insert_with_ttl(&mut self, key: CacheKey, value: T, ttl: Duration) {
-        self.entries.insert(key, CacheEntry::new(value, ttl));
+        self.entries.insert(key, crate::cache_entry(value, ttl));
     }
 
     pub fn get(&self, key: &CacheKey) -> Option<&T> {
@@ -37,3 +38,11 @@ impl<T> MemoryCache<T> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) fn memory_cache<T>(ttl: Duration) -> MemoryCache<T> {
+    MemoryCache {
+        ttl,
+        entries: crate::default(),
+    }
+}

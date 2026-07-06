@@ -2,6 +2,12 @@ use versionlens_suggestions::Suggestion;
 use versionlens_versions::{ProjectVersionBump, UpdateLevel, update_level};
 
 use crate::project::is_project_version_dependency;
+use versionlens_versions::ProjectVersionBump::{
+    Major as ProjectMajor, Minor as ProjectMinor, Patch as ProjectPatch, Prerelease, Release,
+};
+use versionlens_versions::UpdateLevel::{
+    Major as LevelMajor, Minor as LevelMinor, Patch as LevelPatch,
+};
 
 struct UpdateCommand {
     name: &'static str,
@@ -17,29 +23,29 @@ struct ProjectUpdateCommand {
 const UPDATE_COMMANDS: &[UpdateCommand] = &[
     UpdateCommand {
         name: "updateMajor",
-        level: UpdateLevel::Major,
-        project_bump: ProjectVersionBump::Major,
+        level: LevelMajor,
+        project_bump: ProjectMajor,
     },
     UpdateCommand {
         name: "updateMinor",
-        level: UpdateLevel::Minor,
-        project_bump: ProjectVersionBump::Minor,
+        level: LevelMinor,
+        project_bump: ProjectMinor,
     },
     UpdateCommand {
         name: "updatePatch",
-        level: UpdateLevel::Patch,
-        project_bump: ProjectVersionBump::Patch,
+        level: LevelPatch,
+        project_bump: ProjectPatch,
     },
 ];
 
 const PROJECT_UPDATE_COMMANDS: &[ProjectUpdateCommand] = &[
     ProjectUpdateCommand {
         name: "updateRelease",
-        project_bump: ProjectVersionBump::Release,
+        project_bump: Release,
     },
     ProjectUpdateCommand {
         name: "updatePrerelease",
-        project_bump: ProjectVersionBump::Prerelease,
+        project_bump: Prerelease,
     },
 ];
 

@@ -3,6 +3,7 @@ pub(super) fn local_requirement_path(requirement: &str) -> Option<&str> {
     let path = requirement
         .strip_prefix("file:")
         .or_else(|| requirement.strip_prefix("link:"))
+        .or_else(|| requirement.strip_prefix("portal:"))
         .or_else(|| requirement.strip_prefix("path:"))
         .unwrap_or(requirement);
 
@@ -12,6 +13,7 @@ pub(super) fn local_requirement_path(requirement: &str) -> Option<&str> {
 fn is_local_requirement(requirement: &str) -> bool {
     requirement.starts_with("file:")
         || requirement.starts_with("link:")
+        || requirement.starts_with("portal:")
         || requirement.starts_with("path:")
         || requirement.starts_with('/')
         || requirement.starts_with("./")

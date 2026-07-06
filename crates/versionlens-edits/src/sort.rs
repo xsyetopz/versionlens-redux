@@ -1,9 +1,12 @@
+use self::slots::is_sortable_dependency;
+use std::ops::Range as ByteRange;
+
 use versionlens_parsers::Dependency;
 use versionlens_vscode_model::{Position, Range, TextEdit};
 
-use std::ops::Range as ByteRange;
-
 use crate::range::line_range;
+
+pub(crate) type SortTextEdits = Vec<TextEdit>;
 
 mod comma;
 mod groups;
@@ -14,14 +17,14 @@ use groups::grouped_slots;
 pub use slots::can_sort_dependencies;
 use slots::{SortSlot, compare_dependencies, slot_end_text, slot_text_for, sortable_slots};
 
-pub fn sort_dependency_edits(text: &str, dependencies: &[Dependency]) -> Vec<TextEdit> {
+pub fn sort_dependency_edits(text: &str, dependencies: &[Dependency]) -> SortTextEdits {
     let same_line_edits = same_line_sort_edits(text, dependencies);
     if !same_line_edits.is_empty() {
         return same_line_edits;
     }
 
     if !can_sort_dependencies(dependencies) {
-        return Vec::new();
+        return vec![];
     }
 
     let lines: Vec<&str> = text.lines().collect();
@@ -35,9 +38,9 @@ pub fn sort_dependency_edits(text: &str, dependencies: &[Dependency]) -> Vec<Tex
         .collect()
 }
 
-fn same_line_sort_edits(text: &str, dependencies: &[Dependency]) -> Vec<TextEdit> {
+fn same_line_sort_edits(text: &str, dependencies: &[Dependency]) -> SortTextEdits {
     let lines: Vec<&str> = text.lines().collect();
-    let mut edits = Vec::new();
+    let mut edits = vec![];
 
     for group in same_line_groups(dependencies) {
         let Some(line) = lines.get(group.line).copied() else {
@@ -95,10 +98,10 @@ struct SameLineGroup<'a> {
 }
 
 fn same_line_groups(dependencies: &[Dependency]) -> Vec<SameLineGroup<'_>> {
-    let mut groups = Vec::new();
+    let mut groups = vec![];
     for dependency in dependencies
         .iter()
-        .filter(|dependency| slots::is_sortable_dependency(dependency))
+        .filter(|dependency| is_sortable_dependency(dependency))
     {
         if dependency.range.start.line != dependency.range.end.line {
             continue;
@@ -168,14 +171,17 @@ fn same_line_entry_end(line: &str, name_end: usize) -> usize {
 }
 
 fn leading_ascii_whitespace_len(value: &str) -> usize {
-    value.bytes().take_while(u8::is_ascii_whitespace).count()
+    value
+        .bytes()
+        .take_while(|byte| byte.is_ascii_whitespace())
+        .count()
 }
 
 fn trailing_ascii_whitespace_len(value: &str) -> usize {
     value
         .bytes()
         .rev()
-        .take_while(u8::is_ascii_whitespace)
+        .take_while(|byte| byte.is_ascii_whitespace())
         .count()
 }
 
@@ -192,7 +198,7 @@ fn utf16_character_to_byte(line: &str, character: u32) -> Option<usize> {
 }
 
 fn utf16_code_units(value: &str) -> usize {
-    value.chars().map(char::len_utf16).sum()
+    value.chars().map(|value| value.len_utf16()).sum()
 }
 
 fn sort_group_edits(
@@ -200,7 +206,7 @@ fn sort_group_edits(
     line_spans: &[ByteRange<usize>],
     lines: &[&str],
     group_slots: Vec<SortSlot<'_>>,
-) -> Vec<TextEdit> {
+) -> SortTextEdits {
     let mut sorted: Vec<usize> = (0..group_slots.len()).collect();
     sorted.sort_by(|left, right| {
         compare_dependencies(
@@ -228,7 +234,7 @@ fn sort_group_edits(
 }
 
 fn line_body_spans(text: &str, lines: &[&str]) -> Vec<ByteRange<usize>> {
-    let mut spans = Vec::with_capacity(lines.len());
+    let mut spans = vec![];
     let mut offset = 0;
 
     for line in lines {

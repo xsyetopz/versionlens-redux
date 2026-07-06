@@ -1,0 +1,19 @@
+<project>
+  <repositories>
+    <repository><url>https://packages.example.test/maven</url></repository>
+  </repositories>
+  <profiles>
+    <profile>
+      <repositories>
+        <repository><url>https://profile.example.test/releases</url></repository>
+      </repositories>
+    </profile>
+  </profiles>
+  <dependencies>
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>demo</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+</project>

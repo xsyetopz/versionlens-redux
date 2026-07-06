@@ -1,15 +1,18 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use crate::model::SuggestionStatus::{
+    Directory as StatusDirectory, DirectoryNotFound as StatusDirectoryNotFound,
+    Error as StatusError, Fixed as StatusFixed, NoMatch as StatusNoMatch,
+};
+use versionlens_parsers::Dependency;
 use versionlens_vscode_model::{Position, Range};
 
-use crate::model::SuggestionStatus;
-
 use super::{directory, directory_not_found, error, fixed, no_match, no_match_with_message};
+use versionlens_parsers::Ecosystem::Cargo;
 
 #[test]
 fn no_match_marks_dependency_no_match() {
     let suggestion = no_match(dependency("serde", "1.0.0"));
 
-    assert_eq!(suggestion.status, SuggestionStatus::NoMatch);
+    assert_eq!(suggestion.status, StatusNoMatch);
     assert_eq!(suggestion.latest, None);
 }
 
@@ -20,7 +23,7 @@ fn no_match_can_carry_a_message() {
         Some("not supported".to_owned()),
     );
 
-    assert_eq!(suggestion.status, SuggestionStatus::NoMatch);
+    assert_eq!(suggestion.status, StatusNoMatch);
     assert_eq!(suggestion.latest.as_deref(), Some("not supported"));
 }
 
@@ -32,7 +35,7 @@ fn directory_marks_dependency_directory() {
         "/repo/local".to_owned(),
     );
 
-    assert_eq!(suggestion.status, SuggestionStatus::Directory);
+    assert_eq!(suggestion.status, StatusDirectory);
     assert_eq!(suggestion.latest.as_deref(), Some("../local"));
     assert_eq!(suggestion.resolved.as_deref(), Some("/repo/local"));
 }
@@ -44,7 +47,7 @@ fn directory_not_found_marks_dependency_directory_not_found() {
         "../missing".to_owned(),
     );
 
-    assert_eq!(suggestion.status, SuggestionStatus::DirectoryNotFound);
+    assert_eq!(suggestion.status, StatusDirectoryNotFound);
     assert_eq!(suggestion.latest.as_deref(), Some("../missing"));
     assert_eq!(suggestion.resolved, None);
 }
@@ -56,7 +59,7 @@ fn fixed_marks_dependency_fixed() {
         "git repository".to_owned(),
     );
 
-    assert_eq!(suggestion.status, SuggestionStatus::Fixed);
+    assert_eq!(suggestion.status, StatusFixed);
     assert_eq!(suggestion.latest.as_deref(), Some("git repository"));
 }
 
@@ -64,7 +67,7 @@ fn fixed_marks_dependency_fixed() {
 fn error_marks_dependency_error() {
     let suggestion = error(dependency("serde", "1.0.0"), "not found".to_owned());
 
-    assert_eq!(suggestion.status, SuggestionStatus::Error);
+    assert_eq!(suggestion.status, StatusError);
     assert_eq!(suggestion.latest.as_deref(), Some("not found"));
 }
 
@@ -72,14 +75,14 @@ fn dependency(name: &str, requirement: &str) -> Dependency {
     Dependency {
         name: name.to_owned(),
         requirement: requirement.to_owned(),
-        ecosystem: Ecosystem::Cargo,
+        ecosystem: Cargo,
         group: "dependencies".to_owned(),
         hosted_url: None,
         hosted_name: None,
         range: empty_range(),
         requirement_range: empty_range(),
-        requirement_prefix: String::new(),
-        requirement_suffix: String::new(),
+        requirement_prefix: "".to_owned(),
+        requirement_suffix: "".to_owned(),
     }
 }
 

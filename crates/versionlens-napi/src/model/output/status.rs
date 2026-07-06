@@ -22,8 +22,8 @@ impl NativeStatusPayload {
             error_count: 0,
             no_match_count: 0,
             visible: false,
-            text: String::new(),
-            tooltip: String::new(),
+            text: "".to_owned(),
+            tooltip: "".to_owned(),
         }
     }
     pub(super) fn from_core(payload: StatusPayload) -> Self {
@@ -37,5 +37,17 @@ impl NativeStatusPayload {
             text: payload.text,
             tooltip: payload.tooltip,
         }
+    }
+}
+
+impl Default for NativeStatusPayload {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl From<StatusPayload> for NativeStatusPayload {
+    fn from(value: StatusPayload) -> Self {
+        Self::from_core(value)
     }
 }

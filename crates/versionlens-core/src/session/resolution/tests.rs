@@ -1,52 +1,30 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem, parse_document};
+use versionlens_parsers::{DocumentInput, parse_document};
 
 use crate::{
-    DependencyPropertyConfig, ProviderSettings, RegistryResponseInput, RegistryUrlConfig,
-    SessionConfig, SuggestionIndicators, VersionLensSession,
+    ProviderSettings, RegistryResponseInput, RegistryUrlConfig, SessionConfig, VersionLensSession,
 };
 
 fn standard_session() -> VersionLensSession {
-    session_with_settings(ProviderSettings::default(), true)
+    session_with_settings(crate::default(), true)
 }
 
 fn session_without_vulnerabilities() -> VersionLensSession {
-    session_with_settings(ProviderSettings::default(), false)
-}
-
-fn session_with_dependency_properties(
-    ecosystem: Ecosystem,
-    properties: &[&str],
-) -> VersionLensSession {
-    session_with_settings(
-        ProviderSettings {
-            dependency_properties: vec![DependencyPropertyConfig {
-                ecosystem,
-                manifest_kind: None,
-                properties: properties
-                    .iter()
-                    .map(|property| (*property).to_owned())
-                    .collect(),
-            }],
-            ..ProviderSettings::default()
-        },
-        true,
-    )
+    session_with_settings(crate::default(), false)
 }
 
 fn session_with_settings(
     providers: ProviderSettings,
     show_vulnerabilities: bool,
 ) -> VersionLensSession {
-    VersionLensSession::new(SessionConfig {
+    crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
+        enabled_providers: vec![],
         providers,
-        suggestion_indicators: SuggestionIndicators::standard(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     })
 }
 
@@ -55,6 +33,7 @@ mod error;
 mod fixed;
 mod github;
 mod go;
+mod hex;
 mod maven;
 mod npm;
 mod npm_request_cache;

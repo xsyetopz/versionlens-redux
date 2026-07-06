@@ -1,0 +1,3 @@
+{:deps
+ {io.github.sally/awesome {:git/tag "v1.2.3" :git/sha "123abcd"}
+  my.dev/project {:local/root "../project"}}}

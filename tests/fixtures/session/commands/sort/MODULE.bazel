@@ -1,0 +1,2 @@
+bazel_dep(name = "zeta_rules", version = "1.0.0")
+bazel_dep(name = "alpha_rules", version = "1.0.0")

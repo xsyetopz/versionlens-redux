@@ -1,3 +1,4 @@
+use ureq::Error as UreqError;
 mod response;
 mod retry;
 
@@ -13,7 +14,7 @@ use retry::retry_or_fail;
 pub(super) fn send_with_retries(
     method: &str,
     retry_policy: RetryPolicy,
-    mut send: impl FnMut() -> Result<HttpResponse, ureq::Error>,
+    mut send: impl FnMut() -> Result<HttpResponse, UreqError>,
 ) -> Result<String, HttpError> {
     let mut attempt = 0;
 
@@ -26,7 +27,7 @@ pub(super) fn send_with_retries(
 }
 
 fn send_attempt(
-    send: &mut impl FnMut() -> Result<HttpResponse, ureq::Error>,
+    send: &mut impl FnMut() -> Result<HttpResponse, UreqError>,
     attempt: u32,
     method: &str,
     retry_policy: RetryPolicy,

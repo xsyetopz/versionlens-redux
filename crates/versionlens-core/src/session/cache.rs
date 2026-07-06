@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::time::Duration;
 
@@ -22,50 +24,50 @@ impl VersionLensSession {
         self.request_body_cache().clear();
         self.request_locks
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
             .clear();
         self.suggestion_cache().clear();
         self.vulnerability_cache().clear();
         self.dotnet_registry_sources
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
             .take();
     }
 
     pub(crate) fn cache(&self) -> MutexGuard<'_, MemoryCache<CachedLatest>> {
         self.latest_cache
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
     }
 
     pub(crate) fn cached_latest(&self, key: &CacheKey) -> Option<String> {
         self.cache()
             .get(key)
-            .map(|cached| String::from(cached.latest.as_str()))
+            .map(|cached| cached.latest.as_str().to_owned())
     }
 
     pub(crate) fn request_body_cache(&self) -> MutexGuard<'_, MemoryCache<String>> {
         self.request_body_cache
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
     }
 
     pub(crate) fn cached_request_body(&self, url: &str) -> Option<String> {
         self.request_body_cache()
             .get(&request_cache_key(url))
-            .map(|body| String::from(body.as_str()))
+            .map(|body| body.as_str().to_owned())
     }
 
-    pub(crate) fn request_lock(&self, url: &str) -> std::sync::Arc<std::sync::Mutex<()>> {
+    pub(crate) fn request_lock(&self, url: &str) -> Arc<Mutex<()>> {
         {
             let mut locks = self
                 .request_locks
                 .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            std::sync::Arc::clone(
+                .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
+            crate::clone_arc(
                 locks
                     .entry(url.to_owned())
-                    .or_insert_with(|| std::sync::Arc::new(std::sync::Mutex::new(()))),
+                    .or_insert_with(|| crate::arc(crate::mutex(()))),
             )
         }
     }
@@ -87,13 +89,13 @@ impl VersionLensSession {
     pub(crate) fn suggestion_cache(&self) -> MutexGuard<'_, MemoryCache<Suggestion>> {
         self.suggestion_cache
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
     }
 
     pub(crate) fn cached_resolved_suggestion(&self, dependency: &Dependency) -> Option<Suggestion> {
         self.suggestion_cache()
             .get(&suggestion_cache_key(dependency))
-            .map(ToOwned::to_owned)
+            .map(|value| value.to_owned())
     }
 
     pub(crate) fn cache_resolved_suggestions(
@@ -140,8 +142,8 @@ fn provider_cache_ttl(
     provider_cache
         .iter()
         .rfind(|config| config.ecosystem == ecosystem && config.applies_to_manifest(manifest_kind))
-        .map(|config| Duration::from_millis(config.cache_ttl_ms))
-        .unwrap_or_else(|| Duration::from_millis(default_ttl_ms))
+        .map(|config| crate::duration_from_millis(config.cache_ttl_ms))
+        .unwrap_or_else(|| crate::duration_from_millis(default_ttl_ms))
 }
 
 #[cfg(test)]

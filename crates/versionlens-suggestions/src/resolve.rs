@@ -1,4 +1,11 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use crate::model::SuggestionStatus::{
+    BuildAvailable as StatusBuildAvailable, Current as StatusCurrent,
+    InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
+    SatisfiesLatest as StatusSatisfiesLatest, Unresolved as StatusUnresolved,
+    UpdateAvailable as StatusUpdateAvailable,
+};
+use versionlens_parsers::Dependency;
+use versionlens_parsers::Ecosystem::{Deno, Docker, Dotnet, Nix, Npm};
 use versionlens_versions::{
     is_build_update, is_dotnet_requirement_parseable, is_update_available, normalized_version,
     requirement_has_empty_comparator_intersection, requirement_is_parseable,
@@ -14,21 +21,21 @@ mod npm;
 use github::github_commit_status_for_dependency;
 use npm::is_npm_dist_tag_dependency;
 
+type NumericSegments = Vec<u64>;
+
 pub fn resolve_dependency(dependency: Dependency, latest: Option<String>) -> Suggestion {
     let Some(latest) = latest else {
         return Suggestion {
             dependency,
             latest: None,
             resolved: None,
-            status: SuggestionStatus::Unresolved,
-            builds: Vec::new(),
-            choices: Vec::new(),
+            status: StatusUnresolved,
+            builds: vec![],
+            choices: vec![],
         };
     };
 
-    if dependency.ecosystem == Ecosystem::Dotnet
-        && !is_dotnet_requirement_parseable(&dependency.requirement)
-    {
+    if dependency.ecosystem == Dotnet && !is_dotnet_requirement_parseable(&dependency.requirement) {
         return no_match(dependency);
     }
 
@@ -39,8 +46,8 @@ pub fn resolve_dependency(dependency: Dependency, latest: Option<String>) -> Sug
         latest: Some(latest),
         resolved: None,
         status,
-        builds: Vec::new(),
-        choices: Vec::new(),
+        builds: vec![],
+        choices: vec![],
     }
 }
 
@@ -52,37 +59,67 @@ fn resolved_status(dependency: &Dependency, latest: &str) -> SuggestionStatus {
     }
 
     if docker_tag_update_available(dependency, latest) {
-        return SuggestionStatus::UpdateAvailable;
+        return StatusUpdateAvailable;
+    }
+
+    if nix_release_update_available(dependency, latest, requirement) {
+        return StatusUpdateAvailable;
     }
 
     if is_build_update(latest, requirement) {
-        return SuggestionStatus::BuildAvailable;
+        return StatusBuildAvailable;
     }
 
     if requirement_has_empty_comparator_intersection(requirement) {
-        return SuggestionStatus::InvalidRange;
+        return StatusInvalidRange;
     }
 
     if semver_registry_requirement_is_not_parseable(dependency, requirement, latest) {
-        return SuggestionStatus::NoMatch;
+        return StatusNoMatch;
     }
 
     if is_npm_dist_tag_dependency(dependency, latest) || is_update_available(latest, requirement) {
-        return SuggestionStatus::UpdateAvailable;
+        return StatusUpdateAvailable;
     }
 
     if requirement_satisfies_latest(requirement, latest) {
         if range_minimum_matches_latest(requirement, latest) {
-            return SuggestionStatus::Current;
+            return StatusCurrent;
         }
-        return SuggestionStatus::SatisfiesLatest;
+        return StatusSatisfiesLatest;
     }
 
-    SuggestionStatus::Current
+    StatusCurrent
+}
+
+fn nix_release_update_available(dependency: &Dependency, latest: &str, requirement: &str) -> bool {
+    if dependency.ecosystem != Nix {
+        return false;
+    }
+    let Some(latest) = comparable_nix_release(latest) else {
+        return false;
+    };
+    let Some(current) = comparable_nix_release(requirement) else {
+        return false;
+    };
+    latest > current
+}
+
+fn comparable_nix_release(value: &str) -> Option<NumericSegments> {
+    let value = value
+        .strip_prefix("nixos-")
+        .or_else(|| value.strip_prefix("release-"))
+        .unwrap_or(value);
+    let core = value.split_once('-').map_or(value, |(core, _)| core);
+    let parts = core
+        .split('.')
+        .map(|part| part.parse::<u64>().ok())
+        .collect::<Option<Vec<_>>>()?;
+    (!parts.is_empty()).then_some(parts)
 }
 
 fn comparable_requirement<'a>(dependency: &'a Dependency) -> &'a str {
-    if matches!(dependency.ecosystem, Ecosystem::Deno | Ecosystem::Npm)
+    if matches!(dependency.ecosystem, Deno | Npm)
         && let Some(requirement) = registry_alias_requirement(&dependency.requirement)
     {
         return requirement;
@@ -106,7 +143,7 @@ fn semver_registry_requirement_is_not_parseable(
     requirement: &str,
     latest: &str,
 ) -> bool {
-    !matches!(dependency.ecosystem, Ecosystem::Docker | Ecosystem::Npm)
+    !matches!(dependency.ecosystem, Docker | Npm)
         && dependency.hosted_url.is_none()
         && normalized_version(latest).is_some()
         && !requirement_is_parseable(requirement, latest)
@@ -131,7 +168,7 @@ fn range_minimum(requirement: &str) -> Option<String> {
         return None;
     }
 
-    let mut normalized = Vec::new();
+    let mut normalized = vec![];
     for part in parts {
         normalized.push(normalize_range_part(part)?);
     }
@@ -171,7 +208,7 @@ fn normalize_range_part(part: &str) -> Option<String> {
 }
 
 fn docker_tag_update_available(dependency: &Dependency, latest: &str) -> bool {
-    if dependency.ecosystem != Ecosystem::Docker {
+    if dependency.ecosystem != Docker {
         return false;
     }
 
@@ -185,7 +222,7 @@ fn docker_tag_update_available(dependency: &Dependency, latest: &str) -> bool {
     docker_numbers_are_newer(&latest, &current)
 }
 
-fn docker_tag_numbers(tag: &str) -> Option<Vec<u64>> {
+fn docker_tag_numbers(tag: &str) -> Option<NumericSegments> {
     let version = tag.split_once('-').map_or(tag, |(version, _)| version);
     let numbers = version
         .split('.')

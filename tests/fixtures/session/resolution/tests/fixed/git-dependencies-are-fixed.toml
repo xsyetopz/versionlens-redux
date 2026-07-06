@@ -1,0 +1,2 @@
+[dependencies]
+remote = { git = "https://example.test/repo.git" }

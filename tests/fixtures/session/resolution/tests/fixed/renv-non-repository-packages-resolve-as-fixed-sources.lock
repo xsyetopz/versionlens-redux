@@ -1,0 +1,10 @@
+{
+  "Packages": {
+    "localpkg": {
+      "Package": "localpkg",
+      "Version": "0.1.0",
+      "Source": "Local",
+      "RemoteUrl": "../localpkg"
+    }
+  }
+}

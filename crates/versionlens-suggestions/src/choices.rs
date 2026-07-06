@@ -1,13 +1,18 @@
 use semver::Version;
+use std::cmp::Ordering::{
+    Equal as OrderingEqual, Greater as OrderingGreater, Less as OrderingLess,
+};
 use versionlens_versions::requirement_satisfies_latest;
 
 use crate::model::UpdateChoice;
+
+type UpdateChoices = Vec<UpdateChoice>;
 
 pub fn release_update_choices(
     requirement: &str,
     latest: &str,
     versions: &[String],
-) -> Vec<UpdateChoice> {
+) -> UpdateChoices {
     release_update_choices_with_prereleases(requirement, latest, versions, true, &[])
 }
 
@@ -17,7 +22,7 @@ pub fn release_update_choices_with_prereleases(
     versions: &[String],
     include_prereleases: bool,
     prerelease_tags: &[String],
-) -> Vec<UpdateChoice> {
+) -> UpdateChoices {
     let mut choices = stable_update_choices(requirement, latest, versions);
     if include_prereleases {
         choices.extend(prerelease_update_choices(
@@ -29,20 +34,16 @@ pub fn release_update_choices_with_prereleases(
     choices
 }
 
-fn stable_update_choices(
-    requirement: &str,
-    latest: &str,
-    versions: &[String],
-) -> Vec<UpdateChoice> {
+fn stable_update_choices(requirement: &str, latest: &str, versions: &[String]) -> UpdateChoices {
     let stable_versions = stable_versions(versions);
-    let Some(current) = Version::parse(requirement.trim()).ok() else {
+    let Some(current) = crate::parse_semver(requirement.trim()).ok() else {
         return range_update_choices(requirement, latest, &stable_versions);
     };
     if stable_versions.is_empty() {
-        return Vec::new();
+        return vec![];
     }
 
-    let mut choices = Vec::new();
+    let mut choices = vec![];
     if !current_matches_latest(&current, latest) {
         push_unique_choice(&mut choices, latest_choice_label(latest), latest, "update");
     }
@@ -62,30 +63,32 @@ fn stable_update_choices(
 }
 
 fn current_matches_latest(current: &Version, latest: &str) -> bool {
-    Version::parse(latest.trim()).ok().is_some_and(|latest| {
-        current.major == latest.major
-            && current.minor == latest.minor
-            && current.patch == latest.patch
-            && current.pre == latest.pre
-    })
+    crate::parse_semver(latest.trim())
+        .ok()
+        .is_some_and(|latest| {
+            current.major == latest.major
+                && current.minor == latest.minor
+                && current.patch == latest.patch
+                && current.pre == latest.pre
+        })
 }
 
 fn range_update_choices(
     requirement: &str,
     latest: &str,
     stable_versions: &[(&str, Version)],
-) -> Vec<UpdateChoice> {
+) -> UpdateChoices {
     if stable_versions.is_empty() || !looks_like_range_requirement(requirement) {
-        return Vec::new();
+        return vec![];
     }
 
-    let mut choices = Vec::new();
+    let mut choices = vec![];
     if range_latest_update_is_useful(requirement, latest) {
         push_unique_choice(&mut choices, latest_choice_label(latest), latest, "update");
     }
 
     if let Some(version) = latest_satisfying_range(requirement, stable_versions) {
-        if let Ok(current) = Version::parse(&version) {
+        if let Ok(current) = crate::parse_semver(&version) {
             if let Some(version) = next_range_major(&current, stable_versions) {
                 push_unique_choice(&mut choices, "major", &version, "updateMajor");
             }
@@ -115,7 +118,7 @@ fn range_latest_update_is_useful(requirement: &str, latest: &str) -> bool {
     let Some(minimum) = minimum_version(requirement) else {
         return true;
     };
-    let Some(latest) = Version::parse(latest.trim()).ok() else {
+    let Some(latest) = crate::parse_semver(latest.trim()).ok() else {
         return true;
     };
 
@@ -139,7 +142,7 @@ fn next_range_major(current: &Version, stable_versions: &[(&str, Version)]) -> O
 }
 
 fn latest_choice_label(latest: &str) -> &'static str {
-    if Version::parse(latest.trim())
+    if crate::parse_semver(latest.trim())
         .ok()
         .is_some_and(|version| !version.pre.is_empty())
     {
@@ -178,7 +181,7 @@ fn find_next_major(current: &Version, versions: &[String]) -> Option<u64> {
     let mut found_current = false;
 
     for raw in versions {
-        let Ok(version) = Version::parse(raw) else {
+        let Ok(version) = crate::parse_semver(raw) else {
             if found_current {
                 let major = loose_major(raw)?;
                 if major > current.major {
@@ -239,7 +242,7 @@ fn stable_versions(versions: &[String]) -> Vec<(&str, Version)> {
 }
 
 fn stable_version(release: &str) -> Option<(&str, Version)> {
-    let version = Version::parse(release).ok()?;
+    let version = crate::parse_semver(release).ok()?;
     version.pre.is_empty().then_some((release, version))
 }
 
@@ -247,12 +250,12 @@ fn prerelease_update_choices(
     requirement: &str,
     versions: &[String],
     prerelease_tags: &[String],
-) -> Vec<UpdateChoice> {
+) -> UpdateChoices {
     let Some(minimum) = minimum_version(requirement) else {
-        return Vec::new();
+        return vec![];
     };
 
-    let mut groups = Vec::new();
+    let mut groups = vec![];
     for (order, raw) in versions.iter().enumerate() {
         if !prerelease_tag_allowed(raw, prerelease_tags) {
             continue;
@@ -260,7 +263,16 @@ fn prerelease_update_choices(
         let Some((key, label, version)) = prerelease_parts(raw) else {
             continue;
         };
-        upsert_prerelease_group(&mut groups, key, label, raw, version, order);
+        upsert_prerelease_group(
+            &mut groups,
+            PrereleaseGroup {
+                key,
+                label,
+                raw: raw.to_owned(),
+                version,
+                order,
+            },
+        );
     }
 
     groups.sort_by_key(|group| group.order);
@@ -285,33 +297,20 @@ struct PrereleaseGroup {
     order: usize,
 }
 
-fn upsert_prerelease_group(
-    groups: &mut Vec<PrereleaseGroup>,
-    key: String,
-    label: String,
-    raw: &str,
-    version: Version,
-    order: usize,
-) {
-    if let Some(group) = groups.iter_mut().find(|group| group.key == key) {
-        group.label = label;
-        group.raw = raw.to_owned();
-        group.version = version;
-        group.order = order;
+fn upsert_prerelease_group(groups: &mut Vec<PrereleaseGroup>, next: PrereleaseGroup) {
+    if let Some(group) = groups.iter_mut().find(|group| group.key == next.key) {
+        group.label = next.label;
+        group.raw = next.raw;
+        group.version = next.version;
+        group.order = next.order;
         return;
     }
 
-    groups.push(PrereleaseGroup {
-        key,
-        label,
-        raw: raw.to_owned(),
-        version,
-        order,
-    });
+    groups.push(next);
 }
 
 fn prerelease_parts(raw: &str) -> Option<(String, String, Version)> {
-    let version = Version::parse(raw).ok()?;
+    let version = crate::parse_semver(raw).ok()?;
     if version.pre.is_empty() {
         return None;
     }
@@ -327,15 +326,13 @@ fn prerelease_tag_allowed(raw: &str, allowed_tags: &[String]) -> bool {
         return true;
     }
 
-    first_prerelease_identifier(raw).is_some_and(|first| {
-        allowed_tags
-            .iter()
-            .any(|allowed| allowed.eq_ignore_ascii_case(first))
-    })
-}
-
-fn first_prerelease_identifier(raw: &str) -> Option<&str> {
-    prerelease_suffix(raw)?.split('.').next()
+    prerelease_suffix(raw)
+        .and_then(|suffix| suffix.split('.').next())
+        .is_some_and(|first| {
+            allowed_tags
+                .iter()
+                .any(|allowed| allowed.eq_ignore_ascii_case(first))
+        })
 }
 
 fn prerelease_suffix(raw: &str) -> Option<&str> {
@@ -388,7 +385,7 @@ const COMMON_PRERELEASE_IDENTITIES: &[&[&str]] = &[
 fn minimum_version(requirement: &str) -> Option<Version> {
     let token = minimum_version_token(requirement)?;
     let normalized = normalize_minimum_version_token(token)?;
-    Version::parse(&normalized).ok()
+    crate::parse_semver(&normalized).ok()
 }
 
 fn minimum_version_token(requirement: &str) -> Option<&str> {
@@ -414,7 +411,7 @@ fn normalize_minimum_version_token(token: &str) -> Option<String> {
         return None;
     }
 
-    let mut normalized = Vec::new();
+    let mut normalized = vec![];
     for part in parts {
         normalized.push(normalize_version_part(part)?);
     }
@@ -438,7 +435,7 @@ fn normalize_version_part(part: &str) -> Option<String> {
         .then(|| part.to_owned())
 }
 
-fn push_unique_choice(choices: &mut Vec<UpdateChoice>, label: &str, version: &str, command: &str) {
+fn push_unique_choice(choices: &mut UpdateChoices, label: &str, version: &str, command: &str) {
     if choices.iter().any(|choice| choice.version == version) {
         return;
     }
@@ -453,13 +450,13 @@ fn push_unique_choice(choices: &mut Vec<UpdateChoice>, label: &str, version: &st
 fn sort_choices_by_version_descending(choices: &mut [UpdateChoice]) {
     choices.sort_by(|left, right| {
         match (
-            Version::parse(left.version.trim()),
-            Version::parse(right.version.trim()),
+            crate::parse_semver(left.version.trim()),
+            crate::parse_semver(right.version.trim()),
         ) {
             (Ok(left), Ok(right)) => right.cmp(&left),
-            (Ok(_), Err(_)) => std::cmp::Ordering::Less,
-            (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
-            (Err(_), Err(_)) => std::cmp::Ordering::Equal,
+            (Ok(_), Err(_)) => OrderingLess,
+            (Err(_), Ok(_)) => OrderingGreater,
+            (Err(_), Err(_)) => OrderingEqual,
         }
     });
 }

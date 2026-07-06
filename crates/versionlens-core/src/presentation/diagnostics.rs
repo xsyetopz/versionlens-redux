@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::borrow::Cow::{Borrowed as CowBorrowed, Owned as CowOwned};
 
 use versionlens_parsers::Dependency;
 use versionlens_providers::{VulnerabilityAdvisory, vulnerability_version_from_requirement};
@@ -12,8 +12,8 @@ pub(crate) fn vulnerability_diagnostics(
     advisories: Vec<VulnerabilityAdvisory>,
 ) -> Vec<DiagnosticPayload> {
     let version = vulnerability_version_from_requirement(&dependency.requirement)
-        .map(Cow::Owned)
-        .unwrap_or(Cow::Borrowed(&dependency.requirement));
+        .map(CowOwned)
+        .unwrap_or(CowBorrowed(&dependency.requirement));
 
     advisories
         .into_iter()

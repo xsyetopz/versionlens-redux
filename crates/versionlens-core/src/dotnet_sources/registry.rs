@@ -1,6 +1,7 @@
-use versionlens_parsers::{Ecosystem, parse_dotnet_enabled_sources};
+use versionlens_parsers::parse_dotnet_enabled_sources;
 
 use crate::config::RegistryUrlConfig;
+use versionlens_parsers::Ecosystem::Dotnet;
 
 pub fn dotnet_registry_source_urls(
     configured: &[RegistryUrlConfig],
@@ -8,7 +9,7 @@ pub fn dotnet_registry_source_urls(
 ) -> Vec<String> {
     let feed_urls = configured
         .iter()
-        .filter(|url| url.ecosystem == Ecosystem::Dotnet)
+        .filter(|url| url.ecosystem == Dotnet)
         .map(|url| url.url.as_str().to_owned())
         .collect::<Vec<_>>();
 

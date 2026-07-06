@@ -1,3 +1,4 @@
+use versionlens_parsers::ManifestKind::{DockerComposeYaml, Dockerfile, PnpmYaml};
 use versionlens_parsers::{
     Ecosystem, ManifestKind, ecosystem_config_namespace, ecosystem_for_manifest,
 };
@@ -7,10 +8,7 @@ pub(crate) fn install_task_config_key(ecosystem: Ecosystem) -> String {
 }
 
 pub(crate) fn install_task_config_key_for_manifest(kind: ManifestKind) -> Option<String> {
-    if matches!(
-        kind,
-        ManifestKind::DockerComposeYaml | ManifestKind::Dockerfile | ManifestKind::PnpmYaml
-    ) {
+    if matches!(kind, DockerComposeYaml | Dockerfile | PnpmYaml) {
         return None;
     }
 

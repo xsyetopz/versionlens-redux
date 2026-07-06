@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "zeta": "1",
+    "alpha": "1"
+  },
+  "devDependencies": {
+    "z-dev": "1",
+    "a-dev": "1"
+  }
+}

@@ -1,21 +1,27 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_parsers::Dependency;
+use versionlens_versions::requirement_has_empty_comparator_intersection;
 
 use super::python::python_replacement;
 use super::ruby::{ruby_prefixed_replacement, ruby_replacement};
 use super::semver::{preserve_semver_range_prefix, semver_selector_latest};
+use versionlens_parsers::Ecosystem::{
+    AnsibleGalaxy, Composer, Cran, Deno, Helm, Npm, Opam, Python, Ruby,
+};
 
 pub(crate) fn replacement_text(dependency: &Dependency, latest: &str) -> String {
     if let Some(replacement) = registry_alias_replacement(&dependency.requirement, latest) {
         return replacement;
     }
 
-    if versionlens_versions::requirement_has_empty_comparator_intersection(&dependency.requirement)
-    {
+    if requirement_has_empty_comparator_intersection(&dependency.requirement) {
         return latest.to_owned();
     }
 
     if !dependency.requirement_prefix.is_empty() || !dependency.requirement_suffix.is_empty() {
-        if dependency.ecosystem == Ecosystem::Ruby {
+        if matches!(dependency.ecosystem, Helm | AnsibleGalaxy) {
+            return latest.to_owned();
+        }
+        if dependency.ecosystem == Ruby {
             return ruby_prefixed_replacement(
                 &dependency.requirement_prefix,
                 &dependency.requirement_suffix,
@@ -31,14 +37,19 @@ pub(crate) fn replacement_text(dependency: &Dependency, latest: &str) -> String 
     }
 
     match dependency.ecosystem {
-        Ecosystem::Python => python_replacement(&dependency.requirement, latest),
-        Ecosystem::Ruby => ruby_replacement(&dependency.requirement, latest),
+        Python => python_replacement(&dependency.requirement, latest),
+        Cran | Opam | Ruby => ruby_replacement(&dependency.requirement, latest),
         _ => preserve_semver_range_prefix(&dependency.requirement, latest),
     }
 }
 
 fn prefixed_latest(dependency: &Dependency, latest: &str) -> String {
-    if dependency.ecosystem == Ecosystem::Npm && dependency.requirement_prefix.starts_with("npm:") {
+    if (dependency.ecosystem == Npm && dependency.requirement_prefix.starts_with("npm:"))
+        || (dependency.ecosystem == Deno
+            && (dependency.requirement_prefix.starts_with("jsr:")
+                || dependency.requirement_prefix.starts_with("npm:")))
+        || dependency.ecosystem == Composer
+    {
         return preserve_semver_range_prefix(&dependency.requirement, latest);
     }
 

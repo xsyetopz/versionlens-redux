@@ -18,9 +18,9 @@ pub(in crate::range) fn semver_range_requirement_satisfies(
 
 fn parse_normalized_version_req(requirement: &str) -> Option<VersionReq> {
     let normalized = normalize_requirement(requirement);
-    VersionReq::parse(&normalized)
+    crate::parse_semver_req(&normalized)
         .or_else(|_| {
-            VersionReq::parse(&normalized.split_whitespace().collect::<Vec<_>>().join(", "))
+            crate::parse_semver_req(&normalized.split_whitespace().collect::<Vec<_>>().join(", "))
         })
         .ok()
 }

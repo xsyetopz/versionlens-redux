@@ -1,0 +1,1 @@
+FROM node:${NODE_VERSION}

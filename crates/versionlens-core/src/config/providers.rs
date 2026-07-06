@@ -1,5 +1,16 @@
 use serde::{Deserialize, Serialize};
 use versionlens_cache::minutes_to_ms;
+use versionlens_parsers::ManifestKind::{
+    AnsibleGalaxyRequirementsYaml, BazelModule, Cabal, CabalProject, CargoToml, ClojureDepsEdn,
+    CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile, DenoImportMapJson,
+    DenoJson, DockerComposeYaml, DotnetXml, DubJson, DuneProject, Gemfile, GleamToml, GoMod,
+    GradleBuild, GradleSettings, GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson,
+    JuliaManifestToml, JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec,
+    MavenPomXml, MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam,
+    PaketDependencies, PaketReferences, PnpmYaml, PubspecYaml, PythonRequirementsTxt, RDescription,
+    RebarConfig, RenvLock, RubyGemspec, SbtBuild, StackYaml, SwiftPackage, TerraformTf,
+    UnityProjectManifestJson, VcpkgJson, ZigBuildZon,
+};
 use versionlens_parsers::{Ecosystem, ManifestKind, ecosystem_from_config_name};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -23,6 +34,30 @@ pub struct ProviderSettingsInput {
     pub file_patterns: Option<Vec<FilePatternConfigInput>>,
 }
 
+fn registry_url_config_from_input(input: RegistryUrlConfigInput) -> Option<RegistryUrlConfig> {
+    input.try_into().ok()
+}
+
+fn prerelease_tag_config_from_input(
+    input: PrereleaseTagConfigInput,
+) -> Option<PrereleaseTagConfig> {
+    input.try_into().ok()
+}
+
+fn provider_http_config_from_input(input: ProviderHttpConfigInput) -> Option<ProviderHttpConfig> {
+    input.try_into().ok()
+}
+
+fn dependency_property_config_from_input(
+    input: DependencyPropertyConfigInput,
+) -> Option<DependencyPropertyConfig> {
+    input.try_into().ok()
+}
+
+fn file_pattern_config_from_input(input: FilePatternConfigInput) -> Option<FilePatternConfig> {
+    input.try_into().ok()
+}
+
 impl ProviderSettings {
     pub fn from_input(input: ProviderSettingsInput) -> Self {
         Self {
@@ -30,13 +65,13 @@ impl ProviderSettings {
                 .registry_urls
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(RegistryUrlConfig::from_input)
+                .filter_map(registry_url_config_from_input)
                 .collect(),
             prerelease_tags: input
                 .prerelease_tag_filters
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(PrereleaseTagConfig::from_input)
+                .filter_map(prerelease_tag_config_from_input)
                 .collect(),
             provider_cache: input
                 .provider_cache
@@ -48,19 +83,19 @@ impl ProviderSettings {
                 .provider_http
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(ProviderHttpConfig::from_input)
+                .filter_map(provider_http_config_from_input)
                 .collect(),
             dependency_properties: input
                 .dependency_properties
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(DependencyPropertyConfig::from_input)
+                .filter_map(dependency_property_config_from_input)
                 .collect(),
             file_patterns: input
                 .file_patterns
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(FilePatternConfig::from_input)
+                .filter_map(file_pattern_config_from_input)
                 .collect(),
         }
     }
@@ -102,7 +137,8 @@ pub struct DependencyPropertyConfig {
 
 impl DependencyPropertyConfig {
     pub(crate) fn applies_to_manifest(&self, kind: ManifestKind) -> bool {
-        self.manifest_kind.is_none_or(|candidate| candidate == kind)
+        self.manifest_kind
+            .is_none_or(|candidate| manifest_kind_matches(candidate, kind))
     }
 
     pub fn from_input(input: DependencyPropertyConfigInput) -> Option<Self> {
@@ -123,8 +159,34 @@ pub struct EnabledProviderConfig {
 
 impl EnabledProviderConfig {
     pub(crate) fn applies_to_manifest(&self, kind: ManifestKind, ecosystem: Ecosystem) -> bool {
-        self.ecosystem == ecosystem && self.manifest_kind.is_none_or(|candidate| candidate == kind)
+        self.ecosystem == ecosystem
+            && self
+                .manifest_kind
+                .is_none_or(|candidate| manifest_kind_matches(candidate, kind))
     }
+}
+
+fn manifest_kind_matches(candidate: ManifestKind, kind: ManifestKind) -> bool {
+    candidate == kind
+        || (candidate == NpmPackageJson && matches!(kind, NpmPackageJson5 | NpmPackageYaml))
+        || (candidate == DenoJson && matches!(kind, DenoImportMapJson | JsrJson))
+        || (candidate == DotnetXml && matches!(kind, PaketDependencies | PaketReferences))
+        || (candidate == Gemfile && kind == RubyGemspec)
+        || (candidate == MavenPomXml
+            && matches!(
+                kind,
+                GradleBuild
+                    | GradleSettings
+                    | GradleVersionCatalogToml
+                    | SbtBuild
+                    | ClojureDepsEdn
+                    | LeiningenProjectClj
+            ))
+        || (candidate == Cabal && matches!(kind, CabalProject | StackYaml))
+        || (candidate == JuliaProjectToml && kind == JuliaManifestToml)
+        || (candidate == RDescription && kind == RenvLock)
+        || (candidate == Opam && kind == DuneProject)
+        || (candidate == ConanfileTxt && kind == ConanfilePy)
 }
 
 pub fn enabled_provider_config_from_name(provider: &str) -> Option<EnabledProviderConfig> {
@@ -136,16 +198,22 @@ pub fn enabled_provider_config_from_name(provider: &str) -> Option<EnabledProvid
 
 fn enabled_provider_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
-        "npm" | "bun" => Some(ManifestKind::NpmPackageJson),
-        "pnpm" => Some(ManifestKind::PnpmYaml),
+        "npm" | "bun" => Some(NpmPackageJson),
+        "pnpm" => Some(PnpmYaml),
+        "kustomize" => Some(KustomizationYaml),
+        "unity" => Some(UnityProjectManifestJson),
+        "cocoapods" => Some(CocoaPodsPodfile),
         _ => None,
     }
 }
 
 pub fn dependency_property_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
-        "npm" | "bun" => Some(ManifestKind::NpmPackageJson),
-        "pnpm" => Some(ManifestKind::PnpmYaml),
+        "npm" | "bun" => Some(NpmPackageJson),
+        "pnpm" => Some(PnpmYaml),
+        "kustomize" => Some(KustomizationYaml),
+        "unity" => Some(UnityProjectManifestJson),
+        "cocoapods" => Some(CocoaPodsPodfile),
         _ => None,
     }
 }
@@ -165,26 +233,62 @@ pub fn dependency_property_config_from_name(
 
 pub fn provider_settings_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
-        "pnpm" => Some(ManifestKind::PnpmYaml),
+        "pnpm" => Some(PnpmYaml),
+        "kustomize" => Some(KustomizationYaml),
+        "unity" => Some(UnityProjectManifestJson),
+        "cocoapods" => Some(CocoaPodsPodfile),
         _ => None,
     }
 }
 
 pub fn file_pattern_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
-        "cargo" => Some(ManifestKind::CargoToml),
-        "composer" => Some(ManifestKind::ComposerJson),
-        "deno" => Some(ManifestKind::DenoJson),
-        "docker" => Some(ManifestKind::DockerComposeYaml),
-        "dotnet" => Some(ManifestKind::DotnetXml),
-        "dub" => Some(ManifestKind::DubJson),
-        "go" | "golang" => Some(ManifestKind::GoMod),
-        "maven" => Some(ManifestKind::MavenPomXml),
-        "bun" | "npm" => Some(ManifestKind::NpmPackageJson),
-        "pnpm" => Some(ManifestKind::PnpmYaml),
-        "pypi" | "python" => Some(ManifestKind::PythonRequirementsTxt),
-        "pub" => Some(ManifestKind::PubspecYaml),
-        "ruby" => Some(ManifestKind::Gemfile),
+        "cargo" => Some(CargoToml),
+        "composer" => Some(ComposerJson),
+        "deno" => Some(DenoJson),
+        "docker" => Some(DockerComposeYaml),
+        "kustomize" => Some(KustomizationYaml),
+        "unity" => Some(UnityProjectManifestJson),
+        "dotnet" => Some(DotnetXml),
+        "dub" => Some(DubJson),
+        "go" | "golang" => Some(GoMod),
+        "hex" | "beam" => Some(MixExs),
+        "gleam" => Some(GleamToml),
+        "rebar" => Some(RebarConfig),
+        "opam" | "ocaml" => Some(Opam),
+        "dune" => Some(DuneProject),
+        "hackage" | "haskell" => Some(Cabal),
+        "stack" => Some(StackYaml),
+        "julia" => Some(JuliaProjectToml),
+        "julia-manifest" => Some(JuliaManifestToml),
+        "cran" | "r" => Some(RDescription),
+        "renv" => Some(RenvLock),
+        "conan" => Some(ConanfileTxt),
+        "vcpkg" => Some(VcpkgJson),
+        "swift" => Some(SwiftPackage),
+        "zig" => Some(ZigBuildZon),
+        "nim" => Some(Nimble),
+        "luarocks" | "lua" => Some(LuaRockspec),
+        "cpan" | "perl" => Some(Cpanfile),
+        "haxelib" | "haxe" => Some(HaxelibJson),
+        "terraform" | "opentofu" | "tofu" => Some(TerraformTf),
+        "helm" => Some(HelmChartYaml),
+        "ansible" | "ansible-galaxy" | "galaxy" => Some(AnsibleGalaxyRequirementsYaml),
+        "bazel" | "bzlmod" => Some(BazelModule),
+        "nix" => Some(NixFlake),
+        "cocoapods" => Some(CocoaPodsPodfile),
+        "gradle" | "gradle-build" => Some(GradleBuild),
+        "gradle-settings" => Some(GradleSettings),
+        "gradle-version-catalog" => Some(GradleVersionCatalogToml),
+        "sbt" | "scala" => Some(SbtBuild),
+        "clojure" | "deps-edn" => Some(ClojureDepsEdn),
+        "leiningen" | "lein" | "project-clj" => Some(LeiningenProjectClj),
+        "maven" => Some(MavenPomXml),
+        "bun" | "npm" => Some(NpmPackageJson),
+        "pnpm" => Some(PnpmYaml),
+        "pypi" | "python" => Some(PythonRequirementsTxt),
+        "pub" => Some(PubspecYaml),
+        "ruby" => Some(Gemfile),
         _ => None,
     }
 }
@@ -346,5 +450,45 @@ impl ProviderHttpConfig {
     pub(crate) fn applies_to_manifest(&self, kind: Option<ManifestKind>) -> bool {
         self.manifest_kind
             .is_none_or(|candidate| kind == Some(candidate))
+    }
+}
+
+impl TryFrom<RegistryUrlConfigInput> for RegistryUrlConfig {
+    type Error = ();
+
+    fn try_from(input: RegistryUrlConfigInput) -> Result<Self, Self::Error> {
+        Self::from_input(input).ok_or(())
+    }
+}
+
+impl TryFrom<PrereleaseTagConfigInput> for PrereleaseTagConfig {
+    type Error = ();
+
+    fn try_from(input: PrereleaseTagConfigInput) -> Result<Self, Self::Error> {
+        Self::from_input(input).ok_or(())
+    }
+}
+
+impl TryFrom<ProviderHttpConfigInput> for ProviderHttpConfig {
+    type Error = ();
+
+    fn try_from(input: ProviderHttpConfigInput) -> Result<Self, Self::Error> {
+        Self::from_input(input).ok_or(())
+    }
+}
+
+impl TryFrom<DependencyPropertyConfigInput> for DependencyPropertyConfig {
+    type Error = ();
+
+    fn try_from(input: DependencyPropertyConfigInput) -> Result<Self, Self::Error> {
+        Self::from_input(input).ok_or(())
+    }
+}
+
+impl TryFrom<FilePatternConfigInput> for FilePatternConfig {
+    type Error = ();
+
+    fn try_from(input: FilePatternConfigInput) -> Result<Self, Self::Error> {
+        Self::from_input(input).ok_or(())
     }
 }

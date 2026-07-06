@@ -1,0 +1,3 @@
+services:
+  app:
+    image: registry.example.test/team/app:1.0.0

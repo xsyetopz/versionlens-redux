@@ -1,0 +1,4 @@
+(lang dune 3.17)
+(package
+ (name demo)
+ (depends (fmt (>= 0.6))))

@@ -1,11 +1,10 @@
 use super::{find_next_major, release_update_choices};
-use semver::Version;
 
 #[test]
 fn release_update_choices_omits_major_when_latest_already_targets_next_major() {
     let releases = ["1.0.0", "1.0.1", "1.1.0", "2.0.0", "2.1.0"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("1.0.0", "2.1.0", &releases);
@@ -34,7 +33,7 @@ fn release_update_choices_omits_major_when_latest_already_targets_next_major() {
 fn release_update_choices_avoid_duplicate_latest_targets() {
     let releases = ["1.0.0", "1.0.1"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("1.0.0", "1.0.1", &releases);
@@ -47,7 +46,7 @@ fn release_update_choices_avoid_duplicate_latest_targets() {
 fn release_update_choices_sort_stable_suggestions_by_version_descending() {
     let releases = ["1.0.0", "1.0.1", "1.1.0", "2.0.0"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("1.0.0", "1.0.1", &releases);
@@ -78,7 +77,7 @@ fn release_update_choices_offer_bump_targets_for_ranges() {
         "2.1.2", "3.0.0", "3.1.0", "4.0.0", "4.0.1", "4.1.10", "5.1.1", "5.2.0", "5.3.3", "5.4.5",
     ]
     .into_iter()
-    .map(str::to_owned)
+    .map(|value| value.to_owned())
     .collect::<Vec<_>>();
 
     let choices = release_update_choices("^4.1.0", "5.4.5", &releases);
@@ -112,7 +111,7 @@ fn release_update_choices_omit_noop_latest_for_current_ranges() {
 fn release_update_choices_offer_intermediate_major_targets_for_ranges() {
     let releases = ["1.0.0", "1.1.0", "2.0.0", "3.0.0"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("^1.0.0", "3.0.0", &releases);
@@ -141,7 +140,7 @@ fn release_update_choices_offer_intermediate_major_targets_for_ranges() {
 fn release_update_choices_omit_major_when_fixed_requirement_is_missing() {
     let releases = ["0.5.1", "0.6.0", "1.0.0", "2.0.0"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("0.5.0", "2.0.0", &releases);
@@ -170,7 +169,7 @@ fn release_update_choices_omit_major_when_fixed_requirement_is_missing() {
 fn release_update_choices_stop_major_discovery_at_invalid_versions() {
     let releases = ["2.0.0", "ABC", "3.0.0", "4.0.0"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("2.0.0", "4.0.0", &releases);
@@ -192,9 +191,9 @@ fn release_update_choices_stop_major_discovery_at_invalid_versions() {
 fn find_next_major_handles_loose_versions() {
     let releases = ["2.0.0", "3.1.2ar"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
-    let current = Version::parse("2.0.0").unwrap();
+    let current = crate::parse_semver("2.0.0").unwrap();
 
     assert_eq!(find_next_major(&current, &releases), Some(3));
 }
@@ -209,7 +208,7 @@ fn release_update_choices_offer_prerelease_targets_by_tag() {
         "1.2.0-beta",
     ]
     .into_iter()
-    .map(str::to_owned)
+    .map(|value| value.to_owned())
     .collect::<Vec<_>>();
 
     let choices = release_update_choices("~1.0.0-alpha", "1.2.0-beta", &versions);
@@ -238,7 +237,7 @@ fn release_update_choices_offer_prerelease_targets_by_tag() {
 fn release_update_choices_group_prereleases_by_common_identity_after_hyphen() {
     let versions = ["1.1.0-foo-beta.1", "1.2.0-bar-beta.1"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("1.0.0", "1.2.0-bar-beta.1", &versions);
@@ -260,7 +259,7 @@ fn release_update_choices_group_prereleases_by_common_identity_after_hyphen() {
 fn release_update_choices_use_full_numeric_prerelease_label() {
     let versions = ["1.1.0-123.1", "1.2.0-123.4"]
         .into_iter()
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect::<Vec<_>>();
 
     let choices = release_update_choices("1.0.0", "1.2.0-123.4", &versions);

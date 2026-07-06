@@ -1,6 +1,12 @@
+use std::fs::read_to_string;
+use std::path::PathBuf;
+
 use super::{
-    DocumentInput, Ecosystem, RegistryResponseInput, session_with_vulnerability_visibility,
-    standard_session,
+    ApplyCommandRequest, DocumentInput, RegistryResponseInput,
+    session_with_vulnerability_visibility, standard_session,
+};
+use versionlens_parsers::Ecosystem::{
+    AnsibleGalaxy, Bazel, CocoaPods, Docker, Helm, Nix, Npm, Terraform, Unity,
 };
 
 #[test]
@@ -11,7 +17,7 @@ fn apply_command_updates_only_selected_dependency() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"1.0.0","is-odd":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture("apply-command-updates-only-selected-dependency.json"),
             workspace_root: None,
         },
         None,
@@ -19,12 +25,12 @@ fn apply_command_updates_only_selected_dependency() {
         &[
             RegistryResponseInput {
                 package: "left-pad".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
             },
             RegistryResponseInput {
                 package: "is-odd".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"dist-tags":{"latest":"3.0.0"}}"#.to_owned(),
             },
         ],
@@ -40,19 +46,19 @@ fn apply_command_updates_only_selected_dependency() {
 fn apply_command_updates_selected_build_version() {
     let session = standard_session();
 
-    let output = session.apply_command_with_selected_version(
-        DocumentInput {
+    let output = session.apply_command_with_selected_version(ApplyCommandRequest {
+        input: DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"1.0.0+build.1"}}"#.to_owned(),
+            text: package_file_fixture("apply-command-updates-selected-build-version.json"),
             workspace_root: None,
         },
-        None,
-        Some("left-pad"),
-        Some("1.0.0+build.3"),
-        &[RegistryResponseInput {
+        command: None,
+        dependency_name: Some("left-pad"),
+        selected_version: Some("1.0.0+build.3"),
+        responses: &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "1.0.0+build.2" },
               "versions": {
@@ -63,11 +69,218 @@ fn apply_command_updates_selected_build_version() {
             }"#
             .to_owned(),
         }],
-    );
+    });
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.edits.len(), 1);
     assert_eq!(output.edits[0].new_text, "1.0.0+build.3");
+}
+
+#[test]
+fn apply_command_updates_terraform_provider_version_without_replacing_operator() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///main.tf".to_owned(),
+            language_id: "terraform".to_owned(),
+            text: package_file_fixture(
+                "apply-command-updates-terraform-provider-version-without-replacing-operator.tf",
+            ),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("hashicorp/aws"),
+        &[RegistryResponseInput {
+            package: "hashicorp/aws".to_owned(),
+            ecosystem: Terraform,
+            body: r#"{"versions":[{"version":"6.0.0"},{"version":"6.1.0-beta.1"}]}"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "6.0.0");
+}
+
+#[test]
+fn apply_command_updates_helm_chart_dependency_version_without_replacing_operator() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///Chart.yaml".to_owned(),
+            language_id: "yaml".to_owned(),
+            text: package_file_fixture("apply-command-updates-helm-chart-dependency-version-without-replacing-operator.yaml"),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("mysql"),
+        &[RegistryResponseInput {
+            package: "mysql".to_owned(),
+            ecosystem: Helm,
+            body: "apiVersion: v1\nentries:\n  mysql:\n    - version: 4.0.0\n".to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "4.0.0");
+}
+
+#[test]
+fn apply_command_updates_ansible_collection_requirement_without_replacing_operator() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///work/requirements.yml".to_owned(),
+            language_id: "yaml".to_owned(),
+            text: package_file_fixture("apply-command-updates-ansible-collection-requirement-without-replacing-operator.yml"),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("community.general"),
+        &[RegistryResponseInput {
+            package: "community.general".to_owned(),
+            ecosystem: AnsibleGalaxy,
+            body: r#"{"data":[{"version":"8.0.0"},{"version":"7.5.0"}]}"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "8.0.0");
+}
+
+#[test]
+fn apply_command_updates_bazel_module_dependency() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///work/MODULE.bazel".to_owned(),
+            language_id: "starlark".to_owned(),
+            text: package_file_fixture("apply-command-updates-bazel-module-dependencyMODULE.bazel"),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("rules_cc"),
+        &[RegistryResponseInput {
+            package: "rules_cc".to_owned(),
+            ecosystem: Bazel,
+            body: r#"{"versions":["0.0.9","0.0.10"]}"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "0.0.10");
+}
+
+#[test]
+fn apply_command_updates_cocoapods_podfile_dependency_preserving_operator() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///work/Podfile".to_owned(),
+            language_id: "ruby".to_owned(),
+            text: package_file_fixture(
+                "apply-command-updates-cocoapods-podfile-dependency-preserving-operatorPodfile",
+            ),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("AFNetworking"),
+        &[RegistryResponseInput {
+            package: "AFNetworking".to_owned(),
+            ecosystem: CocoaPods,
+            body: r#"{"versions":[{"name":"5.0.0"},{"name":"4.0.1"}]}"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "~> 5.0.0");
+}
+
+#[test]
+fn apply_command_updates_unity_project_manifest_dependency() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///work/Packages/manifest.json".to_owned(),
+            language_id: "json".to_owned(),
+            text: package_file_fixture(
+                "apply-command-updates-unity-project-manifest-dependency.json",
+            ),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("com.unity.timeline"),
+        &[RegistryResponseInput {
+            package: "com.unity.timeline".to_owned(),
+            ecosystem: Unity,
+            body: r#"{"dist-tags":{"latest":"1.8.7"},"versions":{"1.8.6":{},"1.8.7":{}}}"#
+                .to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "1.8.7");
+}
+
+#[test]
+fn apply_command_updates_kustomization_image_new_tag() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///work/kustomization.yaml".to_owned(),
+            language_id: "yaml".to_owned(),
+            text: package_file_fixture("apply-command-updates-kustomization-image-new-tag.yaml"),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("platform/nginx"),
+        &[RegistryResponseInput {
+            package: "platform/nginx".to_owned(),
+            ecosystem: Docker,
+            body: r#"{"tags":["1.26.0","1.25.3"]}"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "1.26.0");
+}
+
+#[test]
+fn apply_command_updates_nix_flake_github_input_ref() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput {
+            uri: "file:///work/flake.nix".to_owned(),
+            language_id: "nix".to_owned(),
+            text: package_file_fixture("apply-command-updates-nix-flake-github-input-ref.nix"),
+            workspace_root: None,
+        },
+        Some("update"),
+        Some("NixOS/nixpkgs"),
+        &[RegistryResponseInput {
+            package: "NixOS/nixpkgs".to_owned(),
+            ecosystem: Nix,
+            body: r#"[{"name":"nixos-24.05"},{"name":"nixos-23.11"}]"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "24.05");
 }
 
 #[test]
@@ -78,7 +291,9 @@ fn apply_command_does_not_count_vulnerability_fixed_by_update() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"1.0.0","is-odd":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture(
+                "apply-command-does-not-count-vulnerability-fixed-by-update.json",
+            ),
             workspace_root: None,
         },
         Some("update"),
@@ -86,7 +301,7 @@ fn apply_command_does_not_count_vulnerability_fixed_by_update() {
         &[
             RegistryResponseInput {
                 package: "left-pad".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{
                   "dist-tags": { "latest": "1.1.0" },
                   "vulns": [{
@@ -104,7 +319,7 @@ fn apply_command_does_not_count_vulnerability_fixed_by_update() {
             },
             RegistryResponseInput {
                 package: "is-odd".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"dist-tags":{"latest":"3.0.0"}}"#.to_owned(),
             },
         ],
@@ -124,7 +339,9 @@ fn single_apply_command_counts_vulnerable_update_targets() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"1.0.0","is-odd":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture(
+                "single-apply-command-counts-vulnerable-update-targets.json",
+            ),
             workspace_root: None,
         },
         Some("update"),
@@ -132,7 +349,7 @@ fn single_apply_command_counts_vulnerable_update_targets() {
         &[
             RegistryResponseInput {
                 package: "left-pad".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{
                   "dist-tags": { "latest": "1.1.0" },
                   "vulns": [{
@@ -150,7 +367,7 @@ fn single_apply_command_counts_vulnerable_update_targets() {
             },
             RegistryResponseInput {
                 package: "is-odd".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"dist-tags":{"latest":"3.0.0"}}"#.to_owned(),
             },
         ],
@@ -175,14 +392,16 @@ fn bulk_apply_command_does_not_count_vulnerable_update_targets() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture(
+                "bulk-apply-command-does-not-count-vulnerable-update-targets.json",
+            ),
             workspace_root: None,
         },
         Some("update"),
         None,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "1.1.0" },
               "vulns": [{
@@ -213,14 +432,14 @@ fn single_apply_command_does_not_count_vulnerable_targets_when_vulnerabilities_a
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture("single-apply-command-does-not-count-vulnerable-targets-when-vulnerabilities-are-hidden.json"),
             workspace_root: None,
         },
         Some("update"),
         Some("left-pad"),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "1.1.0" },
               "vulns": [{
@@ -251,14 +470,14 @@ fn apply_command_counts_authorization_required_failures() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"private-package":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture("apply-command-counts-authorization-required-failures.json"),
             workspace_root: None,
         },
         Some("update"),
         None,
         &[RegistryResponseInput {
             package: "private-package".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"status":401}"#.to_owned(),
         }],
     );
@@ -277,14 +496,14 @@ fn apply_command_does_not_count_forbidden_registry_failures_as_authorization_req
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"private-package":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture("apply-command-does-not-count-forbidden-registry-failures-as-authorization-required.json"),
             workspace_root: None,
         },
         Some("update"),
         None,
         &[RegistryResponseInput {
             package: "private-package".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"status":403}"#.to_owned(),
         }],
     );
@@ -301,14 +520,15 @@ fn apply_command_uses_code_lens_selector_for_duplicate_names() {
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"},"devDependencies":{"left-pad":"1.0.0"}}"#
-            .to_owned(),
+        text: package_file_fixture(
+            "apply-command-uses-code-lens-selector-for-duplicate-names.json",
+        ),
         workspace_root: None,
     };
 
     let responses = [RegistryResponseInput {
         package: "left-pad".to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
     }];
     session.resolve_document_with_responses(input.clone(), &responses);
@@ -336,8 +556,7 @@ fn apply_command_updates_only_requested_level() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"major":"1.0.0","minor":"1.0.0","patch":"1.0.0"}}"#
-                .to_owned(),
+            text: package_file_fixture("apply-command-updates-only-requested-level.json"),
             workspace_root: None,
         },
         Some("updateMinor"),
@@ -345,17 +564,17 @@ fn apply_command_updates_only_requested_level() {
         &[
             RegistryResponseInput {
                 package: "major".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
             },
             RegistryResponseInput {
                 package: "minor".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
             },
             RegistryResponseInput {
                 package: "patch".to_owned(),
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 body: r#"{"dist-tags":{"latest":"1.0.1"}}"#.to_owned(),
             },
         ],
@@ -375,14 +594,14 @@ fn apply_command_updates_ranged_dependency_to_requested_minor_choice() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"~1.0.0"}}"#.to_owned(),
+            text: package_file_fixture("apply-command-updates-ranged-dependency-to-requested-minor-choice.json"),
             workspace_root: None,
         },
         Some("updateMinor"),
         None,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"1.0.1":{},"1.1.0":{},"2.0.0":{}}}"#
                 .to_owned(),
         }],
@@ -402,14 +621,14 @@ fn apply_command_updates_ranged_dependency_to_requested_patch_choice() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"<=1.0.0"}}"#.to_owned(),
+            text: package_file_fixture("apply-command-updates-ranged-dependency-to-requested-patch-choice.json"),
             workspace_root: None,
         },
         Some("updatePatch"),
         None,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"1.0.1":{},"1.1.0":{},"2.0.0":{}}}"#
                 .to_owned(),
         }],
@@ -429,14 +648,16 @@ fn apply_command_level_filter_does_not_bump_project_version() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"version":"1.2.3","dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+            text: package_file_fixture(
+                "apply-command-level-filter-does-not-bump-project-version.json",
+            ),
             workspace_root: None,
         },
         Some("updateMajor"),
         None,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
         }],
     );
@@ -455,7 +676,9 @@ fn apply_command_bulk_update_skips_project_version_edits() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"version":"1.2.3"}"#.to_owned(),
+            text: package_file_fixture(
+                "apply-command-bulk-update-skips-project-version-edits.json",
+            ),
             workspace_root: None,
         },
         Some("update"),
@@ -463,7 +686,7 @@ fn apply_command_bulk_update_skips_project_version_edits() {
         &[],
     );
 
-    assert!(output.suggestions.is_empty());
+    assert_eq!(output.suggestions.len(), 1);
     assert!(output.edits.is_empty());
 }
 
@@ -475,14 +698,16 @@ fn bulk_update_skips_prerelease_only_invalid_range_updates() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":">1 <1"}}"#.to_owned(),
+            text: package_file_fixture(
+                "bulk-update-skips-prerelease-only-invalid-range-updates.json",
+            ),
             workspace_root: None,
         },
         Some("update"),
         None,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "5.0.0-beta.1" },
               "versions": {
@@ -498,275 +723,27 @@ fn bulk_update_skips_prerelease_only_invalid_range_updates() {
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn apply_command_preserves_semver_requirement_prefix() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"left-pad":"^1.0.0"}}"#.to_owned(),
-            workspace_root: None,
-        },
-        Some("update"),
-        Some("left-pad"),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
-            body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "^2.0.0");
+fn package_file_fixture(name: &str) -> String {
+    let path = repo_root()
+        .join("tests/fixtures/session/commands/update")
+        .join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read session command update fixture {}: {error}",
+            path.display()
+        )
+    })
 }
 
-#[test]
-fn apply_command_updates_project_version_by_requested_level() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"version":"1.2.3","dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
-            workspace_root: None,
-        },
-        Some("updateMajor"),
-        Some("1.2.3"),
-        &[],
-    );
-
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.group, "version");
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "2.0.0");
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
 }
 
-#[test]
-fn apply_command_updates_prerelease_project_version_by_requested_level() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"version":"1.2.3-beta.4","dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
-            workspace_root: None,
-        },
-        Some("updateRelease"),
-        Some("1.2.3-beta.4"),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
-            body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.group, "version");
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "1.2.3");
-}
-
-#[test]
-fn apply_command_updates_only_project_versions_for_prerelease_command() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: r#"{"version":"1.2.3-beta.4","dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
-            workspace_root: None,
-        },
-        Some("updatePrerelease"),
-        None,
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
-            body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.group, "version");
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "1.2.3-beta.5");
-}
-
-#[test]
-fn apply_command_updates_cargo_project_version_by_requested_level() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///Cargo.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: "[package]\nname = \"demo\"\nversion = \"1.2.3\"\n".to_owned(),
-            workspace_root: None,
-        },
-        Some("updatePatch"),
-        Some("version"),
-        &[],
-    );
-
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.group, "package");
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "1.2.4");
-}
-
-#[test]
-fn apply_command_updates_bare_requirements_with_equals_prefix() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///requirements.txt".to_owned(),
-            language_id: "pip-requirements".to_owned(),
-            text: "importlib-metadata; python_version < '3.8'\n".to_owned(),
-            workspace_root: None,
-        },
-        None,
-        Some("importlib-metadata"),
-        &[RegistryResponseInput {
-            package: "importlib-metadata".to_owned(),
-            ecosystem: Ecosystem::Python,
-            body: r#"{"info":{"version":"8.7.0"}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "==8.7.0");
-}
-
-#[test]
-fn apply_command_updates_empty_pipfile_requirements_with_equals_prefix() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///Pipfile".to_owned(),
-            language_id: "toml".to_owned(),
-            text: "[dev-packages]\nmagic = \"\"\n".to_owned(),
-            workspace_root: None,
-        },
-        None,
-        Some("magic"),
-        &[RegistryResponseInput {
-            package: "magic".to_owned(),
-            ecosystem: Ecosystem::Python,
-            body: r#"{"info":{"version":"1.2.3"}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "==1.2.3");
-}
-
-#[test]
-fn apply_command_ignores_dotnet_package_reference_child_version_for_upstream_parity() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///app.csproj".to_owned(),
-            language_id: "xml".to_owned(),
-            text: r#"<Project>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk">
-      <Version>18.7.0</Version>
-    </PackageReference>
-  </ItemGroup>
-</Project>"#
-                .to_owned(),
-            workspace_root: None,
-        },
-        Some("update"),
-        Some("Microsoft.NET.Test.Sdk"),
-        &[RegistryResponseInput {
-            package: "Microsoft.NET.Test.Sdk".to_owned(),
-            ecosystem: Ecosystem::Dotnet,
-            body: r#"{"versions":["18.7.0","18.8.0"]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.requirement, "*");
-    assert!(output.edits.is_empty());
-}
-
-#[test]
-fn apply_command_inserts_missing_deno_import_versions() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///deno.json".to_owned(),
-            language_id: "jsonc".to_owned(),
-            text: r#"{"imports":{"@std/assert":"jsr:@std/assert"}}"#.to_owned(),
-            workspace_root: None,
-        },
-        None,
-        Some("@std/assert"),
-        &[RegistryResponseInput {
-            package: "@std/assert".to_owned(),
-            ecosystem: Ecosystem::Deno,
-            body: r#"{"versions":{"1.0.1":{}}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "jsr:@std/assert@1.0.1");
-}
-
-#[test]
-fn apply_command_updates_deno_jsr_import_aliases_by_specifier_package() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///deno.json".to_owned(),
-            language_id: "jsonc".to_owned(),
-            text: r#"{"imports":{"luca":"jsr:@luca/cases@1.0.0"}}"#.to_owned(),
-            workspace_root: None,
-        },
-        None,
-        Some("luca"),
-        &[RegistryResponseInput {
-            package: "@luca/cases".to_owned(),
-            ecosystem: Ecosystem::Deno,
-            body: r#"{"versions":{"1.1.0":{},"1.0.0":{}}}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "jsr:@luca/cases@1.1.0");
-}
-
-#[test]
-fn apply_command_ignores_pub_hosted_dependency_without_version_for_upstream_parity() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: "dependencies:\n  hosted_dep:\n    hosted:\n      name: hosted_alias\n      url: https://pub.example.test\n".to_owned(),
-            workspace_root: None,
-        },
-        Some("update"),
-        Some("hosted_dep"),
-        &[RegistryResponseInput {
-            package: "hosted_alias".to_owned(),
-            ecosystem: Ecosystem::Pub,
-            body: r#"{"latest":{"version":"2.0.0"}}"#.to_owned(),
-        }],
-    );
-
-    assert!(output.suggestions.is_empty());
-    assert!(output.edits.is_empty());
-}
+include!("update_more.rs");
+include!("update_more2.rs");
+include!("update_more3.rs");

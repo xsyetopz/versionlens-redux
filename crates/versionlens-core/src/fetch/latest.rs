@@ -1,4 +1,6 @@
+use serde_json::from_str;
 use std::cmp::Ordering;
+use std::cmp::Ordering::{Equal as OrderingEqual, Greater as OrderingGreater};
 
 use semver::Version;
 use serde_json::Value;
@@ -9,6 +11,7 @@ use versionlens_suggestions::{UpdateChoice, release_update_choices_with_prerelea
 use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::registry::RegistryContext;
+use versionlens_parsers::Ecosystem::{Docker, Npm};
 
 mod body;
 mod local_dotnet;
@@ -42,8 +45,8 @@ impl VersionLensSession {
             Some(error) => Err(error),
             None => Ok(LatestFetch {
                 latest: None,
-                builds: Vec::new(),
-                choices: Vec::new(),
+                builds: vec![],
+                choices: vec![],
             }),
         }
     }
@@ -57,8 +60,8 @@ impl VersionLensSession {
         let Some(body) = self.fetch_registry_body(dependency, url, context)? else {
             return Ok(LatestFetch {
                 latest: None,
-                builds: Vec::new(),
-                choices: Vec::new(),
+                builds: vec![],
+                choices: vec![],
             });
         };
 
@@ -77,14 +80,14 @@ impl VersionLensSession {
             .unwrap_or_default();
         Ok(LatestFetch {
             latest,
-            builds: fetched_build_versions(dependency, &body),
+            builds: build_versions_from_response(
+                dependency.ecosystem,
+                &body,
+                &dependency.requirement,
+            ),
             choices,
         })
     }
-}
-
-fn fetched_build_versions(dependency: &Dependency, body: &str) -> Vec<String> {
-    build_versions_from_response(dependency.ecosystem, body, &dependency.requirement)
 }
 
 pub(crate) fn response_update_choices(
@@ -94,7 +97,7 @@ pub(crate) fn response_update_choices(
     include_prereleases: bool,
     prerelease_tags: &[String],
 ) -> Vec<UpdateChoice> {
-    if dependency.ecosystem == Ecosystem::Docker {
+    if dependency.ecosystem == Docker {
         return docker_update_choices(&dependency.requirement, latest, body);
     }
 
@@ -114,7 +117,7 @@ fn update_choice_versions_from_response(
     latest: &str,
 ) -> Vec<String> {
     let versions = release_versions_from_response(ecosystem, body);
-    if ecosystem == Ecosystem::Npm {
+    if ecosystem == Npm {
         return npm_versions_capped_to_latest(versions, latest);
     }
     versions
@@ -128,7 +131,7 @@ fn npm_versions_capped_to_latest(versions: Vec<String>, latest: &str) -> Vec<Str
     versions
         .into_iter()
         .filter(|version| {
-            let Some(parsed) = Version::parse(version).ok() else {
+            let Some(parsed) = crate::parse_semver(version).ok() else {
                 return true;
             };
             !parsed.pre.is_empty() || semver_precedence_lte(&parsed, &latest)
@@ -137,7 +140,7 @@ fn npm_versions_capped_to_latest(versions: Vec<String>, latest: &str) -> Vec<Str
 }
 
 fn stable_semver(version: &str) -> Option<Version> {
-    let version = Version::parse(version.trim()).ok()?;
+    let version = crate::parse_semver(version.trim()).ok()?;
     version.pre.is_empty().then_some(version)
 }
 
@@ -147,7 +150,7 @@ fn semver_precedence_lte(version: &Version, latest: &Version) -> bool {
 
 fn docker_update_choices(requirement: &str, latest: &str, body: &str) -> Vec<UpdateChoice> {
     if latest.is_empty() || latest == requirement {
-        return Vec::new();
+        return vec![];
     }
 
     let Some(current) = docker_tag_shape(requirement) else {
@@ -162,7 +165,7 @@ fn docker_update_choices(requirement: &str, latest: &str, body: &str) -> Vec<Upd
         || latest.to_owned(),
         |candidate| candidate.tag.as_str().to_owned(),
     );
-    let mut choices = Vec::new();
+    let mut choices = vec![];
     push_unique_docker_choice(&mut choices, "latest", &latest_version, "update");
 
     if let Some(version) = docker_next_major_update(&current.numbers, &updates) {
@@ -193,7 +196,7 @@ fn docker_matching_tag_shape_updates(
     body: &str,
 ) -> Vec<DockerTagCandidate> {
     let tags = docker_response_tag_names(body);
-    let mut updates = Vec::new();
+    let mut updates = vec![];
 
     for tag in tags {
         let Some(candidate) = docker_tag_shape(&tag) else {
@@ -202,7 +205,7 @@ fn docker_matching_tag_shape_updates(
         if candidate.suffix != current.suffix || candidate.numbers.len() != current.numbers.len() {
             continue;
         }
-        if compare_docker_numbers(&candidate.numbers, &current.numbers) != Ordering::Greater {
+        if compare_docker_numbers(&candidate.numbers, &current.numbers) != OrderingGreater {
             continue;
         }
         updates.push(DockerTagCandidate {
@@ -299,7 +302,7 @@ fn docker_tag_shape(tag: &str) -> Option<DockerTagShape> {
         .ok()?;
     (!numbers.is_empty()).then_some(DockerTagShape {
         numbers,
-        suffix: suffix.map(str::to_owned),
+        suffix: suffix.map(|value| value.to_owned()),
     })
 }
 
@@ -311,15 +314,15 @@ fn compare_docker_numbers(left: &[u64], right: &[u64]) -> Ordering {
                 .unwrap_or(&0)
                 .cmp(right.get(index).unwrap_or(&0))
         })
-        .find(|ordering| *ordering != Ordering::Equal)
-        .unwrap_or(Ordering::Equal)
+        .find(|ordering| *ordering != OrderingEqual)
+        .unwrap_or(OrderingEqual)
 }
 
 fn docker_response_tag_names(body: &str) -> Vec<String> {
-    let Ok(value) = serde_json::from_str::<Value>(body) else {
-        return Vec::new();
+    let Ok(value) = from_str::<Value>(body) else {
+        return vec![];
     };
-    let mut tags = Vec::new();
+    let mut tags = vec![];
     tags.extend(docker_object_tag_names(
         value.get("results").unwrap_or(&value),
     ));
@@ -333,19 +336,19 @@ fn docker_object_tag_names(value: &Value) -> Vec<String> {
         .into_iter()
         .flat_map(|tags| tags.iter())
         .filter_map(docker_object_tag_name)
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
         .collect()
 }
 
 fn docker_object_tag_name(entry: &Value) -> Option<&str> {
-    let status = entry.get("tag_status").and_then(Value::as_str);
+    let status = entry.get("tag_status").and_then(|value| value.as_str());
     if status.is_some_and(|status| status != "active") {
         return None;
     }
     if status.is_some()
         && entry
             .get("digest")
-            .and_then(Value::as_str)
+            .and_then(|value| value.as_str())
             .is_none_or(str::is_empty)
     {
         return None;
@@ -356,11 +359,11 @@ fn docker_object_tag_name(entry: &Value) -> Option<&str> {
 fn docker_registry_v2_tag_names(value: &Value) -> Vec<String> {
     value
         .get("tags")
-        .and_then(Value::as_array)
+        .and_then(|value| value.as_array())
         .into_iter()
         .flat_map(|tags| tags.iter())
-        .filter_map(Value::as_str)
-        .map(str::to_owned)
+        .filter_map(|value| value.as_str())
+        .map(|value| value.to_owned())
         .collect()
 }
 

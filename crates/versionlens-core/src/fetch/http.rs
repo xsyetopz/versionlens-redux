@@ -1,11 +1,13 @@
 use versionlens_http::{
-    ACCEPT_GITHUB_V3, ACCEPT_JSON, HttpError, RetryPolicy, get_text_with_accept_and_retry,
+    ACCEPT_GITHUB_V3, ACCEPT_JSON, RetryPolicy, get_text_with_accept_and_retry,
 };
 use versionlens_parsers::Ecosystem;
+use versionlens_parsers::Ecosystem::{Go, Maven, Npm, Python};
 use versionlens_providers::http_status_message_from_code;
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
+use crate::error::FetchError::RegistryStatus as FetchRegistryStatus;
 use crate::registry::RegistryContext;
 
 impl VersionLensSession {
@@ -22,7 +24,7 @@ impl VersionLensSession {
         let request_lock = self.request_lock(url);
         let _request_guard = request_lock
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
         if let Some(body) = self.cached_request_body(url) {
             return Ok(Some(body));
         }
@@ -41,15 +43,15 @@ impl VersionLensSession {
                 self.cache_request_body(url, &body, ecosystem, context.manifest_kind());
                 Ok(Some(body))
             }
-            Err(error) => match http_status_message(&error) {
+            Err(error) => match error.status_code().and_then(http_status_message_from_code) {
                 Some(message) => {
                     if error.status_code() == Some(401) {
                         let auth_url = self.authorization_url_for_request(url);
                         self.record_authorization_request(auth_url, url.to_owned());
                     }
-                    Err(FetchError::RegistryStatus(message.to_owned()))
+                    Err(FetchRegistryStatus(message.to_owned()))
                 }
-                None => Err(anyhow::Error::new(error)
+                None => Err(crate::anyhow_error(error)
                     .context(format!("failed to fetch registry URL {url}"))
                     .into()),
             },
@@ -62,22 +64,18 @@ fn accept_header_for_request(ecosystem: Ecosystem, url: &str) -> Option<&'static
         return Some(ACCEPT_GITHUB_V3);
     }
     match ecosystem {
-        Ecosystem::Go | Ecosystem::Maven | Ecosystem::Npm | Ecosystem::Python => None,
+        Go | Maven | Npm | Python => None,
         _ => Some(ACCEPT_JSON),
     }
 }
 
 fn retry_policy_for_request(ecosystem: Ecosystem, url: &str) -> RetryPolicy {
     match ecosystem {
-        Ecosystem::Npm if !starts_with_ignore_ascii_case(url, "https://api.github.com/repos/") => {
-            RetryPolicy::npm_registry_fetch()
+        Npm if !starts_with_ignore_ascii_case(url, "https://api.github.com/repos/") => {
+            versionlens_http::npm_registry_fetch_retry_policy()
         }
-        _ => RetryPolicy::disabled(),
+        _ => versionlens_http::disabled_retry_policy(),
     }
-}
-
-fn http_status_message(error: &HttpError) -> Option<&'static str> {
-    http_status_message_from_code(error.status_code()?)
 }
 
 impl VersionLensSession {
@@ -87,10 +85,10 @@ impl VersionLensSession {
             .auth_headers
             .iter()
             .filter_map(|header| header.url.as_deref())
-            .map(str::trim)
+            .map(|value| value.trim())
             .filter(|url| !url.is_empty())
             .find(|url| starts_with_ignore_ascii_case(request_url, url))
-            .map(str::to_owned)
+            .map(|value| value.to_owned())
             .or_else(|| url_origin(request_url))
             .unwrap_or_else(|| request_url.to_owned())
     }

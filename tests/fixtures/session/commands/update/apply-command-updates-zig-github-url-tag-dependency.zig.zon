@@ -1,0 +1,8 @@
+.{
+    .dependencies = .{
+        .known_folders = .{
+            .url = "https://github.com/ziglibs/known-folders/archive/refs/tags/0.7.0.tar.gz",
+            .hash = "1220aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        },
+    },
+}

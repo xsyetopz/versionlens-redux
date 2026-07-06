@@ -29,17 +29,7 @@ pub struct SuggestionIndicatorsInput {
 
 impl SuggestionIndicators {
     pub fn standard() -> Self {
-        Self {
-            latest: "\u{1F7E2}".to_owned(),
-            satisfies_latest: "\u{1F7E2}".to_owned(),
-            directory: "\u{1F4C1}".to_owned(),
-            error: "\u{1F534}".to_owned(),
-            no_match: "\u{26AA}".to_owned(),
-            matched: "\u{1F7E1}".to_owned(),
-            updateable: "\u{2191} ".to_owned(),
-            updateable_vulnerable: "\u{26A0}\u{FE0F}".to_owned(),
-            build: "\u{224C} ".to_owned(),
-        }
+        standard_suggestion_indicators()
     }
 
     pub fn from_input(input: SuggestionIndicatorsInput) -> Self {
@@ -57,5 +47,19 @@ impl SuggestionIndicators {
                 .unwrap_or(defaults.updateable_vulnerable),
             build: input.build.unwrap_or(defaults.build),
         }
+    }
+}
+
+pub fn standard_suggestion_indicators() -> SuggestionIndicators {
+    SuggestionIndicators {
+        latest: "\u{1F7E2}".to_owned(),
+        satisfies_latest: "\u{1F7E2}".to_owned(),
+        directory: "\u{1F4C1}".to_owned(),
+        error: "\u{1F534}".to_owned(),
+        no_match: "\u{26AA}".to_owned(),
+        matched: "\u{1F7E1}".to_owned(),
+        updateable: "\u{2191} ".to_owned(),
+        updateable_vulnerable: "\u{26A0}\u{FE0F}".to_owned(),
+        build: "\u{224C} ".to_owned(),
     }
 }

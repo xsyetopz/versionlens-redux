@@ -27,9 +27,9 @@ fn pessimistic_bounds(requirement: &str) -> Option<(Version, Version)> {
     let component_count = lower.split('.').count();
     let lower = parse_padded_version(&strip_version_prefix(lower))?;
     let upper = if component_count >= 3 {
-        Version::new(lower.major, lower.minor + 1, 0)
+        crate::semver_version(lower.major, lower.minor + 1, 0)
     } else {
-        Version::new(lower.major + 1, 0, 0)
+        crate::semver_version(lower.major + 1, 0, 0)
     };
 
     Some((lower, upper))

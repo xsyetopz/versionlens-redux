@@ -1,0 +1,1 @@
+<project><repositories><repository><url>https://pom.example.test/maven</url></repository></repositories><dependencies><dependency><groupId>org.example</groupId><artifactId>demo</artifactId><version>1.0.0</version></dependency></dependencies></project>

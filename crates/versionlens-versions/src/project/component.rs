@@ -1,6 +1,7 @@
 use semver::Version;
 
 use crate::model::ProjectVersionBump;
+use crate::model::ProjectVersionBump::{Major, Minor, Patch};
 
 type VersionBump = fn(&Version) -> Version;
 
@@ -12,15 +13,15 @@ struct VersionComponentBump {
 
 const VERSION_COMPONENT_BUMPS: &[VersionComponentBump] = &[
     VersionComponentBump {
-        bump: ProjectVersionBump::Major,
+        bump: Major,
         bumped: major_version_bump,
     },
     VersionComponentBump {
-        bump: ProjectVersionBump::Minor,
+        bump: Minor,
         bumped: minor_version_bump,
     },
     VersionComponentBump {
-        bump: ProjectVersionBump::Patch,
+        bump: Patch,
         bumped: patch_version_bump,
     },
 ];
@@ -33,13 +34,13 @@ pub(super) fn bump_version_component(version: Version, bump: ProjectVersionBump)
 }
 
 fn major_version_bump(version: &Version) -> Version {
-    Version::new(version.major + 1, 0, 0)
+    crate::semver_version(version.major + 1, 0, 0)
 }
 
 fn minor_version_bump(version: &Version) -> Version {
-    Version::new(version.major, version.minor + 1, 0)
+    crate::semver_version(version.major, version.minor + 1, 0)
 }
 
 fn patch_version_bump(version: &Version) -> Version {
-    Version::new(version.major, version.minor, version.patch + 1)
+    crate::semver_version(version.major, version.minor, version.patch + 1)
 }

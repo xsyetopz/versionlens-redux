@@ -1,3 +1,4 @@
+use crate::dependency::properties::is_enabled;
 use versionlens_parsers::{
     Dependency, DocumentInput, Ecosystem, ManifestKind, ecosystem_for_manifest,
     parse_document_as_manifest_with_dependency_paths,
@@ -5,7 +6,6 @@ use versionlens_parsers::{
 
 use crate::DependencyPropertyConfig;
 use crate::VersionLensSession;
-use crate::dependency::properties;
 
 impl VersionLensSession {
     pub(crate) fn dependencies(&self, input: &DocumentInput) -> Vec<Dependency> {
@@ -13,7 +13,7 @@ impl VersionLensSession {
         if let Some(ecosystem) = ecosystem_for_manifest(kind)
             && !self.provider_enabled_for_manifest(kind, ecosystem)
         {
-            return Vec::new();
+            return vec![];
         }
 
         let dependency_paths = self.dependency_paths_for_manifest(kind);
@@ -26,11 +26,11 @@ impl VersionLensSession {
 
     fn dependency_paths_for_manifest(&self, kind: ManifestKind) -> Vec<&str> {
         let Some(ecosystem) = ecosystem_for_manifest(kind) else {
-            return Vec::new();
+            return vec![];
         };
 
         self.dependency_property_configs(kind, ecosystem)
-            .flat_map(|config| config.properties.iter().map(String::as_str))
+            .flat_map(|config| config.properties.iter().map(|value| value.as_str()))
             .collect()
     }
 
@@ -39,7 +39,7 @@ impl VersionLensSession {
             return true;
         };
 
-        properties::is_enabled(
+        is_enabled(
             dependency,
             ecosystem,
             self.dependency_property_configs(kind, ecosystem),

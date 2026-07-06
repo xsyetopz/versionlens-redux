@@ -1,0 +1,7 @@
+{
+  "repositories": [
+    {"type":"composer","url":"https://composer.example.test"},
+    {"type":"vcs","url":"https://github.com/example/pkg"}
+  ],
+  "require": {"phpunit/phpunit":"^10.0"}
+}

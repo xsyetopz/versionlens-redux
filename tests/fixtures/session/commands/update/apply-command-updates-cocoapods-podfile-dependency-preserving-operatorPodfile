@@ -1,0 +1,3 @@
+target 'App' do
+  pod 'AFNetworking', '~> 4.0'
+end

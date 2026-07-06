@@ -51,3 +51,9 @@ fn http_header_input_from_native(header: NativeHttpHeader) -> HttpHeaderInput {
         url: header.url,
     }
 }
+
+impl From<NativeHttpConfig> for HttpConfigInput {
+    fn from(value: NativeHttpConfig) -> Self {
+        value.into_input()
+    }
+}

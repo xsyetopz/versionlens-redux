@@ -1,0 +1,10 @@
+repositories {
+    maven {
+        url = uri("https://maven.example.test/releases")
+    }
+    google()
+}
+
+dependencies {
+    implementation "com.example:demo:1.0.0"
+}

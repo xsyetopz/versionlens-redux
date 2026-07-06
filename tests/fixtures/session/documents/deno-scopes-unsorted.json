@@ -1,0 +1,8 @@
+{
+  "scopes": {
+    "https://deno.land/x/app/": {
+      "zeta": "jsr:@scope/zeta@1.0.0",
+      "alpha": "jsr:@scope/alpha@1.0.0"
+    }
+  }
+}

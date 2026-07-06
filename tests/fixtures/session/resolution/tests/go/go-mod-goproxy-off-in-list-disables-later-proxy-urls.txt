@@ -1,0 +1,3 @@
+module example.test/app
+
+require example.test/mod v1.0.0

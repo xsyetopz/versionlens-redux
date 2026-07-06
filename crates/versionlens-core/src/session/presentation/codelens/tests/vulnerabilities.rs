@@ -1,26 +1,26 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use versionlens_parsers::DocumentInput;
 
-use crate::{ProviderSettings, RegistryResponseInput, SessionConfig, VersionLensSession};
+use crate::{RegistryResponseInput, SessionConfig};
 
-use super::test_indicators;
+use super::{package_file_fixture, test_indicators};
+use versionlens_parsers::Ecosystem::Npm;
 
 #[test]
 fn code_lens_title_marks_vulnerable_update_targets() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -28,7 +28,7 @@ fn code_lens_title_marks_vulnerable_update_targets() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "1.1.0" },
               "vulns": [{
@@ -53,20 +53,20 @@ fn code_lens_title_marks_vulnerable_update_targets() {
 
 #[test]
 fn code_lens_title_does_not_mark_update_that_fixes_current_vulnerability() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -74,7 +74,7 @@ fn code_lens_title_does_not_mark_update_that_fixes_current_vulnerability() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "1.1.0" },
               "vulns": [{
@@ -100,21 +100,21 @@ fn code_lens_title_does_not_mark_update_that_fixes_current_vulnerability() {
 #[test]
 fn vulnerable_update_indicator_falls_back_to_warning_when_configured_indicator_is_empty() {
     let mut indicators = test_indicators();
-    indicators.updateable_vulnerable = String::new();
-    let session = VersionLensSession::new(SessionConfig {
+    indicators.updateable_vulnerable = "".to_owned();
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: indicators,
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.1.1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.1.1.json"),
         workspace_root: None,
     };
 
@@ -122,7 +122,7 @@ fn vulnerable_update_indicator_falls_back_to_warning_when_configured_indicator_i
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "versions": {
                 "1.1.1": {},
@@ -159,21 +159,21 @@ fn vulnerable_update_indicator_falls_back_to_warning_when_configured_indicator_i
 #[test]
 fn vulnerable_build_code_lens_uses_vulnerable_update_indicator_fallback() {
     let mut indicators = test_indicators();
-    indicators.updateable_vulnerable = String::new();
-    let session = VersionLensSession::new(SessionConfig {
+    indicators.updateable_vulnerable = "".to_owned();
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: indicators,
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0+b1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0-b1.json"),
         workspace_root: None,
     };
 
@@ -181,7 +181,7 @@ fn vulnerable_build_code_lens_uses_vulnerable_update_indicator_fallback() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "1.0.0+b2" },
               "versions": {
@@ -214,20 +214,20 @@ fn vulnerable_build_code_lens_uses_vulnerable_update_indicator_fallback() {
 
 #[test]
 fn update_choice_code_lens_marks_vulnerable_non_latest_targets() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.1.1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.1.1.json"),
         workspace_root: None,
     };
 
@@ -235,7 +235,7 @@ fn update_choice_code_lens_marks_vulnerable_non_latest_targets() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "versions": {
                 "1.1.1": {},

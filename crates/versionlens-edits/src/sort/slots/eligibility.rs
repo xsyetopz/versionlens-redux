@@ -1,8 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_parsers::Dependency;
 
 use super::lines::{dependency_end_line, dependency_start_line};
+use versionlens_parsers::Ecosystem::{
+    AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cran, Deno, Docker, Dotnet, Dub,
+    Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm, Opam, Pub, Python,
+    Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
+};
 
 const CARGO_DEPENDENCY_GROUPS: &[&str] =
     &["dependencies", "dev-dependencies", "build-dependencies"];
@@ -31,18 +36,23 @@ pub(in crate::sort) fn is_sortable_dependency(dependency: &Dependency) -> bool {
     let group = dependency.group.as_str();
 
     match dependency.ecosystem {
-        Ecosystem::Cargo => is_cargo_sortable_group(group),
-        Ecosystem::Composer => matches!(group, "require" | "require-dev"),
-        Ecosystem::Deno => is_deno_sortable_group(group),
-        Ecosystem::Dotnet => is_dotnet_sortable_dependency(dependency),
-        Ecosystem::Dub => matches!(group, "dependencies" | "versions"),
-        Ecosystem::Go => matches!(group, "require" | "exclude"),
-        Ecosystem::Maven => is_maven_sortable_group(group),
-        Ecosystem::Npm => is_npm_sortable_group(group),
-        Ecosystem::Python => is_python_sortable_group(group),
-        Ecosystem::Pub => PUB_DEPENDENCY_GROUPS.contains(&group),
-        Ecosystem::Ruby => true,
-        Ecosystem::Docker => false,
+        Cargo => is_cargo_sortable_group(group),
+        Composer => matches!(
+            group,
+            "require" | "require-dev" | "conflict" | "replace" | "provide"
+        ),
+        Deno => is_deno_sortable_group(group),
+        Dotnet => is_dotnet_sortable_dependency(dependency),
+        Dub => matches!(group, "dependencies" | "versions"),
+        Go => matches!(group, "require" | "exclude"),
+        Maven => is_maven_sortable_group(group),
+        Npm => is_npm_sortable_group(group),
+        Python => is_python_sortable_group(group),
+        Pub => PUB_DEPENDENCY_GROUPS.contains(&group),
+        Ruby => true,
+        Hex | Opam | Hackage | Julia | Cran | Conan | Vcpkg | Swift | Zig | Nim | LuaRocks
+        | Cpan | Haxelib | Terraform | Helm | AnsibleGalaxy | Bazel | Nix | Unity | CocoaPods
+        | Docker => false,
     }
 }
 
@@ -125,7 +135,10 @@ fn is_npm_sortable_group(group: &str) -> bool {
 fn is_maven_sortable_group(group: &str) -> bool {
     matches!(
         group,
-        "project.dependencies.dependency" | "project.dependencyManagement.dependencies.dependency"
+        "project.dependencies.dependency"
+            | "project.dependencyManagement.dependencies.dependency"
+            | "project.profiles.profile.dependencies.dependency"
+            | "project.profiles.profile.dependencyManagement.dependencies.dependency"
     )
 }
 
@@ -158,7 +171,7 @@ fn has_sortable_group<'a>(dependencies: impl Iterator<Item = &'a Dependency>) ->
 }
 
 fn dependency_lines_are_unique<'a>(dependencies: impl Iterator<Item = &'a Dependency>) -> bool {
-    let mut lines = BTreeSet::new();
+    let mut lines: BTreeSet<u32> = crate::default();
     for dependency in dependencies {
         let line = dependency_start_line(dependency);
         if !lines.insert(line) {
@@ -169,6 +182,6 @@ fn dependency_lines_are_unique<'a>(dependencies: impl Iterator<Item = &'a Depend
 }
 
 fn has_sortable_span(dependency: &Dependency) -> bool {
-    dependency.ecosystem == Ecosystem::Maven
+    dependency.ecosystem == Maven
         || dependency_start_line(dependency) == dependency_end_line(dependency)
 }

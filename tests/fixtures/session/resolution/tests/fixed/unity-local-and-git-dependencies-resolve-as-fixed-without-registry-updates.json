@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "com.acme.local": "file:../Packages/local",
+    "com.acme.git": "https://github.com/acme/package.git#v1.2.3"
+  }
+}

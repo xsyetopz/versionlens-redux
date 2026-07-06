@@ -1,26 +1,26 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use versionlens_parsers::DocumentInput;
 
-use crate::{ProviderSettings, RegistryResponseInput, SessionConfig, VersionLensSession};
+use crate::{RegistryResponseInput, SessionConfig};
 
-use super::test_indicators;
+use super::{package_file_fixture, test_indicators};
+use versionlens_parsers::Ecosystem::Npm;
 
 #[test]
 fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"4.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-4.0.0.json"),
         workspace_root: None,
     };
 
@@ -28,7 +28,7 @@ fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "4.0.0-next" },
               "versions": {
@@ -56,7 +56,7 @@ fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -67,20 +67,20 @@ fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
 
 #[test]
 fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"bad tag"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-bad-tag.json"),
         workspace_root: None,
     };
 
@@ -88,7 +88,7 @@ fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"status":"EINVALIDTAGNAME"}"#.to_owned(),
         }],
     );
@@ -112,7 +112,7 @@ fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -125,20 +125,20 @@ fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
 
 #[test]
 fn npm_unsupported_protocol_error_uses_not_supported_status() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -146,7 +146,7 @@ fn npm_unsupported_protocol_error_uses_not_supported_status() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"status":"EUNSUPPORTEDPROTOCOL"}"#.to_owned(),
         }],
     );

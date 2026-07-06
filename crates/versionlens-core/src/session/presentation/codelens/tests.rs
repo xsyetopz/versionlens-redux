@@ -1,10 +1,10 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use std::fs::read_to_string;
+use std::path::PathBuf;
 
-use crate::{
-    ProviderSettings, RegistryResponseInput, SessionConfig, SuggestionIndicators,
-    VersionLensSession,
-};
+use versionlens_parsers::DocumentInput;
+
+use crate::{RegistryResponseInput, SessionConfig, SuggestionIndicators};
+use versionlens_parsers::Ecosystem::Npm;
 
 mod actions;
 mod docker;
@@ -13,20 +13,20 @@ mod ranges;
 mod vulnerabilities;
 #[test]
 fn code_lens_title_uses_configured_indicators() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -34,7 +34,7 @@ fn code_lens_title_uses_configured_indicators() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
@@ -58,20 +58,20 @@ fn code_lens_title_uses_configured_indicators() {
 
 #[test]
 fn code_lenses_offer_release_update_choices_for_fixed_versions() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -79,7 +79,7 @@ fn code_lenses_offer_release_update_choices_for_fixed_versions() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "2.1.0" },
               "versions": {
@@ -109,7 +109,7 @@ fn code_lenses_offer_release_update_choices_for_fixed_versions() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -135,20 +135,20 @@ fn code_lenses_offer_release_update_choices_for_fixed_versions() {
 
 #[test]
 fn code_lens_ranges_encode_suggestion_order() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -156,7 +156,7 @@ fn code_lens_ranges_encode_suggestion_order() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "2.1.0" },
               "versions": {
@@ -187,30 +187,20 @@ fn code_lens_ranges_encode_suggestion_order() {
 
 #[test]
 fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.2",
-    "@types/bun": "^1.3.14",
-    "@types/node": "26.0.1",
-    "@types/vscode": "^1.75.0",
-    "@vscode/vsce": "^3.9.2",
-    "typescript": "^6.0.3"
-  }
-}"#
-        .to_owned(),
+        text: package_file_fixture("package-dev-dependencies.json"),
         workspace_root: None,
     };
 
@@ -254,20 +244,20 @@ fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
 
 #[test]
 fn code_lenses_offer_bump_update_choices_for_ranges() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"^4.1.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-4.1.0-range.json"),
         workspace_root: None,
     };
 
@@ -275,7 +265,7 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "5.4.5" },
               "versions": {
@@ -308,7 +298,7 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -329,20 +319,20 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
 
 #[test]
 fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":">1 <1"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-invalid-range.json"),
         workspace_root: None,
     };
 
@@ -350,7 +340,7 @@ fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "5.0.0" },
               "versions": {
@@ -376,7 +366,7 @@ fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -387,20 +377,20 @@ fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
 
 #[test]
 fn code_lenses_keep_latest_update_choice_for_ranges_satisfying_latest() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":">=2"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-gte-2.json"),
         workspace_root: None,
     };
 
@@ -408,7 +398,7 @@ fn code_lenses_keep_latest_update_choice_for_ranges_satisfying_latest() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "3.0.0" },
               "versions": {
@@ -435,7 +425,7 @@ fn code_lenses_keep_latest_update_choice_for_ranges_satisfying_latest() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -446,20 +436,20 @@ fn code_lenses_keep_latest_update_choice_for_ranges_satisfying_latest() {
 
 #[test]
 fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":">=2 <3"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-gte-2-lt-3.json"),
         workspace_root: None,
     };
 
@@ -467,7 +457,7 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "3.0.0" },
               "versions": {
@@ -494,7 +484,7 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -515,20 +505,20 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
 
 #[test]
 fn code_lenses_offer_prerelease_update_choices_by_tag() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"~1.0.0-alpha"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-prerelease-range.json"),
         workspace_root: None,
     };
 
@@ -536,7 +526,7 @@ fn code_lenses_offer_prerelease_update_choices_by_tag() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "versions": {
                 "1.0.0-alpha": {},
@@ -569,20 +559,20 @@ fn code_lenses_offer_prerelease_update_choices_by_tag() {
 
 #[test]
 fn code_lens_title_uses_satisfies_latest_indicator() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"^1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-caret-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -590,7 +580,7 @@ fn code_lens_title_uses_satisfies_latest_indicator() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
@@ -602,20 +592,20 @@ fn code_lens_title_uses_satisfies_latest_indicator() {
 
 #[test]
 fn code_lens_title_uses_latest_indicator_for_current_dependencies() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"typescript":"latest"}}"#.to_owned(),
+        text: package_file_fixture("package-typescript-latest.json"),
         workspace_root: None,
     };
 
@@ -623,7 +613,7 @@ fn code_lens_title_uses_latest_indicator_for_current_dependencies() {
         input.clone(),
         &[RegistryResponseInput {
             package: "typescript".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"6.0.3"}}"#.to_owned(),
         }],
     );
@@ -635,23 +625,20 @@ fn code_lens_title_uses_latest_indicator_for_current_dependencies() {
 
 #[test]
 fn code_lens_title_shows_fixed_git_dependencies() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///Cargo.toml".to_owned(),
         language_id: "toml".to_owned(),
-        text: r#"[dependencies]
-remote = { git = "https://example.test/repo.git" }
-"#
-        .to_owned(),
+        text: package_file_fixture("Cargo-git-dependency.toml"),
         workspace_root: None,
     };
 
@@ -663,20 +650,20 @@ remote = { git = "https://example.test/repo.git" }
 
 #[test]
 fn missing_suggestion_code_lens_is_omitted_like_upstream() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: test_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -689,20 +676,20 @@ fn missing_suggestion_code_lens_is_omitted_like_upstream() {
 fn code_lens_title_preserves_configured_indicator_spacing_like_non_windows_upstream() {
     let mut indicators = test_indicators();
     indicators.updateable = "U ".to_owned();
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
+        enabled_providers: vec![],
+        providers: crate::default(),
         suggestion_indicators: indicators,
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("package-left-pad-1.0.0.json"),
         workspace_root: None,
     };
 
@@ -710,7 +697,7 @@ fn code_lens_title_preserves_configured_indicator_spacing_like_non_windows_upstr
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
@@ -720,10 +707,31 @@ fn code_lens_title_preserves_configured_indicator_spacing_like_non_windows_upstr
     assert_eq!(output.code_lenses[1].title, "U  latest 1.1.0");
 }
 
+pub(super) fn package_file_fixture(name: &str) -> String {
+    let path = repo_root()
+        .join("tests/fixtures/session/presentation/codelens")
+        .join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read session presentation codelens fixture {}: {error}",
+            path.display()
+        )
+    })
+}
+
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
+}
+
 fn npm_response(package: &str, latest: &str) -> RegistryResponseInput {
     RegistryResponseInput {
         package: package.to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: format!(r#"{{"dist-tags":{{"latest":"{latest}"}}}}"#),
     }
 }

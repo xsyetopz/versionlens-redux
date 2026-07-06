@@ -1,4 +1,4 @@
-use versionlens_parsers::{Ecosystem, ManifestKind};
+use crate::model::config::NativeSessionConfig;
 
 use super::blank_session_config;
 use versionlens_core::SessionConfig;
@@ -8,6 +8,8 @@ use crate::model::config::{
     NativePrereleaseTagFilter, NativeProviderCacheConfig, NativeProviderHttpConfig,
     NativeProviderSettings, NativeRegistryUrl, NativeSuggestionIndicators,
 };
+use versionlens_parsers::Ecosystem::{Cargo, Go, Npm, Python};
+use versionlens_parsers::ManifestKind::{ComposerJson, NpmPackageJson};
 
 #[test]
 fn maps_session_http_config_to_core() {
@@ -20,7 +22,7 @@ fn maps_session_http_config_to_core() {
 }
 
 fn mapped_session_config() -> SessionConfig {
-    crate::model::config::NativeSessionConfig {
+    NativeSessionConfig {
         cache_duration_minutes: Some(2.0),
         enabled_providers: Some(vec![
             "cargo".to_owned(),
@@ -34,7 +36,7 @@ fn mapped_session_config() -> SessionConfig {
             }]),
             prerelease_tag_filters: Some(vec![NativePrereleaseTagFilter {
                 ecosystem: "npm".to_owned(),
-                tags: vec![" beta ".to_owned(), String::new(), "  ".to_owned()],
+                tags: vec![" beta ".to_owned(), "".to_owned(), "  ".to_owned()],
             }]),
             provider_cache: Some(vec![NativeProviderCacheConfig {
                 ecosystem: "npm".to_owned(),
@@ -98,46 +100,37 @@ fn assert_session_flags(config: &SessionConfig) {
             .iter()
             .map(|provider| provider.ecosystem)
             .collect::<Vec<_>>(),
-        [Ecosystem::Cargo, Ecosystem::Go, Ecosystem::Python]
+        [Cargo, Go, Python]
     );
     assert_eq!(config.cache_ttl_ms, 120_000);
 }
 
 fn assert_provider_config(config: &SessionConfig) {
-    assert_eq!(
-        config.providers.registry_urls[0].ecosystem,
-        Ecosystem::Cargo
-    );
+    assert_eq!(config.providers.registry_urls[0].ecosystem, Cargo);
     assert_eq!(
         config.providers.registry_urls[0].url,
         "https://mirror.test/crates"
     );
-    assert_eq!(
-        config.providers.prerelease_tags[0].ecosystem,
-        Ecosystem::Npm
-    );
+    assert_eq!(config.providers.prerelease_tags[0].ecosystem, Npm);
     assert_eq!(config.providers.prerelease_tags[0].tags, ["beta"]);
-    assert_eq!(config.providers.provider_cache[0].ecosystem, Ecosystem::Npm);
+    assert_eq!(config.providers.provider_cache[0].ecosystem, Npm);
     assert_eq!(config.providers.provider_cache[0].manifest_kind, None);
     assert_eq!(config.providers.provider_cache[0].cache_ttl_ms, 60_000);
-    assert_eq!(config.providers.provider_http[0].ecosystem, Ecosystem::Npm);
+    assert_eq!(config.providers.provider_http[0].ecosystem, Npm);
     assert_eq!(config.providers.provider_http[0].manifest_kind, None);
     assert_eq!(config.providers.provider_http[0].strict_ssl, Some(false));
-    assert_eq!(
-        config.providers.dependency_properties[0].ecosystem,
-        Ecosystem::Npm
-    );
+    assert_eq!(config.providers.dependency_properties[0].ecosystem, Npm);
     assert_eq!(
         config.providers.dependency_properties[0].properties,
         ["dependencies"]
     );
     assert_eq!(
         config.providers.dependency_properties[0].manifest_kind,
-        Some(ManifestKind::NpmPackageJson)
+        Some(NpmPackageJson)
     );
     assert_eq!(
         config.providers.file_patterns[0].manifest_kind,
-        ManifestKind::ComposerJson
+        ComposerJson
     );
     assert_eq!(
         config.providers.file_patterns[0].pattern,

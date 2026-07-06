@@ -1,4 +1,5 @@
 use versionlens_parsers::Dependency;
+use versionlens_versions::ProjectVersionBump::{Major, Minor, Patch, Prerelease, Release};
 use versionlens_versions::{
     ProjectVersionBump, is_prerelease_project_version, next_project_version,
 };
@@ -23,17 +24,17 @@ struct ProjectVersionCodeLensEntry {
 
 const STABLE_PROJECT_VERSION_CODE_LENSES: &[ProjectVersionCodeLensEntry] = &[
     ProjectVersionCodeLensEntry {
-        bump: ProjectVersionBump::Major,
+        bump: Major,
         label: "major",
         command: "updateMajor",
     },
     ProjectVersionCodeLensEntry {
-        bump: ProjectVersionBump::Minor,
+        bump: Minor,
         label: "minor",
         command: "updateMinor",
     },
     ProjectVersionCodeLensEntry {
-        bump: ProjectVersionBump::Patch,
+        bump: Patch,
         label: "patch",
         command: "updatePatch",
     },
@@ -41,12 +42,12 @@ const STABLE_PROJECT_VERSION_CODE_LENSES: &[ProjectVersionCodeLensEntry] = &[
 
 const PRERELEASE_PROJECT_VERSION_CODE_LENSES: &[ProjectVersionCodeLensEntry] = &[
     ProjectVersionCodeLensEntry {
-        bump: ProjectVersionBump::Release,
+        bump: Release,
         label: "release",
         command: "updateRelease",
     },
     ProjectVersionCodeLensEntry {
-        bump: ProjectVersionBump::Prerelease,
+        bump: Prerelease,
         label: "prerelease",
         command: "updatePrerelease",
     },
@@ -65,7 +66,7 @@ pub(crate) fn project_version_code_lens_suggestions(
     dependency: &Dependency,
 ) -> Vec<ProjectVersionCodeLensSuggestion> {
     if !is_project_version_dependency(dependency) {
-        return Vec::new();
+        return vec![];
     }
 
     let entries = if is_prerelease_project_version(&dependency.requirement) {

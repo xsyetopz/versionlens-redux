@@ -1,6 +1,10 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_parsers::Dependency;
+use versionlens_parsers::Ecosystem::{
+    AnsibleGalaxy, Bazel, Docker, Hackage, Helm, Pub, Python, Ruby,
+};
 use versionlens_providers::{
-    python_package_json_url_template, registry_url, registry_url_with_base,
+    ansible_role_registry_url_with_base, python_package_json_url_template, registry_url,
+    registry_url_with_base,
 };
 
 const GITHUB_API_REPO_PREFIX: &str = "https://api.github.com/repos/";
@@ -12,11 +16,15 @@ pub(super) fn hosted_registry_urls(dependency: &Dependency) -> Option<Vec<String
         return Some(vec![hosted_url.to_owned()]);
     }
 
-    if dependency.ecosystem == Ecosystem::Python {
+    if dependency.ecosystem == Python && hosted_url.contains("://") {
         return Some(vec![python_source_registry_url(dependency, hosted_url)]);
     }
 
-    if dependency.ecosystem == Ecosystem::Ruby {
+    if dependency.ecosystem == Hackage && hosted_url == "stackage" {
+        return Some(vec![registry_url(dependency.ecosystem, &dependency.name)]);
+    }
+
+    if dependency.ecosystem == Ruby {
         return Some(vec![registry_url_with_base(
             dependency.ecosystem,
             &dependency.name,
@@ -24,12 +32,28 @@ pub(super) fn hosted_registry_urls(dependency: &Dependency) -> Option<Vec<String
         )]);
     }
 
-    if dependency.ecosystem == Ecosystem::Docker {
+    if dependency.ecosystem == Docker {
         return Some(vec![docker_hosted_registry_url(dependency, hosted_url)]);
     }
 
-    if dependency.ecosystem == Ecosystem::Pub {
+    if dependency.ecosystem == Pub {
         return Some(vec![pub_hosted_registry_url(dependency, hosted_url)]);
+    }
+
+    if dependency.ecosystem == Helm {
+        return Some(vec![helm_hosted_registry_url(dependency, hosted_url)]);
+    }
+
+    if dependency.ecosystem == AnsibleGalaxy {
+        return Some(vec![ansible_hosted_registry_url(dependency, hosted_url)]);
+    }
+
+    if dependency.ecosystem == Bazel {
+        return Some(vec![registry_url_with_base(
+            dependency.ecosystem,
+            &dependency.name,
+            Some(hosted_url),
+        )]);
     }
 
     None
@@ -46,5 +70,36 @@ fn docker_hosted_registry_url(dependency: &Dependency, hosted_url: &str) -> Stri
 }
 
 fn pub_hosted_registry_url(dependency: &Dependency, hosted_url: &str) -> String {
-    format!("{hosted_url}/{}", dependency.name)
+    let name = dependency
+        .hosted_name
+        .as_deref()
+        .unwrap_or(&dependency.name);
+    registry_url_with_base(dependency.ecosystem, name, Some(hosted_url))
+}
+
+fn helm_hosted_registry_url(dependency: &Dependency, hosted_url: &str) -> String {
+    if hosted_url.starts_with("oci://") {
+        let name = dependency
+            .hosted_name
+            .as_deref()
+            .unwrap_or(&dependency.name);
+        let explicit_name = format!("{hosted_url}/{name}");
+        return registry_url(dependency.ecosystem, &explicit_name);
+    }
+
+    registry_url_with_base(dependency.ecosystem, &dependency.name, Some(hosted_url))
+}
+
+fn ansible_hosted_registry_url(dependency: &Dependency, hosted_url: &str) -> String {
+    if hosted_url == "role" {
+        return ansible_role_registry_url_with_base(
+            "https://galaxy.ansible.com",
+            dependency
+                .hosted_name
+                .as_deref()
+                .unwrap_or(&dependency.name),
+        );
+    }
+
+    registry_url_with_base(dependency.ecosystem, &dependency.name, Some(hosted_url))
 }

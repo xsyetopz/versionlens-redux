@@ -1,12 +1,10 @@
 use versionlens_core::{AuthorizationRequestPayload, ResolveDocumentOutput};
 
-use super::NativeResolveDocumentOutput;
-
 #[test]
 fn maps_authorization_requests_from_core_output() {
-    let output = NativeResolveDocumentOutput::from_core(ResolveDocumentOutput {
-        suggestions: Vec::new(),
-        edits: Vec::new(),
+    let output = crate::resolve_document_output_from_core(ResolveDocumentOutput {
+        suggestions: vec![],
+        edits: vec![],
         authorization_required_count: 1,
         authorization_required_requests: vec![AuthorizationRequestPayload {
             auth_url: "https://registry.example.test".to_owned(),

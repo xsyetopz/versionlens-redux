@@ -1,0 +1,2 @@
+source https://nuget.example.test/v3/index.json
+nuget Newtonsoft.Json 13.0.3

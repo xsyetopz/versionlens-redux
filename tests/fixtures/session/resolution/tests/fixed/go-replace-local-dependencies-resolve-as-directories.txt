@@ -1,0 +1,1 @@
+replace example.test/local => ../local

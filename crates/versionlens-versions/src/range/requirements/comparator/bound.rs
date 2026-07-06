@@ -3,12 +3,13 @@ use semver::Version;
 use crate::parse::parse_version;
 
 pub(super) type ComparatorBound = (Version, bool);
+type OptionalComparatorBound = Option<ComparatorBound>;
 
 pub(super) fn comparator_bound(
     part: &str,
     inclusive_prefix: &str,
     exclusive_prefix: &str,
-) -> Option<ComparatorBound> {
+) -> OptionalComparatorBound {
     if let Some(version) = part.strip_prefix(inclusive_prefix) {
         return Some((parse_version(version)?, true));
     }
@@ -16,7 +17,7 @@ pub(super) fn comparator_bound(
 }
 
 pub(super) fn max_lower_bound(
-    current: Option<ComparatorBound>,
+    current: OptionalComparatorBound,
     next: Version,
     inclusive: bool,
 ) -> ComparatorBound {
@@ -31,7 +32,7 @@ pub(super) fn max_lower_bound(
 }
 
 pub(super) fn min_upper_bound(
-    current: Option<ComparatorBound>,
+    current: OptionalComparatorBound,
     next: Version,
     inclusive: bool,
 ) -> ComparatorBound {

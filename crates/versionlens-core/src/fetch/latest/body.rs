@@ -1,4 +1,7 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use std::fs::read_to_string;
+use std::io::ErrorKind::NotFound as IoNotFound;
+use versionlens_parsers::Dependency;
+use versionlens_parsers::Ecosystem::{Docker, Dotnet, Maven};
 use versionlens_providers::{
     docker_hub_body_has_next_page, docker_hub_tags_page_url, dotnet_package_url_from_service_index,
     merge_docker_hub_response_pages,
@@ -10,6 +13,8 @@ use crate::registry::RegistryContext;
 
 use super::local_dotnet::local_dotnet_package_body;
 
+type RegistryBodyResult = Result<Option<String>, FetchError>;
+
 const DOCKER_HUB_MAX_PAGES: u8 = 3;
 
 impl VersionLensSession {
@@ -18,8 +23,8 @@ impl VersionLensSession {
         dependency: &Dependency,
         url: &str,
         context: &RegistryContext,
-    ) -> Result<Option<String>, FetchError> {
-        if dependency.ecosystem == Ecosystem::Docker && docker_hub_tags_page_url(url, 1).is_some() {
+    ) -> RegistryBodyResult {
+        if dependency.ecosystem == Docker && docker_hub_tags_page_url(url, 1).is_some() {
             return self.fetch_docker_hub_body(dependency, url, context);
         }
 
@@ -43,7 +48,7 @@ impl VersionLensSession {
         dependency: &Dependency,
         url: &str,
         context: &RegistryContext,
-    ) -> Result<Option<String>, FetchError> {
+    ) -> RegistryBodyResult {
         let Some(index) =
             self.get_text_or_status_with_context(url, dependency.ecosystem, context)?
         else {
@@ -62,8 +67,8 @@ impl VersionLensSession {
         dependency: &Dependency,
         url: &str,
         context: &RegistryContext,
-    ) -> Result<Option<String>, FetchError> {
-        let mut pages = Vec::new();
+    ) -> RegistryBodyResult {
+        let mut pages = vec![];
 
         for page in 1..=DOCKER_HUB_MAX_PAGES {
             let Some(page_url) = docker_hub_tags_page_url(url, page) else {
@@ -86,7 +91,7 @@ impl VersionLensSession {
 }
 
 fn dotnet_service_index_url(dependency: &Dependency, url: &str) -> bool {
-    dependency.ecosystem == Ecosystem::Dotnet
+    dependency.ecosystem == Dotnet
         && remote_url(url)
         && !url.contains("v3-flatcontainer")
         && !url.contains("flatcontainer")
@@ -96,18 +101,15 @@ fn remote_url(url: &str) -> bool {
     url.starts_with("https://") || url.starts_with("http://")
 }
 
-fn local_maven_metadata_body(
-    dependency: &Dependency,
-    url: &str,
-) -> Result<Option<String>, FetchError> {
-    if dependency.ecosystem != Ecosystem::Maven || url.contains("://") {
+fn local_maven_metadata_body(dependency: &Dependency, url: &str) -> RegistryBodyResult {
+    if dependency.ecosystem != Maven || url.contains("://") {
         return Ok(None);
     }
 
-    match std::fs::read_to_string(url) {
+    match read_to_string(url) {
         Ok(body) => Ok(Some(body)),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(anyhow::Error::new(error)
+        Err(error) if error.kind() == IoNotFound => Ok(None),
+        Err(error) => Err(crate::anyhow_error(error)
             .context(format!("failed to read Maven metadata file {url}"))
             .into()),
     }

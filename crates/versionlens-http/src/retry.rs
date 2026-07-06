@@ -1,4 +1,12 @@
-use std::io::ErrorKind;
+use std::io::ErrorKind::{
+    AddrInUse as IoAddrInUse, ConnectionRefused as IoConnectionRefused,
+    ConnectionReset as IoConnectionReset, TimedOut as IoTimedOut,
+};
+use ureq::Error as UreqError;
+use ureq::Error::{
+    ConnectionFailed as UreqConnectionFailed, Io as UreqIo, StatusCode as UreqStatusCode,
+    Timeout as UreqTimeout,
+};
 
 #[cfg(test)]
 const INITIAL_BACKOFF_MS: u64 = 100;
@@ -48,21 +56,18 @@ impl RetryPolicy {
             && matches!(status, 408 | 420 | 429 | 500..=599)
     }
 
-    pub(crate) fn should_retry_error(self, method: &str, error: &ureq::Error) -> bool {
+    pub(crate) fn should_retry_error(self, method: &str, error: &UreqError) -> bool {
         if self.max_retries == 0 || method.eq_ignore_ascii_case("POST") {
             return false;
         }
 
         match error {
-            ureq::Error::StatusCode(status) => self.should_retry_status(method, *status),
-            ureq::Error::Io(error) => matches!(
+            UreqStatusCode(status) => self.should_retry_status(method, *status),
+            UreqIo(error) => matches!(
                 error.kind(),
-                ErrorKind::ConnectionReset
-                    | ErrorKind::ConnectionRefused
-                    | ErrorKind::AddrInUse
-                    | ErrorKind::TimedOut
+                IoConnectionReset | IoConnectionRefused | IoAddrInUse | IoTimedOut
             ),
-            ureq::Error::Timeout(_) | ureq::Error::ConnectionFailed => true,
+            UreqTimeout(_) | UreqConnectionFailed => true,
             _ => false,
         }
     }
@@ -76,7 +81,7 @@ impl RetryPolicy {
 }
 
 #[cfg(test)]
-pub(crate) fn should_retry_error(_error: &ureq::Error) -> bool {
+pub(crate) fn should_retry_error() -> bool {
     false
 }
 
@@ -87,3 +92,21 @@ pub(crate) fn retry_backoff_ms(attempt: u32) -> u64 {
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) fn disabled_retry_policy() -> RetryPolicy {
+    RetryPolicy {
+        max_retries: 0,
+        factor: 1,
+        min_timeout_ms: 0,
+        max_timeout_ms: 0,
+    }
+}
+
+pub(crate) fn npm_registry_fetch_retry_policy() -> RetryPolicy {
+    RetryPolicy {
+        max_retries: 2,
+        factor: 2,
+        min_timeout_ms: 250,
+        max_timeout_ms: 1_000,
+    }
+}

@@ -1,12 +1,27 @@
 use super::blank_session_config;
+use crate::model::config::NativeSessionConfig;
 use crate::model::config::NativeSuggestionIndicators;
+
+fn blank_indicators() -> NativeSuggestionIndicators {
+    NativeSuggestionIndicators {
+        latest: None,
+        satisfies_latest: None,
+        directory: None,
+        error: None,
+        no_match: None,
+        matched: None,
+        updateable: None,
+        updateable_vulnerable: None,
+        build: None,
+    }
+}
 
 #[test]
 fn partial_indicator_config_keeps_core_defaults() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         suggestion_indicators: Some(NativeSuggestionIndicators {
             updateable: Some("U".to_owned()),
-            ..NativeSuggestionIndicators::default()
+            ..blank_indicators()
         }),
         ..blank_session_config()
     }
@@ -26,10 +41,10 @@ fn partial_indicator_config_keeps_core_defaults() {
 
 #[test]
 fn directory_indicator_maps_to_core() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         suggestion_indicators: Some(NativeSuggestionIndicators {
             directory: Some("D".to_owned()),
-            ..NativeSuggestionIndicators::default()
+            ..blank_indicators()
         }),
         ..blank_session_config()
     }

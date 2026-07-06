@@ -1,0 +1,2 @@
+source 'https://gems.example.test/'
+gem 'rails', '8.1.3'

@@ -1,12 +1,10 @@
-use std::path::Path;
-
 pub(super) fn is_git_dependency_requirement(requirement: &str) -> bool {
     let requirement = requirement.trim();
     requirement.starts_with("git+")
         || requirement.starts_with("git@")
         || requirement.starts_with("git://")
         || requirement.starts_with("ssh://")
-        || Path::new(requirement)
+        || crate::path(requirement)
             .extension()
             .is_some_and(|extension| extension.eq_ignore_ascii_case("git"))
         || is_hosted_git_url(requirement)

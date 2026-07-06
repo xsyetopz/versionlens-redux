@@ -1,3 +1,11 @@
+use versionlens_suggestions::SuggestionStatus::{
+    BuildAvailable as StatusBuildAvailable, Current as StatusCurrent, Directory as StatusDirectory,
+    DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,
+    Invalid as StatusInvalid, InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
+    NotSupported as StatusNotSupported, Satisfies as StatusSatisfies,
+    SatisfiesLatest as StatusSatisfiesLatest, Unresolved as StatusUnresolved,
+    UpdateAvailable as StatusUpdateAvailable,
+};
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
 use versionlens_vscode_model::SuggestionPayload;
 
@@ -19,19 +27,19 @@ fn suggestion_payload(suggestion: Suggestion) -> SuggestionPayload {
 
 fn suggestion_status_name(status: SuggestionStatus) -> &'static str {
     match status {
-        SuggestionStatus::BuildAvailable => "buildAvailable",
-        SuggestionStatus::Current => "current",
-        SuggestionStatus::Directory => "directory",
-        SuggestionStatus::DirectoryNotFound => "directoryNotFound",
-        SuggestionStatus::Error => "error",
-        SuggestionStatus::Fixed => "fixed",
-        SuggestionStatus::Invalid => "invalid",
-        SuggestionStatus::InvalidRange => "invalidRange",
-        SuggestionStatus::NoMatch => "noMatch",
-        SuggestionStatus::NotSupported => "notSupported",
-        SuggestionStatus::Satisfies => "satisfies",
-        SuggestionStatus::SatisfiesLatest => "satisfiesLatest",
-        SuggestionStatus::Unresolved => "unresolved",
-        SuggestionStatus::UpdateAvailable => "updateAvailable",
+        StatusBuildAvailable => "buildAvailable",
+        StatusCurrent => "current",
+        StatusDirectory => "directory",
+        StatusDirectoryNotFound => "directoryNotFound",
+        StatusError => "error",
+        StatusFixed => "fixed",
+        StatusInvalid => "invalid",
+        StatusInvalidRange => "invalidRange",
+        StatusNoMatch => "noMatch",
+        StatusNotSupported => "notSupported",
+        StatusSatisfies => "satisfies",
+        StatusSatisfiesLatest => "satisfiesLatest",
+        StatusUnresolved => "unresolved",
+        StatusUpdateAvailable => "updateAvailable",
     }
 }

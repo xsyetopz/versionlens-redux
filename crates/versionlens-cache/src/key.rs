@@ -17,3 +17,15 @@ impl CacheKey {
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) fn provider_package_cache_key(provider: &str, package: &str) -> CacheKey {
+    CacheKey(format!("{provider}:{package}"))
+}
+
+pub(crate) fn provider_dependency_cache_key(
+    provider: &str,
+    package: &str,
+    requirement: &str,
+) -> CacheKey {
+    provider_package_cache_key(provider, &format!("{package}@{requirement}"))
+}

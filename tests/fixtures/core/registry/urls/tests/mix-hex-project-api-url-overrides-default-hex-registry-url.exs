@@ -1,0 +1,23 @@
+
+defmodule Demo.MixProject do
+  def project do
+    [
+      app: :demo,
+      version: "0.1.0",
+      deps: deps(),
+      hex: hex()
+    ]
+  end
+
+  defp deps do
+    [
+      {:plug, "~> 1.20"}
+    ]
+  end
+
+  defp hex do
+    [
+      api_url: "https://hex.example.test/api"
+    ]
+  end
+end

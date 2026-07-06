@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use versionlens_cache::MemoryCache;
 use versionlens_parsers::{Ecosystem, ManifestKind};
@@ -19,6 +18,8 @@ mod documents;
 mod presentation;
 mod resolution;
 
+pub use commands::ApplyCommandRequest;
+
 #[derive(Debug)]
 pub struct VersionLensSession {
     pub(crate) config: SessionConfig,
@@ -33,17 +34,7 @@ pub struct VersionLensSession {
 
 impl VersionLensSession {
     pub fn new(config: SessionConfig) -> Self {
-        let cache_ttl = Duration::from_millis(config.cache_ttl_ms);
-        Self {
-            config,
-            latest_cache: Mutex::new(MemoryCache::new(cache_ttl)),
-            request_body_cache: Mutex::new(MemoryCache::new(cache_ttl)),
-            request_locks: Mutex::new(HashMap::new()),
-            suggestion_cache: Mutex::new(MemoryCache::new(cache_ttl)),
-            vulnerability_cache: Mutex::new(MemoryCache::new(cache_ttl)),
-            dotnet_registry_sources: Mutex::new(None),
-            authorization_requests: Mutex::new(Vec::new()),
-        }
+        version_lens_session(config)
     }
 
     pub(crate) fn clear_authorization_requests(&self) {
@@ -90,5 +81,19 @@ impl VersionLensSession {
                 .enabled_providers
                 .iter()
                 .any(|provider| provider.applies_to_manifest(kind, ecosystem))
+    }
+}
+
+pub fn version_lens_session(config: SessionConfig) -> VersionLensSession {
+    let cache_ttl = crate::duration_from_millis(config.cache_ttl_ms);
+    VersionLensSession {
+        config,
+        latest_cache: crate::mutex(crate::memory_cache(cache_ttl)),
+        request_body_cache: crate::mutex(crate::memory_cache(cache_ttl)),
+        request_locks: crate::mutex(crate::default()),
+        suggestion_cache: crate::mutex(crate::memory_cache(cache_ttl)),
+        vulnerability_cache: crate::mutex(crate::memory_cache(cache_ttl)),
+        dotnet_registry_sources: crate::mutex(None),
+        authorization_requests: crate::mutex(vec![]),
     }
 }

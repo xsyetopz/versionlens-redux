@@ -1,0 +1,2 @@
+
+gem "private_gem", "1.0.0", source: "https://private.gems.example.test/"

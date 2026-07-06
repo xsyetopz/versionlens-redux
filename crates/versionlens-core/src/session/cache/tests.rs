@@ -1,76 +1,78 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem, ManifestKind};
+use std::env;
+use std::env::temp_dir;
+use std::fs::create_dir_all;
+use std::fs::read_to_string;
+use std::fs::remove_dir_all;
+use std::fs::write;
+use std::path::PathBuf;
+use std::process::id;
+use std::thread::sleep;
+
+use versionlens_parsers::DocumentInput;
 
 use crate::cache::cache_key;
-use crate::{
-    ProviderCacheConfig, ProviderSettings, RegistryResponseInput, SessionConfig,
-    SuggestionIndicators, VersionLensSession,
-};
+
+use crate::{ProviderCacheConfig, ProviderSettings, RegistryResponseInput, SessionConfig};
+use versionlens_parsers::Ecosystem::Npm;
+use versionlens_parsers::ManifestKind::{NpmPackageJson, PnpmYaml};
 
 #[test]
 fn provider_cache_overrides_global_cache_ttl() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
+        enabled_providers: vec![],
         providers: ProviderSettings {
             provider_cache: vec![ProviderCacheConfig {
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 manifest_kind: None,
                 cache_ttl_ms: 1,
             }],
-            ..ProviderSettings::default()
+            ..crate::default()
         },
-        suggestion_indicators: SuggestionIndicators::standard(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("provider-cache-overrides-global-cache-ttl.json"),
         workspace_root: None,
     };
     let responses = [RegistryResponseInput {
         package: "left-pad".to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
     }];
 
     session.resolve_document_with_responses(input, &responses);
-    std::thread::sleep(std::time::Duration::from_millis(5));
+    sleep(crate::duration_from_millis(5));
 
-    assert!(
-        session
-            .cached_latest(&cache_key(Ecosystem::Npm, "left-pad"))
-            .is_none()
-    );
+    assert!(session.cached_latest(&cache_key(Npm, "left-pad")).is_none());
 }
 
 #[test]
 fn npm_ca_file_context_does_not_write_shared_latest_cache() {
-    let root = std::env::temp_dir().join(format!(
-        "versionlens-npm-cafile-cache-{}",
-        std::process::id()
-    ));
-    std::fs::create_dir_all(&root).unwrap();
-    std::fs::write(root.join(".npmrc"), "cafile=/tmp/npm-ca.pem\n").unwrap();
-    let session = VersionLensSession::new(SessionConfig {
+    let root = temp_dir().join(format!("versionlens-npm-cafile-cache-{}", id()));
+    create_dir_all(&root).unwrap();
+    write(root.join(".npmrc"), "cafile=/tmp/npm-ca.pem\n").unwrap();
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: format!("file://{}", root.join("package.json").display()),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("npm-ca-file-context-does-not-write-shared-latest-cache.txt"),
         workspace_root: Some(root.to_string_lossy().into_owned()),
     };
 
@@ -78,72 +80,70 @@ fn npm_ca_file_context_does_not_write_shared_latest_cache() {
         input,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
 
-    assert!(
-        session
-            .cached_latest(&cache_key(Ecosystem::Npm, "left-pad"))
-            .is_none()
-    );
-    std::fs::remove_dir_all(root).unwrap();
+    assert!(session.cached_latest(&cache_key(Npm, "left-pad")).is_none());
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
 fn manifest_scoped_provider_cache_does_not_override_package_json_npm() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
+        enabled_providers: vec![],
         providers: ProviderSettings {
             provider_cache: vec![ProviderCacheConfig {
-                ecosystem: Ecosystem::Npm,
-                manifest_kind: Some(ManifestKind::PnpmYaml),
+                ecosystem: Npm,
+                manifest_kind: Some(PnpmYaml),
                 cache_ttl_ms: 1,
             }],
-            ..ProviderSettings::default()
+            ..crate::default()
         },
-        suggestion_indicators: SuggestionIndicators::standard(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     assert_eq!(
-        session.cache_ttl(Ecosystem::Npm, Some(ManifestKind::NpmPackageJson)),
-        std::time::Duration::from_mins(5)
+        session.cache_ttl(Npm, Some(NpmPackageJson)),
+        crate::duration_from_millis(300_000)
     );
     assert_eq!(
-        session.cache_ttl(Ecosystem::Npm, Some(ManifestKind::PnpmYaml)),
-        std::time::Duration::from_millis(1)
+        session.cache_ttl(Npm, Some(PnpmYaml)),
+        crate::duration_from_millis(1)
     );
 }
 
 #[test]
 fn manifest_scoped_provider_cache_controls_cached_suggestions() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
+        enabled_providers: vec![],
         providers: ProviderSettings {
             provider_cache: vec![ProviderCacheConfig {
-                ecosystem: Ecosystem::Npm,
-                manifest_kind: Some(ManifestKind::PnpmYaml),
+                ecosystem: Npm,
+                manifest_kind: Some(PnpmYaml),
                 cache_ttl_ms: 1,
             }],
-            ..ProviderSettings::default()
+            ..crate::default()
         },
-        suggestion_indicators: SuggestionIndicators::standard(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///pnpm-workspace.yaml".to_owned(),
         language_id: "yaml".to_owned(),
-        text: "catalog:\n  left-pad: 1.0.0\n".to_owned(),
+        text: package_file_fixture(
+            "manifest-scoped-provider-cache-controls-cached-suggestions.yaml",
+        ),
         workspace_root: None,
     };
 
@@ -151,7 +151,7 @@ fn manifest_scoped_provider_cache_controls_cached_suggestions() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
@@ -160,27 +160,27 @@ fn manifest_scoped_provider_cache_controls_cached_suggestions() {
         "↑  latest 1.1.0"
     );
 
-    std::thread::sleep(std::time::Duration::from_millis(5));
+    sleep(crate::duration_from_millis(5));
 
     assert!(session.analyze_document(input).code_lenses.is_empty());
 }
 
 #[test]
 fn registry_responses_override_cached_latest_version() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("registry-responses-override-cached-latest-version.json"),
         workspace_root: None,
     };
 
@@ -188,7 +188,7 @@ fn registry_responses_override_cached_latest_version() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
@@ -196,7 +196,7 @@ fn registry_responses_override_cached_latest_version() {
         input,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.2.0"}}"#.to_owned(),
         }],
     );
@@ -206,20 +206,20 @@ fn registry_responses_override_cached_latest_version() {
 
 #[test]
 fn caches_latest_version_and_clear_cache_removes_it() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("caches-latest-version-and-clear-cache-removes-it.json"),
         workspace_root: None,
     };
 
@@ -227,7 +227,7 @@ fn caches_latest_version_and_clear_cache_removes_it() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
@@ -243,25 +243,25 @@ fn caches_latest_version_and_clear_cache_removes_it() {
 
 #[test]
 fn cached_latest_preserves_registry_build_aliases() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("cached-latest-preserves-registry-build-aliases.json"),
         workspace_root: None,
     };
     let response = RegistryResponseInput {
         package: "left-pad".to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: r#"{"dist-tags":{"latest":"1.0.0+build.2"},"versions":{"1.0.0":{},"1.0.0+build.1":{},"1.0.0+build.2":{}}}"#
             .to_owned(),
     };
@@ -276,15 +276,15 @@ fn cached_latest_preserves_registry_build_aliases() {
 
 #[test]
 fn clear_cache_removes_dotnet_registry_sources() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     *session.dotnet_registry_sources.lock().unwrap() =
@@ -297,20 +297,20 @@ fn clear_cache_removes_dotnet_registry_sources() {
 
 #[test]
 fn analyze_document_uses_cached_latest_for_code_lens_title() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.0.0"}}"#.to_owned(),
+        text: package_file_fixture("analyze-document-uses-cached-latest-for-code-lens-title.json"),
         workspace_root: None,
     };
 
@@ -318,7 +318,7 @@ fn analyze_document_uses_cached_latest_for_code_lens_title() {
         input.clone(),
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
         }],
     );
@@ -338,26 +338,30 @@ fn analyze_document_uses_cached_latest_for_code_lens_title() {
 
 #[test]
 fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let fixed_input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"1.1.1"}}"#.to_owned(),
+        text: package_file_fixture(
+            "cached-latest-is-scoped-to-dependency-requirement-for-update-choices.json",
+        ),
         workspace_root: None,
     };
     let range_input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"^1.0.0"}}"#.to_owned(),
+        text: package_file_fixture(
+            "cached-latest-is-scoped-to-dependency-requirement-for-update-choices-2.json",
+        ),
         workspace_root: None,
     };
 
@@ -365,7 +369,7 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
         fixed_input,
         &[RegistryResponseInput {
             package: "left-pad".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{
               "dist-tags": { "latest": "2.0.0" },
               "versions": {
@@ -391,7 +395,7 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -409,4 +413,23 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
             vec!["update", "1.1.2"]
         ]
     );
+}
+
+fn package_file_fixture(name: &str) -> String {
+    let path = repo_root().join("tests/fixtures/session/cache").join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read session cache fixture {}: {error}",
+            path.display()
+        )
+    })
+}
+
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
 }

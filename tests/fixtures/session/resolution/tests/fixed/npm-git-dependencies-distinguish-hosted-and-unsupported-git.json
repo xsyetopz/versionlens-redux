@@ -1,0 +1,1 @@
+{"devDependencies":{"gitpkgnotfound1":"git+https://git@github.com/testuser/test.git","gitpkgnotfound2":"git+ssh://git@some.com/testuser/test.git","gitpkgnotfound3":"git://example.com/testuser/test"}}

@@ -1,14 +1,22 @@
 use super::{DocumentInput, standard_session};
+use std::env;
+use std::env::temp_dir;
+use std::fs::create_dir_all;
+use std::fs::read_to_string;
+use std::fs::remove_dir_all;
+use std::fs::write;
+use std::path::PathBuf;
+use std::process::id;
 
 #[test]
-fn requirements_index_urls_are_ignored_for_upstream_parity() {
+fn requirements_index_urls_override_python_registry_urls() {
     let input = DocumentInput {
         uri: "file:///repo/requirements.txt".to_owned(),
         language_id: "pip-requirements".to_owned(),
-        text: "--index-url https://primary.example.test/simple\n--extra-index-url https://extra.example.test/simple\nrequests==2.32.0\n".to_owned(),
+        text: package_file_fixture("requirements-index-urls-override-python-registry-urls.txt"),
         workspace_root: None,
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
@@ -19,43 +27,37 @@ fn requirements_index_urls_are_ignored_for_upstream_parity() {
 
     assert_eq!(
         session.registry_urls_with_context(requests, &context),
-        vec!["https://pypi.org/rss/project/requests/releases.xml"]
+        vec![
+            "https://primary.example.test/simple",
+            "https://extra.example.test/simple",
+        ]
     );
 }
 
 #[test]
-fn pipfile_sources_are_ignored_for_upstream_parity() {
+fn pipfile_sources_override_python_registry_urls() {
     let input = DocumentInput {
         uri: "file:///repo/Pipfile".to_owned(),
         language_id: "toml".to_owned(),
-        text: r#"
-[[source]]
-name = "private"
-url = "https://pypi.example.test/simple/"
-verify_ssl = true
-
-[packages]
-requests = "==2.32.0"
-"#
-        .to_owned(),
+        text: package_file_fixture("pipfile-sources-override-python-registry-urls.Pipfile"),
         workspace_root: None,
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(dependencies[0].name, "requests");
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://pypi.org/rss/project/requests/releases.xml"]
+        vec!["https://pypi.example.test/simple"]
     );
 }
 
 #[test]
-fn python_documents_ignore_workspace_pip_conf_for_upstream_parity() {
-    let root = std::env::temp_dir().join(format!("versionlens-pip-conf-{}", std::process::id()));
-    std::fs::create_dir_all(&root).unwrap();
-    std::fs::write(
+fn python_documents_use_workspace_pip_conf_registry_urls() {
+    let root = temp_dir().join(format!("versionlens-pip-conf-{}", id()));
+    create_dir_all(&root).unwrap();
+    write(
         root.join("pip.conf"),
         "[global]\nindex-url = https://primary.example.test/simple/\nextra-index-url = https://extra.example.test/simple\n",
     )
@@ -64,26 +66,29 @@ fn python_documents_ignore_workspace_pip_conf_for_upstream_parity() {
     let input = DocumentInput {
         uri: format!("file://{}", root.join("requirements.txt").display()),
         language_id: "pip-requirements".to_owned(),
-        text: "requests==2.32.0\n".to_owned(),
+        text: package_file_fixture("python-documents-use-workspace-pip-conf-registry-urls.txt"),
         workspace_root: Some(root.to_string_lossy().into_owned()),
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://pypi.org/rss/project/requests/releases.xml"]
+        vec![
+            "https://primary.example.test/simple",
+            "https://extra.example.test/simple",
+        ]
     );
 
-    std::fs::remove_dir_all(root).unwrap();
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
-fn python_documents_ignore_pip_environment_for_upstream_parity() {
-    let root = std::env::temp_dir().join(format!("versionlens-pip-env-{}", std::process::id()));
-    std::fs::create_dir_all(&root).unwrap();
-    std::fs::write(
+fn python_documents_use_pip_environment_registry_urls() {
+    let root = temp_dir().join(format!("versionlens-pip-env-{}", id()));
+    create_dir_all(&root).unwrap();
+    write(
         root.join(".env"),
         "PIP_INDEX_URL=https://env-primary.example.test/simple/\nPIP_EXTRA_INDEX_URL=https://env-extra-one.example.test/simple https://env-extra-two.example.test/simple/\n",
     )
@@ -92,19 +97,23 @@ fn python_documents_ignore_pip_environment_for_upstream_parity() {
     let input = DocumentInput {
         uri: format!("file://{}", root.join("requirements.txt").display()),
         language_id: "pip-requirements".to_owned(),
-        text: "requests==2.32.0\n".to_owned(),
+        text: package_file_fixture("python-documents-use-pip-environment-registry-urls.txt"),
         workspace_root: Some(root.to_string_lossy().into_owned()),
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://pypi.org/rss/project/requests/releases.xml"]
+        vec![
+            "https://env-primary.example.test/simple",
+            "https://env-extra-one.example.test/simple",
+            "https://env-extra-two.example.test/simple",
+        ]
     );
 
-    std::fs::remove_dir_all(root).unwrap();
+    remove_dir_all(root).unwrap();
 }
 
 #[test]
@@ -112,17 +121,17 @@ fn gemfile_source_urls_override_ruby_registry_urls() {
     let input = DocumentInput {
         uri: "file:///repo/Gemfile".to_owned(),
         language_id: "ruby".to_owned(),
-        text: "source 'https://gems.example.test/'\ngem 'rails', '8.1.3'\n".to_owned(),
+        text: package_file_fixture("gemfile-source-urls-override-ruby-registry-urlsGemfile"),
         workspace_root: None,
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(dependencies[0].name, "rails");
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://gems.example.test"]
+        vec!["https://gems.example.test/api/v1/versions/rails.json"]
     );
 }
 
@@ -131,12 +140,7 @@ fn gemfile_source_blocks_override_dependency_registry_url() {
     let input = DocumentInput {
         uri: "file:///repo/Gemfile".to_owned(),
         language_id: "ruby".to_owned(),
-        text: r#"
-source "https://private.gems.example.test/" do
-  gem "private_gem", "1.0.0"
-end
-"#
-        .to_owned(),
+        text: package_file_fixture("gemfile-source-blocks-override-dependency-registry-urlGemfile"),
         workspace_root: None,
     };
     let dependencies = standard_session().dependencies(&input);
@@ -145,7 +149,7 @@ end
     assert_eq!(dependencies[0].name, "private_gem");
     assert_eq!(
         session.registry_urls(&dependencies[0]),
-        vec!["https://private.gems.example.test"]
+        vec!["https://private.gems.example.test/api/v1/versions/private_gem.json"]
     );
 }
 
@@ -154,10 +158,9 @@ fn gemfile_source_option_overrides_dependency_registry_url() {
     let input = DocumentInput {
         uri: "file:///repo/Gemfile".to_owned(),
         language_id: "ruby".to_owned(),
-        text: r#"
-gem "private_gem", "1.0.0", source: "https://private.gems.example.test/"
-"#
-        .to_owned(),
+        text: package_file_fixture(
+            "gemfile-source-option-overrides-dependency-registry-urlGemfile",
+        ),
         workspace_root: None,
     };
     let dependencies = standard_session().dependencies(&input);
@@ -166,108 +169,79 @@ gem "private_gem", "1.0.0", source: "https://private.gems.example.test/"
     assert_eq!(dependencies[0].name, "private_gem");
     assert_eq!(
         session.registry_urls(&dependencies[0]),
-        vec!["https://private.gems.example.test"]
+        vec!["https://private.gems.example.test/api/v1/versions/private_gem.json"]
     );
 }
 
 #[test]
-fn pyproject_uv_indexes_are_ignored_for_upstream_parity() {
+fn pyproject_uv_indexes_override_python_registry_urls() {
     let input = DocumentInput {
         uri: "file:///repo/pyproject.toml".to_owned(),
         language_id: "toml".to_owned(),
-        text: r#"
-[project]
-dependencies = ["requests==2.32.0"]
-
-[tool.uv]
-index-url = "https://primary.example.test/simple/"
-extra-index-url = ["https://extra.example.test/simple"]
-
-[[tool.uv.index]]
-name = "private"
-url = "https://private.example.test/simple/"
-"#
-        .to_owned(),
+        text: package_file_fixture("pyproject-uv-indexes-override-python-registry-urls.toml"),
         workspace_root: None,
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(dependencies[0].name, "requests");
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://pypi.org/rss/project/requests/releases.xml"]
+        vec![
+            "https://primary.example.test/simple",
+            "https://extra.example.test/simple",
+            "https://private.example.test/simple",
+        ]
     );
 }
 
 #[test]
-fn pyproject_poetry_sources_are_ignored_for_upstream_parity() {
+fn pyproject_poetry_sources_override_python_registry_urls() {
     let input = DocumentInput {
         uri: "file:///repo/pyproject.toml".to_owned(),
         language_id: "toml".to_owned(),
-        text: r#"
-[tool.poetry.dependencies]
-requests = "^2.32"
-
-[[tool.poetry.source]]
-name = "private"
-url = "https://poetry.example.test/simple/"
-priority = "primary"
-"#
-        .to_owned(),
+        text: package_file_fixture("pyproject-poetry-sources-override-python-registry-urls.toml"),
         workspace_root: None,
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(dependencies[0].name, "requests");
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://pypi.org/rss/project/requests/releases.xml"]
+        vec!["https://poetry.example.test/simple"]
     );
 }
 
 #[test]
-fn pyproject_poetry_dependency_source_is_ignored_for_upstream_parity() {
+fn pyproject_poetry_dependency_source_overrides_python_registry_url() {
     let input = DocumentInput {
         uri: "file:///repo/pyproject.toml".to_owned(),
         language_id: "toml".to_owned(),
-        text: r#"
-[tool.poetry.dependencies]
-public = "^1.0"
-private = { version = "^2.0", source = "private" }
-
-[[tool.poetry.source]]
-name = "private"
-url = "https://private.example.test/simple/"
-priority = "explicit"
-
-[[tool.poetry.source]]
-name = "mirror"
-url = "https://mirror.example.test/simple/"
-priority = "supplemental"
-"#
-        .to_owned(),
+        text: package_file_fixture(
+            "pyproject-poetry-dependency-source-overrides-python-registry-url.toml",
+        ),
         workspace_root: None,
     };
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(dependencies[1].name, "private");
-    assert_eq!(dependencies[1].hosted_url, None);
+    assert_eq!(dependencies[1].hosted_url, Some("private".to_owned()));
+    let context = crate::registry::registry_context_from_document(&input);
     assert_eq!(
-        session.registry_urls(&dependencies[1]),
-        vec!["https://pypi.org/rss/project/private/releases.xml"]
+        session.registry_urls_with_context(&dependencies[1], &context),
+        vec!["https://private.example.test/simple"]
     );
 }
 
 #[test]
-fn python_documents_ignore_workspace_uv_toml_for_upstream_parity() {
-    let root = std::env::temp_dir().join(format!("versionlens-uv-toml-{}", std::process::id()));
-    std::fs::create_dir_all(&root).unwrap();
-    std::fs::write(
+fn python_documents_use_workspace_uv_toml_registry_urls() {
+    let root = temp_dir().join(format!("versionlens-uv-toml-{}", id()));
+    create_dir_all(&root).unwrap();
+    write(
         root.join("uv.toml"),
         "index-url = 'https://primary.example.test/simple/'\nextra-index-url = ['https://extra.example.test/simple']\n[[index]]\nname = 'private'\nurl = 'https://private.example.test/simple/'\n",
     )
@@ -276,17 +250,72 @@ fn python_documents_ignore_workspace_uv_toml_for_upstream_parity() {
     let input = DocumentInput {
         uri: format!("file://{}", root.join("pyproject.toml").display()),
         language_id: "toml".to_owned(),
-        text: "[project]\ndependencies = ['requests==2.32.0']\n".to_owned(),
+        text: package_file_fixture("python-documents-use-workspace-uv-toml-registry-urls.txt"),
         workspace_root: Some(root.to_string_lossy().into_owned()),
     };
-    let context = crate::registry::RegistryContext::from_document(&input);
+    let context = crate::registry::registry_context_from_document(&input);
     let dependencies = standard_session().dependencies(&input);
     let session = standard_session();
 
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://pypi.org/rss/project/requests/releases.xml"]
+        vec![
+            "https://primary.example.test/simple",
+            "https://extra.example.test/simple",
+            "https://private.example.test/simple",
+        ]
     );
 
-    std::fs::remove_dir_all(root).unwrap();
+    remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn podfile_external_and_latest_dependencies_resolve_as_fixed_without_registry_updates() {
+    let input = DocumentInput {
+        uri: "file:///repo/Podfile".to_owned(),
+        language_id: "ruby".to_owned(),
+        text: package_file_fixture(
+            "podfile-external-and-latest-dependencies-resolve-as-fixed-without-registry-updatesPodfile",
+        ),
+        workspace_root: None,
+    };
+    let output = standard_session().resolve_document(input);
+
+    assert_eq!(output.suggestions.len(), 4);
+    assert!(output.edits.is_empty());
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("latest version")
+    );
+    assert_eq!(output.suggestions[1].latest.as_deref(), Some("local pod"));
+    assert_eq!(
+        output.suggestions[2].latest.as_deref(),
+        Some("git repository")
+    );
+    assert_eq!(
+        output.suggestions[3].latest.as_deref(),
+        Some("podspec source")
+    );
+}
+
+fn package_file_fixture(name: &str) -> String {
+    let path = repo_root()
+        .join("tests/fixtures/session/resolution/tests/fixed/registry_sources")
+        .join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read session resolution fixture {}: {error}",
+            path.display()
+        )
+    })
+}
+
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
 }

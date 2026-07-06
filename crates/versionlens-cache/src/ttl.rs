@@ -20,7 +20,7 @@ pub fn minutes_to_ms(minutes: f64) -> Option<u64> {
     }
 
     let seconds = minutes * SECONDS_PER_MINUTE;
-    let duration = Duration::try_from_secs_f64(seconds).ok()?;
+    let duration = <Duration>::try_from_secs_f64(seconds).ok()?;
     let rounded_millis = duration
         .as_nanos()
         .checked_add(HALF_MILLI_NANOS)?

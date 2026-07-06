@@ -42,5 +42,10 @@ fn has_block_boundary(
 }
 
 fn is_block_boundary(line: &str) -> bool {
-    line == ")" || line == "end" || line.ends_with('(') || line.ends_with(" do")
+    line == ")"
+        || line == "end"
+        || line.ends_with('(')
+        || line.ends_with(" do")
+        || line.starts_with("<ItemGroup")
+        || line.starts_with("</ItemGroup")
 }

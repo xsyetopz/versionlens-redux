@@ -1,0 +1,7 @@
+apiVersion: v2
+name: parent
+version: 0.1.0
+dependencies:
+  - name: mysql
+    version: ~3.2.1
+    repository: https://charts.example.test

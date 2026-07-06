@@ -1,0 +1,2 @@
+[dependencies]
+localdep = { path = "./localdep" }

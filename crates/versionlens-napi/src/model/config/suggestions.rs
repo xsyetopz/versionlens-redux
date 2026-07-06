@@ -30,3 +30,9 @@ impl NativeSuggestionIndicators {
         }
     }
 }
+
+impl From<NativeSuggestionIndicators> for SuggestionIndicatorsInput {
+    fn from(value: NativeSuggestionIndicators) -> Self {
+        value.into_input()
+    }
+}

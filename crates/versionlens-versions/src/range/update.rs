@@ -7,6 +7,7 @@ use super::requirements::{
     disjunctive_requirement_satisfies, nuget_requirement_satisfies, pessimistic_update_available,
     range_requirement_satisfies, semver_range_requirement_satisfies,
 };
+use crate::model::UpdateLevel::{Major, Minor, Patch};
 
 pub fn is_update_available(latest: &str, requirement: &str) -> bool {
     if requirement.trim().is_empty() {
@@ -69,10 +70,10 @@ pub fn build_variants<'a>(
     versions: impl IntoIterator<Item = &'a str>,
 ) -> Vec<String> {
     let Some(current) = parse_version(requirement) else {
-        return Vec::new();
+        return vec![];
     };
 
-    let mut variants = Vec::new();
+    let mut variants = vec![];
     for version in versions {
         if parse_version(version)
             .or_else(|| parse_coerced_version(version))
@@ -88,11 +89,7 @@ pub fn build_variants<'a>(
         }
     }
 
-    if variants.len() > 1 {
-        variants
-    } else {
-        Vec::new()
-    }
+    if variants.len() > 1 { variants } else { vec![] }
 }
 
 pub fn update_level(latest: &str, requirement: &str) -> Option<UpdateLevel> {
@@ -100,11 +97,11 @@ pub fn update_level(latest: &str, requirement: &str) -> Option<UpdateLevel> {
     let current = parse_version(requirement).or_else(|| parse_coerced_version(requirement))?;
 
     if latest.major != current.major {
-        Some(UpdateLevel::Major)
+        Some(Major)
     } else if latest.minor != current.minor {
-        Some(UpdateLevel::Minor)
+        Some(Minor)
     } else if latest.patch != current.patch {
-        Some(UpdateLevel::Patch)
+        Some(Patch)
     } else {
         None
     }

@@ -1,0 +1,11 @@
+<project>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.example</groupId>
+        <artifactId>demo-plugin</artifactId>
+        <version>1.0.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

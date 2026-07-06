@@ -26,7 +26,7 @@ fn coerced_version_len(raw: &str) -> Option<usize> {
 
 fn read_digits(bytes: &[u8], start: usize) -> Option<usize> {
     let mut end = start;
-    while bytes.get(end).is_some_and(u8::is_ascii_digit) {
+    while bytes.get(end).is_some_and(|value| value.is_ascii_digit()) {
         end += 1;
     }
     (end > start).then_some(end)

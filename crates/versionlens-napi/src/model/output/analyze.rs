@@ -26,11 +26,20 @@ impl NativeAnalyzeDocumentOutput {
             is_supported_manifest: false,
             active_provider_name: None,
             install_task_config_key: None,
-            dependency_signature: String::new(),
-            dependencies: Vec::new(),
-            code_lenses: Vec::new(),
-            diagnostics: Vec::new(),
-            status: NativeStatusPayload::empty(),
+            dependency_signature: "".to_owned(),
+            dependencies: vec![],
+            code_lenses: vec![],
+            diagnostics: vec![],
+            status: NativeStatusPayload {
+                dependency_count: 0,
+                update_count: 0,
+                vulnerability_count: 0,
+                error_count: 0,
+                no_match_count: 0,
+                visible: false,
+                text: "".to_owned(),
+                tooltip: "".to_owned(),
+            },
         }
     }
     pub(crate) fn from_core(output: AnalyzeDocumentOutput) -> Self {
@@ -43,19 +52,31 @@ impl NativeAnalyzeDocumentOutput {
             dependencies: output
                 .dependencies
                 .into_iter()
-                .map(NativeDependency::from_core)
+                .map(|dependency| dependency.into())
                 .collect(),
             code_lenses: output
                 .code_lenses
                 .into_iter()
-                .map(NativeCodeLensPayload::from_core)
+                .map(|code_lens| code_lens.into())
                 .collect(),
             diagnostics: output
                 .diagnostics
                 .into_iter()
-                .map(NativeDiagnosticPayload::from_core)
+                .map(|diagnostic| diagnostic.into())
                 .collect(),
-            status: NativeStatusPayload::from_core(output.status),
+            status: output.status.into(),
         }
+    }
+}
+
+impl Default for NativeAnalyzeDocumentOutput {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl From<AnalyzeDocumentOutput> for NativeAnalyzeDocumentOutput {
+    fn from(value: AnalyzeDocumentOutput) -> Self {
+        Self::from_core(value)
     }
 }

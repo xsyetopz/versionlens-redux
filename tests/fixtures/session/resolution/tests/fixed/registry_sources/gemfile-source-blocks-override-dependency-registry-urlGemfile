@@ -1,0 +1,4 @@
+
+source "https://private.gems.example.test/" do
+  gem "private_gem", "1.0.0"
+end

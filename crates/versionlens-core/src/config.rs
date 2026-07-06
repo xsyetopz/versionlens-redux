@@ -15,7 +15,14 @@ pub use providers::{
     registry_url_config_from_name,
 };
 pub use session::{SessionConfig, SessionConfigInput};
-pub use suggestions::{SuggestionIndicators, SuggestionIndicatorsInput};
+pub use suggestions::{
+    SuggestionIndicators, SuggestionIndicatorsInput, standard_suggestion_indicators,
+};
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) fn session_config_from_input(input: SessionConfigInput) -> SessionConfig {
+    input.into()
+}

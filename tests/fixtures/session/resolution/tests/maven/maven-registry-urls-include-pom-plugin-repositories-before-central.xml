@@ -1,0 +1,17 @@
+<project>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>plugin-releases</id>
+      <url>https://plugins.example.test/maven</url>
+    </pluginRepository>
+  </pluginRepositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.example</groupId>
+        <artifactId>demo-plugin</artifactId>
+        <version>1.0.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

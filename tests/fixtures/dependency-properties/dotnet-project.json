@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "Newtonsoft.Json": "13.0.1"
+  },
+  "frameworks": {
+    "net472": {
+      "dependencies": {
+        "System.Text.Json": "8.0.5"
+      }
+    }
+  }
+}

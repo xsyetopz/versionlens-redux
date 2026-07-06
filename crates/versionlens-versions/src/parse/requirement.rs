@@ -1,14 +1,35 @@
 pub(crate) fn normalize_requirement(requirement: &str) -> String {
-    requirement
+    let parts = requirement
         .replacen("~> ", "~", 1)
         .replacen("~>", "~", 1)
         .split_whitespace()
+        .filter(|part| !part.eq_ignore_ascii_case("and"))
         .map(normalize_requirement_part)
-        .collect::<Vec<_>>()
-        .join(" ")
+        .collect::<Vec<_>>();
+
+    join_spaced_comparators(&parts)
 }
 
-pub(crate) fn strip_version_prefix(part: &str) -> String {
+fn join_spaced_comparators(parts: &[String]) -> String {
+    let mut output = vec![];
+    let mut index = 0;
+    while index < parts.len() {
+        let part = parts[index].as_str();
+        if matches!(part, ">" | ">=" | "<" | "<=" | "=" | "==")
+            && let Some(version) = parts.get(index + 1)
+        {
+            output.push(format!("{part}{version}"));
+            index += 2;
+            continue;
+        }
+
+        output.push(part.to_owned());
+        index += 1;
+    }
+
+    output.join(" ")
+}
+pub fn strip_version_prefix(part: &str) -> String {
     let split_at = part
         .find(|char: char| char.is_ascii_digit() || matches!(char, 'v' | 'V'))
         .unwrap_or(part.len());

@@ -2,17 +2,21 @@ use versionlens_parsers::{DocumentInput, ManifestKind, classify_document};
 
 use crate::VersionLensSession;
 use crate::config::FilePatternConfig;
+use versionlens_parsers::ManifestKind::{
+    DockerComposeYaml, Dockerfile, DubJson, DubSdl, PythonPipfile, PythonPyprojectToml,
+    PythonRequirementsTxt, Unknown,
+};
 
 impl VersionLensSession {
     pub(crate) fn classify_document(&self, input: &DocumentInput) -> ManifestKind {
         let kind = classify_document(input);
-        if kind != ManifestKind::Unknown {
+        if kind != Unknown {
             return kind;
         }
 
         match configured_file_pattern_kind(&self.config.providers.file_patterns, input) {
             Some(kind) => kind,
-            None => ManifestKind::Unknown,
+            None => Unknown,
         }
     }
 }
@@ -80,15 +84,10 @@ fn file_name(path: &str) -> &str {
 
 fn configured_manifest_kind(kind: ManifestKind, path: &str) -> ManifestKind {
     match kind {
-        ManifestKind::DockerComposeYaml if !has_extension(path, ["yaml", "yml"]) => {
-            ManifestKind::Dockerfile
-        }
-        ManifestKind::PythonRequirementsTxt if has_extension(path, ["toml"]) => {
-            ManifestKind::PythonPyprojectToml
-        }
-        ManifestKind::PythonRequirementsTxt if file_name(path).eq_ignore_ascii_case("Pipfile") => {
-            ManifestKind::PythonPipfile
-        }
+        DockerComposeYaml if !has_extension(path, ["yaml", "yml"]) => Dockerfile,
+        PythonRequirementsTxt if has_extension(path, ["toml"]) => PythonPyprojectToml,
+        PythonRequirementsTxt if file_name(path).eq_ignore_ascii_case("Pipfile") => PythonPipfile,
+        DubJson if has_extension(path, ["sdl"]) => DubSdl,
         _ => kind,
     }
 }
@@ -106,8 +105,7 @@ fn has_extension<const N: usize>(path: &str, extensions: [&str; N]) -> bool {
 fn glob_matches(pattern: &str, text: &str) -> bool {
     if let Some((prefix, alternatives, suffix)) = extglob_alternative_parts(pattern) {
         return alternatives.split('|').any(|alternative| {
-            let mut expanded =
-                String::with_capacity(prefix.len() + alternative.len() + suffix.len());
+            let mut expanded: String = crate::default();
             expanded.push_str(prefix);
             expanded.push_str(alternative);
             expanded.push_str(suffix);
@@ -117,8 +115,7 @@ fn glob_matches(pattern: &str, text: &str) -> bool {
 
     if let Some((prefix, alternatives, suffix)) = brace_parts(pattern) {
         return alternatives.split(',').any(|alternative| {
-            let mut expanded =
-                String::with_capacity(prefix.len() + alternative.len() + suffix.len());
+            let mut expanded: String = crate::default();
             expanded.push_str(prefix);
             expanded.push_str(alternative);
             expanded.push_str(suffix);

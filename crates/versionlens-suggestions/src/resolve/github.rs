@@ -1,6 +1,10 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use crate::model::SuggestionStatus::{
+    Current as StatusCurrent, UpdateAvailable as StatusUpdateAvailable,
+};
+use versionlens_parsers::Dependency;
 
 use crate::model::SuggestionStatus;
+use versionlens_parsers::Ecosystem::{Npm, Ruby};
 
 pub(super) fn github_commit_status_for_dependency(
     dependency: &Dependency,
@@ -12,14 +16,14 @@ pub(super) fn github_commit_status_for_dependency(
 
 fn github_commit_status(current: &str, latest: &str) -> SuggestionStatus {
     if github_commit_matches(current, latest) {
-        SuggestionStatus::Current
+        StatusCurrent
     } else {
-        SuggestionStatus::UpdateAvailable
+        StatusUpdateAvailable
     }
 }
 
 fn is_github_commit_dependency(dependency: &Dependency) -> bool {
-    matches!(dependency.ecosystem, Ecosystem::Npm | Ecosystem::Ruby)
+    matches!(dependency.ecosystem, Npm | Ruby)
         && dependency
             .hosted_url
             .as_deref()

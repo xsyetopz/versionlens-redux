@@ -1,4 +1,12 @@
 use versionlens_suggestions::SuggestionStatus;
+use versionlens_suggestions::SuggestionStatus::{
+    BuildAvailable as StatusBuildAvailable, Current as StatusCurrent, Directory as StatusDirectory,
+    DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,
+    Invalid as StatusInvalid, InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
+    NotSupported as StatusNotSupported, Satisfies as StatusSatisfies,
+    SatisfiesLatest as StatusSatisfiesLatest, Unresolved as StatusUnresolved,
+    UpdateAvailable as StatusUpdateAvailable,
+};
 
 use crate::SuggestionIndicators;
 
@@ -7,18 +15,15 @@ pub(super) fn stable_indicator(
     status: SuggestionStatus,
 ) -> &str {
     match status {
-        SuggestionStatus::Current => &indicators.latest,
-        SuggestionStatus::SatisfiesLatest => &indicators.satisfies_latest,
-        SuggestionStatus::Directory => &indicators.directory,
-        SuggestionStatus::BuildAvailable => &indicators.build,
-        SuggestionStatus::Fixed | SuggestionStatus::Satisfies => &indicators.matched,
-        SuggestionStatus::DirectoryNotFound
-        | SuggestionStatus::Error
-        | SuggestionStatus::Invalid
-        | SuggestionStatus::InvalidRange => &indicators.error,
-        SuggestionStatus::NoMatch
-        | SuggestionStatus::NotSupported
-        | SuggestionStatus::Unresolved => &indicators.no_match,
-        SuggestionStatus::UpdateAvailable => &indicators.updateable,
+        StatusCurrent => &indicators.latest,
+        StatusSatisfiesLatest => &indicators.satisfies_latest,
+        StatusDirectory => &indicators.directory,
+        StatusBuildAvailable => &indicators.build,
+        StatusFixed | StatusSatisfies => &indicators.matched,
+        StatusDirectoryNotFound | StatusError | StatusInvalid | StatusInvalidRange => {
+            &indicators.error
+        }
+        StatusNoMatch | StatusNotSupported | StatusUnresolved => &indicators.no_match,
+        StatusUpdateAvailable => &indicators.updateable,
     }
 }

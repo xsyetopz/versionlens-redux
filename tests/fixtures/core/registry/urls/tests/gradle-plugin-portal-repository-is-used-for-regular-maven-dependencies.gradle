@@ -1,0 +1,7 @@
+repositories {
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation "com.example:demo:1.0.0"
+}

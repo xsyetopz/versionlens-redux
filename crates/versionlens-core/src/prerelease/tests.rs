@@ -1,35 +1,34 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use std::fs::read_to_string;
+use std::path::PathBuf;
+use versionlens_parsers::DocumentInput;
 
-use crate::{
-    PrereleaseTagConfig, ProviderSettings, RegistryResponseInput, SessionConfig,
-    SuggestionIndicators, VersionLensSession,
-};
+use crate::{PrereleaseTagConfig, ProviderSettings, RegistryResponseInput, SessionConfig};
+use versionlens_parsers::Ecosystem::{Composer, Dotnet, Npm, Python};
 
 #[test]
 fn show_prereleases_allows_prerelease_updates() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let input = DocumentInput {
-            uri: "file:///Directory.Packages.props".to_owned(),
-            language_id: "xml".to_owned(),
-            text: r#"<Project><ItemGroup><PackageVersion Include="Newtonsoft.Json" Version="13.0.1" /></ItemGroup></Project>"#.to_owned(),
-            workspace_root: None,
-        };
+        uri: "file:///Directory.Packages.props".to_owned(),
+        language_id: "xml".to_owned(),
+        text: package_file_fixture("show-prereleases-allows-prerelease-updates.Packages.props"),
+        workspace_root: None,
+    };
     let output = session.resolve_document_with_responses(
         input.clone(),
         &[RegistryResponseInput {
             package: "Newtonsoft.Json".to_owned(),
-            ecosystem: Ecosystem::Dotnet,
+            ecosystem: Dotnet,
             body: r#"{"versions":["13.0.3","14.0.0-beta.1"]}"#.to_owned(),
         }],
     );
@@ -42,7 +41,7 @@ fn show_prereleases_allows_prerelease_updates() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -54,21 +53,21 @@ fn show_prereleases_allows_prerelease_updates() {
 
 #[test]
 fn show_prereleases_applies_to_composer_update_choices() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let input = DocumentInput {
         uri: "file:///repo/composer.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"require":{"php-parallel-lint/php-parallel-lint":"3.1.3"}}"#.to_owned(),
+        text: package_file_fixture("show-prereleases-applies-to-composer-update-choices.json"),
         workspace_root: None,
     };
 
@@ -76,7 +75,7 @@ fn show_prereleases_applies_to_composer_update_choices() {
         input.clone(),
         &[RegistryResponseInput {
             package: "php-parallel-lint/php-parallel-lint".to_owned(),
-            ecosystem: Ecosystem::Composer,
+            ecosystem: Composer,
             body: r#"{
               "packages": {
                 "php-parallel-lint/php-parallel-lint": [
@@ -101,26 +100,26 @@ fn show_prereleases_applies_to_composer_update_choices() {
 
 #[test]
 fn show_prereleases_applies_to_npm_versions() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"typescript":"6.0.0"}}"#.to_owned(),
+        text: package_file_fixture("show-prereleases-applies-to-npm-versions.json"),
         workspace_root: None,
     };
     let responses = [RegistryResponseInput {
         package: "typescript".to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#
             .to_owned(),
     }];
@@ -148,26 +147,28 @@ fn show_prereleases_applies_to_npm_versions() {
 
 #[test]
 fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"left-pad":"3.0.0"}}"#.to_owned(),
+        text: package_file_fixture(
+            "show-prereleases-keeps-npm-prerelease-choice-when-fixed-version-is-latest.json",
+        ),
         workspace_root: None,
     };
     let responses = [RegistryResponseInput {
         package: "left-pad".to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: r#"{
           "dist-tags": { "latest": "3.0.0" },
           "versions": {
@@ -197,7 +198,7 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
             lens.arguments
                 .iter()
                 .skip(2)
-                .map(String::as_str)
+                .map(|value| value.as_str())
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -211,32 +212,32 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
 
 #[test]
 fn prerelease_tag_filters_apply_to_responses() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
+        enabled_providers: vec![],
         providers: ProviderSettings {
             prerelease_tags: vec![PrereleaseTagConfig {
-                ecosystem: Ecosystem::Npm,
+                ecosystem: Npm,
                 tags: vec!["beta".to_owned()],
             }],
-            ..ProviderSettings::default()
+            ..crate::default()
         },
-        suggestion_indicators: SuggestionIndicators::standard(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let input = DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"dependencies":{"typescript":"6.0.0"}}"#.to_owned(),
+        text: package_file_fixture("prerelease-tag-filters-apply-to-responses.json"),
         workspace_root: None,
     };
     let responses = [RegistryResponseInput {
         package: "typescript".to_owned(),
-        ecosystem: Ecosystem::Npm,
+        ecosystem: Npm,
         body: r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{},"8.0.0-rc.1":{}}}"#
             .to_owned(),
     }];
@@ -264,27 +265,29 @@ fn prerelease_tag_filters_apply_to_responses() {
 
 #[test]
 fn prerelease_ranges_can_resolve_prerelease_versions_when_hidden() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"typescript":"^1.0.0-beta.1"}}"#.to_owned(),
+            text: package_file_fixture(
+                "prerelease-ranges-can-resolve-prerelease-versions-when-hidden.json",
+            ),
             workspace_root: None,
         },
         &[RegistryResponseInput {
             package: "typescript".to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"versions":{"2.0.0-beta.1":{}}}"#.to_owned(),
         }],
     );
@@ -294,31 +297,52 @@ fn prerelease_ranges_can_resolve_prerelease_versions_when_hidden() {
 
 #[test]
 fn show_prereleases_applies_to_python_releases() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
             uri: "file:///requirements.txt".to_owned(),
             language_id: "pip-requirements".to_owned(),
-            text: "flask==3.0.0".to_owned(),
+            text: package_file_fixture("show-prereleases-applies-to-python-releases.txt"),
             workspace_root: None,
         },
         &[RegistryResponseInput {
             package: "flask".to_owned(),
-            ecosystem: Ecosystem::Python,
+            ecosystem: Python,
             body: r#"{"info":{"version":"3.0.0"},"releases":{"3.0.0":[],"4.0.0rc1":[]}}"#
                 .to_owned(),
         }],
     );
 
     assert_eq!(output.edits[0].new_text, "==4.0.0rc1");
+}
+
+fn package_file_fixture(name: &str) -> String {
+    let path = repo_root()
+        .join("tests/fixtures/core/prerelease/tests")
+        .join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read package-file fixture {}: {error}",
+            path.display()
+        )
+    })
+}
+
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
 }

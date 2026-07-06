@@ -1,9 +1,11 @@
+use super::auth_registry_match_len;
 use versionlens_parsers::{
     NpmAuthEntry, NpmClientCertEntry, NpmGenericProxyConfig, NpmHttpConfig, NpmRegistryEntry,
     parse_bunfig_npm_auth_entries_with_env, parse_bunfig_npm_registry_entries_with_env,
     parse_npm_env_http_config, parse_npm_env_registry_entries, parse_npmrc_auth_entries_with_env,
     parse_npmrc_client_cert_entries_with_env, parse_npmrc_http_config_with_env,
-    parse_npmrc_registry_entries_with_env,
+    parse_npmrc_registry_entries_with_env, parse_yarnrc_npm_auth_entries_with_env,
+    parse_yarnrc_npm_registry_entries_with_env,
 };
 
 #[derive(Debug, Default)]
@@ -16,6 +18,7 @@ pub(super) struct NpmContext {
 
 pub(super) fn npm_context(
     npmrc_texts: &[String],
+    yarnrc_texts: &[String],
     bunfig_texts: &[String],
     env: &[(String, String)],
 ) -> NpmContext {
@@ -28,6 +31,11 @@ pub(super) fn npm_context(
                     .flat_map(|text| parse_npmrc_registry_entries_with_env(text, env)),
             )
             .chain(
+                yarnrc_texts
+                    .iter()
+                    .flat_map(|text| parse_yarnrc_npm_registry_entries_with_env(text, env)),
+            )
+            .chain(
                 bunfig_texts
                     .iter()
                     .flat_map(|text| parse_bunfig_npm_registry_entries_with_env(text, env)),
@@ -36,6 +44,11 @@ pub(super) fn npm_context(
         auth_entries: npmrc_texts
             .iter()
             .flat_map(|text| parse_npmrc_auth_entries_with_env(text, env))
+            .chain(
+                yarnrc_texts
+                    .iter()
+                    .flat_map(|text| parse_yarnrc_npm_auth_entries_with_env(text, env)),
+            )
             .chain(
                 bunfig_texts
                     .iter()
@@ -60,7 +73,9 @@ pub(super) fn npm_registry_entry_applies(entry: &NpmRegistryEntry, name: &str) -
 pub(super) fn best_npm_auth_entry<'a>(entries: &'a [NpmAuthEntry], url: &str) -> Option<&'a str> {
     entries
         .iter()
-        .filter_map(|entry| npm_auth_match_len(entry, url).map(|len| (entry, len)))
+        .filter_map(|entry| {
+            auth_registry_match_len(entry.registry.strip_prefix("//")?, url).map(|len| (entry, len))
+        })
         .max_by_key(|(_, len)| *len)
         .map(|(entry, _)| entry.header_value.as_str())
 }
@@ -104,10 +119,6 @@ fn npm_http_config(npmrc_texts: &[String], env: &[(String, String)]) -> NpmHttpC
     merged
 }
 
-fn npm_auth_match_len(entry: &NpmAuthEntry, url: &str) -> Option<usize> {
-    super::auth_registry_match_len(entry.registry.strip_prefix("//")?, url)
-}
-
 pub(super) fn best_npm_client_cert_entry<'a>(
     entries: &'a [NpmClientCertEntry],
     url: &str,
@@ -115,13 +126,11 @@ pub(super) fn best_npm_client_cert_entry<'a>(
     entries
         .iter()
         .filter(|entry| entry.cert_file.is_some() && entry.key_file.is_some())
-        .filter_map(|entry| npm_client_cert_match_len(entry, url).map(|len| (entry, len)))
+        .filter_map(|entry| {
+            auth_registry_match_len(entry.registry.strip_prefix("//")?, url).map(|len| (entry, len))
+        })
         .max_by_key(|(_, len)| *len)
         .map(|(entry, _)| entry)
-}
-
-fn npm_client_cert_match_len(entry: &NpmClientCertEntry, url: &str) -> Option<usize> {
-    super::auth_registry_match_len(entry.registry.strip_prefix("//")?, url)
 }
 
 pub(super) fn npm_generic_proxy_for_request(
@@ -129,14 +138,14 @@ pub(super) fn npm_generic_proxy_for_request(
     generic_proxy: &NpmGenericProxyConfig,
 ) -> Option<String> {
     if starts_with_ignore_ascii_case(url, "https://") {
-        return generic_proxy.https.as_deref().map(str::to_owned);
+        return generic_proxy.https.as_deref().map(|value| value.to_owned());
     }
     generic_proxy
         .https
         .as_deref()
         .or(generic_proxy.http.as_deref())
         .or(generic_proxy.plain.as_deref())
-        .map(str::to_owned)
+        .map(|value| value.to_owned())
 }
 
 pub(super) fn npm_no_proxy_matches(url: &str, no_proxy: Option<&str>) -> bool {
@@ -146,7 +155,7 @@ pub(super) fn npm_no_proxy_matches(url: &str, no_proxy: Option<&str>) -> bool {
     no_proxy
         .into_iter()
         .flat_map(|entries| entries.split(','))
-        .map(str::trim)
+        .map(|value| value.trim())
         .filter(|entry| !entry.is_empty())
         .any(|entry| npm_no_proxy_entry_matches(host, entry))
 }

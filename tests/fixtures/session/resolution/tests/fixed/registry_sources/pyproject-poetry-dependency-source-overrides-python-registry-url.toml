@@ -1,0 +1,14 @@
+
+[tool.poetry.dependencies]
+public = "^1.0"
+private = { version = "^2.0", source = "private" }
+
+[[tool.poetry.source]]
+name = "private"
+url = "https://private.example.test/simple/"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "mirror"
+url = "https://mirror.example.test/simple/"
+priority = "supplemental"

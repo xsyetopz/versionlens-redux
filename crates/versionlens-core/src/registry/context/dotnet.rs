@@ -1,9 +1,13 @@
+use super::auth_header;
+use super::document_parent_path;
+use super::full_url_or_origin_match_len;
+use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
 use versionlens_http::HttpHeader;
 use versionlens_parsers::{
     Dependency, DocumentInput, DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig,
-    DotnetSourceMapping, parse_nuget_config,
+    DotnetSourceMapping, parse_nuget_config, parse_paket_source_urls,
 };
 
 #[derive(Debug, Default)]
@@ -16,7 +20,17 @@ pub(super) struct DotnetContext {
 }
 
 pub(super) fn dotnet_context(input: &DocumentInput) -> DotnetContext {
-    let mut context = DotnetContext::default();
+    let mut context: DotnetContext = crate::default();
+    for url in parse_paket_source_urls(&input.text) {
+        context.has_source_configuration = true;
+        push_unique_source(
+            &mut context.sources,
+            DotnetNamedSource {
+                name: "paket".to_owned(),
+                url,
+            },
+        );
+    }
     for config in dotnet_config_files(input) {
         if let Some(parsed) = parse_nuget_config(&config.text) {
             merge_dotnet_config(&mut context, &config.path, parsed);
@@ -49,12 +63,12 @@ impl DotnetContext {
     }
 
     pub(super) fn auth_headers_for_url(&self, url: &str) -> Vec<HttpHeader> {
-        super::auth_header(best_dotnet_auth_entry(&self.auth_entries, url))
+        auth_header(best_dotnet_auth_entry(&self.auth_entries, url))
     }
 
     fn mapped_sources(&self, name: &str) -> Vec<String> {
         if self.source_mappings.is_empty() {
-            return Vec::new();
+            return vec![];
         }
 
         self.sources
@@ -79,7 +93,7 @@ fn dotnet_config_files(input: &DocumentInput) -> Vec<DotnetConfigFile> {
                 .map(|file_name| dir.join(file_name))
         })
         .filter_map(|path| {
-            std::fs::read_to_string(&path)
+            read_to_string(&path)
                 .ok()
                 .map(|text| DotnetConfigFile { path, text })
         })
@@ -87,14 +101,14 @@ fn dotnet_config_files(input: &DocumentInput) -> Vec<DotnetConfigFile> {
 }
 
 fn dotnet_config_dirs(input: &DocumentInput) -> Vec<PathBuf> {
-    let Some(mut current) = super::document_parent_path(&input.uri) else {
-        return Vec::new();
+    let Some(mut current) = document_parent_path(&input.uri) else {
+        return vec![];
     };
-    let workspace_root = input.workspace_root.as_deref().map(Path::new);
-    let mut dirs = Vec::new();
+    let workspace_root = input.workspace_root.as_deref().map(crate::path);
+    let mut dirs = vec![];
 
     loop {
-        push_unique_path(&mut dirs, PathBuf::from(current.as_path()));
+        push_unique_path(&mut dirs, current.as_path().into());
         if workspace_root.is_some_and(|root| current == root) {
             break;
         }
@@ -151,7 +165,7 @@ fn merge_dotnet_config(context: &mut DotnetContext, config_path: &Path, config: 
 }
 
 fn resolve_nuget_source_url(config_path: &Path, url: &str) -> String {
-    if remote_url(url) || url.starts_with("file://") || Path::new(url).is_absolute() {
+    if remote_url(url) || url.starts_with("file://") || crate::path(url).is_absolute() {
         return url.to_owned();
     }
 
@@ -168,13 +182,11 @@ fn remote_url(url: &str) -> bool {
 fn best_dotnet_auth_entry<'a>(entries: &'a [DotnetAuthEntry], url: &str) -> Option<&'a str> {
     entries
         .iter()
-        .filter_map(|entry| dotnet_auth_match_len(entry, url).map(|len| (entry, len)))
+        .filter_map(|entry| {
+            full_url_or_origin_match_len(&entry.registry, url).map(|len| (entry, len))
+        })
         .max_by_key(|(_, len)| *len)
         .map(|(entry, _)| entry.header_value.as_str())
-}
-
-fn dotnet_auth_match_len(entry: &DotnetAuthEntry, url: &str) -> Option<usize> {
-    super::full_url_or_origin_match_len(&entry.registry, url)
 }
 
 fn dotnet_source_matches_package(

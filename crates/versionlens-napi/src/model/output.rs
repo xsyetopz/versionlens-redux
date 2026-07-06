@@ -9,6 +9,7 @@ mod text_edit;
 
 pub(crate) use analyze::NativeAnalyzeDocumentOutput;
 pub(crate) use resolve::NativeResolveDocumentOutput;
+pub(crate) use status::NativeStatusPayload;
 
 #[cfg(test)]
 mod tests;

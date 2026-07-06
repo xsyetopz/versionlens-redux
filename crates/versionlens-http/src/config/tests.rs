@@ -1,8 +1,8 @@
-use super::{HttpConfig, HttpConfigInput, HttpHeaderInput};
+use super::{HttpConfigInput, HttpHeaderInput};
 
 #[test]
 fn config_input_uses_standard_defaults_for_missing_options() {
-    let config = HttpConfig::from_input(HttpConfigInput {
+    let config = crate::http_config_from_input(HttpConfigInput {
         timeout_ms: None,
         strict_ssl: None,
         proxy: None,
@@ -24,7 +24,7 @@ fn config_input_uses_standard_defaults_for_missing_options() {
 
 #[test]
 fn config_input_trims_proxy_and_ca_file_and_rejects_blank_values() {
-    let config = HttpConfig::from_input(HttpConfigInput {
+    let config = crate::http_config_from_input(HttpConfigInput {
         timeout_ms: Some(250),
         strict_ssl: Some(false),
         proxy: Some(" http://localhost:8080 ".to_owned()),
@@ -42,16 +42,16 @@ fn config_input_trims_proxy_and_ca_file_and_rejects_blank_values() {
     assert_eq!(config.proxy.as_deref(), Some("http://localhost:8080"));
     assert_eq!(config.ca_file.as_deref(), Some("/tmp/versionlens-ca.pem"));
 
-    let config = HttpConfig::from_input(HttpConfigInput {
+    let config = crate::http_config_from_input(HttpConfigInput {
         timeout_ms: None,
         strict_ssl: None,
         proxy: Some("   ".to_owned()),
-        ca_file: Some(String::new()),
+        ca_file: Some("".to_owned()),
         ca: Some("   ".to_owned()),
         cert_file: Some("   ".to_owned()),
-        key_file: Some(String::new()),
+        key_file: Some("".to_owned()),
         cert: Some("   ".to_owned()),
-        key: Some(String::new()),
+        key: Some("".to_owned()),
         auth_headers: None,
     });
 
@@ -61,7 +61,7 @@ fn config_input_trims_proxy_and_ca_file_and_rejects_blank_values() {
 
 #[test]
 fn config_input_trims_header_names_and_urls_and_rejects_blank_names() {
-    let config = HttpConfig::from_input(HttpConfigInput {
+    let config = crate::http_config_from_input(HttpConfigInput {
         timeout_ms: None,
         strict_ssl: None,
         proxy: None,

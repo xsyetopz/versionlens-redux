@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Zeta.Package" Version="1" />
+    <PackageReference Include="Alpha.Package" Version="1" />
+  </ItemGroup>
+</Project>

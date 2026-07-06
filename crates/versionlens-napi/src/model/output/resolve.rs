@@ -18,10 +18,10 @@ pub struct NativeResolveDocumentOutput {
 impl NativeResolveDocumentOutput {
     pub(crate) fn empty() -> Self {
         Self {
-            suggestions: Vec::new(),
-            edits: Vec::new(),
+            suggestions: vec![],
+            edits: vec![],
             authorization_required_count: 0,
-            authorization_required_requests: Vec::new(),
+            authorization_required_requests: vec![],
             vulnerable_update_count: 0,
             vulnerable_update_package: None,
             vulnerable_update_version: None,
@@ -32,18 +32,14 @@ impl NativeResolveDocumentOutput {
             suggestions: output
                 .suggestions
                 .into_iter()
-                .map(NativeSuggestion::from_core)
+                .map(|suggestion| suggestion.into())
                 .collect(),
-            edits: output
-                .edits
-                .into_iter()
-                .map(NativeTextEdit::from_core)
-                .collect(),
+            edits: output.edits.into_iter().map(|edit| edit.into()).collect(),
             authorization_required_count: output.authorization_required_count,
             authorization_required_requests: output
                 .authorization_required_requests
                 .into_iter()
-                .map(NativeAuthorizationRequest::from_core)
+                .map(|request| request.into())
                 .collect(),
             vulnerable_update_count: output.vulnerable_update_count,
             vulnerable_update_package: output.vulnerable_update_package,
@@ -64,5 +60,23 @@ impl NativeAuthorizationRequest {
             auth_url: input.auth_url,
             request_url: input.request_url,
         }
+    }
+}
+
+impl Default for NativeResolveDocumentOutput {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl From<ResolveDocumentOutput> for NativeResolveDocumentOutput {
+    fn from(value: ResolveDocumentOutput) -> Self {
+        Self::from_core(value)
+    }
+}
+
+impl From<AuthorizationRequestPayload> for NativeAuthorizationRequest {
+    fn from(value: AuthorizationRequestPayload) -> Self {
+        Self::from_core(value)
     }
 }

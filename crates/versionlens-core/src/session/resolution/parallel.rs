@@ -1,42 +1,24 @@
-use versionlens_parsers::Dependency;
+use std::thread::scope;
 use versionlens_suggestions::Suggestion;
-use versionlens_versions::ProjectVersionBump;
 
+use super::ResolutionRequest;
+use super::dependency::ResolveDependencyInput;
 use crate::VersionLensSession;
 use crate::concurrency::dependency_chunks;
-use crate::model::RegistryResponseInput;
-use crate::registry::RegistryContext;
+
+type ResolvedSuggestions = Vec<Suggestion>;
 
 pub(super) fn resolve_dependencies(
     session: &VersionLensSession,
-    dependencies: Vec<Dependency>,
-    document_uri: &str,
-    responses: &[RegistryResponseInput],
-    project_bump: Option<ProjectVersionBump>,
-    context: &RegistryContext,
-) -> Vec<Suggestion> {
-    let worker_count = resolve_worker_count(dependencies.len());
+    request: ResolutionRequest<'_>,
+) -> ResolvedSuggestions {
+    let worker_count = resolve_worker_count(request.dependencies.len());
 
     if worker_count <= 1 {
-        return resolve_sequential(
-            session,
-            dependencies,
-            document_uri,
-            responses,
-            project_bump,
-            context,
-        );
+        return resolve_sequential(session, request);
     }
 
-    resolve_parallel(
-        session,
-        dependencies,
-        document_uri,
-        responses,
-        project_bump,
-        worker_count,
-        context,
-    )
+    resolve_parallel(session, request, worker_count)
 }
 
 fn resolve_worker_count(dependency_count: usize) -> usize {
@@ -45,50 +27,57 @@ fn resolve_worker_count(dependency_count: usize) -> usize {
 
 fn resolve_sequential(
     session: &VersionLensSession,
-    dependencies: Vec<Dependency>,
-    document_uri: &str,
-    responses: &[RegistryResponseInput],
-    project_bump: Option<ProjectVersionBump>,
-    context: &RegistryContext,
-) -> Vec<Suggestion> {
+    request: ResolutionRequest<'_>,
+) -> ResolvedSuggestions {
+    let ResolutionRequest {
+        dependencies,
+        document_uri,
+        responses,
+        project_bump,
+        context,
+    } = request;
+
     dependencies
         .into_iter()
         .filter_map(|dependency| {
-            session.resolve_dependency_with_responses(
+            session.resolve_dependency_with_responses(ResolveDependencyInput {
                 dependency,
-                Some(document_uri),
+                document_uri: Some(document_uri),
                 responses,
                 project_bump,
                 context,
-            )
+            })
         })
         .collect()
 }
 
 fn resolve_parallel(
     session: &VersionLensSession,
-    dependencies: Vec<Dependency>,
-    document_uri: &str,
-    responses: &[RegistryResponseInput],
-    project_bump: Option<ProjectVersionBump>,
+    request: ResolutionRequest<'_>,
     worker_count: usize,
-    context: &RegistryContext,
-) -> Vec<Suggestion> {
+) -> ResolvedSuggestions {
+    let ResolutionRequest {
+        dependencies,
+        document_uri,
+        responses,
+        project_bump,
+        context,
+    } = request;
     let chunks = dependency_chunks(dependencies, worker_count);
-    std::thread::scope(|scope| {
-        let mut handles = Vec::new();
+    scope(|scope| {
+        let mut handles = vec![];
         for chunk in chunks {
             handles.push(scope.spawn(move || {
                 chunk
                     .into_iter()
                     .filter_map(|dependency| {
-                        session.resolve_dependency_with_responses(
+                        session.resolve_dependency_with_responses(ResolveDependencyInput {
                             dependency,
-                            Some(document_uri),
+                            document_uri: Some(document_uri),
                             responses,
                             project_bump,
                             context,
-                        )
+                        })
                     })
                     .collect::<Vec<_>>()
             }));

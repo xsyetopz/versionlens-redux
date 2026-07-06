@@ -1,0 +1,6 @@
+packageExtensions:
+  react@18:
+    dependencies:
+      scheduler: ^0.23.0
+    peerDependencies:
+      '@types/react': ^18.0.0

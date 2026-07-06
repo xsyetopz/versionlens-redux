@@ -1,0 +1,5 @@
+[dependencies]
+serde = "1"
+
+[workspace.metadata.versionlens.dependencies]
+custom = "1"

@@ -1,8 +1,10 @@
+use napi::Env as NapiEnv;
+use napi::Result as NapiResult;
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use napi::bindgen_prelude::{AsyncTask, Task};
 use napi_derive::napi;
-use versionlens_core::VersionLensSession;
+use versionlens_core::{ApplyCommandRequest, VersionLensSession, version_lens_session};
 
 use crate::model::{
     NativeAnalyzeDocumentOutput, NativeApplyCommandInput, NativeDocumentInput,
@@ -17,9 +19,7 @@ pub struct NativeSession {
 #[napi]
 pub fn create_session(config: NativeSessionConfig) -> NativeSession {
     NativeSession {
-        inner: Arc::new(RwLock::new(Some(VersionLensSession::new(
-            config.into_core(),
-        )))),
+        inner: crate::new_session_cell(Some(version_lens_session(config.into_core()))),
     }
 }
 
@@ -27,29 +27,31 @@ pub fn create_session(config: NativeSessionConfig) -> NativeSession {
 impl NativeSession {
     #[napi]
     pub fn analyze_document(&self, input: NativeDocumentInput) -> NativeAnalyzeDocumentOutput {
-        self.with_session(NativeAnalyzeDocumentOutput::empty(), |session| {
-            NativeAnalyzeDocumentOutput::from_core(session.analyze_document(input.into_core()))
+        self.with_session(crate::empty_analyze_document_output(), |session| {
+            crate::analyze_document_output_from_core(session.analyze_document(input.into_core()))
         })
     }
 
     #[napi]
     pub fn resolve_document(&self, input: NativeDocumentInput) -> AsyncTask<ResolveDocumentTask> {
-        AsyncTask::new(ResolveDocumentTask {
-            session: Arc::clone(&self.inner),
+        crate::async_task(ResolveDocumentTask {
+            session: crate::clone_arc(&self.inner),
             input: Some(input),
         })
     }
 
     #[napi]
     pub fn apply_command(&self, input: NativeApplyCommandInput) -> NativeResolveDocumentOutput {
-        self.with_session(NativeResolveDocumentOutput::empty(), |session| {
+        self.with_session(crate::empty_resolve_document_output(), |session| {
             let (document, command, dependency_name, selected_version) = input.into_parts();
-            NativeResolveDocumentOutput::from_core(session.apply_command_with_selected_version(
-                document,
-                command.as_deref(),
-                dependency_name.as_deref(),
-                selected_version.as_deref(),
-                &[],
+            crate::resolve_document_output_from_core(session.apply_command_with_selected_version(
+                ApplyCommandRequest {
+                    input: document,
+                    command: command.as_deref(),
+                    dependency_name: dependency_name.as_deref(),
+                    selected_version: selected_version.as_deref(),
+                    responses: &[],
+                },
             ))
         })
     }
@@ -79,13 +81,13 @@ impl NativeSession {
     fn read_guard(&self) -> RwLockReadGuard<'_, Option<VersionLensSession>> {
         self.inner
             .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
     }
 
     fn write_guard(&self) -> RwLockWriteGuard<'_, Option<VersionLensSession>> {
         self.inner
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
     }
 }
 
@@ -98,24 +100,24 @@ impl Task for ResolveDocumentTask {
     type Output = NativeResolveDocumentOutput;
     type JsValue = NativeResolveDocumentOutput;
 
-    fn compute(&mut self) -> napi::Result<Self::Output> {
+    fn compute(&mut self) -> NapiResult<Self::Output> {
         let Some(input) = self.input.take() else {
-            return Ok(NativeResolveDocumentOutput::empty());
+            return Ok(crate::empty_resolve_document_output());
         };
         let input = input.into_core();
         let guard = self
             .session
             .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
         Ok(match guard.as_ref() {
             Some(session) => {
-                NativeResolveDocumentOutput::from_core(session.resolve_document(input))
+                crate::resolve_document_output_from_core(session.resolve_document(input))
             }
-            None => NativeResolveDocumentOutput::empty(),
+            None => crate::empty_resolve_document_output(),
         })
     }
 
-    fn resolve(&mut self, _env: napi::Env, output: Self::Output) -> napi::Result<Self::JsValue> {
+    fn resolve(&mut self, _: NapiEnv, output: Self::Output) -> NapiResult<Self::JsValue> {
         Ok(output)
     }
 }

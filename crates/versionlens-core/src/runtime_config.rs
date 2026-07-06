@@ -2,11 +2,11 @@ use versionlens_http::{HttpConfig, HttpHeader};
 use versionlens_parsers::{Dependency, Ecosystem, ManifestKind};
 
 use crate::VersionLensSession;
-use crate::prerelease::requirement_mentions_prerelease;
+use crate::prerelease::dependency_allows_prereleases;
 
 impl VersionLensSession {
     pub(crate) fn includes_prereleases(&self, dependency: &Dependency) -> bool {
-        self.config.show_prereleases || requirement_mentions_prerelease(&dependency.requirement)
+        self.config.show_prereleases || dependency_allows_prereleases(dependency)
     }
 
     pub(crate) fn prerelease_tags(&self, ecosystem: Ecosystem) -> &[String] {
@@ -51,13 +51,43 @@ impl VersionLensSession {
         HttpConfig {
             timeout_ms: self.config.http.timeout_ms,
             strict_ssl,
-            proxy: self.config.http.proxy.as_deref().map(str::to_owned),
-            ca_file: self.config.http.ca_file.as_deref().map(str::to_owned),
-            ca: self.config.http.ca.as_deref().map(str::to_owned),
-            cert_file: self.config.http.cert_file.as_deref().map(str::to_owned),
-            key_file: self.config.http.key_file.as_deref().map(str::to_owned),
-            cert: self.config.http.cert.as_deref().map(str::to_owned),
-            key: self.config.http.key.as_deref().map(str::to_owned),
+            proxy: self
+                .config
+                .http
+                .proxy
+                .as_deref()
+                .map(|value| value.to_owned()),
+            ca_file: self
+                .config
+                .http
+                .ca_file
+                .as_deref()
+                .map(|value| value.to_owned()),
+            ca: self.config.http.ca.as_deref().map(|value| value.to_owned()),
+            cert_file: self
+                .config
+                .http
+                .cert_file
+                .as_deref()
+                .map(|value| value.to_owned()),
+            key_file: self
+                .config
+                .http
+                .key_file
+                .as_deref()
+                .map(|value| value.to_owned()),
+            cert: self
+                .config
+                .http
+                .cert
+                .as_deref()
+                .map(|value| value.to_owned()),
+            key: self
+                .config
+                .http
+                .key
+                .as_deref()
+                .map(|value| value.to_owned()),
             auth_headers: self
                 .config
                 .http
@@ -67,7 +97,7 @@ impl VersionLensSession {
                 .map(|header| HttpHeader {
                     name: header.name.as_str().to_owned(),
                     value: header.value.as_str().to_owned(),
-                    url: header.url.as_deref().map(str::to_owned),
+                    url: header.url.as_deref().map(|value| value.to_owned()),
                 })
                 .collect(),
         }

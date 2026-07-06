@@ -1,21 +1,28 @@
+use versionlens_suggestions::SuggestionStatus::{
+    DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Invalid as StatusInvalid,
+    InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
+    NotSupported as StatusNotSupported, UpdateAvailable as StatusUpdateAvailable,
+};
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
 use versionlens_vscode_model::{DiagnosticPayload, StatusPayload};
+
+type OptionalSuggestions<'a> = &'a [Option<Suggestion>];
 
 pub(crate) fn status_payload(
     dependency_count: usize,
     diagnostics: &[DiagnosticPayload],
-    suggestions: &[Option<Suggestion>],
+    suggestions: OptionalSuggestions<'_>,
     show_suggestion_stats: bool,
 ) -> StatusPayload {
     let dependency_count = to_u32(dependency_count);
-    let update_count = suggestions_with_status(suggestions, SuggestionStatus::UpdateAvailable);
+    let update_count = suggestions_with_status(suggestions, StatusUpdateAvailable);
     let vulnerability_count = diagnostics.len();
-    let error_count = suggestions_with_status(suggestions, SuggestionStatus::Error)
-        + suggestions_with_status(suggestions, SuggestionStatus::DirectoryNotFound)
-        + suggestions_with_status(suggestions, SuggestionStatus::Invalid)
-        + suggestions_with_status(suggestions, SuggestionStatus::InvalidRange);
-    let no_match_count = suggestions_with_status(suggestions, SuggestionStatus::NoMatch)
-        + suggestions_with_status(suggestions, SuggestionStatus::NotSupported);
+    let error_count = suggestions_with_status(suggestions, StatusError)
+        + suggestions_with_status(suggestions, StatusDirectoryNotFound)
+        + suggestions_with_status(suggestions, StatusInvalid)
+        + suggestions_with_status(suggestions, StatusInvalidRange);
+    let no_match_count = suggestions_with_status(suggestions, StatusNoMatch)
+        + suggestions_with_status(suggestions, StatusNotSupported);
     let update_count = to_u32(update_count);
     let vulnerability_count = to_u32(vulnerability_count);
     let error_count = to_u32(error_count);
@@ -43,7 +50,10 @@ pub(crate) fn status_payload(
     }
 }
 
-fn suggestions_with_status(suggestions: &[Option<Suggestion>], status: SuggestionStatus) -> usize {
+fn suggestions_with_status(
+    suggestions: OptionalSuggestions<'_>,
+    status: SuggestionStatus,
+) -> usize {
     suggestions
         .iter()
         .filter(|suggestion| {

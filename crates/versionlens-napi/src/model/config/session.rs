@@ -1,5 +1,5 @@
 use napi_derive::napi;
-use versionlens_core::{SessionConfig, SessionConfigInput};
+use versionlens_core::{SessionConfig as CoreSessionConfig, SessionConfigInput};
 
 use super::http::NativeHttpConfig;
 use super::providers::NativeProviderSettings;
@@ -18,19 +18,19 @@ pub struct NativeSessionConfig {
 }
 
 impl NativeSessionConfig {
-    pub(crate) fn into_core(self) -> SessionConfig {
-        SessionConfig::from_input(SessionConfigInput {
+    pub(crate) fn into_core(self) -> CoreSessionConfig {
+        versionlens_core::SessionConfig::from_input(SessionConfigInput {
             cache_duration_minutes: self.cache_duration_minutes,
             cache_ttl_seconds: None,
             enabled_providers: self.enabled_providers,
-            providers: self.providers.map(NativeProviderSettings::into_input),
+            providers: self.providers.map(|providers| providers.into()),
             suggestion_indicators: self
                 .suggestion_indicators
-                .map(NativeSuggestionIndicators::into_input),
+                .map(|indicators| indicators.into()),
             show_vulnerabilities: self.show_vulnerabilities,
             show_suggestion_stats: self.show_suggestion_stats,
             show_prereleases: self.show_prereleases,
-            http: self.http.map(NativeHttpConfig::into_input),
+            http: self.http.map(|http| http.into()),
         })
     }
 }

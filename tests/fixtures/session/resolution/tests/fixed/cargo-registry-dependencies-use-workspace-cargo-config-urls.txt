@@ -1,0 +1,3 @@
+
+[dependencies]
+private = { version = "1.0", registry = "private" }

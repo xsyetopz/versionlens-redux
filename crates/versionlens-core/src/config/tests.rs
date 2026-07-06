@@ -1,50 +1,75 @@
 use versionlens_http::{HttpConfigInput, HttpHeaderInput};
-use versionlens_parsers::{Ecosystem, ManifestKind};
 
 use super::{
     DependencyPropertyConfigInput, FilePatternConfigInput, PrereleaseTagConfigInput,
     ProviderCacheConfigInput, ProviderHttpConfigInput, ProviderSettingsInput,
     RegistryUrlConfigInput, SessionConfig, SessionConfigInput, SuggestionIndicatorsInput,
     dependency_property_config_from_name, dependency_property_manifest_kind_from_name,
-    enabled_provider_config_from_name, prerelease_tag_config_from_name,
-    provider_cache_config_from_name, provider_http_config_from_name,
-    provider_settings_manifest_kind_from_name, registry_url_config_from_name,
+    enabled_provider_config_from_name, file_pattern_config_from_name,
+    prerelease_tag_config_from_name, provider_cache_config_from_name,
+    provider_http_config_from_name, provider_settings_manifest_kind_from_name,
+    registry_url_config_from_name,
+};
+use versionlens_parsers::Ecosystem::{Cargo, Deno, Npm};
+use versionlens_parsers::ManifestKind::{
+    Cabal, ComposerJson, DenoImportMapJson, DenoJson, JsrJson, MixExs, NpmPackageJson,
+    NpmPackageJson5, NpmPackageYaml, Opam, PnpmYaml,
 };
 
 #[test]
 fn enabled_provider_config_names_are_manifest_scoped() {
     let npm = enabled_provider_config_from_name("npm").expect("npm provider");
-    assert_eq!(npm.ecosystem, Ecosystem::Npm);
-    assert_eq!(npm.manifest_kind, Some(ManifestKind::NpmPackageJson));
+    assert_eq!(npm.ecosystem, Npm);
+    assert_eq!(npm.manifest_kind, Some(NpmPackageJson));
 
     let bun = enabled_provider_config_from_name("bun").expect("bun provider");
-    assert_eq!(bun.ecosystem, Ecosystem::Npm);
-    assert_eq!(bun.manifest_kind, Some(ManifestKind::NpmPackageJson));
+    assert_eq!(bun.ecosystem, Npm);
+    assert_eq!(bun.manifest_kind, Some(NpmPackageJson));
 
     let pnpm = enabled_provider_config_from_name("pnpm").expect("pnpm provider");
-    assert_eq!(pnpm.ecosystem, Ecosystem::Npm);
-    assert_eq!(pnpm.manifest_kind, Some(ManifestKind::PnpmYaml));
+    assert_eq!(pnpm.ecosystem, Npm);
+    assert_eq!(pnpm.manifest_kind, Some(PnpmYaml));
 
     let cargo = enabled_provider_config_from_name("cargo").expect("cargo provider");
-    assert_eq!(cargo.ecosystem, Ecosystem::Cargo);
+    assert_eq!(cargo.ecosystem, Cargo);
     assert_eq!(cargo.manifest_kind, None);
 
     assert_eq!(enabled_provider_config_from_name("unknown"), None);
 }
 
 #[test]
+fn npm_enabled_provider_config_applies_to_package_json5_and_package_yaml() {
+    let config = enabled_provider_config_from_name("npm").expect("npm provider");
+
+    assert!(config.applies_to_manifest(NpmPackageJson, Npm));
+    assert!(config.applies_to_manifest(NpmPackageJson5, Npm));
+    assert!(config.applies_to_manifest(NpmPackageYaml, Npm));
+    assert!(!config.applies_to_manifest(PnpmYaml, Npm));
+}
+
+#[test]
+fn deno_enabled_provider_config_applies_to_import_maps_and_jsr_config() {
+    let config = enabled_provider_config_from_name("deno").expect("deno provider");
+
+    assert!(config.applies_to_manifest(DenoJson, Deno));
+    assert!(config.applies_to_manifest(DenoImportMapJson, Deno));
+    assert!(config.applies_to_manifest(JsrJson, Deno));
+    assert!(!config.applies_to_manifest(NpmPackageJson, Npm));
+}
+
+#[test]
 fn dependency_property_names_are_manifest_scoped() {
     assert_eq!(
         dependency_property_manifest_kind_from_name("npm"),
-        Some(ManifestKind::NpmPackageJson)
+        Some(NpmPackageJson)
     );
     assert_eq!(
         dependency_property_manifest_kind_from_name("bun"),
-        Some(ManifestKind::NpmPackageJson)
+        Some(NpmPackageJson)
     );
     assert_eq!(
         dependency_property_manifest_kind_from_name("pnpm"),
-        Some(ManifestKind::PnpmYaml)
+        Some(PnpmYaml)
     );
     assert_eq!(dependency_property_manifest_kind_from_name("cargo"), None);
 }
@@ -53,7 +78,7 @@ fn dependency_property_names_are_manifest_scoped() {
 fn provider_setting_names_are_manifest_scoped() {
     assert_eq!(
         provider_settings_manifest_kind_from_name("pnpm"),
-        Some(ManifestKind::PnpmYaml)
+        Some(PnpmYaml)
     );
     assert_eq!(provider_settings_manifest_kind_from_name("npm"), None);
     assert_eq!(provider_settings_manifest_kind_from_name("cargo"), None);
@@ -65,9 +90,39 @@ fn dependency_property_config_uses_provider_scope_override() {
         dependency_property_config_from_name("npm", Some("pnpm"), vec!["catalog".to_owned()])
             .expect("dependency property config");
 
-    assert_eq!(config.ecosystem, Ecosystem::Npm);
-    assert_eq!(config.manifest_kind, Some(ManifestKind::PnpmYaml));
+    assert_eq!(config.ecosystem, Npm);
+    assert_eq!(config.manifest_kind, Some(PnpmYaml));
     assert_eq!(config.properties, ["catalog"]);
+}
+
+#[test]
+fn hex_file_pattern_config_routes_to_mix_exs() {
+    let config = file_pattern_config_from_name("hex", " **/mix.exs ".to_owned())
+        .expect("hex file pattern config");
+
+    assert_eq!(config.manifest_kind, MixExs);
+    assert_eq!(config.pattern, "**/mix.exs");
+}
+
+#[test]
+fn opam_file_pattern_config_routes_to_opam() {
+    let config = file_pattern_config_from_name("opam", " **/{opam,*.opam} ".to_owned())
+        .expect("opam file pattern config");
+
+    assert_eq!(config.manifest_kind, Opam);
+    assert_eq!(config.pattern, "**/{opam,*.opam}");
+}
+
+#[test]
+fn hackage_file_pattern_config_routes_to_cabal() {
+    let config = file_pattern_config_from_name(
+        "hackage",
+        " **/{*.cabal,cabal.project,stack.yaml} ".to_owned(),
+    )
+    .expect("hackage file pattern config");
+
+    assert_eq!(config.manifest_kind, Cabal);
+    assert_eq!(config.pattern, "**/{*.cabal,cabal.project,stack.yaml}");
 }
 
 #[test]
@@ -75,7 +130,7 @@ fn registry_url_config_trims_urls_and_rejects_blank_values() {
     let config = registry_url_config_from_name("cargo", " https://mirror.test/crates ".to_owned())
         .expect("registry url config");
 
-    assert_eq!(config.ecosystem, Ecosystem::Cargo);
+    assert_eq!(config.ecosystem, Cargo);
     assert_eq!(config.url, "https://mirror.test/crates");
     assert_eq!(
         registry_url_config_from_name("cargo", "   ".to_owned()),
@@ -87,14 +142,14 @@ fn registry_url_config_trims_urls_and_rejects_blank_values() {
 fn prerelease_tag_config_trims_tags_and_rejects_empty_results() {
     let config = prerelease_tag_config_from_name(
         "npm",
-        vec![" beta ".to_owned(), String::new(), "  ".to_owned()],
+        vec![" beta ".to_owned(), "".to_owned(), "  ".to_owned()],
     )
     .expect("prerelease tag config");
 
-    assert_eq!(config.ecosystem, Ecosystem::Npm);
+    assert_eq!(config.ecosystem, Npm);
     assert_eq!(config.tags, ["beta"]);
     assert_eq!(
-        prerelease_tag_config_from_name("npm", vec![String::new()]),
+        prerelease_tag_config_from_name("npm", vec!["".to_owned()]),
         None
     );
 }
@@ -104,8 +159,8 @@ fn provider_cache_config_maps_duration_and_manifest_scope() {
     let config =
         provider_cache_config_from_name("pnpm", Some(0.25)).expect("provider cache config");
 
-    assert_eq!(config.ecosystem, Ecosystem::Npm);
-    assert_eq!(config.manifest_kind, Some(ManifestKind::PnpmYaml));
+    assert_eq!(config.ecosystem, Npm);
+    assert_eq!(config.manifest_kind, Some(PnpmYaml));
     assert_eq!(config.cache_ttl_ms, 15_000);
     assert_eq!(provider_cache_config_from_name("pnpm", None), None);
 }
@@ -114,14 +169,14 @@ fn provider_cache_config_maps_duration_and_manifest_scope() {
 fn provider_http_config_maps_manifest_scope() {
     let config = provider_http_config_from_name("pnpm", Some(false)).expect("provider http config");
 
-    assert_eq!(config.ecosystem, Ecosystem::Npm);
-    assert_eq!(config.manifest_kind, Some(ManifestKind::PnpmYaml));
+    assert_eq!(config.ecosystem, Npm);
+    assert_eq!(config.manifest_kind, Some(PnpmYaml));
     assert_eq!(config.strict_ssl, Some(false));
 }
 
 #[test]
 fn session_config_input_applies_core_defaults() {
-    let config = SessionConfig::from_input(SessionConfigInput {
+    let config = crate::session_config_from_input(SessionConfigInput {
         cache_duration_minutes: None,
         cache_ttl_seconds: None,
         enabled_providers: None,
@@ -150,12 +205,9 @@ fn session_config_input_normalizes_session_indicator_and_http_values() {
 
     assert_eq!(config.cache_ttl_ms, 30_000);
     assert_eq!(config.enabled_providers.len(), 2);
-    assert_eq!(config.enabled_providers[0].ecosystem, Ecosystem::Cargo);
-    assert_eq!(config.enabled_providers[1].ecosystem, Ecosystem::Npm);
-    assert_eq!(
-        config.enabled_providers[1].manifest_kind,
-        Some(ManifestKind::PnpmYaml)
-    );
+    assert_eq!(config.enabled_providers[0].ecosystem, Cargo);
+    assert_eq!(config.enabled_providers[1].ecosystem, Npm);
+    assert_eq!(config.enabled_providers[1].manifest_kind, Some(PnpmYaml));
     assert_eq!(config.suggestion_indicators.updateable, "U");
     assert_eq!(config.suggestion_indicators.latest, "\u{1F7E2}");
     assert!(!config.show_vulnerabilities);
@@ -181,15 +233,15 @@ fn session_config_input_normalizes_provider_values() {
     assert_eq!(config.providers.provider_cache[0].cache_ttl_ms, 15_000);
     assert_eq!(
         config.providers.provider_http[0].manifest_kind,
-        Some(ManifestKind::PnpmYaml)
+        Some(PnpmYaml)
     );
     assert_eq!(
         config.providers.dependency_properties[0].manifest_kind,
-        Some(ManifestKind::PnpmYaml)
+        Some(PnpmYaml)
     );
     assert_eq!(
         config.providers.file_patterns[0].manifest_kind,
-        ManifestKind::ComposerJson
+        ComposerJson
     );
     assert_eq!(
         config.providers.file_patterns[0].pattern,
@@ -198,7 +250,7 @@ fn session_config_input_normalizes_provider_values() {
 }
 
 fn normalized_session_config() -> SessionConfig {
-    SessionConfig::from_input(SessionConfigInput {
+    crate::session_config_from_input(SessionConfigInput {
         cache_duration_minutes: Some(0.5),
         cache_ttl_seconds: Some(90),
         enabled_providers: Some(vec![
@@ -241,7 +293,7 @@ fn normalized_session_config() -> SessionConfig {
         }),
         suggestion_indicators: Some(SuggestionIndicatorsInput {
             updateable: Some("U".to_owned()),
-            ..SuggestionIndicatorsInput::default()
+            ..crate::default()
         }),
         show_vulnerabilities: Some(false),
         show_suggestion_stats: Some(true),

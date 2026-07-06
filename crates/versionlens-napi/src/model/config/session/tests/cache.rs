@@ -1,4 +1,5 @@
 use super::blank_session_config;
+use crate::model::config::NativeSessionConfig;
 
 #[test]
 fn missing_cache_ttl_uses_extension_default() {
@@ -11,7 +12,7 @@ fn missing_cache_ttl_uses_extension_default() {
 
 #[test]
 fn legacy_fractional_cache_minutes_are_converted_to_milliseconds() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         cache_duration_minutes: Some(0.5),
         ..blank_session_config()
     }

@@ -1,22 +1,23 @@
-use versionlens_http::HttpConfig;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use std::fs::read_to_string;
+use std::path::PathBuf;
+use versionlens_parsers::DocumentInput;
 
-use crate::{
-    ProviderSettings, RegistryResponseInput, SessionConfig, SuggestionIndicators,
-    VersionLensSession,
-};
+use super::resolve_worker_count;
+
+use crate::{RegistryResponseInput, SessionConfig};
+use versionlens_parsers::Ecosystem::Npm;
 
 #[test]
 fn batched_resolution_preserves_dependency_order() {
-    let session = VersionLensSession::new(SessionConfig {
+    let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
-        enabled_providers: Vec::new(),
-        providers: ProviderSettings::default(),
-        suggestion_indicators: SuggestionIndicators::standard(),
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: HttpConfig::standard(),
+        http: versionlens_http::standard_http_config(),
     });
     let names = [
         "dep-00", "dep-01", "dep-02", "dep-03", "dep-04", "dep-05", "dep-06", "dep-07", "dep-08",
@@ -26,7 +27,7 @@ fn batched_resolution_preserves_dependency_order() {
         .iter()
         .map(|name| RegistryResponseInput {
             package: (*name).to_owned(),
-            ecosystem: Ecosystem::Npm,
+            ecosystem: Npm,
             body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
         })
         .collect::<Vec<_>>();
@@ -35,8 +36,7 @@ fn batched_resolution_preserves_dependency_order() {
         DocumentInput {
             uri: "file:///package.json".to_owned(),
             language_id: "json".to_owned(),
-            text: r#"{"dependencies":{"dep-00":"1.0.0","dep-01":"1.0.0","dep-02":"1.0.0","dep-03":"1.0.0","dep-04":"1.0.0","dep-05":"1.0.0","dep-06":"1.0.0","dep-07":"1.0.0","dep-08":"1.0.0","dep-09":"1.0.0","dep-10":"1.0.0","dep-11":"1.0.0"}}"#
-                .to_owned(),
+            text: package_file_fixture("batched-resolution-preserves-dependency-order.json"),
             workspace_root: None,
         },
         &responses,
@@ -52,9 +52,30 @@ fn batched_resolution_preserves_dependency_order() {
 
 #[test]
 fn registry_resolution_bounds_parallel_workers() {
-    assert_eq!(super::resolve_worker_count(0), 0);
-    assert_eq!(super::resolve_worker_count(1), 1);
-    assert_eq!(super::resolve_worker_count(8), 8);
-    assert_eq!(super::resolve_worker_count(12), 8);
-    assert_eq!(super::resolve_worker_count(100), 8);
+    assert_eq!(resolve_worker_count(0), 0);
+    assert_eq!(resolve_worker_count(1), 1);
+    assert_eq!(resolve_worker_count(8), 8);
+    assert_eq!(resolve_worker_count(12), 8);
+    assert_eq!(resolve_worker_count(100), 8);
+}
+
+fn package_file_fixture(name: &str) -> String {
+    let path = repo_root()
+        .join("tests/fixtures/session/resolution/parallel/tests")
+        .join(name);
+    read_to_string(&path).unwrap_or_else(|error| {
+        panic!(
+            "failed to read session resolution fixture {}: {error}",
+            path.display()
+        )
+    })
+}
+
+fn repo_root() -> PathBuf {
+    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("core crate should be under crates/")
+        .to_path_buf()
 }

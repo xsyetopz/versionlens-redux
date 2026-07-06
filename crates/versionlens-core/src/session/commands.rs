@@ -1,5 +1,14 @@
+use versionlens_edits::bulk_update_edits;
+use versionlens_edits::sort_dependency_edits;
+use versionlens_edits::update_edits;
 use versionlens_parsers::{Dependency, DocumentInput, ManifestKind};
-use versionlens_suggestions::{Suggestion, SuggestionStatus};
+use versionlens_suggestions::Suggestion;
+use versionlens_suggestions::SuggestionStatus::{
+    BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
+    DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,
+    NotSupported as StatusNotSupported, Unresolved as StatusUnresolved,
+    UpdateAvailable as StatusUpdateAvailable,
+};
 
 use crate::VersionLensSession;
 use crate::command::{filter_update_command, project_version_bump};
@@ -7,6 +16,14 @@ use crate::model::{RegistryResponseInput, ResolveDocumentOutput};
 use crate::project::is_project_version_dependency;
 use crate::status::to_u32;
 use crate::suggestion::into_suggestion_payloads;
+
+pub struct ApplyCommandRequest<'a> {
+    pub input: DocumentInput,
+    pub command: Option<&'a str>,
+    pub dependency_name: Option<&'a str>,
+    pub selected_version: Option<&'a str>,
+    pub responses: &'a [RegistryResponseInput],
+}
 
 impl VersionLensSession {
     pub fn apply_command(
@@ -16,26 +33,35 @@ impl VersionLensSession {
         dependency_name: Option<&str>,
         responses: &[RegistryResponseInput],
     ) -> ResolveDocumentOutput {
-        self.apply_command_with_selected_version(input, command, dependency_name, None, responses)
+        self.apply_command_with_selected_version(ApplyCommandRequest {
+            input,
+            command,
+            dependency_name,
+            selected_version: None,
+            responses,
+        })
     }
 
     pub fn apply_command_with_selected_version(
         &self,
-        input: DocumentInput,
-        command: Option<&str>,
-        dependency_name: Option<&str>,
-        selected_version: Option<&str>,
-        responses: &[RegistryResponseInput],
+        request: ApplyCommandRequest<'_>,
     ) -> ResolveDocumentOutput {
+        let ApplyCommandRequest {
+            input,
+            command,
+            dependency_name,
+            selected_version,
+            responses,
+        } = request;
         self.clear_authorization_requests();
         if command == Some("sort") {
             let dependencies = self.dependencies(&input);
-            let edits = versionlens_edits::sort_dependency_edits(&input.text, &dependencies);
+            let edits = sort_dependency_edits(&input.text, &dependencies);
             return ResolveDocumentOutput {
-                suggestions: Vec::new(),
+                suggestions: vec![],
                 edits,
                 authorization_required_count: 0,
-                authorization_required_requests: Vec::new(),
+                authorization_required_requests: vec![],
                 vulnerable_update_count: 0,
                 vulnerable_update_package: None,
                 vulnerable_update_version: None,
@@ -49,17 +75,19 @@ impl VersionLensSession {
             None => self.resolve_suggestions(input, responses, project_bump),
         };
         let bulk_dependency_update = bulk_dependency_update_command(command, dependency_name);
-        if bulk_dependency_update {
-            suggestions.retain(|suggestion| !is_project_version_dependency(&suggestion.dependency));
-        }
         if let Some(version) = selected_version {
             force_selected_version(&mut suggestions, version);
         }
         filter_update_command(&mut suggestions, command, selected_version.is_some());
         let edits = if bulk_dependency_update {
-            versionlens_edits::bulk_update_edits(&suggestions)
+            let dependency_suggestions = suggestions
+                .iter()
+                .filter(|suggestion| !is_project_version_dependency(&suggestion.dependency))
+                .map(|value| value.to_owned())
+                .collect::<Vec<_>>();
+            bulk_update_edits(&dependency_suggestions)
         } else {
-            versionlens_edits::update_edits(&suggestions)
+            update_edits(&suggestions)
         };
         let authorization_required_count = Self::authorization_required_count(&suggestions);
         let (vulnerable_update_count, vulnerable_update_package, vulnerable_update_version) =
@@ -152,7 +180,7 @@ impl VersionLensSession {
         let count = suggestions
             .iter()
             .filter(|suggestion| {
-                suggestion.status == SuggestionStatus::Error
+                suggestion.status == StatusError
                     && matches!(suggestion.latest.as_deref(), Some("401 not authorized"))
             })
             .count();
@@ -170,15 +198,30 @@ fn bulk_dependency_update_command(command: Option<&str>, dependency_name: Option
 
 fn force_selected_version(suggestions: &mut [Suggestion], version: &str) {
     for suggestion in suggestions {
+        if suggestion.status == StatusFixed
+            && suggestion.choices.is_empty()
+            && suggestion.builds.is_empty()
+        {
+            continue;
+        }
+        if matches!(
+            suggestion.status,
+            StatusNotSupported
+                | StatusDirectory
+                | StatusDirectoryNotFound
+                | StatusError
+                | StatusUnresolved
+        ) {
+            continue;
+        }
         suggestion.latest = Some(version.to_owned());
-        suggestion.status = SuggestionStatus::UpdateAvailable;
+        suggestion.status = StatusUpdateAvailable;
     }
 }
 
 fn target_update_dependency(suggestion: &Suggestion) -> Option<Dependency> {
     let latest = suggestion.latest.as_deref()?;
-    (suggestion.status == SuggestionStatus::UpdateAvailable
-        || suggestion.status == SuggestionStatus::BuildAvailable)
+    (suggestion.status == StatusUpdateAvailable || suggestion.status == StatusBuildAvailable)
         .then(|| update_dependency_for_version(suggestion, latest))
 }
 
@@ -192,16 +235,16 @@ fn update_dependency_for_version(suggestion: &Suggestion, version: &str) -> Depe
             .dependency
             .hosted_url
             .as_deref()
-            .map(str::to_owned),
+            .map(|value| value.to_owned()),
         hosted_name: suggestion
             .dependency
             .hosted_name
             .as_deref()
-            .map(str::to_owned),
+            .map(|value| value.to_owned()),
         range: suggestion.dependency.range,
         requirement_range: suggestion.dependency.requirement_range,
-        requirement_prefix: String::new(),
-        requirement_suffix: String::new(),
+        requirement_prefix: "".to_owned(),
+        requirement_suffix: "".to_owned(),
     }
 }
 

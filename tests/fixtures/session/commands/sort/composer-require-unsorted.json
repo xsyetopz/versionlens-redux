@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "require": {
+    "symfony/console": "8.1.*",
+    "allocine/twigcs": "^3.1.3"
+  }
+}

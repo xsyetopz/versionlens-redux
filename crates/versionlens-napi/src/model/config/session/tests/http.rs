@@ -1,9 +1,10 @@
 use super::blank_session_config;
+use crate::model::config::NativeSessionConfig;
 use crate::model::config::{NativeHttpConfig, NativeHttpHeader};
 
 #[test]
 fn http_proxy_is_trimmed_and_blank_proxy_is_ignored_in_rust() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         http: Some(NativeHttpConfig {
             timeout_ms: None,
             strict_ssl: None,
@@ -22,7 +23,7 @@ fn http_proxy_is_trimmed_and_blank_proxy_is_ignored_in_rust() {
 
     assert_eq!(config.http.proxy.as_deref(), Some("http://localhost:8080"));
 
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         http: Some(NativeHttpConfig {
             timeout_ms: None,
             strict_ssl: None,
@@ -44,7 +45,7 @@ fn http_proxy_is_trimmed_and_blank_proxy_is_ignored_in_rust() {
 
 #[test]
 fn http_ca_file_is_trimmed_and_blank_ca_file_is_ignored_in_rust() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         http: Some(NativeHttpConfig {
             timeout_ms: None,
             strict_ssl: None,
@@ -66,7 +67,7 @@ fn http_ca_file_is_trimmed_and_blank_ca_file_is_ignored_in_rust() {
         Some("/tmp/versionlens-ca.pem")
     );
 
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         http: Some(NativeHttpConfig {
             timeout_ms: None,
             strict_ssl: None,
@@ -88,7 +89,7 @@ fn http_ca_file_is_trimmed_and_blank_ca_file_is_ignored_in_rust() {
 
 #[test]
 fn http_header_names_are_trimmed_and_blank_names_are_ignored_in_rust() {
-    let config = crate::model::config::NativeSessionConfig {
+    let config = NativeSessionConfig {
         http: Some(NativeHttpConfig {
             timeout_ms: None,
             strict_ssl: None,

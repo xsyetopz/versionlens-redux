@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk">
+      <Version>18.7.0</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

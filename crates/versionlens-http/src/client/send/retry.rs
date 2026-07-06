@@ -1,16 +1,18 @@
+use std::thread::sleep;
 use std::time::Duration;
+use ureq::Error as UreqError;
 
 use crate::error::HttpError;
 use crate::retry::RetryPolicy;
 
 pub(super) fn retry_or_fail(
-    error: ureq::Error,
+    error: UreqError,
     attempt: u32,
     method: &str,
     policy: RetryPolicy,
 ) -> Result<Option<String>, HttpError> {
     if let Some(delay) = retry_delay(&error, attempt, method, policy) {
-        std::thread::sleep(delay);
+        sleep(delay);
         Ok(None)
     } else {
         Err(error.into())
@@ -18,7 +20,7 @@ pub(super) fn retry_or_fail(
 }
 
 fn retry_delay(
-    error: &ureq::Error,
+    error: &UreqError,
     attempt: u32,
     method: &str,
     policy: RetryPolicy,
@@ -26,5 +28,5 @@ fn retry_delay(
     policy
         .retry_backoff_ms(attempt)
         .filter(|_| policy.should_retry_error(method, error))
-        .map(Duration::from_millis)
+        .map(crate::duration_from_millis)
 }

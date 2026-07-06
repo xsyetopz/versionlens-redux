@@ -1,0 +1,5 @@
+services:
+  web:
+    image: zeta:1
+  api:
+    image: alpha:1

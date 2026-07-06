@@ -18,7 +18,10 @@ fn python_operator_replacement(operator: &str, latest: &str) -> String {
 }
 
 fn replace_python_multi_constraint(requirement: &str, latest: &str) -> String {
-    let parts = requirement.split(',').map(str::trim).collect::<Vec<_>>();
+    let parts = requirement
+        .split(',')
+        .map(|value| value.trim())
+        .collect::<Vec<_>>();
     let has_upper_bound = parts.iter().any(|part| part.starts_with('<'));
 
     parts

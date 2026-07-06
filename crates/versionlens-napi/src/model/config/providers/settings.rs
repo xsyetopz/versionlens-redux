@@ -48,3 +48,9 @@ impl NativeProviderSettings {
         }
     }
 }
+
+impl From<NativeProviderSettings> for ProviderSettingsInput {
+    fn from(value: NativeProviderSettings) -> Self {
+        value.into_input()
+    }
+}

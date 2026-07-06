@@ -1,15 +1,18 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use crate::model::SuggestionStatus::{
+    Current as StatusCurrent, SatisfiesLatest as StatusSatisfiesLatest,
+    Unresolved as StatusUnresolved, UpdateAvailable as StatusUpdateAvailable,
+};
+use versionlens_parsers::Dependency;
 use versionlens_vscode_model::{Position, Range};
 
-use crate::model::SuggestionStatus;
-
 use super::{resolve_with_latest, unresolved};
+use versionlens_parsers::Ecosystem::Cargo;
 
 #[test]
 fn unresolved_marks_dependencies_unresolved() {
     let suggestions = unresolved(vec![dependency("serde", "1.0.0")]);
 
-    assert_eq!(suggestions[0].status, SuggestionStatus::Unresolved);
+    assert_eq!(suggestions[0].status, StatusUnresolved);
     assert_eq!(suggestions[0].latest, None);
 }
 
@@ -20,29 +23,29 @@ fn latest_marks_update_status() {
         "1.5.0",
     );
 
-    assert_eq!(suggestions[0].status, SuggestionStatus::UpdateAvailable);
-    assert_eq!(suggestions[1].status, SuggestionStatus::Current);
+    assert_eq!(suggestions[0].status, StatusUpdateAvailable);
+    assert_eq!(suggestions[1].status, StatusCurrent);
 }
 
 #[test]
 fn latest_satisfying_range_is_current() {
     let suggestions = resolve_with_latest(vec![dependency("serde", "^1.0.0")], "1.5.0");
 
-    assert_eq!(suggestions[0].status, SuggestionStatus::SatisfiesLatest);
+    assert_eq!(suggestions[0].status, StatusSatisfiesLatest);
 }
 
 fn dependency(name: &str, requirement: &str) -> Dependency {
     Dependency {
         name: name.to_owned(),
         requirement: requirement.to_owned(),
-        ecosystem: Ecosystem::Cargo,
+        ecosystem: Cargo,
         group: "dependencies".to_owned(),
         hosted_url: None,
         hosted_name: None,
         range: empty_range(),
         requirement_range: empty_range(),
-        requirement_prefix: String::new(),
-        requirement_suffix: String::new(),
+        requirement_prefix: "".to_owned(),
+        requirement_suffix: "".to_owned(),
     }
 }
 

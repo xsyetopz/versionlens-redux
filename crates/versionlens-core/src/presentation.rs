@@ -1,5 +1,10 @@
+use self::indicator::{code_lens_indicator, update_indicator, with_indicator};
+use self::title::code_lens_title_text;
 use versionlens_parsers::Dependency;
-use versionlens_suggestions::{Suggestion, SuggestionStatus, UpdateChoice};
+use versionlens_suggestions::SuggestionStatus::{
+    BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
+};
+use versionlens_suggestions::{Suggestion, UpdateChoice};
 use versionlens_vscode_model::CodeLensPayload;
 
 use crate::SuggestionIndicators;
@@ -11,6 +16,8 @@ mod indicator;
 mod title;
 
 pub(crate) use diagnostics::vulnerability_diagnostics;
+
+type SuggestionRef<'a> = Option<&'a Suggestion>;
 
 pub(crate) fn code_lens_payload(dependency: &Dependency, title: String) -> CodeLensPayload {
     CodeLensPayload {
@@ -29,7 +36,7 @@ pub(crate) fn project_version_code_lens_payload(
     suggestion: ProjectVersionCodeLensSuggestion,
     indicators: &SuggestionIndicators,
 ) -> CodeLensPayload {
-    let title = indicator::with_indicator(
+    let title = with_indicator(
         &indicators.updateable,
         format!("{} {}", suggestion.label, suggestion.latest),
     );
@@ -47,11 +54,11 @@ pub(crate) fn project_version_code_lens_payload(
 
 pub(crate) fn suggested_code_lens_payload(
     dependency: &Dependency,
-    suggestion: Option<&Suggestion>,
+    suggestion: SuggestionRef<'_>,
     title: String,
 ) -> CodeLensPayload {
     if let Some(suggestion) = suggestion
-        && suggestion.status == SuggestionStatus::BuildAvailable
+        && suggestion.status == StatusBuildAvailable
         && let Some(builds) = build_choices(suggestion)
     {
         let mut arguments = vec![
@@ -86,8 +93,8 @@ pub(crate) fn update_choice_code_lens_payload(
     indicators: &SuggestionIndicators,
     has_vulnerabilities: bool,
 ) -> CodeLensPayload {
-    let title = indicator::with_indicator(
-        indicator::update_indicator(indicators, has_vulnerabilities),
+    let title = with_indicator(
+        update_indicator(indicators, has_vulnerabilities),
         format!("{} {}", choice.label.as_str(), choice.version.as_str()),
     );
     CodeLensPayload {
@@ -105,25 +112,31 @@ pub(crate) fn update_choice_code_lens_payload(
 
 pub(crate) fn code_lens_title(
     dependency: &Dependency,
-    suggestion: Option<&Suggestion>,
+    suggestion: SuggestionRef<'_>,
     indicators: &SuggestionIndicators,
     has_vulnerabilities: bool,
 ) -> String {
-    let title = title::code_lens_title_text(dependency, suggestion);
-    let indicator = indicator::code_lens_indicator(indicators, suggestion, has_vulnerabilities);
-    indicator::with_indicator(indicator, title)
+    let title = code_lens_title_text(dependency, suggestion);
+    let indicator = code_lens_indicator(indicators, suggestion, has_vulnerabilities);
+    with_indicator(indicator, title)
 }
 
-fn directory_open_path(suggestion: Option<&Suggestion>) -> Option<&str> {
+fn directory_open_path(suggestion: SuggestionRef<'_>) -> Option<&str> {
     let suggestion = suggestion?;
-    (suggestion.status == SuggestionStatus::Directory)
+    (suggestion.status == StatusDirectory)
         .then_some(suggestion.resolved.as_deref())
         .flatten()
 }
 
 fn build_choices(suggestion: &Suggestion) -> Option<Vec<String>> {
     if !suggestion.builds.is_empty() {
-        return Some(suggestion.builds.iter().map(String::to_owned).collect());
+        return Some(
+            suggestion
+                .builds
+                .iter()
+                .map(|value| value.to_owned())
+                .collect(),
+        );
     }
 
     suggestion

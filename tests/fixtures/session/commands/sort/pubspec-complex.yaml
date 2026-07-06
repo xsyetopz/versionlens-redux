@@ -1,0 +1,6 @@
+dependencies:
+  sqflite:
+    git:
+      url: https://github.com/tekartik/sqflite
+      path: sqflite
+  equatable: ^0.2.0

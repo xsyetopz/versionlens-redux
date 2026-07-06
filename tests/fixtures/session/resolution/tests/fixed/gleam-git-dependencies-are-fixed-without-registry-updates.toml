@@ -1,0 +1,2 @@
+[dependencies]
+my_library = { git = "https://github.com/example/my_library", ref = "main" }

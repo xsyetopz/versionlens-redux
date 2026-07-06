@@ -1,0 +1,9 @@
+
+[dependencies]
+regex = { workspace = true, features = ["unicode"] }
+
+[build-dependencies]
+cc.workspace = true
+
+[target.'cfg(unix)'.dev-dependencies]
+rand = { workspace = true, optional = true }

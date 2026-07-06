@@ -1,0 +1,2 @@
+{:deps {com.example/demo {:mvn/version "1.0.0"}}
+ :mvn/repos {"private" {:url "https://maven.example.test/releases"}}}
