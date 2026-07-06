@@ -4,7 +4,7 @@ use crate::config::HttpHeader;
 
 const ACCEPT_HEADER: &str = "accept";
 const USER_AGENT_HEADER: &str = "user-agent";
-const USER_AGENT_VALUE: &str = "vscode-versionlens (gitlab.com/versionlens/vscode-versionlens)";
+const USER_AGENT_VALUE: &str = "versionlens-redux (github.com/xsyetopz/versionlens-redux)";
 
 pub(crate) fn request_with_headers<B>(
     request: RequestBuilder<B>,

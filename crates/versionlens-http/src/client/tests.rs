@@ -117,7 +117,7 @@ fn applies_versionlens_user_agent_to_request() {
 
     assert_eq!(
         request.headers_ref().unwrap()["user-agent"],
-        "vscode-versionlens (gitlab.com/versionlens/vscode-versionlens)"
+        "versionlens-redux (github.com/xsyetopz/versionlens-redux)"
     );
 }
 

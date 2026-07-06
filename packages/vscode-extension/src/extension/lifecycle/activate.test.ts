@@ -9,8 +9,31 @@ let packageWatchingCount = 0;
 let subscriptionCount = 0;
 let uiInitCount = 0;
 let recreateSessionError: Error | undefined;
+let originalVersionLensInstalled = false;
+let warningSelection: string | undefined;
+const warningMessages: string[] = [];
+const executedCommands: unknown[][] = [];
 
 mock.module("vscode", () => ({
+	commands: {
+		executeCommand(...args: unknown[]) {
+			executedCommands.push(args);
+		},
+	},
+	extensions: {
+		getExtension(id: string) {
+			return originalVersionLensInstalled &&
+				id === "pflannery.vscode-versionlens"
+				? { id }
+				: undefined;
+		},
+	},
+	window: {
+		showWarningMessage(message: string) {
+			warningMessages.push(message);
+			return warningSelection;
+		},
+	},
 	workspace: {
 		getConfiguration() {
 			return {
@@ -79,6 +102,10 @@ function reset() {
 	subscriptionCount = 0;
 	uiInitCount = 0;
 	recreateSessionError = undefined;
+	originalVersionLensInstalled = false;
+	warningSelection = undefined;
+	warningMessages.length = 0;
+	executedCommands.length = 0;
 }
 
 test("activation warns when VS Code editor code lenses are disabled", async () => {
@@ -126,4 +153,36 @@ test("activation does not warn when VS Code editor code lenses are enabled", asy
 	await activateExtension(state as never, { subscriptions: [] } as never);
 
 	expect(outputLines).toEqual([]);
+});
+
+test("activation warns when original VersionLens is installed", async () => {
+	reset();
+	originalVersionLensInstalled = true;
+	const { activateExtension } = await import("./activate.ts");
+	const state = { context: undefined, ui: {} };
+
+	await activateExtension(state as never, { subscriptions: [] } as never);
+
+	const message =
+		"VersionLens Redux conflicts with the original VersionLens extension. Disable the original extension before using VersionLens Redux in this workspace.";
+	expect(outputLines).toContain(message);
+	expect(warningMessages).toEqual([message]);
+	expect(executedCommands).toEqual([]);
+});
+
+test("activation can disable original VersionLens from the conflict prompt", async () => {
+	reset();
+	originalVersionLensInstalled = true;
+	warningSelection = "Disable original VersionLens";
+	const { activateExtension } = await import("./activate.ts");
+	const state = { context: undefined, ui: {} };
+
+	await activateExtension(state as never, { subscriptions: [] } as never);
+
+	expect(executedCommands).toEqual([
+		[
+			"workbench.extensions.action.disableExtension",
+			"pflannery.vscode-versionlens",
+		],
+	]);
 });

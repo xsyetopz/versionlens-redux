@@ -1,15 +1,15 @@
 {
-	"name": "vscode-versionlens",
-	"displayName": "Version Lens",
+	"name": "versionlens-redux",
+	"displayName": "VersionLens Redux",
 	"description": "Shows the latest version for each package using code lens",
-	"publisher": "pflannery",
+	"publisher": "xsyetopz",
 	"private": true,
 	"preview": false,
 	"version": "1.28.0",
 	"main": "./dist/extension.js",
 	"repository": {
 		"type": "git",
-		"url": "https://gitlab.com/versionlens/vscode-versionlens.git"
+		"url": "https://github.com/xsyetopz/versionlens-redux.git"
 	},
 	"author": "Peter Flannery",
 	"license": "ISC",
@@ -26,7 +26,7 @@
 		"Other"
 	],
 	"engines": {
-		"vscode": ">=1.90.0"
+		"vscode": ">=1.75.0"
 	},
 	"activationEvents": [
 		"onLanguage:jsonc",
@@ -41,28 +41,16 @@
 		"onLanguage:plaintext",
 		"onLanguage:ruby",
 		"onFileSystem:versionlens",
-		"onCommand:versionlens.editor.onShowVersionLenses",
-		"onCommand:versionlens.editor.onHideVersionLenses",
-		"onCommand:versionlens.editor.onShowError",
-		"onCommand:versionlens.icons.showingProgress",
-		"onCommand:versionlens.editor.onShowPrereleaseVersions",
-		"onCommand:versionlens.editor.onHidePrereleaseVersions",
-		"onCommand:versionlens.suggestion.onClearCache",
-		"onCommand:versionlens.editor.onAddUrlAuthentication",
-		"onCommand:versionlens.editor.onRemoveUrlAuthentication",
-		"onCommand:versionlens.editor.onCustomInstall",
-		"onCommand:versionlens.editor.onSortDependencies",
-		"onCommand:versionlens.editor.onUpdateDependenciesLatest",
-		"onCommand:versionlens.editor.onUpdateDependenciesMajor",
-		"onCommand:versionlens.editor.onUpdateDependenciesMinor",
-		"onCommand:versionlens.editor.onUpdateDependenciesPatch"
+		"onLanguage:groovy",
+		"onLanguage:kotlin",
+		"onLanguage:properties"
 	],
 	"contributes": {
 		"commands": [
 			{
 				"command": "versionlens.editor.onShowVersionLenses",
 				"title": "Show release versions",
-				"category": "VersionLens",
+				"category": "VersionLens Redux",
 				"icon": {
 					"dark": "images/icons/toggle-inactive.svg",
 					"light": "images/icons/toggle-inactive-light.svg"
@@ -71,26 +59,26 @@
 			{
 				"command": "versionlens.editor.onHideVersionLenses",
 				"title": "Hide release versions",
-				"category": "VersionLens",
+				"category": "VersionLens Redux",
 				"icon": "images/icons/toggle-active.svg"
 			},
 			{
 				"command": "versionlens.editor.onShowError",
 				"title": "An error has occurred. Click to see the log for details.",
-				"category": "VersionLens",
+				"category": "VersionLens Redux",
 				"icon": "images/icons/toggle-death.svg"
 			},
 			{
 				"command": "versionlens.icons.showingProgress",
 				"enablement": "false",
 				"title": "Analyzing dependencies...",
-				"category": "VersionLens",
+				"category": "VersionLens Redux",
 				"icon": "images/icons/toggle-active-progress.svg"
 			},
 			{
 				"command": "versionlens.editor.onShowPrereleaseVersions",
 				"title": "Show prerelease versions",
-				"category": "VersionLens",
+				"category": "VersionLens Redux",
 				"icon": {
 					"dark": "images/icons/tag-inactive.svg",
 					"light": "images/icons/tag-inactive-light.svg"
@@ -99,53 +87,53 @@
 			{
 				"command": "versionlens.editor.onHidePrereleaseVersions",
 				"title": "Hide prerelease versions",
-				"category": "VersionLens",
+				"category": "VersionLens Redux",
 				"icon": "images/icons/tag-active.svg"
 			},
 			{
 				"command": "versionlens.suggestion.onClearCache",
 				"title": "Clear cache",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onAddUrlAuthentication",
 				"title": "Add url authentication",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onRemoveUrlAuthentication",
 				"title": "Remove url authentication",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onCustomInstall",
 				"title": "Run custom install task",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onSortDependencies",
 				"title": "Sort dependencies alphabetically",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onUpdateDependenciesLatest",
 				"title": "Update dependencies to latest",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onUpdateDependenciesMajor",
 				"title": "Update dependencies (major-only)",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onUpdateDependenciesMinor",
 				"title": "Update dependencies (minor-only)",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			},
 			{
 				"command": "versionlens.editor.onUpdateDependenciesPatch",
 				"title": "Update dependencies (patch-only)",
-				"category": "VersionLens"
+				"category": "VersionLens Redux"
 			}
 		],
 		"menus": {
@@ -269,7 +257,7 @@
 			}
 		],
 		"configuration": {
-			"title": "VersionLens",
+			"title": "VersionLens Redux",
 			"properties": {
 				"versionlens.suggestions.showOnStartup": {
 					"type": "boolean",

@@ -13,13 +13,13 @@ test("activation events preserve upstream manifest events", async () => {
 	);
 });
 
-test("command activation events cover contributed commands", async () => {
+test("command activation events rely on VS Code 1.75 automatic generation", async () => {
 	const local = await packageJson("packages/vscode-extension/package.json");
-	const activationEvents = new Set(local.activationEvents ?? []);
+	const activationEvents = local.activationEvents ?? [];
 
-	for (const command of local.contributes?.commands ?? []) {
-		expect(activationEvents.has(`onCommand:${command.command}`)).toBe(true);
-	}
+	expect(activationEvents.some((event) => event.startsWith("onCommand:"))).toBe(
+		false,
+	);
 });
 
 test("package keywords match upstream manifest metadata", async () => {
