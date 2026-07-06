@@ -2,7 +2,9 @@
 
 VersionLens Redux shows dependency version information in editor manifests using a Rust core shared by VS Code, Zed, and JetBrains adapters.
 
-[![CI](https://github.com/xsyetopz/versionlens-redux/actions/workflows/ci.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/ci.yml)
+[![VS Code CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml)
+[![Zed CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/zed.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/zed.yml)
+[![JetBrains CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/jetbrains.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/jetbrains.yml)
 [![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
 ## Status
@@ -19,7 +21,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 | `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
 | `assets/versionlens/` | Shared icons, logo, and README media reused by editor packages. |
 | `scripts/` | Repository checks, build scripts, parity checks, and packaging guards. |
-| `tests/` | Repo-level boundary, parser fixture, extension, and N-API tests. |
+| `tests/` | Repo-level boundary, parser fixture, N-API, and e2e tests; VS Code unit tests live beside adapter source under `packages/vscode-extension/src/extension/__tests__/`. |
 
 ## Editor packages
 

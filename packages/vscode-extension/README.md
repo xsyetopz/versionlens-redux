@@ -2,7 +2,7 @@
 
 VersionLens Redux shows dependency versions, update actions, and vulnerability diagnostics in VS Code manifest files.
 
-[![CI](https://github.com/xsyetopz/versionlens-redux/actions/workflows/ci.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/ci.yml)
+[![VS Code CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml)
 [![GitHub release](https://img.shields.io/github/v/release/xsyetopz/versionlens-redux?include_prereleases)](https://github.com/xsyetopz/versionlens-redux/releases)
 [![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](../../LICENSE)
 
@@ -64,7 +64,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 | Julia | Project.toml, Manifest.toml, Manifest-v{major}.{minor}.toml | `versionlens.julia.files`, `versionlens.julia.apiUrl`, `versionlens.julia.dependencyProperties` | Julia General registry Versions.toml files or configured Julia registry base URL |
 | CRAN | DESCRIPTION, renv.lock | `versionlens.cran.files`, `versionlens.cran.apiUrl`, `versionlens.cran.dependencyProperties` | CRAN PACKAGES metadata from CRAN or configured CRAN-like repositories |
 | Conan | conanfile.txt, conanfile.py | `versionlens.conan.files`, `versionlens.conan.apiUrl`, `versionlens.conan.dependencyProperties` | Conan v2 registry search API from ConanCenter or configured Conan-compatible remotes |
-| C/C++ build files | CMakeLists.txt, xmake.lua, WORKSPACE, WORKSPACE.bazel | `versionlens.cpp.files`, `versionlens.cpp.apiUrl`, `versionlens.cpp.dependencyProperties` | GitHub tags for GitHub-backed CMake, Meson wrap, and Bazel dependencies; Xmake package recipes from xmake-repo for Xmake dependencies |
+| C/C++ build files | CMakeLists.txt, *.cmake, xmake.lua, subprojects/*.wrap, WORKSPACE, WORKSPACE.bazel | `versionlens.cpp.files`, `versionlens.cpp.apiUrl`, `versionlens.cpp.dependencyProperties` | GitHub tags for GitHub-backed CMake, Meson wrap, and Bazel dependencies; Xmake package recipes from xmake-repo for Xmake dependencies |
 | vcpkg | vcpkg.json | `versionlens.vcpkg.files`, `versionlens.vcpkg.apiUrl`, `versionlens.vcpkg.dependencyProperties` | vcpkg registry version database from the configured registry repository |
 | Swift | Package.swift | `versionlens.swift.files`, `versionlens.swift.apiUrl`, `versionlens.swift.dependencyProperties` | Swift package registry API or GitHub tags for GitHub URL dependencies |
 | Zig | build.zig.zon | `versionlens.zig.files`, `versionlens.zig.apiUrl`, `versionlens.zig.dependencyProperties` | Zig package URLs with GitHub tag lookup for GitHub-hosted archives |
@@ -72,7 +72,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 | LuaRocks | .rockspec | `versionlens.luarocks.files`, `versionlens.luarocks.apiUrl`, `versionlens.luarocks.dependencyProperties` | LuaRocks manifest repository |
 | CPAN | cpanfile | `versionlens.cpan.files`, `versionlens.cpan.apiUrl`, `versionlens.cpan.dependencyProperties` | MetaCPAN download_url API |
 | Haxelib | haxelib.json | `versionlens.haxelib.files`, `versionlens.haxelib.apiUrl`, `versionlens.haxelib.dependencyProperties` | Haxelib project versions page |
-| Terraform |  | `versionlens.terraform.files`, `versionlens.terraform.apiUrl`, `versionlens.terraform.dependencyProperties` | Terraform Registry protocol |
+| Terraform | *.tf, *.tofu | `versionlens.terraform.files`, `versionlens.terraform.apiUrl`, `versionlens.terraform.dependencyProperties` | Terraform Registry protocol |
 | Helm | Chart.yaml | `versionlens.helm.files`, `versionlens.helm.apiUrl`, `versionlens.helm.dependencyProperties` | Helm chart repository index.yaml and OCI tags |
 | Ansible | requirements.yml, requirements.yaml | `versionlens.ansible.files`, `versionlens.ansible.apiUrl`, `versionlens.ansible.dependencyProperties` | Ansible Galaxy API for collections and roles; git/source requirements are fixed |
 | Bazel | MODULE.bazel | `versionlens.bazel.files`, `versionlens.bazel.apiUrl`, `versionlens.bazel.dependencyProperties` | Bazel Central Registry metadata.json or configured Bazel registry |
