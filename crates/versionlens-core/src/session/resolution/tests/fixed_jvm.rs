@@ -81,7 +81,9 @@ fn dub_sdl_path_dependencies_resolve_as_directories() {
     let session = standard_session();
     let root = local_test_root("dub-directory");
     let local = root.join("localdep");
+    let bare_local = root.join("vendor/localdep");
     create_dir_all(&local).unwrap();
+    create_dir_all(&bare_local).unwrap();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
@@ -97,8 +99,14 @@ fn dub_sdl_path_dependencies_resolve_as_directories() {
         }],
     );
 
+    assert_eq!(output.suggestions.len(), 2);
     assert_eq!(output.suggestions[0].status, "directory");
     assert_eq!(output.suggestions[0].latest.as_deref(), Some("./localdep"));
+    assert_eq!(output.suggestions[1].status, "directory");
+    assert_eq!(
+        output.suggestions[1].latest.as_deref(),
+        Some("vendor/localdep")
+    );
     assert!(output.edits.is_empty());
     remove_dir_all(root).unwrap();
 }
@@ -135,7 +143,9 @@ fn gleam_path_dependencies_resolve_as_directories() {
     let session = standard_session();
     let root = local_test_root("gleam-directory");
     let local = root.join("localdep");
+    let bare_local = root.join("vendor/localdep");
     create_dir_all(&local).unwrap();
+    create_dir_all(&bare_local).unwrap();
 
     let output = session.resolve_document_with_responses(
         DocumentInput {
@@ -151,8 +161,14 @@ fn gleam_path_dependencies_resolve_as_directories() {
         }],
     );
 
+    assert_eq!(output.suggestions.len(), 2);
     assert_eq!(output.suggestions[0].status, "directory");
     assert_eq!(output.suggestions[0].latest.as_deref(), Some("./localdep"));
+    assert_eq!(output.suggestions[1].status, "directory");
+    assert_eq!(
+        output.suggestions[1].latest.as_deref(),
+        Some("vendor/localdep")
+    );
     assert!(output.edits.is_empty());
     remove_dir_all(root).unwrap();
 }

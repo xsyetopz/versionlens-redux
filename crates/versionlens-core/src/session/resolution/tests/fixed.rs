@@ -15,6 +15,47 @@ mod npm;
 mod registry_sources;
 
 #[test]
+fn cargo_path_dependencies_resolve_existing_relative_directories() {
+    let session = standard_session();
+    let root = local_test_root("cargo-path-directory");
+    let cache = root.join("crates/versionlens-cache");
+    create_dir_all(&cache).unwrap();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput {
+            uri: file_uri(&root.join("Cargo.toml")),
+            language_id: "toml".to_owned(),
+            text: r#"
+[dependencies]
+versionlens-cache = { path = "crates/versionlens-cache" }
+versionlens-core = { version = "0.1.0", path = "crates/versionlens-cache" }
+"#
+            .to_owned(),
+            workspace_root: Some(root.to_string_lossy().into_owned()),
+        },
+        &[RegistryResponseInput {
+            package: "versionlens-cache".to_owned(),
+            ecosystem: versionlens_parsers::Ecosystem::Cargo,
+            body: r#"{"versions":[{"num":"9.9.9","yanked":false}]}"#.to_owned(),
+        }],
+    );
+
+    assert_eq!(output.suggestions.len(), 2);
+    assert_eq!(output.suggestions[0].status, "directory");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("crates/versionlens-cache")
+    );
+    assert_eq!(output.suggestions[1].status, "directory");
+    assert_eq!(
+        output.suggestions[1].latest.as_deref(),
+        Some("crates/versionlens-cache")
+    );
+    assert!(output.edits.is_empty());
+    remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn missing_local_dependencies_return_directory_not_found_without_registry_lookup() {
     let session = standard_session();
 

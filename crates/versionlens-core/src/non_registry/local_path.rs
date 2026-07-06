@@ -15,13 +15,20 @@ pub(super) fn local_dependency_path(
     dependency: &Dependency,
     document_uri: Option<&str>,
 ) -> Option<LocalDependencyPath> {
-    let path = local_requirement_path(&dependency.requirement)
+    let path = hosted_path_requirement(dependency)
+        .or_else(|| local_requirement_path(&dependency.requirement))
         .or_else(|| ruby_bare_path_requirement(dependency))
         .or_else(|| pub_workspace_path_requirement(dependency))
         .or_else(|| docker_bare_build_path_requirement(dependency))?;
     let display = path.to_owned();
     let resolved = resolve_local_path(&display, document_uri);
     Some(LocalDependencyPath { display, resolved })
+}
+
+fn hosted_path_requirement(dependency: &Dependency) -> Option<&str> {
+    let requirement = dependency.requirement.trim();
+    (dependency.hosted_url.as_deref() == Some("path") && !requirement.is_empty())
+        .then_some(requirement)
 }
 
 fn ruby_bare_path_requirement(dependency: &Dependency) -> Option<&str> {

@@ -64,6 +64,7 @@ fn parses_dub_json_configuration_dependencies() {
     assert_eq!(dependencies[1].group, "configurations.tls.dependencies");
     assert_eq!(dependencies[1].name, "localdep");
     assert_eq!(dependencies[1].requirement, "../localdep");
+    assert_eq!(dependencies[1].hosted_url.as_deref(), Some("path"));
 }
 
 #[test]
@@ -129,6 +130,7 @@ fn parses_dub_sdl_dependency_directives() {
     );
     assert_eq!(dependencies[1].name, "localdep");
     assert_eq!(dependencies[1].requirement, "../localdep");
+    assert_eq!(dependencies[1].hosted_url.as_deref(), Some("path"));
     assert_eq!(
         extract_range(text, dependencies[1].requirement_range),
         "../localdep"

@@ -19,7 +19,7 @@ pub(super) fn object_json_manifest_dependency(
     for field in fields {
         if let Some(value) = object.get_string(field) {
             let (name_start, name_end) = property_name_range(prop);
-            return Some(json_manifest_dependency(
+            let mut dependency = json_manifest_dependency(
                 source,
                 name,
                 value.value.as_ref().to_owned(),
@@ -29,7 +29,11 @@ pub(super) fn object_json_manifest_dependency(
                     requirement_start: string_content_start(value.range.start, value.range.end),
                     requirement_end: string_content_end(value.range.start, value.range.end),
                 },
-            ));
+            );
+            if *field == "path" {
+                dependency.hosted_url = Some("path".to_owned());
+            }
+            return Some(dependency);
         }
     }
     None

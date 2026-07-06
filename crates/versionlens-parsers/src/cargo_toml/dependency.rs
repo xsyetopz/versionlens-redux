@@ -59,18 +59,23 @@ pub(super) fn toml_dependency(input: CargoTomlDependencyInput<'_>) -> Option<Dep
         .unwrap_or(input.name);
     let field_value = inline_dependency_value(input.value)?;
     let registry_name = inline_registry_name(input.value);
+    let hosted_url = if field_value.field == "path" {
+        Some("path")
+    } else {
+        registry_name
+    };
     Some(cargo_dependency_from_span(
         CargoDependencySource {
             text: input.text,
             group: input.group,
             name: input.name,
             hosted_name: (package_name != input.name).then_some(package_name),
-            requirement: field_value.as_str()?,
-            hosted_url: registry_name,
+            requirement: field_value.value.as_str()?,
+            hosted_url,
         },
         CargoDependencySpans {
             name: input.name_key.span(),
-            requirement: field_value.span(),
+            requirement: field_value.value.span(),
         },
     ))
 }

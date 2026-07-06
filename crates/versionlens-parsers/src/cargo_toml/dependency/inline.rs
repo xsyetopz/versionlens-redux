@@ -1,11 +1,18 @@
 use toml_edit::Value as TomlValue;
 
-pub(super) fn inline_dependency_value(value: &TomlValue) -> Option<&TomlValue> {
+pub(super) struct InlineDependencyValue<'a> {
+    pub(super) field: &'static str,
+    pub(super) value: &'a TomlValue,
+}
+
+pub(super) fn inline_dependency_value(value: &TomlValue) -> Option<InlineDependencyValue<'_>> {
     let inline = value.as_inline_table()?;
-    ["version", "path", "git"]
-        .into_iter()
-        .find_map(|field| inline.get(field))
-        .filter(|value| value.as_str().is_some())
+    ["path", "git", "version"].into_iter().find_map(|field| {
+        inline
+            .get(field)
+            .filter(|value| value.as_str().is_some())
+            .map(|value| InlineDependencyValue { field, value })
+    })
 }
 
 pub(super) fn inline_registry_name(value: &TomlValue) -> Option<&str> {

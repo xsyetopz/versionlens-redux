@@ -210,6 +210,11 @@ pub(crate) fn known_non_registry_suggestion(
     if is_go_exclude(&dependency) {
         return Ok(fixed(dependency, "excluded version".to_owned()));
     }
+    if dependency.hosted_url.as_deref() == Some("path")
+        && let Some(path) = local_dependency_path(&dependency, document_uri)
+    {
+        return Ok(local_directory_suggestion(dependency, path));
+    }
     if is_registry_dependency(
         dependency.ecosystem,
         &dependency.name,

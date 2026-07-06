@@ -34,6 +34,7 @@ fn parses_cargo_toml_dependency_tables() {
         extract_range(text, dependencies[2].requirement_range),
         "../local"
     );
+    assert_eq!(dependencies[2].hosted_url.as_deref(), Some("path"));
     assert_eq!(dependencies[3].requirement, "https://example.test/repo.git");
     assert_eq!(dependencies[4].group, "dev-dependencies");
     assert_eq!(dependencies[4].name, "trybuild");
@@ -51,6 +52,29 @@ fn parses_cargo_toml_dependency_tables() {
     );
     assert_eq!(dependencies[8].name, "win-test");
     assert_eq!(dependencies[8].requirement, "0.1");
+}
+
+#[test]
+fn cargo_path_dependencies_prefer_path_over_version() {
+    let text = r#"
+[dependencies]
+local = { version = "1.2.3", path = "crates/local" }
+"#;
+    let dependencies = parse_document(&DocumentInput {
+        uri: "file:///work/Cargo.toml".to_owned(),
+        language_id: "toml".to_owned(),
+        text: text.to_owned(),
+        workspace_root: None,
+    });
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].name, "local");
+    assert_eq!(dependencies[0].requirement, "crates/local");
+    assert_eq!(dependencies[0].hosted_url.as_deref(), Some("path"));
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "crates/local"
+    );
 }
 
 #[test]

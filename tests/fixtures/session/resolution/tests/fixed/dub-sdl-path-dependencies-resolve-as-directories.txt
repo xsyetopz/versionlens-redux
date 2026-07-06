@@ -1,1 +1,2 @@
 dependency "localdep" path="./localdep"
+dependency "localdep_bare" path="vendor/localdep"

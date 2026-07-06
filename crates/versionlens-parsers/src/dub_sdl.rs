@@ -20,14 +20,15 @@ fn parse_dub_sdl_line(line_index: usize, line: &str) -> Option<Dependency> {
     let name_start = content_start + line[content_start..].find('"')? + 1;
     let name = quoted_value_at(line, name_start)?;
     let attributes = &line[name_start + name.len() + 1..];
-    let (requirement, requirement_start) = dependency_requirement(line, attributes)?;
+    let (requirement, requirement_start, requirement_field) =
+        dependency_requirement(line, attributes)?;
 
     Some(Dependency {
         name: name.to_owned(),
         requirement: requirement.to_owned(),
         ecosystem: Dub,
         group: "dependencies".to_owned(),
-        hosted_url: None,
+        hosted_url: (requirement_field == "path").then_some("path".to_owned()),
         hosted_name: None,
         range: line_range(line_index, line, name_start, name_start + name.len()),
         requirement_range: line_range(
@@ -41,14 +42,17 @@ fn parse_dub_sdl_line(line_index: usize, line: &str) -> Option<Dependency> {
     })
 }
 
-fn dependency_requirement<'a>(line: &'a str, attributes: &'a str) -> Option<(&'a str, usize)> {
-    if let Some(path) = attribute_value(line, attributes, "path") {
-        return Some(path);
+fn dependency_requirement<'a>(
+    line: &'a str,
+    attributes: &'a str,
+) -> Option<(&'a str, usize, &'static str)> {
+    if let Some((path, start)) = attribute_value(line, attributes, "path") {
+        return Some((path, start, "path"));
     }
-    if let Some(repository) = attribute_value(line, attributes, "repository") {
-        return Some(repository);
+    if let Some((repository, start)) = attribute_value(line, attributes, "repository") {
+        return Some((repository, start, "repository"));
     }
-    attribute_value(line, attributes, "version")
+    attribute_value(line, attributes, "version").map(|(version, start)| (version, start, "version"))
 }
 
 fn attribute_value<'a>(
