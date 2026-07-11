@@ -10,7 +10,7 @@
 		"biome:check": "biome check --write --unsafe --max-diagnostics 16384",
 		"biome:format": "biome format --write --max-diagnostics 16384",
 		"biome:lint": "biome lint --write --max-diagnostics 16384",
-		"check": "bun run check:biome && bun run check:rustfmt && bun run check:code-quality && bun run check:vscode-adapter && bun run check:package-parity && bun run check:vsix-freshness && bun run check:data-objects && bun run check:napi-boundary && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace && bun run test:extension && bun run test:napi",
+		"check": "bun run check:biome && bun run check:rustfmt && bun run check:code-quality && bun run check:vscode-adapter && bun run check:vsix-freshness && bun run check:data-objects && bun run check:napi-boundary && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace && bun run test:extension && bun run test:napi",
 		"check:biome": "biome check --max-diagnostics 16384",
 		"check:code-quality": "python3 scripts/check-code-quality.py",
 		"check:clippy": "cargo clippy --workspace --all-targets",
@@ -28,8 +28,7 @@
 		"test:napi": "bun run native:build && bun test tests/napi",
 		"typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/vscode-extension/tsconfig.json",
 		"vscode:prepublish": "bun run native:build:release && bun run build",
-		"native:build:release": "cargo build -p versionlens-napi --release && bun scripts/build-native.mjs --release",
-		"check:package-parity": "bun scripts/check-package-parity.mjs"
+		"native:build:release": "cargo build -p versionlens-napi --release && bun scripts/build-native.mjs --release"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.3",

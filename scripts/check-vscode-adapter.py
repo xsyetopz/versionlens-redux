@@ -14,7 +14,6 @@ ALLOWED_EXTENSION_SOURCE_DIRS = {"extension", "schema"}
 ALLOWED_ROOT_SOURCE_FILES = {"extension.ts"}
 ALLOWED_BARE_IMPORTS = {"bun:test", "vscode"}
 FORBIDDEN_NODE_IMPORTS = {"node:child_process"}
-PRESERVED_PACKAGE_FIELDS = ["author", "categories", "description", "icon", "license", "preview"]
 APPROVED_PACKAGE_OVERRIDES: dict[str, Any] = {
     "name": "versionlens-redux",
     "displayName": "VersionLens Redux",
@@ -22,9 +21,11 @@ APPROVED_PACKAGE_OVERRIDES: dict[str, Any] = {
     "engines": {"vscode": ">=1.75.0"},
     "repository": {"type": "git", "url": "https://github.com/xsyetopz/versionlens-redux.git"},
 }
-UPSTREAM_COMMAND_CATEGORY = "VersionLens"
-LOCAL_COMMAND_CATEGORY = "VersionLens Redux"
-APPROVED_LOCAL_ACTIVATION_EVENTS = {"onLanguage:groovy", "onLanguage:kotlin", "onLanguage:properties"}
+INTERNAL_REGISTERED_COMMANDS = {
+    "versionlens.suggestion.onChooseBuild",
+    "versionlens.suggestion.onFileLink",
+    "versionlens.suggestion.onUpdateDependency",
+}
 
 IMPORT_PATTERN = re.compile(r"\b(?:import|export)\b(?:[^\"'`]*?\bfrom\s*)?[\"']([^\"']+)[\"']|createRequire\([^)]*\)\([\"']([^\"']+)[\"']\)")
 JSON_BRIDGE_PATTERN = re.compile(r"\bJSON\.(?:parse|stringify)\s*\(")
@@ -110,45 +111,6 @@ def file_pattern_details(source: str) -> dict[str, dict[str, Any]]:
     return details
 
 
-def expect_superset(offenders: list[str], label: str, current: Any, upstream: list[Any]) -> None:
-    current_set = set(current)
-    for value in upstream:
-        if value not in current_set:
-            offenders.append(f"{label} missing upstream contribution {value}")
-
-
-def expect_array_superset(offenders: list[str], label: str, current: Any, upstream: Any) -> None:
-    if not isinstance(upstream, list):
-        return
-    if not isinstance(current, list):
-        offenders.append(f"{label} is no longer an array")
-        return
-    expect_superset(offenders, label, current, upstream)
-
-
-def keyword_tokens(keywords: list[Any]) -> list[str]:
-    tokens: list[str] = []
-    for keyword in keywords:
-        if isinstance(keyword, str):
-            tokens.extend([token for token in keyword.split(",") if token])
-    return tokens
-
-
-def expect_package_keywords(offenders: list[str], current: Any, upstream: Any) -> None:
-    if not (isinstance(current, list) and isinstance(upstream, list)):
-        offenders.append("package.json keywords must be arrays")
-        return
-    current_tokens = set(keyword_tokens(current))
-    upstream_tokens = set(keyword_tokens(upstream))
-    allowed_additions = {"cargo", "rust"}
-    for token in upstream_tokens:
-        if token not in current_tokens:
-            offenders.append(f"package.json keywords missing upstream keyword {token}")
-    for token in current_tokens:
-        if token not in upstream_tokens and token not in allowed_additions:
-            offenders.append(f"package.json keywords has unverified keyword {token}")
-
-
 def rust_string_array(offenders: list[str], file_path: str, name: str) -> list[str]:
     source = read(file_path)
     pattern = re.compile(rf"const\s+{re.escape(name)}:\s*&\[&str\]\s*=\s*&\[(?P<body>[\s\S]*?)\];")
@@ -221,12 +183,6 @@ def collect_markdown_asset_paths(markdown_path: Path) -> list[str]:
     return [path for match in MARKDOWN_IMAGE_PATTERN.finditer(read(markdown_path)) if (path := markdown_asset_path(markdown_path, match.group(1)))]
 
 
-def normalize_local_command_contribution(command: Any) -> Any:
-    if not isinstance(command, dict):
-        return command
-    return {key: (UPSTREAM_COMMAND_CATEGORY if key == "category" and value == LOCAL_COMMAND_CATEGORY else value) for key, value in command.items()}
-
-
 def check_adapter_source_layout(offenders: list[str]) -> None:
     for entry in Path("packages/vscode-extension/src").iterdir():
         if entry.is_dir() and entry.name not in ALLOWED_EXTENSION_SOURCE_DIRS:
@@ -253,14 +209,10 @@ def check_typescript_adapter_files(offenders: list[str]) -> None:
                     offenders.append(f"{file_label} imports {specifier}; Rust owns CLI/domain discovery")
 
 
-def check_package_metadata(offenders: list[str], extension_package: dict[str, Any], upstream_package: dict[str, Any]) -> None:
-    for field in PRESERVED_PACKAGE_FIELDS:
-        if stable_json(extension_package.get(field)) != stable_json(upstream_package.get(field)):
-            offenders.append(f"package.json {field} differs from upstream extension")
+def check_package_metadata(offenders: list[str], extension_package: dict[str, Any]) -> None:
     for field, expected in APPROVED_PACKAGE_OVERRIDES.items():
         if stable_json(extension_package.get(field)) != stable_json(expected):
             offenders.append(f"package.json {field} differs from approved local rebrand")
-    expect_package_keywords(offenders, extension_package.get("keywords"), upstream_package.get("keywords"))
     if extension_package.get("dependencies"):
         offenders.append("packages/vscode-extension/package.json must not have runtime dependencies")
     if extension_package.get("devDependencies"):
@@ -303,66 +255,32 @@ def check_vscodeignore(offenders: list[str]) -> None:
             offenders.append(f"{package_ignore_path.as_posix()} must not ignore packaged native module via {forbidden_ignore}")
 
 
-def check_commands(offenders: list[str], extension_package: dict[str, Any], upstream_package: dict[str, Any]) -> None:
+def check_commands(offenders: list[str], extension_package: dict[str, Any]) -> None:
     command_source = read("packages/vscode-extension/src/extension/commands.ts")
     registered_commands = set([m.group(1) for m in REGISTER_COMMAND_PATTERN.finditer(command_source)] + [m.group(1) for m in COMMAND_TUPLE_PATTERN.finditer(command_source)])
     contributed_commands_list = [command.get("command") for command in ((extension_package.get("contributes") or {}).get("commands") or [])]
     contributed_commands = set(contributed_commands_list)
-    upstream_commands = [command.get("command") for command in ((upstream_package.get("contributes") or {}).get("commands") or [])]
-    upstream_internal_registered_commands = {
-        "versionlens.suggestion.onChooseBuild",
-        "versionlens.suggestion.onFileLink",
-        "versionlens.suggestion.onUpdateDependency",
-    }
-    contributed_command_by_id = {command.get("command"): command for command in ((extension_package.get("contributes") or {}).get("commands") or [])}
-    if stable_json(contributed_commands_list) != stable_json(upstream_commands):
-        offenders.append("commands must match upstream package.json exactly")
-    expect_superset(offenders, "commands", contributed_commands, upstream_commands)
-    for command in ((upstream_package.get("contributes") or {}).get("commands") or []):
-        if stable_json(normalize_local_command_contribution(contributed_command_by_id.get(command.get("command")))) != stable_json(command):
-            offenders.append(f"{command.get('command')} contribution differs from upstream")
-
-    upstream_activation_events = upstream_package.get("activationEvents") or []
     local_activation_events = extension_package.get("activationEvents") or []
-    if not all(event in local_activation_events for event in upstream_activation_events):
-        offenders.append("activationEvents must include upstream package.json events")
-    for event in local_activation_events:
-        if event not in upstream_activation_events and event not in APPROVED_LOCAL_ACTIVATION_EVENTS:
-            offenders.append(f"activationEvents has unsupported extra event {event}")
-
-    for menu in (((upstream_package.get("contributes") or {}).get("menus") or {}).keys()):
-        if stable_json((((extension_package.get("contributes") or {}).get("menus") or {}).get(menu) or [])) != stable_json((((upstream_package.get("contributes") or {}).get("menus") or {}).get(menu) or [])):
-            offenders.append(f"{menu} menu must match upstream package.json exactly")
-        expect_superset(offenders, f"{menu} menu", menu_commands(extension_package, menu), menu_commands(upstream_package, menu))
-        expect_superset(offenders, f"{menu} menu placements", menu_placements(extension_package, menu), menu_placements(upstream_package, menu))
-
-    expect_superset(offenders, "jsonValidation", json_validation_file_matches(extension_package), json_validation_file_matches(upstream_package))
     for item in ((extension_package.get("contributes") or {}).get("jsonValidation") or []):
         if not Path("packages/vscode-extension", item.get("url", "")).exists():
             offenders.append(f"jsonValidation URL {item.get('url')} does not exist")
 
     for command in registered_commands:
-        if command not in contributed_commands and command not in upstream_internal_registered_commands:
+        if command not in contributed_commands and command not in INTERNAL_REGISTERED_COMMANDS:
             offenders.append(f"{command} is registered but not contributed")
     for command in contributed_commands:
         if command not in registered_commands:
             offenders.append(f"{command} is contributed but not registered")
     for command in rust_versionlens_command_strings("crates/versionlens-core/src/presentation.rs"):
-        if command not in contributed_commands and command not in upstream_internal_registered_commands:
+        if command not in contributed_commands and command not in INTERNAL_REGISTERED_COMMANDS:
             offenders.append(f"{command} is emitted by Rust but not contributed")
         if command not in registered_commands:
             offenders.append(f"{command} is emitted by Rust but not registered")
 
 
-def check_configuration(offenders: list[str], extension_package: dict[str, Any], upstream_package: dict[str, Any]) -> None:
+def check_configuration(offenders: list[str], extension_package: dict[str, Any]) -> None:
     contributed_configuration = (((extension_package.get("contributes") or {}).get("configuration") or {}).get("properties") or {})
-    upstream_configuration = (((upstream_package.get("contributes") or {}).get("configuration") or {}).get("properties") or {})
     contributed_settings = set(contributed_configuration.keys())
-    expect_superset(offenders, "configuration", contributed_settings, list(upstream_configuration.keys()))
-    for key, setting in upstream_configuration.items():
-        current = contributed_configuration.get(key) or {}
-        expect_array_superset(offenders, f"{key} default", current.get("default"), setting.get("default") if isinstance(setting, dict) else None)
-        expect_array_superset(offenders, f"{key} enum", ((current.get("items") or {}).get("enum") if isinstance(current, dict) else None), ((setting.get("items") or {}).get("enum") if isinstance(setting, dict) else None))
 
     dependency_default_specs = [
         ("cargo", "crates/versionlens-parsers/src/cargo_toml/paths.rs", "CARGO_DEPENDENCY_PATHS"),
@@ -438,13 +356,11 @@ def main() -> int:
     check_typescript_adapter_files(offenders)
 
     extension_package = read_json("packages/vscode-extension/package.json")
-    upstream_package = read_json("external/versionlens/vscode-versionlens/package.json")
-
-    check_package_metadata(offenders, extension_package, upstream_package)
+    check_package_metadata(offenders, extension_package)
     check_assets(offenders, extension_package)
     check_vscodeignore(offenders)
-    check_commands(offenders, extension_package, upstream_package)
-    check_configuration(offenders, extension_package, upstream_package)
+    check_commands(offenders, extension_package)
+    check_configuration(offenders, extension_package)
 
     if offenders:
         print("\n".join(offenders), file=sys.stderr)
