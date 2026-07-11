@@ -2,9 +2,9 @@ import * as vscode from "vscode";
 import { authorizationRequiredMessage } from "../auth/required.ts";
 import { addAuthHeader, isAuthHeaderSuppressed } from "../auth.ts";
 import { documentInput } from "../documents.ts";
-import { invalidateDocumentAnalysis } from "./analyze.ts";
 import { recreateSession } from "../session.ts";
 import type { ExtensionState } from "../state.ts";
+import { invalidateDocumentAnalysis } from "./analyze.ts";
 import { logProviderError } from "./log.ts";
 import {
 	clearProviderError,
