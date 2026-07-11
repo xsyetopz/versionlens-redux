@@ -4,3 +4,13 @@ dist/
 *.node
 *.vsix
 *.tsbuildinfo
+
+# Platform files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python cache
+__pycache__/
+*.py[cod]
+
