@@ -33,7 +33,10 @@ export function analyzeDocument(
 
 	const cacheKey = document.uri.toString();
 	const cached = analysisCache.get(cacheKey);
-	if (cached?.session === state.session && cached.version === document.version) {
+	if (
+		cached?.session === state.session &&
+		cached.version === document.version
+	) {
 		return cached.output;
 	}
 

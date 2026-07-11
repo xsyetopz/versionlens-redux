@@ -357,9 +357,13 @@ test("code lens provider renders cached Rust code lenses before background resol
 	expect(lenses?.[0]).toMatchObject({
 		command: { command: "versionlens.suggestion.onUpdateDependency" },
 	});
+	const lens = lenses?.[0];
+	if (!lens) {
+		throw new Error("expected a CodeLens");
+	}
 	expect(
-		(lenses?.[0] as { command?: { arguments?: unknown[] } }).command?.arguments,
-	).toEqual([lenses?.[0]]);
+		(lens as { command?: { arguments?: unknown[] } }).command?.arguments,
+	).toEqual([lens]);
 
 	await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -554,11 +558,15 @@ test("code lens command argument carries native payload through the CodeLens obj
 	registerCommands(state as never);
 	registerCodeLensProvider(state as never);
 	const lenses = await codeLensProviders[0]?.provideCodeLenses(document);
+	const lens = lenses?.[0];
+	if (!lens) {
+		throw new Error("expected a CodeLens");
+	}
 	const command = (
-		lenses?.[0] as { command?: { arguments?: unknown[]; command: string } }
+		lens as { command?: { arguments?: unknown[]; command: string } }
 	).command;
 
-	expect(command?.arguments).toEqual([lenses?.[0]]);
+	expect(command?.arguments).toEqual([lens]);
 	await registeredCommands[command?.command ?? ""]?.(command?.arguments?.[0]);
 
 	expect(applyInputs[0]).toMatchObject({
