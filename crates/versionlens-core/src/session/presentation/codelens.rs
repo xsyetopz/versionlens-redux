@@ -129,7 +129,11 @@ fn ordered_code_lens_range(range: Range, order: usize) -> Range {
         return range;
     };
     let mut ordered = range;
-    ordered.start.character = ordered.start.character.saturating_add(offset);
+    ordered.start.character = ordered
+        .start
+        .character
+        .saturating_add(offset)
+        .min(range.end.character);
     ordered.end = ordered.start;
     ordered
 }

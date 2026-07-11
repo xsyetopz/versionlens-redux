@@ -483,10 +483,31 @@
 						"Build": "\u224c "
 					},
 					"properties": {
-						"name": {
+						"Build": {
 							"type": "string"
 						},
-						"indicator": {
+						"Directory": {
+							"type": "string"
+						},
+						"Error": {
+							"type": "string"
+						},
+						"Latest": {
+							"type": "string"
+						},
+						"Match": {
+							"type": "string"
+						},
+						"NoMatch": {
+							"type": "string"
+						},
+						"SatisfiesLatest": {
+							"type": "string"
+						},
+						"Updateable": {
+							"type": "string"
+						},
+						"UpdateableVulnerable": {
 							"type": "string"
 						}
 					},
