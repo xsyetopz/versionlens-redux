@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SemVer release version matching every package manifest
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Create tag and release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Validate release ref and version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+
+          if [[ "$GITHUB_REF" != "refs/heads/master" ]]; then
+            echo "Releases must be dispatched from master, not $GITHUB_REF" >&2
+            exit 1
+          fi
+
+          remote_master=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/master" --jq .object.sha)
+          if [[ "$GITHUB_SHA" != "$remote_master" ]]; then
+            echo "Release commit $GITHUB_SHA is not current master $remote_master" >&2
+            exit 1
+          fi
+
+          bun scripts/bump-version.mjs "$VERSION" --check
+
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists" >&2
+            exit 1
+          fi
+
+      - name: Download successful editor artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+
+          download_artifact() {
+            local workflow=$1
+            local artifact=$2
+            local run_id
+
+            run_id=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=master&event=push&status=success&head_sha=$GITHUB_SHA&per_page=1" --jq '.workflow_runs[0].id')
+
+            if [[ -z "$run_id" ]]; then
+              echo "No successful $workflow push run found for $GITHUB_SHA" >&2
+              exit 1
+            fi
+
+            gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$artifact" --dir release-assets
+          }
+
+          download_artifact vscode.yml versionlens-redux-vsix
+          download_artifact zed.yml versionlens-redux-zed-extension
+          download_artifact jetbrains.yml versionlens-redux-jetbrains-plugin
+
+          find release-assets -type f -print
+          if [[ $(find release-assets -type f | wc -l) -lt 3 ]]; then
+            echo "Expected compiled attachments from all three editor workflows" >&2
+            exit 1
+          fi
+
+      - name: Create GitHub tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          mapfile -t assets < <(find release-assets -type f -print | sort)
+
+          args=(
+            "$tag"
+            --repo "$GITHUB_REPOSITORY"
+            --target "$GITHUB_SHA"
+            --title "VersionLens Redux $VERSION"
+            --generate-notes
+          )
+          if [[ "$VERSION" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+
+          gh release create "${args[@]}" "${assets[@]}"

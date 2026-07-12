@@ -34,6 +34,19 @@ Build all three editor packages and verify their bundled runtimes:
 bun run package:editors
 ```
 
+## Release
+
+1. Bump and commit the synchronized repository version:
+
+```bash
+bun run version:bump 0.2.0
+```
+
+2. Push the commit to `master` and wait for the VS Code, Zed, and JetBrains workflows to pass.
+3. Run the **Release** workflow from `master` with the same version.
+
+The release workflow refuses stale commits, mismatched versions, existing tags, and commits without successful editor workflows. It downloads the compiled artifacts from those exact workflow runs before creating the tag and GitHub release.
+
 ## Validation
 
 Run the smallest check that covers your change. Common checks:

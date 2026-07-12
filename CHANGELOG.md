@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Added a single command to build the VS Code, Zed, and JetBrains packages.
 - Bundled and verified each editor package's required native runtime.
+- Added a gated GitHub release workflow that tags successful master builds and attaches all three editor packages.
 
 ## [0.1.1] - 2026-07-12
 

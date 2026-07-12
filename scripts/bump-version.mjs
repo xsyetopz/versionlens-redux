@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const nextVersion = Bun.argv[2];
+const checkOnly = Bun.argv.includes("--check");
 const semverPattern =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/u;
 const numericIdentifierPattern = /^\d+$/u;
@@ -120,13 +121,19 @@ function currentVersion(path, pattern) {
 }
 
 if (!nextVersion) {
-	fail("usage: bun scripts/bump-version.mjs <major.minor.patch>");
+	fail("usage: bun scripts/bump-version.mjs <major.minor.patch> [--check]");
 }
 const parsedNext = parseSemver(nextVersion);
 const rootPattern =
 	/"name": "@versionlens\/workspace",[\s\S]*?"version": "(?<version>[^"]+)"/u;
 const previousVersion = currentVersion("package.json", rootPattern);
-if (compareSemver(parsedNext, parseSemver(previousVersion)) <= 0) {
+if (checkOnly && nextVersion !== previousVersion) {
+	fail(`requested version ${nextVersion} does not match ${previousVersion}`);
+}
+if (
+	!checkOnly &&
+	compareSemver(parsedNext, parseSemver(previousVersion)) <= 0
+) {
 	fail(
 		`new version ${nextVersion} must have higher SemVer precedence than ${previousVersion}`,
 	);
@@ -161,6 +168,11 @@ for (const [path, pattern] of manifests) {
 			`${path}: version ${version} is not synchronized with ${previousVersion}`,
 		);
 	}
+}
+
+if (checkOnly) {
+	console.log(`Verified synchronized release version ${nextVersion}.`);
+	process.exit(0);
 }
 
 const changes = new Map();
