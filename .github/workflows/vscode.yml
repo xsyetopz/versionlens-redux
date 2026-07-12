@@ -179,7 +179,11 @@ jobs:
         env:
           RUST_TARGET: ${{ matrix.rust_target }}
           USE_ZIG: ${{ matrix.zig }}
+          VSCODE_TARGET: ${{ matrix.vscode_target }}
         run: |
+          if [[ "$VSCODE_TARGET" == alpine-* ]]; then
+            export RUSTFLAGS="-C target-feature=-crt-static"
+          fi
           if [[ "$USE_ZIG" == "true" ]]; then
             cargo zigbuild -p versionlens-napi --release --target "$RUST_TARGET"
           else
