@@ -107,7 +107,7 @@ jobs:
             "$tag"
             --repo "$GITHUB_REPOSITORY"
             --target "$GITHUB_SHA"
-            --title "VersionLens Redux $VERSION"
+            --title "$VERSION"
             --generate-notes
           )
           if [[ "$VERSION" == *-* ]]; then
