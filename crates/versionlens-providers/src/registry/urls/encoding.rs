@@ -17,3 +17,27 @@ pub(super) fn encode_component(value: &str) -> String {
         .filter(|char| *char != '\0')
         .collect()
 }
+
+pub(super) fn encode_unsafe_url_bytes(value: &str) -> String {
+    value
+        .bytes()
+        .flat_map(|byte| {
+            if byte.is_ascii_graphic()
+                && !matches!(
+                    byte,
+                    b'"' | b'<' | b'>' | b'\\' | b'^' | b'`' | b'{' | b'|' | b'}'
+                )
+            {
+                [byte as char, '\0', '\0']
+            } else {
+                const HEX: &[u8; 16] = b"0123456789ABCDEF";
+                [
+                    '%',
+                    HEX[(byte >> 4) as usize] as char,
+                    HEX[(byte & 0x0F) as usize] as char,
+                ]
+            }
+        })
+        .filter(|char| *char != '\0')
+        .collect()
+}

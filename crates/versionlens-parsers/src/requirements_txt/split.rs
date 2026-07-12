@@ -1,4 +1,4 @@
-pub(crate) fn split_python_requirement(raw: &str) -> Option<(&str, &str, usize)> {
+pub(crate) fn split_python_requirement(raw: &str) -> Option<(&str, &str, usize, &str)> {
     let value = strip_comment(raw).trim_end();
     if let Some((raw_name, requirement)) = value.split_once(" @ ") {
         let name = raw_name.trim().split('[').next().unwrap_or("").trim();
@@ -9,6 +9,7 @@ pub(crate) fn split_python_requirement(raw: &str) -> Option<(&str, &str, usize)>
             name,
             requirement.split(';').next().unwrap_or("").trim_end(),
             raw_name.len() + 3,
+            "",
         ));
     }
 
@@ -16,8 +17,12 @@ pub(crate) fn split_python_requirement(raw: &str) -> Option<(&str, &str, usize)>
     let split = requirement_part
         .find(['=', '<', '>', '~', '!'])
         .unwrap_or(requirement_part.len());
-    let name = requirement_part[..split]
-        .trim()
+    let raw_name = requirement_part[..split].trim();
+    let parenthesized = raw_name.ends_with('(') && requirement_part.ends_with(')');
+    let name = raw_name
+        .strip_suffix('(')
+        .unwrap_or(raw_name)
+        .trim_end()
         .split('[')
         .next()
         .unwrap_or("")
@@ -25,8 +30,17 @@ pub(crate) fn split_python_requirement(raw: &str) -> Option<(&str, &str, usize)>
     if name.is_empty() {
         return None;
     }
-    let requirement = requirement_part[split..].trim_end();
-    Some((name, requirement, split))
+    let requirement = requirement_part[split..]
+        .strip_suffix(')')
+        .filter(|_| parenthesized)
+        .unwrap_or(&requirement_part[split..])
+        .trim_end();
+    Some((
+        name,
+        requirement,
+        split,
+        if parenthesized { ")" } else { "" },
+    ))
 }
 
 pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &str, usize)> {
@@ -42,11 +56,27 @@ pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &st
     }
 
     let after_name = &requirement_part[name_end..];
-    let operator_offset = after_name
+    let extras_len = if after_name.starts_with('[') {
+        after_name.find(']').map_or(0, |end| end + 1)
+    } else {
+        0
+    };
+    let after_qualifier = &after_name[extras_len..];
+    let leading_space = leading_space_len(after_qualifier);
+    if let Some(parenthesized) = after_qualifier[leading_space..].strip_prefix('(')
+        && let Some(close) = parenthesized.find(')')
+    {
+        let requirement_start = name_end + extras_len + leading_space + 1;
+        let requirement = parenthesized[..close].trim();
+        let trimmed_start =
+            parenthesized[..close].len() - parenthesized[..close].trim_start().len();
+        return Some((name, requirement, requirement_start + trimmed_start));
+    }
+    let operator_offset = after_qualifier
         .find(['=', '<', '>', '~', '!'])
-        .filter(|offset| after_name[..*offset].trim().is_empty());
+        .filter(|offset| after_qualifier[..*offset].trim().is_empty());
     let Some(operator_offset) = operator_offset else {
-        let version_start = name_end + leading_space_len(after_name);
+        let version_start = name_end + extras_len + leading_space_len(after_qualifier);
         let version_len = requirement_part[version_start..]
             .bytes()
             .take_while(|byte| valid_upstream_requirement_version_byte(*byte))
@@ -62,7 +92,7 @@ pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &st
         ));
     };
 
-    let split = name_end + operator_offset;
+    let split = name_end + extras_len + operator_offset;
     let operator_end = split + requirement_operator_len(&requirement_part[split..]);
     let version_start = operator_end + leading_space_len(&requirement_part[operator_end..]);
     let version_len = requirement_part[version_start..]

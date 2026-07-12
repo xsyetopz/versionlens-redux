@@ -231,8 +231,7 @@ fn respond(connection: &Connection, id: RequestId, result: serde_json::Value) ->
         .sender
         .send(Message::Response(Response {
             id,
-            result: Some(result),
-            error: None,
+            response_kind: lsp_server::ResponseKind::Ok { result },
         }))
         .context("failed to send LSP response")
 }

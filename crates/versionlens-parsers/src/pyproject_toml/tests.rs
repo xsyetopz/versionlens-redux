@@ -260,6 +260,31 @@ fn parses_configured_poetry_dev_dependencies() {
 }
 
 #[test]
+fn parses_parenthesized_pep_508_requirements_without_polluting_package_names() {
+    let text = r#"[project]
+dependencies = ["unfat (>=0.0.13)", "httpx[http2] (>=0.28,<1); python_version >= '3.11'"]
+"#;
+    let dependencies = parse_document(&DocumentInput {
+        uri: "file:///work/pyproject.toml".to_owned(),
+        language_id: "toml".to_owned(),
+        text: text.to_owned(),
+        workspace_root: None,
+    });
+
+    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies[0].name, "unfat");
+    assert_eq!(dependencies[0].requirement, ">=0.0.13");
+    assert_eq!(dependencies[0].requirement_suffix, ")");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        ">=0.0.13"
+    );
+    assert_eq!(dependencies[1].name, "httpx");
+    assert_eq!(dependencies[1].requirement, ">=0.28,<1");
+    assert_eq!(dependencies[1].requirement_suffix, ")");
+}
+
+#[test]
 fn parses_smoke_python_smoke_shapes() {
     let pyproject = r#"
 [project]

@@ -11,7 +11,11 @@ pub(super) fn parse_requirement_line(line_index: usize, line: &str) -> Option<De
 
     let offset = line.len() - trimmed.len();
     let (name, mut requirement, mut split) = split_requirements_txt_requirement(trimmed)?;
-    if requirements_txt_extras_end_before_requirement(trimmed, name, split) {
+    let parenthesized = trimmed[..split].trim_end().ends_with('(')
+        && trimmed[split + requirement.len()..]
+            .trim_start()
+            .starts_with(')');
+    if !parenthesized && requirements_txt_extras_end_before_requirement(trimmed, name, split) {
         requirement = "";
         split = name.len();
     }
@@ -34,7 +38,7 @@ pub(super) fn parse_requirement_line(line_index: usize, line: &str) -> Option<De
         range: line_range(line_index, line, offset, offset + name.len()),
         requirement_range: line_range(line_index, line, requirement_start, requirement_end),
         requirement_prefix: requirement_prefix.to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: if parenthesized { ")" } else { "" }.to_owned(),
     })
 }
 
@@ -44,6 +48,7 @@ fn requirements_txt_extras_end_before_requirement(raw: &str, name: &str, split: 
     };
     extra_start == name.len() && raw.find(']').is_some_and(|extra_end| extra_end < split)
 }
+
 fn requirements_txt_descriptor_version(raw: &str) -> String {
     for operator in ["===", "==", "~=", ">=", "<=", "!=", ">", "<"] {
         let Some(after_operator) = raw.strip_prefix(operator) else {

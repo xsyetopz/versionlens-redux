@@ -11,6 +11,7 @@ mod template;
 
 use docker::{docker_registry_url, docker_registry_url_with_base};
 use dotnet::{dotnet_default_registry_url, dotnet_package_url};
+use encoding::encode_unsafe_url_bytes;
 use go::{go_registry_url, go_registry_url_with_base};
 use maven::{maven_registry_url, maven_registry_url_with_base};
 use package::{
@@ -122,7 +123,7 @@ const CUSTOM_REGISTRY_URLS: &[RegistryUrlWithBaseBuilder] = &[
 
 pub fn registry_url(ecosystem: Ecosystem, name: &str) -> String {
     let name = name.trim();
-    DEFAULT_REGISTRY_URLS[ecosystem as usize](name)
+    encode_unsafe_url_bytes(&DEFAULT_REGISTRY_URLS[ecosystem as usize](name))
 }
 
 pub fn registry_url_with_base(ecosystem: Ecosystem, name: &str, base_url: Option<&str>) -> String {
@@ -132,10 +133,10 @@ pub fn registry_url_with_base(ecosystem: Ecosystem, name: &str, base_url: Option
     };
 
     if let Some(url) = template_registry_url(ecosystem, name, base_url) {
-        return url;
+        return encode_unsafe_url_bytes(&url);
     }
 
-    registry_url_from_base(ecosystem, name, base_url)
+    encode_unsafe_url_bytes(&registry_url_from_base(ecosystem, name, base_url))
 }
 
 fn registry_url_from_base(ecosystem: Ecosystem, name: &str, base_url: &str) -> String {

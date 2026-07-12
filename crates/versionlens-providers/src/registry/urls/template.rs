@@ -18,8 +18,8 @@ pub(super) fn template_registry_url(
     let base_module = base_module_name(ecosystem, name);
     Some(
         base_url
-            .replacen(NAME_TOKEN, name, 1)
-            .replacen(BASE_MODULE_TOKEN, &base_module, 1),
+            .replace(NAME_TOKEN, name)
+            .replace(BASE_MODULE_TOKEN, &base_module),
     )
 }
 

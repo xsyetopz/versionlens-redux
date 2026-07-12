@@ -55,6 +55,31 @@ fn parses_requirements_txt_dependencies() {
 }
 
 #[test]
+fn parses_parenthesized_pep_508_requirements() {
+    let text = "unfat (>=0.0.13)
+httpx[http2] (>=0.28,<1); python_version >= '3.11'
+";
+    let dependencies = parse_document(&DocumentInput {
+        uri: "file:///work/requirements.txt".to_owned(),
+        language_id: "pip-requirements".to_owned(),
+        text: text.to_owned(),
+        workspace_root: None,
+    });
+
+    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies[0].name, "unfat");
+    assert_eq!(dependencies[0].requirement, ">=0.0.13");
+    assert_eq!(dependencies[0].requirement_suffix, ")");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        ">=0.0.13"
+    );
+    assert_eq!(dependencies[1].name, "httpx");
+    assert_eq!(dependencies[1].requirement, ">=0.28,<1");
+    assert_eq!(dependencies[1].requirement_suffix, ")");
+}
+
+#[test]
 fn requirements_txt_adjacent_hash_not_part_of_normal_version() {
     let text =
         package_file_fixture("requirements-txt-adjacent-hash-not-part-of-normal-version.txt");

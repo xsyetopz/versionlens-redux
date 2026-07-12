@@ -1,12 +1,13 @@
 {
 	"name": "@versionlens/workspace",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"workspaces": [
 		"packages/*"
 	],
 	"scripts": {
 		"build": "bun scripts/build-extension.mjs",
+		"version:bump": "bun scripts/bump-version.mjs",
 		"biome:check": "biome check --write --unsafe --max-diagnostics 16384",
 		"biome:format": "biome format --write --max-diagnostics 16384",
 		"biome:lint": "biome lint --write --max-diagnostics 16384",

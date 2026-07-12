@@ -4,8 +4,8 @@ use super::{
     merge_docker_hub_response_pages, provider_id, registry_url, registry_url_with_base,
 };
 use versionlens_parsers::Ecosystem::{
-    AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cran, Deno, Docker, Dotnet, Dub,
-    Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm, Opam, Pub, Python,
+    AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Cran, Deno, Docker, Dotnet,
+    Dub, Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm, Opam, Pub, Python,
     Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
 };
 
@@ -348,11 +348,11 @@ fn builds_custom_registry_urls() {
             "Go.uber.org/Zap",
             Some("https://proxy.test/{base-module}/{base-module}")
         ),
-        "https://proxy.test/!go.uber.org/!zap/{base-module}"
+        "https://proxy.test/!go.uber.org/!zap/!go.uber.org/!zap"
     );
     assert_eq!(
         registry_url_with_base(Python, "requests", Some("https://pypi.test/{name}/{name}")),
-        "https://pypi.test/requests/{name}"
+        "https://pypi.test/requests/requests"
     );
 }
 
@@ -396,7 +396,7 @@ fn builds_custom_package_registry_urls() {
     );
     assert_eq!(
         registry_url_with_base(Ruby, "rails", Some("https://gems.test/{name}/{name}")),
-        "https://gems.test/rails/{name}"
+        "https://gems.test/rails/rails"
     );
     assert_eq!(
         registry_url_with_base(Ruby, "rails", Some("https://gems.test")),
@@ -458,6 +458,57 @@ fn builds_haxelib_registry_urls() {
         registry_url(Haxelib, "tink_core"),
         "https://lib.haxe.org/p/tink_core/versions/"
     );
+}
+
+#[test]
+fn registry_urls_escape_unsafe_bytes_for_every_ecosystem() {
+    let ecosystems = [
+        Cargo,
+        Composer,
+        Deno,
+        Dotnet,
+        Docker,
+        Dub,
+        Go,
+        Maven,
+        Npm,
+        Python,
+        Pub,
+        Ruby,
+        Hex,
+        Opam,
+        Hackage,
+        Julia,
+        Cran,
+        Conan,
+        Vcpkg,
+        Swift,
+        Zig,
+        Nim,
+        LuaRocks,
+        Cpan,
+        Haxelib,
+        Terraform,
+        Helm,
+        AnsibleGalaxy,
+        Bazel,
+        Nix,
+        Unity,
+        CocoaPods,
+        Cpp,
+    ];
+
+    for ecosystem in ecosystems {
+        let url = registry_url(ecosystem, " package name\\with\nnewline ");
+        assert!(
+            url.bytes().all(|byte| byte.is_ascii_graphic()),
+            "{ecosystem:?} produced an unsafe registry URL: {url:?}"
+        );
+        assert!(
+            !url.contains([' ', '\\', '\n', '\r', '\t']),
+            "{ecosystem:?} produced an unsafe registry URL: {url:?}"
+        );
+    }
 }
 
 #[test]

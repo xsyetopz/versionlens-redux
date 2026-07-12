@@ -297,11 +297,12 @@ test("version lens toggles refresh registered code lenses", async () => {
 
 	registerCommands(state as never);
 	await registeredCommands["versionlens.editor.onHideVersionLenses"]?.();
+	await registeredCommands["versionlens.editor.onShowVersionLenses"]?.();
 	await registeredCommands["versionlens.editor.onShowPrereleaseVersions"]?.();
 
-	expect(testState.codeLensRefreshCount).toBe(2);
-	expect(testState.activeRefreshCount).toBe(0);
-	expect(state.flags.showVersionLenses).toBe(false);
+	expect(testState.codeLensRefreshCount).toBe(3);
+	expect(testState.activeRefreshCount).toBe(1);
+	expect(state.flags.showVersionLenses).toBe(true);
 	expect(state.flags.showPrereleases).toBe(true);
 	expect(createdSessionConfigs).toHaveLength(1);
 });

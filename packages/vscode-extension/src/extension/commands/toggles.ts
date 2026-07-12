@@ -1,3 +1,4 @@
+import { refreshActiveDiagnostics } from "../diagnostics.ts";
 import { recreateSession } from "../session.ts";
 import type { ExtensionState } from "../state.ts";
 import { refreshCodeLenses } from "./codelens.ts";
@@ -10,6 +11,9 @@ export async function toggleVersionLenses(
 	state.flags.showVersionLenses = next;
 	await updateContexts(state);
 	refreshCodeLenses(state);
+	if (next) {
+		await refreshActiveDiagnostics(state);
+	}
 }
 
 export async function togglePrereleases(state: ExtensionState, next: boolean) {

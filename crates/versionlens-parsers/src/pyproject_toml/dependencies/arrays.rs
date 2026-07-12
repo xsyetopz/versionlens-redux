@@ -21,7 +21,8 @@ pub(in crate::pyproject_toml) fn collect_requirement_array(
         let Some(raw) = item.as_str() else {
             continue;
         };
-        let Some((name, requirement, split)) = split_python_requirement(raw) else {
+        let Some((name, requirement, split, requirement_suffix)) = split_python_requirement(raw)
+        else {
             continue;
         };
         let Some(span) = item.span() else {
@@ -46,7 +47,7 @@ pub(in crate::pyproject_toml) fn collect_requirement_array(
             } else {
                 "".to_owned()
             },
-            requirement_suffix: "".to_owned(),
+            requirement_suffix: requirement_suffix.to_owned(),
         });
     }
 }
