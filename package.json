@@ -1,7 +1,7 @@
 {
 	"name": "@versionlens/workspace",
 	"private": true,
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"workspaces": [
 		"packages/*"
 	],
@@ -25,6 +25,7 @@
 		"native:build": "cargo build -p versionlens-napi && bun scripts/build-native.mjs",
 		"native:test": "cargo test --workspace",
 		"package": "bun run vscode:prepublish && cd packages/vscode-extension && bunx vsce package --no-dependencies",
+		"package:vscode-target": "bun scripts/package-vscode-target.mjs",
 		"package:editors": "bun scripts/build-editor-packages.mjs",
 		"test": "bun run test:extension && bun run test:napi",
 		"test:extension": "bun scripts/test-extension.mjs",

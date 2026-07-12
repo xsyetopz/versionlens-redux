@@ -13,18 +13,18 @@ const executableName =
 const vscodeArtifact = join(
 	"packages",
 	"vscode-extension",
-	["versionlens-redux-", version, ".vsix"].join(""),
+	`versionlens-redux-${version}.vsix`,
 );
 const zedArtifact = join(
 	"dist",
-	["versionlens-redux-zed-extension-", platform, "-", arch, ".tar.gz"].join(""),
+	`versionlens-redux-zed-extension-${platform}-${arch}.tar.gz`,
 );
 const jetbrainsArtifact = join(
 	"packages",
 	"jetbrains-plugin",
 	"build",
 	"distributions",
-	["versionlens-jetbrains-plugin-", version, ".zip"].join(""),
+	`versionlens-jetbrains-plugin-${version}.zip`,
 );
 
 function run(command) {
@@ -38,7 +38,7 @@ function run(command) {
 
 function requireEntry(entries, expected, artifact) {
 	if (!entries.split(linePattern).includes(expected)) {
-		throw new Error([artifact, " does not contain ", expected].join(""));
+		throw new Error(`${artifact} does not contain ${expected}`);
 	}
 }
 
@@ -48,7 +48,7 @@ function digest(bytes) {
 
 function requireMatchingBinary(actual, expectedPath, artifact) {
 	if (digest(actual) !== digest(readFileSync(expectedPath))) {
-		throw new Error([artifact, " contains a stale runtime binary"].join(""));
+		throw new Error(`${artifact} contains a stale runtime binary`);
 	}
 }
 
@@ -72,9 +72,9 @@ requireMatchingBinary(
 );
 
 const zedEntries = new TextDecoder().decode(run(["tar", "-tzf", zedArtifact]));
-requireEntry(zedEntries, ["bin/", executableName].join(""), zedArtifact);
+requireEntry(zedEntries, `bin/${executableName}`, zedArtifact);
 requireMatchingBinary(
-	run(["tar", "-xOzf", zedArtifact, ["bin/", executableName].join("")]),
+	run(["tar", "-xOzf", zedArtifact, `bin/${executableName}`]),
 	join("target", "release", executableName),
 	zedArtifact,
 );
@@ -89,26 +89,18 @@ try {
 	const pluginJar = outerEntries
 		.split(linePattern)
 		.find((entry) =>
-			entry.endsWith(
-				["/lib/versionlens-jetbrains-plugin-", version, ".jar"].join(""),
-			),
+			entry.endsWith(`/lib/versionlens-jetbrains-plugin-${version}.jar`),
 		);
 	if (!pluginJar) {
-		throw new Error(
-			[jetbrainsArtifact, " does not contain the plugin JAR"].join(""),
-		);
+		throw new Error(`${jetbrainsArtifact} does not contain the plugin JAR`);
 	}
 
 	const jarPath = join(temporaryDirectory, "plugin.jar");
 	writeFileSync(jarPath, run(["unzip", "-p", jetbrainsArtifact, pluginJar]));
 	const jarEntries = new TextDecoder().decode(run(["unzip", "-Z1", jarPath]));
-	requireEntry(
-		jarEntries,
-		["bin/", executableName].join(""),
-		jetbrainsArtifact,
-	);
+	requireEntry(jarEntries, `bin/${executableName}`, jetbrainsArtifact);
 	requireMatchingBinary(
-		run(["unzip", "-p", jarPath, ["bin/", executableName].join("")]),
+		run(["unzip", "-p", jarPath, `bin/${executableName}`]),
 		join("target", "release", executableName),
 		jetbrainsArtifact,
 	);

@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  vscode:
-    name: VS Code extension
+  check:
+    name: VS Code checks
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -54,7 +54,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-vscode-${{ hashFiles('Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-vscode-check-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-vscode-
             ${{ runner.os }}-cargo-
@@ -62,35 +62,170 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Check formatting
+      - name: Check formatting and contracts
         run: |
           bun run check:biome
           bun run check:rustfmt
-
-      - name: Check VS Code contracts
-        run: |
           bun run check:vscode-adapter
           bun run check:vsix-freshness
           bun run check:data-objects
           bun run check:napi-boundary
 
-      - name: Typecheck
-        run: bun run typecheck
-
-      - name: Rust checks
+      - name: Typecheck and test
         run: |
+          bun run typecheck
           bun run check:clippy
           cargo test --workspace
-
-      - name: Build VS Code extension
-        run: |
+          bun run test:extension
           bun run check:extension-build
-          bun run package
-          bun run check:vsix-freshness
 
-      - name: Upload VSIX artifact
+  package:
+    name: VSIX (${{ matrix.vscode_target }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vscode_target: linux-x64
+            rust_target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            zig: false
+          - vscode_target: linux-arm64
+            rust_target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+            zig: false
+          - vscode_target: linux-armhf
+            rust_target: armv7-unknown-linux-gnueabihf
+            runner: ubuntu-latest
+            zig: true
+          - vscode_target: alpine-x64
+            rust_target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            zig: true
+          - vscode_target: alpine-arm64
+            rust_target: aarch64-unknown-linux-musl
+            runner: ubuntu-latest
+            zig: true
+          - vscode_target: darwin-x64
+            rust_target: x86_64-apple-darwin
+            runner: macos-15-intel
+            zig: false
+          - vscode_target: darwin-arm64
+            rust_target: aarch64-apple-darwin
+            runner: macos-15
+            zig: false
+          - vscode_target: win32-x64
+            rust_target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            zig: false
+          - vscode_target: win32-arm64
+            rust_target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+            zig: false
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: latest
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Setup Rust target
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal
+          rustup default "$channel"
+          rustup target add "$RUST_TARGET"
+
+      - name: Setup Zig cross-compilation
+        if: matrix.zig
+        shell: bash
+        run: |
+          python3 -m pip install ziglang==0.15.2
+          cargo install cargo-zigbuild --version 0.23.0 --locked
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-${{ hashFiles('bun.lock') }}
+
+      - name: Cache Cargo registry and target
+        uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-vscode-${{ matrix.rust_target }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build native runtime
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+          USE_ZIG: ${{ matrix.zig }}
+        run: |
+          if [[ "$USE_ZIG" == "true" ]]; then
+            cargo zigbuild -p versionlens-napi --release --target "$RUST_TARGET"
+          else
+            cargo build -p versionlens-napi --release --target "$RUST_TARGET"
+          fi
+
+      - name: Package target-specific VSIX
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+          VSCODE_TARGET: ${{ matrix.vscode_target }}
+        run: bun run package:vscode-target "$VSCODE_TARGET" "$RUST_TARGET"
+
+      - name: Upload target VSIX
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: versionlens-redux-vsix-${{ matrix.vscode_target }}
+          path: packages/vscode-extension/*-${{ matrix.vscode_target }}.vsix
+          if-no-files-found: error
+
+  bundle:
+    name: Bundle target VSIX packages
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download target packages
+        uses: actions/download-artifact@v8.0.0
+        with:
+          pattern: versionlens-redux-vsix-*
+          path: packages
+          merge-multiple: true
+
+      - name: Require every VS Code target
+        shell: bash
+        run: |
+          set -euo pipefail
+          for target in win32-x64 win32-arm64 linux-x64 linux-arm64 linux-armhf alpine-x64 alpine-arm64 darwin-x64 darwin-arm64; do
+            compgen -G "packages/*-$target.vsix" >/dev/null || {
+              echo "Missing VSIX for $target" >&2
+              exit 1
+            }
+          done
+
+      - name: Upload complete VSIX set
         uses: actions/upload-artifact@v7.0.1
         with:
           name: versionlens-redux-vsix
-          path: packages/vscode-extension/*.vsix
+          path: packages/*.vsix
           if-no-files-found: error

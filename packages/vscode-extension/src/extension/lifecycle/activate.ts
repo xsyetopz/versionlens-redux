@@ -19,7 +19,16 @@ export async function activateExtension(
 	warnWhenCodeLensesDisabled(state);
 	registerExtensionSubscriptions(state, context);
 
-	await recreateSession(state);
+	try {
+		await recreateSession(state);
+	} catch (error) {
+		const detail = error instanceof Error ? error.message : String(error);
+		const runtime = [process.platform, process.arch].join("-");
+		const message = `VersionLens Redux could not load its native runtime for ${runtime}. Install the matching platform package.`;
+		state.ui.outputChannel?.appendLine([message, detail].join(" "));
+		await window.showErrorMessage(message);
+		throw error;
+	}
 	await updateContexts(state);
 	await initializePackageFileWatching(state);
 	await refreshActiveDiagnostics(state);

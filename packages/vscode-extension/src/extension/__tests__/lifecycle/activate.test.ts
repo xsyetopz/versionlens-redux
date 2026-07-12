@@ -12,6 +12,7 @@ let recreateSessionError: Error | undefined;
 let originalVersionLensInstalled = false;
 let warningSelection: string | undefined;
 const warningMessages: string[] = [];
+const errorMessages: string[] = [];
 const executedCommands: unknown[][] = [];
 
 mock.module("vscode", () => ({
@@ -29,6 +30,9 @@ mock.module("vscode", () => ({
 		},
 	},
 	window: {
+		showErrorMessage(message: string) {
+			errorMessages.push(message);
+		},
 		showWarningMessage(message: string) {
 			warningMessages.push(message);
 			return warningSelection;
@@ -105,6 +109,7 @@ function reset() {
 	originalVersionLensInstalled = false;
 	warningSelection = undefined;
 	warningMessages.length = 0;
+	errorMessages.length = 0;
 	executedCommands.length = 0;
 }
 
@@ -136,6 +141,11 @@ test("activation registers commands before native session creation can fail", as
 	await expect(
 		activateExtension(state as never, { subscriptions: [] } as never),
 	).rejects.toThrow("native session failed");
+	const runtime = [process.platform, process.arch].join("-");
+	expect(errorMessages).toEqual([
+		`VersionLens Redux could not load its native runtime for ${runtime}. Install the matching platform package.`,
+	]);
+	expect(outputLines.at(-1)).toContain("native session failed");
 
 	expect(uiInitCount).toBe(1);
 	expect(subscriptionCount).toBe(1);
