@@ -34,7 +34,7 @@ mod vcpkg;
 mod xml;
 mod zig;
 
-use composer::composer_release_versions;
+use composer::{composer_release_versions, composer_release_versions_for_package};
 use cran::cran_release_versions;
 pub use dispatch::{
     LatestVersionRequest, latest_version_from_response, latest_version_from_response_for_request,
@@ -69,6 +69,10 @@ pub fn release_versions_from_response(ecosystem: Ecosystem, body: &str) -> Vec<S
         return vec![];
     }
 
+    if ecosystem == Composer {
+        return composer_release_versions(body);
+    }
+
     release_versions_from_response_for_package(ecosystem, "", body)
 }
 
@@ -80,7 +84,7 @@ pub fn release_versions_from_response_for_package(
     body: &str,
 ) -> Vec<String> {
     match ecosystem {
-        Composer => composer_release_versions(body),
+        Composer => composer_release_versions_for_package(body, package),
         Cran => cran_release_versions(body, package),
         Dotnet => dotnet_release_versions(body),
         Hex => hex_release_versions(body),

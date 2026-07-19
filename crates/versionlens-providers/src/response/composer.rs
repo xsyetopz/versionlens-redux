@@ -35,6 +35,25 @@ pub(crate) fn composer_release_versions(body: &str) -> Vec<String> {
     versions
 }
 
+/// Extract releases only for `package` from a Composer response.
+///
+/// Unlike the compatibility extractor above, this is safe for Composer
+/// responses whose `packages` object contains metadata for multiple packages.
+pub(crate) fn composer_release_versions_for_package(body: &str, package: &str) -> Vec<String> {
+    let Ok(value) = from_str::<Value>(body) else {
+        return vec![];
+    };
+
+    let Some(package_versions) = composer_package_versions_value(&value, package) else {
+        return vec![];
+    };
+
+    let mut versions = composer_versions_from_package_value(package_versions);
+    sort_versions(&mut versions);
+    versions.dedup();
+    versions
+}
+
 fn composer_package_versions_value<'a>(value: &'a Value, package: &str) -> Option<&'a Value> {
     value
         .get("packages")

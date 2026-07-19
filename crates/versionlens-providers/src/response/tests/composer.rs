@@ -1,4 +1,7 @@
-use super::{latest_version_from_response, release_versions_from_response_for_package};
+use super::{
+    latest_version_from_response, release_versions_from_response,
+    release_versions_from_response_for_package,
+};
 use versionlens_parsers::Ecosystem::Composer;
 
 #[test]
@@ -58,6 +61,29 @@ fn extracts_composer_release_versions_for_update_choices() {
 }
 
 #[test]
+fn extracts_composer_releases_only_for_the_requested_package() {
+    let body = r#"{
+      "packages": {
+        "acme/target": [{"version": "1.0.0"}, {"version": "1.1.0"}],
+        "acme/unrelated": [{"version": "9.0.0"}]
+      }
+    }"#;
+
+    assert_eq!(
+        release_versions_from_response_for_package(Composer, "acme/target", body),
+        vec!["1.0.0".to_owned(), "1.1.0".to_owned()]
+    );
+    assert_eq!(
+        release_versions_from_response_for_package(Composer, "acme/unrelated", body),
+        vec!["9.0.0".to_owned()]
+    );
+    assert_eq!(
+        release_versions_from_response(Composer, body),
+        vec!["1.0.0".to_owned(), "1.1.0".to_owned(), "9.0.0".to_owned()]
+    );
+}
+
+#[test]
 fn extracts_composer_branch_alias_versions_from_metadata() {
     assert_eq!(
         release_versions_from_response_for_package(
@@ -107,5 +133,23 @@ fn reads_packagist_json_api_package_versions() {
             "3.7.0".to_owned(),
             "3.8.0-beta.1".to_owned(),
         ]
+    );
+}
+
+#[test]
+fn extracts_packagist_json_api_releases_only_when_the_package_matches() {
+    let body = r#"{
+      "package": {
+        "name": "acme/target",
+        "versions": {"1.0.0": {}, "1.1.0": {}}
+      }
+    }"#;
+
+    assert_eq!(
+        release_versions_from_response_for_package(Composer, "acme/target", body),
+        vec!["1.0.0".to_owned(), "1.1.0".to_owned()]
+    );
+    assert!(
+        release_versions_from_response_for_package(Composer, "acme/unrelated", body).is_empty()
     );
 }
