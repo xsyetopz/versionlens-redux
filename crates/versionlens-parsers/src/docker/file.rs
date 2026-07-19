@@ -1,7 +1,7 @@
 use crate::docker::image::split_image_reference;
-use crate::model::Dependency;
-use crate::model::Ecosystem::Docker;
 use crate::positions::line_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Docker;
 
 pub(crate) fn parse_dockerfile(text: &str) -> Vec<Dependency> {
     text.lines()

@@ -1,12 +1,13 @@
-use versionlens_parsers::Dependency;
+use semver::{Version, VersionReq};
+use versionlens_model::Dependency;
+use versionlens_model::{Position, Range};
 use versionlens_suggestions::Suggestion;
 use versionlens_suggestions::SuggestionStatus::{
     Current as StatusCurrent, UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_vscode_model::{Position, Range};
 
 use super::update_edits;
-use versionlens_parsers::Ecosystem::{Cargo, Cpp, Dotnet, Go, Npm, Python, Ruby};
+use versionlens_model::Ecosystem::{Cargo, Cpp, Dotnet, Go, Npm, Python, Ruby};
 
 #[test]
 fn replaces_requirement_range_with_latest_version() {
@@ -66,11 +67,11 @@ fn preserves_python_requirement_operators() {
         ("==1.2.3", "==2.0.0"),
         ("!=1.2.3", "==2.0.0"),
         (">1.2.3", ">=2.0.0"),
-        ("<=1.2.3", "<=2.0.0"),
+        ("<=1.2.3", "==2.0.0"),
         ("~=1.2.3", "~=2.0.0"),
         (">=1.0.0, <3.0.0", ">=2.0.0, <3.0.0"),
         (">=1.0.0, <2.0.0", ">=2.0.0, <=2.0.0"),
-        ("<3.0.0, !=1.5.0", "<=2.0.0, !=1.5.0"),
+        ("<3.0.0, !=1.5.0", "==2.0.0"),
         (">=1.0.0, !=1.1.0", ">=2.0.0, !=1.1.0"),
         ("~=1.0.0, !=1.1.0", "~=2.0.0, !=1.1.0"),
         ("==1.0.0, !=1.1.0", "==2.0.0, !=1.1.0"),
@@ -91,11 +92,40 @@ fn preserves_python_requirement_operators() {
 }
 
 #[test]
+fn preserves_pep440_extended_bounds_and_local_exclusions() {
+    for (requirement, latest, expected) in [
+        (">=1!1.0, <1!2.0", "1!1.5", ">=1!1.5, <1!2.0"),
+        (
+            ">=1.0.post1, <1.0.post3",
+            "1.0.post2",
+            ">=1.0.post2, <1.0.post3",
+        ),
+        (">=1.0.dev1, <1.0", "1.0.dev2", ">=1.0.dev2, <=1.0.dev2"),
+        (
+            ">=1.0, <2.0, !=1.5+linux",
+            "1.5+mac",
+            ">=1.5, <2.0, !=1.5+linux",
+        ),
+    ] {
+        let edits = update_edits(&[Suggestion {
+            dependency: python_dependency(requirement),
+            latest: Some(latest.to_owned()),
+            resolved: None,
+            status: StatusUpdateAvailable,
+            builds: vec![],
+            choices: vec![],
+        }]);
+
+        assert_eq!(edits[0].new_text, expected);
+    }
+}
+
+#[test]
 fn preserves_ruby_requirement_operators() {
     for (requirement, expected) in [
         ("~> 1.2.3", "~> 2.0.0"),
         (">= 1.2.3", ">= 2.0.0"),
-        ("!=1.2.3", "!=2.0.0"),
+        ("!=1.2.3", "==2.0.0"),
     ] {
         let edits = update_edits(&[Suggestion {
             dependency: ruby_dependency(requirement),
@@ -270,6 +300,30 @@ fn preserves_semver_requirement_operators() {
 }
 
 #[test]
+fn rewritten_requirements_select_the_requested_upgrade() {
+    for (dependency, latest, expected) in [
+        (python_dependency("<=1.2.3"), "2.0.0", "==2.0.0"),
+        (python_dependency("<3.0.0, !=1.5.0"), "2.0.0", "==2.0.0"),
+        (ruby_dependency("!=1.2.3"), "2.0.0", "==2.0.0"),
+        (npm_dependency("<2.0.0"), "1.2.4", "1.2.4"),
+        (npm_dependency(">=1.2.3 <2.0.0"), "1.2.4", ">=1.2.4"),
+    ] {
+        let edits = update_edits(&[Suggestion {
+            dependency,
+            latest: Some(latest.to_owned()),
+            resolved: None,
+            status: StatusUpdateAvailable,
+            builds: vec![],
+            choices: vec![],
+        }]);
+
+        assert_eq!(edits[0].new_text, expected);
+        assert_requirement_matches(&edits[0].new_text, latest);
+        assert_requirement_rejects(&edits[0].new_text, "1.2.3");
+    }
+}
+
+#[test]
 fn preserves_npm_alias_specifier_when_replacing_versions() {
     let edits = update_edits(&[Suggestion {
         dependency: Dependency {
@@ -397,6 +451,41 @@ fn ruby_dependency(requirement: &str) -> Dependency {
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
     }
+}
+
+fn npm_dependency(requirement: &str) -> Dependency {
+    Dependency {
+        name: "left-pad".to_owned(),
+        requirement: requirement.to_owned(),
+        ecosystem: Npm,
+        group: "dependencies".to_owned(),
+        hosted_url: None,
+        hosted_name: None,
+        range: range(0, 0, 0, 8),
+        requirement_range: range(0, 8, 0, 8 + u32::try_from(requirement.len()).unwrap()),
+        requirement_prefix: "".to_owned(),
+        requirement_suffix: "".to_owned(),
+    }
+}
+
+fn assert_requirement_matches(requirement: &str, version: &str) {
+    let requirement = normalize_exact_requirement(requirement);
+    let requirement = VersionReq::parse(&requirement).expect("parse rewritten requirement");
+    let version = Version::parse(version).expect("parse selected version");
+    assert!(requirement.matches(&version));
+}
+
+fn assert_requirement_rejects(requirement: &str, version: &str) {
+    let requirement = normalize_exact_requirement(requirement);
+    let requirement = VersionReq::parse(&requirement).expect("parse rewritten requirement");
+    let version = Version::parse(version).expect("parse obsolete version");
+    assert!(!requirement.matches(&version));
+}
+
+fn normalize_exact_requirement(requirement: &str) -> String {
+    requirement
+        .strip_prefix("==")
+        .map_or_else(|| requirement.to_owned(), |version| format!("={version}"))
 }
 
 fn range(start_line: u32, start_character: u32, end_line: u32, end_character: u32) -> Range {

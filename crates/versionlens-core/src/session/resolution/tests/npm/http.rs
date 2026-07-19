@@ -7,7 +7,7 @@ use std::fs::remove_dir_all;
 use std::fs::write;
 use std::path::PathBuf;
 use std::process::id;
-use versionlens_parsers::Ecosystem::Npm;
+use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn npm_http_config_uses_document_npmrc_fetch_timeout() {

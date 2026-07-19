@@ -3,8 +3,8 @@ use jsonc_parser::ast::ObjectProp as JsonObjectProp;
 use jsonc_parser::ast::Value::{Array as JsonValueArray, Object as JsonValueObject};
 use jsonc_parser::ast::{Object, Value};
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Npm;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Npm;
 
 type JsonManifestDependencies = Vec<Dependency>;
 type JsonObject<'a> = &'a Object<'a>;

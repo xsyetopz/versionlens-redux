@@ -2,8 +2,8 @@ use crate::positions::line_range;
 use std::borrow::Cow;
 use std::borrow::Cow::{Borrowed as CowBorrowed, Owned as CowOwned};
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Go;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Go;
 
 const INCOMPATIBLE: &str = "+incompatible";
 

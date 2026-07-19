@@ -18,6 +18,40 @@ pub(crate) fn latest_go_version(
         .map(normalize_go_version)
 }
 
+pub(crate) fn latest_go_module_list_version(
+    body: &str,
+    include_prereleases: bool,
+    prerelease_tags: &[String],
+) -> Option<String> {
+    let versions = body
+        .lines()
+        .map(str::trim)
+        .filter(|version| !version.is_empty())
+        .collect::<Vec<_>>();
+    if versions.is_empty()
+        || versions
+            .iter()
+            .any(|version| normalized_version(version).is_none())
+    {
+        return None;
+    }
+    let prerelease_tags = if include_prereleases {
+        prerelease_tags
+    } else {
+        &[]
+    };
+    latest_go_module_proxy_version(versions, prerelease_tags).map(normalize_go_version)
+}
+
+pub(crate) fn latest_go_module_latest_version(body: &str) -> Option<String> {
+    let value = from_str::<Value>(body).ok()?;
+    let version = go_metadata_entry_version(&value)?;
+    if go_metadata_entry_is_unavailable(&value) || normalized_version(version).is_none() {
+        return None;
+    }
+    Some(normalize_go_version(version.to_owned()))
+}
+
 fn latest_go_metadata_versions(
     value: &Value,
     include_prereleases: bool,

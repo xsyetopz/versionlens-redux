@@ -4,11 +4,11 @@ use crate::json_manifest::dependency::{
     string_content_start,
 };
 use crate::json_manifest::paths::{DENO_DEPENDENCY_PATHS, JSR_DEPENDENCY_PATHS, dependency_paths};
-use crate::model::Dependency;
-use crate::model::Ecosystem::Deno;
 use jsonc_parser::ast::Value::Object as JsonValueObject;
 use jsonc_parser::errors::ParseError as JsonParseError;
 use jsonc_parser::parse_to_ast;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Deno;
 
 pub(crate) fn parse_deno_json_with_paths(text: &str, paths: &[&str]) -> Vec<Dependency> {
     let dependency_paths = dependency_paths(paths, DENO_DEPENDENCY_PATHS);

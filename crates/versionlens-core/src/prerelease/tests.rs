@@ -1,9 +1,9 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::{PrereleaseTagConfig, ProviderSettings, RegistryResponseInput, SessionConfig};
-use versionlens_parsers::Ecosystem::{Composer, Dotnet, Npm, Python};
+use versionlens_model::Ecosystem::{Composer, Dotnet, Npm, Python};
 
 #[test]
 fn show_prereleases_allows_prerelease_updates() {

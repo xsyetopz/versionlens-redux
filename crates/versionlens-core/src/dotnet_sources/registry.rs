@@ -1,7 +1,7 @@
 use versionlens_parsers::parse_dotnet_enabled_sources;
 
 use crate::config::RegistryUrlConfig;
-use versionlens_parsers::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 pub fn dotnet_registry_source_urls(
     configured: &[RegistryUrlConfig],

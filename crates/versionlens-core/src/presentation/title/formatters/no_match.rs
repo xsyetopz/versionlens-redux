@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_suggestions::Suggestion;
 
 pub(in crate::presentation::title) fn no_match_title_text(

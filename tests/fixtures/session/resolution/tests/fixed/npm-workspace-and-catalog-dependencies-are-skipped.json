@@ -1,1 +1,6 @@
-{"dependencies":{"workspace-only":"workspace:*","catalog-only":"catalog:"}}
+{
+  "dependencies": {
+    "workspace-only": "workspace:*",
+    "catalog-only": "catalog:"
+  }
+}

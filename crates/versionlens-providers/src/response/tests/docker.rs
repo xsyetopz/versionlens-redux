@@ -2,7 +2,7 @@ use super::{
     build_versions_from_response, docker_tag_exists, latest_version_for_requirement,
     latest_version_from_response, latest_version_from_response_with_prereleases,
 };
-use versionlens_parsers::Ecosystem::Docker;
+use versionlens_model::Ecosystem::Docker;
 
 #[test]
 fn ignores_docker_hub_tags_without_digests() {

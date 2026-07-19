@@ -1,7 +1,7 @@
 use self::collect::collect_pubspec_workspace;
 use marked_yaml::parse_yaml;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 mod collect;
 mod dependency;

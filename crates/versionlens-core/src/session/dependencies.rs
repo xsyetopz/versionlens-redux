@@ -1,8 +1,8 @@
 use crate::dependency::properties::is_enabled;
-use versionlens_parsers::{
+use versionlens_model::{
     Dependency, DocumentInput, Ecosystem, ManifestKind, ecosystem_for_manifest,
-    parse_document_as_manifest_with_dependency_paths,
 };
+use versionlens_parsers::parse_document_as_manifest_with_dependency_paths;
 
 use crate::DependencyPropertyConfig;
 use crate::VersionLensSession;

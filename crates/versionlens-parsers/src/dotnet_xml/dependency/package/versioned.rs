@@ -1,6 +1,6 @@
 use self::DotnetDependencyRange::Name as DotnetRangeName;
 use self::DotnetTagKind::{Empty as DotnetTagEmpty, Start as DotnetTagStart};
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use crate::dotnet_xml::dependency::attrs::DotnetDependencyRange::Tag as DotnetRangeTag;
 use crate::dotnet_xml::dependency::attrs::{

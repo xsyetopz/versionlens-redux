@@ -1,5 +1,8 @@
-use super::{latest_stable, latest_version, latest_version_with_prerelease_tags};
+use super::{
+    latest_stable, latest_version, latest_version_for_dialect, latest_version_with_prerelease_tags,
+};
 use crate::range::is_update_available;
+use crate::{VersionDialect, normalized_version_for_dialect};
 
 #[test]
 fn picks_latest_stable_semver() {
@@ -71,5 +74,51 @@ fn normalizes_prerelease_filter_tag_case() {
             &["BETA".to_owned()],
         ),
         Some("2.0.0-beta.1".to_owned())
+    );
+}
+
+#[test]
+fn normalizes_prerelease_candidate_case() {
+    assert_eq!(
+        latest_version_with_prerelease_tags(["1.0.0", "2.0.0-BETA.1"], true, &["beta".to_owned()],),
+        Some("2.0.0-BETA.1".to_owned())
+    );
+}
+
+#[test]
+fn pep440_dialect_accepts_extended_python_release_forms() {
+    for (raw, normalized) in [
+        ("1.0rc1", "1.0.0-rc.1"),
+        ("1.0-rc.1", "1.0.0-rc.1"),
+        ("1.0.post2", "1.0.0.post2"),
+        ("1.0.dev3", "1.0.0.dev3"),
+        ("1!2.0.0.4+linux.1", "1!2.0.0.4+linux.1"),
+    ] {
+        assert_eq!(
+            normalized_version_for_dialect(raw, VersionDialect::Pep440).as_deref(),
+            Some(normalized)
+        );
+    }
+}
+
+#[test]
+fn pep440_dialect_orders_epochs_postreleases_and_four_part_versions() {
+    assert_eq!(
+        latest_version_for_dialect(
+            ["9.0.0.1", "1!1.0", "1!1.0.post1", "1!1.1.dev1"],
+            false,
+            &[],
+            VersionDialect::Pep440,
+        ),
+        Some("1!1.0.post1".to_owned())
+    );
+    assert_eq!(
+        latest_version_for_dialect(
+            ["1.0", "1.1rc1", "1.1-rc.2", "1.1.dev3"],
+            true,
+            &["RC".to_owned()],
+            VersionDialect::Pep440,
+        ),
+        Some("1.1-rc.2".to_owned())
     );
 }

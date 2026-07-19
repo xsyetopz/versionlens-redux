@@ -1,109 +1,151 @@
-import * as vscode from "vscode";
+import {
+  CodeLens,
+  type Disposable,
+  EventEmitter,
+  languages,
+  type TextDocument,
+} from "#vscode-host";
+import { analyzeDocument } from "../diagnostics/analyze.ts";
 import { resolveDocumentForDiagnostics } from "../diagnostics/resolve.ts";
-import { analyzeDocument } from "../diagnostics.ts";
-import { documentSelectors, toRange } from "../documents.ts";
+import { toRange } from "../documents/range.ts";
+import { documentSelectors } from "../documents/selectors.ts";
 import type { NativeCodeLensPayload } from "../native/output.ts";
 import type { ExtensionState } from "../state.ts";
 
 const nativeArgumentsByCodeLens = new WeakMap<object, string[]>();
-const pendingCodeLensResolutions = new Set<string>();
-const completedCodeLensResolutions = new Set<string>();
 
-export function registerCodeLensProvider(state: ExtensionState) {
-	state.ui.codeLensRefresh?.dispose();
-	pendingCodeLensResolutions.clear();
-	completedCodeLensResolutions.clear();
-	const refresh = new vscode.EventEmitter<void>();
-	state.ui.codeLensRefresh = refresh;
-	const registration = vscode.languages.registerCodeLensProvider(
-		documentSelectors(),
-		{
-			onDidChangeCodeLenses: refresh.event,
-			provideCodeLenses(document) {
-				if (!state.flags.showVersionLenses) {
-					return [];
-				}
+interface CodeLensResolutionContext {
+  state: ExtensionState;
+  owner: Disposable;
+  refresh: EventEmitter<void>;
+  resolutions: {
+    pending: Set<string>;
+    completed: Set<string>;
+  };
+}
 
-				const output = analyzeDocument(state, document, {
-					rejectOnError: true,
-				});
-				if (output) {
-					scheduleCodeLensResolution(
-						state,
-						document,
-						output.dependencySignature,
-					);
-				}
-				state.flags.codeLensReplace = true;
-				return (output?.codeLenses ?? []).map(toCodeLens);
-			},
-		},
-	);
-	return {
-		dispose() {
-			registration.dispose();
-			refresh.dispose();
-			if (state.ui.codeLensRefresh === refresh) {
-				state.ui.codeLensRefresh = undefined;
-			}
-		},
-	};
+interface CodeLensProviderRegistration {
+  dispose: () => void;
+}
+
+function registerCodeLensProvider(
+  state: ExtensionState,
+): CodeLensProviderRegistration {
+  state.ui.codeLensProvider?.dispose();
+  const resolutions = {
+    pending: new Set<string>(),
+    completed: new Set<string>(),
+  };
+  const refresh = new EventEmitter<void>();
+  state.ui.codeLensRefresh = refresh;
+  const registration = languages.registerCodeLensProvider(documentSelectors(), {
+    onDidChangeCodeLenses: refresh.event,
+    provideCodeLenses(document: TextDocument): CodeLens[] {
+      if (!state.flags.showVersionLenses) {
+        return [];
+      }
+
+      const output = analyzeDocument(state, document, {
+        rejectOnError: true,
+      });
+      if (output) {
+        scheduleCodeLensResolution(
+          { state, owner, refresh, resolutions },
+          document,
+          output.dependencySignature,
+        );
+      }
+      state.flags.codeLensReplace = true;
+      return (output?.codeLenses ?? []).map(toCodeLens);
+    },
+  });
+  let disposed = false;
+  const owner = {
+    dispose(): void {
+      if (disposed) {
+        return;
+      }
+      disposed = true;
+      registration.dispose();
+      refresh.dispose();
+      resolutions.pending.clear();
+      resolutions.completed.clear();
+      if (state.ui.codeLensProvider === owner) {
+        state.ui.codeLensProvider = undefined;
+        state.ui.codeLensRefresh = undefined;
+        state.ui.resetCodeLensResolutions = undefined;
+      }
+    },
+  };
+  state.ui.codeLensProvider = owner;
+  state.ui.resetCodeLensResolutions = (): void => resolutions.completed.clear();
+  return owner;
 }
 
 function scheduleCodeLensResolution(
-	state: ExtensionState,
-	document: vscode.TextDocument,
-	dependencySignature: string,
-) {
-	const key = `${document.uri.toString()}\0${dependencySignature}`;
-	if (
-		dependencySignature === "" ||
-		pendingCodeLensResolutions.has(key) ||
-		completedCodeLensResolutions.has(key)
-	) {
-		return;
-	}
+  context: CodeLensResolutionContext,
+  document: TextDocument,
+  dependencySignature: string,
+): void {
+  const { state, owner, refresh, resolutions } = context;
+  const key = `${document.uri.toString()}\0${dependencySignature}`;
+  if (
+    dependencySignature === "" ||
+    resolutions.pending.has(key) ||
+    resolutions.completed.has(key)
+  ) {
+    return;
+  }
 
-	pendingCodeLensResolutions.add(key);
-	setTimeout(() => {
-		if (!state.flags.showVersionLenses) {
-			pendingCodeLensResolutions.delete(key);
-			return;
-		}
-		resolveDocumentForDiagnostics(state, document)
-			.catch(() => undefined)
-			.finally(() => {
-				pendingCodeLensResolutions.delete(key);
-				completedCodeLensResolutions.add(key);
-				if (state.flags.showVersionLenses) {
-					state.ui.codeLensRefresh?.fire();
-				}
-			});
-	}, 0);
+  resolutions.pending.add(key);
+  setTimeout((): void => {
+    if (state.ui.codeLensProvider !== owner || !state.flags.showVersionLenses) {
+      resolutions.pending.delete(key);
+      return;
+    }
+    resolveDocumentForDiagnostics(state, document, { rejectOnError: true })
+      .then((completed): void => {
+        if (
+          !completed ||
+          state.ui.codeLensProvider !== owner ||
+          !state.flags.showVersionLenses
+        ) {
+          return;
+        }
+        resolutions.completed.add(key);
+        refresh.fire();
+      })
+      .catch((): undefined => undefined)
+      .finally((): void => {
+        resolutions.pending.delete(key);
+      });
+  }, 0);
 }
 
-export function nativeCodeLensArguments(argument: unknown) {
-	if (typeof argument !== "object" || argument === null) {
-		return undefined;
-	}
+function nativeCodeLensArguments(argument: unknown): string[] | undefined {
+  if (typeof argument !== "object" || argument === null) {
+    return;
+  }
 
-	return nativeArgumentsByCodeLens.get(argument);
+  return nativeArgumentsByCodeLens.get(argument);
 }
 
-function toCodeLens(lens: NativeCodeLensPayload) {
-	const rendered = new vscode.CodeLens(toRange(lens.range));
-	nativeArgumentsByCodeLens.set(rendered, lens.arguments);
-	rendered.command = {
-		command: lens.command,
-		title: lens.title,
-	};
-	if (lens.command) {
-		rendered.command.arguments = [rendered];
-	}
-	return rendered;
+function toCodeLens(lens: NativeCodeLensPayload): CodeLens {
+  const rendered = new CodeLens(toRange(lens.range));
+  nativeArgumentsByCodeLens.set(rendered, lens.arguments);
+  rendered.command = {
+    command: lens.command,
+    title: lens.title,
+  };
+  if (lens.command) {
+    rendered.command.arguments = [rendered];
+  }
+  return rendered;
 }
 
-export function refreshCodeLenses(state: ExtensionState) {
-	completedCodeLensResolutions.clear();
-	state.ui.codeLensRefresh?.fire();
+function refreshCodeLenses(state: ExtensionState): void {
+  state.ui.resetCodeLensResolutions?.();
+  state.ui.codeLensRefresh?.fire();
 }
+
+export { nativeCodeLensArguments, refreshCodeLenses, registerCodeLensProvider };

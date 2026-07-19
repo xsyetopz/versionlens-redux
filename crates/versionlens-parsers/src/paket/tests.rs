@@ -1,9 +1,9 @@
 use super::parse_paket_source_urls;
 use crate::document::test_support::extract_range;
-use crate::model::Ecosystem::Dotnet;
 use crate::{DocumentInput, parse_document};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Dotnet;
 
 #[test]
 fn parses_paket_dependencies_nuget_lines() {

@@ -1,5 +1,5 @@
 use self::DotnetDependencyRange::Name as DotnetRangeName;
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::super::DotnetEventContext;
 use super::attrs::{DotnetDependencyAttrs, DotnetDependencyRange, dependency_from_attrs};

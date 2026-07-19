@@ -1,19 +1,23 @@
-const REGISTRY_URL_PREFIX = /^https?:\/\//;
+const REGISTRY_URL_PREFIX = /^https?:\/\//u;
 
-export function normalizedAuthHeaderName(value: string | undefined) {
-	return normalizedRequiredInput(value);
+function normalizedRegistryUrl(value: string | undefined): string | undefined {
+  const url = normalizedRequiredInput(value);
+  let normalized: string | undefined;
+  if (url && REGISTRY_URL_PREFIX.test(url)) {
+    normalized = url;
+  }
+  return normalized;
 }
 
-export function normalizedAuthHeaderValue(value: string | undefined) {
-	return normalizedRequiredInput(value);
+function normalizedRequiredInput(
+  value: string | undefined,
+): string | undefined {
+  const trimmed = value?.trim();
+  let normalized: string | undefined;
+  if (trimmed) {
+    normalized = trimmed;
+  }
+  return normalized;
 }
 
-export function normalizedRegistryUrl(value: string | undefined) {
-	const url = normalizedRequiredInput(value);
-	return url && REGISTRY_URL_PREFIX.test(url) ? url : undefined;
-}
-
-function normalizedRequiredInput(value: string | undefined) {
-	const trimmed = value?.trim();
-	return trimmed ? trimmed : undefined;
-}
+export { normalizedRegistryUrl, normalizedRequiredInput };

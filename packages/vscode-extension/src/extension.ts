@@ -1,14 +1,14 @@
-import type * as vscode from "vscode";
+import type { ExtensionContext } from "#vscode-host";
 import { activateExtension } from "./extension/lifecycle/activate.ts";
 import { deactivateExtension } from "./extension/lifecycle/deactivate.ts";
 import { createExtensionState } from "./extension/state.ts";
 
 const state = createExtensionState();
 
-export async function activate(context: vscode.ExtensionContext) {
-	await activateExtension(state, context);
+export async function activate(context: ExtensionContext): Promise<void> {
+  await activateExtension(state, context);
 }
 
-export function deactivate() {
-	deactivateExtension(state);
+export function deactivate(): void {
+  deactivateExtension(state);
 }

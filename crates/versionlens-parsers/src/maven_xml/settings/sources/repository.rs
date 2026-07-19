@@ -1,5 +1,5 @@
 use super::urls::settings_repository_urls_with_default;
-use crate::maven_xml::settings::{model::MavenRepository, protocol::protocol_from_url};
+use crate::maven_xml::settings::{entries::MavenRepository, protocol::protocol_from_url};
 
 pub fn parse_maven_effective_settings_repository_sources(text: &str) -> Vec<MavenRepository> {
     settings_repository_urls_with_default(text)

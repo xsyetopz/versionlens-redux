@@ -1,14 +1,20 @@
+use std::sync::{Mutex, MutexGuard, TryLockError};
+use std::thread::sleep;
+use std::time::Duration;
+
 use versionlens_http::{
-    ACCEPT_GITHUB_V3, ACCEPT_JSON, RetryPolicy, get_text_with_accept_and_retry,
+    ACCEPT_GITHUB_V3, ACCEPT_JSON, HttpError, RetryPolicy, get_text_with_accept_and_retry,
+    get_text_with_accept_and_retry_timeout,
 };
-use versionlens_parsers::Ecosystem;
-use versionlens_parsers::Ecosystem::{Go, Maven, Npm, Python};
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::{Go, Maven, Npm, Python};
 use versionlens_providers::http_status_message_from_code;
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::error::FetchError::RegistryStatus as FetchRegistryStatus;
 use crate::registry::RegistryContext;
+use crate::session::operation::OperationContext;
 
 impl VersionLensSession {
     pub(in crate::fetch) fn get_text_or_status_with_context(
@@ -16,38 +22,53 @@ impl VersionLensSession {
         url: &str,
         ecosystem: Ecosystem,
         context: &RegistryContext,
+        operation: &OperationContext,
     ) -> Result<Option<String>, FetchError> {
-        if let Some(body) = self.cached_request_body(url) {
+        let http_config = self.effective_http_config(url, ecosystem, context);
+        let cache_key = self.request_cache_key(url, &http_config);
+        if let Some(body) = self.cached_request_body(&cache_key) {
             return Ok(Some(body));
         }
-
-        let request_lock = self.request_lock(url);
-        let _request_guard = request_lock
-            .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
-        if let Some(body) = self.cached_request_body(url) {
-            return Ok(Some(body));
+        if operation.is_expired() {
+            return Err(FetchError::OperationTimeout);
         }
 
-        let auth_headers = context.auth_headers_for_url(ecosystem, url);
-        let base_config =
-            self.http_config_with_headers(ecosystem, context.manifest_kind(), &auth_headers);
-        let http_config = context.http_config_for_request(ecosystem, url, base_config);
-        match get_text_with_accept_and_retry(
-            url,
-            &http_config,
-            accept_header_for_request(ecosystem, url),
-            retry_policy_for_request(ecosystem, url),
-        ) {
+        let request_lock = self.request_lock(&cache_key);
+        let _request_guard = lock_request_before_deadline(&request_lock, operation)?;
+        if let Some(body) = self.cached_request_body(&cache_key) {
+            return Ok(Some(body));
+        }
+        if operation.is_expired() {
+            return Err(FetchError::OperationTimeout);
+        }
+
+        let accept = accept_header_for_request(ecosystem, url);
+        let retry_policy = retry_policy_for_request(ecosystem, url);
+        let response = match operation.remaining_duration() {
+            Some(remaining) => get_text_with_accept_and_retry_timeout(
+                url,
+                &http_config,
+                accept,
+                retry_policy,
+                remaining,
+            ),
+            None => get_text_with_accept_and_retry(url, &http_config, accept, retry_policy),
+        };
+
+        match response {
             Ok(body) => {
-                self.cache_request_body(url, &body, ecosystem, context.manifest_kind());
+                if operation.is_expired() {
+                    return Err(FetchError::OperationTimeout);
+                }
+                self.cache_request_body(cache_key, &body, ecosystem, context.manifest_kind());
                 Ok(Some(body))
             }
+            Err(HttpError::DeadlineExceeded) => Err(FetchError::OperationTimeout),
             Err(error) => match error.status_code().and_then(http_status_message_from_code) {
                 Some(message) => {
                     if error.status_code() == Some(401) {
                         let auth_url = self.authorization_url_for_request(url);
-                        self.record_authorization_request(auth_url, url.to_owned());
+                        operation.record_authorization_request(auth_url, url.to_owned());
                     }
                     Err(FetchRegistryStatus(message.to_owned()))
                 }
@@ -55,6 +76,36 @@ impl VersionLensSession {
                     .context(format!("failed to fetch registry URL {url}"))
                     .into()),
             },
+        }
+    }
+}
+
+const REQUEST_LOCK_POLL_INTERVAL: Duration = Duration::from_millis(1);
+
+fn lock_request_before_deadline<'a>(
+    lock: &'a Mutex<()>,
+    operation: &OperationContext,
+) -> Result<MutexGuard<'a, ()>, FetchError> {
+    if operation.remaining_duration().is_none() {
+        return Ok(lock
+            .lock()
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned)));
+    }
+
+    loop {
+        let Some(remaining) = operation.remaining_duration() else {
+            unreachable!("the operation deadline cannot be removed while waiting for a lock");
+        };
+        if remaining.is_zero() {
+            return Err(FetchError::OperationTimeout);
+        }
+
+        match lock.try_lock() {
+            Ok(guard) => return Ok(guard),
+            Err(TryLockError::Poisoned(poisoned)) => {
+                return Ok(crate::recover_poison(poisoned));
+            }
+            Err(TryLockError::WouldBlock) => sleep(remaining.min(REQUEST_LOCK_POLL_INTERVAL)),
         }
     }
 }

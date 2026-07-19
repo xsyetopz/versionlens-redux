@@ -1,9 +1,9 @@
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::{RegistryResponseInput, SessionConfig};
 
 use super::{package_file_fixture, test_indicators};
-use versionlens_parsers::Ecosystem::Npm;
+use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {

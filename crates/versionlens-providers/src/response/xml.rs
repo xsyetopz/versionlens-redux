@@ -1,7 +1,8 @@
 use std::cmp::Ordering::Equal as OrderingEqual;
 
 use versionlens_versions::{
-    compare_versions, latest_version_with_prerelease_tags, normalized_version,
+    VersionDialect, compare_versions, latest_version_for_dialect,
+    latest_version_with_prerelease_tags, normalized_version, normalized_version_for_dialect,
 };
 
 mod collect;
@@ -14,19 +15,20 @@ pub(crate) fn latest_python_rss_version(
     prerelease_tags: &[String],
 ) -> Option<String> {
     let versions = collect_element_texts(body, b"title", python_rss_title_version)?;
-    latest_version_with_prerelease_tags(
+    latest_version_for_dialect(
         versions.iter().map(|value| value.as_str()),
         include_prereleases,
         prerelease_tags,
+        VersionDialect::Pep440,
     )
-    .and_then(|version| normalized_version(&version))
+    .and_then(|version| normalized_version_for_dialect(&version, VersionDialect::Pep440))
 }
 
 pub(crate) fn python_rss_release_versions(body: &str) -> Vec<String> {
     collect_element_texts(body, b"title", python_rss_title_version)
         .unwrap_or_default()
         .into_iter()
-        .filter_map(|version| normalized_version(&version))
+        .filter_map(|version| normalized_version_for_dialect(&version, VersionDialect::Pep440))
         .collect()
 }
 

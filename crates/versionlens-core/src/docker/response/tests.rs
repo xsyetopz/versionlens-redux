@@ -1,9 +1,9 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::{RegistryResponseInput, SessionConfig};
-use versionlens_parsers::Ecosystem::Docker;
+use versionlens_model::Ecosystem::Docker;
 
 #[test]
 fn docker_registry_response_missing_requested_tag_creates_no_match() {

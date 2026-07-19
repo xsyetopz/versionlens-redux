@@ -2,11 +2,11 @@ use serde_json::to_value;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
-use versionlens_parsers::{DocumentInput, Ecosystem, ManifestKind};
+use versionlens_model::{DocumentInput, Ecosystem, ManifestKind};
 
 use crate::{DependencyPropertyConfig, RegistryResponseInput, SessionConfig, VersionLensSession};
-use versionlens_parsers::Ecosystem::{Deno, Go, Npm};
-use versionlens_parsers::ManifestKind::NpmPackageJson;
+use versionlens_model::Ecosystem::{Deno, Go, Npm};
+use versionlens_model::ManifestKind::NpmPackageJson;
 
 #[test]
 fn reports_sort_capability_only_for_supported_documents() {

@@ -27,11 +27,11 @@ typecheck:
 
 # Run Rust tests with an isolated target dir to avoid local target-path hangs.
 rust-test *args:
-    CARGO_TARGET_DIR=/tmp/versionlens-cargo-target cargo test --workspace {{ args }}
+    CARGO_TARGET_DIR=/tmp/versionlens-cargo-target cargo test --workspace --locked {{ args }}
 
 # Run one exact versionlens-http test with output.
 http-test name:
-    CARGO_TARGET_DIR=/tmp/versionlens-cargo-target cargo test -p versionlens-http {{ name }} -- --exact --nocapture
+    CARGO_TARGET_DIR=/tmp/versionlens-cargo-target cargo test -p versionlens-http --locked {{ name }} -- --exact --nocapture
 
 # Regression for large registry response bodies.
 http-large-response:

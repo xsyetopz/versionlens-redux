@@ -1,8 +1,8 @@
 use crate::document::test_support::extract_range;
-use crate::model::Ecosystem::Python;
 use crate::{DocumentInput, parse_document, parse_document_with_dependency_paths};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Python;
 
 #[test]
 fn parses_pipfile_dependencies() {

@@ -1,8 +1,8 @@
 use self::slots::is_sortable_dependency;
 use std::ops::Range as ByteRange;
 
-use versionlens_parsers::Dependency;
-use versionlens_vscode_model::{Position, Range, TextEdit};
+use versionlens_model::Dependency;
+use versionlens_model::{Position, Range, TextEdit};
 
 use crate::range::line_range;
 
@@ -153,19 +153,105 @@ fn same_line_entry<'a>(line: &'a str, dependency: &Dependency) -> Option<SameLin
     })
 }
 
+#[derive(Clone, Copy)]
+struct StructuralDelimiter {
+    index: usize,
+    delimiter: char,
+    depth_before: usize,
+}
+
+fn structural_delimiters(line: &str) -> Vec<StructuralDelimiter> {
+    let mut delimiters = Vec::new();
+    let mut depth = 0usize;
+    let mut quote = None;
+    let mut escaped = false;
+
+    for (index, value) in line.char_indices() {
+        if let Some(active_quote) = quote {
+            if escaped {
+                escaped = false;
+            } else if value == '\\' {
+                escaped = true;
+            } else if value == active_quote {
+                quote = None;
+            }
+            continue;
+        }
+
+        if value == '"' || value == '\'' {
+            quote = Some(value);
+            continue;
+        }
+
+        let depth_before = depth;
+        match value {
+            '{' | '[' => {
+                delimiters.push(StructuralDelimiter {
+                    index,
+                    delimiter: value,
+                    depth_before,
+                });
+                depth += 1;
+            }
+            '}' | ']' => {
+                delimiters.push(StructuralDelimiter {
+                    index,
+                    delimiter: value,
+                    depth_before,
+                });
+                depth = depth.saturating_sub(1);
+            }
+            ',' => delimiters.push(StructuralDelimiter {
+                index,
+                delimiter: value,
+                depth_before,
+            }),
+            _ => {}
+        }
+    }
+    delimiters
+}
+
+fn depth_at(line: &str, offset: usize) -> usize {
+    let mut depth = 0usize;
+    for delimiter in structural_delimiters(line) {
+        if delimiter.index >= offset {
+            break;
+        }
+        match delimiter.delimiter {
+            '{' | '[' => depth += 1,
+            '}' | ']' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    depth
+}
+
 fn same_line_entry_start(line: &str, name_start: usize) -> usize {
-    let delimiter = line[..name_start]
-        .rmatch_indices([',', '{', '['])
-        .next()
-        .map(|(index, delimiter)| index + delimiter.len())
+    let depth = depth_at(line, name_start);
+    let delimiter = structural_delimiters(line)
+        .into_iter()
+        .rfind(|delimiter| {
+            delimiter.index < name_start
+                && ((delimiter.delimiter == ',' && delimiter.depth_before == depth)
+                    || ((delimiter.delimiter == '{' || delimiter.delimiter == '[')
+                        && delimiter.depth_before + 1 == depth))
+        })
+        .map(|delimiter| delimiter.index + delimiter.delimiter.len_utf8())
         .unwrap_or(0);
     delimiter + leading_ascii_whitespace_len(&line[delimiter..name_start])
 }
 
 fn same_line_entry_end(line: &str, name_end: usize) -> usize {
-    let delimiter = line[name_end..]
-        .find([',', '}', ']'])
-        .map(|index| name_end + index)
+    let depth = depth_at(line, name_end);
+    let delimiter = structural_delimiters(line)
+        .into_iter()
+        .find(|delimiter| {
+            delimiter.index >= name_end
+                && delimiter.depth_before == depth
+                && matches!(delimiter.delimiter, ',' | '}' | ']')
+        })
+        .map(|delimiter| delimiter.index)
         .unwrap_or(line.len());
     delimiter - trailing_ascii_whitespace_len(&line[name_end..delimiter])
 }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use versionlens_cache::minutes_to_ms;
-use versionlens_parsers::ManifestKind::{
+use versionlens_model::ManifestKind::{
     AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
     ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
     DenoImportMapJson, DenoJson, DockerComposeYaml, DotnetXml, DubJson, DuneProject, Gemfile,
@@ -12,7 +12,7 @@ use versionlens_parsers::ManifestKind::{
     SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
     ZigBuildZon,
 };
-use versionlens_parsers::{Ecosystem, ManifestKind, ecosystem_from_config_name};
+use versionlens_model::{Ecosystem, ManifestKind, ecosystem_from_config_name};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]

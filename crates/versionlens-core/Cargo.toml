@@ -19,6 +19,7 @@ serde_json.workspace = true
 versionlens-cache.workspace = true
 versionlens-edits.workspace = true
 versionlens-http.workspace = true
+versionlens-model.workspace = true
 versionlens-parsers.workspace = true
 versionlens-providers.workspace = true
 versionlens-suggestions.workspace = true

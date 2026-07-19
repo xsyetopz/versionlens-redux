@@ -1,6 +1,6 @@
 use toml_edit::{Key, Value as TomlValue};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::spans::{PythonDependencySource, PythonDependencySpans, dependency_from_span};
 

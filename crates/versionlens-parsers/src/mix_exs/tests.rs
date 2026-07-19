@@ -1,7 +1,7 @@
-use crate::model::Ecosystem::Hex;
 use crate::{DocumentInput, document::test_support::extract_range, parse_document};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Hex;
 
 #[test]
 fn parses_mix_exs_dependency_tuple_forms() {

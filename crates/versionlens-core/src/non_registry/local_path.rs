@@ -3,8 +3,8 @@ mod requirement;
 
 use normalize::resolve_local_path;
 use requirement::local_requirement_path;
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::{Docker, Pub, Ruby};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{Docker, Pub, Ruby};
 
 pub(super) struct LocalDependencyPath {
     pub(super) display: String,

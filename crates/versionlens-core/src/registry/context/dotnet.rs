@@ -5,9 +5,10 @@ use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
 use versionlens_http::HttpHeader;
+use versionlens_model::{Dependency, DocumentInput};
 use versionlens_parsers::{
-    Dependency, DocumentInput, DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig,
-    DotnetSourceMapping, parse_nuget_config, parse_paket_source_urls,
+    DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig, DotnetSourceMapping, parse_nuget_config,
+    parse_paket_source_urls,
 };
 
 #[derive(Debug, Default)]

@@ -1,8 +1,8 @@
-use crate::model::Dependency;
 use crate::pnpm_yaml::nodes::mapping_node;
 use crate::pnpm_yaml::paths::PACKAGE_EXTENSION_GROUPS;
 use marked_yaml::types::MarkedMappingNode;
 use marked_yaml::types::Node::Mapping as YamlMapping;
+use versionlens_model::Dependency;
 
 use super::super::PnpmCollectContext;
 

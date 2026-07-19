@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use base64::{Engine, engine::general_purpose::STANDARD};
 
 use super::super::nodes::{XmlNode, child_named, collect_nodes, direct_children};
-use super::model::{MavenAuthEntry, MavenMirror, MavenNamedRepository};
+use super::entries::{MavenAuthEntry, MavenMirror, MavenNamedRepository};
 
 pub fn parse_maven_settings_auth_entries(text: &str) -> Vec<MavenAuthEntry> {
     let Some(nodes) = collect_nodes(text) else {

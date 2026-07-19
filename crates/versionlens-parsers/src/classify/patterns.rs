@@ -1,5 +1,5 @@
-use crate::model::ManifestKind;
-use crate::model::ManifestKind::{
+use versionlens_model::ManifestKind;
+use versionlens_model::ManifestKind::{
     DockerComposeYaml, DotnetXml, PnpmYaml, PythonPipfile, PythonPyprojectToml,
     PythonRequirementsTxt,
 };

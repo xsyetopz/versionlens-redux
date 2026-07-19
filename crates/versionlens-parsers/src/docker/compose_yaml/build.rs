@@ -6,8 +6,8 @@ use marked_yaml::types::Node::{
     Mapping as YamlMapping, Scalar as YamlScalar, Sequence as YamlSequence,
 };
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Docker;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Docker;
 
 pub(super) fn build_dependency(text: &str, value: &Node) -> Option<Dependency> {
     match value {

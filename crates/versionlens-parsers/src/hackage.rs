@@ -1,6 +1,6 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Hackage;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Hackage;
 
 type ParsedHackageDependency = Option<Dependency>;
 type HackageDependencies = Vec<Dependency>;

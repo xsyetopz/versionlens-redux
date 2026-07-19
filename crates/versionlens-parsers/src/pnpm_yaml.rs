@@ -2,7 +2,7 @@ use self::collect::{collect_catalog, collect_catalogs, collect_package_extension
 use marked_yaml::parse_yaml;
 use marked_yaml::types::MarkedMappingNode;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 mod collect;
 mod dependency;

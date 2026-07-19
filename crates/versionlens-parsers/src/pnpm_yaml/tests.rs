@@ -1,7 +1,7 @@
-use crate::model::Ecosystem::Npm;
 use crate::{DocumentInput, document::test_support::extract_range, parse_document};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn parses_catalog_and_named_catalogs() {

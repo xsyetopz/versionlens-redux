@@ -1,4 +1,4 @@
-use super::model::DotnetSource;
+use super::schema::DotnetSource;
 
 pub fn filter_dotnet_remote_sources(sources: Vec<DotnetSource>) -> Vec<DotnetSource> {
     sources

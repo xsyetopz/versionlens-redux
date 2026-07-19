@@ -4,7 +4,7 @@ use std::fs::create_dir_all;
 use std::fs::remove_dir_all;
 use std::fs::write;
 use std::process::id;
-use versionlens_parsers::Ecosystem::Npm;
+use versionlens_model::Ecosystem::Npm;
 #[test]
 fn npm_registry_urls_use_document_npmrc_scope_registry() {
     let root = temp_dir().join(format!("versionlens-npmrc-{}", id()));

@@ -1,7 +1,7 @@
 use super::{DocumentInput, RegistryResponseInput, parse_document, standard_session};
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::Ecosystem::{Npm, Ruby};
+use versionlens_model::Ecosystem::{Npm, Ruby};
 
 #[test]
 fn resolves_npm_github_dependencies_from_tags() {

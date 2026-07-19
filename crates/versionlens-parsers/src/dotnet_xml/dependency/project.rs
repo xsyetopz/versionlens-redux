@@ -1,8 +1,8 @@
-use crate::model::Dependency;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
 
 use super::super::OpenProjectVersion;
-use crate::model::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 pub(in crate::dotnet_xml) fn project_version_dependency(
     text: &str,

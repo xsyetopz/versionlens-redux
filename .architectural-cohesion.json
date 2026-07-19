@@ -1,0 +1,29 @@
+{
+  "naming_exceptions": [],
+  "artifact_exemptions": [
+    {
+      "class": "fixture",
+      "path": "tests/fixtures",
+      "reason": "Runner-loaded golden manifest and registry payload fixtures intentionally preserve external ecosystem filenames and serialized content.",
+      "owner": "VersionLens parser and provider maintainers",
+      "control": "Workspace parser, provider, and boundary tests load these fixtures and verify their observable interpretation.",
+      "review": "Review during the next test-fixture topology migration or before v1.0."
+    },
+    {
+      "class": "framework",
+      "path": "CODE_OF_CONDUCT.md",
+      "reason": "The published GitHub community-health repository contract requires the standard CODE_OF_CONDUCT.md filename.",
+      "owner": "VersionLens repository maintainers",
+      "control": "The CI architecture check validates the exact GitHub community-health filename exemption and repository path.",
+      "review": "Review on the next GitHub community-health template upgrade."
+    },
+    {
+      "class": "framework",
+      "path": "packages/vscode-extension/src/schema/versionlens.multi-registries.json",
+      "reason": "The VS Code extension manifest and published schema URI require this exact schema filename.",
+      "owner": "VersionLens VS Code extension maintainers",
+      "control": "VS Code manifest contract tests verify the contributed schema path and packaged resource.",
+      "review": "Review on the next schema URI or extension package layout migration."
+    }
+  ]
+}

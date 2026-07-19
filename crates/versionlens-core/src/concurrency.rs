@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
 pub(crate) fn dependency_chunks(
     dependencies: Vec<Dependency>,

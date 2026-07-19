@@ -2,8 +2,8 @@ use serde_json::Value;
 use serde_json::from_str;
 use versionlens_versions::{build_variants, latest_version_with_prerelease_tags};
 
-use super::common::latest_version_strings;
 use super::github::{latest_github_commit, latest_github_tag};
+use super::versions::latest_version_strings;
 
 pub(crate) fn latest_npm_version(
     value: &Value,

@@ -1,6 +1,6 @@
 use self::indicator::{code_lens_indicator, update_indicator, with_indicator};
 use self::title::code_lens_title_text;
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_suggestions::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
 };

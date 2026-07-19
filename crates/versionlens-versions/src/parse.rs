@@ -1,5 +1,8 @@
 use semver::Version;
 
+use crate::pep440;
+use crate::policy::VersionDialect;
+
 type ParsedVersion = Option<Version>;
 
 mod coerce;
@@ -18,6 +21,13 @@ pub(crate) fn parse_version(raw: &str) -> ParsedVersion {
 
 pub fn normalized_version(raw: &str) -> Option<String> {
     Some(parse_version(raw)?.to_string())
+}
+
+pub fn normalized_version_for_dialect(raw: &str, dialect: VersionDialect) -> Option<String> {
+    match dialect {
+        VersionDialect::Semver => normalized_version(raw),
+        VersionDialect::Pep440 => Some(pep440::parse_version(raw)?.to_string()),
+    }
 }
 
 pub(crate) fn parse_coerced_version(raw: &str) -> ParsedVersion {

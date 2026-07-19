@@ -1,4 +1,4 @@
-use super::common::latest_version_array;
+use super::versions::latest_version_array;
 use serde_json::Value;
 use serde_json::from_str;
 use versionlens_versions::{compare_versions, normalized_version};

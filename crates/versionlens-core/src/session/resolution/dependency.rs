@@ -1,8 +1,8 @@
 use semver::Version;
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::{Composer, Docker, Dotnet, Npm};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{Composer, Docker, Dotnet, Npm};
 use versionlens_providers::{
     is_registry_dependency, is_unsupported_dotnet_requirement,
     release_versions_from_response_for_package,
@@ -20,11 +20,14 @@ use versionlens_versions::{
 };
 
 use crate::VersionLensSession;
+use crate::contract::RegistryResponseInput;
 use crate::docker::response::docker_response_missing_tag;
-use crate::model::RegistryResponseInput;
 use crate::non_registry::{deno_import_has_no_suggestions, known_non_registry_suggestion};
 use crate::project::project_version_latest;
 use crate::registry::{RegistryContext, registry_response_matches};
+use crate::session::operation::OperationContext;
+
+use super::latest::LatestResolutionRequest;
 
 type UpdateChoices = Vec<UpdateChoice>;
 
@@ -34,6 +37,15 @@ pub(super) struct ResolveDependencyInput<'a> {
     pub(super) responses: &'a [RegistryResponseInput],
     pub(super) project_bump: Option<ProjectVersionBump>,
     pub(super) context: &'a RegistryContext,
+    pub(super) operation: &'a OperationContext,
+}
+
+struct LatestSuggestionRequest<'a> {
+    dependency: Dependency,
+    responses: &'a [RegistryResponseInput],
+    has_registry_response: bool,
+    context: &'a RegistryContext,
+    operation: &'a OperationContext,
 }
 
 impl VersionLensSession {
@@ -47,6 +59,7 @@ impl VersionLensSession {
             responses,
             project_bump,
             context,
+            operation,
         } = input;
 
         if let Some(latest) = project_version_latest(&dependency, project_bump) {
@@ -75,7 +88,7 @@ impl VersionLensSession {
             return Some(resolve_dependency(dependency, Some(version)));
         }
 
-        self.registry_dependency_suggestion(dependency, responses, context)
+        self.registry_dependency_suggestion(dependency, responses, context, operation)
     }
 
     fn registry_dependency_suggestion(
@@ -83,9 +96,10 @@ impl VersionLensSession {
         dependency: Dependency,
         responses: &[RegistryResponseInput],
         context: &RegistryContext,
+        operation: &OperationContext,
     ) -> Option<Suggestion> {
         if self.config.show_vulnerabilities {
-            self.cache_vulnerabilities(&dependency, responses, context.manifest_kind());
+            self.cache_vulnerabilities(&dependency, responses, context.manifest_kind(), operation);
         }
 
         if is_unsupported_dotnet_registry_dependency(&dependency) {
@@ -98,25 +112,39 @@ impl VersionLensSession {
             Err(suggestion) => return Some(*suggestion),
         };
         if docker_response_missing_tag(&dependency, responses) {
-            return Some(self.docker_no_match_suggestion(
+            return Some(self.docker_no_match_suggestion(LatestSuggestionRequest {
                 dependency,
                 responses,
                 has_registry_response,
                 context,
-            ));
+                operation,
+            }));
         }
 
-        Some(self.latest_lookup_suggestion(dependency, responses, has_registry_response, context))
+        Some(self.latest_lookup_suggestion(LatestSuggestionRequest {
+            dependency,
+            responses,
+            has_registry_response,
+            context,
+            operation,
+        }))
     }
 
-    fn docker_no_match_suggestion(
-        &self,
-        dependency: Dependency,
-        responses: &[RegistryResponseInput],
-        has_registry_response: bool,
-        context: &RegistryContext,
-    ) -> Suggestion {
-        let lookup = self.resolve_latest(&dependency, responses, has_registry_response, context);
+    fn docker_no_match_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
+        let LatestSuggestionRequest {
+            dependency,
+            responses,
+            has_registry_response,
+            context,
+            operation,
+        } = request;
+        let lookup = self.resolve_latest(LatestResolutionRequest {
+            dependency: &dependency,
+            responses,
+            has_registry_response,
+            context,
+            operation,
+        });
         if let Some(message) = lookup.fetch_error {
             return error(dependency, message.to_string());
         }
@@ -127,14 +155,21 @@ impl VersionLensSession {
         suggestion
     }
 
-    fn latest_lookup_suggestion(
-        &self,
-        dependency: Dependency,
-        responses: &[RegistryResponseInput],
-        has_registry_response: bool,
-        context: &RegistryContext,
-    ) -> Suggestion {
-        let lookup = self.resolve_latest(&dependency, responses, has_registry_response, context);
+    fn latest_lookup_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
+        let LatestSuggestionRequest {
+            dependency,
+            responses,
+            has_registry_response,
+            context,
+            operation,
+        } = request;
+        let lookup = self.resolve_latest(LatestResolutionRequest {
+            dependency: &dependency,
+            responses,
+            has_registry_response,
+            context,
+            operation,
+        });
         if let Some(message) = lookup.fetch_error {
             return error(dependency, message.to_string());
         }

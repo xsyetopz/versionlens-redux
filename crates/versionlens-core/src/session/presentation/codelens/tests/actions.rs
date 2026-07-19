@@ -6,12 +6,12 @@ use std::path::{Path, PathBuf};
 use std::process::id;
 use std::time::UNIX_EPOCH;
 
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::{RegistryResponseInput, SessionConfig};
 
 use super::{package_file_fixture, test_indicators};
-use versionlens_parsers::Ecosystem::Npm;
+use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn project_version_code_lenses_offer_stable_bumps() {

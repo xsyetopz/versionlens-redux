@@ -2,12 +2,12 @@ mod cache;
 mod command;
 mod concurrency;
 mod config;
+mod contract;
 mod dependency;
 mod docker;
 mod dotnet_sources;
 mod error;
 mod fetch;
-mod model;
 mod non_registry;
 mod prerelease;
 mod presentation;
@@ -36,17 +36,19 @@ pub use config::{
     provider_http_config_from_name, provider_settings_manifest_kind_from_name,
     registry_url_config_from_name, standard_suggestion_indicators,
 };
-pub use dependency::dependency_payload;
-pub use dotnet_sources::dotnet_registry_source_urls;
-pub use model::{
+pub use contract::{
     AnalyzeDocumentOutput, AuthorizationRequestPayload, RegistryResponseInput,
     ResolveDocumentOutput,
 };
+pub use dependency::dependency_payload;
+pub use dotnet_sources::dotnet_registry_source_urls;
 pub use session::{ApplyCommandRequest, VersionLensSession, version_lens_session};
 pub(crate) use support::{
-    anyhow_error, arc, boxed, clone_arc, default, duration_from_millis, memory_cache, mutex,
-    parse_semver, parse_semver_req, path, recover_poison, string_from_utf8,
+    anyhow_error, arc, boxed, default, duration_from_millis, memory_cache, mutex, parse_semver,
+    parse_semver_req, path, recover_poison, string_from_utf8,
 };
 #[cfg(test)]
-pub(crate) use support::{session_config_from_input, system_time_now, tcp_listener_bind};
+pub(crate) use support::{
+    clone_arc, session_config_from_input, system_time_now, tcp_listener_bind,
+};
 pub use versionlens_suggestions::{Suggestion, SuggestionStatus};

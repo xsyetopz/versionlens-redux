@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  jetbrains:
-    name: JetBrains plugin
+  check:
+    name: JetBrains checks
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -49,15 +49,96 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6.2.0
-        with:
-          gradle-version: current
 
-      - name: Check and build JetBrains plugin
-        run: gradle -p packages/jetbrains-plugin check buildPlugin --stacktrace
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6.2.0
+
+      - name: Check JetBrains plugin
+        run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin check --no-daemon --stacktrace -PversionlensRustTarget=x86_64-unknown-linux-gnu
+
+  package:
+    name: JetBrains package (${{ matrix.editor_target }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - editor_target: linux-x64
+            rust_target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          - editor_target: linux-arm64
+            rust_target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - editor_target: darwin-x64
+            rust_target: x86_64-apple-darwin
+            runner: macos-15-intel
+          - editor_target: darwin-arm64
+            rust_target: aarch64-apple-darwin
+            runner: macos-15
+          - editor_target: win32-x64
+            rust_target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - editor_target: win32-arm64
+            rust_target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.0
+
+      - name: Setup Rust target
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal
+          rustup default "$channel"
+          rustup target add "$RUST_TARGET"
+
+      - name: Cache Cargo registry and language server build
+        uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-jetbrains-${{ matrix.rust_target }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v5.4.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6.2.0
+
+      - name: Build JetBrains plugin
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin buildPlugin --no-daemon --stacktrace -PversionlensRustTarget="$RUST_TARGET"
+
+      - name: Name platform-specific plugin archive
+        shell: bash
+        env:
+          EDITOR_TARGET: ${{ matrix.editor_target }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(packages/jetbrains-plugin/build/distributions/*.zip)
+          if [[ ${#artifacts[@]} -ne 1 ]]; then
+            echo "Expected one JetBrains plugin archive, found ${#artifacts[@]}" >&2
+            exit 1
+          fi
+          mv -- "${artifacts[0]}" "packages/jetbrains-plugin/build/distributions/versionlens-redux-jetbrains-plugin-$EDITOR_TARGET.zip"
 
       - name: Upload JetBrains artifact
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: versionlens-redux-jetbrains-plugin
-          path: packages/jetbrains-plugin/build/distributions/*.zip
+          name: versionlens-redux-jetbrains-plugin-${{ matrix.editor_target }}
+          path: packages/jetbrains-plugin/build/distributions/versionlens-redux-jetbrains-plugin-${{ matrix.editor_target }}.zip
           if-no-files-found: error

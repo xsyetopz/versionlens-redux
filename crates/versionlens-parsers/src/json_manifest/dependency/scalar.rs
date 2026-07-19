@@ -1,13 +1,13 @@
 use crate::json_manifest::npm::parse_package_manager;
 use jsonc_parser::ast::{ObjectProp, StringLit};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::{
     JsonDependencyRanges, JsonDependencySource, json_manifest_dependency, property_name_range,
     string_content_end, string_content_start,
 };
-use crate::model::Ecosystem::Npm;
+use versionlens_model::Ecosystem::Npm;
 
 pub(super) fn scalar_json_manifest_dependency(
     source: &JsonDependencySource<'_>,

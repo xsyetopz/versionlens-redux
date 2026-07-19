@@ -1,0 +1,17 @@
+[package]
+name = "versionlens-model"
+description = "Editor-neutral shared data contracts for VersionLens"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+serde.workspace = true
+
+[lints]
+workspace = true

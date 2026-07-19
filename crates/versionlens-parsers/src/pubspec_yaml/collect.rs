@@ -3,14 +3,14 @@ use marked_yaml::types::Node::{
     Mapping as YamlMapping, Scalar as YamlScalar, Sequence as YamlSequence,
 };
 
-use crate::model::Dependency;
 use crate::path_patterns::path_or_member_enabled;
 use crate::positions::offset_range;
 use crate::yaml::scalar_range;
+use versionlens_model::Dependency;
 
 use super::dependency::{dependency_from_node, scalar_dependency};
 use super::paths::dependency_groups;
-use crate::model::Ecosystem::Pub;
+use versionlens_model::Ecosystem::Pub;
 
 type PubspecDependencies = Vec<Dependency>;
 

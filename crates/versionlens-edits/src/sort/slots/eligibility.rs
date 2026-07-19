@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
 use super::lines::{dependency_end_line, dependency_start_line};
-use versionlens_parsers::Ecosystem::{
+use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Cran, Deno, Docker, Dotnet,
     Dub, Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm, Opam, Pub, Python,
     Ruby, Swift, Terraform, Unity, Vcpkg, Zig,

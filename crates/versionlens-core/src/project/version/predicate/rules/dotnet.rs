@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
 pub(super) fn is_dotnet_property_version(dependency: &Dependency) -> bool {
     dependency.group == "PropertyGroup"

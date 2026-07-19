@@ -1,6 +1,6 @@
 use self::parsers::parse_manifest_kind;
 use crate::classify::classify_document;
-use crate::model::{Dependency, DocumentInput, ManifestKind};
+use versionlens_model::{Dependency, DocumentInput, ManifestKind};
 
 mod parsers;
 #[cfg(test)]

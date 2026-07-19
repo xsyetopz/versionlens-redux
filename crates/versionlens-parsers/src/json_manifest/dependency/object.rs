@@ -1,13 +1,13 @@
-use crate::model::Ecosystem;
 use jsonc_parser::ast::{Object, ObjectProp};
+use versionlens_model::Ecosystem;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::{
     JsonDependencyRanges, JsonDependencySource, json_manifest_dependency, property_name_range,
     string_content_end, string_content_start,
 };
-use crate::model::Ecosystem::Dub;
+use versionlens_model::Ecosystem::Dub;
 
 pub(super) fn object_json_manifest_dependency(
     source: &JsonDependencySource<'_>,

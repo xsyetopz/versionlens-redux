@@ -1,7 +1,7 @@
 use super::{DocumentInput, parse_document};
-use crate::model::Ecosystem::{Dub, Npm};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::{Dub, Npm};
 
 #[test]
 fn parses_smoke_pnpm_package_json_smoke_shapes() {

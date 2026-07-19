@@ -1,5 +1,5 @@
-use versionlens_parsers::Ecosystem;
-use versionlens_parsers::Ecosystem::{Composer, Cran, Docker, Pub, Ruby};
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::{Composer, Cran, Docker, Pub, Ruby};
 
 mod docker;
 mod nuget;

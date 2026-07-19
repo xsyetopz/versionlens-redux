@@ -1,5 +1,5 @@
 use super::{is_prerelease_project_version, next_project_version};
-use crate::model::ProjectVersionBump::{Major, Minor, Patch, Prerelease};
+use crate::policy::ProjectVersionBump::{Major, Minor, Patch, Prerelease};
 
 #[test]
 fn bumps_project_versions() {
@@ -46,4 +46,24 @@ fn invalid_project_versions_fall_back_to_zero_without_coercion() {
         Some("0.0.1".to_owned())
     );
     assert!(!is_prerelease_project_version("release-1.2.3-beta.4"));
+}
+
+#[test]
+fn project_version_bumps_do_not_overflow() {
+    assert_eq!(
+        next_project_version("18446744073709551615.0.0", Some(Major)),
+        None
+    );
+    assert_eq!(
+        next_project_version("1.18446744073709551615.0", Some(Minor)),
+        None
+    );
+    assert_eq!(
+        next_project_version("1.0.18446744073709551615", Some(Patch)),
+        None
+    );
+    assert_eq!(
+        next_project_version("1.0.0-rc.18446744073709551615", Some(Prerelease),),
+        Some("1.0.0-rc.18446744073709551615.0".to_owned())
+    );
 }

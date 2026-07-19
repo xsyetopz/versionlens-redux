@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Range;
+use versionlens_model::Range;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

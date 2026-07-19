@@ -1,2185 +1,2205 @@
 {
-	"name": "versionlens-redux",
-	"displayName": "VersionLens Redux",
-	"description": "Shows the latest version for each package using code lens",
-	"publisher": "xsyetopz",
-	"private": true,
-	"preview": false,
-	"version": "0.1.2",
-	"main": "./dist/extension.js",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/xsyetopz/versionlens-redux.git"
-	},
-	"author": "Peter Flannery",
-	"license": "ISC",
-	"icon": "images/logo-redux.png",
-	"keywords": [
-		"versions",
-		"packages",
-		"dependencies",
-		"references",
-		"c#,composer,csharp,dart,deno,docker,dotnet,dub,f#,fsharp,go,java,jspm,maven,npm,nuget,pnpm,pub,pypi,python,ruby"
-	],
-	"categories": [
-		"Programming Languages",
-		"Other"
-	],
-	"engines": {
-		"vscode": ">=1.75.0"
-	},
-	"activationEvents": [
-		"onLanguage:jsonc",
-		"onLanguage:json",
-		"onLanguage:xml",
-		"onLanguage:toml",
-		"onLanguage:yaml",
-		"onLanguage:go.mod",
-		"onLanguage:dockerfile",
-		"onLanguage:dockercompose",
-		"onLanguage:pip-requirements",
-		"onLanguage:plaintext",
-		"onLanguage:ruby",
-		"onFileSystem:versionlens",
-		"onLanguage:groovy",
-		"onLanguage:kotlin",
-		"onLanguage:properties"
-	],
-	"contributes": {
-		"commands": [
-			{
-				"command": "versionlens.editor.onShowVersionLenses",
-				"title": "Show release versions",
-				"category": "VersionLens Redux",
-				"icon": {
-					"dark": "images/icons/toggle-inactive.svg",
-					"light": "images/icons/toggle-inactive-light.svg"
-				}
-			},
-			{
-				"command": "versionlens.editor.onHideVersionLenses",
-				"title": "Hide release versions",
-				"category": "VersionLens Redux",
-				"icon": "images/icons/toggle-active.svg"
-			},
-			{
-				"command": "versionlens.editor.onShowError",
-				"title": "An error has occurred. Click to see the log for details.",
-				"category": "VersionLens Redux",
-				"icon": "images/icons/toggle-death.svg"
-			},
-			{
-				"command": "versionlens.icons.showingProgress",
-				"enablement": "false",
-				"title": "Analyzing dependencies...",
-				"category": "VersionLens Redux",
-				"icon": "images/icons/toggle-active-progress.svg"
-			},
-			{
-				"command": "versionlens.editor.onShowPrereleaseVersions",
-				"title": "Show prerelease versions",
-				"category": "VersionLens Redux",
-				"icon": {
-					"dark": "images/icons/tag-inactive.svg",
-					"light": "images/icons/tag-inactive-light.svg"
-				}
-			},
-			{
-				"command": "versionlens.editor.onHidePrereleaseVersions",
-				"title": "Hide prerelease versions",
-				"category": "VersionLens Redux",
-				"icon": "images/icons/tag-active.svg"
-			},
-			{
-				"command": "versionlens.suggestion.onClearCache",
-				"title": "Clear cache",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onAddUrlAuthentication",
-				"title": "Add url authentication",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onRemoveUrlAuthentication",
-				"title": "Remove url authentication",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onCustomInstall",
-				"title": "Run custom install task",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onSortDependencies",
-				"title": "Sort dependencies alphabetically",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onUpdateDependenciesLatest",
-				"title": "Update dependencies to latest",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onUpdateDependenciesMajor",
-				"title": "Update dependencies (major-only)",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onUpdateDependenciesMinor",
-				"title": "Update dependencies (minor-only)",
-				"category": "VersionLens Redux"
-			},
-			{
-				"command": "versionlens.editor.onUpdateDependenciesPatch",
-				"title": "Update dependencies (patch-only)",
-				"category": "VersionLens Redux"
-			}
-		],
-		"menus": {
-			"commandPalette": [
-				{
-					"command": "versionlens.editor.onShowVersionLenses",
-					"when": "versionlens.show && versionlens.providerActive"
-				},
-				{
-					"command": "versionlens.editor.onHideVersionLenses",
-					"when": "versionlens.show && versionlens.providerActive"
-				},
-				{
-					"command": "versionlens.editor.onShowError",
-					"when": "false"
-				},
-				{
-					"command": "versionlens.editor.onShowPrereleaseVersions",
-					"when": "versionlens.show && versionlens.providerActive"
-				},
-				{
-					"command": "versionlens.editor.onHidePrereleaseVersions",
-					"when": "versionlens.show && versionlens.providerActive"
-				},
-				{
-					"command": "versionlens.editor.onCustomInstall",
-					"when": "versionlens.showCustomInstall && versionlens.providerActive"
-				},
-				{
-					"command": "versionlens.editor.onSortDependencies",
-					"when": "versionlens.showSortAlphabetically && versionlens.providerActive"
-				}
-			],
-			"editor/title": [
-				{
-					"command": "versionlens.editor.onShowVersionLenses",
-					"when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
-					"group": "navigation@1"
-				},
-				{
-					"command": "versionlens.editor.onHideVersionLenses",
-					"when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
-					"group": "navigation@1"
-				},
-				{
-					"command": "versionlens.editor.onShowError",
-					"when": "versionlens.providerError && versionlens.providerActive && textCompareEditorVisible == false",
-					"group": "navigation@1"
-				},
-				{
-					"command": "versionlens.icons.showingProgress",
-					"when": "versionlens.providerBusy && versionlens.providerActive && versionlens.providerError == false && textCompareEditorVisible == false",
-					"group": "navigation@1"
-				},
-				{
-					"command": "versionlens.editor.onShowPrereleaseVersions",
-					"when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
-					"group": "navigation@1.1"
-				},
-				{
-					"command": "versionlens.editor.onHidePrereleaseVersions",
-					"when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
-					"group": "navigation@1.1"
-				},
-				{
-					"command": "versionlens.editor.onShowVersionLenses",
-					"when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
-					"group": "secondary_versionlens@1"
-				},
-				{
-					"command": "versionlens.editor.onHideVersionLenses",
-					"when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
-					"group": "secondary_versionlens@1"
-				},
-				{
-					"command": "versionlens.editor.onShowPrereleaseVersions",
-					"when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
-					"group": "secondary_versionlens@2"
-				},
-				{
-					"command": "versionlens.editor.onHidePrereleaseVersions",
-					"when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
-					"group": "secondary_versionlens@2"
-				},
-				{
-					"command": "versionlens.editor.onCustomInstall",
-					"when": "versionlens.showCustomInstall && versionlens.providerActive && textCompareEditorVisible == false",
-					"group": "secondary_versionlens_tool@0"
-				},
-				{
-					"command": "versionlens.editor.onSortDependencies",
-					"when": "versionlens.showSortAlphabetically && versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
-					"group": "secondary_versionlens_tool@1"
-				},
-				{
-					"command": "versionlens.editor.onUpdateDependenciesLatest",
-					"when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
-					"group": "secondary_versionlens_update@0"
-				},
-				{
-					"command": "versionlens.editor.onUpdateDependenciesMajor",
-					"when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
-					"group": "secondary_versionlens_update@1"
-				},
-				{
-					"command": "versionlens.editor.onUpdateDependenciesMinor",
-					"when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
-					"group": "secondary_versionlens_update@2"
-				},
-				{
-					"command": "versionlens.editor.onUpdateDependenciesPatch",
-					"when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
-					"group": "secondary_versionlens_update@3"
-				}
-			]
-		},
-		"jsonValidation": [
-			{
-				"fileMatch": "versionlens:/versionlens.multi-registries.json",
-				"url": "./src/schema/versionlens.multi-registries.json"
-			}
-		],
-		"configuration": {
-			"title": "VersionLens Redux",
-			"properties": {
-				"versionlens.suggestions.showOnStartup": {
-					"type": "boolean",
-					"default": false,
-					"description": "Show version suggestions by default on vscode start up."
-				},
-				"versionlens.suggestions.showPrereleasesOnStartup": {
-					"type": "boolean",
-					"default": false,
-					"description": "Show version prerelease suggestions by default on vscode start up."
-				},
-				"versionlens.cargo.files": {
-					"type": "string",
-					"default": "**/Cargo.toml",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.composer.files": {
-					"type": "string",
-					"default": "**/composer.json",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.deno.files": {
-					"type": "string",
-					"default": "**/{deno.json,deno.jsonc,import_map.json,jsr.json,jsr.jsonc}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.docker.files": {
-					"type": "string",
-					"default": "**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.dotnet.files": {
-					"type": "string",
-					"default": "**/{*.csproj,*.fsproj,*.vbproj,project.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.dub.files": {
-					"type": "string",
-					"default": "**/{dub.json,dub.selections.json,dub.sdl}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.golang.files": {
-					"type": "string",
-					"default": "**/{go.mod,go.work}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.maven.files": {
-					"type": "string",
-					"default": "**/{pom.xml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,gradle/libs.versions.toml,build.sbt,deps.edn,project.clj}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.npm.files": {
-					"type": "string",
-					"default": "**/{package.json,package.json5,package.yaml,package.yml}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.pnpm.files": {
-					"type": "string",
-					"default": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yaml,.yarnrc.yml}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.pypi.files": {
-					"type": "string",
-					"default": "**/{Pipfile,pyproject.toml,*requirements*.txt,*constraints*.txt}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.pub.files": {
-					"type": "string",
-					"default": "**/{pubspec.yaml,pubspec.yml,pubspec_overrides.yaml}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.ruby.files": {
-					"type": "string",
-					"default": "**/{Gemfile,*.gemspec}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.hex.files": {
-					"type": "string",
-					"default": "**/{mix.exs,rebar.config,gleam.toml}",
-					"description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.cargo.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.composer.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.deno.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.dotnet.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.dub.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.golang.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.maven.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.npm.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.pypi.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.pub.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.ruby.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.hex.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.suggestions.showVulnerabilities": {
-					"type": "boolean",
-					"default": true,
-					"description": "Show package vulnerabilities as red squiggles in the editor."
-				},
-				"versionlens.suggestions.showSuggestionsStats": {
-					"type": "boolean",
-					"default": false,
-					"description": "Show the stats of all suggestions in the status bar."
-				},
-				"versionlens.suggestions.indicators": {
-					"type": "object",
-					"default": {
-						"Directory": "\ud83d\udcc1 ",
-						"Error": "\ud83d\udd34",
-						"Latest": "\ud83d\udfe2",
-						"SatisfiesLatest": "\ud83d\udfe2",
-						"NoMatch": "\u26aa",
-						"Match": "\ud83d\udfe1",
-						"Updateable": "\u2191 ",
-						"UpdateableVulnerable": "\u26a0\ufe0f",
-						"Build": "\u224c "
-					},
-					"properties": {
-						"Build": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"Directory": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"Error": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"Latest": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"Match": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"NoMatch": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"SatisfiesLatest": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"Updateable": {
-							"type": "string",
-							"pattern": "\\S"
-						},
-						"UpdateableVulnerable": {
-							"type": "string",
-							"pattern": "\\S"
-						}
-					},
-					"description": "The indicators used when showing version suggestion statuses."
-				},
-				"versionlens.npm.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"packageManager",
-						"devEngines.packageManager",
-						"dependencies",
-						"devDependencies",
-						"peerDependencies",
-						"optionalDependencies",
-						"bundledDependencies",
-						"bundleDependencies",
-						"trustedDependencies",
-						"resolutions",
-						"overrides",
-						"overrides.*",
-						"jspm.dependencies",
-						"jspm.devDependencies",
-						"jspm.peerDependencies",
-						"jspm.optionalDependencies",
-						"pnpm.overrides",
-						"pnpm.overrides.*",
-						"pnpm.packageExtensions.*.dependencies",
-						"pnpm.packageExtensions.*.devDependencies",
-						"pnpm.packageExtensions.*.peerDependencies",
-						"pnpm.packageExtensions.*.optionalDependencies",
-						"catalog",
-						"catalogs.*",
-						"workspaces.catalog",
-						"workspaces.catalogs.*"
-					],
-					"description": "Defines which properties in package.json should be parsed by this extension"
-				},
-				"versionlens.deno.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"imports",
-						"scopes"
-					],
-					"description": "Defines which properties in deno.json should be parsed by this extension"
-				},
-				"versionlens.pnpm.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"catalog",
-						"catalogs.*.*",
-						"overrides",
-						"packageExtensions.*.dependencies",
-						"packageExtensions.*.devDependencies",
-						"packageExtensions.*.peerDependencies",
-						"packageExtensions.*.optionalDependencies"
-					],
-					"description": "Defines which properties in pnpm-workspace.yaml should be parsed by this extension"
-				},
-				"versionlens.pub.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"workspace",
-						"dependencies",
-						"dev_dependencies",
-						"dependency_overrides"
-					],
-					"description": "Defines which properties in pubspec.yaml should be parsed by this extension"
-				},
-				"versionlens.hex.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"deps",
-						"plugins",
-						"project_plugins",
-						"dependencies",
-						"dev-dependencies",
-						"dev_dependencies"
-					],
-					"description": "Defines which dependency groups in Hex manifests should be parsed by this extension"
-				},
-				"versionlens.dotnet.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"Project.Sdk",
-						"Project.PropertyGroup.Version",
-						"Project.PropertyGroup.AssemblyVersion",
-						"Project.ItemGroup.GlobalPackageReference",
-						"Project.ItemGroup.PackageReference",
-						"Project.ItemGroup.PackageVersion",
-						"Project.ItemGroup.DotNetCliToolReference",
-						"packages.package",
-						"paket.dependencies",
-						"paket.references"
-					],
-					"description": "Defines which project properties should be parsed by this extension"
-				},
-				"versionlens.dotnet.nuget.sources": {
-					"type": "array",
-					"items": {
-						"type": [
-							"null",
-							"string"
-						]
-					},
-					"default": [],
-					"description": "Defines which nuget source to use for package searching. Has to be a v3 'service index' endpoint. e.g. https://api.nuget.org/v3/index.json. Defaults to the sources output by `dotnet nuget list source`"
-				},
-				"versionlens.dub.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies",
-						"versions",
-						"configurations.*.dependencies"
-					],
-					"description": "Defines which properties in dub.json should be parsed by this extension"
-				},
-				"versionlens.cargo.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"package",
-						"dependencies",
-						"dependencies.*",
-						"dev-dependencies",
-						"dev-dependencies.*",
-						"build-dependencies",
-						"build-dependencies.*",
-						"target.*.dependencies",
-						"target.*.dependencies.*",
-						"target.*.dev-dependencies",
-						"target.*.dev-dependencies.*",
-						"target.*.build-dependencies",
-						"target.*.build-dependencies.*",
-						"workspace.dependencies",
-						"workspace.dependencies.*"
-					],
-					"description": "Defines which properties in cargo.toml should be parsed by this extension"
-				},
-				"versionlens.composer.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"require",
-						"require-dev",
-						"conflict",
-						"replace",
-						"provide"
-					],
-					"description": "Defines which properties in composer.json should be parsed by this extension"
-				},
-				"versionlens.maven.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"project.version",
-						"project.dependencies.dependency",
-						"project.dependencyManagement.dependencies.dependency",
-						"project.parent",
-						"project.build.plugins.plugin",
-						"project.build.pluginManagement.plugins.plugin",
-						"project.profiles.profile.dependencies.dependency",
-						"project.profiles.profile.dependencyManagement.dependencies.dependency",
-						"project.profiles.profile.build.plugins.plugin",
-						"project.profiles.profile.build.pluginManagement.plugins.plugin"
-					],
-					"description": "Defines which properties in pom.xml should be parsed by this extension"
-				},
-				"versionlens.pypi.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"project",
-						"packages",
-						"dev-packages",
-						"tool.poetry.dependencies",
-						"tool.poetry.dev-dependencies",
-						"tool.poetry.group.*.dependencies",
-						"project.optional-dependencies",
-						"dependency-groups",
-						"tool.uv.sources"
-					],
-					"description": "Defines which properties in pyproject.toml should be parsed by this extension"
-				},
-				"versionlens.enabledProviders": {
-					"type": "array",
-					"items": {
-						"type": "string",
-						"enum": [
-							"cargo",
-							"composer",
-							"deno",
-							"docker",
-							"dotnet",
-							"dub",
-							"golang",
-							"maven",
-							"npm",
-							"pnpm",
-							"pub",
-							"pypi",
-							"ruby"
-						]
-					},
-					"default": [],
-					"description": "Defines a list of providers to enable. If empty, all providers are enabled. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"default": 3,
-					"description": "Specifies how long (in minutes) version suggestions will be cached. Setting the duration to 0 will disable caching."
-				},
-				"versionlens.cargo.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.composer.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.deno.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.docker.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.dotnet.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.dub.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.golang.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.maven.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.npm.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.pub.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.pypi.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.ruby.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.hex.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.http.strictSSL": {
-					"type": [
-						"boolean"
-					],
-					"default": true,
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned."
-				},
-				"versionlens.cargo.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.composer.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.deno.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.docker.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.dotnet.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.dub.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.golang.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.maven.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.pub.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.pypi.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.ruby.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.hex.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.npm.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.deno.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.pub.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.dotnet.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.dub.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.cargo.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.composer.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.maven.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.pypi.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.golang.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.ruby.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.hex.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.cargo.apiUrl": {
-					"type": "string",
-					"default": "https://crates.io/api/v1/crates",
-					"description": "Defines the api to use for crate package searching."
-				},
-				"versionlens.composer.apiUrl": {
-					"type": "string",
-					"default": "https://repo.packagist.org/p2",
-					"description": "Defines the api to use for composer package searching."
-				},
-				"versionlens.dub.apiUrl": {
-					"type": "string",
-					"default": "https://code.dlang.org/api/packages",
-					"description": "Defines the api to use for dub package searching."
-				},
-				"versionlens.golang.apiUrl": {
-					"type": "string",
-					"default": "https://proxy.golang.org/{base-module}/@v/list",
-					"description": "Defines the api to use for go package searching."
-				},
-				"versionlens.maven.apiUrl": {
-					"type": "string",
-					"default": "",
-					"description": "Defines the api to use for maven package searching."
-				},
-				"versionlens.pypi.apiUrl": {
-					"type": "string",
-					"default": "https://pypi.org/rss/project/{name}/releases.xml",
-					"description": "Defines the api to use for pypi package searching."
-				},
-				"versionlens.pub.apiUrl": {
-					"type": "string",
-					"default": "https://pub.dev/api/packages",
-					"description": "Defines the pub api to use for package searching."
-				},
-				"versionlens.ruby.apiUrl": {
-					"type": "string",
-					"default": "https://rubygems.org/api/v1/versions/{name}.json",
-					"description": "Defines the api to use for ruby package searching."
-				},
-				"versionlens.hex.apiUrl": {
-					"type": "string",
-					"default": "https://hex.pm/api/packages",
-					"description": "Defines the Hex api to use for package searching."
-				},
-				"versionlens.opam.files": {
-					"type": "string",
-					"default": "**/{opam,*.opam,dune-project}",
-					"description": "Specifies which opam package definition files to register with version lenses. You can use [micromatch](https://github.com/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.opam.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.opam.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"depends",
-						"depopts",
-						"conflicts",
-						"package.version",
-						"package.depends"
-					],
-					"description": "Defines which dependency groups in opam package definitions should be parsed by this extension"
-				},
-				"versionlens.opam.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.opam.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.opam.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.opam.apiUrl": {
-					"type": "string",
-					"default": "https://opam.ocaml.org",
-					"description": "Defines the opam package site base URL to use for package searching."
-				},
-				"versionlens.hackage.files": {
-					"type": "string",
-					"default": "**/{*.cabal,cabal.project,stack.yaml,stack.yml}",
-					"description": "Specifies which Haskell Cabal and Stack files to register with version lenses. You can use [micromatch](https://github.com/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
-				},
-				"versionlens.hackage.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
-				},
-				"versionlens.hackage.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"build-depends",
-						"setup-depends",
-						"build-tool-depends",
-						"constraints",
-						"resolver",
-						"extra-deps"
-					],
-					"description": "Defines which dependency groups in Cabal, cabal.project, and Stack manifests should be parsed by this extension"
-				},
-				"versionlens.hackage.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Specifies how long (in minutes) version suggestions will be cached."
-				},
-				"versionlens.hackage.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
-				},
-				"versionlens.hackage.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
-				},
-				"versionlens.hackage.apiUrl": {
-					"type": "string",
-					"default": "https://hackage.haskell.org",
-					"description": "Defines the Hackage package API base URL to use for Hackage package searching. Stack resolver snapshots use the Stackage snapshots API."
-				},
-				"versionlens.julia.files": {
-					"type": "string",
-					"default": "**/{Project.toml,Manifest.toml,Manifest-v*.toml}",
-					"description": "Julia Project.toml and Manifest.toml files to scan."
-				},
-				"versionlens.julia.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Julia prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.julia.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"version",
-						"deps",
-						"compat",
-						"sources"
-					],
-					"description": "Julia Project.toml and Manifest.toml dependency sections to scan."
-				},
-				"versionlens.julia.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Julia registry cache duration in minutes."
-				},
-				"versionlens.julia.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Julia registry requests."
-				},
-				"versionlens.julia.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Julia provider on-save behavior."
-				},
-				"versionlens.julia.apiUrl": {
-					"type": "string",
-					"default": "https://raw.githubusercontent.com/JuliaRegistries/General/master",
-					"description": "Julia General registry base URL."
-				},
-				"versionlens.cran.files": {
-					"type": "string",
-					"default": "**/{DESCRIPTION,renv.lock}",
-					"description": "R DESCRIPTION and renv.lock files to scan."
-				},
-				"versionlens.cran.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "CRAN prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.cran.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"Version",
-						"Depends",
-						"Imports",
-						"Suggests",
-						"Enhances",
-						"LinkingTo",
-						"Packages"
-					],
-					"description": "R DESCRIPTION fields and renv.lock package records to scan."
-				},
-				"versionlens.cran.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "CRAN registry cache duration in minutes."
-				},
-				"versionlens.cran.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for CRAN registry requests."
-				},
-				"versionlens.cran.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "CRAN provider on-save behavior."
-				},
-				"versionlens.cran.apiUrl": {
-					"type": "string",
-					"default": "https://cran.r-project.org",
-					"description": "CRAN repository base URL."
-				},
-				"versionlens.conan.files": {
-					"type": "string",
-					"default": "**/{conanfile.txt,conanfile.py}",
-					"description": "Conan conanfile.txt and conanfile.py manifests to scan."
-				},
-				"versionlens.conan.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Conan prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.conan.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"requires",
-						"tool_requires",
-						"build_requires",
-						"test_requires",
-						"python_requires"
-					],
-					"description": "Conan dependency sections and recipe attributes to scan."
-				},
-				"versionlens.conan.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Conan registry cache duration in minutes."
-				},
-				"versionlens.conan.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Conan registry requests."
-				},
-				"versionlens.conan.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Conan provider on-save behavior."
-				},
-				"versionlens.conan.apiUrl": {
-					"type": "string",
-					"default": "https://center2.conan.io",
-					"description": "Conan v2 registry base URL."
-				},
-				"versionlens.vcpkg.files": {
-					"type": "string",
-					"default": "**/vcpkg.json",
-					"description": "vcpkg manifest files to scan."
-				},
-				"versionlens.vcpkg.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "vcpkg prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.vcpkg.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies",
-						"features.*.dependencies",
-						"overrides"
-					],
-					"description": "vcpkg dependency arrays to scan."
-				},
-				"versionlens.vcpkg.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "vcpkg registry cache duration in minutes."
-				},
-				"versionlens.vcpkg.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for vcpkg registry requests."
-				},
-				"versionlens.vcpkg.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "vcpkg provider on-save behavior."
-				},
-				"versionlens.vcpkg.apiUrl": {
-					"type": "string",
-					"default": "https://raw.githubusercontent.com/microsoft/vcpkg/master",
-					"description": "vcpkg registry repository raw base URL."
-				},
-				"versionlens.swift.files": {
-					"type": "string",
-					"default": "**/Package.swift",
-					"description": "Swift Package.swift manifests to scan."
-				},
-				"versionlens.swift.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Swift prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.swift.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies"
-					],
-					"description": "Swift Package dependency sections to scan."
-				},
-				"versionlens.swift.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Swift package registry cache duration in minutes."
-				},
-				"versionlens.swift.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Swift package registry requests."
-				},
-				"versionlens.swift.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Swift provider on-save behavior."
-				},
-				"versionlens.swift.apiUrl": {
-					"type": "string",
-					"default": "https://packages.swift.org",
-					"description": "Swift package registry base URL."
-				},
-				"versionlens.zig.files": {
-					"type": "string",
-					"default": "**/build.zig.zon",
-					"description": "Zig build.zig.zon package manifests to scan."
-				},
-				"versionlens.zig.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Zig prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.zig.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies"
-					],
-					"description": "Zig build.zig.zon dependency sections to scan."
-				},
-				"versionlens.zig.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Zig package registry cache duration in minutes."
-				},
-				"versionlens.zig.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Zig package registry requests."
-				},
-				"versionlens.zig.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Zig provider on-save behavior."
-				},
-				"versionlens.zig.apiUrl": {
-					"type": "string",
-					"default": "https://pkg.ziglang.org",
-					"description": "Zig package registry base URL for non-GitHub package identities."
-				},
-				"versionlens.nim.files": {
-					"type": "string",
-					"default": "**/*.nimble",
-					"description": "Nimble .nimble package manifests to scan."
-				},
-				"versionlens.nim.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Nim prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.nim.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"requires",
-						"dev.requires",
-						"feature.*.requires"
-					],
-					"description": "Nimble requires dependency groups to scan."
-				},
-				"versionlens.nim.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Nimble package registry cache duration in minutes."
-				},
-				"versionlens.nim.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Nimble package registry requests."
-				},
-				"versionlens.nim.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Nim provider on-save behavior."
-				},
-				"versionlens.nim.apiUrl": {
-					"type": "string",
-					"default": "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json",
-					"description": "Nimble packages index URL or compatible registry base URL."
-				},
-				"versionlens.luarocks.files": {
-					"type": "string",
-					"default": "**/*.rockspec",
-					"description": "LuaRocks rockspec package manifests to scan."
-				},
-				"versionlens.luarocks.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "LuaRocks prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.luarocks.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies",
-						"build_dependencies",
-						"test_dependencies"
-					],
-					"description": "LuaRocks rockspec dependency arrays to scan."
-				},
-				"versionlens.luarocks.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "LuaRocks manifest cache duration in minutes."
-				},
-				"versionlens.luarocks.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for LuaRocks manifest requests."
-				},
-				"versionlens.luarocks.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "LuaRocks provider on-save behavior."
-				},
-				"versionlens.luarocks.apiUrl": {
-					"type": "string",
-					"default": "https://luarocks.org",
-					"description": "LuaRocks server base URL or manifest URL."
-				},
-				"versionlens.cpan.files": {
-					"type": "string",
-					"default": "**/cpanfile",
-					"description": "Perl cpanfile dependency manifests to scan."
-				},
-				"versionlens.cpan.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "CPAN prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.cpan.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"requires",
-						"recommends",
-						"suggests",
-						"conflicts",
-						"configure.requires",
-						"build.requires",
-						"test.requires",
-						"develop.requires",
-						"feature.*.requires",
-						"feature.*.recommends",
-						"feature.*.suggests",
-						"feature.*.conflicts"
-					],
-					"description": "cpanfile dependency declarations to scan."
-				},
-				"versionlens.cpan.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "MetaCPAN registry cache duration in minutes."
-				},
-				"versionlens.cpan.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for MetaCPAN registry requests."
-				},
-				"versionlens.cpan.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "CPAN provider on-save behavior."
-				},
-				"versionlens.cpan.apiUrl": {
-					"type": "string",
-					"default": "https://fastapi.metacpan.org/v1",
-					"description": "MetaCPAN API v1 base URL."
-				},
-				"versionlens.haxelib.files": {
-					"type": "string",
-					"default": "**/haxelib.json",
-					"description": "Haxe haxelib.json package manifests to scan."
-				},
-				"versionlens.haxelib.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Haxelib prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.haxelib.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies"
-					],
-					"description": "haxelib.json dependency declarations to scan."
-				},
-				"versionlens.haxelib.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Haxelib registry cache duration in minutes."
-				},
-				"versionlens.haxelib.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Haxelib registry requests."
-				},
-				"versionlens.haxelib.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Haxelib provider on-save behavior."
-				},
-				"versionlens.haxelib.apiUrl": {
-					"type": "string",
-					"default": "https://lib.haxe.org",
-					"description": "Haxelib registry base URL."
-				},
-				"versionlens.terraform.files": {
-					"type": "string",
-					"default": "**/*.{tf,tofu}",
-					"description": "Terraform and OpenTofu HCL manifests to scan."
-				},
-				"versionlens.terraform.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Terraform provider prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.terraform.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"required_providers"
-					],
-					"description": "Terraform and OpenTofu required_providers declarations to scan."
-				},
-				"versionlens.terraform.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Terraform Registry protocol cache duration in minutes."
-				},
-				"versionlens.terraform.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Terraform Registry protocol requests."
-				},
-				"versionlens.terraform.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Terraform provider on-save behavior."
-				},
-				"versionlens.terraform.apiUrl": {
-					"type": "string",
-					"default": "https://registry.terraform.io",
-					"description": "Terraform Registry protocol base URL."
-				},
-				"versionlens.helm.files": {
-					"type": "string",
-					"default": "**/Chart.yaml",
-					"description": "Helm Chart.yaml manifests to scan."
-				},
-				"versionlens.helm.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Helm chart prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.helm.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies"
-					],
-					"description": "Helm Chart.yaml dependency declarations to scan."
-				},
-				"versionlens.helm.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Helm chart repository cache duration in minutes."
-				},
-				"versionlens.helm.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Helm chart repository requests."
-				},
-				"versionlens.helm.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Helm provider on-save behavior."
-				},
-				"versionlens.helm.apiUrl": {
-					"type": "string",
-					"default": "https://charts.bitnami.com/bitnami",
-					"description": "Helm chart repository base URL."
-				},
-				"versionlens.ansible.files": {
-					"type": "string",
-					"default": "**/requirements.{yml,yaml}",
-					"description": "Ansible Galaxy requirements manifests to scan."
-				},
-				"versionlens.ansible.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Ansible Galaxy prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.ansible.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"roles",
-						"collections"
-					],
-					"description": "Ansible Galaxy requirements dependency declarations to scan."
-				},
-				"versionlens.ansible.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Ansible Galaxy registry cache duration in minutes."
-				},
-				"versionlens.ansible.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Ansible Galaxy registry requests."
-				},
-				"versionlens.ansible.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Ansible Galaxy provider on-save behavior."
-				},
-				"versionlens.ansible.apiUrl": {
-					"type": "string",
-					"default": "https://galaxy.ansible.com",
-					"description": "Ansible Galaxy API server base URL."
-				},
-				"versionlens.bazel.files": {
-					"type": "string",
-					"default": "**/MODULE.bazel",
-					"description": "Bazel Bzlmod MODULE.bazel manifests to scan."
-				},
-				"versionlens.bazel.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Bazel module prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.bazel.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"bazel_dep",
-						"single_version_override",
-						"multiple_version_override"
-					],
-					"description": "Bazel MODULE.bazel dependency directives to scan."
-				},
-				"versionlens.bazel.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Bazel registry cache duration in minutes."
-				},
-				"versionlens.bazel.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Bazel registry requests."
-				},
-				"versionlens.bazel.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Bazel provider on-save behavior."
-				},
-				"versionlens.bazel.apiUrl": {
-					"type": "string",
-					"default": "https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main",
-					"description": "Bazel registry base URL."
-				},
-				"versionlens.nix.files": {
-					"type": "string",
-					"default": "**/flake.nix",
-					"description": "Nix flake manifests to scan."
-				},
-				"versionlens.nix.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Nix flake input prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.nix.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"inputs"
-					],
-					"description": "Nix flake input declarations to scan."
-				},
-				"versionlens.nix.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Nix flake input registry cache duration in minutes."
-				},
-				"versionlens.nix.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Nix flake input registry requests."
-				},
-				"versionlens.nix.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Nix provider on-save behavior."
-				},
-				"versionlens.nix.apiUrl": {
-					"type": "string",
-					"default": "https://api.github.com/repos",
-					"description": "Nix flake input GitHub API base URL."
-				},
-				"versionlens.kustomize.files": {
-					"type": "string",
-					"default": "**/{kustomization.yaml,kustomization.yml,Kustomization}",
-					"description": "Kustomize kustomization manifests to scan."
-				},
-				"versionlens.kustomize.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Kustomize image prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.kustomize.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"images"
-					],
-					"description": "Kustomize image declarations to scan."
-				},
-				"versionlens.kustomize.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Kustomize image registry cache duration in minutes."
-				},
-				"versionlens.kustomize.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Kustomize image registry requests."
-				},
-				"versionlens.kustomize.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Kustomize provider on-save behavior."
-				},
-				"versionlens.unity.files": {
-					"type": "string",
-					"default": "**/Packages/manifest.json",
-					"description": "Unity project Packages/manifest.json files to scan."
-				},
-				"versionlens.unity.prereleaseTagFilter": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 0,
-					"default": [],
-					"description": "Unity package prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.unity.dependencyProperties": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"uniqueItems": true,
-					"minItems": 1,
-					"default": [
-						"dependencies"
-					],
-					"description": "Unity project manifest dependency declarations to scan."
-				},
-				"versionlens.unity.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"description": "Unity package registry cache duration in minutes."
-				},
-				"versionlens.unity.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"description": "Whether to require strict SSL for Unity package registry requests."
-				},
-				"versionlens.unity.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "Unity provider on-save behavior."
-				},
-				"versionlens.unity.apiUrl": {
-					"type": "string",
-					"default": "https://packages.unity.com",
-					"description": "Unity npm-compatible package registry base URL."
-				},
-				"versionlens.cocoapods.files": {
-					"type": "string",
-					"default": "**/Podfile",
-					"description": "Glob pattern for CocoaPods Podfile manifests."
-				},
-				"versionlens.cocoapods.dependencyProperties": {
-					"type": "array",
-					"default": [
-						"pod"
-					],
-					"items": {
-						"type": "string"
-					},
-					"description": "CocoaPods Podfile dependency declarations to inspect."
-				},
-				"versionlens.cocoapods.apiUrl": {
-					"type": "string",
-					"default": "https://trunk.cocoapods.org/api/v1/pods",
-					"description": "Base URL for CocoaPods package metadata lookups."
-				},
-				"versionlens.cocoapods.prereleaseTagFilter": {
-					"type": "array",
-					"default": [],
-					"items": {
-						"type": "string"
-					},
-					"description": "CocoaPods prerelease tag names to include in update suggestions."
-				},
-				"versionlens.cocoapods.caching.duration": {
-					"type": "number",
-					"default": 3600,
-					"description": "CocoaPods registry response cache duration in seconds."
-				},
-				"versionlens.cocoapods.http.strictSSL": {
-					"type": "boolean",
-					"default": true,
-					"description": "Require valid TLS certificates for CocoaPods registry requests."
-				},
-				"versionlens.cocoapods.onSaveChanges": {
-					"type": "boolean",
-					"default": true,
-					"description": "Refresh CocoaPods suggestions when Podfile files are saved."
-				},
-				"versionlens.cpp.files": {
-					"type": "string",
-					"default": "**/{CMakeLists.txt,*.cmake,xmake.lua,subprojects/*.wrap,WORKSPACE,WORKSPACE.bazel}",
-					"description": "C/C++ build and dependency manifest files to scan."
-				},
-				"versionlens.cpp.prereleaseTagFilter": {
-					"type": "array",
-					"default": [],
-					"items": {
-						"type": "string"
-					},
-					"description": "C/C++ prerelease identifiers to include when prerelease suggestions are enabled."
-				},
-				"versionlens.cpp.dependencyProperties": {
-					"type": "array",
-					"default": [
-						"add_requires",
-						"FetchContent_Declare",
-						"ExternalProject_Add",
-						"CPMAddPackage",
-						"meson.wrap",
-						"http_archive"
-					],
-					"items": {
-						"type": "string"
-					},
-					"description": "C/C++ dependency declaration forms to scan."
-				},
-				"versionlens.cpp.caching.duration": {
-					"type": [
-						"null",
-						"number"
-					],
-					"default": null,
-					"description": "C/C++ registry cache duration in minutes."
-				},
-				"versionlens.cpp.http.strictSSL": {
-					"type": [
-						"null",
-						"boolean"
-					],
-					"default": null,
-					"description": "Whether to require strict SSL for C/C++ registry requests."
-				},
-				"versionlens.cpp.onSaveChanges": {
-					"type": "string",
-					"default": null,
-					"description": "C/C++ provider on-save behavior."
-				},
-				"versionlens.cpp.apiUrl": {
-					"type": "string",
-					"default": "https://raw.githubusercontent.com/xmake-io/xmake-repo/master",
-					"description": "C/C++ fallback package registry base URL for Xmake package recipes."
-				}
-			}
-		}
-	}
+  "name": "versionlens-redux",
+  "displayName": "VersionLens Redux",
+  "description": "Shows the latest version for each package using code lens",
+  "publisher": "xsyetopz",
+  "private": true,
+  "imports": {
+    "#vscode-host": "./src/extension/platform/host.ts"
+  },
+  "preview": false,
+  "version": "0.2.0",
+  "main": "./dist/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xsyetopz/versionlens-redux.git"
+  },
+  "author": "Peter Flannery",
+  "license": "ISC",
+  "icon": "images/logo-redux.png",
+  "keywords": [
+    "versions",
+    "packages",
+    "dependencies",
+    "references",
+    "c#,composer,csharp,dart,deno,docker,dotnet,dub,f#,fsharp,go,java,jspm,maven,npm,nuget,pnpm,pub,pypi,python,ruby"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "engines": {
+    "vscode": ">=1.75.0"
+  },
+  "activationEvents": [
+    "onLanguage:jsonc",
+    "onLanguage:json",
+    "onLanguage:xml",
+    "onLanguage:toml",
+    "onLanguage:yaml",
+    "onLanguage:go.mod",
+    "onLanguage:dockerfile",
+    "onLanguage:dockercompose",
+    "onLanguage:pip-requirements",
+    "onLanguage:plaintext",
+    "onLanguage:ruby",
+    "onLanguage:groovy",
+    "onLanguage:kotlin",
+    "onLanguage:properties",
+    "onLanguage:scala",
+    "onLanguage:clojure",
+    "onLanguage:json5",
+    "onLanguage:elixir",
+    "onLanguage:erlang",
+    "onLanguage:python",
+    "onLanguage:swift",
+    "onLanguage:zig",
+    "onLanguage:nim",
+    "onLanguage:lua",
+    "onLanguage:perl",
+    "onLanguage:terraform",
+    "onLanguage:hcl",
+    "onLanguage:starlark",
+    "onLanguage:nix",
+    "onLanguage:cmake",
+    "onLanguage:meson",
+    "onLanguage:ini",
+    "onFileSystem:versionlens"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "versionlens.editor.onShowVersionLenses",
+        "title": "Show release versions",
+        "category": "VersionLens Redux",
+        "icon": {
+          "dark": "images/icons/toggle-inactive.svg",
+          "light": "images/icons/toggle-inactive-light.svg"
+        }
+      },
+      {
+        "command": "versionlens.editor.onHideVersionLenses",
+        "title": "Hide release versions",
+        "category": "VersionLens Redux",
+        "icon": "images/icons/toggle-active.svg"
+      },
+      {
+        "command": "versionlens.editor.onShowError",
+        "title": "An error has occurred. Click to see the log for details.",
+        "category": "VersionLens Redux",
+        "icon": "images/icons/toggle-death.svg"
+      },
+      {
+        "command": "versionlens.icons.showingProgress",
+        "enablement": "false",
+        "title": "Analyzing dependencies...",
+        "category": "VersionLens Redux",
+        "icon": "images/icons/toggle-active-progress.svg"
+      },
+      {
+        "command": "versionlens.editor.onShowPrereleaseVersions",
+        "title": "Show prerelease versions",
+        "category": "VersionLens Redux",
+        "icon": {
+          "dark": "images/icons/tag-inactive.svg",
+          "light": "images/icons/tag-inactive-light.svg"
+        }
+      },
+      {
+        "command": "versionlens.editor.onHidePrereleaseVersions",
+        "title": "Hide prerelease versions",
+        "category": "VersionLens Redux",
+        "icon": "images/icons/tag-active.svg"
+      },
+      {
+        "command": "versionlens.suggestion.onClearCache",
+        "title": "Clear cache",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onAddUrlAuthentication",
+        "title": "Add url authentication",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onRemoveUrlAuthentication",
+        "title": "Remove url authentication",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onCustomInstall",
+        "title": "Run custom install task",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onSortDependencies",
+        "title": "Sort dependencies alphabetically",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesLatest",
+        "title": "Update dependencies to latest",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesMajor",
+        "title": "Update dependencies (major-only)",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesMinor",
+        "title": "Update dependencies (minor-only)",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.editor.onUpdateDependenciesPatch",
+        "title": "Update dependencies (patch-only)",
+        "category": "VersionLens Redux"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "versionlens.editor.onShowVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onHideVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onShowError",
+          "when": "false"
+        },
+        {
+          "command": "versionlens.editor.onShowPrereleaseVersions",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onHidePrereleaseVersions",
+          "when": "versionlens.show && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onCustomInstall",
+          "when": "versionlens.showCustomInstall && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.editor.onSortDependencies",
+          "when": "versionlens.showSortAlphabetically && versionlens.providerActive"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "versionlens.editor.onShowVersionLenses",
+          "when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.editor.onHideVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.editor.onShowError",
+          "when": "versionlens.providerError && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.icons.showingProgress",
+          "when": "versionlens.providerBusy && versionlens.providerActive && versionlens.providerError == false && textCompareEditorVisible == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "versionlens.editor.onShowPrereleaseVersions",
+          "when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "navigation@1.1"
+        },
+        {
+          "command": "versionlens.editor.onHidePrereleaseVersions",
+          "when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "navigation@1.1"
+        },
+        {
+          "command": "versionlens.editor.onShowVersionLenses",
+          "when": "versionlens.show == false && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@1"
+        },
+        {
+          "command": "versionlens.editor.onHideVersionLenses",
+          "when": "versionlens.show && versionlens.providerActive && versionlens.providerBusy == false && versionlens.providerError == false  && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@1"
+        },
+        {
+          "command": "versionlens.editor.onShowPrereleaseVersions",
+          "when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@2"
+        },
+        {
+          "command": "versionlens.editor.onHidePrereleaseVersions",
+          "when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "secondary_versionlens@2"
+        },
+        {
+          "command": "versionlens.editor.onCustomInstall",
+          "when": "versionlens.showCustomInstall && versionlens.providerActive && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_tool@0"
+        },
+        {
+          "command": "versionlens.editor.onSortDependencies",
+          "when": "versionlens.showSortAlphabetically && versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_tool@1"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesLatest",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@0"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesMajor",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@1"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesMinor",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@2"
+        },
+        {
+          "command": "versionlens.editor.onUpdateDependenciesPatch",
+          "when": "versionlens.providerActive && versionlens.providerBusy == 0 && textCompareEditorVisible == false",
+          "group": "secondary_versionlens_update@3"
+        }
+      ]
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": "versionlens:/versionlens.multi-registries.json",
+        "url": "./src/schema/versionlens.multi-registries.json"
+      }
+    ],
+    "configuration": {
+      "title": "VersionLens Redux",
+      "properties": {
+        "versionlens.suggestions.showOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show version suggestions by default on vscode start up."
+        },
+        "versionlens.suggestions.showPrereleasesOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show version prerelease suggestions by default on vscode start up."
+        },
+        "versionlens.cargo.files": {
+          "type": "string",
+          "default": "**/Cargo.toml",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.composer.files": {
+          "type": "string",
+          "default": "**/composer.json",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.deno.files": {
+          "type": "string",
+          "default": "**/{deno.json,deno.jsonc,import_map.json,jsr.json,jsr.jsonc}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.docker.files": {
+          "type": "string",
+          "default": "**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.dotnet.files": {
+          "type": "string",
+          "default": "**/{*.csproj,*.fsproj,*.vbproj,project.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.dub.files": {
+          "type": "string",
+          "default": "**/{dub.json,dub.selections.json,dub.sdl}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.golang.files": {
+          "type": "string",
+          "default": "**/{go.mod,go.work}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.maven.files": {
+          "type": "string",
+          "default": "**/{pom.xml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,gradle/libs.versions.toml,build.sbt,deps.edn,project.clj}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.npm.files": {
+          "type": "string",
+          "default": "**/{package.json,package.json5,package.yaml,package.yml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.pnpm.files": {
+          "type": "string",
+          "default": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yaml,.yarnrc.yml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.pypi.files": {
+          "type": "string",
+          "default": "**/{Pipfile,pyproject.toml,*requirements*.txt,*constraints*.txt}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.pub.files": {
+          "type": "string",
+          "default": "**/{pubspec.yaml,pubspec.yml,pubspec_overrides.yaml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.ruby.files": {
+          "type": "string",
+          "default": "**/{Gemfile,*.gemspec}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.hex.files": {
+          "type": "string",
+          "default": "**/{mix.exs,rebar.config,gleam.toml}",
+          "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.cargo.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.composer.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.deno.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.dotnet.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.dub.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.golang.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.maven.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.npm.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.pypi.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.pub.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.ruby.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.hex.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.suggestions.showVulnerabilities": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show package vulnerabilities as red squiggles in the editor."
+        },
+        "versionlens.suggestions.showSuggestionsStats": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the stats of all suggestions in the status bar."
+        },
+        "versionlens.suggestions.indicators": {
+          "type": "object",
+          "default": {
+            "Directory": "\ud83d\udcc1 ",
+            "Error": "\ud83d\udd34",
+            "Latest": "\ud83d\udfe2",
+            "SatisfiesLatest": "\ud83d\udfe2",
+            "NoMatch": "\u26aa",
+            "Match": "\ud83d\udfe1",
+            "Updateable": "\u2191 ",
+            "UpdateableVulnerable": "\u26a0\ufe0f",
+            "Build": "\u224c "
+          },
+          "properties": {
+            "Build": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "Directory": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "Error": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "Latest": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "Match": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "NoMatch": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "SatisfiesLatest": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "Updateable": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "UpdateableVulnerable": {
+              "type": "string",
+              "pattern": "\\S"
+            }
+          },
+          "description": "The indicators used when showing version suggestion statuses."
+        },
+        "versionlens.npm.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "packageManager",
+            "devEngines.packageManager",
+            "dependencies",
+            "devDependencies",
+            "peerDependencies",
+            "optionalDependencies",
+            "bundledDependencies",
+            "bundleDependencies",
+            "trustedDependencies",
+            "resolutions",
+            "overrides",
+            "overrides.*",
+            "jspm.dependencies",
+            "jspm.devDependencies",
+            "jspm.peerDependencies",
+            "jspm.optionalDependencies",
+            "pnpm.overrides",
+            "pnpm.overrides.*",
+            "pnpm.packageExtensions.*.dependencies",
+            "pnpm.packageExtensions.*.devDependencies",
+            "pnpm.packageExtensions.*.peerDependencies",
+            "pnpm.packageExtensions.*.optionalDependencies",
+            "catalog",
+            "catalogs.*",
+            "workspaces.catalog",
+            "workspaces.catalogs.*"
+          ],
+          "description": "Defines which properties in package.json should be parsed by this extension"
+        },
+        "versionlens.deno.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "imports",
+            "scopes"
+          ],
+          "description": "Defines which properties in deno.json should be parsed by this extension"
+        },
+        "versionlens.pnpm.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "catalog",
+            "catalogs.*.*",
+            "overrides",
+            "packageExtensions.*.dependencies",
+            "packageExtensions.*.devDependencies",
+            "packageExtensions.*.peerDependencies",
+            "packageExtensions.*.optionalDependencies"
+          ],
+          "description": "Defines which properties in pnpm-workspace.yaml should be parsed by this extension"
+        },
+        "versionlens.pub.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "workspace",
+            "dependencies",
+            "dev_dependencies",
+            "dependency_overrides"
+          ],
+          "description": "Defines which properties in pubspec.yaml should be parsed by this extension"
+        },
+        "versionlens.hex.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "deps",
+            "plugins",
+            "project_plugins",
+            "dependencies",
+            "dev-dependencies",
+            "dev_dependencies"
+          ],
+          "description": "Defines which dependency groups in Hex manifests should be parsed by this extension"
+        },
+        "versionlens.dotnet.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "Project.Sdk",
+            "Project.PropertyGroup.Version",
+            "Project.PropertyGroup.AssemblyVersion",
+            "Project.ItemGroup.GlobalPackageReference",
+            "Project.ItemGroup.PackageReference",
+            "Project.ItemGroup.PackageVersion",
+            "Project.ItemGroup.DotNetCliToolReference",
+            "packages.package",
+            "paket.dependencies",
+            "paket.references"
+          ],
+          "description": "Defines which project properties should be parsed by this extension"
+        },
+        "versionlens.dotnet.nuget.sources": {
+          "type": "array",
+          "items": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "default": [],
+          "description": "Defines which nuget source to use for package searching. Has to be a v3 'service index' endpoint. e.g. https://api.nuget.org/v3/index.json. Defaults to the sources output by `dotnet nuget list source`"
+        },
+        "versionlens.dub.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies",
+            "versions",
+            "configurations.*.dependencies"
+          ],
+          "description": "Defines which properties in dub.json should be parsed by this extension"
+        },
+        "versionlens.cargo.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "package",
+            "dependencies",
+            "dependencies.*",
+            "dev-dependencies",
+            "dev-dependencies.*",
+            "build-dependencies",
+            "build-dependencies.*",
+            "target.*.dependencies",
+            "target.*.dependencies.*",
+            "target.*.dev-dependencies",
+            "target.*.dev-dependencies.*",
+            "target.*.build-dependencies",
+            "target.*.build-dependencies.*",
+            "workspace.dependencies",
+            "workspace.dependencies.*"
+          ],
+          "description": "Defines which properties in cargo.toml should be parsed by this extension"
+        },
+        "versionlens.composer.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "require",
+            "require-dev",
+            "conflict",
+            "replace",
+            "provide"
+          ],
+          "description": "Defines which properties in composer.json should be parsed by this extension"
+        },
+        "versionlens.maven.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "project.version",
+            "project.dependencies.dependency",
+            "project.dependencyManagement.dependencies.dependency",
+            "project.parent",
+            "project.build.plugins.plugin",
+            "project.build.pluginManagement.plugins.plugin",
+            "project.profiles.profile.dependencies.dependency",
+            "project.profiles.profile.dependencyManagement.dependencies.dependency",
+            "project.profiles.profile.build.plugins.plugin",
+            "project.profiles.profile.build.pluginManagement.plugins.plugin"
+          ],
+          "description": "Defines which properties in pom.xml should be parsed by this extension"
+        },
+        "versionlens.pypi.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "project",
+            "packages",
+            "dev-packages",
+            "tool.poetry.dependencies",
+            "tool.poetry.dev-dependencies",
+            "tool.poetry.group.*.dependencies",
+            "project.optional-dependencies",
+            "dependency-groups",
+            "tool.uv.sources"
+          ],
+          "description": "Defines which properties in pyproject.toml should be parsed by this extension"
+        },
+        "versionlens.enabledProviders": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "cargo",
+              "composer",
+              "deno",
+              "docker",
+              "dotnet",
+              "dub",
+              "golang",
+              "maven",
+              "npm",
+              "pnpm",
+              "pub",
+              "pypi",
+              "ruby"
+            ]
+          },
+          "default": [],
+          "description": "Defines a list of providers to enable. If empty, all providers are enabled. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "default": 3,
+          "description": "Specifies how long (in minutes) version suggestions will be cached. Setting the duration to 0 will disable caching."
+        },
+        "versionlens.cargo.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.composer.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.deno.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.docker.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.dotnet.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.dub.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.golang.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.maven.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.npm.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.pub.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.pypi.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.ruby.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.hex.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.http.strictSSL": {
+          "type": [
+            "boolean"
+          ],
+          "default": true,
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned."
+        },
+        "versionlens.cargo.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.composer.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.deno.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.docker.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.dotnet.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.dub.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.golang.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.maven.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.pub.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.pypi.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.ruby.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.hex.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.npm.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.deno.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.pub.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.dotnet.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.dub.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.cargo.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.composer.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.maven.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.pypi.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.golang.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.ruby.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.hex.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.cargo.apiUrl": {
+          "type": "string",
+          "default": "https://crates.io/api/v1/crates",
+          "description": "Defines the api to use for crate package searching."
+        },
+        "versionlens.composer.apiUrl": {
+          "type": "string",
+          "default": "https://repo.packagist.org/p2",
+          "description": "Defines the api to use for composer package searching."
+        },
+        "versionlens.dub.apiUrl": {
+          "type": "string",
+          "default": "https://code.dlang.org/api/packages",
+          "description": "Defines the api to use for dub package searching."
+        },
+        "versionlens.golang.apiUrl": {
+          "type": "string",
+          "default": "https://proxy.golang.org/{base-module}/@v/list",
+          "description": "Defines the api to use for go package searching."
+        },
+        "versionlens.maven.apiUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Defines the api to use for maven package searching."
+        },
+        "versionlens.pypi.apiUrl": {
+          "type": "string",
+          "default": "https://pypi.org/rss/project/{name}/releases.xml",
+          "description": "Defines the api to use for pypi package searching."
+        },
+        "versionlens.pub.apiUrl": {
+          "type": "string",
+          "default": "https://pub.dev/api/packages",
+          "description": "Defines the pub api to use for package searching."
+        },
+        "versionlens.ruby.apiUrl": {
+          "type": "string",
+          "default": "https://rubygems.org/api/v1/versions/{name}.json",
+          "description": "Defines the api to use for ruby package searching."
+        },
+        "versionlens.hex.apiUrl": {
+          "type": "string",
+          "default": "https://hex.pm/api/packages",
+          "description": "Defines the Hex api to use for package searching."
+        },
+        "versionlens.opam.files": {
+          "type": "string",
+          "default": "**/{opam,*.opam,dune-project}",
+          "description": "Specifies which opam package definition files to register with version lenses. You can use [micromatch](https://github.com/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.opam.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.opam.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "depends",
+            "depopts",
+            "conflicts",
+            "package.version",
+            "package.depends"
+          ],
+          "description": "Defines which dependency groups in opam package definitions should be parsed by this extension"
+        },
+        "versionlens.opam.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.opam.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.opam.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.opam.apiUrl": {
+          "type": "string",
+          "default": "https://opam.ocaml.org",
+          "description": "Defines the opam package site base URL to use for package searching."
+        },
+        "versionlens.hackage.files": {
+          "type": "string",
+          "default": "**/{*.cabal,cabal.project,stack.yaml,stack.yml}",
+          "description": "Specifies which Haskell Cabal and Stack files to register with version lenses. You can use [micromatch](https://github.com/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
+        },
+        "versionlens.hackage.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Defines a list of prerelease tags you only want to see. i.e. ['alpha', 'beta']. If you don't specify any prerelease tags then all the prerelease tags newer the the latest version are shown when the 'show prerelease' icon is activated."
+        },
+        "versionlens.hackage.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "build-depends",
+            "setup-depends",
+            "build-tool-depends",
+            "constraints",
+            "resolver",
+            "extra-deps"
+          ],
+          "description": "Defines which dependency groups in Cabal, cabal.project, and Stack manifests should be parsed by this extension"
+        },
+        "versionlens.hackage.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Specifies how long (in minutes) version suggestions will be cached."
+        },
+        "versionlens.hackage.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "When set to 'true' the server will reject any connection which is not authorized within the list of supplied CAs. Set to false for unsigned. Overrides 'versionlens.http.strictSSL'"
+        },
+        "versionlens.hackage.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a package document that has dependency changes. Ensure to set your `task.options.cwd` to the predefined variable called `${fileDirname}` when running an install task"
+        },
+        "versionlens.hackage.apiUrl": {
+          "type": "string",
+          "default": "https://hackage.haskell.org",
+          "description": "Defines the Hackage package API base URL to use for Hackage package searching. Stack resolver snapshots use the Stackage snapshots API."
+        },
+        "versionlens.julia.files": {
+          "type": "string",
+          "default": "**/{Project.toml,Manifest.toml,Manifest-v*.toml}",
+          "description": "Julia Project.toml and Manifest.toml files to scan."
+        },
+        "versionlens.julia.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Julia prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.julia.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "version",
+            "deps",
+            "compat",
+            "sources"
+          ],
+          "description": "Julia Project.toml and Manifest.toml dependency sections to scan."
+        },
+        "versionlens.julia.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Julia registry cache duration in minutes."
+        },
+        "versionlens.julia.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Julia registry requests."
+        },
+        "versionlens.julia.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Julia provider on-save behavior."
+        },
+        "versionlens.julia.apiUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/JuliaRegistries/General/master",
+          "description": "Julia General registry base URL."
+        },
+        "versionlens.cran.files": {
+          "type": "string",
+          "default": "**/{DESCRIPTION,renv.lock}",
+          "description": "R DESCRIPTION and renv.lock files to scan."
+        },
+        "versionlens.cran.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "CRAN prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.cran.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "Version",
+            "Depends",
+            "Imports",
+            "Suggests",
+            "Enhances",
+            "LinkingTo",
+            "Packages"
+          ],
+          "description": "R DESCRIPTION fields and renv.lock package records to scan."
+        },
+        "versionlens.cran.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "CRAN registry cache duration in minutes."
+        },
+        "versionlens.cran.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for CRAN registry requests."
+        },
+        "versionlens.cran.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "CRAN provider on-save behavior."
+        },
+        "versionlens.cran.apiUrl": {
+          "type": "string",
+          "default": "https://cran.r-project.org",
+          "description": "CRAN repository base URL."
+        },
+        "versionlens.conan.files": {
+          "type": "string",
+          "default": "**/{conanfile.txt,conanfile.py}",
+          "description": "Conan conanfile.txt and conanfile.py manifests to scan."
+        },
+        "versionlens.conan.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Conan prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.conan.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "requires",
+            "tool_requires",
+            "build_requires",
+            "test_requires",
+            "python_requires"
+          ],
+          "description": "Conan dependency sections and recipe attributes to scan."
+        },
+        "versionlens.conan.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Conan registry cache duration in minutes."
+        },
+        "versionlens.conan.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Conan registry requests."
+        },
+        "versionlens.conan.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Conan provider on-save behavior."
+        },
+        "versionlens.conan.apiUrl": {
+          "type": "string",
+          "default": "https://center2.conan.io",
+          "description": "Conan v2 registry base URL."
+        },
+        "versionlens.vcpkg.files": {
+          "type": "string",
+          "default": "**/vcpkg.json",
+          "description": "vcpkg manifest files to scan."
+        },
+        "versionlens.vcpkg.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "vcpkg prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.vcpkg.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies",
+            "features.*.dependencies",
+            "overrides"
+          ],
+          "description": "vcpkg dependency arrays to scan."
+        },
+        "versionlens.vcpkg.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "vcpkg registry cache duration in minutes."
+        },
+        "versionlens.vcpkg.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for vcpkg registry requests."
+        },
+        "versionlens.vcpkg.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "vcpkg provider on-save behavior."
+        },
+        "versionlens.vcpkg.apiUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/microsoft/vcpkg/master",
+          "description": "vcpkg registry repository raw base URL."
+        },
+        "versionlens.swift.files": {
+          "type": "string",
+          "default": "**/Package.swift",
+          "description": "Swift Package.swift manifests to scan."
+        },
+        "versionlens.swift.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Swift prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.swift.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies"
+          ],
+          "description": "Swift Package dependency sections to scan."
+        },
+        "versionlens.swift.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Swift package registry cache duration in minutes."
+        },
+        "versionlens.swift.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Swift package registry requests."
+        },
+        "versionlens.swift.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Swift provider on-save behavior."
+        },
+        "versionlens.swift.apiUrl": {
+          "type": "string",
+          "default": "https://packages.swift.org",
+          "description": "Swift package registry base URL."
+        },
+        "versionlens.zig.files": {
+          "type": "string",
+          "default": "**/build.zig.zon",
+          "description": "Zig build.zig.zon package manifests to scan."
+        },
+        "versionlens.zig.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Zig prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.zig.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies"
+          ],
+          "description": "Zig build.zig.zon dependency sections to scan."
+        },
+        "versionlens.zig.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Zig package registry cache duration in minutes."
+        },
+        "versionlens.zig.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Zig package registry requests."
+        },
+        "versionlens.zig.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Zig provider on-save behavior."
+        },
+        "versionlens.zig.apiUrl": {
+          "type": "string",
+          "default": "https://pkg.ziglang.org",
+          "description": "Zig package registry base URL for non-GitHub package identities."
+        },
+        "versionlens.nim.files": {
+          "type": "string",
+          "default": "**/*.nimble",
+          "description": "Nimble .nimble package manifests to scan."
+        },
+        "versionlens.nim.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Nim prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.nim.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "requires",
+            "dev.requires",
+            "feature.*.requires"
+          ],
+          "description": "Nimble requires dependency groups to scan."
+        },
+        "versionlens.nim.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Nimble package registry cache duration in minutes."
+        },
+        "versionlens.nim.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Nimble package registry requests."
+        },
+        "versionlens.nim.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Nim provider on-save behavior."
+        },
+        "versionlens.nim.apiUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json",
+          "description": "Nimble packages index URL or compatible registry base URL."
+        },
+        "versionlens.luarocks.files": {
+          "type": "string",
+          "default": "**/*.rockspec",
+          "description": "LuaRocks rockspec package manifests to scan."
+        },
+        "versionlens.luarocks.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "LuaRocks prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.luarocks.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies",
+            "build_dependencies",
+            "test_dependencies"
+          ],
+          "description": "LuaRocks rockspec dependency arrays to scan."
+        },
+        "versionlens.luarocks.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "LuaRocks manifest cache duration in minutes."
+        },
+        "versionlens.luarocks.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for LuaRocks manifest requests."
+        },
+        "versionlens.luarocks.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "LuaRocks provider on-save behavior."
+        },
+        "versionlens.luarocks.apiUrl": {
+          "type": "string",
+          "default": "https://luarocks.org",
+          "description": "LuaRocks server base URL or manifest URL."
+        },
+        "versionlens.cpan.files": {
+          "type": "string",
+          "default": "**/cpanfile",
+          "description": "Perl cpanfile dependency manifests to scan."
+        },
+        "versionlens.cpan.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "CPAN prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.cpan.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "requires",
+            "recommends",
+            "suggests",
+            "conflicts",
+            "configure.requires",
+            "build.requires",
+            "test.requires",
+            "develop.requires",
+            "feature.*.requires",
+            "feature.*.recommends",
+            "feature.*.suggests",
+            "feature.*.conflicts"
+          ],
+          "description": "cpanfile dependency declarations to scan."
+        },
+        "versionlens.cpan.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "MetaCPAN registry cache duration in minutes."
+        },
+        "versionlens.cpan.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for MetaCPAN registry requests."
+        },
+        "versionlens.cpan.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "CPAN provider on-save behavior."
+        },
+        "versionlens.cpan.apiUrl": {
+          "type": "string",
+          "default": "https://fastapi.metacpan.org/v1",
+          "description": "MetaCPAN API v1 base URL."
+        },
+        "versionlens.haxelib.files": {
+          "type": "string",
+          "default": "**/haxelib.json",
+          "description": "Haxe haxelib.json package manifests to scan."
+        },
+        "versionlens.haxelib.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Haxelib prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.haxelib.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies"
+          ],
+          "description": "haxelib.json dependency declarations to scan."
+        },
+        "versionlens.haxelib.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Haxelib registry cache duration in minutes."
+        },
+        "versionlens.haxelib.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Haxelib registry requests."
+        },
+        "versionlens.haxelib.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Haxelib provider on-save behavior."
+        },
+        "versionlens.haxelib.apiUrl": {
+          "type": "string",
+          "default": "https://lib.haxe.org",
+          "description": "Haxelib registry base URL."
+        },
+        "versionlens.terraform.files": {
+          "type": "string",
+          "default": "**/*.{tf,tofu}",
+          "description": "Terraform and OpenTofu HCL manifests to scan."
+        },
+        "versionlens.terraform.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Terraform provider prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.terraform.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "required_providers"
+          ],
+          "description": "Terraform and OpenTofu required_providers declarations to scan."
+        },
+        "versionlens.terraform.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Terraform Registry protocol cache duration in minutes."
+        },
+        "versionlens.terraform.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Terraform Registry protocol requests."
+        },
+        "versionlens.terraform.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Terraform provider on-save behavior."
+        },
+        "versionlens.terraform.apiUrl": {
+          "type": "string",
+          "default": "https://registry.terraform.io",
+          "description": "Terraform Registry protocol base URL."
+        },
+        "versionlens.helm.files": {
+          "type": "string",
+          "default": "**/Chart.yaml",
+          "description": "Helm Chart.yaml manifests to scan."
+        },
+        "versionlens.helm.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Helm chart prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.helm.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies"
+          ],
+          "description": "Helm Chart.yaml dependency declarations to scan."
+        },
+        "versionlens.helm.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Helm chart repository cache duration in minutes."
+        },
+        "versionlens.helm.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Helm chart repository requests."
+        },
+        "versionlens.helm.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Helm provider on-save behavior."
+        },
+        "versionlens.helm.apiUrl": {
+          "type": "string",
+          "default": "https://charts.bitnami.com/bitnami",
+          "description": "Helm chart repository base URL."
+        },
+        "versionlens.ansible.files": {
+          "type": "string",
+          "default": "**/requirements.{yml,yaml}",
+          "description": "Ansible Galaxy requirements manifests to scan."
+        },
+        "versionlens.ansible.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Ansible Galaxy prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.ansible.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "roles",
+            "collections"
+          ],
+          "description": "Ansible Galaxy requirements dependency declarations to scan."
+        },
+        "versionlens.ansible.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Ansible Galaxy registry cache duration in minutes."
+        },
+        "versionlens.ansible.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Ansible Galaxy registry requests."
+        },
+        "versionlens.ansible.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Ansible Galaxy provider on-save behavior."
+        },
+        "versionlens.ansible.apiUrl": {
+          "type": "string",
+          "default": "https://galaxy.ansible.com",
+          "description": "Ansible Galaxy API server base URL."
+        },
+        "versionlens.bazel.files": {
+          "type": "string",
+          "default": "**/MODULE.bazel",
+          "description": "Bazel Bzlmod MODULE.bazel manifests to scan."
+        },
+        "versionlens.bazel.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Bazel module prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.bazel.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "bazel_dep",
+            "single_version_override",
+            "multiple_version_override"
+          ],
+          "description": "Bazel MODULE.bazel dependency directives to scan."
+        },
+        "versionlens.bazel.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Bazel registry cache duration in minutes."
+        },
+        "versionlens.bazel.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Bazel registry requests."
+        },
+        "versionlens.bazel.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Bazel provider on-save behavior."
+        },
+        "versionlens.bazel.apiUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main",
+          "description": "Bazel registry base URL."
+        },
+        "versionlens.nix.files": {
+          "type": "string",
+          "default": "**/flake.nix",
+          "description": "Nix flake manifests to scan."
+        },
+        "versionlens.nix.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Nix flake input prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.nix.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "inputs"
+          ],
+          "description": "Nix flake input declarations to scan."
+        },
+        "versionlens.nix.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Nix flake input registry cache duration in minutes."
+        },
+        "versionlens.nix.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Nix flake input registry requests."
+        },
+        "versionlens.nix.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Nix provider on-save behavior."
+        },
+        "versionlens.nix.apiUrl": {
+          "type": "string",
+          "default": "https://api.github.com/repos",
+          "description": "Nix flake input GitHub API base URL."
+        },
+        "versionlens.kustomize.files": {
+          "type": "string",
+          "default": "**/{kustomization.yaml,kustomization.yml,Kustomization}",
+          "description": "Kustomize kustomization manifests to scan."
+        },
+        "versionlens.kustomize.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Kustomize image prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.kustomize.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "images"
+          ],
+          "description": "Kustomize image declarations to scan."
+        },
+        "versionlens.kustomize.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Kustomize image registry cache duration in minutes."
+        },
+        "versionlens.kustomize.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Kustomize image registry requests."
+        },
+        "versionlens.kustomize.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Kustomize provider on-save behavior."
+        },
+        "versionlens.unity.files": {
+          "type": "string",
+          "default": "**/Packages/manifest.json",
+          "description": "Unity project Packages/manifest.json files to scan."
+        },
+        "versionlens.unity.prereleaseTagFilter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 0,
+          "default": [],
+          "description": "Unity package prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.unity.dependencyProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": [
+            "dependencies"
+          ],
+          "description": "Unity project manifest dependency declarations to scan."
+        },
+        "versionlens.unity.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "description": "Unity package registry cache duration in minutes."
+        },
+        "versionlens.unity.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for Unity package registry requests."
+        },
+        "versionlens.unity.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "Unity provider on-save behavior."
+        },
+        "versionlens.unity.apiUrl": {
+          "type": "string",
+          "default": "https://packages.unity.com",
+          "description": "Unity npm-compatible package registry base URL."
+        },
+        "versionlens.cocoapods.files": {
+          "type": "string",
+          "default": "**/Podfile",
+          "description": "Glob pattern for CocoaPods Podfile manifests."
+        },
+        "versionlens.cocoapods.dependencyProperties": {
+          "type": "array",
+          "default": [
+            "pod"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "CocoaPods Podfile dependency declarations to inspect."
+        },
+        "versionlens.cocoapods.apiUrl": {
+          "type": "string",
+          "default": "https://trunk.cocoapods.org/api/v1/pods",
+          "description": "Base URL for CocoaPods package metadata lookups."
+        },
+        "versionlens.cocoapods.prereleaseTagFilter": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "CocoaPods prerelease tag names to include in update suggestions."
+        },
+        "versionlens.cocoapods.caching.duration": {
+          "type": "number",
+          "description": "CocoaPods registry response cache duration in minutes."
+        },
+        "versionlens.cocoapods.http.strictSSL": {
+          "type": "boolean",
+          "default": true,
+          "description": "Require valid TLS certificates for CocoaPods registry requests."
+        },
+        "versionlens.cocoapods.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a Podfile with dependency changes. Ensure `task.options.cwd` uses `${fileDirname}` when running an install task."
+        },
+        "versionlens.cpp.files": {
+          "type": "string",
+          "default": "**/{CMakeLists.txt,*.cmake,xmake.lua,subprojects/*.wrap,WORKSPACE,WORKSPACE.bazel}",
+          "description": "C/C++ build and dependency manifest files to scan."
+        },
+        "versionlens.cpp.prereleaseTagFilter": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "C/C++ prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.cpp.dependencyProperties": {
+          "type": "array",
+          "default": [
+            "add_requires",
+            "FetchContent_Declare",
+            "ExternalProject_Add",
+            "CPMAddPackage",
+            "meson.wrap",
+            "http_archive"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "C/C++ dependency declaration forms to scan."
+        },
+        "versionlens.cpp.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "default": null,
+          "description": "C/C++ registry cache duration in minutes."
+        },
+        "versionlens.cpp.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "default": null,
+          "description": "Whether to require strict SSL for C/C++ registry requests."
+        },
+        "versionlens.cpp.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "C/C++ provider on-save behavior."
+        },
+        "versionlens.cpp.apiUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/xmake-io/xmake-repo/master",
+          "description": "C/C++ fallback package registry base URL for Xmake package recipes."
+        }
+      }
+    }
+  }
 }

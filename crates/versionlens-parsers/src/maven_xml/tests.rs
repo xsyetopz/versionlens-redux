@@ -12,7 +12,7 @@ use super::{
     parse_maven_settings_auth_entries, parse_maven_settings_mirror_urls,
     parse_maven_settings_mirrors, parse_maven_settings_repository_urls,
 };
-use crate::model::Ecosystem::Maven;
+use versionlens_model::Ecosystem::Maven;
 
 #[test]
 fn parses_maven_pom_dependencies() {

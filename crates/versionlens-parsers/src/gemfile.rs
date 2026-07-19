@@ -1,18 +1,18 @@
 use self::line::gem_name_range;
-use crate::model::Ecosystem::Ruby;
+use versionlens_model::Ecosystem::Ruby;
 mod github;
 mod line;
 mod sources;
 mod standard;
 mod syntax;
 
-use crate::model::Dependency;
 use crate::positions::line_range;
 use github::{gem_github_default_dependency, gem_github_ref_dependency, gem_github_tag_dependency};
 use line::{GemLineContext, GemNameSpan};
 use sources::source_block_url_from_line;
 use standard::standard_gem_dependency;
 use syntax::{quoted_strings, strip_comment};
+use versionlens_model::Dependency;
 
 pub use sources::parse_gemfile_source_urls;
 

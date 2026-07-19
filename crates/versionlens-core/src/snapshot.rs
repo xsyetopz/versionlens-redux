@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_providers::provider_id;
 
 use crate::dependency::is_npm_package_manager;

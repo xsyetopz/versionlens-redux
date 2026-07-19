@@ -1,4 +1,4 @@
-use crate::model::Ecosystem::{AnsibleGalaxy, Bazel, Cpan, Cran, Haxelib, Helm, Julia, Nix, Terraform};
+use versionlens_model::Ecosystem::{AnsibleGalaxy, Bazel, Cpan, Cran, Haxelib, Helm, Julia, Nix, Terraform};
 #[test]
 fn parses_cpanfile_dependencies() {
     let text = package_file_fixture("parses-cpanfile-dependencies.txt");

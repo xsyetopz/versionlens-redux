@@ -6,8 +6,8 @@ use jsonc_parser::ast::Value::{
 use jsonc_parser::ast::{Array, Object, ObjectProp, Value};
 use jsonc_parser::parse_to_ast;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Unity;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Unity;
 
 type UnityJsonObject<'a> = &'a Object<'a>;
 type UnityJsonProperty<'a> = &'a ObjectProp<'a>;

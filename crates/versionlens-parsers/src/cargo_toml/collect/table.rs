@@ -1,7 +1,7 @@
 use crate::cargo_toml::dependency::{CargoTomlDependencyInput, toml_dependency};
 use crate::cargo_toml::paths::match_cargo_dependency_table;
-use crate::model::Dependency;
 use toml_edit::{Key, Value as TomlValue};
+use versionlens_model::Dependency;
 
 use super::CargoCollectContext;
 

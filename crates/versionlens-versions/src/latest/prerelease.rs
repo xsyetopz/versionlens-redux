@@ -15,7 +15,8 @@ pub(super) fn prerelease_allowed(
         return true;
     }
 
-    let pre = version.pre.as_str();
+    let normalized_pre = version.pre.as_str().to_ascii_lowercase();
+    let pre = normalized_pre.as_str();
     prerelease_tags.iter().any(|tag| {
         let normalized_tag = tag.to_ascii_lowercase();
         pre == normalized_tag

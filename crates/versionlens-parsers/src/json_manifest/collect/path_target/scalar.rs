@@ -3,7 +3,7 @@ use jsonc_parser::ast::StringLit;
 use crate::json_manifest::dependency::{
     JsonDependencySource, json_manifest_dependency_from_property, scalar_json_manifest_dependency,
 };
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 type JsonPathTargetDependencies = Vec<Dependency>;
 type JsonStringLit<'a> = &'a StringLit<'a>;

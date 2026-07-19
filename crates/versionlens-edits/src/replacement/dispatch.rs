@@ -1,10 +1,10 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_versions::requirement_has_empty_comparator_intersection;
 
 use super::python::python_replacement;
 use super::ruby::{ruby_prefixed_replacement, ruby_replacement};
 use super::semver::{preserve_semver_range_prefix, semver_selector_latest};
-use versionlens_parsers::Ecosystem::{
+use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Composer, Cran, Deno, Helm, Npm, Opam, Python, Ruby,
 };
 

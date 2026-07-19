@@ -1,7 +1,7 @@
 use crate::RegistryUrlConfig;
 
 use super::dotnet_registry_source_urls;
-use versionlens_parsers::Ecosystem::{Cargo, Dotnet};
+use versionlens_model::Ecosystem::{Cargo, Dotnet};
 
 #[test]
 fn dotnet_registry_urls_are_enriched_from_rust_owned_source_listing() {

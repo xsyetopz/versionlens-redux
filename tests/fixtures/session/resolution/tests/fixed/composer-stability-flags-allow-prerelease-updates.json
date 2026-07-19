@@ -1,1 +1,1 @@
-{"require":{"acme/pkg":"^1.0@beta"}}
+{ "require": { "acme/pkg": "^1.0@beta" } }

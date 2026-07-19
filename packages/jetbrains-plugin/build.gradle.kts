@@ -5,13 +5,17 @@ plugins {
 }
 
 group = "com.versionlens"
-version = "0.1.2"
+version = "0.2.0"
 
 repositories {
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
     }
+}
+
+dependencyLocking {
+    lockAllConfigurations()
 }
 
 java {
@@ -32,11 +36,43 @@ val lspExecutableName =
         "versionlens-lsp"
     }
 val repositoryRoot = layout.projectDirectory.dir("../..")
-val lspBinary = repositoryRoot.file("target/release/$lspExecutableName")
+val lspRustTarget = providers.gradleProperty("versionlensRustTarget").orNull
+val hostArchitecture = System.getProperty("os.arch").lowercase()
+val hostRustTarget =
+    when {
+        System.getProperty("os.name").startsWith("Windows", ignoreCase = true) &&
+            hostArchitecture in setOf("amd64", "x86_64") -> "x86_64-pc-windows-msvc"
+        System.getProperty("os.name").startsWith("Windows", ignoreCase = true) &&
+            hostArchitecture in setOf("arm64", "aarch64") -> "aarch64-pc-windows-msvc"
+        System.getProperty("os.name").startsWith("Mac", ignoreCase = true) &&
+            hostArchitecture in setOf("x86_64", "amd64") -> "x86_64-apple-darwin"
+        System.getProperty("os.name").startsWith("Mac", ignoreCase = true) &&
+            hostArchitecture in setOf("arm64", "aarch64") -> "aarch64-apple-darwin"
+        System.getProperty("os.name").startsWith("Linux", ignoreCase = true) &&
+            hostArchitecture in setOf("x86_64", "amd64") -> "x86_64-unknown-linux-gnu"
+        System.getProperty("os.name").startsWith("Linux", ignoreCase = true) &&
+            hostArchitecture in setOf("arm64", "aarch64") -> "aarch64-unknown-linux-gnu"
+        else -> null
+    }
+require(lspRustTarget == null || lspRustTarget == hostRustTarget) {
+    "versionlensRustTarget=$lspRustTarget does not match this native runner ($hostRustTarget)"
+}
+val lspOutputDirectory =
+    if (lspRustTarget == null) {
+        "target/release"
+    } else {
+        "target/$lspRustTarget/release"
+    }
+val lspBinary = repositoryRoot.file("$lspOutputDirectory/$lspExecutableName")
 val buildVersionLensLsp =
     tasks.register<Exec>("buildVersionLensLsp") {
         workingDir(repositoryRoot)
-        commandLine("cargo", "build", "-p", "versionlens-lsp", "--release")
+        val cargoArguments =
+            mutableListOf("cargo", "build", "-p", "versionlens-lsp", "--release", "--locked")
+        if (lspRustTarget != null) {
+            cargoArguments.addAll(listOf("--target", lspRustTarget))
+        }
+        commandLine(cargoArguments)
     }
 
 tasks.processResources {

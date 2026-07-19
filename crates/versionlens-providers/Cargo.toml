@@ -14,7 +14,7 @@ version.workspace = true
 semver.workspace = true
 quick-xml.workspace = true
 serde_json.workspace = true
-versionlens-parsers.workspace = true
+versionlens-model.workspace = true
 versionlens-versions.workspace = true
 
 [lints]

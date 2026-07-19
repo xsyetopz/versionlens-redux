@@ -1,7 +1,7 @@
-use versionlens_parsers::Ecosystem;
+use versionlens_model::Ecosystem;
 
 use super::go::go_base_module;
-use versionlens_parsers::Ecosystem::Go;
+use versionlens_model::Ecosystem::Go;
 
 const NAME_TOKEN: &str = "{name}";
 const BASE_MODULE_TOKEN: &str = "{base-module}";

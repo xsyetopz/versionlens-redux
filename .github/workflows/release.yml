@@ -53,7 +53,7 @@ jobs:
             exit 1
           fi
 
-          bun scripts/bump-version.mjs "$VERSION" --check
+          bun scripts/release/version.mjs "$VERSION" --check
 
           if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
             echo "Tag $tag already exists" >&2
@@ -84,14 +84,27 @@ jobs:
           }
 
           download_artifact vscode.yml versionlens-redux-vsix
-          download_artifact zed.yml versionlens-redux-zed-extension
-          download_artifact jetbrains.yml versionlens-redux-jetbrains-plugin
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 win32-x64 win32-arm64; do
+            download_artifact zed.yml "versionlens-redux-zed-extension-$target"
+            download_artifact jetbrains.yml "versionlens-redux-jetbrains-plugin-$target"
+          done
 
           find release-assets -type f -print
-          if [[ $(find release-assets -type f | wc -l) -lt 3 ]]; then
-            echo "Expected compiled attachments from all three editor workflows" >&2
-            exit 1
-          fi
+
+          require_count() {
+            local expected=$1
+            local pattern=$2
+            local actual
+            actual=$(find release-assets -type f -name "$pattern" | wc -l | tr -d ' ')
+            if [[ "$actual" -ne "$expected" ]]; then
+              echo "Expected $expected release assets matching $pattern, found $actual" >&2
+              exit 1
+            fi
+          }
+
+          require_count 9 'versionlens-redux-*-*.vsix'
+          require_count 6 'versionlens-redux-zed-extension-*.tar.gz'
+          require_count 6 'versionlens-redux-jetbrains-plugin-*.zip'
 
       - name: Create GitHub tag and release
         env:

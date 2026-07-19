@@ -1,6 +1,6 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Dotnet;
 use crate::positions::line_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Dotnet;
 
 pub(crate) fn parse_paket_dependencies(text: &str) -> Vec<Dependency> {
     text.lines()

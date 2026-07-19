@@ -1,6 +1,6 @@
 use std::path::PathBuf;
-use versionlens_parsers::Ecosystem::{Cargo, Composer, Dotnet, Go, Hex, Maven, Npm, Python, Ruby};
-use versionlens_parsers::ManifestKind::{
+use versionlens_model::Ecosystem::{Cargo, Composer, Dotnet, Go, Hex, Maven, Npm, Python, Ruby};
+use versionlens_model::ManifestKind::{
     CargoToml, ClojureDepsEdn, ComposerJson, DenoImportMapJson, DenoJson, DotnetProjectJson,
     DotnetXml, Gemfile, GleamToml, GoMod, GradleBuild, GradleSettings, GradleVersionCatalogToml,
     JsrJson, LeiningenProjectClj, MavenPomXml, MixExs, NpmPackageJson, NpmPackageYaml,
@@ -11,12 +11,13 @@ use versionlens_parsers::ManifestKind::{
 use versionlens_parsers::classify_document;
 
 use versionlens_http::{HttpConfig, HttpHeader};
+use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 use versionlens_parsers::{
-    CargoRegistrySource, ComposerAuthEntry, ComposerRepository, Dependency, DocumentInput,
-    Ecosystem, ManifestKind, MavenAuthEntry, MavenMirror, MavenNamedRepository, PoetrySource,
-    parse_cargo_config_registry_sources, parse_clojure_maven_repositories,
-    parse_composer_auth_entries, parse_composer_packagist_disabled, parse_composer_repositories,
-    parse_gemfile_source_urls, parse_go_proxy_urls, parse_gradle_dependency_maven_repositories,
+    CargoRegistrySource, ComposerAuthEntry, ComposerRepository, MavenAuthEntry, MavenMirror,
+    MavenNamedRepository, PoetrySource, parse_cargo_config_registry_sources,
+    parse_clojure_maven_repositories, parse_composer_auth_entries,
+    parse_composer_packagist_disabled, parse_composer_repositories, parse_gemfile_source_urls,
+    parse_go_proxy_urls, parse_gradle_dependency_maven_repositories,
     parse_gradle_maven_repositories, parse_gradle_plugin_maven_repositories,
     parse_leiningen_maven_repositories, parse_maven_pom_repositories,
     parse_maven_settings_auth_entries, parse_maven_settings_mirror_urls,
@@ -24,9 +25,11 @@ use versionlens_parsers::{
     parse_pip_env_registry_urls, parse_pipfile_source_urls, parse_poetry_sources,
     parse_python_registry_urls, parse_sbt_maven_repositories, parse_uv_registry_urls,
 };
-use versionlens_providers::registry_url_with_base;
+use versionlens_providers::registry_endpoint_with_base;
 
 use crate::RegistryUrlConfig;
+
+use super::RegistryEndpoints;
 
 mod dotnet;
 mod npm;
@@ -297,21 +300,21 @@ impl RegistryContext {
         self.dotnet.registry_urls(dependency)
     }
 
-    pub(crate) fn registry_urls(&self, dependency: &Dependency) -> Vec<String> {
+    pub(crate) fn registry_endpoints(&self, dependency: &Dependency) -> RegistryEndpoints {
         if dependency.ecosystem == Cargo {
-            return self.cargo_registry_urls(dependency);
+            return self.cargo_registry_endpoints(dependency);
         }
 
         if dependency.ecosystem == Composer {
-            return self.composer_registry_urls(dependency);
+            return self.composer_registry_endpoints(dependency);
         }
 
         if dependency.ecosystem == Python {
-            return self.python_registry_urls(dependency);
+            return self.python_registry_endpoints(dependency);
         }
 
         if dependency.ecosystem == Maven && is_gradle_plugin_marker(dependency) {
-            return self.gradle_plugin_registry_urls(dependency);
+            return self.gradle_plugin_registry_endpoints(dependency);
         }
 
         if dependency.ecosystem != Npm {
@@ -325,7 +328,7 @@ impl RegistryContext {
             .find(|entry| {
                 entry.scope.is_some() && npm_registry_entry_applies(entry, &dependency.name)
             })
-            .map(|entry| registry_url_with_base(Npm, &dependency.name, Some(&entry.url)))
+            .map(|entry| registry_endpoint_with_base(Npm, &dependency.name, Some(&entry.url)))
         {
             return vec![url];
         }
@@ -334,12 +337,12 @@ impl RegistryContext {
             .registries
             .iter()
             .find(|entry| entry.scope.is_none())
-            .map(|entry| registry_url_with_base(Npm, &dependency.name, Some(&entry.url)))
+            .map(|entry| registry_endpoint_with_base(Npm, &dependency.name, Some(&entry.url)))
             .into_iter()
             .collect()
     }
 
-    fn python_registry_urls(&self, dependency: &Dependency) -> Vec<String> {
+    fn python_registry_endpoints(&self, dependency: &Dependency) -> RegistryEndpoints {
         let Some(source_name) = dependency.hosted_url.as_deref() else {
             return vec![];
         };
@@ -350,29 +353,29 @@ impl RegistryContext {
         self.python_sources
             .iter()
             .find(|source| source.name == source_name)
-            .map(|source| registry_url_with_base(Python, &dependency.name, Some(&source.url)))
+            .map(|source| registry_endpoint_with_base(Python, &dependency.name, Some(&source.url)))
             .into_iter()
             .collect()
     }
 
-    fn composer_registry_urls(&self, dependency: &Dependency) -> Vec<String> {
+    fn composer_registry_endpoints(&self, dependency: &Dependency) -> RegistryEndpoints {
         self.composer
             .repositories
             .iter()
             .filter(|repository| composer_repository_applies(repository, &dependency.name))
             .filter(|repository| !repository.url.is_empty())
             .map(|repository| {
-                registry_url_with_base(Composer, &dependency.name, Some(&repository.url))
+                registry_endpoint_with_base(Composer, &dependency.name, Some(&repository.url))
             })
             .collect()
     }
 
-    fn gradle_plugin_registry_urls(&self, dependency: &Dependency) -> Vec<String> {
+    fn gradle_plugin_registry_endpoints(&self, dependency: &Dependency) -> RegistryEndpoints {
         self.maven
             .plugin_urls
             .iter()
             .map(|config| {
-                registry_url_with_base(
+                registry_endpoint_with_base(
                     Maven,
                     dependency
                         .hosted_name
@@ -401,13 +404,13 @@ impl RegistryContext {
             .map(|package| package.version.as_str().to_owned())
     }
 
-    fn cargo_registry_urls(&self, dependency: &Dependency) -> Vec<String> {
+    fn cargo_registry_endpoints(&self, dependency: &Dependency) -> RegistryEndpoints {
         let registry_name = dependency.hosted_url.as_deref().unwrap_or("crates-io");
         let Some(url) = cargo_registry_source_url(&self.cargo_registries, registry_name) else {
             return vec![];
         };
 
-        vec![registry_url_with_base(
+        vec![registry_endpoint_with_base(
             Cargo,
             dependency
                 .hosted_name

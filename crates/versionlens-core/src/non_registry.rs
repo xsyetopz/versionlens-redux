@@ -1,5 +1,5 @@
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::{
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, CocoaPods, Composer, Cran, Deno, Docker, Dotnet, Go, Haxelib, Helm,
     LuaRocks, Maven, Nim, Nix, Npm, Swift, Terraform, Unity, Vcpkg, Zig,
 };

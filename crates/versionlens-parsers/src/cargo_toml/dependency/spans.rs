@@ -1,10 +1,10 @@
 use std::ops::Range as ByteRange;
 
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::{Position, Range};
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Cargo;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Cargo;
 
 pub(super) struct CargoDependencySource<'a> {
     pub(super) text: &'a str,

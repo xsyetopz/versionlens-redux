@@ -1,11 +1,11 @@
 use toml_edit::Value as TomlValue;
 
-use crate::model::Dependency;
 use crate::positions::offset_range;
 use crate::requirements_txt::split_python_requirement;
+use versionlens_model::Dependency;
 
 use super::spans::string_content_bounds;
-use crate::model::Ecosystem::Python;
+use versionlens_model::Ecosystem::Python;
 
 pub(in crate::pyproject_toml) fn collect_requirement_array(
     text: &str,

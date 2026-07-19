@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Bazel;
 use crate::positions::offset_range;
 use crate::scanner::matching_delimiter;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Bazel;
 
 type ParsedBazelDependency = Option<Dependency>;
 type BazelArguments = BTreeMap<String, ArgumentValue>;

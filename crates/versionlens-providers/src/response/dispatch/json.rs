@@ -1,9 +1,9 @@
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_parsers::Ecosystem;
+use versionlens_model::Ecosystem;
 
 use super::ResponseRequest;
-use versionlens_parsers::Ecosystem::{
+use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Deno, Docker, Dotnet, Dub,
     Hackage, Hex, Maven, Nim, Nix, Npm, Pub, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
 };

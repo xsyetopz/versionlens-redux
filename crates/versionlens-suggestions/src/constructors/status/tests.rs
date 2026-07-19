@@ -1,12 +1,12 @@
-use crate::model::SuggestionStatus::{
+use crate::suggestion::SuggestionStatus::{
     Directory as StatusDirectory, DirectoryNotFound as StatusDirectoryNotFound,
     Error as StatusError, Fixed as StatusFixed, NoMatch as StatusNoMatch,
 };
-use versionlens_parsers::Dependency;
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::Dependency;
+use versionlens_model::{Position, Range};
 
 use super::{directory, directory_not_found, error, fixed, no_match, no_match_with_message};
-use versionlens_parsers::Ecosystem::Cargo;
+use versionlens_model::Ecosystem::Cargo;
 
 #[test]
 fn no_match_marks_dependency_no_match() {

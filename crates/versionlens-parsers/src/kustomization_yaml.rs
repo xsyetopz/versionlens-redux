@@ -1,5 +1,4 @@
 use crate::docker::image::split_image_reference;
-use crate::model::Ecosystem::Docker;
 use crate::positions::offset_range;
 use crate::yaml::scalar_range;
 use marked_yaml::parse_yaml;
@@ -7,8 +6,9 @@ use marked_yaml::types::Node::{
     Mapping as YamlMapping, Scalar as YamlScalar, Sequence as YamlSequence,
 };
 use marked_yaml::types::{MarkedMappingNode, MarkedScalarNode};
+use versionlens_model::Ecosystem::Docker;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 type KustomizationImageDependency = Option<Dependency>;
 

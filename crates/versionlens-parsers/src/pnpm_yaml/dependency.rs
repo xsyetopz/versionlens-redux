@@ -2,8 +2,8 @@ use crate::positions::offset_range;
 use crate::yaml::scalar_range;
 use marked_yaml::types::MarkedScalarNode;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Npm;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Npm;
 
 pub(super) fn dependency(
     text: &str,

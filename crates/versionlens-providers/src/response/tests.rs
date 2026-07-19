@@ -1,4 +1,4 @@
-use versionlens_parsers::Ecosystem;
+use versionlens_model::Ecosystem;
 
 use crate::{
     vulnerability_advisories_from_response, vulnerability_request_body,
@@ -55,7 +55,8 @@ fn assert_latest(ecosystem: Ecosystem, package: &str, body: &str, expected: &str
 mod composer;
 mod docker;
 mod dotnet;
-mod latest;
+mod endpoint;
 mod npm_errors;
+mod versions;
 mod vulnerability;
 mod vulnerability_identity;

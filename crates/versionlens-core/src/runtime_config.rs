@@ -1,5 +1,5 @@
 use versionlens_http::{HttpConfig, HttpHeader};
-use versionlens_parsers::{Dependency, Ecosystem, ManifestKind};
+use versionlens_model::{Dependency, Ecosystem, ManifestKind};
 
 use crate::VersionLensSession;
 use crate::prerelease::dependency_allows_prereleases;

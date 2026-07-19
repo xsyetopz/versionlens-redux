@@ -1,4 +1,4 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_model::{Dependency, Ecosystem};
 
 use crate::config::DependencyPropertyConfig;
 

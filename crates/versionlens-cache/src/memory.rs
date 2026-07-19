@@ -27,8 +27,18 @@ impl<T> MemoryCache<T> {
         self.entries.insert(key, crate::cache_entry(value, ttl));
     }
 
-    pub fn get(&self, key: &CacheKey) -> Option<&T> {
-        self.entries.get(key)?.get()
+    pub fn get(&mut self, key: &CacheKey) -> Option<&T> {
+        let now = crate::now();
+        let expired = self
+            .entries
+            .get(key)
+            .is_some_and(|entry| entry.is_expired_at(now));
+        if expired {
+            self.entries.remove(key);
+            return None;
+        }
+
+        self.entries.get(key).map(CacheEntry::value)
     }
 
     pub fn clear(&mut self) {

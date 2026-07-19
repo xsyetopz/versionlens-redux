@@ -20,25 +20,6 @@ pub(crate) fn latest_composer_version(
     )
 }
 
-pub(crate) fn composer_release_versions(body: &str) -> Vec<String> {
-    let Ok(value) = from_str::<Value>(body) else {
-        return vec![];
-    };
-
-    let mut versions = composer_package_version_values(&value)
-        .into_iter()
-        .flat_map(composer_versions_from_package_value)
-        .collect::<Vec<_>>();
-
-    sort_versions(&mut versions);
-    versions.dedup();
-    versions
-}
-
-/// Extract releases only for `package` from a Composer response.
-///
-/// Unlike the compatibility extractor above, this is safe for Composer
-/// responses whose `packages` object contains metadata for multiple packages.
 pub(crate) fn composer_release_versions_for_package(body: &str, package: &str) -> Vec<String> {
     let Ok(value) = from_str::<Value>(body) else {
         return vec![];
@@ -59,22 +40,6 @@ fn composer_package_versions_value<'a>(value: &'a Value, package: &str) -> Optio
         .get("packages")
         .and_then(|packages| packages.get(package))
         .or_else(|| composer_json_api_package_versions(value, package))
-}
-
-fn composer_package_version_values(value: &Value) -> Vec<&Value> {
-    let mut versions = value
-        .get("packages")
-        .and_then(|value| value.as_object())
-        .into_iter()
-        .flat_map(|packages| packages.values())
-        .collect::<Vec<_>>();
-    if let Some(package_versions) = value
-        .get("package")
-        .and_then(|package| package.get("versions"))
-    {
-        versions.push(package_versions);
-    }
-    versions
 }
 
 fn composer_json_api_package_versions<'a>(value: &'a Value, package: &str) -> Option<&'a Value> {

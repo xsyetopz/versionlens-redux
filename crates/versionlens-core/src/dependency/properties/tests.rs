@@ -1,7 +1,7 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
-use versionlens_parsers::{DocumentInput, Ecosystem, ManifestKind};
+use versionlens_model::{DocumentInput, Ecosystem, ManifestKind};
 
 use crate::{DependencyPropertyConfig, ProviderSettings, SessionConfig, VersionLensSession};
 

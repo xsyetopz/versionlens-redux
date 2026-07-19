@@ -13,8 +13,7 @@ use crate::dune_project::parse_dune_project;
 use crate::gemfile::{parse_gemfile, parse_gemspec};
 use crate::gleam_toml::parse_gleam_toml;
 use crate::go_mod::parse_go_mod;
-use crate::gradle_build::{parse_gradle_build, parse_gradle_settings};
-use crate::gradle_version_catalog::parse_gradle_version_catalog_toml;
+use crate::gradle::{parse_gradle_build, parse_gradle_settings, parse_gradle_version_catalog_toml};
 use crate::hackage::{parse_cabal, parse_cabal_project, parse_stack_yaml};
 use crate::haxelib::parse_haxelib_json_with_paths;
 use crate::helm_chart::parse_helm_chart_yaml_with_paths;
@@ -29,20 +28,6 @@ use crate::leiningen_project::parse_leiningen_project_clj;
 use crate::luarocks::parse_luarocks_rockspec;
 use crate::maven_xml::parse_maven_xml_with_paths;
 use crate::mix_exs::parse_mix_exs;
-use crate::model::ManifestKind::{
-    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
-    ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
-    DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson, DotnetXml,
-    DubJson, DubSdl, DuneProject, Gemfile, GleamToml, GoMod, GradleBuild, GradleSettings,
-    GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml,
-    JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap,
-    MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam,
-    PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml, PythonPipfile,
-    PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
-    SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
-    ZigBuildZon,
-};
-use crate::model::{Dependency, ManifestKind};
 use crate::nimble::parse_nimble;
 use crate::nix_flake::parse_nix_flake_with_paths;
 use crate::opam::parse_opam;
@@ -59,6 +44,20 @@ use crate::terraform_hcl::parse_terraform_hcl;
 use crate::unity_manifest::parse_unity_project_manifest_json_with_paths;
 use crate::vcpkg::parse_vcpkg_json_with_paths;
 use crate::zig_zon::parse_zig_build_zon;
+use versionlens_model::ManifestKind::{
+    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
+    ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
+    DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson, DotnetXml,
+    DubJson, DubSdl, DuneProject, Gemfile, GleamToml, GoMod, GradleBuild, GradleSettings,
+    GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml,
+    JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap,
+    MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam,
+    PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml, PythonPipfile,
+    PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
+    SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
+    ZigBuildZon,
+};
+use versionlens_model::{Dependency, ManifestKind};
 
 use self::ManifestParser::{Direct as ParserDirect, WithPaths as ParserWithPaths};
 

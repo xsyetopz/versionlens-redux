@@ -1,6 +1,7 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::{DocumentInput, parse_document};
+use versionlens_model::DocumentInput;
+use versionlens_parsers::parse_document;
 
 use super::dependency_signature;
 

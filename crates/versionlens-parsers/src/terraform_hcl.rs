@@ -1,6 +1,6 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Terraform;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Terraform;
 
 pub(crate) fn parse_terraform_hcl(text: &str) -> Vec<Dependency> {
     let mut dependencies = vec![];

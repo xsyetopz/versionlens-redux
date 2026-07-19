@@ -28,8 +28,8 @@ fn requirements_index_urls_override_python_registry_urls() {
     assert_eq!(
         session.registry_urls_with_context(requests, &context),
         vec![
-            "https://primary.example.test/simple",
-            "https://extra.example.test/simple",
+            "https://primary.example.test/simple/requests/",
+            "https://extra.example.test/simple/requests/",
         ]
     );
 }
@@ -49,7 +49,7 @@ fn pipfile_sources_override_python_registry_urls() {
     assert_eq!(dependencies[0].name, "requests");
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://pypi.example.test/simple"]
+        vec!["https://pypi.example.test/simple/requests/"]
     );
 }
 
@@ -76,8 +76,8 @@ fn python_documents_use_workspace_pip_conf_registry_urls() {
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
         vec![
-            "https://primary.example.test/simple",
-            "https://extra.example.test/simple",
+            "https://primary.example.test/simple/requests/",
+            "https://extra.example.test/simple/requests/",
         ]
     );
 
@@ -107,9 +107,9 @@ fn python_documents_use_pip_environment_registry_urls() {
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
         vec![
-            "https://env-primary.example.test/simple",
-            "https://env-extra-one.example.test/simple",
-            "https://env-extra-two.example.test/simple",
+            "https://env-primary.example.test/simple/requests/",
+            "https://env-extra-one.example.test/simple/requests/",
+            "https://env-extra-two.example.test/simple/requests/",
         ]
     );
 
@@ -189,9 +189,9 @@ fn pyproject_uv_indexes_override_python_registry_urls() {
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
         vec![
-            "https://primary.example.test/simple",
-            "https://extra.example.test/simple",
-            "https://private.example.test/simple",
+            "https://primary.example.test/simple/requests/",
+            "https://extra.example.test/simple/requests/",
+            "https://private.example.test/simple/requests/",
         ]
     );
 }
@@ -211,7 +211,7 @@ fn pyproject_poetry_sources_override_python_registry_urls() {
     assert_eq!(dependencies[0].name, "requests");
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://poetry.example.test/simple"]
+        vec!["https://poetry.example.test/simple/requests/"]
     );
 }
 
@@ -233,7 +233,7 @@ fn pyproject_poetry_dependency_source_overrides_python_registry_url() {
     let context = crate::registry::registry_context_from_document(&input);
     assert_eq!(
         session.registry_urls_with_context(&dependencies[1], &context),
-        vec!["https://private.example.test/simple"]
+        vec!["https://private.example.test/simple/private/"]
     );
 }
 
@@ -260,9 +260,9 @@ fn python_documents_use_workspace_uv_toml_registry_urls() {
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
         vec![
-            "https://primary.example.test/simple",
-            "https://extra.example.test/simple",
-            "https://private.example.test/simple",
+            "https://primary.example.test/simple/requests/",
+            "https://extra.example.test/simple/requests/",
+            "https://private.example.test/simple/requests/",
         ]
     );
 

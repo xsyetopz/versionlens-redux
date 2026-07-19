@@ -1,4 +1,4 @@
-use super::super::model::MavenRepository;
+use super::super::entries::MavenRepository;
 use super::super::protocol::protocol_from_url;
 use super::super::xml::repository_urls_from_settings_xml;
 

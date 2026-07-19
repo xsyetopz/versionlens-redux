@@ -1,7 +1,7 @@
 use crate::json_manifest::parse::parse_json_manifest;
-use crate::model::Dependency;
-use crate::model::Ecosystem;
-use crate::model::Ecosystem::{Composer, Dotnet, Dub};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::{Composer, Dotnet, Dub};
 
 type JsonManifestDependencies = Vec<Dependency>;
 use crate::json_manifest::paths::{

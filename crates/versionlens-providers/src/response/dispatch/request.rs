@@ -1,4 +1,4 @@
-use versionlens_parsers::Ecosystem;
+use versionlens_model::Ecosystem;
 
 pub(super) struct ResponseRequest<'a> {
     pub(super) package: &'a str,

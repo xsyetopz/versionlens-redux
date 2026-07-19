@@ -1,7 +1,7 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Cpan;
 use crate::positions::offset_range;
 use crate::requirement_range::operator_requirement_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Cpan;
 
 pub(crate) fn parse_cpanfile(text: &str) -> Vec<Dependency> {
     let mut dependencies = vec![];

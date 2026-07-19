@@ -1,5 +1,5 @@
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::{Hex, Npm};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{Hex, Npm};
 use versionlens_providers::RegistryErrorStatus::{
     Error as RegistryStatusError, Invalid as RegistryStatusInvalid,
     InvalidWithLatest as RegistryStatusInvalidWithLatest, NoMatch as RegistryStatusNoMatch,
@@ -11,7 +11,7 @@ use versionlens_suggestions::{
 };
 
 use crate::VersionLensSession;
-use crate::model::RegistryResponseInput;
+use crate::contract::RegistryResponseInput;
 use crate::registry::registry_response_matches;
 
 impl VersionLensSession {

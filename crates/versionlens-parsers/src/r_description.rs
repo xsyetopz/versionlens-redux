@@ -1,8 +1,8 @@
 use serde_json::Value;
 use serde_json::from_str;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Cran;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Cran;
 type RDependencies = Vec<Dependency>;
 
 use crate::positions::offset_range;

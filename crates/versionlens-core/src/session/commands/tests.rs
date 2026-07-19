@@ -1,5 +1,5 @@
 use super::ApplyCommandRequest;
-use versionlens_parsers::{DocumentInput, Ecosystem};
+use versionlens_model::{DocumentInput, Ecosystem};
 
 use crate::{
     DependencyPropertyConfig, ProviderSettings, RegistryResponseInput, SessionConfig,
@@ -51,3 +51,4 @@ fn session_with_dependency_properties(
 
 mod sort;
 mod update;
+mod validation;

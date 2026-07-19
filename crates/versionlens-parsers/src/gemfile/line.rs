@@ -1,5 +1,5 @@
 use crate::positions::line_range;
-use versionlens_vscode_model::Range;
+use versionlens_model::Range;
 
 pub(super) struct GemLineContext<'a> {
     pub(super) line_index: usize,

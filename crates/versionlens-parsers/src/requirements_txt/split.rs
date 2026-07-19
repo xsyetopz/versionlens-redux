@@ -46,6 +46,9 @@ pub(crate) fn split_python_requirement(raw: &str) -> Option<(&str, &str, usize, 
 pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &str, usize)> {
     let value = strip_comment(raw).trim_end();
     let requirement_part = value.split(';').next().unwrap_or("").trim_end();
+    if is_bare_direct_reference(requirement_part) {
+        return None;
+    }
     let name_end = requirement_part
         .bytes()
         .position(|byte| !valid_upstream_requirement_name_byte(byte))
@@ -63,6 +66,19 @@ pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &st
     };
     let after_qualifier = &after_name[extras_len..];
     let leading_space = leading_space_len(after_qualifier);
+    if let Some(at_offset) = after_qualifier[leading_space..].find('@') {
+        let before_at = &after_qualifier[leading_space..leading_space + at_offset];
+        if before_at.trim().is_empty() {
+            let raw_requirement = &after_qualifier[leading_space + at_offset + 1..];
+            let requirement = raw_requirement.trim();
+            if !requirement.is_empty() {
+                let trim_start = raw_requirement.len() - raw_requirement.trim_start().len();
+                let requirement_start =
+                    name_end + extras_len + leading_space + at_offset + 1 + trim_start;
+                return Some((name, requirement, requirement_start));
+            }
+        }
+    }
     if let Some(parenthesized) = after_qualifier[leading_space..].strip_prefix('(')
         && let Some(close) = parenthesized.find(')')
     {
@@ -105,6 +121,15 @@ pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &st
 
     let requirement_end = version_start + version_len;
     Some((name, &requirement_part[split..requirement_end], split))
+}
+
+fn is_bare_direct_reference(value: &str) -> bool {
+    [
+        "http://", "https://", "ftp://", "ssh://", "git://", "git+", "git@", "svn://", "svn+",
+        "hg://", "hg+", "bzr://", "bzr+", "file:",
+    ]
+    .iter()
+    .any(|prefix| value.starts_with(prefix))
 }
 
 fn strip_comment(input: &str) -> &str {

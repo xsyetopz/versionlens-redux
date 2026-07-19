@@ -1,4 +1,4 @@
-use ureq::RequestBuilder;
+use ureq::{RequestBuilder, http::Uri};
 
 use crate::config::HttpHeader;
 
@@ -27,16 +27,57 @@ pub(crate) fn request_with_headers<B>(
 }
 
 fn matches_header_url(header: &HttpHeader, url: &str) -> bool {
-    header
-        .url
-        .as_deref()
-        .map(|value| value.trim())
-        .filter(|pattern| !pattern.is_empty())
-        .is_none_or(|pattern| starts_with_ignore_ascii_case(url, pattern))
+    match header.url.as_deref() {
+        None => true,
+        Some(auth_url) => urls_share_auth_scope(auth_url.trim(), url),
+    }
 }
 
-fn starts_with_ignore_ascii_case(value: &str, prefix: &str) -> bool {
-    value
-        .get(..prefix.len())
-        .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
+fn urls_share_auth_scope(auth_url: &str, request_url: &str) -> bool {
+    let Ok(auth_url) = auth_url.parse::<Uri>() else {
+        return false;
+    };
+    let Ok(request_url) = request_url.parse::<Uri>() else {
+        return false;
+    };
+
+    same_origin(&auth_url, &request_url) && path_contains(auth_url.path(), request_url.path())
+}
+
+fn same_origin(auth_url: &Uri, request_url: &Uri) -> bool {
+    let Some(auth_scheme) = auth_url.scheme_str() else {
+        return false;
+    };
+    let Some(request_scheme) = request_url.scheme_str() else {
+        return false;
+    };
+    let Some(auth_host) = auth_url.host() else {
+        return false;
+    };
+    let Some(request_host) = request_url.host() else {
+        return false;
+    };
+
+    auth_scheme.eq_ignore_ascii_case(request_scheme)
+        && auth_host.eq_ignore_ascii_case(request_host)
+        && effective_port(auth_url) == effective_port(request_url)
+}
+
+fn effective_port(url: &Uri) -> Option<u16> {
+    url.port_u16().or_else(|| match url.scheme_str() {
+        Some(scheme) if scheme.eq_ignore_ascii_case("http") => Some(80),
+        Some(scheme) if scheme.eq_ignore_ascii_case("https") => Some(443),
+        _ => None,
+    })
+}
+
+fn path_contains(auth_path: &str, request_path: &str) -> bool {
+    let auth_path = auth_path.trim_end_matches('/');
+    let request_path = request_path.trim_end_matches('/');
+
+    auth_path.is_empty()
+        || request_path == auth_path
+        || request_path
+            .strip_prefix(auth_path)
+            .is_some_and(|suffix| suffix.starts_with('/'))
 }

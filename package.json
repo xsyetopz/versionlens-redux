@@ -1,50 +1,53 @@
 {
-	"name": "@versionlens/workspace",
-	"private": true,
-	"version": "0.1.2",
-	"workspaces": [
-		"packages/*"
-	],
-	"scripts": {
-		"build": "bun scripts/build-extension.mjs",
-		"version:bump": "bun scripts/bump-version.mjs",
-		"biome:check": "biome check --write --unsafe --max-diagnostics 16384",
-		"biome:format": "biome format --write --max-diagnostics 16384",
-		"biome:lint": "biome lint --write --max-diagnostics 16384",
-		"check": "bun run check:biome && bun run check:rustfmt && bun run check:code-quality && bun run check:vscode-adapter && bun run check:vsix-freshness && bun run check:data-objects && bun run check:napi-boundary && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace && bun run test:extension && bun run test:napi",
-		"check:biome": "biome check --max-diagnostics 16384",
-		"check:code-quality": "python3 scripts/check-code-quality.py",
-		"check:clippy": "cargo clippy --workspace --all-targets",
-		"check:data-objects": "python3 scripts/check-data-object-fields.py",
-		"check:extension-build": "bun scripts/build-extension.mjs --check",
-		"check:editor-packages": "bun scripts/check-editor-packages.mjs",
-		"check:napi-boundary": "python3 scripts/check-napi-boundary.py",
-		"check:rustfmt": "cargo fmt --all -- --check",
-		"check:vsix-freshness": "bun scripts/check-vsix-freshness.mjs",
-		"check:vscode-adapter": "python3 scripts/check-vscode-adapter.py",
-		"native:build": "cargo build -p versionlens-napi && bun scripts/build-native.mjs",
-		"native:test": "cargo test --workspace",
-		"package": "bun run vscode:prepublish && cd packages/vscode-extension && bunx vsce package --no-dependencies",
-		"package:vscode-target": "bun scripts/package-vscode-target.mjs",
-		"package:editors": "bun scripts/build-editor-packages.mjs",
-		"test": "bun run test:extension && bun run test:napi",
-		"test:extension": "bun scripts/test-extension.mjs",
-		"test:napi": "bun run native:build && bun test tests/napi",
-		"typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/vscode-extension/tsconfig.json",
-		"vscode:prepublish": "bun run native:build:release && bun run build",
-		"native:build:release": "cargo build -p versionlens-napi --release && bun scripts/build-native.mjs --release"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.5.3",
-		"@types/bun": "^1.3.14",
-		"@types/node": "26.1.1",
-		"@types/vscode": "^1.75.0",
-		"@vscode/vsce": "^3.9.2",
-		"typescript": "^7.0.2"
-	},
-	"trustedDependencies": [
-		"@biomejs/biome",
-		"@vscode/vsce-sign",
-		"keytar"
-	]
+  "name": "@versionlens/workspace",
+  "private": true,
+  "version": "0.2.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun scripts/build/extension.mjs",
+    "version:bump": "bun scripts/release/version.mjs",
+    "biome:check": "biome check --write --unsafe --max-diagnostics 16384",
+    "biome:format": "biome format --write --max-diagnostics 16384",
+    "biome:lint": "biome lint --write --max-diagnostics 16384",
+    "check": "bun run check:biome && bun run check:rustfmt && bun run test:quality && bun run test:release && bun run test:package && bun run check:code-quality && bun run check:vscode-adapter && bun run check:vsix-freshness && bun run check:data-objects && bun run check:napi-boundary && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace --locked && bun run test:extension && bun run test:napi",
+    "check:biome": "biome check --max-diagnostics 16384",
+    "check:code-quality": "bun scripts/check/quality.mjs",
+    "check:clippy": "cargo clippy --workspace --all-targets",
+    "check:data-objects": "python3 scripts/check/data_objects.py",
+    "check:extension-build": "bun scripts/build/extension.mjs --check",
+    "check:editor-packages": "bun scripts/check/editors.mjs",
+    "check:napi-boundary": "python3 scripts/check/napi.py",
+    "check:rustfmt": "cargo fmt --all -- --check",
+    "check:vsix-freshness": "bun run package && bun scripts/check/vsix.mjs",
+    "check:vscode-adapter": "python3 scripts/check/vscode.py",
+    "native:build": "cargo build -p versionlens-napi --locked && bun scripts/build/native.mjs",
+    "native:test": "cargo test --workspace --locked",
+    "package": "bun run vscode:prepublish && cd packages/vscode-extension && bunx vsce package --no-dependencies",
+    "package:vscode-target": "bun scripts/package/vscode.mjs",
+    "package:editors": "bun scripts/package/editors.mjs",
+    "test": "bun run test:extension && bun run test:napi",
+    "test:extension": "bun scripts/test/extension.mjs",
+    "test:quality": "bun test scripts/check/quality",
+    "test:release": "bun test scripts/release",
+    "test:napi": "bun run native:build && bun test tests/napi",
+    "test:package": "bun test scripts/check/vsix.test.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/vscode-extension/tsconfig.json",
+    "vscode:prepublish": "bun run native:build:release && bun run build",
+    "native:build:release": "cargo build -p versionlens-napi --release --locked && bun scripts/build/native.mjs --release"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "@types/bun": "^1.3.14",
+    "@types/node": "26.1.1",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^7.0.2"
+  },
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "@vscode/vsce-sign",
+    "keytar"
+  ]
 }

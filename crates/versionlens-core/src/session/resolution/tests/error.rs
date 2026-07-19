@@ -7,7 +7,7 @@ use super::{
     DocumentInput, ProviderSettings, RegistryResponseInput, RegistryUrlConfig,
     session_with_settings, session_without_vulnerabilities,
 };
-use versionlens_parsers::Ecosystem::{Hex, Npm};
+use versionlens_model::Ecosystem::{Hex, Npm};
 
 #[test]
 fn registry_response_without_latest_creates_no_match() {

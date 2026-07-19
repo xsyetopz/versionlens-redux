@@ -1,8 +1,8 @@
-use crate::model::ManifestKind::{
+use versionlens_model::ManifestKind::{
     Cabal, DockerComposeYaml, Dockerfile, JuliaManifestToml, LuaRockspec, Nimble, Opam,
     RubyGemspec, TerraformTf, UnityProjectManifestJson, Unknown, VersionLensMultiRegistries,
 };
-use crate::model::{DocumentInput, ManifestKind};
+use versionlens_model::{DocumentInput, ManifestKind};
 
 mod content;
 mod patterns;

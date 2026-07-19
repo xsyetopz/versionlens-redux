@@ -1,23 +1,27 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_providers::build_versions_from_response;
 use versionlens_suggestions::UpdateChoice;
 
 use crate::VersionLensSession;
+use crate::contract::RegistryResponseInput;
 use crate::error::FetchError;
 use crate::fetch::response_update_choices;
-use crate::model::RegistryResponseInput;
 use crate::registry::{RegistryContext, registry_response_matches};
 
-use super::LatestLookup;
+use super::{LatestLookup, LatestResolutionRequest};
 
 impl VersionLensSession {
     pub(in crate::session::resolution::latest) fn lookup_latest(
         &self,
-        dependency: &Dependency,
-        responses: &[RegistryResponseInput],
-        has_registry_response: bool,
-        context: &RegistryContext,
+        request: LatestResolutionRequest<'_>,
     ) -> Result<LatestLookup, FetchError> {
+        let LatestResolutionRequest {
+            dependency,
+            responses,
+            has_registry_response,
+            context,
+            operation,
+        } = request;
         if has_registry_response {
             self.cache_registry_response_bodies(dependency, responses, context);
             let latest = self.latest_from_responses(dependency, responses);
@@ -32,7 +36,7 @@ impl VersionLensSession {
                 fetch_error: None,
             })
         } else {
-            let fetched = self.fetch_latest(dependency, context)?;
+            let fetched = self.fetch_latest(dependency, context, operation)?;
             Ok(LatestLookup {
                 latest: fetched.latest,
                 builds: fetched.builds,
@@ -54,9 +58,12 @@ impl VersionLensSession {
             return;
         };
 
-        for url in self.registry_urls_with_context(dependency, context) {
+        for endpoint in self.registry_endpoints_with_context(dependency, context) {
+            let http_config =
+                self.effective_http_config(&endpoint.url, dependency.ecosystem, context);
+            let cache_key = self.request_cache_key(&endpoint.url, &http_config);
             self.cache_request_body(
-                &url,
+                cache_key,
                 &response.body,
                 dependency.ecosystem,
                 context.manifest_kind(),

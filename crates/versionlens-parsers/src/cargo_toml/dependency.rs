@@ -1,6 +1,6 @@
 use toml_edit::{Key, Value as TomlValue};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 mod inline;
 mod spans;

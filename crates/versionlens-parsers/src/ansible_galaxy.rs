@@ -1,4 +1,3 @@
-use crate::model::Ecosystem::AnsibleGalaxy;
 use crate::positions::offset_range;
 use crate::yaml::scalar_range;
 use marked_yaml::types::Node;
@@ -9,8 +8,9 @@ use marked_yaml::{
     parse_yaml,
     types::{MarkedMappingNode, MarkedScalarNode},
 };
+use versionlens_model::Ecosystem::AnsibleGalaxy;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 pub(crate) fn parse_ansible_galaxy_requirements_yaml_with_paths(
     text: &str,

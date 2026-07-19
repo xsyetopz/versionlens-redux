@@ -1,8 +1,7 @@
 use serde_json::Value;
-use versionlens_versions::latest_version_with_prerelease_tags;
+use versionlens_versions::{VersionDialect, latest_version_for_dialect};
 
 use super::yanked::python_release_is_yanked;
-use crate::response::common::latest_version_strings;
 
 pub(super) fn latest_python_json_version(
     value: &Value,
@@ -20,10 +19,34 @@ pub(super) fn latest_python_json_version(
         .and_then(|value| value.as_str())
         .filter(|version| !python_release_is_yanked(value, version))
         .and_then(|version| {
-            latest_version_with_prerelease_tags([version], include_prereleases, prerelease_tags)
+            latest_version_for_dialect(
+                [version],
+                include_prereleases,
+                prerelease_tags,
+                VersionDialect::Pep440,
+            )
         })
         .or_else(|| latest_python_release_key(value, false, prerelease_tags))
-        .or_else(|| latest_version_strings(value, include_prereleases, prerelease_tags))
+        .or_else(|| latest_python_version_strings(value, include_prereleases, prerelease_tags))
+}
+
+fn latest_python_version_strings(
+    value: &Value,
+    include_prereleases: bool,
+    prerelease_tags: &[String],
+) -> Option<String> {
+    let versions = value
+        .get("versions")
+        .unwrap_or(value)
+        .as_array()?
+        .iter()
+        .filter_map(Value::as_str);
+    latest_version_for_dialect(
+        versions,
+        include_prereleases,
+        prerelease_tags,
+        VersionDialect::Pep440,
+    )
 }
 
 fn latest_python_release_key(
@@ -32,12 +55,13 @@ fn latest_python_release_key(
     prerelease_tags: &[String],
 ) -> Option<String> {
     let releases = value.get("releases")?.as_object()?;
-    latest_version_with_prerelease_tags(
+    latest_version_for_dialect(
         releases
             .keys()
             .filter(|version| !python_release_is_yanked(value, version))
             .map(|value| value.as_str()),
         include_prereleases,
         prerelease_tags,
+        VersionDialect::Pep440,
     )
 }

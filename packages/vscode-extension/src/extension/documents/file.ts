@@ -1,9 +1,15 @@
-import * as vscode from "vscode";
+import { type TextDocument, window } from "#vscode-host";
 
-export function activeFileDocument() {
-	return fileDocument(vscode.window.activeTextEditor?.document);
+export function activeFileDocument(): TextDocument | undefined {
+  return fileDocument(window.activeTextEditor?.document);
 }
 
-export function fileDocument(document: vscode.TextDocument | undefined) {
-	return document?.uri.scheme === "file" ? document : undefined;
+export function fileDocument(
+  document: TextDocument | undefined,
+): TextDocument | undefined {
+  let file: TextDocument | undefined;
+  if (document?.uri.scheme === "file") {
+    file = document;
+  }
+  return file;
 }

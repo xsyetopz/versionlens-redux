@@ -1,7 +1,7 @@
 use jsonc_parser::ast::ObjectProp;
 use jsonc_parser::common::Ranged;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::super::dependency::{
     JsonDependencyRanges, JsonDependencySource, json_manifest_dependency,

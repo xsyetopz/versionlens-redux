@@ -36,7 +36,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 - Bun for JavaScript and TypeScript scripts.
 - Rust from [`rust-toolchain.toml`](rust-toolchain.toml).
 - Cargo workspace commands run from the repository root.
-- Gradle for the JetBrains plugin package.
+- Gradle 9.6.1 for the JetBrains plugin package.
 
 ## Setup
 

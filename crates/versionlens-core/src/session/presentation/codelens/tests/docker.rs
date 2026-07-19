@@ -1,9 +1,9 @@
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::{RegistryResponseInput, SessionConfig};
 
 use super::{package_file_fixture, test_indicators};
-use versionlens_parsers::Ecosystem::Docker;
+use versionlens_model::Ecosystem::Docker;
 
 #[test]
 fn docker_argument_image_name_uses_not_supported_status() {

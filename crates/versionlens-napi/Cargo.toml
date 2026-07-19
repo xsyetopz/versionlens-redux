@@ -18,7 +18,7 @@ napi.workspace = true
 napi-derive.workspace = true
 versionlens-core.workspace = true
 versionlens-http.workspace = true
-versionlens-parsers.workspace = true
+versionlens-model.workspace = true
 versionlens-vscode-model.workspace = true
 
 [build-dependencies]

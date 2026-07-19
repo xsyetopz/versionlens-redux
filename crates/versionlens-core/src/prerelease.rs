@@ -1,5 +1,5 @@
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::{Composer, Npm};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{Composer, Npm};
 
 pub(crate) fn requirement_mentions_prerelease(requirement: &str) -> bool {
     requirement

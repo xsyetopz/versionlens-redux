@@ -18,7 +18,8 @@ pub(super) fn increment_prerelease(mut version: Version) -> Option<Version> {
         Some((prefix, suffix)) => suffix
             .parse::<u64>()
             .ok()
-            .map(|number| format!("{prefix}.{}", number + 1))
+            .and_then(|number| number.checked_add(1))
+            .map(|number| format!("{prefix}.{number}"))
             .unwrap_or_else(|| format!("{pre}.0")),
         None if pre.is_empty() => "pre.0".to_owned(),
         None => format!("{pre}.0"),

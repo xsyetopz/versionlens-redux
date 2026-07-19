@@ -6,6 +6,8 @@ use ureq::Error::StatusCode as UreqStatusCode;
 
 #[derive(Debug, Error)]
 pub enum HttpError {
+    #[error("HTTP operation deadline exceeded")]
+    DeadlineExceeded,
     #[error(transparent)]
     Client(#[from] UreqError),
     #[error(transparent)]
@@ -20,7 +22,11 @@ impl HttpError {
     pub fn status_code(&self) -> Option<u16> {
         match self {
             Self::Client(UreqStatusCode(status)) => Some(*status),
-            Self::Client(_) | Self::Io(_) | Self::Schema(_) | Self::SchemaValidation(_) => None,
+            Self::DeadlineExceeded
+            | Self::Client(_)
+            | Self::Io(_)
+            | Self::Schema(_)
+            | Self::SchemaValidation(_) => None,
         }
     }
 }

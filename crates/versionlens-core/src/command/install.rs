@@ -1,5 +1,5 @@
-use versionlens_parsers::ManifestKind::{DockerComposeYaml, Dockerfile, PnpmYaml};
-use versionlens_parsers::{
+use versionlens_model::ManifestKind::{DockerComposeYaml, Dockerfile, PnpmYaml};
+use versionlens_model::{
     Ecosystem, ManifestKind, ecosystem_config_namespace, ecosystem_for_manifest,
 };
 

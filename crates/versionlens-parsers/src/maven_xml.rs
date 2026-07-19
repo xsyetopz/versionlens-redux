@@ -1,4 +1,4 @@
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 mod dependency;
 mod metadata;

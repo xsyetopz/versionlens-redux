@@ -13,11 +13,8 @@ version.workspace = true
 [dependencies]
 serde.workspace = true
 semver.workspace = true
-versionlens-parsers.workspace = true
+versionlens-model.workspace = true
 versionlens-versions.workspace = true
-
-[dev-dependencies]
-versionlens-vscode-model.workspace = true
 
 [lints]
 workspace = true

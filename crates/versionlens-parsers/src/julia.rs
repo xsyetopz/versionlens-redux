@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Julia;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Julia;
 
 type ParsedStringEntry = Option<StringEntry>;
 

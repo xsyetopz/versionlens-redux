@@ -1,257 +1,221 @@
-import { basename, dirname } from "node:path";
-import * as vscode from "vscode";
-import { updateContexts } from "../commands.ts";
-import { enabledFilePatternKeys } from "../config/keys/files.ts";
+import { type Disposable, type Uri, window, workspace } from "#vscode-host";
+import { updateContexts } from "../commands/contexts.ts";
 import { analyzeDocument } from "../diagnostics/analyze.ts";
+import { refreshDiagnostics } from "../diagnostics/refresh.ts";
 import { rememberDependencySnapshot } from "../diagnostics/snapshot.ts";
-import { refreshDiagnostics } from "../diagnostics.ts";
-import { fileDocument } from "../documents.ts";
+import { fileDocument } from "../documents/file.ts";
 import type { ExtensionState } from "../state.ts";
+import {
+  isDefaultExcluded,
+  packageFilePattern,
+  packageFilePatterns,
+} from "./package-patterns.ts";
 
-const defaultExcludes = [
-	"**/node_modules/**",
-	"**/bower_components/**",
-	"**/bin/**",
-	"**/.git/**",
-	"**/.vscode/**",
-] as const;
+async function initializePackageFileWatching(
+  state: ExtensionState,
+): Promise<void> {
+  if ((workspace.workspaceFolders?.length ?? 0) > 0) {
+    await scanWorkspacePackageFiles(state);
+    watchActivePackageFileOutsideWorkspace(state);
+    return;
+  }
 
-export async function initializePackageFileWatching(state: ExtensionState) {
-	if ((vscode.workspace.workspaceFolders?.length ?? 0) > 0) {
-		await scanWorkspacePackageFiles(state);
-		watchActivePackageFileOutsideWorkspace(state);
-		return;
-	}
-
-	scanActivePackageFile(state);
+  scanActivePackageFile(state);
 }
 
-export async function scanWorkspacePackageFiles(state: ExtensionState) {
-	const seenUris = new Set<string>();
-	await Promise.all(
-		packageFilePatterns().map(async ({ exclude, pattern }) => {
-			const files = await vscode.workspace.findFiles(pattern, exclude);
-			for (const uri of files) {
-				const key = uri.toString();
-				if (seenUris.has(key)) {
-					continue;
-				}
-				seenUris.add(key);
-				await refreshWatchedPackageFile(state, uri, false);
-			}
-		}),
-	);
+async function scanWorkspacePackageFiles(state: ExtensionState): Promise<void> {
+  const seenUris = new Set<string>();
+  const discoveredFiles = await Promise.all(
+    packageFilePatterns().map(async ({ exclude, pattern }) =>
+      workspace.findFiles(pattern, exclude),
+    ),
+  );
+  const uniqueFiles = discoveredFiles.flat().filter((uri): boolean => {
+    const key = uri.toString();
+    if (seenUris.has(key)) {
+      return false;
+    }
+    seenUris.add(key);
+    return true;
+  });
+  await Promise.all(
+    uniqueFiles.map((uri) => refreshWatchedPackageFile(state, uri, false)),
+  );
 }
 
-function scanActivePackageFile(state: ExtensionState) {
-	const document = fileDocument(vscode.window.activeTextEditor?.document);
-	if (!document) {
-		return;
-	}
+function scanActivePackageFile(state: ExtensionState): void {
+  const document = fileDocument(window.activeTextEditor?.document);
+  if (!document) {
+    return;
+  }
 
-	const output = analyzeDocument(state, document);
-	if (!output?.isSupportedManifest) {
-		return;
-	}
+  const output = analyzeDocument(state, document);
+  if (!output?.isSupportedManifest) {
+    return;
+  }
 
-	rememberDependencySnapshot(state, document, output.dependencySignature);
+  rememberDependencySnapshot(state, document, output.dependencySignature);
 }
 
-export function watchActivePackageFileOutsideWorkspace(
-	state: ExtensionState,
-	document = vscode.window.activeTextEditor?.document,
-) {
-	const file = fileDocument(document);
-	if (!file || vscode.workspace.getWorkspaceFolder(file.uri)) {
-		return;
-	}
+function watchActivePackageFileOutsideWorkspace(
+  state: ExtensionState,
+  document = window.activeTextEditor?.document,
+): void {
+  const file = fileDocument(document);
+  if (!file || workspace.getWorkspaceFolder(file.uri)) {
+    return;
+  }
 
-	const output = analyzeDocument(state, file);
-	if (!output?.isSupportedManifest) {
-		return;
-	}
+  const output = analyzeDocument(state, file);
+  if (!output?.isSupportedManifest) {
+    return;
+  }
 
-	rememberDependencySnapshot(state, file, output.dependencySignature);
-	registerExternalPackageFileWatcher(state, file.uri);
+  rememberDependencySnapshot(state, file, output.dependencySignature);
+  registerExternalPackageFileWatcher(state, file.uri);
 }
 
-export function disposePackageFileWatchers(state: ExtensionState) {
-	const lifecycle = ensureLifecycle(state);
-	for (const disposable of lifecycle.packageFileWatchers) {
-		disposable.dispose();
-	}
-	lifecycle.packageFileWatchers = [];
+function disposePackageFileWatchers(state: ExtensionState): void {
+  const lifecycle = ensureLifecycle(state);
+  for (const disposable of lifecycle.packageFileWatchers) {
+    disposable.dispose();
+  }
+  lifecycle.packageFileWatchers = [];
 
-	for (const disposables of lifecycle.externalPackageFileWatchers.values()) {
-		for (const disposable of disposables) {
-			disposable.dispose();
-		}
-	}
-	lifecycle.externalPackageFileWatchers.clear();
+  for (const disposables of lifecycle.externalPackageFileWatchers.values()) {
+    for (const disposable of disposables) {
+      disposable.dispose();
+    }
+  }
+  lifecycle.externalPackageFileWatchers.clear();
 }
 
-export function registerPackageFileWatchers(
-	state: ExtensionState,
-	subscriptions?: vscode.Disposable[],
-) {
-	const lifecycle = ensureLifecycle(state);
-	disposePackageFileWatchers(state);
+function registerPackageFileWatchers(
+  state: ExtensionState,
+  subscriptions?: Disposable[],
+): Disposable[] {
+  const lifecycle = ensureLifecycle(state);
+  disposePackageFileWatchers(state);
 
-	const watchers: vscode.Disposable[] = [];
-	for (const { pattern } of packageFilePatterns()) {
-		const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-		watchers.push(
-			watcher.onDidCreate((uri) =>
-				refreshWatchedPackageFile(state, uri, false),
-			),
-			watcher.onDidDelete((uri) => deleteWatchedPackageFile(state, uri)),
-			watcher.onDidChange((uri) => refreshWatchedPackageFile(state, uri, true)),
-			watcher,
-		);
-	}
+  const watchers: Disposable[] = [];
+  for (const { pattern } of packageFilePatterns()) {
+    const watcher = workspace.createFileSystemWatcher(pattern);
+    watchers.push(
+      watcher.onDidCreate(
+        (uri): Promise<void> => refreshWatchedPackageFile(state, uri, false),
+      ),
+      watcher.onDidDelete((uri): void => deleteWatchedPackageFile(state, uri)),
+      watcher.onDidChange(
+        (uri): Promise<void> => refreshWatchedPackageFile(state, uri, true),
+      ),
+      watcher,
+    );
+  }
 
-	lifecycle.packageFileWatchers = watchers;
-	subscriptions?.push(...watchers);
-	return watchers;
+  lifecycle.packageFileWatchers = watchers;
+  subscriptions?.push(...watchers);
+  return watchers;
 }
 
-function ensureLifecycle(state: ExtensionState) {
-	state.lifecycle ??= {
-		externalPackageFileWatchers: new Map(),
-		packageFileWatchers: [],
-	};
-	state.lifecycle.externalPackageFileWatchers ??= new Map();
-	return state.lifecycle;
+interface PackageWatcherLifecycle {
+  packageFileWatchers: Disposable[];
+  externalPackageFileWatchers: Map<string, Disposable[]>;
+  sessionGenerations: Map<string, number>;
+}
+
+function ensureLifecycle(state: ExtensionState): PackageWatcherLifecycle {
+  state.lifecycle ??= {
+    externalPackageFileWatchers: new Map(),
+    packageFileWatchers: [],
+    sessionGenerations: new Map(),
+  };
+  state.lifecycle.externalPackageFileWatchers ??= new Map();
+  return state.lifecycle;
 }
 
 function registerExternalPackageFileWatcher(
-	state: ExtensionState,
-	uri: vscode.Uri,
-) {
-	const lifecycle = ensureLifecycle(state);
-	const key = uri.toString();
-	if (lifecycle.externalPackageFileWatchers.has(key)) {
-		return;
-	}
+  state: ExtensionState,
+  uri: Uri,
+): void {
+  const lifecycle = ensureLifecycle(state);
+  const key = uri.toString();
+  if (lifecycle.externalPackageFileWatchers.has(key)) {
+    return;
+  }
 
-	const watcher = vscode.workspace.createFileSystemWatcher(
-		packageFilePattern(uri),
-	);
-	const disposables = [
-		watcher.onDidCreate((createdUri) =>
-			refreshWatchedPackageFile(state, createdUri, false),
-		),
-		watcher.onDidDelete((deletedUri) => {
-			deleteWatchedPackageFile(state, deletedUri);
-			for (const disposable of disposables) {
-				disposable.dispose();
-			}
-			lifecycle.externalPackageFileWatchers.delete(key);
-		}),
-		watcher.onDidChange((changedUri) =>
-			refreshWatchedPackageFile(state, changedUri, true),
-		),
-		watcher,
-	];
-	lifecycle.externalPackageFileWatchers.set(key, disposables);
+  const watcher = workspace.createFileSystemWatcher(packageFilePattern(uri));
+  const disposables = [
+    watcher.onDidCreate(
+      (createdUri): Promise<void> =>
+        refreshWatchedPackageFile(state, createdUri, false),
+    ),
+    watcher.onDidDelete((deletedUri): void => {
+      deleteWatchedPackageFile(state, deletedUri);
+      for (const disposable of disposables) {
+        disposable.dispose();
+      }
+      lifecycle.externalPackageFileWatchers.delete(key);
+    }),
+    watcher.onDidChange(
+      (changedUri): Promise<void> =>
+        refreshWatchedPackageFile(state, changedUri, true),
+    ),
+    watcher,
+  ];
+  lifecycle.externalPackageFileWatchers.set(key, disposables);
 }
 
 async function refreshWatchedPackageFile(
-	state: ExtensionState,
-	uri: vscode.Uri,
-	notifyWhenChanged: boolean,
-) {
-	if (isDefaultExcluded(uri)) {
-		return;
-	}
+  state: ExtensionState,
+  uri: Uri,
+  notifyWhenChanged: boolean,
+): Promise<void> {
+  if (isDefaultExcluded(uri)) {
+    return;
+  }
 
-	const key = uri.toString();
-	const previousSnapshot = state.snapshots.savedDependencies.get(key) ?? "";
-	const document = await vscode.workspace.openTextDocument(uri);
-	const output = analyzeDocument(state, document);
-	if (!output) {
-		return;
-	}
+  const key = uri.toString();
+  const previousSnapshot = state.snapshots.savedDependencies.get(key) ?? "";
+  const document = await workspace.openTextDocument(uri);
+  const output = analyzeDocument(state, document);
+  if (!output) {
+    return;
+  }
 
-	rememberDependencySnapshot(state, document, output.dependencySignature);
-	if (notifyWhenChanged && output.dependencySignature !== previousSnapshot) {
-		await refreshActivePackageUi(state, key);
-	}
+  rememberDependencySnapshot(state, document, output.dependencySignature);
+  if (notifyWhenChanged && output.dependencySignature !== previousSnapshot) {
+    await refreshActivePackageUi(state, key);
+  }
 }
 
-function deleteWatchedPackageFile(state: ExtensionState, uri: vscode.Uri) {
-	if (isDefaultExcluded(uri)) {
-		return;
-	}
+function deleteWatchedPackageFile(state: ExtensionState, uri: Uri): void {
+  if (isDefaultExcluded(uri)) {
+    return;
+  }
 
-	const key = uri.toString();
-	state.snapshots.savedDependencies.delete(key);
-	state.snapshots.editedDependencies.delete(key);
+  const key = uri.toString();
+  state.snapshots.savedDependencies.delete(key);
+  state.snapshots.editedDependencies.delete(key);
 }
 
 async function refreshActivePackageUi(
-	state: ExtensionState,
-	changedKey: string,
-) {
-	const activeDocument = vscode.window.activeTextEditor?.document;
-	if (activeDocument?.uri.toString() !== changedKey) {
-		return;
-	}
+  state: ExtensionState,
+  changedKey: string,
+): Promise<void> {
+  const activeDocument = window.activeTextEditor?.document;
+  if (activeDocument?.uri.toString() !== changedKey) {
+    return;
+  }
 
-	await refreshDiagnostics(state, activeDocument);
-	await updateContexts(state);
-	state.ui.codeLensRefresh?.fire();
+  await refreshDiagnostics(state, activeDocument);
+  await updateContexts(state);
+  state.ui.codeLensRefresh?.fire();
 }
 
-function packageFilePatterns() {
-	if ((vscode.workspace.workspaceFolders?.length ?? 0) === 0) {
-		const document = fileDocument(vscode.window.activeTextEditor?.document);
-		return document
-			? [
-					{
-						exclude: undefined,
-						pattern: packageFilePattern(document.uri),
-					},
-				]
-			: [];
-	}
-
-	const config = vscode.workspace.getConfiguration("versionlens");
-	const fileExcludes = vscode.workspace
-		.getConfiguration("files")
-		.get<Record<string, boolean>>("exclude", {});
-	const editorExcludes = Object.entries(fileExcludes ?? {})
-		.filter(([, enabled]) => enabled)
-		.map(([pattern]) => pattern);
-
-	return enabledFilePatternKeys(config.get<string[]>("enabledProviders")).map(
-		([, key, , excludePatterns]) => {
-			const pattern = config.get<string>(key, "**/*");
-			const excludes = [
-				...defaultExcludes,
-				...editorExcludes,
-				...(excludePatterns ?? []),
-			];
-			return { exclude: mapToSinglePattern(excludes), pattern };
-		},
-	);
-}
-
-function packageFilePattern(uri: vscode.Uri) {
-	return new vscode.RelativePattern(dirname(uri.fsPath), basename(uri.fsPath));
-}
-
-function mapToSinglePattern(patterns: readonly string[]) {
-	return patterns.length === 1 ? patterns[0] : `{${patterns.join(",")}}`;
-}
-
-function isDefaultExcluded(uri: vscode.Uri) {
-	const path = uri.fsPath.replaceAll("\\", "/");
-	return (
-		path.includes("/node_modules/") ||
-		path.includes("/bower_components/") ||
-		path.includes("/bin/") ||
-		path.includes("/.git/") ||
-		path.includes("/.vscode/")
-	);
-}
+export {
+  disposePackageFileWatchers,
+  initializePackageFileWatching,
+  registerPackageFileWatchers,
+  scanWorkspacePackageFiles,
+  watchActivePackageFileOutsideWorkspace,
+};

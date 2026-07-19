@@ -1,5 +1,5 @@
 mod auth;
-mod model;
+mod entries;
 mod protocol;
 mod sources;
 mod xml;
@@ -9,7 +9,7 @@ pub use auth::{
     parse_maven_settings_mirrors, parse_maven_settings_repositories,
     parse_maven_settings_repository_urls,
 };
-pub use model::{MavenAuthEntry, MavenMirror, MavenNamedRepository, MavenRepository};
+pub use entries::{MavenAuthEntry, MavenMirror, MavenNamedRepository, MavenRepository};
 pub use sources::{
     extract_maven_repository_urls, parse_maven_effective_settings_https_repositories,
     parse_maven_effective_settings_https_repository_sources,

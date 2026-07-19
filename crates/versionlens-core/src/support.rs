@@ -60,6 +60,7 @@ where
     error.into()
 }
 
+#[cfg(test)]
 pub(crate) fn clone_arc<T>(value: &StdArc<T>) -> StdArc<T> {
     value.clone()
 }

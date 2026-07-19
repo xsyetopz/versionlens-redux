@@ -20,8 +20,7 @@ mod gemfile;
 mod gleam_toml;
 mod go_mod;
 mod go_proxy;
-mod gradle_build;
-mod gradle_version_catalog;
+mod gradle;
 mod hackage;
 mod haxelib;
 mod helm_chart;
@@ -32,7 +31,6 @@ mod leiningen_project;
 mod luarocks;
 mod maven_xml;
 mod mix_exs;
-mod model;
 mod nimble;
 mod nix_flake;
 mod npmrc;
@@ -83,7 +81,7 @@ pub use dotnet_sources::{
 };
 pub use gemfile::parse_gemfile_source_urls;
 pub use go_proxy::parse_go_proxy_urls;
-pub use gradle_build::{
+pub use gradle::{
     GradleMavenRepositories, parse_gradle_dependency_maven_repositories,
     parse_gradle_maven_repositories, parse_gradle_plugin_maven_repositories,
 };
@@ -97,10 +95,6 @@ pub use maven_xml::{
     parse_maven_settings_auth_entries, parse_maven_settings_mirror_urls,
     parse_maven_settings_mirrors, parse_maven_settings_repositories,
     parse_maven_settings_repository_urls,
-};
-pub use model::{
-    Dependency, DocumentInput, Ecosystem, ManifestKind, ecosystem_config_namespace,
-    ecosystem_for_manifest, ecosystem_from_config_name,
 };
 pub use npmrc::{
     NpmAuthEntry, NpmClientCertEntry, NpmGenericProxyConfig, NpmHttpConfig, NpmRegistryEntry,
@@ -119,6 +113,10 @@ pub use sbt_build::parse_sbt_maven_repositories;
 pub(crate) use support::leaked_string;
 pub(crate) use support::{
     default, is_whitespace, parse_toml_document, path, string_from_utf8_lossy, xml_reader,
+};
+pub use versionlens_model::{
+    Dependency, DocumentInput, Ecosystem, ManifestKind, ecosystem_config_namespace,
+    ecosystem_for_manifest, ecosystem_from_config_name,
 };
 pub use yarnrc::{
     parse_yarnrc_npm_auth_entries_with_env, parse_yarnrc_npm_registry_entries_with_env,

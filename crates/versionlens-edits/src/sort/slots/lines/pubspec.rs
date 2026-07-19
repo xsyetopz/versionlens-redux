@@ -1,8 +1,8 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
 use super::dependency_end_line;
 use super::whitespace::leading_whitespace_len;
-use versionlens_parsers::Ecosystem::{Maven, Pub};
+use versionlens_model::Ecosystem::{Maven, Pub};
 
 pub(in crate::sort::slots) fn sort_slot_start(
     lines: &[&str],

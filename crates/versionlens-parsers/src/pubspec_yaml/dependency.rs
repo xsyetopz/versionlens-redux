@@ -4,7 +4,7 @@ use marked_yaml::types::Node::{
     Mapping as YamlMapping, Scalar as YamlScalar, Sequence as YamlSequence,
 };
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 mod mapping;
 mod scalar;

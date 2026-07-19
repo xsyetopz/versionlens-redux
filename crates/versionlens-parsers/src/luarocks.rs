@@ -1,7 +1,7 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::LuaRocks;
 use crate::positions::offset_range;
 use crate::requirement_range::operator_requirement_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::LuaRocks;
 
 const DEPENDENCY_GROUPS: &[&str] = &["dependencies", "build_dependencies", "test_dependencies"];
 

@@ -1,5 +1,5 @@
-use crate::model::Dependency;
 use crate::toml_walk::walk_toml_values;
+use versionlens_model::Dependency;
 
 mod collect;
 mod dependencies;

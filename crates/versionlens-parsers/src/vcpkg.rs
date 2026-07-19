@@ -5,9 +5,9 @@ use jsonc_parser::ast::{Array, Object, StringLit};
 use jsonc_parser::errors::ParseError as JsonParseError;
 use jsonc_parser::parse_to_ast;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Vcpkg;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Vcpkg;
 
 type VcpkgDependencies = Vec<Dependency>;
 type VcpkgObject<'a> = &'a Object<'a>;

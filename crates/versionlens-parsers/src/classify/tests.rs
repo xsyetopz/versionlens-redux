@@ -1,9 +1,9 @@
-use crate::model::{DocumentInput, ManifestKind};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::{DocumentInput, ManifestKind};
 
 use super::classify_document;
-use crate::model::ManifestKind::{
+use versionlens_model::ManifestKind::{
     AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
     ClojureDepsEdn, Cmake, ComposerJson, Cpanfile, DenoImportMapJson, DenoJson, DockerComposeYaml,
     Dockerfile, DotnetProjectJson, DotnetXml, DubJson, DubSdl, DuneProject, Gemfile, GleamToml,

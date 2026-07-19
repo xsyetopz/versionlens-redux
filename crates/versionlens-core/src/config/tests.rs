@@ -10,8 +10,8 @@ use super::{
     provider_http_config_from_name, provider_settings_manifest_kind_from_name,
     registry_url_config_from_name,
 };
-use versionlens_parsers::Ecosystem::{Cargo, Deno, Npm};
-use versionlens_parsers::ManifestKind::{
+use versionlens_model::Ecosystem::{Cargo, Deno, Npm};
+use versionlens_model::ManifestKind::{
     Cabal, ComposerJson, DenoImportMapJson, DenoJson, JsrJson, MixExs, NpmPackageJson,
     NpmPackageJson5, NpmPackageYaml, Opam, PnpmYaml,
 };

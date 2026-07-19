@@ -1,68 +1,88 @@
-import * as vscode from "vscode";
+import {
+  type ExtensionContext,
+  type QuickPickItem,
+  window,
+} from "#vscode-host";
 import type { ExtensionState } from "../state.ts";
 import {
-	authSecretKey,
-	noStatus,
-	notSetScheme,
-	removeUrlAuthentication,
-	type UrlAuthenticationData,
-	urlAuthenticationEntries,
+  authSecretKey,
+  noStatus,
+  notSetScheme,
+  removeUrlAuthentication,
+  type UrlAuthenticationData,
+  urlAuthenticationEntries,
 } from "./store.ts";
 
-type AuthHeaderQuickPick = vscode.QuickPickItem & {
-	entry: UrlAuthenticationData;
+type AuthHeaderQuickPick = QuickPickItem & {
+  entry: UrlAuthenticationData;
 };
 
-export async function removeAuthHeader(
-	state: ExtensionState,
-): Promise<boolean> {
-	const context = state.context;
-	const choices: AuthHeaderQuickPick[] = urlAuthenticationChoices(context);
-	const picked = await vscode.window.showQuickPick<AuthHeaderQuickPick>(
-		choices,
-		{
-			canPickMany: true,
-			placeHolder: "Choose which urls to remove",
-			title: "Clear url authentication",
-		},
-	);
-	const pickedItems = picked ?? [];
-	if (!(context && pickedItems.length > 0)) {
-		return false;
-	}
+async function removeAuthHeader(state: ExtensionState): Promise<boolean> {
+  const { context } = state;
+  const choices: AuthHeaderQuickPick[] = urlAuthenticationChoices(context);
+  const picked = await window.showQuickPick<AuthHeaderQuickPick>(choices, {
+    canPickMany: true,
+    placeHolder: "Choose which urls to remove",
+    title: "Clear url authentication",
+  });
+  const pickedItems = picked ?? [];
+  if (!(context && pickedItems.length > 0)) {
+    return false;
+  }
 
-	for (const item of pickedItems) {
-		await removeUrlAuthentication(context, item.entry.url);
-		if (item.entry.scheme !== notSetScheme) {
-			const secret = authSecretKey(context, item.entry.url);
-			if (secret) {
-				await context.secrets.delete(secret);
-			}
-		}
-	}
-	return true;
+  await Promise.all(
+    pickedItems.map(async (item): Promise<void> => {
+      await removeUrlAuthentication(context, item.entry.url);
+      if (item.entry.scheme !== notSetScheme) {
+        const secret = authSecretKey(context, item.entry.url);
+        if (secret) {
+          await context.secrets.delete(secret);
+        }
+      }
+    }),
+  );
+  return true;
 }
+
+type AuthenticationDetail = { detail: string } | { detail?: never };
 
 function urlAuthenticationChoices(
-	context: vscode.ExtensionContext | undefined,
+  context: ExtensionContext | undefined,
 ): AuthHeaderQuickPick[] {
-	return urlAuthenticationEntries(context).map((entry) => ({
-		entry,
-		label: entry.url,
-		...urlAuthenticationDetail(entry),
-	}));
+  return urlAuthenticationEntries(context).map(
+    (
+      entry,
+    ):
+      | { detail: string; entry: UrlAuthenticationData; label: string }
+      | { detail?: never; entry: UrlAuthenticationData; label: string } => ({
+      entry,
+      label: entry.url,
+      ...urlAuthenticationDetail(entry),
+    }),
+  );
 }
 
-function urlAuthenticationDetail(entry: UrlAuthenticationData) {
-	const detail: string[] = [];
-	if (entry.scheme !== notSetScheme) {
-		detail.push(entry.protocol === "http:" ? "Unsecured" : "Secure");
-		if (entry.label) {
-			detail.push(entry.label);
-		}
-	}
-	if (entry.status !== noStatus) {
-		detail.push(`(${entry.status})`);
-	}
-	return detail.length > 0 ? { detail: detail.join(" ") } : {};
+function urlAuthenticationDetail(
+  entry: UrlAuthenticationData,
+): AuthenticationDetail {
+  const detail: string[] = [];
+  if (entry.scheme !== notSetScheme) {
+    if (entry.protocol === "http:") {
+      detail.push("Unsecured");
+    } else {
+      detail.push("Secure");
+    }
+    if (entry.label) {
+      detail.push(entry.label);
+    }
+  }
+  if (entry.status !== noStatus) {
+    detail.push(`(${entry.status})`);
+  }
+  if (detail.length > 0) {
+    return { detail: detail.join(" ") };
+  }
+  return {};
 }
+
+export { removeAuthHeader };

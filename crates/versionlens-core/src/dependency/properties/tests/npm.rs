@@ -2,8 +2,8 @@ use super::{
     DocumentInput, package_file_fixture, session_with_properties, session_with_property_configs,
     session_with_scoped_property_configs,
 };
-use versionlens_parsers::Ecosystem::{Deno, Npm};
-use versionlens_parsers::ManifestKind::{NpmPackageJson, PnpmYaml};
+use versionlens_model::Ecosystem::{Deno, Npm};
+use versionlens_model::ManifestKind::{NpmPackageJson, PnpmYaml};
 
 #[test]
 fn dependency_properties_are_filtered_in_rust() {
@@ -178,7 +178,7 @@ fn pnpm_dependency_properties_do_not_disable_package_json_defaults() {
     let output = session.analyze_document(DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
-        text: package_file_fixture("package.json"),
+        text: package_file_fixture("npm-dependencies.json"),
         workspace_root: None,
     });
 

@@ -4,16 +4,18 @@ use std::cmp::Ordering::{Equal as OrderingEqual, Greater as OrderingGreater};
 
 use semver::Version;
 use serde_json::Value;
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_providers::{
-    build_versions_from_response, release_versions_from_response_for_package,
+    RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
+    release_versions_from_response_for_package,
 };
 use versionlens_suggestions::{UpdateChoice, release_update_choices_with_prereleases};
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::registry::RegistryContext;
-use versionlens_parsers::Ecosystem::{Docker, Npm};
+use crate::session::operation::OperationContext;
+use versionlens_model::Ecosystem::{Docker, Npm};
 
 mod body;
 mod local_dotnet;
@@ -25,16 +27,31 @@ pub(crate) struct LatestFetch {
     pub(crate) choices: Vec<UpdateChoice>,
 }
 
+type UpdateChoices = Vec<UpdateChoice>;
+
+struct ResponseUpdateRequest<'a> {
+    dependency: &'a Dependency,
+    endpoint: Option<&'a RegistryEndpoint>,
+    latest: &'a str,
+    body: &'a str,
+    include_prereleases: bool,
+    prerelease_tags: &'a [String],
+}
+
 impl VersionLensSession {
     pub(crate) fn fetch_latest(
         &self,
         dependency: &Dependency,
         context: &RegistryContext,
+        operation: &OperationContext,
     ) -> Result<LatestFetch, FetchError> {
         let mut first_error = None;
 
-        for url in self.registry_urls_with_context(dependency, context) {
-            match self.fetch_latest_from_url(dependency, &url, context) {
+        for endpoint in self.registry_endpoints_with_context(dependency, context) {
+            if operation.is_expired() {
+                return Err(FetchError::OperationTimeout);
+            }
+            match self.fetch_latest_from_endpoint(dependency, &endpoint, context, operation) {
                 Ok(fetch) if fetch.latest.is_some() => return Ok(fetch),
                 Ok(_) => {}
                 Err(error) => {
@@ -53,13 +70,15 @@ impl VersionLensSession {
         }
     }
 
-    fn fetch_latest_from_url(
+    fn fetch_latest_from_endpoint(
         &self,
         dependency: &Dependency,
-        url: &str,
+        endpoint: &RegistryEndpoint,
         context: &RegistryContext,
+        operation: &OperationContext,
     ) -> Result<LatestFetch, FetchError> {
-        let Some(body) = self.fetch_registry_body(dependency, url, context)? else {
+        let Some(body) = self.fetch_registry_body(dependency, &endpoint.url, context, operation)?
+        else {
             return Ok(LatestFetch {
                 latest: None,
                 builds: vec![],
@@ -67,17 +86,18 @@ impl VersionLensSession {
             });
         };
 
-        let latest = self.latest_from_fetched_body(dependency, &body);
+        let latest = self.latest_from_fetched_body(dependency, endpoint, &body);
         let choices = latest
             .as_deref()
             .map(|version| {
-                response_update_choices(
+                response_update_choices_with_endpoint(ResponseUpdateRequest {
                     dependency,
-                    version,
-                    &body,
-                    self.includes_prereleases(dependency),
-                    self.prerelease_tags(dependency.ecosystem),
-                )
+                    endpoint: Some(endpoint),
+                    latest: version,
+                    body: &body,
+                    include_prereleases: self.includes_prereleases(dependency),
+                    prerelease_tags: self.prerelease_tags(dependency.ecosystem),
+                })
             })
             .unwrap_or_default();
         Ok(LatestFetch {
@@ -98,12 +118,31 @@ pub(crate) fn response_update_choices(
     body: &str,
     include_prereleases: bool,
     prerelease_tags: &[String],
-) -> Vec<UpdateChoice> {
+) -> UpdateChoices {
+    response_update_choices_with_endpoint(ResponseUpdateRequest {
+        dependency,
+        endpoint: None,
+        latest,
+        body,
+        include_prereleases,
+        prerelease_tags,
+    })
+}
+
+fn response_update_choices_with_endpoint(request: ResponseUpdateRequest<'_>) -> UpdateChoices {
+    let ResponseUpdateRequest {
+        dependency,
+        endpoint,
+        latest,
+        body,
+        include_prereleases,
+        prerelease_tags,
+    } = request;
     if dependency.ecosystem == Docker {
         return docker_update_choices(&dependency.requirement, latest, body);
     }
 
-    let versions = update_choice_versions_from_response(dependency, body, latest);
+    let versions = update_choice_versions_from_response(dependency, endpoint, body, latest);
     release_update_choices_with_prereleases(
         &dependency.requirement,
         latest,
@@ -115,16 +154,24 @@ pub(crate) fn response_update_choices(
 
 fn update_choice_versions_from_response(
     dependency: &Dependency,
+    endpoint: Option<&RegistryEndpoint>,
     body: &str,
     latest: &str,
 ) -> Vec<String> {
-    let versions = release_versions_from_response_for_package(
-        dependency.ecosystem,
-        dependency
-            .hosted_name
-            .as_deref()
-            .unwrap_or(&dependency.name),
-        body,
+    let package = dependency
+        .hosted_name
+        .as_deref()
+        .unwrap_or(&dependency.name);
+    let versions = endpoint.map_or_else(
+        || release_versions_from_response_for_package(dependency.ecosystem, package, body),
+        |endpoint| {
+            release_versions_from_response_for_endpoint(
+                endpoint,
+                dependency.ecosystem,
+                package,
+                body,
+            )
+        },
     );
     if dependency.ecosystem == Npm {
         return npm_versions_capped_to_latest(versions, latest);
@@ -157,7 +204,7 @@ fn semver_precedence_lte(version: &Version, latest: &Version) -> bool {
     (version.major, version.minor, version.patch) <= (latest.major, latest.minor, latest.patch)
 }
 
-fn docker_update_choices(requirement: &str, latest: &str, body: &str) -> Vec<UpdateChoice> {
+fn docker_update_choices(requirement: &str, latest: &str, body: &str) -> UpdateChoices {
     if latest.is_empty() || latest == requirement {
         return vec![];
     }

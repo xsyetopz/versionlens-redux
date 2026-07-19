@@ -1,5 +1,5 @@
 use super::release_versions_from_response_for_package;
-use versionlens_parsers::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 #[test]
 fn extracts_dotnet_versions_for_update_choices() {

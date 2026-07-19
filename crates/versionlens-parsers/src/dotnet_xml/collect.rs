@@ -1,8 +1,8 @@
 mod event;
 mod state;
 
-use crate::model::Dependency;
 use crate::positions::to_usize;
+use versionlens_model::Dependency;
 
 use super::{DotnetEventContext, DotnetTagSpan};
 use event::dotnet_xml_event_finished;

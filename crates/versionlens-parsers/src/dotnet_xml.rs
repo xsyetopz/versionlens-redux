@@ -1,6 +1,6 @@
-use crate::model::Dependency;
 use quick_xml::events::BytesStart;
 use std::str;
+use versionlens_model::Dependency;
 
 mod attributes;
 mod collect;

@@ -4,11 +4,11 @@ use std::io::ErrorKind::NotFound as IoNotFound;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
 use crate::error::FetchError;
 
-use versionlens_parsers::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 type LocalDotnetVersions = Vec<String>;
 

@@ -1,11 +1,11 @@
-use crate::model::SuggestionStatus::{
+use crate::suggestion::SuggestionStatus::{
     Directory as StatusDirectory, DirectoryNotFound as StatusDirectoryNotFound,
     Error as StatusError, Fixed as StatusFixed, Invalid as StatusInvalid, NoMatch as StatusNoMatch,
     NotSupported as StatusNotSupported,
 };
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
-use crate::model::Suggestion;
+use crate::suggestion::Suggestion;
 
 pub fn no_match(dependency: Dependency) -> Suggestion {
     no_match_with_message(dependency, None)

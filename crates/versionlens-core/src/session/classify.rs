@@ -1,8 +1,9 @@
-use versionlens_parsers::{DocumentInput, ManifestKind, classify_document};
+use versionlens_model::{DocumentInput, ManifestKind};
+use versionlens_parsers::classify_document;
 
 use crate::VersionLensSession;
 use crate::config::FilePatternConfig;
-use versionlens_parsers::ManifestKind::{
+use versionlens_model::ManifestKind::{
     DockerComposeYaml, Dockerfile, DubJson, DubSdl, PythonPipfile, PythonPyprojectToml,
     PythonRequirementsTxt, Unknown,
 };

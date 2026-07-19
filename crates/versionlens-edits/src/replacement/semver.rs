@@ -13,7 +13,7 @@ pub(super) fn preserve_semver_range_prefix(requirement: &str, latest: &str) -> S
         .collect::<String>();
 
     match leading.as_str() {
-        "^" | "~" | "<" | "<=" | ">" | ">=" | "~>" | "==" => {
+        "^" | "~" | ">" | ">=" | "~>" | "==" => {
             format!("{leading}{latest}")
         }
         _ => latest.to_owned(),

@@ -3,7 +3,7 @@ mod table;
 
 use toml_edit::{Key, Value as TomlValue};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use project::collect_cargo_project_version;
 use table::collect_cargo_table_dependency;

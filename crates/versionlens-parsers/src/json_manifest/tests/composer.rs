@@ -3,7 +3,7 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use super::{DocumentInput, parse_document};
-use crate::model::Ecosystem::Composer;
+use versionlens_model::Ecosystem::Composer;
 
 #[test]
 fn parses_composer_json_dependency_groups() {

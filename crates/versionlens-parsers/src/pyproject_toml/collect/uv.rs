@@ -1,5 +1,5 @@
-use crate::model::Dependency;
 use crate::path_patterns::path_or_member_enabled_exact;
+use versionlens_model::Dependency;
 
 use super::super::paths::TomlPathContext;
 use super::{TomlValueContext, push_keyed_dependency};

@@ -1,12 +1,12 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::DocumentInput;
-use versionlens_parsers::{Dependency, Ecosystem};
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::DocumentInput;
+use versionlens_model::{Dependency, Ecosystem};
+use versionlens_model::{Position, Range};
 
 use super::response_update_choices;
 use crate::{ProviderSettings, RegistryUrlConfig, SessionConfig};
-use versionlens_parsers::Ecosystem::{Composer, Npm};
+use versionlens_model::Ecosystem::{Composer, Npm};
 
 #[test]
 fn invalid_registry_url_creates_contextual_error_suggestion() {

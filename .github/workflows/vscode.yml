@@ -66,6 +66,7 @@ jobs:
         run: |
           bun run check:biome
           bun run check:rustfmt
+          bun run check:code-quality
           bun run check:vscode-adapter
           bun run check:vsix-freshness
           bun run check:data-objects
@@ -75,8 +76,9 @@ jobs:
         run: |
           bun run typecheck
           bun run check:clippy
-          cargo test --workspace
+          cargo test --workspace --locked
           bun run test:extension
+          bun run test:napi
           bun run check:extension-build
 
   package:
@@ -185,9 +187,9 @@ jobs:
             export RUSTFLAGS="-C target-feature=-crt-static"
           fi
           if [[ "$USE_ZIG" == "true" ]]; then
-            cargo zigbuild -p versionlens-napi --release --target "$RUST_TARGET"
+            cargo zigbuild -p versionlens-napi --release --locked --target "$RUST_TARGET"
           else
-            cargo build -p versionlens-napi --release --target "$RUST_TARGET"
+            cargo build -p versionlens-napi --release --locked --target "$RUST_TARGET"
           fi
 
       - name: Package target-specific VSIX

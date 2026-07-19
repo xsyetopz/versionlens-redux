@@ -1,148 +1,180 @@
 import { dirname } from "node:path";
-import * as vscode from "vscode";
+import { type ExtensionContext, window } from "#vscode-host";
 
 type AuthenticationScheme = "NotSet" | "Basic" | "Custom";
 type UrlAuthenticationStatus =
-	| "NoStatus"
-	| "User cancelled"
-	| "Credentials failed";
+  | "NoStatus"
+  | "User cancelled"
+  | "Credentials failed";
 
-export type UrlAuthenticationData = {
-	label?: string;
-	protocol: string;
-	scheme: AuthenticationScheme;
-	status: UrlAuthenticationStatus;
-	url: string;
-};
+interface UrlAuthenticationData {
+  label?: string;
+  protocol: string;
+  scheme: AuthenticationScheme;
+  status: UrlAuthenticationStatus;
+  url: string;
+}
 
-export type AuthHeaderMetadata = {
-	label: string;
-	scheme: Exclude<AuthenticationScheme, "NotSet">;
-};
+interface AuthHeaderMetadata {
+  label: string;
+  scheme: Exclude<AuthenticationScheme, "NotSet">;
+}
 
-export const urlAuthenticationStoreKey = "UrlAuthenticationStore";
-export const authorizationHeaderName = "Authorization";
-export const noStatus = "NoStatus";
-export const notSetScheme = "NotSet";
-export const basicScheme = "Basic";
-export const customScheme = "Custom";
+const urlAuthenticationStoreKey = "UrlAuthenticationStore";
+const authorizationHeaderName = "Authorization";
+const noStatus = "NoStatus";
+const notSetScheme = "NotSet";
+const basicScheme = "Basic";
+const customScheme = "Custom";
 
-export function urlAuthenticationEntries(
-	context: vscode.ExtensionContext | undefined,
+function urlAuthenticationEntries(
+  context: ExtensionContext | undefined,
 ): UrlAuthenticationData[] {
-	if (!context) {
-		return [];
-	}
-	return collectionValues(context).filter(isUrlAuthenticationData);
+  if (!context) {
+    return [];
+  }
+  return collectionValues(context).filter(isUrlAuthenticationData);
 }
 
-export function getUrlAuthentication(
-	context: vscode.ExtensionContext | undefined,
-	url: string,
+function getUrlAuthentication(
+  context: ExtensionContext | undefined,
+  url: string,
 ): UrlAuthenticationData | undefined {
-	if (!context) {
-		return undefined;
-	}
-	const entry = collectionEntries(context).find(([key]) => key === url)?.[1];
-	return isUrlAuthenticationData(entry) ? entry : undefined;
+  let authentication: UrlAuthenticationData | undefined;
+  if (context) {
+    const entry = collectionEntries(context).find(
+      ([key]): boolean => key === url,
+    )?.[1];
+    if (isUrlAuthenticationData(entry)) {
+      authentication = entry;
+    }
+  }
+  return authentication;
 }
 
-export async function updateUrlAuthentication(
-	context: vscode.ExtensionContext,
-	url: string,
-	value: UrlAuthenticationData,
-) {
-	const entries = collectionEntries(context).filter(([key]) => key !== url);
-	await context.workspaceState.update(
-		urlAuthenticationStoreKey,
-		Object.fromEntries([...entries, [url, value]]),
-	);
+async function updateUrlAuthentication(
+  context: ExtensionContext,
+  url: string,
+  value: UrlAuthenticationData,
+): Promise<void> {
+  const entries = collectionEntries(context).filter(
+    ([key]): boolean => key !== url,
+  );
+  await context.workspaceState.update(
+    urlAuthenticationStoreKey,
+    Object.fromEntries([...entries, [url, value]]),
+  );
 }
 
-export async function removeUrlAuthentication(
-	context: vscode.ExtensionContext,
-	url: string,
-) {
-	await context.workspaceState.update(
-		urlAuthenticationStoreKey,
-		Object.fromEntries(
-			collectionEntries(context).filter(([key]) => key !== url),
-		),
-	);
+async function removeUrlAuthentication(
+  context: ExtensionContext,
+  url: string,
+): Promise<void> {
+  await context.workspaceState.update(
+    urlAuthenticationStoreKey,
+    Object.fromEntries(
+      collectionEntries(context).filter(([key]): boolean => key !== url),
+    ),
+  );
 }
 
-export function createUrlAuthenticationData(
-	url: string,
-	metadata: AuthHeaderMetadata,
+function createUrlAuthenticationData(
+  url: string,
+  metadata: AuthHeaderMetadata,
 ): UrlAuthenticationData {
-	return {
-		label: metadata.label,
-		protocol: new URL(url).protocol,
-		scheme: metadata.scheme,
-		status: noStatus,
-		url,
-	};
+  return {
+    label: metadata.label,
+    protocol: new URL(url).protocol,
+    scheme: metadata.scheme,
+    status: noStatus,
+    url,
+  };
 }
 
-export function createEmptyUrlAuthenticationData(
-	url: string,
-	status: Exclude<UrlAuthenticationStatus, "NoStatus"> = "User cancelled",
+function createEmptyUrlAuthenticationData(
+  url: string,
+  status: Exclude<UrlAuthenticationStatus, "NoStatus"> = "User cancelled",
 ): UrlAuthenticationData {
-	return {
-		protocol: new URL(url).protocol,
-		scheme: notSetScheme,
-		status,
-		url,
-	};
+  return {
+    protocol: new URL(url).protocol,
+    scheme: notSetScheme,
+    status,
+    url,
+  };
 }
 
-export function authSecretKey(
-	context: vscode.ExtensionContext,
-	url: string,
+function authSecretKey(
+  context: ExtensionContext,
+  url: string,
 ): string | undefined {
-	const resourceFolderPath = resourceFolderPathForAuth(context);
-	return resourceFolderPath ? `${resourceFolderPath}__${url}` : undefined;
+  const resourceFolderPath = resourceFolderPathForAuth(context);
+  let secretKey: string | undefined;
+  if (resourceFolderPath) {
+    secretKey = `${resourceFolderPath}__${url}`;
+  }
+  return secretKey;
 }
 
-export function resourceFolderPathForAuth(
-	context: vscode.ExtensionContext,
+function resourceFolderPathForAuth(
+  context: ExtensionContext,
 ): string | undefined {
-	if (context.storageUri?.path) {
-		return context.storageUri.path;
-	}
-
-	const activePath = vscode.window?.activeTextEditor?.document.uri.path;
-	return activePath ? dirname(activePath) : undefined;
+  let resourcePath: string | undefined;
+  if (context.storageUri?.path) {
+    resourcePath = context.storageUri.path;
+  } else {
+    const activePath = window?.activeTextEditor?.document.uri.path;
+    if (activePath) {
+      resourcePath = dirname(activePath);
+    }
+  }
+  return resourcePath;
 }
 
-function collectionEntries(
-	context: vscode.ExtensionContext,
-): [string, unknown][] {
-	const workspaceState = context.workspaceState;
-	if (!workspaceState) {
-		return [];
-	}
-	const collection = workspaceState.get<unknown>(urlAuthenticationStoreKey, {});
-	return typeof collection === "object" && collection !== null
-		? Object.entries(collection)
-		: [];
+function collectionEntries(context: ExtensionContext): [string, unknown][] {
+  const { workspaceState } = context;
+  if (!workspaceState) {
+    return [];
+  }
+  const collection = workspaceState.get<unknown>(urlAuthenticationStoreKey, {});
+  if (typeof collection === "object" && collection !== null) {
+    return Object.entries(collection);
+  }
+  return [];
 }
 
-function collectionValues(context: vscode.ExtensionContext): unknown[] {
-	return collectionEntries(context).map((entry) => entry[1]);
+function collectionValues(context: ExtensionContext): unknown[] {
+  return collectionEntries(context).map((entry): unknown => entry[1]);
 }
 
 function isUrlAuthenticationData(
-	value: unknown,
+  value: unknown,
 ): value is UrlAuthenticationData {
-	if (!(typeof value === "object" && value !== null)) {
-		return false;
-	}
-	const entry = value as UrlAuthenticationData;
-	return (
-		typeof entry.url === "string" &&
-		typeof entry.scheme === "string" &&
-		typeof entry.status === "string" &&
-		typeof entry.protocol === "string"
-	);
+  if (!(typeof value === "object" && value !== null)) {
+    return false;
+  }
+  const entry = value as UrlAuthenticationData;
+  return (
+    typeof entry.url === "string" &&
+    typeof entry.scheme === "string" &&
+    typeof entry.status === "string" &&
+    typeof entry.protocol === "string"
+  );
 }
+
+export type { AuthHeaderMetadata, UrlAuthenticationData };
+export {
+  authorizationHeaderName,
+  authSecretKey,
+  basicScheme,
+  createEmptyUrlAuthenticationData,
+  createUrlAuthenticationData,
+  customScheme,
+  getUrlAuthentication,
+  noStatus,
+  notSetScheme,
+  removeUrlAuthentication,
+  resourceFolderPathForAuth,
+  updateUrlAuthentication,
+  urlAuthenticationEntries,
+  urlAuthenticationStoreKey,
+};

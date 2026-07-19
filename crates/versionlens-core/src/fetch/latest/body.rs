@@ -1,7 +1,7 @@
 use std::fs::read_to_string;
 use std::io::ErrorKind::NotFound as IoNotFound;
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::{Docker, Dotnet, Maven};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{Docker, Dotnet, Maven};
 use versionlens_providers::{
     docker_hub_body_has_next_page, docker_hub_tags_page_url, dotnet_package_url_from_service_index,
     merge_docker_hub_response_pages,
@@ -10,6 +10,7 @@ use versionlens_providers::{
 use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::registry::RegistryContext;
+use crate::session::operation::OperationContext;
 
 use super::local_dotnet::local_dotnet_package_body;
 
@@ -23,9 +24,10 @@ impl VersionLensSession {
         dependency: &Dependency,
         url: &str,
         context: &RegistryContext,
+        operation: &OperationContext,
     ) -> RegistryBodyResult {
         if dependency.ecosystem == Docker && docker_hub_tags_page_url(url, 1).is_some() {
-            return self.fetch_docker_hub_body(dependency, url, context);
+            return self.fetch_docker_hub_body(dependency, url, context, operation);
         }
 
         if let Some(body) = local_dotnet_package_body(dependency, url)? {
@@ -33,14 +35,14 @@ impl VersionLensSession {
         }
 
         if dotnet_service_index_url(dependency, url) {
-            return self.fetch_dotnet_package_body(dependency, url, context);
+            return self.fetch_dotnet_package_body(dependency, url, context, operation);
         }
 
         if let Some(body) = local_maven_metadata_body(dependency, url)? {
             return Ok(Some(body));
         }
 
-        self.get_text_or_status_with_context(url, dependency.ecosystem, context)
+        self.get_text_or_status_with_context(url, dependency.ecosystem, context, operation)
     }
 
     fn fetch_dotnet_package_body(
@@ -48,9 +50,10 @@ impl VersionLensSession {
         dependency: &Dependency,
         url: &str,
         context: &RegistryContext,
+        operation: &OperationContext,
     ) -> RegistryBodyResult {
         let Some(index) =
-            self.get_text_or_status_with_context(url, dependency.ecosystem, context)?
+            self.get_text_or_status_with_context(url, dependency.ecosystem, context, operation)?
         else {
             return Ok(None);
         };
@@ -59,7 +62,7 @@ impl VersionLensSession {
             return Ok(None);
         };
 
-        self.get_text_or_status_with_context(&package_url, dependency.ecosystem, context)
+        self.get_text_or_status_with_context(&package_url, dependency.ecosystem, context, operation)
     }
 
     fn fetch_docker_hub_body(
@@ -67,6 +70,7 @@ impl VersionLensSession {
         dependency: &Dependency,
         url: &str,
         context: &RegistryContext,
+        operation: &OperationContext,
     ) -> RegistryBodyResult {
         let mut pages = vec![];
 
@@ -74,8 +78,12 @@ impl VersionLensSession {
             let Some(page_url) = docker_hub_tags_page_url(url, page) else {
                 return Ok(None);
             };
-            let Some(body) =
-                self.get_text_or_status_with_context(&page_url, dependency.ecosystem, context)?
+            let Some(body) = self.get_text_or_status_with_context(
+                &page_url,
+                dependency.ecosystem,
+                context,
+                operation,
+            )?
             else {
                 break;
             };

@@ -10,7 +10,7 @@ use std::fs::remove_dir_all;
 use std::fs::write;
 use std::path::PathBuf;
 use std::process::id;
-use versionlens_parsers::Ecosystem::Maven;
+use versionlens_model::Ecosystem::Maven;
 
 #[test]
 fn maven_registry_urls_preserve_configured_fallback_order() {

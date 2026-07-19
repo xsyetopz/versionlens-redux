@@ -1,13 +1,13 @@
 use self::object::object_json_manifest_dependency;
 use self::scalar::scalar_json_manifest_dependency as scalar_json_manifest_dependency_impl;
 use self::string::string_json_manifest_dependency;
-use crate::model::Ecosystem;
 use jsonc_parser::ast::Value::{Object as JsonValueObject, StringLit as JsonValueStringLit};
 use jsonc_parser::ast::{Object, ObjectProp, StringLit};
+use versionlens_model::Ecosystem;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::{Composer, Npm};
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{Composer, Npm};
 
 mod object;
 mod ranges;

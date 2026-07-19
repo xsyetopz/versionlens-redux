@@ -2,7 +2,7 @@ use super::{
     latest_version_from_response, release_versions_from_response,
     release_versions_from_response_for_package,
 };
-use versionlens_parsers::Ecosystem::Composer;
+use versionlens_model::Ecosystem::Composer;
 
 #[test]
 fn picks_latest_stable_composer_version() {
@@ -77,10 +77,7 @@ fn extracts_composer_releases_only_for_the_requested_package() {
         release_versions_from_response_for_package(Composer, "acme/unrelated", body),
         vec!["9.0.0".to_owned()]
     );
-    assert_eq!(
-        release_versions_from_response(Composer, body),
-        vec!["1.0.0".to_owned(), "1.1.0".to_owned(), "9.0.0".to_owned()]
-    );
+    assert!(release_versions_from_response(Composer, body).is_empty());
 }
 
 #[test]

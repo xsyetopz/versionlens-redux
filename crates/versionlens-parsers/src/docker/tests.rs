@@ -1,9 +1,9 @@
 use crate::docker::image::split_image_reference;
 use crate::document::test_support::extract_range;
-use crate::model::Ecosystem::Docker;
 use crate::{DocumentInput, parse_document};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Docker;
 
 #[test]
 fn dockerfile_image_reference_separates_explicit_registry() {

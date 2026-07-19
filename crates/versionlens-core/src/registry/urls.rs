@@ -1,19 +1,20 @@
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_model::{Dependency, Ecosystem};
+use versionlens_providers::{RegistryEndpoint, RegistryResponseKind};
 
 use crate::VersionLensSession;
-use crate::registry::RegistryContext;
-use versionlens_parsers::Ecosystem::{Dotnet, Go, Maven, Python};
-use versionlens_parsers::ManifestKind::{ClojureDepsEdn, LeiningenProjectClj};
+use crate::registry::{RegistryContext, RegistryEndpoints};
+use versionlens_model::Ecosystem::{Dotnet, Go, Maven, Python};
+use versionlens_model::ManifestKind::{ClojureDepsEdn, LeiningenProjectClj};
 
 mod configured;
 mod dotnet;
 mod hosted;
 
 use configured::{
-    clojars_registry_url, configured_registry_urls, default_registry_url, extend_registry_urls,
-    gradle_plugin_portal_registry_url,
+    clojars_registry_endpoint, configured_registry_endpoints, default_registry_endpoint,
+    extend_registry_endpoints, gradle_plugin_portal_registry_endpoint,
 };
-use hosted::hosted_registry_urls;
+use hosted::hosted_registry_endpoints;
 
 impl VersionLensSession {
     #[cfg(test)]
@@ -21,13 +22,25 @@ impl VersionLensSession {
         self.registry_urls_with_context(dependency, &crate::default())
     }
 
+    #[cfg(test)]
     pub(crate) fn registry_urls_with_context(
         &self,
         dependency: &Dependency,
         context: &RegistryContext,
     ) -> Vec<String> {
-        if let Some(urls) = hosted_registry_urls(dependency) {
-            return urls;
+        self.registry_endpoints_with_context(dependency, context)
+            .into_iter()
+            .map(|endpoint| endpoint.url)
+            .collect()
+    }
+
+    pub(crate) fn registry_endpoints_with_context(
+        &self,
+        dependency: &Dependency,
+        context: &RegistryContext,
+    ) -> RegistryEndpoints {
+        if let Some(endpoints) = hosted_registry_endpoints(dependency) {
+            return endpoints;
         }
 
         if context.go_proxy_disabled_for_dependency(dependency) {
@@ -36,16 +49,21 @@ impl VersionLensSession {
 
         if dependency.ecosystem == Dotnet {
             if context.has_dotnet_registry_configuration() {
-                return context.dotnet_registry_urls(dependency);
+                return context
+                    .dotnet_registry_urls(dependency)
+                    .into_iter()
+                    .map(RegistryEndpoint::ecosystem)
+                    .collect();
             }
 
             let urls = self.dotnet_registry_urls();
             if !urls.is_empty() {
-                return urls;
+                return urls.into_iter().map(RegistryEndpoint::ecosystem).collect();
             }
         }
 
-        let mut urls = configured_registry_urls(&self.config.providers.registry_urls, dependency);
+        let mut endpoints =
+            configured_registry_endpoints(&self.config.providers.registry_urls, dependency);
         let is_clojure_maven_document = dependency.ecosystem == Maven
             && !context.maven_uses_mirror()
             && matches!(
@@ -53,61 +71,72 @@ impl VersionLensSession {
                 Some(ClojureDepsEdn | LeiningenProjectClj)
             );
         if is_clojure_maven_document {
-            push_unique_url(&mut urls, default_registry_url(dependency));
-            push_unique_url(&mut urls, clojars_registry_url(dependency));
+            push_unique_endpoint(&mut endpoints, default_registry_endpoint(dependency));
+            push_unique_endpoint(&mut endpoints, clojars_registry_endpoint(dependency));
         }
         if !python_dependency_has_named_source(dependency) {
-            extend_registry_urls(&mut urls, &context.urls, dependency);
+            extend_registry_endpoints(&mut endpoints, &context.urls, dependency);
         }
-        urls.extend(context.registry_urls(dependency));
+        endpoints.extend(context.registry_endpoints(dependency));
 
         if dependency.ecosystem == Maven && !context.maven_uses_mirror() {
-            if let Some(plugin_portal_url) = gradle_plugin_portal_registry_url(dependency)
-                && !urls.iter().any(|url| url == &plugin_portal_url)
+            if let Some(plugin_portal) = gradle_plugin_portal_registry_endpoint(dependency)
+                && !endpoints
+                    .iter()
+                    .any(|endpoint| endpoint.url == plugin_portal.url)
             {
-                urls.push(plugin_portal_url);
+                endpoints.push(plugin_portal);
             }
             if !is_clojure_maven_document {
-                push_unique_url(&mut urls, default_registry_url(dependency));
+                push_unique_endpoint(&mut endpoints, default_registry_endpoint(dependency));
             }
         }
 
-        let urls = if urls.is_empty() && context.default_registry_disabled(dependency.ecosystem) {
-            urls
-        } else if urls.is_empty() {
-            vec![default_registry_url(dependency)]
-        } else {
-            urls
-        };
+        let endpoints =
+            if endpoints.is_empty() && context.default_registry_disabled(dependency.ecosystem) {
+                endpoints
+            } else if endpoints.is_empty() {
+                vec![default_registry_endpoint(dependency)]
+            } else {
+                endpoints
+            };
 
-        go_module_proxy_urls_with_latest_fallback(dependency.ecosystem, urls)
+        go_module_proxy_endpoints_with_latest_fallback(dependency.ecosystem, endpoints)
     }
 }
 
-fn push_unique_url(urls: &mut Vec<String>, url: String) {
-    if !urls.iter().any(|existing| existing == &url) {
-        urls.push(url);
+fn push_unique_endpoint(endpoints: &mut Vec<RegistryEndpoint>, endpoint: RegistryEndpoint) {
+    if !endpoints
+        .iter()
+        .any(|existing| existing.url == endpoint.url)
+    {
+        endpoints.push(endpoint);
     }
 }
 
-fn go_module_proxy_urls_with_latest_fallback(
+fn go_module_proxy_endpoints_with_latest_fallback(
     ecosystem: Ecosystem,
-    urls: Vec<String>,
-) -> Vec<String> {
+    endpoints: RegistryEndpoints,
+) -> RegistryEndpoints {
     if ecosystem != Go {
-        return urls;
+        return endpoints;
     }
 
     let mut expanded = vec![];
-    for url in urls {
-        if let Some(latest_url) = url
-            .strip_suffix("/@v/list")
-            .map(|base| format!("{base}/@latest"))
+    for endpoint in endpoints {
+        if endpoint.response_kind == RegistryResponseKind::GoModuleList
+            && let Some(latest_url) = endpoint
+                .url
+                .strip_suffix("/@v/list")
+                .map(|base| format!("{base}/@latest"))
         {
-            expanded.push(url);
-            expanded.push(latest_url);
+            expanded.push(endpoint);
+            expanded.push(RegistryEndpoint::new(
+                latest_url,
+                RegistryResponseKind::GoModuleLatest,
+            ));
         } else {
-            expanded.push(url);
+            expanded.push(endpoint);
         }
     }
     expanded

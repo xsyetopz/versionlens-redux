@@ -1,9 +1,9 @@
-use crate::model::Ecosystem;
 use jsonc_parser::ast::Value::Object as JsonValueObject;
 use jsonc_parser::errors::ParseError as JsonParseError;
 use jsonc_parser::parse_to_ast;
+use versionlens_model::Ecosystem;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::collect::{JsonManifestContext, collect_json_path};
 

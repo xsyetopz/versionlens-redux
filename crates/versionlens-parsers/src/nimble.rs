@@ -1,8 +1,8 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Nim;
 use crate::positions::offset_range;
 use crate::quoted::double_quoted_string_at;
 use crate::requirement_range::operator_requirement_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Nim;
 
 const GITHUB_API_REPO_PREFIX: &str = "https://api.github.com/repos/";
 

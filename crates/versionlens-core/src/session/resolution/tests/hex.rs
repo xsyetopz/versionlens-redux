@@ -1,7 +1,7 @@
 use super::{DocumentInput, RegistryResponseInput, session_without_vulnerabilities};
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::Ecosystem::Hex;
+use versionlens_model::Ecosystem::Hex;
 
 #[test]
 fn resolves_mix_hex_alias_dependencies_against_target_package() {

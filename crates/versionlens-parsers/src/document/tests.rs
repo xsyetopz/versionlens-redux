@@ -1,7 +1,6 @@
 use super::parse_document;
 use super::test_support::extract_range;
 use crate::DocumentInput;
-use crate::model::Ecosystem::{CocoaPods, Docker, Hex, Maven, Unity};
 use crate::parse_clojure_maven_repositories;
 use crate::parse_gradle_dependency_maven_repositories;
 use crate::parse_gradle_maven_repositories;
@@ -10,6 +9,7 @@ use crate::parse_leiningen_maven_repositories;
 use crate::parse_sbt_maven_repositories;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::{CocoaPods, Docker, Hex, Maven, Unity};
 #[test]
 fn parses_unity_project_manifest_dependencies() {
     let text = package_file_fixture("parses-unity-project-manifest-dependencies.txt");

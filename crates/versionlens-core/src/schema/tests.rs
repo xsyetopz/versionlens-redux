@@ -1,6 +1,6 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::{SessionConfig, VersionLensSession};
 
@@ -34,7 +34,9 @@ fn analyzes_extension_schema_documents_without_dependency_diagnostics() {
     let invalid = session().analyze_document(DocumentInput {
         uri: "versionlens:/versionlens.multi-registries.json".to_owned(),
         language_id: "json".to_owned(),
-        text: package_file_fixture("analyzes-extension-schema-documents-without-dependency-diagnostics.multi-registries-2.multi-registries.json"),
+        text: package_file_fixture(
+            "analyzes-extension-schema-documents-without-dependency-diagnostics.multi-registries-2.txt",
+        ),
         workspace_root: None,
     });
 

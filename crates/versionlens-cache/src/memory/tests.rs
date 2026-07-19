@@ -17,6 +17,7 @@ fn expired_values_are_not_returned() {
     cache.insert_with_ttl(key.clone(), "1.0.228".to_owned(), std::time::Duration::ZERO);
 
     assert_eq!(cache.get(&key), None);
+    assert!(!cache.entries.contains_key(&key));
 }
 
 #[test]

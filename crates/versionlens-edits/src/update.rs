@@ -1,9 +1,9 @@
+use versionlens_model::TextEdit;
 use versionlens_suggestions::SuggestionStatus::{
     InvalidRange as StatusInvalidRange, Satisfies as StatusSatisfies,
     UpdateAvailable as StatusUpdateAvailable,
 };
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
-use versionlens_vscode_model::TextEdit;
 
 use crate::replacement::replacement_text;
 

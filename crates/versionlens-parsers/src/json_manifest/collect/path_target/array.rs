@@ -6,8 +6,8 @@ use crate::json_manifest::dependency::{
     JsonDependencyRanges, JsonDependencySource, collect_dependency_object,
     json_manifest_dependency, string_content_end, string_content_start,
 };
-use crate::model::Dependency;
-use crate::model::Ecosystem::Npm;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Npm;
 
 use super::super::JsonManifestContext;
 

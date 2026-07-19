@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_suggestions::{Suggestion, resolve_dependency};
 
 use crate::VersionLensSession;

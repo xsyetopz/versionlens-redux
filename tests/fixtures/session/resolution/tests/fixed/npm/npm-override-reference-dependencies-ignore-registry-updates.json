@@ -1,1 +1,1 @@
-{"overrides":{"bar":"$foo"}}
+{ "overrides": { "bar": "$foo" } }

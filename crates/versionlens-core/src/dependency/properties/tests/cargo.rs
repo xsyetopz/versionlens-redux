@@ -1,5 +1,5 @@
 use super::{DocumentInput, package_file_fixture, session_with_properties};
-use versionlens_parsers::Ecosystem::Cargo;
+use versionlens_model::Ecosystem::Cargo;
 
 #[test]
 fn cargo_target_dependency_properties_match_wildcards() {

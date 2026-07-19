@@ -3,7 +3,12 @@ pub(super) fn ruby_replacement(requirement: &str, latest: &str) -> String {
         return latest.to_owned();
     };
 
-    format!("{operator}{latest}")
+    let replacement_operator = match operator.trim_end() {
+        "<" | "<=" | "!=" => "==",
+        operator => operator,
+    };
+    let whitespace = &operator[operator.trim_end().len()..];
+    format!("{replacement_operator}{whitespace}{latest}")
 }
 
 pub(super) fn ruby_prefixed_replacement(prefix: &str, suffix: &str, latest: &str) -> String {

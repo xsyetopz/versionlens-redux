@@ -1,9 +1,6 @@
-use versionlens_parsers::Ecosystem;
-use versionlens_parsers::Ecosystem::{
-    Composer, Cran, Docker, Dotnet, Hex, Maven, Npm, Python, Ruby,
-};
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::{Composer, Cran, Docker, Dotnet, Hex, Maven, Npm, Python, Ruby};
 mod cargo;
-mod common;
 mod composer;
 mod conan;
 mod cpan;
@@ -14,6 +11,7 @@ mod dispatch;
 mod docker;
 mod dotnet;
 mod dub;
+mod endpoint;
 mod errors;
 mod github;
 mod go;
@@ -28,13 +26,15 @@ mod npm;
 mod opam;
 mod pub_registry;
 mod python;
+mod python_simple;
 mod ruby;
 mod swift;
 mod vcpkg;
+mod versions;
 mod xml;
 mod zig;
 
-use composer::{composer_release_versions, composer_release_versions_for_package};
+use composer::composer_release_versions_for_package;
 use cran::cran_release_versions;
 pub use dispatch::{
     LatestVersionRequest, latest_version_from_response, latest_version_from_response_for_request,
@@ -43,6 +43,9 @@ pub use dispatch::{
 use docker::docker_build_versions;
 pub use docker::docker_tag_exists;
 use dotnet::dotnet_release_versions;
+pub use endpoint::{
+    latest_version_from_response_for_endpoint, release_versions_from_response_for_endpoint,
+};
 pub use errors::{
     RegistryErrorStatus, http_status_message_from_code, npm_error_status_from_response,
 };
@@ -65,12 +68,8 @@ pub fn build_versions_from_response(
 }
 
 pub fn release_versions_from_response(ecosystem: Ecosystem, body: &str) -> Vec<String> {
-    if ecosystem == Cran {
+    if matches!(ecosystem, Composer | Cran) {
         return vec![];
-    }
-
-    if ecosystem == Composer {
-        return composer_release_versions(body);
     }
 
     release_versions_from_response_for_package(ecosystem, "", body)

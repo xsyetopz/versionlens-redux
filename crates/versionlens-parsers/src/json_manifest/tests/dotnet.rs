@@ -1,8 +1,8 @@
 use super::{DocumentInput, parse_document};
 use crate::document::test_support::extract_range;
-use crate::model::Ecosystem::Dotnet;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Dotnet;
 
 #[test]
 fn parses_dotnet_project_json_dependencies() {

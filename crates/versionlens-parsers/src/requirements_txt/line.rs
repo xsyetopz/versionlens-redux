@@ -1,7 +1,7 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Python;
 use crate::positions::line_range;
 use crate::requirements_txt::split::split_requirements_txt_requirement;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Python;
 
 pub(super) fn parse_requirement_line(line_index: usize, line: &str) -> Option<Dependency> {
     let trimmed = line.trim_start();
@@ -15,12 +15,12 @@ pub(super) fn parse_requirement_line(line_index: usize, line: &str) -> Option<De
         && trimmed[split + requirement.len()..]
             .trim_start()
             .starts_with(')');
-    if !parenthesized && requirements_txt_extras_end_before_requirement(trimmed, name, split) {
+    if !parenthesized
+        && !trimmed[..split].contains('@')
+        && requirements_txt_extras_end_before_requirement(trimmed, name, split)
+    {
         requirement = "";
         split = name.len();
-    }
-    if let Some(comment_start) = requirement.find('#') {
-        requirement = requirement[..comment_start].trim_end();
     }
     let requirement_start = offset + split;
     let requirement_end = requirement_start + requirement.len();

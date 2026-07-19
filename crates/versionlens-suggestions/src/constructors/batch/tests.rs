@@ -1,12 +1,12 @@
-use crate::model::SuggestionStatus::{
+use crate::suggestion::SuggestionStatus::{
     Current as StatusCurrent, SatisfiesLatest as StatusSatisfiesLatest,
     Unresolved as StatusUnresolved, UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_parsers::Dependency;
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::Dependency;
+use versionlens_model::{Position, Range};
 
 use super::{resolve_with_latest, unresolved};
-use versionlens_parsers::Ecosystem::Cargo;
+use versionlens_model::Ecosystem::Cargo;
 
 #[test]
 fn unresolved_marks_dependencies_unresolved() {

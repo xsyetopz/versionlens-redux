@@ -1,1 +1,5 @@
-{"dependencies":{"commit":"git+https://github.com/owner/commit.git#1234567"}}
+{
+  "dependencies": {
+    "commit": "git+https://github.com/owner/commit.git#1234567"
+  }
+}

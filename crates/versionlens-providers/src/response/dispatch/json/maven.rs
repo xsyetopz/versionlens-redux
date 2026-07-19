@@ -1,7 +1,7 @@
 use serde_json::Value;
 
 use super::super::ResponseRequest;
-use crate::response::common::latest_version_strings;
+use crate::response::versions::latest_version_strings;
 
 pub(super) fn latest_maven_json_response(
     value: &Value,

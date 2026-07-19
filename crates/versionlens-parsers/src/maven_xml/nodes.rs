@@ -1,6 +1,6 @@
 use std::ops::Range as ByteRange;
 
-use versionlens_vscode_model::Range;
+use versionlens_model::Range;
 
 use crate::positions::offset_range;
 

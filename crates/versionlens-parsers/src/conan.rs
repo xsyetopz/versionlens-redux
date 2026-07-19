@@ -1,6 +1,6 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Conan;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Conan;
 
 type ConanDependencies = Vec<Dependency>;
 

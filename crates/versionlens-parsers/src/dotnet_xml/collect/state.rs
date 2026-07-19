@@ -3,16 +3,16 @@ use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
 use std::slice::from_ref;
 
-use crate::model::Dependency;
 use crate::path_patterns::path_or_member_enabled;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
 
 use super::super::attributes::{attr_value, tag_bounds, version_insert};
 use super::super::dependency::{dependencies_from_tag, is_package_tag, project_version_dependency};
 use super::super::{
     DotnetEventContext, DotnetTagKind, OpenProjectVersion, event_name, event_name_from_bytes,
 };
-use crate::model::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 type DotnetPackageDependency = Option<Dependency>;
 type DotnetXmlEvent<'a> = BytesStart<'a>;

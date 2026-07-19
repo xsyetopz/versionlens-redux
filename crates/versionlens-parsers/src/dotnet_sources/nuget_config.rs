@@ -15,8 +15,8 @@ type NugetXmlEvent<'a> = BytesStart<'a>;
 type NugetDisabledSources = HashSet<String>;
 type NugetCredentialsBySource = HashMap<String, NugetConfigCredentials>;
 
-use super::model::{DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig, DotnetSourceMapping};
 use super::protocol::protocol_from_url;
+use super::schema::{DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig, DotnetSourceMapping};
 use std::str;
 
 #[derive(Debug, PartialEq, Eq)]

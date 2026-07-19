@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::process::id;
 
 use super::{DocumentInput, standard_session};
-use versionlens_parsers::Ecosystem::Composer;
+use versionlens_model::Ecosystem::Composer;
 
 #[test]
 fn resolves_project_version_without_registry_response() {

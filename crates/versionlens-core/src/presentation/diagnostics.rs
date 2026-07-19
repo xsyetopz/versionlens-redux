@@ -1,6 +1,6 @@
 use std::borrow::Cow::{Borrowed as CowBorrowed, Owned as CowOwned};
 
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_providers::{VulnerabilityAdvisory, vulnerability_version_from_requirement};
 use versionlens_vscode_model::DiagnosticPayload;
 

@@ -1,5 +1,5 @@
 use super::{DocumentInput, package_file_fixture, session_with_properties};
-use versionlens_parsers::Ecosystem::{Dotnet, Maven};
+use versionlens_model::Ecosystem::{Dotnet, Maven};
 
 #[test]
 fn maven_dependency_properties_filter_before_extraction() {

@@ -1,4 +1,5 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
+use versionlens_model::Range;
 use versionlens_suggestions::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Current as StatusCurrent, Directory as StatusDirectory,
     DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,
@@ -9,7 +10,6 @@ use versionlens_suggestions::SuggestionStatus::{
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
 use versionlens_versions::update_level;
 use versionlens_vscode_model::CodeLensPayload;
-use versionlens_vscode_model::Range;
 
 use crate::presentation::{
     code_lens_title, project_version_code_lens_payload, suggested_code_lens_payload,
@@ -17,7 +17,7 @@ use crate::presentation::{
 };
 use crate::project::project_version_code_lens_suggestions;
 use crate::{SuggestionIndicators, VersionLensSession};
-use versionlens_parsers::Ecosystem::Docker;
+use versionlens_model::Ecosystem::Docker;
 
 type CodeLensPayloads = Vec<CodeLensPayload>;
 

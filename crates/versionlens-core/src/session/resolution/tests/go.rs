@@ -7,7 +7,7 @@ use std::fs::remove_dir_all;
 use std::fs::write;
 use std::path::PathBuf;
 use std::process::id;
-use versionlens_parsers::Ecosystem::Go;
+use versionlens_model::Ecosystem::Go;
 
 #[test]
 fn go_mod_exclude_versions_are_fixed_without_registry_updates() {

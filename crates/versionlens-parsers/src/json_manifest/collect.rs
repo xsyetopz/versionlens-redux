@@ -1,7 +1,7 @@
-use crate::model::Ecosystem;
 use jsonc_parser::ast::Object;
+use versionlens_model::Ecosystem;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 mod path;
 mod path_target;

@@ -1,7 +1,7 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
-use crate::model::Suggestion;
 use crate::resolve::resolve_dependency;
+use crate::suggestion::Suggestion;
 
 type Dependencies = Vec<Dependency>;
 type Suggestions = Vec<Suggestion>;

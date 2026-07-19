@@ -2,11 +2,11 @@ use crate::positions::line_range;
 use std::borrow::Cow;
 use std::borrow::Cow::Borrowed as CowBorrowed;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::line::{GemLineContext, GemNameSpan, gem_name_range};
 use super::syntax::{attr_string, github_string};
-use crate::model::Ecosystem::Ruby;
+use versionlens_model::Ecosystem::Ruby;
 
 pub(super) fn standard_gem_dependency(
     context: &GemLineContext<'_>,

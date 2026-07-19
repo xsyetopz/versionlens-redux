@@ -3,7 +3,9 @@ mod json;
 mod yanked;
 
 use serde_json::Value;
-use versionlens_versions::{compare_versions, normalized_version};
+use versionlens_versions::{
+    VersionDialect, compare_versions_for_dialect, normalized_version_for_dialect,
+};
 
 use super::xml::{latest_python_rss_version, python_rss_release_versions};
 use json::latest_python_json_version;
@@ -54,12 +56,13 @@ fn python_json_release_versions(value: Value) -> Vec<String> {
 
     versions
         .into_iter()
-        .filter_map(normalized_version)
+        .filter_map(|version| normalized_version_for_dialect(version, VersionDialect::Pep440))
         .collect()
 }
 
 fn sort_python_versions(versions: &mut [String]) {
     versions.sort_by(|left, right| {
-        compare_versions(left, right).unwrap_or_else(|| left.as_str().cmp(right.as_str()))
+        compare_versions_for_dialect(left, right, VersionDialect::Pep440)
+            .unwrap_or_else(|| left.as_str().cmp(right.as_str()))
     });
 }

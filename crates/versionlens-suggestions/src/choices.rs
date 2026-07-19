@@ -4,7 +4,7 @@ use std::cmp::Ordering::{
 };
 use versionlens_versions::requirement_satisfies_latest;
 
-use crate::model::UpdateChoice;
+use crate::suggestion::UpdateChoice;
 
 type UpdateChoices = Vec<UpdateChoice>;
 

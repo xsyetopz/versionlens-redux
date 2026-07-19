@@ -1,7 +1,7 @@
 use super::{DocumentInput, RegistryResponseInput, standard_session};
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 #[test]
 fn dotnet_nuget_versions_return_registry_suggestions() {

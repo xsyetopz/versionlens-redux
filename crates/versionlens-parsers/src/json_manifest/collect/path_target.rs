@@ -7,7 +7,7 @@ use crate::json_manifest::dependency::{
     JsonDependencyRanges, JsonDependencySource, collect_dependency_object,
     json_manifest_dependency, string_content_end, string_content_start,
 };
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 type JsonPathTargetDependencies = Vec<Dependency>;
 

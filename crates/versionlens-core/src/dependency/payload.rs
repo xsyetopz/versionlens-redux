@@ -1,4 +1,4 @@
-use versionlens_parsers::{Dependency, ecosystem_config_namespace};
+use versionlens_model::{Dependency, ecosystem_config_namespace};
 use versionlens_vscode_model::DependencyPayload;
 
 pub(crate) fn into_dependency_payloads(dependencies: Vec<Dependency>) -> Vec<DependencyPayload> {

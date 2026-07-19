@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_suggestions::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Current as StatusCurrent, Directory as StatusDirectory,
     DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,

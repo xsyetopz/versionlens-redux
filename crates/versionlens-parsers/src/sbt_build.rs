@@ -1,7 +1,7 @@
 use crate::maven_xml::MavenNamedRepository;
-use crate::model::Dependency;
-use crate::model::Ecosystem::Maven;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Maven;
 
 pub(crate) fn parse_sbt_build(text: &str) -> Vec<Dependency> {
     let scala_binary_version = scala_binary_version(text);

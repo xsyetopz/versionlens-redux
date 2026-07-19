@@ -1,8 +1,8 @@
 use crate::document::test_support::extract_range;
-use crate::model::Ecosystem::Python;
 use crate::{DocumentInput, parse_document};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Python;
 
 #[test]
 fn parses_requirements_txt_dependencies() {
@@ -49,9 +49,15 @@ fn parses_requirements_txt_dependencies() {
     );
     assert_eq!(extract_range(text, dependencies[4].requirement_range), "");
     assert_eq!(dependencies[5].name, "local");
-    assert_eq!(dependencies[5].requirement, "");
-    assert_eq!(dependencies[5].requirement_prefix, "==");
-    assert_eq!(extract_range(text, dependencies[5].requirement_range), "");
+    assert_eq!(
+        dependencies[5].requirement,
+        "https://example.test/local.whl#sha256=abc"
+    );
+    assert_eq!(dependencies[5].requirement_prefix, "");
+    assert_eq!(
+        extract_range(text, dependencies[5].requirement_range),
+        "https://example.test/local.whl#sha256=abc"
+    );
 }
 
 #[test]
@@ -147,7 +153,7 @@ fn requirements_txt_rejects_names_outside_upstream_regex() {
 }
 
 #[test]
-fn requirements_txt_direct_urls_match_upstream_blank_version() {
+fn requirements_txt_direct_urls_preserve_source_requirement() {
     let text =
         package_file_fixture("requirements-txt-direct-urls-match-upstream-blank-version.txt");
     let dependencies = parse_document(&DocumentInput {
@@ -159,10 +165,68 @@ fn requirements_txt_direct_urls_match_upstream_blank_version() {
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "local");
-    assert_eq!(dependencies[0].requirement, "");
-    assert_eq!(dependencies[0].requirement_prefix, "==");
+    assert_eq!(
+        dependencies[0].requirement,
+        "https://example.test/local.whl#sha256=abc"
+    );
+    assert_eq!(dependencies[0].requirement_prefix, "");
     assert_eq!(extract_range(text, dependencies[0].range), "local");
-    assert_eq!(extract_range(text, dependencies[0].requirement_range), "");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "https://example.test/local.whl#sha256=abc"
+    );
+}
+
+#[test]
+fn requirements_txt_named_direct_references_keep_source_requirement() {
+    let text = "local @ https://example.test/local.tar.gz\n".to_owned()
+        + "vcs[dev] @ git+https://github.com/example/vcs.git@main ; python_version >= '3.11'\n"
+        + "requests==2.32.0\n";
+    let dependencies = parse_document(&DocumentInput {
+        uri: "file:///work/requirements.txt".to_owned(),
+        language_id: "pip-requirements".to_owned(),
+        text: text.clone(),
+        workspace_root: None,
+    });
+
+    assert_eq!(dependencies.len(), 3);
+    assert_eq!(dependencies[0].name, "local");
+    assert_eq!(
+        dependencies[0].requirement,
+        "https://example.test/local.tar.gz"
+    );
+    assert_eq!(
+        extract_range(text.as_str(), dependencies[0].requirement_range),
+        "https://example.test/local.tar.gz"
+    );
+    assert_eq!(dependencies[1].name, "vcs");
+    assert_eq!(
+        dependencies[1].requirement,
+        "git+https://github.com/example/vcs.git@main"
+    );
+    assert_eq!(
+        extract_range(text.as_str(), dependencies[1].requirement_range),
+        "git+https://github.com/example/vcs.git@main"
+    );
+    assert_eq!(dependencies[2].name, "requests");
+    assert_eq!(dependencies[2].requirement, "==2.32.0");
+}
+
+#[test]
+fn requirements_txt_bare_direct_references_are_not_registry_dependencies() {
+    let text = "https://example.test/package.tar.gz\n".to_owned()
+        + "git+https://github.com/example/package.git@main\n"
+        + "requests>=2.0\n";
+    let dependencies = parse_document(&DocumentInput {
+        uri: "file:///work/requirements.txt".to_owned(),
+        language_id: "pip-requirements".to_owned(),
+        text,
+        workspace_root: None,
+    });
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].name, "requests");
+    assert_eq!(dependencies[0].requirement, ">=2.0");
 }
 
 #[test]
@@ -233,8 +297,11 @@ fn requirements_txt_accepts_raw_version_without_operator_like_upstream() {
         "1.0"
     );
     assert_eq!(dependencies[1].name, "local");
-    assert_eq!(dependencies[1].requirement, "");
-    assert_eq!(dependencies[1].requirement_prefix, "==");
+    assert_eq!(
+        dependencies[1].requirement,
+        "https://example.test/local.whl"
+    );
+    assert_eq!(dependencies[1].requirement_prefix, "");
 }
 #[test]
 fn requirements_txt_option_like_lines_parse_like_upstream() {

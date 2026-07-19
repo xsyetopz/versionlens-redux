@@ -2,11 +2,11 @@ use crate::json_manifest::npm::{
     string_requirement as npm_string_requirement, terminal_resolution_selector,
     trim_package_descriptor,
 };
-use crate::model::Ecosystem;
-use crate::model::Ecosystem::Npm;
 use jsonc_parser::ast::{ObjectProp, StringLit};
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::Npm;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::super::{
     JsonDependencyRanges, JsonDependencySource, json_manifest_dependency, property_name_range,

@@ -1,10 +1,10 @@
 use std::ops::Range as ByteRange;
 
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::{Position, Range};
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Python;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Python;
 
 pub(in crate::pyproject_toml) struct PythonDependencySource<'a> {
     pub(in crate::pyproject_toml) text: &'a str,

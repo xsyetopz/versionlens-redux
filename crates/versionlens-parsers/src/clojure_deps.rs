@@ -3,9 +3,9 @@ use self::EdnTokenKind::{
     RBracket as EdnRBracket, String as EdnString, Symbol as EdnSymbol,
 };
 use crate::maven_xml::MavenNamedRepository;
-use crate::model::Dependency;
-use crate::model::Ecosystem::Maven;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Maven;
 
 type ClojureDependencies = Vec<Dependency>;
 

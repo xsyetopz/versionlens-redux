@@ -1,5 +1,5 @@
-use crate::model::Dependency;
 use crate::path_patterns::path_or_member_enabled;
+use versionlens_model::Dependency;
 
 use super::super::paths::TomlPathContext;
 use super::TomlKind::Pipfile as TomlPipfile;

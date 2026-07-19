@@ -1,7 +1,7 @@
 mod line;
 mod split;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use line::parse_requirement_line;
 

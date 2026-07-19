@@ -1,6 +1,6 @@
 use quick_xml::events::BytesStart;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::{DotnetEventContext, DotnetTagKind, event_name};
 

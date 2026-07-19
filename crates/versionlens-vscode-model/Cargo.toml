@@ -12,6 +12,7 @@ version.workspace = true
 
 [dependencies]
 serde.workspace = true
+versionlens-model.workspace = true
 
 [lints]
 workspace = true

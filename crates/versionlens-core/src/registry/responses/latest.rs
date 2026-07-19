@@ -1,8 +1,8 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_providers::{LatestVersionRequest, latest_version_from_response_for_request};
 
 use crate::VersionLensSession;
-use crate::model::RegistryResponseInput;
+use crate::contract::RegistryResponseInput;
 use crate::registry::registry_response_matches;
 
 impl VersionLensSession {

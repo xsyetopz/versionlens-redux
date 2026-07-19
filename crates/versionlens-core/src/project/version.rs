@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_versions::ProjectVersionBump::{Major, Minor, Patch, Prerelease, Release};
 use versionlens_versions::{
     ProjectVersionBump, is_prerelease_project_version, next_project_version,

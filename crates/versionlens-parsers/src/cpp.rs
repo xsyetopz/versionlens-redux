@@ -1,7 +1,7 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Cpp;
 use crate::positions::offset_range;
 use std::iter;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Cpp;
 const GITHUB_API_REPO_PREFIX: &str = "https://api.github.com/repos/";
 
 type CppDependencies = Vec<Dependency>;

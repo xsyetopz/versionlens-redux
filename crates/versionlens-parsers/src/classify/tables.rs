@@ -1,7 +1,7 @@
-use crate::model::ManifestKind;
+use versionlens_model::ManifestKind;
 
 use super::uri::file_name;
-use crate::model::ManifestKind::{
+use versionlens_model::ManifestKind::{
     AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, CabalProject, CargoToml,
     ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
     DenoImportMapJson, DenoJson, DotnetProjectJson, DotnetXml, DubJson, DubSdl, DuneProject,

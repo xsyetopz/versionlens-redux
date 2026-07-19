@@ -2,9 +2,9 @@ use marked_yaml::types::MarkedMappingNode;
 use marked_yaml::types::Node::Scalar as YamlScalar;
 
 use super::super::dependency::dependency;
-use crate::model::Dependency;
 use crate::path_patterns::path_or_member_enabled;
 use crate::pnpm_yaml::PnpmCollectContext;
+use versionlens_model::Dependency;
 
 pub(in crate::pnpm_yaml::collect) fn collect_dependency_mapping(
     context: &PnpmCollectContext<'_>,

@@ -1,4 +1,6 @@
 {
   "imports": { "@std/assert": "jsr:@std/assert@^1.0.0" },
-  "scopes": { "https://deno.land/x/app/": { "@scope/pkg": "jsr:@scope/pkg@0.2.0" } }
+  "scopes": {
+    "https://deno.land/x/app/": { "@scope/pkg": "jsr:@scope/pkg@0.2.0" }
+  }
 }

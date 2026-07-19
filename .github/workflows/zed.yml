@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  zed:
-    name: Zed extension
+  check:
+    name: Zed checks
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -53,17 +53,94 @@ jobs:
       - name: Test Zed extension
         run: cargo test --manifest-path packages/zed-extension/Cargo.toml --locked
 
-      - name: Build language server and Zed extension
+      - name: Build Zed extension
+        run: cargo build --manifest-path packages/zed-extension/Cargo.toml --release --locked
+
+  package:
+    name: Zed package (${{ matrix.editor_target }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - editor_target: linux-x64
+            rust_target: x86_64-unknown-linux-gnu
+            platform: linux
+            arch: x64
+            runner: ubuntu-latest
+          - editor_target: linux-arm64
+            rust_target: aarch64-unknown-linux-gnu
+            platform: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - editor_target: darwin-x64
+            rust_target: x86_64-apple-darwin
+            platform: darwin
+            arch: x64
+            runner: macos-15-intel
+          - editor_target: darwin-arm64
+            rust_target: aarch64-apple-darwin
+            platform: darwin
+            arch: arm64
+            runner: macos-15
+          - editor_target: win32-x64
+            rust_target: x86_64-pc-windows-msvc
+            platform: win32
+            arch: x64
+            runner: windows-latest
+          - editor_target: win32-arm64
+            rust_target: aarch64-pc-windows-msvc
+            platform: win32
+            arch: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Setup Rust target
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
         run: |
-          cargo build -p versionlens-lsp --release --locked
-          cargo build --manifest-path packages/zed-extension/Cargo.toml --release --locked
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal
+          rustup default "$channel"
+          rustup target add "$RUST_TARGET"
+
+      - name: Cache Cargo registry and target
+        uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-zed-${{ matrix.rust_target }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Build native language server
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: cargo build -p versionlens-lsp --release --locked --target "$RUST_TARGET"
 
       - name: Package Zed extension
-        run: bun scripts/package-zed.mjs
+        shell: bash
+        env:
+          EDITOR_ARCH: ${{ matrix.arch }}
+          EDITOR_PLATFORM: ${{ matrix.platform }}
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: bun scripts/package/zed.mjs "$EDITOR_PLATFORM" "$EDITOR_ARCH" "$RUST_TARGET"
 
       - name: Upload Zed artifact
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: versionlens-redux-zed-extension
-          path: dist/versionlens-redux-zed-extension-*.tar.gz
+          name: versionlens-redux-zed-extension-${{ matrix.editor_target }}
+          path: dist/versionlens-redux-zed-extension-${{ matrix.editor_target }}.tar.gz
           if-no-files-found: error

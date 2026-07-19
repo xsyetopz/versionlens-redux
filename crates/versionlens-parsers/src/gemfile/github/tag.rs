@@ -1,11 +1,11 @@
-use crate::model::Dependency;
 use crate::positions::line_range;
+use versionlens_model::Dependency;
 
 use super::super::line::{GemLineContext, GemNameSpan, gem_name_range};
 use super::super::syntax::attr_string_span;
 use super::repository::github_repository;
 use super::url::github_api_url;
-use crate::model::Ecosystem::Ruby;
+use versionlens_model::Ecosystem::Ruby;
 
 pub(in crate::gemfile) fn gem_github_tag_dependency(
     context: &GemLineContext<'_>,

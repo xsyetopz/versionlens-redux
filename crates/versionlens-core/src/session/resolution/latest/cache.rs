@@ -1,29 +1,31 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_suggestions::UpdateChoice;
 
 use crate::VersionLensSession;
 use crate::cache::latest_cache_key;
-use crate::model::RegistryResponseInput;
 use crate::prerelease::{dependency_allows_prereleases, npm_requirement_may_be_dist_tag};
 use crate::registry::RegistryContext;
 
-use super::LatestLookup;
+use super::{LatestLookup, LatestResolutionRequest};
 use crate::session::cache::CachedLatest;
 
 impl VersionLensSession {
     pub(in crate::session::resolution::latest) fn resolve_cacheable_latest(
         &self,
-        dependency: &Dependency,
-        responses: &[RegistryResponseInput],
-        has_registry_response: bool,
-        context: &RegistryContext,
+        request: LatestResolutionRequest<'_>,
     ) -> LatestLookup {
+        let LatestResolutionRequest {
+            dependency,
+            has_registry_response,
+            context,
+            ..
+        } = request;
         let key = latest_cache_key(dependency);
         if !has_registry_response && let Some(cached) = self.cache().get(&key) {
             return cached_latest_lookup(cached);
         }
 
-        match self.lookup_latest(dependency, responses, has_registry_response, context) {
+        match self.lookup_latest(request) {
             Ok(lookup) => {
                 if let Some(latest) = &lookup.latest {
                     self.cache().insert_with_ttl(
@@ -49,12 +51,9 @@ impl VersionLensSession {
 
     pub(in crate::session::resolution::latest) fn resolve_uncached_latest(
         &self,
-        dependency: &Dependency,
-        responses: &[RegistryResponseInput],
-        has_registry_response: bool,
-        context: &RegistryContext,
+        request: LatestResolutionRequest<'_>,
     ) -> LatestLookup {
-        match self.lookup_latest(dependency, responses, has_registry_response, context) {
+        match self.lookup_latest(request) {
             Ok(lookup) => lookup,
             Err(fetch_error) => LatestLookup {
                 latest: None,

@@ -1,4 +1,4 @@
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use crate::dotnet_xml::DotnetEventContext;
 use crate::dotnet_xml::dependency::attrs::{DotnetMissingVersionAttrs, missing_version_dependency};

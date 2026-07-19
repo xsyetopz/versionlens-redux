@@ -1,10 +1,10 @@
-use crate::model::SuggestionStatus::{
+use crate::suggestion::SuggestionStatus::{
     Current as StatusCurrent, UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
-use crate::model::SuggestionStatus;
-use versionlens_parsers::Ecosystem::{Npm, Ruby};
+use crate::suggestion::SuggestionStatus;
+use versionlens_model::Ecosystem::{Npm, Ruby};
 
 pub(super) fn github_commit_status_for_dependency(
     dependency: &Dependency,

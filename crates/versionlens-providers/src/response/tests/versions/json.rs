@@ -1,0 +1,133 @@
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "table-driven manifest coverage stays readable as one scenario"
+)]
+fn reads_latest_versions_from_json_registry_responses() {
+    for (ecosystem, package, body, expected) in [
+        (
+            Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"1.0.228"}}"#,
+            "1.0.228",
+        ),
+        (
+            Cargo,
+            "serde",
+            r#"{"crate":{"max_version":"1.0.229"},"versions":[{"num":"1.0.229","yanked":true},{"num":"1.0.228","yanked":false}]}"#,
+            "1.0.228",
+        ),
+        (
+            Npm,
+            "typescript",
+            r#"{"dist-tags":{"latest":"6.0.3"}}"#,
+            "6.0.3",
+        ),
+        (
+            Npm,
+            "octokit/core.js",
+            r#"[{"name":"v2.5.0"},{"name":"v2.0.0"}]"#,
+            "v2.5.0",
+        ),
+        (
+            Npm,
+            "owner/commit",
+            r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+            "abcdef1",
+        ),
+        (Npm, "owner/short-commit", r#"[{"sha":"123"}]"#, "123"),
+        (
+            Deno,
+            "@std/assert",
+            r#"{"versions":{"1.0.0":{"yanked":true},"1.1.0":{},"1.2.0-rc.1":{},"1.0.3":{}}}"#,
+            "1.1.0",
+        ),
+        (
+            Deno,
+            "@std/assert",
+            r#"{"latest":"1.3.0","versions":{"1.2.0":{},"1.3.0":{}}}"#,
+            "1.3.0",
+        ),
+        (
+            Dotnet,
+            "Newtonsoft.Json",
+            r#"{"versions":["13.0.1","14.0.0-beta.1","13.0.3"]}"#,
+            "13.0.3",
+        ),
+        (
+            Docker,
+            "node",
+            r#"{"results":[{"name":"20","tag_status":"active","digest":"sha256-20"},{"name":"22-beta","tag_status":"active","digest":"sha256-22"},{"name":"18","tag_status":"inactive","digest":"sha256-18"}]}"#,
+            "20",
+        ),
+        (Python, "flask", r#"{"info":{"version":"3.0.0"}}"#, "3.0.0"),
+        (
+            Python,
+            "flask",
+            r#"{"info":{"version":"3.1.0"},"releases":{"3.0.0":[{"yanked":false}],"3.1.0":[{"yanked":true}]}}"#,
+            "3.0.0",
+        ),
+        (
+            Pub,
+            "http",
+            r#"{"versions":[{"version":"1.0.0"},{"version":"1.2.0","retracted":true},{"version":"1.1.0"},{"version":"2.0.0-dev.1"}]}"#,
+            "1.1.0",
+        ),
+        (
+            Ruby,
+            "rails",
+            r#"[{"number":"8.0.0"},{"number":"8.1.0.beta1"},{"number":"8.0.4"}]"#,
+            "8.0.4",
+        ),
+        (
+            Ruby,
+            "rspec/rspec-rails",
+            r#"[{"name":"v6.1.0"},{"name":"v6.0.1"}]"#,
+            "v6.1.0",
+        ),
+        (
+            Ruby,
+            "rspec/rspec-core",
+            r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+            "abcdef1",
+        ),
+        (
+            Vcpkg,
+            "fmt",
+            r#"{"versions":[{"version":"11.1.4","git-tree":"a"},{"version":"11.2.0-rc.1","git-tree":"b"},{"version":"10.2.1#1","git-tree":"c"}]}"#,
+            "11.1.4",
+        ),
+        (
+            Terraform,
+            "hashicorp/aws",
+            r#"{"versions":[{"version":"5.0.0"},{"version":"5.1.0-beta.1"},{"version":"4.67.0"}]}"#,
+            "5.0.0",
+        ),
+        (
+            AnsibleGalaxy,
+            "community.general",
+            r#"{"data":[{"version":"8.0.0-beta.1"},{"version":"7.5.0"}]}"#,
+            "7.5.0",
+        ),
+        (
+            Bazel,
+            "rules_cc",
+            r#"{"versions":["0.0.9","0.0.10-rc1","0.0.10"],"yanked_versions":{"0.0.10":"bad release"}}"#,
+            "0.0.9",
+        ),
+        (
+            Nix,
+            "NixOS/nixpkgs",
+            r#"[{"name":"nixos-24.05"},{"name":"nixos-unstable"},{"name":"23.11"}]"#,
+            "24.05",
+        ),
+        (
+            CocoaPods,
+            "AFNetworking",
+            r#"{"versions":[{"name":"4.0.1"},{"name":"4.0.0-beta.1"},{"name":"3.2.1"}]}"#,
+            "4.0.1",
+        ),
+    ] {
+        assert_latest(ecosystem, package, body, expected);
+    }
+}

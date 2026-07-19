@@ -1,7 +1,7 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::CocoaPods;
 use crate::positions::line_range;
 use std::iter::from_fn;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::CocoaPods;
 
 pub(crate) fn parse_cocoapods_podfile(text: &str) -> Vec<Dependency> {
     let mut parser: PodfileParser = crate::default();

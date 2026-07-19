@@ -1,17 +1,17 @@
-use crate::model::Ecosystem::Pub;
 use marked_yaml::types::MarkedScalarNode;
 use marked_yaml::types::Node::{
     Mapping as YamlMapping, Scalar as YamlScalar, Sequence as YamlSequence,
 };
+use versionlens_model::Ecosystem::Pub;
 mod git;
 mod hosted;
 mod version;
 
 use marked_yaml::types::MarkedMappingNode;
 
-use crate::model::Dependency;
 use crate::positions::offset_range;
 use crate::yaml::{byte_offset, scalar_range};
+use versionlens_model::Dependency;
 
 use super::scalar::scalar_dependency_from_source;
 use super::source::PubspecDependencySource;

@@ -1,1 +1,5 @@
-{"require":{"php-parallel-lint/php-parallel-lint":"definitely-not-a-version"}}
+{
+  "require": {
+    "php-parallel-lint/php-parallel-lint": "definitely-not-a-version"
+  }
+}

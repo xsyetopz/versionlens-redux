@@ -1,19 +1,20 @@
-use crate::model::SuggestionStatus::{
+use crate::suggestion::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Current as StatusCurrent,
     InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
     SatisfiesLatest as StatusSatisfiesLatest, Unresolved as StatusUnresolved,
     UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::{Deno, Docker, Dotnet, Nix, Npm};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{Deno, Docker, Dotnet, Nix, Npm, Python};
 use versionlens_versions::{
-    is_build_update, is_dotnet_requirement_parseable, is_update_available, normalized_version,
-    requirement_has_empty_comparator_intersection, requirement_is_parseable,
-    requirement_satisfies_latest,
+    VersionDialect, is_build_update, is_dotnet_requirement_parseable,
+    is_update_available_for_dialect, normalized_version_for_dialect,
+    requirement_has_empty_comparator_intersection, requirement_is_parseable_for_dialect,
+    requirement_satisfies_latest_for_dialect,
 };
 
 use crate::constructors::no_match;
-use crate::model::{Suggestion, SuggestionStatus};
+use crate::suggestion::{Suggestion, SuggestionStatus};
 
 mod github;
 mod npm;
@@ -53,6 +54,7 @@ pub fn resolve_dependency(dependency: Dependency, latest: Option<String>) -> Sug
 
 fn resolved_status(dependency: &Dependency, latest: &str) -> SuggestionStatus {
     let requirement = comparable_requirement(dependency);
+    let dialect = version_dialect(dependency);
 
     if let Some(status) = github_commit_status_for_dependency(dependency, latest) {
         return status;
@@ -70,19 +72,23 @@ fn resolved_status(dependency: &Dependency, latest: &str) -> SuggestionStatus {
         return StatusBuildAvailable;
     }
 
-    if requirement_has_empty_comparator_intersection(requirement) {
+    if dialect == VersionDialect::Semver
+        && requirement_has_empty_comparator_intersection(requirement)
+    {
         return StatusInvalidRange;
     }
 
-    if semver_registry_requirement_is_not_parseable(dependency, requirement, latest) {
+    if registry_requirement_is_not_parseable(dependency, requirement, latest, dialect) {
         return StatusNoMatch;
     }
 
-    if is_npm_dist_tag_dependency(dependency, latest) || is_update_available(latest, requirement) {
+    if is_npm_dist_tag_dependency(dependency, latest)
+        || is_update_available_for_dialect(latest, requirement, dialect)
+    {
         return StatusUpdateAvailable;
     }
 
-    if requirement_satisfies_latest(requirement, latest) {
+    if requirement_satisfies_latest_for_dialect(requirement, latest, dialect) {
         if range_minimum_matches_latest(requirement, latest) {
             return StatusCurrent;
         }
@@ -138,15 +144,24 @@ fn registry_alias_requirement(requirement: &str) -> Option<&str> {
     Some(&spec[split + 1..])
 }
 
-fn semver_registry_requirement_is_not_parseable(
+fn registry_requirement_is_not_parseable(
     dependency: &Dependency,
     requirement: &str,
     latest: &str,
+    dialect: VersionDialect,
 ) -> bool {
     !matches!(dependency.ecosystem, Docker | Npm)
         && dependency.hosted_url.is_none()
-        && normalized_version(latest).is_some()
-        && !requirement_is_parseable(requirement, latest)
+        && normalized_version_for_dialect(latest, dialect).is_some()
+        && !requirement_is_parseable_for_dialect(requirement, latest, dialect)
+}
+
+fn version_dialect(dependency: &Dependency) -> VersionDialect {
+    if dependency.ecosystem == Python {
+        VersionDialect::Pep440
+    } else {
+        VersionDialect::Semver
+    }
 }
 
 fn range_minimum_matches_latest(requirement: &str, latest: &str) -> bool {

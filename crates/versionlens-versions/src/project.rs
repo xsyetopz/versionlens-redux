@@ -1,4 +1,4 @@
-use crate::model::ProjectVersionBump;
+use crate::policy::ProjectVersionBump;
 
 mod bump;
 mod component;

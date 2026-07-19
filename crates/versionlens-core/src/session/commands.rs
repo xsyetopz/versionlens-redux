@@ -1,7 +1,7 @@
 use versionlens_edits::bulk_update_edits;
 use versionlens_edits::sort_dependency_edits;
 use versionlens_edits::update_edits;
-use versionlens_parsers::{Dependency, DocumentInput, ManifestKind};
+use versionlens_model::{Dependency, DocumentInput, ManifestKind};
 use versionlens_suggestions::Suggestion;
 use versionlens_suggestions::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
@@ -10,9 +10,11 @@ use versionlens_suggestions::SuggestionStatus::{
     UpdateAvailable as StatusUpdateAvailable,
 };
 
+use super::documents::DependencySuggestionsRequest;
+use super::operation::OperationContext;
 use crate::VersionLensSession;
 use crate::command::{filter_update_command, project_version_bump};
-use crate::model::{RegistryResponseInput, ResolveDocumentOutput};
+use crate::contract::{RegistryResponseInput, ResolveDocumentOutput};
 use crate::project::is_project_version_dependency;
 use crate::status::to_u32;
 use crate::suggestion::into_suggestion_payloads;
@@ -53,26 +55,33 @@ impl VersionLensSession {
             selected_version,
             responses,
         } = request;
-        self.clear_authorization_requests();
+        if !recognized_apply_command(command) {
+            return empty_resolve_output();
+        }
+        let operation = OperationContext::with_timeout(crate::duration_from_millis(
+            self.config.http.timeout_ms,
+        ));
         if command == Some("sort") {
             let dependencies = self.dependencies(&input);
             let edits = sort_dependency_edits(&input.text, &dependencies);
             return ResolveDocumentOutput {
-                suggestions: vec![],
                 edits,
-                authorization_required_count: 0,
-                authorization_required_requests: vec![],
-                vulnerable_update_count: 0,
-                vulnerable_update_package: None,
-                vulnerable_update_version: None,
+                ..empty_resolve_output()
             };
         }
+        let selected_version = selected_version.filter(|_| recognized_update_command(command));
 
         let manifest_kind = self.classify_document(&input);
         let project_bump = project_version_bump(command, dependency_name);
         let mut suggestions = match dependency_name {
-            Some(name) => self.resolve_dependency_suggestions(input, name, responses, project_bump),
-            None => self.resolve_suggestions(input, responses, project_bump),
+            Some(name) => self.resolve_dependency_suggestions(DependencySuggestionsRequest {
+                input,
+                selector: name,
+                responses,
+                project_bump,
+                operation: &operation,
+            }),
+            None => self.resolve_suggestions(input, responses, project_bump, &operation),
         };
         let bulk_dependency_update = bulk_dependency_update_command(command, dependency_name);
         if let Some(version) = selected_version {
@@ -92,11 +101,16 @@ impl VersionLensSession {
         let authorization_required_count = Self::authorization_required_count(&suggestions);
         let (vulnerable_update_count, vulnerable_update_package, vulnerable_update_version) =
             if self.config.show_vulnerabilities && dependency_name.is_some() {
-                self.vulnerable_update_summary(&suggestions, responses, Some(manifest_kind))
+                self.vulnerable_update_summary(
+                    &suggestions,
+                    responses,
+                    Some(manifest_kind),
+                    &operation,
+                )
             } else {
                 (0, None, None)
             };
-        let authorization_required_requests = self.take_authorization_requests();
+        let authorization_required_requests = operation.take_authorization_requests();
         let authorization_required_count =
             authorization_required_count.max(to_u32(authorization_required_requests.len()));
         let suggestion_payloads = into_suggestion_payloads(suggestions);
@@ -116,8 +130,9 @@ impl VersionLensSession {
         suggestions: &[Suggestion],
         responses: &[RegistryResponseInput],
         manifest_kind: Option<ManifestKind>,
+        operation: &OperationContext,
     ) -> u32 {
-        self.vulnerable_update_summary(suggestions, responses, manifest_kind)
+        self.vulnerable_update_summary(suggestions, responses, manifest_kind, operation)
             .0
     }
 
@@ -126,9 +141,15 @@ impl VersionLensSession {
         suggestions: &[Suggestion],
         responses: &[RegistryResponseInput],
         manifest_kind: Option<ManifestKind>,
+        operation: &OperationContext,
     ) -> (u32, Option<String>, Option<String>) {
         for suggestion in suggestions {
-            self.cache_update_choice_vulnerabilities(suggestion, responses, manifest_kind);
+            self.cache_update_choice_vulnerabilities(
+                suggestion,
+                responses,
+                manifest_kind,
+                operation,
+            );
         }
 
         let mut count = 0;
@@ -138,7 +159,7 @@ impl VersionLensSession {
             let Some(dependency) = target_update_dependency(suggestion) else {
                 continue;
             };
-            self.cache_vulnerabilities(&dependency, responses, manifest_kind);
+            self.cache_vulnerabilities(&dependency, responses, manifest_kind, operation);
             if !self.has_cached_vulnerabilities(&dependency) {
                 continue;
             }
@@ -157,10 +178,11 @@ impl VersionLensSession {
         suggestion: &Suggestion,
         responses: &[RegistryResponseInput],
         manifest_kind: Option<ManifestKind>,
+        operation: &OperationContext,
     ) {
         for choice in &suggestion.choices {
             let dependency = update_dependency_for_version(suggestion, choice.version.as_str());
-            self.cache_vulnerabilities(&dependency, responses, manifest_kind);
+            self.cache_vulnerabilities(&dependency, responses, manifest_kind, operation);
         }
     }
 
@@ -194,6 +216,36 @@ fn bulk_dependency_update_command(command: Option<&str>, dependency_name: Option
             command,
             Some("update" | "updateMajor" | "updateMinor" | "updatePatch")
         )
+}
+
+fn recognized_apply_command(command: Option<&str>) -> bool {
+    command.is_none() || command == Some("sort") || recognized_update_command(command)
+}
+
+fn recognized_update_command(command: Option<&str>) -> bool {
+    matches!(
+        command,
+        Some(
+            "update"
+                | "updateMajor"
+                | "updateMinor"
+                | "updatePatch"
+                | "updateRelease"
+                | "updatePrerelease"
+        )
+    )
+}
+
+fn empty_resolve_output() -> ResolveDocumentOutput {
+    ResolveDocumentOutput {
+        suggestions: vec![],
+        edits: vec![],
+        authorization_required_count: 0,
+        authorization_required_requests: vec![],
+        vulnerable_update_count: 0,
+        vulnerable_update_package: None,
+        vulnerable_update_version: None,
+    }
 }
 
 fn force_selected_version(suggestions: &mut [Suggestion], version: &str) {

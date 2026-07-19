@@ -1,5 +1,5 @@
 use versionlens_cache::CacheKey;
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_model::{Dependency, Ecosystem};
 use versionlens_providers::provider_id;
 
 pub(crate) fn cache_key(ecosystem: Ecosystem, package: &str) -> CacheKey {
@@ -14,8 +14,11 @@ pub(crate) fn latest_cache_key(dependency: &Dependency) -> CacheKey {
     )
 }
 
-pub(crate) fn request_cache_key(url: &str) -> CacheKey {
-    versionlens_cache::provider_package_cache_key("request", url)
+pub(crate) fn request_cache_key(url: &str, request_context_identity: u128) -> CacheKey {
+    versionlens_cache::provider_package_cache_key(
+        "request",
+        &format!("{request_context_identity:032x}:{url}"),
+    )
 }
 
 pub(crate) fn suggestion_cache_key(dependency: &Dependency) -> CacheKey {

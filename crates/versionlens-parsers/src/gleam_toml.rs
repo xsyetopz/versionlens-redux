@@ -1,6 +1,6 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Hex;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Hex;
 
 pub(crate) fn parse_gleam_toml(text: &str) -> Vec<Dependency> {
     let mut dependencies = vec![];

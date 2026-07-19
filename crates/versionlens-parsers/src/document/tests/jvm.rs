@@ -1,4 +1,4 @@
-use crate::model::Ecosystem::{Conan, Hackage, LuaRocks, Nim, Opam, Swift, Vcpkg, Zig};
+use versionlens_model::Ecosystem::{Conan, Hackage, LuaRocks, Nim, Opam, Swift, Vcpkg, Zig};
 #[test]
 fn parses_clojure_deps_edn_dependencies() {
     let text = package_file_fixture("parses-clojure-deps-edn-dependencies.txt");
@@ -440,4 +440,3 @@ fn parses_luarocks_rockspec_dependencies() {
     assert_eq!(dependencies[3].name, "busted");
     assert_eq!(dependencies[3].requirement_prefix, "~> ");
 }
-

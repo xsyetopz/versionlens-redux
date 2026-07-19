@@ -1,5 +1,5 @@
-use versionlens_parsers::DocumentInput;
-use versionlens_parsers::Ecosystem::Python;
+use versionlens_model::DocumentInput;
+use versionlens_model::Ecosystem::Python;
 
 use crate::{RegistryResponseInput, SessionConfig};
 

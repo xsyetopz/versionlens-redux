@@ -1,7 +1,7 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Zig;
 use crate::positions::offset_range;
 use crate::quoted::{QuotedString, double_quoted_string_at};
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Zig;
 
 const GITHUB_API_REPO_PREFIX: &str = "https://api.github.com/repos/";
 

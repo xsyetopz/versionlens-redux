@@ -1,9 +1,9 @@
 use semver::Version;
 
-use crate::model::ProjectVersionBump;
-use crate::model::ProjectVersionBump::{Major, Minor, Patch};
+use crate::policy::ProjectVersionBump;
+use crate::policy::ProjectVersionBump::{Major, Minor, Patch};
 
-type VersionBump = fn(&Version) -> Version;
+type VersionBump = fn(&Version) -> Option<Version>;
 
 #[derive(Clone, Copy)]
 struct VersionComponentBump {
@@ -26,21 +26,32 @@ const VERSION_COMPONENT_BUMPS: &[VersionComponentBump] = &[
     },
 ];
 
-pub(super) fn bump_version_component(version: Version, bump: ProjectVersionBump) -> Version {
+pub(super) fn bump_version_component(
+    version: Version,
+    bump: ProjectVersionBump,
+) -> Option<Version> {
     VERSION_COMPONENT_BUMPS
         .iter()
         .find_map(|entry| (entry.bump == bump).then(|| (entry.bumped)(&version)))
-        .unwrap_or(version)
+        .unwrap_or(Some(version))
 }
 
-fn major_version_bump(version: &Version) -> Version {
-    crate::semver_version(version.major + 1, 0, 0)
+fn major_version_bump(version: &Version) -> Option<Version> {
+    Some(crate::semver_version(version.major.checked_add(1)?, 0, 0))
 }
 
-fn minor_version_bump(version: &Version) -> Version {
-    crate::semver_version(version.major, version.minor + 1, 0)
+fn minor_version_bump(version: &Version) -> Option<Version> {
+    Some(crate::semver_version(
+        version.major,
+        version.minor.checked_add(1)?,
+        0,
+    ))
 }
 
-fn patch_version_bump(version: &Version) -> Version {
-    crate::semver_version(version.major, version.minor, version.patch + 1)
+fn patch_version_bump(version: &Version) -> Option<Version> {
+    Some(crate::semver_version(
+        version.major,
+        version.minor,
+        version.patch.checked_add(1)?,
+    ))
 }

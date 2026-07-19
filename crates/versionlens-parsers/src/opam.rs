@@ -1,6 +1,6 @@
-use crate::model::Dependency;
-use crate::model::Ecosystem::Opam;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Opam;
 
 pub(crate) fn parse_opam(text: &str) -> Vec<Dependency> {
     let mut dependencies = vec![];

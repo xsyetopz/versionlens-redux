@@ -8,13 +8,70 @@ use std::path::PathBuf;
 use std::process::id;
 use std::thread::sleep;
 
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::cache::cache_key;
 
 use crate::{ProviderCacheConfig, ProviderSettings, RegistryResponseInput, SessionConfig};
-use versionlens_parsers::Ecosystem::Npm;
-use versionlens_parsers::ManifestKind::{NpmPackageJson, PnpmYaml};
+use versionlens_http::HttpHeader;
+use versionlens_model::Ecosystem::Npm;
+use versionlens_model::ManifestKind::{NpmPackageJson, PnpmYaml};
+
+#[test]
+fn request_cache_identity_separates_effective_security_context_without_exposing_secrets() {
+    let session = cache_test_session();
+    let mut first = versionlens_http::standard_http_config();
+    first.auth_headers.push(HttpHeader {
+        name: "authorization".to_owned(),
+        value: "Bearer first-secret".to_owned(),
+        url: None,
+    });
+    let mut second = first.clone();
+    second.auth_headers[0].value = "Bearer second-secret".to_owned();
+    let mut proxied = first.clone();
+    proxied.proxy = Some("http://proxy.example.test".to_owned());
+    let mut custom_tls = first.clone();
+    custom_tls.strict_ssl = false;
+    custom_tls.ca = Some("private-ca-material".to_owned());
+
+    let first_key = session.request_cache_key("https://registry.example.test/pkg", &first);
+    let second_key = session.request_cache_key("https://registry.example.test/pkg", &second);
+    let proxied_key = session.request_cache_key("https://registry.example.test/pkg", &proxied);
+    let custom_tls_key =
+        session.request_cache_key("https://registry.example.test/pkg", &custom_tls);
+
+    assert_ne!(first_key, second_key);
+    assert_ne!(first_key, proxied_key);
+    assert_ne!(first_key, custom_tls_key);
+    assert!(!first_key.as_str().contains("first-secret"));
+    assert!(!second_key.as_str().contains("second-secret"));
+    assert!(!custom_tls_key.as_str().contains("private-ca-material"));
+
+    session.cache_request_body(first_key.clone(), "first response", Npm, None);
+    assert_eq!(
+        session.cached_request_body(&first_key).as_deref(),
+        Some("first response")
+    );
+    assert!(session.cached_request_body(&second_key).is_none());
+    assert!(session.cached_request_body(&proxied_key).is_none());
+    assert!(session.cached_request_body(&custom_tls_key).is_none());
+}
+
+#[test]
+fn completed_request_lock_keys_are_pruned_during_subsequent_requests() {
+    let session = cache_test_session();
+    let http = versionlens_http::standard_http_config();
+
+    for index in 0..100 {
+        let key = session.request_cache_key(
+            &format!("https://registry.example.test/package-{index}"),
+            &http,
+        );
+        drop(session.request_lock(&key));
+    }
+
+    assert_eq!(session.request_locks.lock().unwrap().len(), 1);
+}
 
 #[test]
 fn provider_cache_overrides_global_cache_ttl() {
@@ -432,4 +489,17 @@ fn repo_root() -> PathBuf {
         .and_then(|path| path.parent())
         .expect("core crate should be under crates/")
         .to_path_buf()
+}
+
+fn cache_test_session() -> crate::VersionLensSession {
+    crate::version_lens_session(SessionConfig {
+        cache_ttl_ms: 300_000,
+        enabled_providers: vec![],
+        providers: crate::default(),
+        suggestion_indicators: crate::standard_suggestion_indicators(),
+        show_vulnerabilities: false,
+        show_suggestion_stats: false,
+        show_prereleases: false,
+        http: versionlens_http::standard_http_config(),
+    })
 }

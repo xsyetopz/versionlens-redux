@@ -1,9 +1,9 @@
-use crate::model::Dependency;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
 
 use super::super::DotnetEventContext;
 use super::super::attributes::{attr_value, tag_bounds};
-use crate::model::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 pub(super) fn project_sdk_dependencies(context: &DotnetEventContext<'_>) -> Vec<Dependency> {
     let (tag_start, tag_end) = tag_bounds(context.text, context.span.start, context.span.end);

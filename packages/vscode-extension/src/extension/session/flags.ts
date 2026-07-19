@@ -1,39 +1,45 @@
-import * as vscode from "vscode";
+import { type Uri, workspace } from "#vscode-host";
 import type { ExtensionState } from "../state.ts";
 import { configuredValue } from "./configured.ts";
 
-export function configuredEnabledProviders() {
-	return configuredValue<string[] | undefined>(
-		"enabledProviders",
-		vscode.workspace.getConfiguration("versionlens"),
-	);
+function configuredEnabledProviders(resource?: Uri): string[] | undefined {
+  return configuredValue<string[] | undefined>(
+    "enabledProviders",
+    workspace.getConfiguration("versionlens", resource),
+  );
 }
 
-export function configuredShowVulnerabilities() {
-	return configuredValue<boolean | undefined>(
-		"suggestions.showVulnerabilities",
-		vscode.workspace.getConfiguration("versionlens"),
-	);
+function configuredShowVulnerabilities(resource?: Uri): boolean | undefined {
+  return configuredValue<boolean | undefined>(
+    "suggestions.showVulnerabilities",
+    workspace.getConfiguration("versionlens", resource),
+  );
 }
 
-export function reloadConfigurationState(state: ExtensionState) {
-	const config = vscode.workspace.getConfiguration("versionlens");
-	state.flags.showVersionLenses = config.get(
-		"suggestions.showOnStartup",
-		false,
-	);
-	state.flags.showPrereleases = prereleasesOnStartup();
-	state.flags.showSuggestionStats = config.get(
-		"suggestions.showSuggestionsStats",
-		false,
-	);
+function reloadConfigurationState(state: ExtensionState): void {
+  const config = workspace.getConfiguration("versionlens");
+  state.flags.showVersionLenses = config.get(
+    "suggestions.showOnStartup",
+    false,
+  );
+  state.flags.showPrereleases = prereleasesOnStartup();
+  state.flags.showSuggestionStats = config.get(
+    "suggestions.showSuggestionsStats",
+    false,
+  );
 }
 
-function prereleasesOnStartup() {
-	return (
-		configuredValue<boolean>(
-			"suggestions.showPrereleasesOnStartup",
-			vscode.workspace.getConfiguration("versionlens"),
-		) ?? false
-	);
+function prereleasesOnStartup(): boolean {
+  return (
+    configuredValue<boolean>(
+      "suggestions.showPrereleasesOnStartup",
+      workspace.getConfiguration("versionlens"),
+    ) ?? false
+  );
 }
+
+export {
+  configuredEnabledProviders,
+  configuredShowVulnerabilities,
+  reloadConfigurationState,
+};

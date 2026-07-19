@@ -3,7 +3,7 @@ use super::{
 };
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::Ecosystem::Npm;
+use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn npm_latest_dist_tag_caps_stable_update_choices() {

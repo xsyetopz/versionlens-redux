@@ -1,4 +1,4 @@
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 
 pub(super) fn is_cargo_package_version(dependency: &Dependency) -> bool {
     dependency.group == "package" && dependency.name == "version"

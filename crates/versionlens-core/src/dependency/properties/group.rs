@@ -1,5 +1,5 @@
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::Dotnet;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Dotnet;
 
 pub(super) fn dependency_property_group(dependency: &Dependency) -> String {
     match dependency.ecosystem {

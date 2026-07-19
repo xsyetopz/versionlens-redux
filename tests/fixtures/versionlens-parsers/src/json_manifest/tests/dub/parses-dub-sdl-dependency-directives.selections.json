@@ -1,5 +1,0 @@
-
-name "app"
-dependency "vibe-d" version="~>0.9.7"
-dependency "localdep" path="../localdep" optional=true default=true
-dependency "remote" repository="git+https://example.org/remote.git" version="a1b2c3d4"

@@ -1,9 +1,9 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::{RegistryResponseInput, SessionConfig};
-use versionlens_parsers::Ecosystem::Dub;
+use versionlens_model::Ecosystem::Dub;
 
 #[test]
 fn resolves_repo_versions_as_current_when_registry_matches() {

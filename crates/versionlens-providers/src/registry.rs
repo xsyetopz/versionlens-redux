@@ -1,11 +1,15 @@
-use versionlens_parsers::Ecosystem;
+use versionlens_model::Ecosystem;
 
 mod eligibility;
+mod endpoint;
 mod urls;
 
 pub use eligibility::{
     is_composer_platform_dependency, is_registry_dependency, is_registry_requirement,
     is_unsupported_dotnet_requirement,
+};
+pub use endpoint::{
+    RegistryEndpoint, RegistryResponseKind, registry_endpoint, registry_endpoint_with_base,
 };
 pub use urls::{
     ansible_role_registry_url_with_base, docker_hub_body_has_next_page, docker_hub_tags_page_url,

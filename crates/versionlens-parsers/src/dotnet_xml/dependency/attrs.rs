@@ -1,11 +1,11 @@
 use self::DotnetDependencyRange::Name as DotnetRangeName;
 use self::DotnetDependencyRange::Tag as DotnetRangeTag;
-use crate::model::Dependency;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
 
 use super::super::DotnetEventContext;
 use super::super::attributes::{attr_value, tag_bounds, version_insert};
-use crate::model::Ecosystem::Dotnet;
+use versionlens_model::Ecosystem::Dotnet;
 
 pub(super) struct DotnetDependencyAttrs<'a> {
     pub(super) group: &'a str,

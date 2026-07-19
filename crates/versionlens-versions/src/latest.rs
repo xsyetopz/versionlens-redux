@@ -1,6 +1,8 @@
 use semver::Version;
 
+use crate::VersionDialect;
 use crate::parse::parse_version;
+use crate::pep440;
 
 mod prerelease;
 
@@ -25,6 +27,27 @@ pub fn latest_version_with_prerelease_tags<'a>(
     versions
         .into_iter()
         .filter_map(|raw| parse_version_entry(raw, include_prereleases, prerelease_tags))
+        .max_by(|left, right| left.0.cmp(&right.0))
+        .map(|(_, raw)| raw.to_owned())
+}
+
+pub fn latest_version_for_dialect<'a>(
+    versions: impl IntoIterator<Item = &'a str>,
+    include_prereleases: bool,
+    prerelease_tags: &[String],
+    dialect: VersionDialect,
+) -> Option<String> {
+    if dialect == VersionDialect::Semver {
+        return latest_version_with_prerelease_tags(versions, include_prereleases, prerelease_tags);
+    }
+
+    versions
+        .into_iter()
+        .filter_map(|raw| {
+            let version = pep440::parse_version(raw)?;
+            pep440::prerelease_allowed(&version, include_prereleases, prerelease_tags)
+                .then_some((version, raw))
+        })
         .max_by(|left, right| left.0.cmp(&right.0))
         .map(|(_, raw)| raw.to_owned())
 }

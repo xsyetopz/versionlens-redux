@@ -1,5 +1,5 @@
 use super::{DocumentInput, package_file_fixture, session_with_properties};
-use versionlens_parsers::Ecosystem::Pub;
+use versionlens_model::Ecosystem::Pub;
 
 #[test]
 fn dependency_properties_allow_custom_pub_paths() {

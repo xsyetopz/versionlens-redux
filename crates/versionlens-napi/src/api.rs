@@ -1,25 +1,25 @@
 use napi::Env as NapiEnv;
 use napi::Result as NapiResult;
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, RwLock};
 
 use napi::bindgen_prelude::{AsyncTask, Task};
 use napi_derive::napi;
 use versionlens_core::{ApplyCommandRequest, VersionLensSession, version_lens_session};
 
-use crate::model::{
+use crate::binding::{
     NativeAnalyzeDocumentOutput, NativeApplyCommandInput, NativeDocumentInput,
     NativeResolveDocumentOutput, NativeSessionConfig,
 };
 
 #[napi]
 pub struct NativeSession {
-    inner: Arc<RwLock<Option<VersionLensSession>>>,
+    inner: Arc<RwLock<Option<Arc<VersionLensSession>>>>,
 }
 
 #[napi]
 pub fn create_session(config: NativeSessionConfig) -> NativeSession {
     NativeSession {
-        inner: crate::new_session_cell(Some(version_lens_session(config.into_core()))),
+        inner: crate::new_session_cell(Some(Arc::new(version_lens_session(config.into_core())))),
     }
 }
 
@@ -27,7 +27,7 @@ pub fn create_session(config: NativeSessionConfig) -> NativeSession {
 impl NativeSession {
     #[napi]
     pub fn analyze_document(&self, input: NativeDocumentInput) -> NativeAnalyzeDocumentOutput {
-        self.with_session(crate::empty_analyze_document_output(), |session| {
+        self.with_session(NativeAnalyzeDocumentOutput::default(), |session| {
             crate::analyze_document_output_from_core(session.analyze_document(input.into_core()))
         })
     }
@@ -58,7 +58,7 @@ impl NativeSession {
 
     #[napi]
     pub fn clear_cache(&self) {
-        if let Some(session) = self.read_guard().as_ref() {
+        if let Some(session) = self.session() {
             session.clear_cache();
         }
     }
@@ -71,20 +71,20 @@ impl NativeSession {
 
 impl NativeSession {
     fn with_session<T>(&self, disposed: T, operation: impl FnOnce(&VersionLensSession) -> T) -> T {
-        let guard = self.read_guard();
-        match guard.as_ref() {
-            Some(session) => operation(session),
+        match self.session() {
+            Some(session) => operation(&session),
             None => disposed,
         }
     }
 
-    fn read_guard(&self) -> RwLockReadGuard<'_, Option<VersionLensSession>> {
+    fn session(&self) -> Option<Arc<VersionLensSession>> {
         self.inner
             .read()
             .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .clone()
     }
 
-    fn write_guard(&self) -> RwLockWriteGuard<'_, Option<VersionLensSession>> {
+    fn write_guard(&self) -> std::sync::RwLockWriteGuard<'_, Option<Arc<VersionLensSession>>> {
         self.inner
             .write()
             .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
@@ -92,7 +92,7 @@ impl NativeSession {
 }
 
 pub struct ResolveDocumentTask {
-    session: Arc<RwLock<Option<VersionLensSession>>>,
+    session: Arc<RwLock<Option<Arc<VersionLensSession>>>>,
     input: Option<NativeDocumentInput>,
 }
 
@@ -105,11 +105,12 @@ impl Task for ResolveDocumentTask {
             return Ok(crate::empty_resolve_document_output());
         };
         let input = input.into_core();
-        let guard = self
+        let session = self
             .session
             .read()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
-        Ok(match guard.as_ref() {
+            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .clone();
+        Ok(match session {
             Some(session) => {
                 crate::resolve_document_output_from_core(session.resolve_document(input))
             }

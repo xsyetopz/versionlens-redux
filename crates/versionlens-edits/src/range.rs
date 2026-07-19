@@ -1,4 +1,4 @@
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::{Position, Range};
 
 pub(crate) fn line_range(start_line: usize, end_line: usize, end_text: &str) -> Range {
     Range {

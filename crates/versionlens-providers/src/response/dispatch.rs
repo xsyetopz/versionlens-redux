@@ -1,7 +1,7 @@
 use self::json::latest_json_response;
 use self::text::latest_text_response;
-use versionlens_parsers::Ecosystem;
-use versionlens_parsers::Ecosystem::{
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Cran, Deno, Docker, Dotnet,
     Dub, Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm, Opam, Pub, Python,
     Ruby, Swift, Terraform, Unity, Vcpkg, Zig,

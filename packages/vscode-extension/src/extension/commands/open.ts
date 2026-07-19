@@ -1,16 +1,16 @@
-import * as vscode from "vscode";
+import { env, FileType, Uri, window, workspace } from "#vscode-host";
 
-export async function openDependency(path: string | undefined) {
-	if (!path) {
-		return;
-	}
+export async function openDependency(path: string | undefined): Promise<void> {
+  if (!path) {
+    return;
+  }
 
-	const uri = vscode.Uri.file(path);
-	const stat = await vscode.workspace.fs.stat(uri);
-	if (stat.type === vscode.FileType.Directory) {
-		await vscode.env.openExternal(uri);
-		return;
-	}
+  const uri = Uri.file(path);
+  const stat = await workspace.fs.stat(uri);
+  if (stat.type === FileType.Directory) {
+    await env.openExternal(uri);
+    return;
+  }
 
-	await vscode.window.showTextDocument(uri);
+  await window.showTextDocument(uri);
 }

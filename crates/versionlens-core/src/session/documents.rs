@@ -3,22 +3,23 @@ use std::collections::HashSet;
 use versionlens_edits::can_sort_dependencies;
 use versionlens_edits::update_edits;
 
-use versionlens_parsers::{DocumentInput, ManifestKind, ecosystem_for_manifest};
+use versionlens_model::{DocumentInput, ManifestKind, ecosystem_for_manifest};
 use versionlens_suggestions::Suggestion;
 use versionlens_versions::ProjectVersionBump;
 use versionlens_vscode_model::DiagnosticPayload;
 
+use super::operation::OperationContext;
 use super::resolution::ResolutionRequest;
 use crate::VersionLensSession;
 use crate::command::install_task_config_key_for_manifest;
+use crate::contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
 use crate::dependency::into_dependency_payloads;
-use crate::model::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
 use crate::registry;
 use crate::schema::schema_output;
 use crate::snapshot::dependency_signature;
 use crate::status::{status_payload, to_u32};
 use crate::suggestion::into_suggestion_payloads;
-use versionlens_parsers::ManifestKind::{
+use versionlens_model::ManifestKind::{
     AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
     ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
     DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson, DotnetXml,
@@ -31,6 +32,14 @@ use versionlens_parsers::ManifestKind::{
     SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, Unknown, VcpkgJson,
     VersionLensMultiRegistries, XmakeLua, ZigBuildZon,
 };
+
+pub(super) struct DependencySuggestionsRequest<'a> {
+    pub(super) input: DocumentInput,
+    pub(super) selector: &'a str,
+    pub(super) responses: &'a [RegistryResponseInput],
+    pub(super) project_bump: Option<ProjectVersionBump>,
+    pub(super) operation: &'a OperationContext,
+}
 
 impl VersionLensSession {
     pub fn analyze_document(&self, input: DocumentInput) -> AnalyzeDocumentOutput {
@@ -118,14 +127,16 @@ impl VersionLensSession {
         input: DocumentInput,
         responses: &[RegistryResponseInput],
     ) -> ResolveDocumentOutput {
-        self.clear_authorization_requests();
+        let operation = OperationContext::with_timeout(crate::duration_from_millis(
+            self.config.http.timeout_ms,
+        ));
         let manifest_kind = self.classify_document(&input);
-        let suggestions = self.resolve_suggestions(input, responses, None);
+        let suggestions = self.resolve_suggestions(input, responses, None, &operation);
         let edits = update_edits(&suggestions);
         let authorization_required_count = Self::authorization_required_count(&suggestions);
         let vulnerable_update_count =
-            self.vulnerable_update_count(&suggestions, responses, Some(manifest_kind));
-        let authorization_required_requests = self.take_authorization_requests();
+            self.vulnerable_update_count(&suggestions, responses, Some(manifest_kind), &operation);
+        let authorization_required_requests = operation.take_authorization_requests();
         let authorization_required_count =
             authorization_required_count.max(to_u32(authorization_required_requests.len()));
         let suggestion_payloads = into_suggestion_payloads(suggestions);
@@ -145,6 +156,7 @@ impl VersionLensSession {
         input: DocumentInput,
         responses: &[RegistryResponseInput],
         project_bump: Option<ProjectVersionBump>,
+        operation: &OperationContext,
     ) -> Vec<Suggestion> {
         let manifest_kind = self.classify_document(&input);
         let context = registry::registry_context_from_document_kind(&input, manifest_kind);
@@ -154,6 +166,7 @@ impl VersionLensSession {
             responses,
             project_bump,
             context: &context,
+            operation,
         });
         if project_bump.is_none() {
             self.cache_resolved_suggestions(&suggestions, context.manifest_kind());
@@ -161,13 +174,17 @@ impl VersionLensSession {
         suggestions
     }
 
-    pub(crate) fn resolve_dependency_suggestions(
+    pub(super) fn resolve_dependency_suggestions(
         &self,
-        input: DocumentInput,
-        selector: &str,
-        responses: &[RegistryResponseInput],
-        project_bump: Option<ProjectVersionBump>,
+        request: DependencySuggestionsRequest<'_>,
     ) -> Vec<Suggestion> {
+        let DependencySuggestionsRequest {
+            input,
+            selector,
+            responses,
+            project_bump,
+            operation,
+        } = request;
         let manifest_kind = self.classify_document(&input);
         let context = registry::registry_context_from_document_kind(&input, manifest_kind);
         let dependencies = self
@@ -181,6 +198,7 @@ impl VersionLensSession {
             responses,
             project_bump,
             context: &context,
+            operation,
         })
     }
 }

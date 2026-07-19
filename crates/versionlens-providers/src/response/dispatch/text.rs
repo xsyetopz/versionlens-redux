@@ -1,4 +1,4 @@
-use versionlens_parsers::Ecosystem;
+use versionlens_model::Ecosystem;
 
 use super::ResponseRequest;
 use crate::response::cpp::latest_cpp_text_version;
@@ -11,7 +11,7 @@ use crate::response::luarocks::latest_luarocks_version;
 use crate::response::opam::latest_opam_version;
 use crate::response::python::latest_python_version;
 use crate::response::xml::latest_maven_version;
-use versionlens_parsers::Ecosystem::{
+use versionlens_model::Ecosystem::{
     Cpp, Cran, Go, Haxelib, Helm, Julia, LuaRocks, Maven, Opam, Python,
 };
 

@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 
 use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::Ruby;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Ruby;
 
 pub(in crate::sort) fn dependency_group(dependency: &Dependency) -> &str {
     dependency.group.as_str()

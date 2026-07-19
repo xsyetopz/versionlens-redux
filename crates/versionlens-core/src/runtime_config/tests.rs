@@ -1,6 +1,6 @@
 use crate::{ProviderHttpConfig, ProviderSettings, SessionConfig};
-use versionlens_parsers::Ecosystem::{Cargo, Npm};
-use versionlens_parsers::ManifestKind::{NpmPackageJson, PnpmYaml};
+use versionlens_model::Ecosystem::{Cargo, Npm};
+use versionlens_model::ManifestKind::{NpmPackageJson, PnpmYaml};
 
 #[test]
 fn provider_http_overrides_global_strict_ssl() {

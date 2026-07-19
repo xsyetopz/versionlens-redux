@@ -1,4 +1,4 @@
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::{Position, Range};
 
 use super::to_u32;
 

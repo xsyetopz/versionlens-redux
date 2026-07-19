@@ -1,5 +1,5 @@
-use versionlens_parsers::Dependency;
-use versionlens_parsers::Ecosystem::Npm;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Npm;
 
 pub(crate) fn is_npm_package_manager(dependency: &Dependency) -> bool {
     dependency.ecosystem == Npm

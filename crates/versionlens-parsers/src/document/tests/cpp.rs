@@ -1,4 +1,4 @@
-use crate::model::Ecosystem::Cpp;
+use versionlens_model::Ecosystem::Cpp;
 
 #[test]
 fn parses_cpp_cmake_dependencies() {

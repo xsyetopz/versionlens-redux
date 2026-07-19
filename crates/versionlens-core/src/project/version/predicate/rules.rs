@@ -3,7 +3,7 @@ mod generic;
 mod package;
 mod python;
 
-use versionlens_parsers::{Dependency, Ecosystem};
+use versionlens_model::{Dependency, Ecosystem};
 
 use dotnet::is_dotnet_property_version;
 use generic::is_name_version_requirement;
@@ -12,7 +12,7 @@ use package::{
     is_maven_project_version, is_pub_version,
 };
 use python::is_python_project_version;
-use versionlens_parsers::Ecosystem::{
+use versionlens_model::Ecosystem::{
     Cargo, Composer, Cran, Deno, Dotnet, Hackage, Hex, Julia, Maven, Npm, Opam, Pub, Python,
 };
 

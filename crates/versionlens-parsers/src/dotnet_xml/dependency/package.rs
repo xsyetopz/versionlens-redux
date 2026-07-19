@@ -3,7 +3,7 @@ mod missing;
 mod tag;
 mod versioned;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::super::{DotnetEventContext, DotnetTagKind};
 use missing::missing_version_package_dependency;

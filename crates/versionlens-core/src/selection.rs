@@ -1,5 +1,5 @@
-use versionlens_parsers::Dependency;
-use versionlens_vscode_model::{Position, Range};
+use versionlens_model::Dependency;
+use versionlens_model::{Position, Range};
 
 const SEPARATOR: char = '\u{001F}';
 

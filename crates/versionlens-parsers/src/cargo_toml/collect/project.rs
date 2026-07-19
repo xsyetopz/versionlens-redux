@@ -1,7 +1,7 @@
 use crate::cargo_toml::paths::is_cargo_project_version;
 use toml_edit::{Key, Value as TomlValue};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::CargoCollectContext;
 use crate::cargo_toml::dependency::{CargoTomlDependencyInput, toml_dependency};

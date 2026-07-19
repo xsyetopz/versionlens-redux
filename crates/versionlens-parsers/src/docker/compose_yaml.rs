@@ -1,13 +1,13 @@
 use marked_yaml::types::Node::Mapping as YamlMapping;
 use marked_yaml::{parse_yaml, types::MarkedMappingNode};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 mod build;
+mod dependencies;
 mod image;
-mod service;
 
-use service::mapping_node_dependencies;
+use dependencies::mapping_node_dependencies;
 
 pub(crate) fn parse_docker_compose_yaml(text: &str) -> Vec<Dependency> {
     let Ok(root) = parse_yaml(0, text) else {

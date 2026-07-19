@@ -1,8 +1,8 @@
 use crate::document::test_support::extract_range;
-use crate::model::Ecosystem::Go;
 use crate::{DocumentInput, parse_document};
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Go;
 
 #[test]
 fn parses_go_mod_dependencies() {

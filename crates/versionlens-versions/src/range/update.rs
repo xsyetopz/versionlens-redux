@@ -1,5 +1,7 @@
-use crate::model::UpdateLevel;
-use crate::parse::{parse_coerced_version, parse_version};
+use crate::parse::{normalize_requirement, parse_coerced_version, parse_version};
+use crate::pep440;
+use crate::policy::UpdateLevel;
+use crate::policy::VersionDialect;
 
 use super::compare::is_newer;
 use super::requirement_has_empty_comparator_intersection;
@@ -7,11 +9,14 @@ use super::requirements::{
     disjunctive_requirement_satisfies, nuget_requirement_satisfies, pessimistic_update_available,
     range_requirement_satisfies, semver_range_requirement_satisfies,
 };
-use crate::model::UpdateLevel::{Major, Minor, Patch};
+use crate::policy::UpdateLevel::{Major, Minor, Patch};
 
 pub fn is_update_available(latest: &str, requirement: &str) -> bool {
     if requirement.trim().is_empty() {
         return true;
+    }
+    if latest_is_older_than_semver_lower_bound(latest, requirement) {
+        return false;
     }
     if let Some(is_update) = pessimistic_update_available(requirement, latest) {
         return is_update;
@@ -36,8 +41,30 @@ pub fn is_update_available(latest: &str, requirement: &str) -> bool {
     is_newer(latest, requirement)
 }
 
+pub fn is_update_available_for_dialect(
+    latest: &str,
+    requirement: &str,
+    dialect: VersionDialect,
+) -> bool {
+    match dialect {
+        VersionDialect::Semver => is_update_available(latest, requirement),
+        VersionDialect::Pep440 => pep440::is_update_available(latest, requirement),
+    }
+}
+
 pub fn requirement_satisfies_latest(requirement: &str, latest: &str) -> bool {
     range_requirement_satisfies(requirement, latest)
+}
+
+pub fn requirement_satisfies_latest_for_dialect(
+    requirement: &str,
+    latest: &str,
+    dialect: VersionDialect,
+) -> bool {
+    match dialect {
+        VersionDialect::Semver => requirement_satisfies_latest(requirement, latest),
+        VersionDialect::Pep440 => pep440::requirement_satisfies(requirement, latest),
+    }
 }
 
 pub fn requirement_is_parseable(requirement: &str, latest: &str) -> bool {
@@ -48,6 +75,46 @@ pub fn requirement_is_parseable(requirement: &str, latest: &str) -> bool {
         || nuget_requirement_satisfies(requirement, latest).is_some()
         || disjunctive_requirement_satisfies(requirement, latest).is_some()
         || semver_range_requirement_satisfies(requirement, latest).is_some()
+}
+
+pub fn requirement_is_parseable_for_dialect(
+    requirement: &str,
+    latest: &str,
+    dialect: VersionDialect,
+) -> bool {
+    match dialect {
+        VersionDialect::Semver => requirement_is_parseable(requirement, latest),
+        VersionDialect::Pep440 => pep440::requirement_is_parseable(requirement),
+    }
+}
+
+fn latest_is_older_than_semver_lower_bound(latest: &str, requirement: &str) -> bool {
+    if requirement.contains("||") {
+        return false;
+    }
+    let Some(latest) = parse_version(latest) else {
+        return false;
+    };
+    semver_lower_bounds(requirement)
+        .into_iter()
+        .max()
+        .is_some_and(|lower| latest < lower)
+}
+
+fn semver_lower_bounds(requirement: &str) -> Vec<semver::Version> {
+    normalize_requirement(requirement)
+        .split(|char: char| char.is_whitespace() || char == ',')
+        .filter_map(|part| {
+            let part = part.trim();
+            if part.is_empty() || part.starts_with('<') {
+                return None;
+            }
+            let version = part.trim_start_matches(['^', '~', '>', '=']);
+            (!version.contains(['*', 'x', 'X']))
+                .then(|| parse_version(version))
+                .flatten()
+        })
+        .collect()
 }
 
 pub fn is_build_update(latest: &str, requirement: &str) -> bool {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::nodes::XmlNode;
 

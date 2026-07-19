@@ -1,4 +1,5 @@
-use versionlens_parsers::{DocumentInput, parse_document};
+use versionlens_model::DocumentInput;
+use versionlens_parsers::parse_document;
 
 use crate::{
     ProviderSettings, RegistryResponseInput, RegistryUrlConfig, SessionConfig, VersionLensSession,
@@ -36,5 +37,4 @@ mod go;
 mod hex;
 mod maven;
 mod npm;
-mod npm_request_cache;
 mod project;

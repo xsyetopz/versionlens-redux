@@ -1,4 +1,4 @@
-use versionlens_parsers::DocumentInput;
+use versionlens_model::DocumentInput;
 
 use crate::AnalyzeDocumentOutput;
 use crate::status::status_payload;

@@ -1,7 +1,7 @@
 use jsonc_parser::ast::{ObjectProp, StringLit};
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Npm;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Npm;
 
 mod literal;
 mod npm;

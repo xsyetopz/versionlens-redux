@@ -2,7 +2,7 @@ use super::super::scalar::scalar_dependency_from_source;
 use super::super::source::PubspecDependencySource;
 use marked_yaml::types::{MarkedMappingNode, MarkedScalarNode};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::hosted::{hosted_name, hosted_url};
 

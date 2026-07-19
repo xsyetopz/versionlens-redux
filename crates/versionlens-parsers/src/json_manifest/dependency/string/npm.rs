@@ -1,7 +1,7 @@
 use crate::json_manifest::npm::{alias_dependency, github_dependency};
 use jsonc_parser::ast::{ObjectProp, StringLit};
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::super::{
     JsonDependencyRanges, JsonDependencySource, json_manifest_dependency, property_name_range,

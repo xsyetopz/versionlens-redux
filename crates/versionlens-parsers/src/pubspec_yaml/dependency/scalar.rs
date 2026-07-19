@@ -1,12 +1,12 @@
 use marked_yaml::types::MarkedScalarNode;
 use std::ops::Range;
 
-use crate::model::Dependency;
 use crate::positions::offset_range;
 use crate::yaml::{byte_offset, scalar_range};
+use versionlens_model::Dependency;
 
 use super::source::PubspecDependencySource;
-use crate::model::Ecosystem::Pub;
+use versionlens_model::Ecosystem::Pub;
 
 pub(super) fn scalar_dependency_from_source(
     source: &PubspecDependencySource<'_>,

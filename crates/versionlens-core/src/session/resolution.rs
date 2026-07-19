@@ -1,10 +1,11 @@
 use self::parallel::resolve_dependencies;
-use versionlens_parsers::Dependency;
+use versionlens_model::Dependency;
 use versionlens_suggestions::Suggestion;
 use versionlens_versions::ProjectVersionBump;
 
+use super::operation::OperationContext;
 use crate::VersionLensSession;
-use crate::model::RegistryResponseInput;
+use crate::contract::RegistryResponseInput;
 use crate::registry::RegistryContext;
 
 pub(crate) struct ResolutionRequest<'a> {
@@ -13,6 +14,7 @@ pub(crate) struct ResolutionRequest<'a> {
     pub(super) responses: &'a [RegistryResponseInput],
     pub(super) project_bump: Option<ProjectVersionBump>,
     pub(super) context: &'a RegistryContext,
+    pub(super) operation: &'a OperationContext,
 }
 
 mod dependency;

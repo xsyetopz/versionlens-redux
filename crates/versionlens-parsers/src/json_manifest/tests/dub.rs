@@ -1,8 +1,8 @@
 use super::{DocumentInput, parse_document, parse_document_with_dependency_paths};
 use crate::document::test_support::extract_range;
-use crate::model::Ecosystem::Dub;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use versionlens_model::Ecosystem::Dub;
 
 #[test]
 fn parses_dub_json_dependency_groups() {
@@ -111,7 +111,7 @@ fn parses_dub_selections_versions() {
 
 #[test]
 fn parses_dub_sdl_dependency_directives() {
-    let text = package_file_fixture("parses-dub-sdl-dependency-directives.selections.json");
+    let text = package_file_fixture("parses-dub-sdl-dependency-directives.selections.txt");
     let dependencies = parse_document(&DocumentInput {
         uri: "file:///work/dub.sdl".to_owned(),
         language_id: "plaintext".to_owned(),

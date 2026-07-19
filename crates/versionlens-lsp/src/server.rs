@@ -1,179 +1,90 @@
-use anyhow::{Context, Result};
-use lsp_server::{Connection, Message, Notification, Request, RequestId, Response};
-use lsp_types::notification::{DidChangeTextDocument, DidOpenTextDocument, Notification as _};
-use lsp_types::request::{CodeLensRequest, Request as LspRequest};
-use lsp_types::{
-    CodeLens, CodeLensOptions, Command, Diagnostic, DiagnosticSeverity, NumberOrString, Position,
-    PublishDiagnosticsParams, Range, ServerCapabilities, TextDocumentSyncCapability,
-    TextDocumentSyncKind, Uri,
-};
-use lsp_types::{CodeLensParams, DidChangeTextDocumentParams, DidOpenTextDocumentParams};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::HashMap;
-use versionlens_core::{SessionConfigInput, VersionLensSession, version_lens_session};
-use versionlens_parsers::DocumentInput;
-use versionlens_vscode_model::{CodeLensPayload, DiagnosticPayload};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+use anyhow::{Context, Result};
+use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
+use lsp_types::notification::{
+    DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
+};
+use lsp_types::request::{CodeLensRequest, ExecuteCommand, Request as LspRequest};
+use lsp_types::{
+    CodeLensParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, ExecuteCommandParams, Uri, WorkspaceFolder,
+};
+use serde::Deserialize;
+use serde_json::Value;
+
+use crate::state::{
+    DISPLAY_CODE_LENS_COMMAND, ResolvedDocument, VersionLensLspState, VersionLensTextDocument,
+};
+
+#[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct VersionLensTextDocument {
-    pub uri: String,
-    pub language_id: String,
-    pub text: String,
-    pub workspace_root: Option<String>,
-}
-
-#[derive(Debug)]
-pub struct VersionLensLspState {
-    session: VersionLensSession,
-    documents: HashMap<String, VersionLensTextDocument>,
-}
-
-impl VersionLensLspState {
-    pub fn standard() -> Self {
-        Self {
-            session: version_lens_session(SessionConfigInput::default().into()),
-            documents: HashMap::new(),
-        }
-    }
-
-    pub fn server_capabilities() -> ServerCapabilities {
-        ServerCapabilities {
-            text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
-            code_lens_provider: Some(CodeLensOptions {
-                resolve_provider: Some(false),
-            }),
-            ..ServerCapabilities::default()
-        }
-    }
-
-    pub fn open_document(&mut self, document: VersionLensTextDocument) -> Vec<Diagnostic> {
-        let diagnostics = self.analyze_document(&document).diagnostics;
-        self.documents
-            .insert(String::from(document.uri.as_str()), document);
-        diagnostics.into_iter().map(into_lsp_diagnostic).collect()
-    }
-
-    pub fn change_document(&mut self, uri: &str, text: String) -> Vec<Diagnostic> {
-        let Some(existing) = self.documents.get(uri) else {
-            return Vec::new();
-        };
-        let document = VersionLensTextDocument {
-            uri: String::from(existing.uri.as_str()),
-            language_id: String::from(existing.language_id.as_str()),
-            text,
-            workspace_root: existing.workspace_root.as_deref().map(str::to_string),
-        };
-        self.open_document(document)
-    }
-
-    pub fn code_lenses(&self, uri: &str) -> Vec<CodeLens> {
-        let Some(document) = self.documents.get(uri) else {
-            return Vec::new();
-        };
-        self.session.resolve_document(document_input(document));
-        self.session
-            .analyze_document(document_input(document))
-            .code_lenses
-            .into_iter()
-            .map(into_lsp_code_lens)
-            .collect()
-    }
-
-    pub fn publish_diagnostics(uri: Uri, diagnostics: Vec<Diagnostic>) -> PublishDiagnosticsParams {
-        PublishDiagnosticsParams {
-            uri,
-            diagnostics,
-            version: None,
-        }
-    }
-
-    fn analyze_document(
-        &self,
-        document: &VersionLensTextDocument,
-    ) -> versionlens_core::AnalyzeDocumentOutput {
-        self.session.analyze_document(document_input(document))
-    }
-}
-
-fn document_input(document: &VersionLensTextDocument) -> DocumentInput {
-    DocumentInput {
-        uri: String::from(document.uri.as_str()),
-        language_id: String::from(document.language_id.as_str()),
-        text: String::from(document.text.as_str()),
-        workspace_root: document.workspace_root.as_deref().map(str::to_string),
-    }
-}
-
-pub fn into_lsp_range(range: versionlens_vscode_model::Range) -> Range {
-    Range {
-        start: Position::new(range.start.line, range.start.character),
-        end: Position::new(range.end.line, range.end.character),
-    }
-}
-
-fn into_lsp_code_lens(payload: CodeLensPayload) -> CodeLens {
-    CodeLens {
-        range: into_lsp_range(payload.range),
-        command: Some(Command {
-            title: payload.title,
-            command: payload.command,
-            arguments: Some(payload.arguments.into_iter().map(Value::String).collect()),
-        }),
-        data: None,
-    }
-}
-
-fn into_lsp_diagnostic(payload: DiagnosticPayload) -> Diagnostic {
-    Diagnostic {
-        range: into_lsp_range(payload.range),
-        severity: diagnostic_severity(payload.severity),
-        code: payload.code.map(NumberOrString::String),
-        code_description: payload
-            .code_description_url
-            .and_then(|href| href.parse::<Uri>().ok())
-            .map(|href| lsp_types::CodeDescription { href }),
-        source: payload.source,
-        message: payload.message,
-        related_information: None,
-        tags: None,
-        data: None,
-    }
-}
-
-fn diagnostic_severity(severity: u8) -> Option<DiagnosticSeverity> {
-    match severity {
-        0 => Some(DiagnosticSeverity::ERROR),
-        1 => Some(DiagnosticSeverity::WARNING),
-        2 => Some(DiagnosticSeverity::INFORMATION),
-        3 => Some(DiagnosticSeverity::HINT),
-        _ => None,
-    }
+struct InitializeWorkspaceParams {
+    #[serde(default)]
+    root_uri: Option<Uri>,
+    #[serde(default)]
+    workspace_folders: Option<Vec<WorkspaceFolder>>,
+    #[serde(flatten)]
+    _remaining: HashMap<String, Value>,
 }
 
 pub fn run_stdio_server() -> Result<()> {
     let (connection, io_threads) = Connection::stdio();
-    let initialize_value = serde_json::to_value(VersionLensLspState::server_capabilities())?;
-    connection.initialize(initialize_value)?;
+    run_connection(&connection)?;
+    io_threads.join()?;
+    Ok(())
+}
 
-    let mut state = VersionLensLspState::standard();
+fn run_connection(connection: &Connection) -> Result<()> {
+    let mut state = initialize(connection)?;
+    run_message_loop(connection, &mut state)
+}
+
+fn initialize(connection: &Connection) -> Result<VersionLensLspState> {
+    loop {
+        let (id, params) = connection.initialize_start()?;
+        let params = match serde_json::from_value::<InitializeWorkspaceParams>(params) {
+            Ok(params) => params,
+            Err(error) => {
+                respond_error(
+                    connection,
+                    id,
+                    ErrorCode::InvalidParams,
+                    format!("invalid initialize params: {error}"),
+                )?;
+                continue;
+            }
+        };
+        let state = VersionLensLspState::with_workspace(
+            params.root_uri,
+            params.workspace_folders.unwrap_or_default(),
+        );
+        let initialize_result = serde_json::json!({
+            "capabilities": VersionLensLspState::server_capabilities(),
+        });
+        connection.initialize_finish(id, initialize_result)?;
+        return Ok(state);
+    }
+}
+
+fn run_message_loop(connection: &Connection, state: &mut VersionLensLspState) -> Result<()> {
     for message in &connection.receiver {
         match message {
             Message::Request(request) => {
                 if connection.handle_shutdown(&request)? {
                     break;
                 }
-                handle_request(&connection, &state, request)?;
+                handle_request(connection, state, request)?;
             }
             Message::Notification(notification) => {
-                handle_notification(&connection, &mut state, notification)?;
+                if notification.method == "exit" {
+                    break;
+                }
+                handle_notification(connection, state, notification)?;
             }
             Message::Response(_) => {}
         }
     }
-
-    io_threads.join()?;
     Ok(())
 }
 
@@ -185,11 +96,60 @@ fn handle_request(
     let Request { id, method, params } = request;
     match method.as_str() {
         CodeLensRequest::METHOD => {
-            let params: CodeLensParams = serde_json::from_value(params)?;
-            let lenses = state.code_lenses(params.text_document.uri.as_str());
-            respond(connection, id, serde_json::to_value(lenses)?)
+            let params = match serde_json::from_value::<CodeLensParams>(params) {
+                Ok(params) => params,
+                Err(error) => {
+                    return respond_error(
+                        connection,
+                        id,
+                        ErrorCode::InvalidParams,
+                        format!("invalid {} params: {error}", CodeLensRequest::METHOD),
+                    );
+                }
+            };
+            let resolved = state.resolve_document(params.text_document.uri.as_str());
+            respond(
+                connection,
+                id,
+                serde_json::to_value(
+                    resolved
+                        .as_ref()
+                        .map_or(&[][..], |value| value.code_lenses.as_slice()),
+                )?,
+            )?;
+            if let Some(ResolvedDocument { diagnostics, .. }) = resolved {
+                publish_diagnostics(connection, params.text_document.uri, diagnostics)?;
+            }
+            Ok(())
         }
-        _ => respond(connection, id, Value::Null),
+        ExecuteCommand::METHOD => {
+            let params = match serde_json::from_value::<ExecuteCommandParams>(params) {
+                Ok(params) => params,
+                Err(error) => {
+                    return respond_error(
+                        connection,
+                        id,
+                        ErrorCode::InvalidParams,
+                        format!("invalid {} params: {error}", ExecuteCommand::METHOD),
+                    );
+                }
+            };
+            if params.command != DISPLAY_CODE_LENS_COMMAND || !params.arguments.is_empty() {
+                return respond_error(
+                    connection,
+                    id,
+                    ErrorCode::InvalidParams,
+                    format!("unsupported command: {}", params.command),
+                );
+            }
+            respond(connection, id, Value::Null)
+        }
+        _ => respond_error(
+            connection,
+            id,
+            ErrorCode::MethodNotFound,
+            format!("method not found: {method}"),
+        ),
     }
 }
 
@@ -200,7 +160,11 @@ fn handle_notification(
 ) -> Result<()> {
     match notification.method.as_str() {
         DidOpenTextDocument::METHOD => {
-            let params: DidOpenTextDocumentParams = serde_json::from_value(notification.params)?;
+            let Ok(params) =
+                serde_json::from_value::<DidOpenTextDocumentParams>(notification.params)
+            else {
+                return Ok(());
+            };
             let uri = params.text_document.uri;
             let diagnostics = state.open_document(VersionLensTextDocument {
                 uri: uri.to_string(),
@@ -211,16 +175,32 @@ fn handle_notification(
             publish_diagnostics(connection, uri, diagnostics)
         }
         DidChangeTextDocument::METHOD => {
-            let params: DidChangeTextDocumentParams = serde_json::from_value(notification.params)?;
+            let Ok(params) =
+                serde_json::from_value::<DidChangeTextDocumentParams>(notification.params)
+            else {
+                return Ok(());
+            };
             let uri = params.text_document.uri;
-            let text = params
+            let Some(text) = params
                 .content_changes
                 .into_iter()
-                .next()
+                .last()
                 .map(|change| change.text)
-                .unwrap_or_default();
+            else {
+                return Ok(());
+            };
             let diagnostics = state.change_document(uri.as_str(), text);
             publish_diagnostics(connection, uri, diagnostics)
+        }
+        DidCloseTextDocument::METHOD => {
+            let Ok(params) =
+                serde_json::from_value::<DidCloseTextDocumentParams>(notification.params)
+            else {
+                return Ok(());
+            };
+            let uri = params.text_document.uri;
+            state.close_document(uri.as_str());
+            publish_diagnostics(connection, uri, Vec::new())
         }
         _ => Ok(()),
     }
@@ -229,11 +209,24 @@ fn handle_notification(
 fn respond(connection: &Connection, id: RequestId, result: serde_json::Value) -> Result<()> {
     connection
         .sender
-        .send(Message::Response(Response {
-            id,
-            response_kind: lsp_server::ResponseKind::Ok { result },
-        }))
+        .send(Message::Response(Response::new_ok(id, result)))
         .context("failed to send LSP response")
+}
+
+fn respond_error(
+    connection: &Connection,
+    id: RequestId,
+    code: ErrorCode,
+    message: String,
+) -> Result<()> {
+    connection
+        .sender
+        .send(Message::Response(Response::new_err(
+            id,
+            code as i32,
+            message,
+        )))
+        .context("failed to send LSP error response")
 }
 
 fn publish_diagnostics(

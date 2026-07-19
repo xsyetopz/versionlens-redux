@@ -6,7 +6,8 @@ mod support;
 
 pub use client::{
     ACCEPT_GITHUB_V3, ACCEPT_JSON, HttpResult, get_text, get_text_with_accept,
-    get_text_with_accept_and_retry, post_text,
+    get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout, post_text,
+    post_text_with_timeout,
 };
 pub use config::{
     HttpConfig, HttpConfigInput, HttpHeader, HttpHeaderInput, http_config_from_input,

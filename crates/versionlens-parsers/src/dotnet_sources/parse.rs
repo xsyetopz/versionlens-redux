@@ -1,5 +1,5 @@
-use super::model::DotnetSource;
 use super::protocol::protocol_from_url;
+use super::schema::DotnetSource;
 
 pub fn parse_dotnet_sources(text: &str) -> Vec<DotnetSource> {
     text.lines()

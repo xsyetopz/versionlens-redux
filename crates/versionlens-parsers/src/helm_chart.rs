@@ -1,11 +1,11 @@
-use crate::model::Ecosystem::Helm;
 use crate::positions::offset_range;
 use crate::yaml::scalar_range;
 use marked_yaml::parse_yaml;
 use marked_yaml::types::MarkedMappingNode;
 use marked_yaml::types::Node::{Mapping as YamlMapping, Sequence as YamlSequence};
+use versionlens_model::Ecosystem::Helm;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 pub(crate) fn parse_helm_chart_yaml_with_paths(
     text: &str,

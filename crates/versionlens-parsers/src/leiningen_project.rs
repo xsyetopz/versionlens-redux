@@ -3,9 +3,9 @@ use self::CljTokenKind::{
     String as CljString,
 };
 use crate::maven_xml::MavenNamedRepository;
-use crate::model::Dependency;
-use crate::model::Ecosystem::Maven;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Maven;
 
 type LeiningenDependencies = Vec<Dependency>;
 

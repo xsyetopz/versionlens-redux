@@ -5,12 +5,12 @@ use jsonc_parser::common::Ranged;
 use jsonc_parser::errors::ParseError as JsonParseError;
 use jsonc_parser::parse_to_ast;
 
-use crate::model::Dependency;
+use versionlens_model::Dependency;
 
 use super::dependency::{
     JsonDependencyRanges, JsonDependencySource, json_manifest_dependency, string_content_start,
 };
-use crate::model::Ecosystem::{Deno, Npm};
+use versionlens_model::Ecosystem::{Deno, Npm};
 
 pub(super) fn parse_deno_imports(
     text: &str,

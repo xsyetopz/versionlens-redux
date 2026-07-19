@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use versionlens_cache::cache_ttl_ms;
-use versionlens_http::{HttpConfig, HttpConfigInput, standard_http_config};
+use versionlens_http::{HttpConfig, HttpConfigInput, http_config_from_input, standard_http_config};
 
 use super::{
     EnabledProviderConfig, ProviderSettings, ProviderSettingsInput, SuggestionIndicators,
@@ -39,10 +39,6 @@ fn provider_settings_from_input(input: ProviderSettingsInput) -> ProviderSetting
 
 fn suggestion_indicators_from_input(input: SuggestionIndicatorsInput) -> SuggestionIndicators {
     input.into()
-}
-
-fn http_config_from_input(input: HttpConfigInput) -> HttpConfig {
-    versionlens_http::http_config_from_input(input)
 }
 
 impl SessionConfig {

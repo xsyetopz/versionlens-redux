@@ -17,7 +17,7 @@ From the repository root:
 cargo build -p versionlens-lsp
 ```
 
-The direct-distribution package embeds the release server binary for its build platform. The extension code resolves the server in this order:
+Direct-distribution packages are platform-specific and embed the matching release server binary. CI produces Linux x64/ARM64, macOS x64/ARM64, and Windows x64/ARM64 archives. The extension code resolves the server in this order:
 
 1. `lsp.versionlens.binary.path` in Zed settings.
 2. Bundled `bin/versionlens-lsp`.

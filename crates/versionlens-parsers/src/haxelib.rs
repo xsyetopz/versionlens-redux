@@ -3,9 +3,9 @@ use jsonc_parser::ast::Value::{Object as JsonValueObject, StringLit as JsonValue
 use jsonc_parser::errors::ParseError as JsonParseError;
 use jsonc_parser::parse_to_ast;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Haxelib;
 use crate::positions::offset_range;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Haxelib;
 
 const DEFAULT_DEPENDENCY_PATHS: &[&str] = &["dependencies"];
 

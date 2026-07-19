@@ -3,8 +3,9 @@ use super::{
 };
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use versionlens_parsers::Ecosystem::{Deno, Npm};
+use versionlens_model::Ecosystem::{Deno, Npm};
 
+mod cache;
 mod dist_tags;
 mod http;
 mod registry_config;
@@ -405,7 +406,7 @@ fn fixed_npm_release_resolves_fixed_with_release_update_choices() {
     );
 }
 
-include!("npm_more.rs");
+include!("npm/workspaces.rs");
 
 fn package_file_fixture(name: &str) -> String {
     let path = repo_root()

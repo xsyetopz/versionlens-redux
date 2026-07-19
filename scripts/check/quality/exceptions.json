@@ -1,0 +1,10 @@
+[
+  {
+    "category": "passThroughWrappers",
+    "fingerprint": "crates/versionlens-napi/build.rs:main:setup",
+    "reason": "Cargo requires the build-script entrypoint to be named main, while napi-build exposes setup as the complete build adapter.",
+    "owner": "versionlens-napi build adapter",
+    "control": "The exception matches only the exact main-to-setup edge; Cargo compilation exercises the build script.",
+    "review": "Remove when napi-build no longer requires an explicit Cargo build-script setup call."
+  }
+]

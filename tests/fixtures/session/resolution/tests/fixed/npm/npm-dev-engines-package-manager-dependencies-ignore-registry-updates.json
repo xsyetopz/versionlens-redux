@@ -1,1 +1,5 @@
-{"devEngines":{"packageManager":{"name":"npm","version":"^10.0.0","onFail":"error"}}}
+{
+  "devEngines": {
+    "packageManager": { "name": "npm", "version": "^10.0.0", "onFail": "error" }
+  }
+}

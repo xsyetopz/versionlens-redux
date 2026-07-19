@@ -3,8 +3,8 @@ use crate::positions::offset_range;
 use crate::yaml::scalar_range;
 use marked_yaml::types::MarkedScalarNode;
 
-use crate::model::Dependency;
-use crate::model::Ecosystem::Docker;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Docker;
 
 pub(super) fn image_dependency(text: &str, value: &MarkedScalarNode) -> Option<Dependency> {
     if value.as_str().is_empty() {
