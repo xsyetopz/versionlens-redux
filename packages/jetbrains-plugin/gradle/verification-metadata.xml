@@ -1486,20 +1486,17 @@
          <artifact name="idea-2026.1.4-aarch64.dmg">
             <sha256 value="5c804affe2f16b3f5d5fe2f197b1d7b25f99dd9ec60734ae0f136cb1bff8036b" origin="Verified from JetBrains SHA-256"/>
          </artifact>
-         <artifact name="idea-2026.1.4-aarch64.exe">
-            <sha256 value="7ec009f0c502edfd413d38365840e953e34e87455c879cb155da3e55190c6d32" origin="Verified from JetBrains SHA-256"/>
-         </artifact>
          <artifact name="idea-2026.1.4-aarch64.tar.gz">
             <sha256 value="303645b8bad4c5c0887346618b842180a3de53b3e0b3da09fc5c501f59f78013" origin="Verified from JetBrains SHA-256"/>
          </artifact>
          <artifact name="idea-2026.1.4.dmg">
             <sha256 value="f0af8b89ec2220d3f84bd7aa5749065ad7f2d857ffcef0705fcf625fb99867bf" origin="Verified from JetBrains SHA-256"/>
          </artifact>
-         <artifact name="idea-2026.1.4.exe">
-            <sha256 value="e86473dd1aa946359cad5e8f8fd92aad631654ac4ae91370d39e26ca9ff5c306" origin="Verified from JetBrains SHA-256"/>
-         </artifact>
          <artifact name="idea-2026.1.4.tar.gz">
             <sha256 value="3104d85d9507ff882065e3f8eb9506402b4a8129092d2682662bb6e9c4f063fc" origin="Verified from JetBrains SHA-256"/>
+         </artifact>
+         <artifact name="idea-2026.1.4-win.zip">
+            <sha256 value="5c92bc8dcca7b39857e7b24029432b558cac61ed518761e3b824590b849d548a" origin="Verified from JetBrains SHA-256"/>
          </artifact>
       </component>
       <component group="idea" name="idea" version="2026.2">

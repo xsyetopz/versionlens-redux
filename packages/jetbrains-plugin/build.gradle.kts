@@ -91,6 +91,8 @@ dependencies {
 }
 
 intellijPlatform {
+    buildSearchableOptions = false
+
     pluginConfiguration {
         id = "com.versionlens.jetbrains"
         name = "VersionLens Redux"
