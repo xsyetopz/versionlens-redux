@@ -1,4 +1,5 @@
 use super::{parse_yarnrc_npm_auth_entries_with_env, parse_yarnrc_npm_registry_entries_with_env};
+use crate::test_support::assert_registry_entries;
 
 #[test]
 fn parses_yarnrc_npm_registries_and_scope_registries() {
@@ -18,12 +19,14 @@ npmScopes:
         &env,
     );
 
-    assert_eq!(entries.len(), 3);
-    assert_eq!(entries[0].scope, None);
-    assert_eq!(entries[0].url, "https://registry.example.test");
-    assert_eq!(entries[1].scope.as_deref(), Some("@scope"));
-    assert_eq!(entries[1].url, "https://scope.example.test/npm");
-    assert_eq!(entries[2].scope.as_deref(), Some("@quoted"));
+    assert_registry_entries(
+        &entries,
+        &[
+            (None, "https://registry.example.test"),
+            (Some("@scope"), "https://scope.example.test/npm"),
+            (Some("@quoted"), "https://quoted.example.test"),
+        ],
+    );
 }
 
 #[test]
@@ -67,9 +70,11 @@ npmRegistries:
         &env,
     );
 
-    assert_eq!(entries.len(), 2);
-    assert_eq!(entries[0].registry, "//registry.example.test");
-    assert_eq!(entries[0].header_value, "Basic dXNlcjpwYXNz");
-    assert_eq!(entries[1].registry, "//other.example.test");
-    assert_eq!(entries[1].header_value, "Basic b3RoZXI6cGFzcw==");
+    crate::support::tests::assert_auth_entries(
+        &entries,
+        &[
+            ("//registry.example.test", "Basic dXNlcjpwYXNz"),
+            ("//other.example.test", "Basic b3RoZXI6cGFzcw=="),
+        ],
+    );
 }

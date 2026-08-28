@@ -1,4 +1,5 @@
 use crate::maven_xml::MavenNamedRepository;
+use crate::support;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Maven;
 type GradleDependencies = Vec<Dependency>;
@@ -137,7 +138,7 @@ fn parse_plugin_line(text: &str, line: &str, line_offset: usize) -> ParsedGradle
         return None;
     }
 
-    let strings = quoted_strings(line);
+    let strings = support::quoted_strings(line, &['\'', '"']);
     if strings.len() < 2 {
         return None;
     }
@@ -181,7 +182,7 @@ fn parse_string_dependency_line(
         return None;
     }
 
-    let strings = quoted_strings(line);
+    let strings = support::quoted_strings(line, &['\'', '"']);
     let gav = strings
         .iter()
         .find(|string| string.value.matches(':').count() >= 2)?;
@@ -258,7 +259,9 @@ fn parse_local_dependency_line(
     } else {
         return None;
     };
-    let local = quoted_strings(line).into_iter().next()?;
+    let local = support::quoted_strings(line, &['\'', '"'])
+        .into_iter()
+        .next()?;
 
     Some(Dependency {
         name: local.value.to_owned(),
@@ -314,7 +317,7 @@ fn brace_delta(line: &str) -> i32 {
 
 fn gradle_repository_url(block: &str) -> Option<&str> {
     let url_start = block.find("url")?;
-    quoted_strings(block.get(url_start..)?)
+    support::quoted_strings(block.get(url_start..)?, &['\'', '"'])
         .into_iter()
         .next()
         .map(|string| string.value)
@@ -347,7 +350,7 @@ fn named_string<'a>(line: &'a str, name: &str) -> Option<QuotedString<'a>> {
                 .map(|start| (start, equals_needle.len()))
         })?;
     let start = match_start + needle_len;
-    quoted_strings(line.get(start..)?)
+    support::quoted_strings(line.get(start..)?, &['\'', '"'])
         .into_iter()
         .next()
         .map(|string| QuotedString {
@@ -359,43 +362,4 @@ fn named_string<'a>(line: &'a str, name: &str) -> Option<QuotedString<'a>> {
         })
 }
 
-#[derive(Clone, Copy)]
-struct QuotedString<'a> {
-    value: &'a str,
-    start: usize,
-    end: usize,
-    content_start: usize,
-    content_end: usize,
-}
-
-fn quoted_strings(line: &str) -> Vec<QuotedString<'_>> {
-    let mut strings = vec![];
-    let mut search_start = 0;
-
-    while let Some(relative_start) = line
-        .get(search_start..)
-        .and_then(|tail| tail.find(['\'', '"']))
-    {
-        let start = search_start + relative_start;
-        let quote = line.as_bytes()[start] as char;
-        let content_start = start + 1;
-        let Some(relative_end) = line.get(content_start..).and_then(|tail| tail.find(quote)) else {
-            break;
-        };
-        let content_end = content_start + relative_end;
-        let end = content_end + 1;
-        let Some(value) = line.get(content_start..content_end) else {
-            break;
-        };
-        strings.push(QuotedString {
-            value,
-            start,
-            end,
-            content_start,
-            content_end,
-        });
-        search_start = end;
-    }
-
-    strings
-}
+use support::QuotedString;

@@ -2,7 +2,7 @@ use std::ops::Range as ByteRange;
 
 use toml_edit::{DocumentMut, InlineTable, Key, Value as TomlValue};
 
-use crate::positions::offset_range;
+use crate::positions::{offset_range, string_content_bounds};
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Maven;
 
@@ -111,6 +111,29 @@ struct GradleDependencyInput<'a> {
     requirement_prefix: String,
 }
 
+fn gradle_dependency_input<'a>(
+    text: &'a str,
+    key: &'a Key,
+    group: &'static str,
+    name: String,
+    requirement: &'a str,
+    hosted_url: Option<&'static str>,
+    requirement_span: Option<ByteRange<usize>>,
+    requirement_prefix: String,
+) -> GradleDependencyInput<'a> {
+    GradleDependencyInput {
+        text,
+        group,
+        name,
+        requirement,
+        hosted_url,
+        hosted_name: None,
+        range_span: key.span(),
+        requirement_span,
+        requirement_prefix,
+    }
+}
+
 fn gradle_dependency(input: GradleDependencyInput<'_>) -> Dependency {
     let range = input
         .range_span
@@ -163,39 +186,23 @@ fn gradle_library_dependency<'a>(
 ) -> Option<GradleDependencyInput<'a>> {
     if let Some(notation) = value.as_str() {
         let (module, requirement) = gradle_module_notation(notation)?;
-        let value_span = value.span()?;
-        let requirement_start = text
-            .get(value_span.start..value_span.end)?
-            .find(requirement)
-            .map(|index| value_span.start + index)?;
-        return Some(GradleDependencyInput {
-            text,
-            group: "libraries",
-            name: module.to_owned(),
-            requirement,
-            hosted_url: None,
-            hosted_name: None,
-            range_span: key.span(),
-            requirement_span: Some(requirement_start..requirement_start + requirement.len()),
-            requirement_prefix: "".to_owned(),
-        });
+        return gradle_string_dependency(text, key, value, "libraries", module, requirement);
     }
 
     let inline = value.as_inline_table()?;
     let name = inline_module_name(inline)?;
     let (requirement, requirement_span, hosted_url, requirement_prefix) =
         inline_version_requirement(inline)?;
-    Some(GradleDependencyInput {
+    Some(gradle_dependency_input(
         text,
-        group: "libraries",
+        key,
+        "libraries",
         name,
         requirement,
         hosted_url,
-        hosted_name: None,
-        range_span: key.span(),
         requirement_span,
         requirement_prefix,
-    })
+    ))
 }
 
 fn gradle_plugin_dependency<'a>(
@@ -206,39 +213,55 @@ fn gradle_plugin_dependency<'a>(
 ) -> Option<GradleDependencyInput<'a>> {
     if let Some(notation) = value.as_str() {
         let (id, requirement) = notation.rsplit_once(':')?;
-        let value_span = value.span()?;
-        let requirement_start = text
-            .get(value_span.start..value_span.end)?
-            .find(requirement)
-            .map(|index| value_span.start + index)?;
-        return Some(GradleDependencyInput {
+        return gradle_string_dependency(
             text,
-            group: "plugins",
-            name: gradle_plugin_marker_name(id),
+            key,
+            value,
+            "plugins",
+            &gradle_plugin_marker_name(id),
             requirement,
-            hosted_url: None,
-            hosted_name: None,
-            range_span: key.span(),
-            requirement_span: Some(requirement_start..requirement_start + requirement.len()),
-            requirement_prefix: "".to_owned(),
-        });
+        );
     }
 
     let inline = value.as_inline_table()?;
     let id = inline.get("id")?.as_str()?;
     let (requirement, requirement_span, hosted_url, requirement_prefix) =
         inline_version_requirement(inline)?;
-    Some(GradleDependencyInput {
+    Some(gradle_dependency_input(
         text,
-        group: "plugins",
-        name: gradle_plugin_marker_name(id),
+        key,
+        "plugins",
+        gradle_plugin_marker_name(id),
         requirement,
         hosted_url,
-        hosted_name: None,
-        range_span: key.span(),
         requirement_span,
         requirement_prefix,
-    })
+    ))
+}
+
+fn gradle_string_dependency<'a>(
+    text: &'a str,
+    key: &'a Key,
+    value: &'a TomlValue,
+    group: &'static str,
+    name: &str,
+    requirement: &'a str,
+) -> Option<GradleDependencyInput<'a>> {
+    let value_span = value.span()?;
+    let requirement_start = text
+        .get(value_span.start..value_span.end)?
+        .find(requirement)
+        .map(|index| value_span.start + index)?;
+    Some(gradle_dependency_input(
+        text,
+        key,
+        group,
+        name.to_owned(),
+        requirement,
+        None,
+        Some(requirement_start..requirement_start + requirement.len()),
+        "".to_owned(),
+    ))
 }
 
 fn gradle_plugin_marker_name(id: &str) -> String {
@@ -314,12 +337,4 @@ fn gradle_module_notation(notation: &str) -> Option<(&str, &str)> {
     let (artifact, version) = rest.rsplit_once(':')?;
     let module_end = group.len() + 1 + artifact.len();
     Some((&notation[..module_end], version))
-}
-
-fn string_content_bounds(text: &str, start: usize, end: usize) -> ByteRange<usize> {
-    let content_start = start + usize::from(text.as_bytes().get(start) == Some(&b'"'));
-    let content_end = end.saturating_sub(usize::from(
-        end > start && text.as_bytes().get(end - 1) == Some(&b'"'),
-    ));
-    content_start..content_end
 }

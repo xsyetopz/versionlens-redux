@@ -93,17 +93,12 @@ pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &st
         .filter(|offset| after_qualifier[..*offset].trim().is_empty());
     let Some(operator_offset) = operator_offset else {
         let version_start = name_end + extras_len + leading_space_len(after_qualifier);
-        let version_len = requirement_part[version_start..]
-            .bytes()
-            .take_while(|byte| valid_upstream_requirement_version_byte(*byte))
-            .count();
-        if version_len == 0 {
+        let Some(version_end) = upstream_version_end(requirement_part, version_start) else {
             return Some((name, "", name_end));
-        }
-        let requirement_end = version_start + version_len;
+        };
         return Some((
             name,
-            &requirement_part[version_start..requirement_end],
+            &requirement_part[version_start..version_end],
             version_start,
         ));
     };
@@ -111,16 +106,19 @@ pub(super) fn split_requirements_txt_requirement(raw: &str) -> Option<(&str, &st
     let split = name_end + extras_len + operator_offset;
     let operator_end = split + requirement_operator_len(&requirement_part[split..]);
     let version_start = operator_end + leading_space_len(&requirement_part[operator_end..]);
-    let version_len = requirement_part[version_start..]
+    let Some(requirement_end) = upstream_version_end(requirement_part, version_start) else {
+        return Some((name, "", name_end));
+    };
+
+    Some((name, &requirement_part[split..requirement_end], split))
+}
+
+fn upstream_version_end(input: &str, start: usize) -> Option<usize> {
+    let length = input[start..]
         .bytes()
         .take_while(|byte| valid_upstream_requirement_version_byte(*byte))
         .count();
-    if version_len == 0 {
-        return Some((name, "", name_end));
-    }
-
-    let requirement_end = version_start + version_len;
-    Some((name, &requirement_part[split..requirement_end], split))
+    (length > 0).then_some(start + length)
 }
 
 fn is_bare_direct_reference(value: &str) -> bool {

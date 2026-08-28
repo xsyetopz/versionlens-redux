@@ -1,18 +1,12 @@
 use crate::document::test_support::extract_range;
 use crate::{DocumentInput, parse_document};
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Dotnet;
 
 #[test]
 fn parses_dotnet_xml_dependencies() {
     let text = package_file_fixture("parses-dotnet-xml-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/app.csproj", "xml");
 
     assert_eq!(dependencies.len(), 8);
     assert_eq!(dependencies[0].ecosystem, Dotnet);
@@ -58,12 +52,8 @@ fn parses_dotnet_xml_dependencies() {
 #[test]
 fn parses_packages_config_dependencies() {
     let text = package_file_fixture("parses-packages-config-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/packages.config".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/packages.config", "xml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].ecosystem, Dotnet);
@@ -84,16 +74,16 @@ fn parses_packages_config_dependencies() {
 fn parses_dotnet_xml_non_empty_versionless_package_reference() {
     let text =
         package_file_fixture("parses-dotnet-xml-non-empty-versionless-package-reference.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/app.csproj", "xml");
 
     assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].name, "ChildVersionNoAttribute");
-    assert_eq!(dependencies[0].requirement, "*");
+    crate::support::tests::assert_named_dependency(
+        &dependencies,
+        0,
+        "ChildVersionNoAttribute",
+        "*",
+    );
     assert_eq!(dependencies[0].requirement_prefix, " Version=\"");
     assert_eq!(dependencies[0].requirement_suffix, "\"");
     assert_eq!(extract_range(text, dependencies[0].requirement_range), "");
@@ -102,12 +92,8 @@ fn parses_dotnet_xml_non_empty_versionless_package_reference() {
 #[test]
 fn parses_package_reference_child_version() {
     let text = package_file_fixture("parses-package-reference-child-version.csproj");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/app.csproj", "xml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "ChildVersionNoAttribute");
@@ -126,12 +112,12 @@ fn parses_package_reference_child_version() {
 
 #[test]
 fn dotnet_invalid_xml_returns_no_dependencies() {
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture("dotnet-invalid-xml-returns-no-dependencies.csproj").to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/app.csproj".to_owned(),
+        "xml".to_owned(),
+        package_file_fixture("dotnet-invalid-xml-returns-no-dependencies.csproj").to_owned(),
+        None,
+    ));
 
     assert!(dependencies.is_empty());
 }
@@ -139,12 +125,8 @@ fn dotnet_invalid_xml_returns_no_dependencies() {
 #[test]
 fn dotnet_dependency_order_follows_dependency_properties() {
     let text = package_file_fixture("dotnet-dependency-order-follows-dependency-properties.csproj");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/app.csproj", "xml");
 
     let names = dependencies
         .iter()
@@ -166,12 +148,8 @@ fn dotnet_dependency_order_follows_dependency_properties() {
 #[test]
 fn dotnet_project_sdk_attribute_is_parsed_like_upstream() {
     let text = package_file_fixture("dotnet-project-sdk-attribute-is-parsed-like-upstream.csproj");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/app.csproj", "xml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "Project.Sdk");
@@ -190,12 +168,8 @@ fn dotnet_project_sdk_attribute_is_parsed_like_upstream() {
 #[test]
 fn parses_dotnet_xml_attributes_case_insensitively() {
     let text = package_file_fixture("parses-dotnet-xml-attributes-case-insensitively.csproj");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/app.csproj", "xml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].ecosystem, Dotnet);
@@ -208,22 +182,8 @@ fn parses_dotnet_xml_attributes_case_insensitively() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/dotnet_xml/tests/current")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/dotnet_xml/tests/current",
+        name,
+    )
 }

@@ -1,6 +1,4 @@
 use super::parse_rebar_config;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 
 #[test]
 fn parses_rebar_dependency_forms() {
@@ -125,32 +123,12 @@ fn parses_rebar_multiline_dependency_tuple() {
 "#,
     );
 
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].name, "gettext");
-    assert_eq!(
-        dependencies[0].requirement,
-        "https://github.com/elixir-lang/gettext.git"
-    );
-    assert_eq!(dependencies[0].hosted_url.as_deref(), Some("git"));
+    crate::support::tests::assert_single_git_dependency(&dependencies, "gettext");
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/rebar_config/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/rebar_config/tests",
+        name,
+    )
 }

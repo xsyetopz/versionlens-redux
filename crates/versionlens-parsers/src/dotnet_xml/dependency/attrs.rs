@@ -58,9 +58,23 @@ pub(super) fn missing_version_dependency(
     context: &DotnetEventContext<'_>,
     attrs: DotnetMissingVersionAttrs<'_>,
 ) -> Option<Dependency> {
+    missing_dependency(context, attrs.group, attrs.name_attr, false)
+}
+
+pub(in crate::dotnet_xml) fn missing_dependency(
+    context: &DotnetEventContext<'_>,
+    group: &str,
+    name_attr: &str,
+    require_unversioned: bool,
+) -> Option<Dependency> {
     let (tag_start, tag_end) = tag_bounds(context.text, context.span.start, context.span.end);
     let tag = context.text.get(tag_start..tag_end)?;
-    let name = attr_value(tag, attrs.name_attr)?;
+    if require_unversioned
+        && (attr_value(tag, "Version").is_some() || attr_value(tag, "VersionOverride").is_some())
+    {
+        return None;
+    }
+    let name = attr_value(tag, name_attr)?;
     let name_start = tag_start + name.range.start;
     let (insert_offset, separator) = version_insert(tag)?;
 
@@ -68,7 +82,7 @@ pub(super) fn missing_version_dependency(
         name: name.value,
         requirement: "*".to_owned(),
         ecosystem: Dotnet,
-        group: attrs.group.to_owned(),
+        group: group.to_owned(),
         hosted_url: None,
         hosted_name: None,
         range: offset_range(context.text, name_start, name_start + name.len),

@@ -7,11 +7,10 @@ use crate::path_patterns::path_or_member_enabled;
 use crate::positions::offset_range;
 use versionlens_model::Dependency;
 
-use super::super::attributes::{attr_value, tag_bounds, version_insert};
+use super::super::attributes::{attr_value, tag_bounds};
+use super::super::dependency::missing_dependency;
 use super::super::dependency::{dependencies_from_tag, is_package_tag, project_version_dependency};
-use super::super::{
-    DotnetEventContext, DotnetTagKind, OpenProjectVersion, event_name, event_name_from_bytes,
-};
+use super::super::{DotnetEventContext, DotnetTagKind, OpenProjectVersion, event_name};
 use versionlens_model::Ecosystem::Dotnet;
 
 type DotnetPackageDependency = Option<Dependency>;
@@ -87,9 +86,7 @@ impl<'a> DotnetXmlCollector<'a> {
     }
 
     pub(super) fn text(&mut self, event: &BytesText<'_>) {
-        let Ok(value) = event.decode() else {
-            return;
-        };
+        let value = event.xml10_content();
         if let Some(open) = &mut self.open_project_version {
             open.value.push_str(&value);
         }
@@ -102,8 +99,9 @@ impl<'a> DotnetXmlCollector<'a> {
         }
     }
 
-    pub(super) fn end_tag(&mut self, text: &str, end_name: &[u8]) {
-        if let Some(name) = event_name_from_bytes(end_name) {
+    pub(super) fn end_tag(&mut self, text: &str, end_name: &str) {
+        let name = end_name.to_owned();
+        {
             let is_project_version = matches!(name.as_str(), "Version" | "AssemblyVersion");
             if let Some(open) = self.open_project_version.take()
                 && is_project_version
@@ -265,41 +263,9 @@ fn missing_package_version_dependency(
     context: &DotnetEventContext<'_>,
     group: &str,
 ) -> DotnetPackageDependency {
-    ["Include", "Update"].iter().find_map(|name_attr| {
-        missing_package_version_dependency_with_name(context, group, name_attr)
-    })
-}
-
-fn missing_package_version_dependency_with_name(
-    context: &DotnetEventContext<'_>,
-    group: &str,
-    name_attr: &str,
-) -> DotnetPackageDependency {
-    let (tag_start, tag_end) = tag_bounds(context.text, context.span.start, context.span.end);
-    let tag = context.text.get(tag_start..tag_end)?;
-    if attr_value(tag, "Version").is_some() || attr_value(tag, "VersionOverride").is_some() {
-        return None;
-    }
-    let name = attr_value(tag, name_attr)?;
-    let name_start = tag_start + name.range.start;
-    let (insert_offset, separator) = version_insert(tag)?;
-
-    Some(Dependency {
-        name: name.value,
-        requirement: "*".to_owned(),
-        ecosystem: Dotnet,
-        group: group.to_owned(),
-        hosted_url: None,
-        hosted_name: None,
-        range: offset_range(context.text, name_start, name_start + name.len),
-        requirement_range: offset_range(
-            context.text,
-            tag_start + insert_offset,
-            tag_start + insert_offset,
-        ),
-        requirement_prefix: format!("{separator}Version=\""),
-        requirement_suffix: "\"".to_owned(),
-    })
+    ["Include", "Update"]
+        .iter()
+        .find_map(|name_attr| missing_dependency(context, group, name_attr, true))
 }
 
 pub(super) fn dotnet_xml_collector<'a>(dependency_paths: Vec<&'a str>) -> DotnetXmlCollector<'a> {

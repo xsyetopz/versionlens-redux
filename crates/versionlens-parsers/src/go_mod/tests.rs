@@ -1,24 +1,23 @@
 use crate::document::test_support::extract_range;
 use crate::{DocumentInput, parse_document};
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Go;
 
 #[test]
 fn parses_go_mod_dependencies() {
     let text = package_file_fixture("parses-go-mod-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 7);
-    assert_eq!(dependencies[0].ecosystem, Go);
-    assert_eq!(dependencies[0].group, "require");
-    assert_eq!(dependencies[0].name, "example.test/one");
-    assert_eq!(dependencies[0].requirement, "v1.2.3");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Go,
+            "require",
+            "example.test/one",
+            "v1.2.3",
+        ),
+    );
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "v1.2.3"
@@ -54,18 +53,13 @@ fn parses_go_mod_dependencies() {
 #[test]
 fn parses_go_work_replace_dependencies() {
     let text = package_file_fixture("parses-go-work-replace-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.work".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].ecosystem, Go);
-    assert_eq!(dependencies[0].group, "use");
-    assert_eq!(dependencies[0].name, "./app");
-    assert_eq!(dependencies[0].requirement, "./app");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Go, "use", "./app", "./app"),
+    );
     assert_eq!(dependencies[1].group, "replace");
     assert_eq!(dependencies[1].name, "example.com/old");
     assert_eq!(dependencies[1].requirement, "./local");
@@ -78,12 +72,7 @@ fn parses_go_work_replace_dependencies() {
 #[test]
 fn parses_quoted_go_module_paths_and_versions() {
     let text = package_file_fixture("parses-quoted-go-module-paths-and-versions.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].group, "require");
@@ -112,12 +101,7 @@ fn parses_quoted_go_module_paths_and_versions() {
 #[test]
 fn parses_interpreted_go_string_escape_sequences() {
     let text = package_file_fixture("parses-interpreted-go-string-escape-sequences.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "require");
@@ -136,12 +120,7 @@ fn parses_interpreted_go_string_escape_sequences() {
 #[test]
 fn parses_raw_string_go_module_paths_and_versions() {
     let text = package_file_fixture("parses-raw-string-go-module-paths-and-versionsgo.mod");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "require");
@@ -163,18 +142,13 @@ fn parses_raw_string_go_module_paths_and_versions() {
 #[test]
 fn parses_go_work_use_directories_as_local_dependencies() {
     let text = package_file_fixture("parses-go-work-use-directories-as-local-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.work".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 3);
-    assert_eq!(dependencies[0].ecosystem, Go);
-    assert_eq!(dependencies[0].group, "use");
-    assert_eq!(dependencies[0].name, "./app");
-    assert_eq!(dependencies[0].requirement, "./app");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Go, "use", "./app", "./app"),
+    );
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "./app"
@@ -190,12 +164,7 @@ fn parses_go_work_use_directories_as_local_dependencies() {
 #[test]
 fn parses_smoke_go_mod_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-go-mod-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 15);
     assert_eq!(dependencies[0].name, "github.com/docker/buildx");
@@ -223,12 +192,7 @@ fn go_mod_dependency_without_version_parses_blank_requirement_like_upstream() {
     let text = package_file_fixture(
         "go-mod-dependency-without-version-parses-blank-requirement-like-upstream.txt",
     );
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "require");
@@ -238,14 +202,7 @@ fn go_mod_dependency_without_version_parses_blank_requirement_like_upstream() {
         extract_range(text, dependencies[0].range),
         "example.test/blank"
     );
-    assert_eq!(
-        dependencies[0].requirement_range.start,
-        dependencies[0].range.end
-    );
-    assert_eq!(
-        dependencies[0].requirement_range.end,
-        dependencies[0].range.end
-    );
+    crate::support::tests::assert_requirement_range_ends_at_dependency(&dependencies, 0);
 }
 
 #[test]
@@ -253,28 +210,22 @@ fn go_mod_versions_with_hyphenated_prerelease_identifiers_are_parsed() {
     let text = package_file_fixture(
         "go-mod-versions-with-hyphenated-prerelease-identifiers-are-parsed.txt",
     );
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].group, "require");
-    assert_eq!(dependencies[0].name, "example.test/prerelease");
-    assert_eq!(dependencies[0].requirement, "v1.0.0-alpha-beta");
+    crate::support::tests::assert_dependency_group(&dependencies, 1, 0, Go, "require");
+    crate::support::tests::assert_dependency_metadata(
+        &dependencies,
+        0,
+        "require",
+        "example.test/prerelease",
+        "v1.0.0-alpha-beta",
+    );
 }
 
 #[test]
 fn parses_go_mod_hyphenated_prerelease_versions() {
     let text = package_file_fixture("parses-go-mod-hyphenated-prerelease-versionsgo.mod");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "require");
@@ -291,12 +242,7 @@ fn go_mod_single_line_directives_require_literal_space_like_upstream() {
     let text = package_file_fixture(
         "go-mod-single-line-directives-require-literal-space-like-upstreamgo.mod",
     );
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert!(dependencies.is_empty());
 }
@@ -305,12 +251,7 @@ fn go_mod_single_line_directives_require_literal_space_like_upstream() {
 fn go_mod_replace_dependencies_use_replacement_source_ranges() {
     let text =
         package_file_fixture("go-mod-replace-dependencies-use-replacement-source-rangesgo.mod");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/go.mod".to_owned(),
-        language_id: "go.mod".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_go_fixture(text);
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "replace");
@@ -329,23 +270,15 @@ fn go_mod_replace_dependencies_use_replacement_source_ranges() {
     );
 }
 
-fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/go_mod/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
+fn parse_go_fixture(text: impl AsRef<str>) -> Vec<versionlens_model::Dependency> {
+    parse_document(&DocumentInput::new(
+        "file:///work/go.mod".to_owned(),
+        "go.mod".to_owned(),
+        text.as_ref().to_owned(),
+        None,
+    ))
 }
 
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+fn package_file_fixture(name: &str) -> &'static str {
+    crate::support::tests::fixture("tests/fixtures/versionlens-parsers/src/go_mod/tests", name)
 }

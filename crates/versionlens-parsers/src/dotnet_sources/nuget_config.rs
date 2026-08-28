@@ -154,7 +154,7 @@ fn auth_entries(
 fn start_tag(state: &mut NugetConfigState, event: &NugetXmlEvent<'_>) {
     match section_from_event(event) {
         NugetOther if state.section == NugetPackageSourceCredentials => {
-            state.credential_source = event_name(event);
+            state.credential_source = Some(event_name(event));
         }
         NugetOther
             if state.section == NugetPackageSourceMapping
@@ -166,27 +166,27 @@ fn start_tag(state: &mut NugetConfigState, event: &NugetXmlEvent<'_>) {
     }
 }
 
-fn end_tag(state: &mut NugetConfigState, name: &[u8]) {
+fn end_tag(state: &mut NugetConfigState, name: &str) {
     if state
         .credential_source
         .as_deref()
-        .is_some_and(|source| source.as_bytes() == name)
+        .is_some_and(|source| source == name)
     {
         state.credential_source = None;
         return;
     }
 
-    if name == b"packageSource" && state.section == NugetPackageSourceMapping {
+    if name == "packageSource" && state.section == NugetPackageSourceMapping {
         state.mapping_source = None;
         return;
     }
 
     if matches!(
         name,
-        b"disabledPackageSources"
-            | b"packageSourceCredentials"
-            | b"packageSourceMapping"
-            | b"packageSources"
+        "disabledPackageSources"
+            | "packageSourceCredentials"
+            | "packageSourceMapping"
+            | "packageSources"
     ) {
         state.section = NugetOther;
     }
@@ -366,24 +366,19 @@ fn add_value_is_true(event: &NugetXmlEvent<'_>) -> bool {
 
 fn attr_value(event: &NugetXmlEvent<'_>, name: &str) -> Option<String> {
     event.attributes().flatten().find_map(|attr| {
-        (attr.key.as_ref() == name.as_bytes()).then(|| {
-            str::from_utf8(attr.value.as_ref())
-                .ok()
-                .map(|value| value.trim())
-                .filter(|value| !value.is_empty())
-                .map(|value| value.to_owned())
+        (attr.key.as_ref() == name).then(|| {
+            let value = attr.value.as_ref().trim();
+            (!value.is_empty()).then(|| value.to_owned())
         })?
     })
 }
 
-fn event_name(event: &NugetXmlEvent<'_>) -> Option<String> {
-    str::from_utf8(event.name().as_ref())
-        .ok()
-        .map(|value| value.to_owned())
+fn event_name(event: &NugetXmlEvent<'_>) -> String {
+    event.name().as_ref().to_owned()
 }
 
 fn event_name_is(event: &NugetXmlEvent<'_>, name: &str) -> bool {
-    event.name().as_ref() == name.as_bytes()
+    event.name().as_ref() == name
 }
 
 fn is_remote_url(url: &str) -> bool {

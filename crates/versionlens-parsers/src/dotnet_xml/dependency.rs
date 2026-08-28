@@ -10,6 +10,7 @@ mod project;
 mod sdk;
 mod sdk_tag;
 
+pub(in crate::dotnet_xml) use attrs::missing_dependency;
 pub(in crate::dotnet_xml) use package::is_package_tag;
 use package::package_dependencies_from_tag;
 pub(super) use project::project_version_dependency;

@@ -3,8 +3,7 @@ use super::{
     parse_nuget_config_auth_entries, parse_nuget_config_source_mappings,
     parse_nuget_config_source_urls,
 };
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use crate::dotnet_sources::DotnetSourceMapping;
 
 #[test]
 fn parses_dotnet_sources() {
@@ -92,9 +91,7 @@ fn parses_nuget_config_clear_elements_per_section() {
     let urls = parse_nuget_config_source_urls(text);
     let mappings = parse_nuget_config_source_mappings(text);
 
-    assert_eq!(urls, vec!["https://new.example.test/v3/index.json"]);
-    assert_eq!(mappings.len(), 1);
-    assert_eq!(mappings[0].source, "new");
+    assert_new_nuget_source_mapping(&urls, &mappings);
     assert_eq!(mappings[0].pattern, "New.*");
 }
 
@@ -105,7 +102,11 @@ fn parses_nuget_config_remove_elements_per_section() {
     let urls = parse_nuget_config_source_urls(text);
     let mappings = parse_nuget_config_source_mappings(text);
 
-    assert_eq!(urls, vec!["https://new.example.test/v3/index.json"]);
+    assert_new_nuget_source_mapping(&urls, &mappings);
+}
+
+fn assert_new_nuget_source_mapping(urls: &[String], mappings: &[DotnetSourceMapping]) {
+    assert_eq!(urls, ["https://new.example.test/v3/index.json"]);
     assert_eq!(mappings.len(), 1);
     assert_eq!(mappings[0].source, "new");
 }
@@ -172,22 +173,8 @@ fn parses_nuget_config_package_source_mappings() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/dotnet_sources/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/dotnet_sources/tests",
+        name,
+    )
 }

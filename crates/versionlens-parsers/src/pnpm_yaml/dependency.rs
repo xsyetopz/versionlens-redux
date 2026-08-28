@@ -1,4 +1,5 @@
 use crate::positions::offset_range;
+use crate::support;
 use crate::yaml::scalar_range;
 use marked_yaml::types::MarkedScalarNode;
 
@@ -48,7 +49,7 @@ fn npm_alias_dependency(
 ) -> Option<(&str, &str, usize, usize, String)> {
     let spec = value.strip_prefix("npm:")?;
     let Some(at) = spec.rfind('@').filter(|index| *index > 0) else {
-        return valid_alias_name(spec)
+        return support::valid_package_alias_name(spec)
             .then(|| (spec, "", value_end, value_end, format!("npm:{spec}@")));
     };
     let name = &spec[..at];
@@ -63,16 +64,4 @@ fn npm_alias_dependency(
         value_end,
         format!("npm:{name}@"),
     ))
-}
-
-fn valid_alias_name(spec: &str) -> bool {
-    if spec.is_empty() || spec.contains(':') {
-        return false;
-    }
-    if let Some(scoped) = spec.strip_prefix('@') {
-        return scoped.split_once('/').is_some_and(|(scope, name)| {
-            !scope.is_empty() && !name.is_empty() && !name.contains('/')
-        });
-    }
-    !spec.contains('/')
 }

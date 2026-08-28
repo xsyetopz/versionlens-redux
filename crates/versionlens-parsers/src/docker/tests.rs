@@ -1,8 +1,6 @@
 use crate::docker::image::split_image_reference;
-use crate::document::test_support::extract_range;
+use crate::document::test_support::{extract_range, parse_fixture};
 use crate::{DocumentInput, parse_document};
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Docker;
 
 #[test]
@@ -17,18 +15,13 @@ fn dockerfile_image_reference_separates_explicit_registry() {
 #[test]
 fn parses_dockerfile_from_dependencies() {
     let text = package_file_fixture("parses-dockerfile-from-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Dockerfile".to_owned(),
-        language_id: "dockerfile".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Dockerfile", "dockerfile");
 
     assert_eq!(dependencies.len(), 5);
-    assert_eq!(dependencies[0].ecosystem, Docker);
-    assert_eq!(dependencies[0].group, "FROM");
-    assert_eq!(dependencies[0].name, "node");
-    assert_eq!(dependencies[0].requirement, "20");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Docker, "FROM", "node", "20"),
+    );
     assert_eq!(extract_range(text, dependencies[0].requirement_range), "20");
     assert_eq!(dependencies[1].name, "dotnet/sdk");
     assert_eq!(
@@ -56,12 +49,7 @@ fn parses_dockerfile_from_dependencies() {
 fn dockerfile_ranges_count_utf16_code_units_before_dependencies() {
     let text =
         package_file_fixture("dockerfile-ranges-count-utf16-code-units-before-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Dockerfile".to_owned(),
-        language_id: "dockerfile".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Dockerfile", "dockerfile");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "node");
@@ -72,18 +60,19 @@ fn dockerfile_ranges_count_utf16_code_units_before_dependencies() {
 #[test]
 fn parses_docker_compose_image_dependencies() {
     let text = package_file_fixture("parses-docker-compose-image-dependenciesDockerfile");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/docker-compose.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/docker-compose.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 12);
-    assert_eq!(dependencies[0].ecosystem, Docker);
-    assert_eq!(dependencies[0].group, "services.image");
-    assert_eq!(dependencies[0].name, "node");
-    assert_eq!(dependencies[0].requirement, "20");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Docker,
+            "services.image",
+            "node",
+            "20",
+        ),
+    );
     assert_eq!(extract_range(text, dependencies[0].requirement_range), "20");
     assert_eq!(dependencies[1].name, "org/app");
     assert_eq!(dependencies[1].hosted_url.as_deref(), Some("ghcr.io"));
@@ -130,12 +119,7 @@ fn parses_docker_compose_namespace_images_without_treating_namespace_as_registry
     let text = package_file_fixture(
         "parses-docker-compose-namespace-images-without-treating-namespace-as-registry.txt",
     );
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/compose.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/compose.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "services.image");
@@ -152,12 +136,7 @@ fn parses_docker_compose_namespace_images_without_treating_namespace_as_registry
 #[test]
 fn parses_docker_compose_bare_build_context_without_prefix() {
     let text = package_file_fixture("parses-docker-compose-bare-build-context-without-prefix.yaml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/docker-compose.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/docker-compose.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "services.build");
@@ -173,22 +152,29 @@ fn parses_docker_compose_bare_build_context_without_prefix() {
 fn parses_docker_compose_top_level_extension_image_dependencies() {
     let text =
         package_file_fixture("parses-docker-compose-top-level-extension-image-dependencies.yaml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/docker-compose.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/docker-compose.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].ecosystem, Docker);
-    assert_eq!(dependencies[0].group, "services.image");
-    assert_eq!(dependencies[0].name, "node");
-    assert_eq!(dependencies[0].requirement, "20");
-    assert_eq!(dependencies[1].ecosystem, Docker);
-    assert_eq!(dependencies[1].group, "services.image");
-    assert_eq!(dependencies[1].name, "busybox");
-    assert_eq!(dependencies[1].requirement, "1.36");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Docker,
+            "services.image",
+            "node",
+            "20",
+        ),
+    );
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            1,
+            Docker,
+            "services.image",
+            "busybox",
+            "1.36",
+        ),
+    );
     assert_eq!(extract_range(text, dependencies[1].range), "busybox");
     assert_eq!(
         extract_range(text, dependencies[1].requirement_range),
@@ -200,12 +186,7 @@ fn parses_docker_compose_top_level_extension_image_dependencies() {
 fn parses_docker_compose_build_context_slashes_without_normalizing() {
     let text =
         package_file_fixture("parses-docker-compose-build-context-slashes-without-normalizing.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/docker-compose.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/docker-compose.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].name, "backend//dockerfile");
@@ -226,12 +207,7 @@ fn parses_docker_compose_build_context_slashes_without_normalizing() {
 fn parses_docker_compose_empty_string_build_context_like_upstream() {
     let text =
         package_file_fixture("parses-docker-compose-empty-string-build-context-like-upstream.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/docker-compose.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/docker-compose.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "services.build");
@@ -247,12 +223,12 @@ FROM mcr.microsoft.com/dotnet/sdk
 
 FROM node:20-alpine
 ";
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/dockerfile".to_owned(),
-        language_id: "dockerfile".to_owned(),
-        text: dockerfile.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/dockerfile".to_owned(),
+        "dockerfile".to_owned(),
+        dockerfile.to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].name, "dotnet/sdk");
@@ -275,12 +251,12 @@ services:
   mongo:
     image: mongo
 ";
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/compose.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: compose.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/compose.yaml".to_owned(),
+        "yaml".to_owned(),
+        compose.to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].name, "nginx");
@@ -290,12 +266,12 @@ services:
     assert_eq!(dependencies[2].name, "mongo");
 
     let custom_dockerfile = "FROM mcr.microsoft.com/dotnet/sdk:7.0";
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build-folder/custom.dockerfile".to_owned(),
-        language_id: "dockerfile".to_owned(),
-        text: custom_dockerfile.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/build-folder/custom.dockerfile".to_owned(),
+        "dockerfile".to_owned(),
+        custom_dockerfile.to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "dotnet/sdk");
@@ -307,22 +283,5 @@ services:
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/docker/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture("tests/fixtures/versionlens-parsers/src/docker/tests", name)
 }

@@ -1,4 +1,5 @@
 use super::{parse_bunfig_npm_auth_entries_with_env, parse_bunfig_npm_registry_entries_with_env};
+use crate::test_support::assert_registry_entries;
 
 #[test]
 fn parses_bunfig_registry_and_scope_registries() {
@@ -18,13 +19,14 @@ scope = "https://scope.example.test/npm"
         &env,
     );
 
-    assert_eq!(entries.len(), 3);
-    assert_eq!(entries[0].scope, None);
-    assert_eq!(entries[0].url, "https://registry.example.test");
-    assert_eq!(entries[1].scope.as_deref(), Some("@scope"));
-    assert_eq!(entries[1].url, "https://scope.example.test/npm");
-    assert_eq!(entries[2].scope.as_deref(), Some("@quoted"));
-    assert_eq!(entries[2].url, "https://quoted.example.test");
+    assert_registry_entries(
+        &entries,
+        &[
+            (None, "https://registry.example.test"),
+            (Some("@scope"), "https://scope.example.test/npm"),
+            (Some("@quoted"), "https://quoted.example.test"),
+        ],
+    );
 }
 
 #[test]
