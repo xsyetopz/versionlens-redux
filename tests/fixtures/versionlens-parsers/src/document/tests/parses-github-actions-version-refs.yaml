@@ -1,0 +1,10 @@
+name: release
+on: workflow_dispatch
+
+jobs:
+  build:
+    steps:
+      - uses: "actions/checkout@v4" # stable action tag
+      - uses: actions/setup-node@V4.1.0 # normalized v-prefix
+  release:
+    uses: 'acme/automation/.github/workflows/release.yml@1.2.0'

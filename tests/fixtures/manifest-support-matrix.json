@@ -315,36 +315,7 @@
         }
       ],
       "dependencyProperties": {
-        "settingKey": "versionlens.npm.dependencyProperties",
-        "default": [
-          "version",
-          "packageManager",
-          "devEngines.packageManager",
-          "dependencies",
-          "devDependencies",
-          "peerDependencies",
-          "optionalDependencies",
-          "bundledDependencies",
-          "bundleDependencies",
-          "trustedDependencies",
-          "resolutions",
-          "overrides",
-          "overrides.*",
-          "jspm.dependencies",
-          "jspm.devDependencies",
-          "jspm.peerDependencies",
-          "jspm.optionalDependencies",
-          "pnpm.overrides",
-          "pnpm.overrides.*",
-          "pnpm.packageExtensions.*.dependencies",
-          "pnpm.packageExtensions.*.devDependencies",
-          "pnpm.packageExtensions.*.peerDependencies",
-          "pnpm.packageExtensions.*.optionalDependencies",
-          "catalog",
-          "catalogs.*",
-          "workspaces.catalog",
-          "workspaces.catalogs.*"
-        ]
+        "settingKey": "versionlens.npm.dependencyProperties"
       }
     },
     {
@@ -651,6 +622,28 @@
       "dependencyProperties": {
         "settingKey": "versionlens.vcpkg.dependencyProperties",
         "default": ["dependencies", "features.*.dependencies", "overrides"]
+      }
+    },
+    {
+      "ecosystem": "github-actions",
+      "provider": "github",
+      "registry": "GitHub repository tags; branch, commit-SHA, local, and ambiguous refs are ignored",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.github.files",
+          "defaultGlob": "**/.github/{workflows,actions}/**/*.{yml,yaml}",
+          "fileForms": [
+            ".github/workflows/*.{yml,yaml}",
+            ".github/actions/**/action.{yml,yaml}"
+          ],
+          "languages": ["yaml"],
+          "manifestKinds": ["GitHubActions"],
+          "parsers": ["parse_github_actions"]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.github.dependencyProperties",
+        "default": ["uses"]
       }
     },
     {

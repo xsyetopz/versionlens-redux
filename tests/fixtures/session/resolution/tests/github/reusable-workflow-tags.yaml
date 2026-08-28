@@ -1,0 +1,3 @@
+jobs:
+  release:
+    uses: acme/automation/.github/workflows/release.yml@v1

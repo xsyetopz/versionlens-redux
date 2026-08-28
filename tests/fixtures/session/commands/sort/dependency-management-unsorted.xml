@@ -3,11 +3,13 @@
     <dependencies>
       <dependency>
         <groupId>org.zeta</groupId>
+        <type>pom</type>
         <artifactId>zeta</artifactId>
         <version>1</version>
       </dependency>
       <dependency>
         <groupId>org.alpha</groupId>
+        <type>pom</type>
         <artifactId>alpha</artifactId>
         <version>1</version>
       </dependency>

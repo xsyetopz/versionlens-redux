@@ -67,7 +67,7 @@ it("applyCommand updates project version", (): void => {
     dependencyName: "1.2.3",
     document: {
       languageId: "json",
-      text: packageFileFixture("package-project-version.json"),
+      text: packageFileFixture("project-version.json"),
       uri: "file:///package.json",
     },
   });
@@ -81,7 +81,7 @@ it("resolveDocument is callable without registry work", async (): Promise<void> 
 
   const output = await session.resolveDocument({
     languageId: "json",
-    text: packageFileFixture("package-workspace-local.json"),
+    text: packageFileFixture("workspace-local.json"),
     uri: "file:///package.json",
   });
 
@@ -100,7 +100,7 @@ it("disposeSession releases the native Rust session", async (): Promise<void> =>
   const session = createSession();
   const input = {
     languageId: "json",
-    text: packageFileFixture("package-left-pad.json"),
+    text: packageFileFixture("left-pad.json"),
     uri: "file:///package.json",
   };
 
@@ -123,7 +123,7 @@ it("analyzeDocument can disable vulnerability diagnostics", (): void => {
 
   const output = session.analyzeDocument({
     languageId: "json",
-    text: packageFileFixture("package-left-pad.json"),
+    text: packageFileFixture("left-pad.json"),
     uri: "file:///package.json",
   });
 
@@ -145,7 +145,7 @@ it("analyzeDocument omits native missing-suggestion code lens payloads", (): voi
 
   const output = session.analyzeDocument({
     languageId: "json",
-    text: packageFileFixture("package-left-pad.json"),
+    text: packageFileFixture("left-pad.json"),
     uri: "file:///package.json",
   });
 
@@ -158,7 +158,7 @@ it("analyzeDocument omits schema diagnostics across N-API", (): void => {
   const output = session.analyzeDocument({
     languageId: "json",
     text: packageFileFixture("versionlens-schema.json"),
-    uri: "versionlens:/versionlens.multi-registries.json",
+    uri: "versionlens:/multi-registries.json",
   });
 
   expect(output.isSupportedManifest).toBe(true);

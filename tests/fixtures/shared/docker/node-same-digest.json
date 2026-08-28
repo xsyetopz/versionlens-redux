@@ -1,0 +1,23 @@
+{
+  "results": [
+    { "name": "latest", "tag_status": "active", "digest": "sha256-23" },
+    {
+      "name": "current-bookworm",
+      "tag_status": "active",
+      "digest": "sha256-23"
+    },
+    { "name": "current", "tag_status": "active", "digest": "sha256-23" },
+    { "name": "bookworm", "tag_status": "active", "digest": "sha256-23" },
+    {
+      "name": "23.11.0-bookworm",
+      "tag_status": "active",
+      "digest": "sha256-23"
+    },
+    { "name": "23.11.0", "tag_status": "active", "digest": "sha256-23" },
+    { "name": "23.11-bookworm", "tag_status": "active", "digest": "sha256-23" },
+    { "name": "23.11", "tag_status": "active", "digest": "sha256-23" },
+    { "name": "23-bookworm", "tag_status": "active", "digest": "sha256-23" },
+    { "name": "23", "tag_status": "active", "digest": "sha256-23" },
+    { "name": "22.4.3", "tag_status": "active", "digest": "sha256-22" }
+  ]
+}
