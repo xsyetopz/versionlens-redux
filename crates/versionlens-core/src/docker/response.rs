@@ -1,7 +1,7 @@
+use crate::RegistryResponseInput;
 use versionlens_model::Dependency;
 use versionlens_providers::docker_tag_exists;
 
-use crate::RegistryResponseInput;
 use crate::registry::registry_response_matches;
 use versionlens_model::Ecosystem::Docker;
 

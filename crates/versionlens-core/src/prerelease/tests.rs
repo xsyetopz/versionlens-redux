@@ -1,50 +1,37 @@
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use crate::RegistryResponseInput;
+use crate::{PrereleaseTagConfig, ProviderSettings, SessionConfig};
 use versionlens_model::DocumentInput;
 
-use crate::{PrereleaseTagConfig, ProviderSettings, RegistryResponseInput, SessionConfig};
-use versionlens_model::Ecosystem::{Composer, Dotnet, Npm, Python};
+use versionlens_model::Ecosystem::*;
+
+fn assert_prerelease_update_arguments(output: &crate::AnalyzeDocumentOutput) {
+    assert_eq!(
+        crate::support::tests::update_code_lens_arguments(output),
+        [vec!["update", "6.0.3"], vec!["update", "7.0.0-beta.1"]]
+    );
+}
 
 #[test]
 fn show_prereleases_allows_prerelease_updates() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: true,
-        http: versionlens_http::standard_http_config(),
-    });
+    let session = prerelease_session();
 
-    let input = DocumentInput {
-        uri: "file:///Directory.Packages.props".to_owned(),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture("show-prereleases-allows-prerelease-updates.Packages.props"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new(
+        "file:///Directory.Packages.props".to_owned(),
+        "xml".to_owned(),
+        package_file_fixture("prereleases-allows-prerelease-updates.Packages.props"),
+        None,
+    );
     let output = session.resolve_document_with_responses(
         input.clone(),
-        &[RegistryResponseInput {
-            package: "Newtonsoft.Json".to_owned(),
-            ecosystem: Dotnet,
-            body: r#"{"versions":["13.0.3","14.0.0-beta.1"]}"#.to_owned(),
-        }],
+        &[RegistryResponseInput::new(
+            "Newtonsoft.Json".to_owned(),
+            Dotnet,
+            r#"{"versions":["13.0.3","14.0.0-beta.1"]}"#.to_owned(),
+        )],
     );
     let analysis = session.analyze_document(input);
-    let update_arguments = analysis
-        .code_lenses
-        .iter()
-        .filter(|lens| lens.title == "↑  beta 14.0.0-beta.1")
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(|value| value.as_str())
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
+    let update_arguments =
+        crate::support::tests::code_lens_arguments_for_title(&analysis, "↑  beta 14.0.0-beta.1");
 
     assert_eq!(output.suggestions[0].status, "noMatch");
     assert!(output.edits.is_empty());
@@ -53,30 +40,21 @@ fn show_prereleases_allows_prerelease_updates() {
 
 #[test]
 fn show_prereleases_applies_to_composer_update_choices() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: true,
-        http: versionlens_http::standard_http_config(),
-    });
+    let session = prerelease_session();
 
-    let input = DocumentInput {
-        uri: "file:///repo/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("show-prereleases-applies-to-composer-update-choices.json"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new(
+        "file:///repo/composer.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture("prereleases-applies-to-composer-update-choices.json"),
+        None,
+    );
 
     session.resolve_document_with_responses(
         input.clone(),
-        &[RegistryResponseInput {
-            package: "php-parallel-lint/php-parallel-lint".to_owned(),
-            ecosystem: Composer,
-            body: r#"{
+        &[RegistryResponseInput::new(
+            "php-parallel-lint/php-parallel-lint".to_owned(),
+            Composer,
+            r#"{
               "packages": {
                 "php-parallel-lint/php-parallel-lint": [
                   { "version": "v3.1.3" },
@@ -85,7 +63,7 @@ fn show_prereleases_applies_to_composer_update_choices() {
               }
             }"#
             .to_owned(),
-        }],
+        )],
     );
 
     let analysis = session.analyze_document(input);
@@ -100,76 +78,41 @@ fn show_prereleases_applies_to_composer_update_choices() {
 
 #[test]
 fn show_prereleases_applies_to_npm_versions() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: true,
-        http: versionlens_http::standard_http_config(),
-    });
+    let session = prerelease_session();
 
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("show-prereleases-applies-to-npm-versions.json"),
-        workspace_root: None,
-    };
-    let responses = [RegistryResponseInput {
-        package: "typescript".to_owned(),
-        ecosystem: Npm,
-        body: r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#
-            .to_owned(),
-    }];
+    let input = DocumentInput::new(
+        "file:///package.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture("prereleases-applies-to-npm-versions.json"),
+        None,
+    );
+    let responses = [RegistryResponseInput::new(
+        "typescript".to_owned(),
+        Npm,
+        r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#.to_owned(),
+    )];
 
     session.resolve_document_with_responses(input.clone(), &responses);
     let output = session.analyze_document(input);
-    let arguments = output
-        .code_lenses
-        .iter()
-        .filter_map(|lens| {
-            if lens.command != "versionlens.suggestion.onUpdateDependency" {
-                return None;
-            }
-            let command = lens.arguments.get(2)?;
-            let version = lens.arguments.get(3)?;
-            Some(vec![command.as_str(), version.as_str()])
-        })
-        .collect::<Vec<_>>();
-
-    assert_eq!(
-        arguments,
-        [vec!["update", "6.0.3"], vec!["update", "7.0.0-beta.1"]]
-    );
+    assert_prerelease_update_arguments(&output);
 }
 
 #[test]
 fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: true,
-        http: versionlens_http::standard_http_config(),
-    });
+    let session = prerelease_session();
 
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture(
-            "show-prereleases-keeps-npm-prerelease-choice-when-fixed-version-is-latest.json",
+    let input = DocumentInput::new(
+        "file:///package.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture(
+            "prereleases-keeps-npm-prerelease-choice-when-fixed-version-is-latest.json",
         ),
-        workspace_root: None,
-    };
-    let responses = [RegistryResponseInput {
-        package: "left-pad".to_owned(),
-        ecosystem: Npm,
-        body: r#"{
+        None,
+    );
+    let responses = [RegistryResponseInput::new(
+        "left-pad".to_owned(),
+        Npm,
+        r#"{
           "dist-tags": { "latest": "3.0.0" },
           "versions": {
             "1.0.0": {},
@@ -181,7 +124,7 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
           }
         }"#
         .to_owned(),
-    }];
+    )];
 
     let resolved = session.resolve_document_with_responses(input.clone(), &responses);
     let output = session.analyze_document(input);
@@ -190,18 +133,7 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
         .iter()
         .map(|lens| lens.title.as_str())
         .collect::<Vec<_>>();
-    let arguments = output
-        .code_lenses
-        .iter()
-        .skip(1)
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(|value| value.as_str())
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
+    let arguments = crate::support::tests::code_lens_arguments(&output);
 
     assert_eq!(resolved.suggestions[0].status, "current");
     assert_eq!(resolved.suggestions[0].latest.as_deref(), Some("3.0.0"));
@@ -229,67 +161,36 @@ fn prerelease_tag_filters_apply_to_responses() {
         http: versionlens_http::standard_http_config(),
     });
 
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("prerelease-tag-filters-apply-to-responses.json"),
-        workspace_root: None,
-    };
-    let responses = [RegistryResponseInput {
-        package: "typescript".to_owned(),
-        ecosystem: Npm,
-        body: r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{},"8.0.0-rc.1":{}}}"#
-            .to_owned(),
-    }];
+    let input = DocumentInput::new(
+        "file:///package.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture("tag-filters-apply-to-responses.json"),
+        None,
+    );
+    let responses = [RegistryResponseInput::new("typescript".to_owned(), Npm, r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{},"8.0.0-rc.1":{}}}"#
+            .to_owned())];
 
     session.resolve_document_with_responses(input.clone(), &responses);
     let output = session.analyze_document(input);
-    let arguments = output
-        .code_lenses
-        .iter()
-        .filter_map(|lens| {
-            if lens.command != "versionlens.suggestion.onUpdateDependency" {
-                return None;
-            }
-            let command = lens.arguments.get(2)?;
-            let version = lens.arguments.get(3)?;
-            Some(vec![command.as_str(), version.as_str()])
-        })
-        .collect::<Vec<_>>();
-
-    assert_eq!(
-        arguments,
-        [vec!["update", "6.0.3"], vec!["update", "7.0.0-beta.1"]]
-    );
+    assert_prerelease_update_arguments(&output);
 }
 
 #[test]
 fn prerelease_ranges_can_resolve_prerelease_versions_when_hidden() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
+    let session = crate::support::tests::test_session(true);
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture(
-                "prerelease-ranges-can-resolve-prerelease-versions-when-hidden.json",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "typescript".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"versions":{"2.0.0-beta.1":{}}}"#.to_owned(),
-        }],
+        DocumentInput::new(
+            "file:///package.json".to_owned(),
+            "json".to_owned(),
+            package_file_fixture("ranges-can-resolve-prerelease-versions-when-hidden.json"),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "typescript".to_owned(),
+            Npm,
+            r#"{"versions":{"2.0.0-beta.1":{}}}"#.to_owned(),
+        )],
     );
 
     assert_eq!(output.edits[0].new_text, "^2.0.0-beta.1");
@@ -297,7 +198,27 @@ fn prerelease_ranges_can_resolve_prerelease_versions_when_hidden() {
 
 #[test]
 fn show_prereleases_applies_to_python_releases() {
-    let session = crate::version_lens_session(SessionConfig {
+    let session = prerelease_session();
+
+    let output = session.resolve_document_with_responses(
+        DocumentInput::new(
+            "file:///requirements.txt".to_owned(),
+            "pip-requirements".to_owned(),
+            package_file_fixture("prereleases-applies-to-python-releases.txt"),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "flask".to_owned(),
+            Python,
+            r#"{"info":{"version":"3.0.0"},"releases":{"3.0.0":[],"4.0.0rc1":[]}}"#.to_owned(),
+        )],
+    );
+
+    assert_eq!(output.edits[0].new_text, "==4.0.0rc1");
+}
+
+fn prerelease_session() -> crate::VersionLensSession {
+    crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: crate::default(),
@@ -306,43 +227,9 @@ fn show_prereleases_applies_to_python_releases() {
         show_suggestion_stats: false,
         show_prereleases: true,
         http: versionlens_http::standard_http_config(),
-    });
-
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///requirements.txt".to_owned(),
-            language_id: "pip-requirements".to_owned(),
-            text: package_file_fixture("show-prereleases-applies-to-python-releases.txt"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "flask".to_owned(),
-            ecosystem: Python,
-            body: r#"{"info":{"version":"3.0.0"},"releases":{"3.0.0":[],"4.0.0rc1":[]}}"#
-                .to_owned(),
-        }],
-    );
-
-    assert_eq!(output.edits[0].new_text, "==4.0.0rc1");
-}
-
-fn package_file_fixture(name: &str) -> String {
-    let path = repo_root()
-        .join("tests/fixtures/core/prerelease/tests")
-        .join(name);
-    read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
     })
 }
 
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("core crate should be under crates/")
-        .to_path_buf()
+fn package_file_fixture(name: &str) -> String {
+    crate::support::tests::fixture("tests/fixtures/core-scenarios/prerelease/tests", name)
 }
