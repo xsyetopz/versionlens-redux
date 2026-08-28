@@ -1,6 +1,6 @@
 use super::blank_session_config;
 use crate::binding::config::NativeSessionConfig;
-use crate::binding::config::{NativeHttpConfig, NativeHttpHeader};
+use crate::binding::config::tests::{NativeHttpConfig, NativeHttpHeader};
 
 #[test]
 fn http_proxy_is_trimmed_and_blank_proxy_is_ignored_in_rust() {

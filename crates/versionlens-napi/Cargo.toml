@@ -24,5 +24,8 @@ versionlens-vscode-model.workspace = true
 [build-dependencies]
 napi-build.workspace = true
 
+[dev-dependencies]
+versionlens-test-support.workspace = true
+
 [lints]
 workspace = true

@@ -19,12 +19,7 @@ pub struct NativeApplyCommandInput {
 
 impl NativeDocumentInput {
     pub(crate) fn into_core(self) -> DocumentInput {
-        DocumentInput {
-            uri: self.uri,
-            language_id: self.language_id,
-            text: self.text,
-            workspace_root: self.workspace_root,
-        }
+        DocumentInput::new(self.uri, self.language_id, self.text, self.workspace_root)
     }
 }
 

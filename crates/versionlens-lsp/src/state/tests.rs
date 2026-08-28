@@ -82,14 +82,7 @@ fn code_lenses_are_visible_informational_commands_and_close_with_the_document() 
     });
 
     let lenses = state.code_lenses(uri);
-    assert!(!lenses.is_empty());
-    assert!(lenses.iter().all(|lens| {
-        lens.command.as_ref().is_some_and(|command| {
-            !command.title.is_empty()
-                && command.command == DISPLAY_CODE_LENS_COMMAND
-                && command.arguments.is_none()
-        })
-    }));
+    crate::test_support::assert_display_code_lenses(&lenses);
 
     state.close_document(uri);
     assert!(state.code_lenses(uri).is_empty());

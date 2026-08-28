@@ -1,6 +1,4 @@
 use super::{NativeApplyCommandInput, NativeDocumentInput};
-use std::fs::read_to_string;
-use std::path::PathBuf;
 
 #[test]
 fn maps_document_workspace_root_to_core() {
@@ -38,23 +36,9 @@ fn maps_apply_input_document_to_core() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-napi/src/binding/input/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    versionlens_test_support::static_fixture!(
+        "tests/fixtures/versionlens-napi/src/binding/input/tests",
+        name
+    )
+    .unwrap()
 }

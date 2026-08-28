@@ -126,14 +126,7 @@ fn assert_visible_code_lenses(client: &Connection, uri: &str) -> Result<()> {
         json!({"textDocument": {"uri": uri}}),
     )?;
     let lenses = serde_json::from_value::<Vec<CodeLens>>(ok_result(receive(client)?)?)?;
-    assert!(!lenses.is_empty());
-    assert!(lenses.iter().all(|lens| {
-        lens.command.as_ref().is_some_and(|command| {
-            !command.title.is_empty()
-                && command.command == DISPLAY_CODE_LENS_COMMAND
-                && command.arguments.is_none()
-        })
-    }));
+    crate::test_support::assert_display_code_lenses(&lenses);
     assert_diagnostics(receive(client)?, uri, true)?;
 
     send_request(

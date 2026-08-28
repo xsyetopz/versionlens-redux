@@ -1,9 +1,10 @@
 use super::blank_session_config;
-use crate::binding::config::{
+use crate::binding::config::NativeSessionConfig;
+use crate::binding::config::tests::{
     NativeDependencyPropertyConfig, NativeFilePatternConfig, NativeProviderCacheConfig,
-    NativeProviderHttpConfig, NativeProviderSettings, NativeRegistryUrl, NativeSessionConfig,
+    NativeProviderHttpConfig, NativeProviderSettings, NativeRegistryUrl,
 };
-use versionlens_model::Ecosystem::{Dotnet, Npm};
+use versionlens_model::Ecosystem::*;
 use versionlens_model::ManifestKind::{ComposerJson, PnpmYaml};
 
 #[test]

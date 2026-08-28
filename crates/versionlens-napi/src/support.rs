@@ -2,11 +2,6 @@ use napi::bindgen_prelude::{AsyncTask as NapiAsyncTask, Task as NapiTask};
 use std::sync::PoisonError as SyncPoisonError;
 use std::sync::{Arc as StdArc, RwLock as StdRwLock};
 
-#[cfg(test)]
-pub(crate) fn leaked_string(contents: String) -> &'static str {
-    <Box<str>>::leak(contents.into_boxed_str())
-}
-
 pub(crate) fn recover_poison<T>(poisoned: SyncPoisonError<T>) -> T {
     poisoned.into_inner()
 }

@@ -1,6 +1,6 @@
 use super::blank_session_config;
 use crate::binding::config::NativeSessionConfig;
-use crate::binding::config::NativeSuggestionIndicators;
+use crate::binding::config::tests::NativeSuggestionIndicators;
 
 fn blank_indicators() -> NativeSuggestionIndicators {
     NativeSuggestionIndicators {

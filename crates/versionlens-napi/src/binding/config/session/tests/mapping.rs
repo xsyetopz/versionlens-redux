@@ -3,12 +3,12 @@ use crate::binding::config::NativeSessionConfig;
 use super::blank_session_config;
 use versionlens_core::SessionConfig;
 
-use crate::binding::config::{
+use crate::binding::config::tests::{
     NativeDependencyPropertyConfig, NativeFilePatternConfig, NativeHttpConfig, NativeHttpHeader,
     NativePrereleaseTagFilter, NativeProviderCacheConfig, NativeProviderHttpConfig,
     NativeProviderSettings, NativeRegistryUrl, NativeSuggestionIndicators,
 };
-use versionlens_model::Ecosystem::{Cargo, Go, Npm, Python};
+use versionlens_model::Ecosystem::*;
 use versionlens_model::ManifestKind::{ComposerJson, NpmPackageJson};
 
 #[test]

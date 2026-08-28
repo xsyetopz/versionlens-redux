@@ -190,12 +190,12 @@ impl VersionLensLspState {
 }
 
 fn document_input(document: &VersionLensTextDocument) -> DocumentInput {
-    DocumentInput {
-        uri: document.uri.clone(),
-        language_id: document.language_id.clone(),
-        text: document.text.clone(),
-        workspace_root: document.workspace_root.clone(),
-    }
+    DocumentInput::new(
+        document.uri.clone(),
+        document.language_id.clone(),
+        document.text.clone(),
+        document.workspace_root.clone(),
+    )
 }
 
 pub fn into_lsp_range(range: ModelRange) -> Range {

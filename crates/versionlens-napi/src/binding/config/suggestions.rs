@@ -1,19 +1,11 @@
 use napi_derive::napi;
 use versionlens_core::SuggestionIndicatorsInput;
 
-#[napi(object)]
-#[derive(Default)]
-pub struct NativeSuggestionIndicators {
-    pub latest: Option<String>,
-    pub satisfies_latest: Option<String>,
-    pub directory: Option<String>,
-    pub error: Option<String>,
-    pub no_match: Option<String>,
-    pub matched: Option<String>,
-    pub updateable: Option<String>,
-    pub updateable_vulnerable: Option<String>,
-    pub build: Option<String>,
-}
+versionlens_core::define_suggestion_indicators_input!(
+    #[napi(object)]
+    #[derive(Default)]
+    NativeSuggestionIndicators
+);
 
 impl NativeSuggestionIndicators {
     pub(in crate::binding::config) fn into_input(self) -> SuggestionIndicatorsInput {
