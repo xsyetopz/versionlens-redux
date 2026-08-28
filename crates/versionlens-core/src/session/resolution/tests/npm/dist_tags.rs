@@ -1,26 +1,23 @@
-use super::{
-    DocumentInput, RegistryResponseInput, session_without_vulnerabilities, standard_session,
-};
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use super::{DocumentInput, session_without_vulnerabilities, standard_session};
+use crate::RegistryResponseInput;
 use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn npm_latest_dist_tag_caps_stable_update_choices() {
     let session = session_without_vulnerabilities();
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-latest-dist-tag-caps-stable-update-choices.json"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new(
+        "file:///package.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture("latest-dist-tag-caps-stable-update-choices.json"),
+        None,
+    );
 
     let output = session.resolve_document_with_responses(
         input.clone(),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{
+        &[RegistryResponseInput::new(
+            "left-pad".to_owned(),
+            Npm,
+            r#"{
               "dist-tags": { "latest": "7.0.0" },
               "versions": {
                 "7.0.0": {},
@@ -28,7 +25,7 @@ fn npm_latest_dist_tag_caps_stable_update_choices() {
               }
             }"#
             .to_owned(),
-        }],
+        )],
     );
 
     let analysis = session.analyze_document(input);
@@ -38,9 +35,7 @@ fn npm_latest_dist_tag_caps_stable_update_choices() {
         .map(|lens| lens.title.as_str())
         .collect::<Vec<_>>();
 
-    assert_eq!(output.suggestions[0].status, "current");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("7.0.0"));
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_suggestion_without_edits(&output, 0, "current", Some("7.0.0"));
     assert_eq!(titles, ["🟢 latest 7.0.0"]);
 }
 
@@ -49,17 +44,8 @@ fn resolves_npm_dist_tag_requirements_against_dist_tags() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("resolves-npm-dist-tag-requirements-against-dist-tags.json"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "typescript".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"6.0.3","next":"7.0.0-beta.1"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#.to_owned(),
-        }],
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("resolves-npm-dist-tag-requirements-against-dist-tags.json"), None),
+        &[RegistryResponseInput::new("typescript".to_owned(), Npm, r#"{"dist-tags":{"latest":"6.0.3","next":"7.0.0-beta.1"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#.to_owned())],
     );
 
     assert_eq!(
@@ -75,17 +61,17 @@ fn missing_npm_dist_tag_requirement_resolves_no_match() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("missing-npm-dist-tag-requirement-resolves-no-match.json"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "typescript".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{}}}"#.to_owned(),
-        }],
+        DocumentInput::new(
+            "file:///package.json".to_owned(),
+            "json".to_owned(),
+            package_file_fixture("missing-npm-dist-tag-requirement-resolves-no-match.json"),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "typescript".to_owned(),
+            Npm,
+            r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{}}}"#.to_owned(),
+        )],
     );
 
     assert_eq!(output.suggestions[0].status, "noMatch");
@@ -93,22 +79,8 @@ fn missing_npm_dist_tag_requirement_resolves_no_match() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    let path = repo_root()
-        .join("tests/fixtures/session/resolution/tests/npm/dist_tags")
-        .join(name);
-    read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read session resolution fixture {}: {error}",
-            path.display()
-        )
-    })
-}
-
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("core crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/session/resolution/tests/npm/dist_tags",
+        name,
+    )
 }

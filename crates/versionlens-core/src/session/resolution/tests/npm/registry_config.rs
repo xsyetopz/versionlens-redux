@@ -1,10 +1,4 @@
-use super::{DocumentInput, package_file_fixture, standard_session};
-use std::env::temp_dir;
-use std::fs::create_dir_all;
-use std::fs::remove_dir_all;
-use std::fs::write;
-use std::process::id;
-use versionlens_model::Ecosystem::Npm;
+use super::*;
 #[test]
 fn npm_registry_urls_use_document_npmrc_scope_registry() {
     let root = temp_dir().join(format!("versionlens-npmrc-{}", id()));
@@ -21,23 +15,16 @@ fn npm_registry_urls_use_document_npmrc_scope_registry() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", package_dir.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-registry-urls-use-document-npmrc-scope-registry.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://scope.example.test/npm/@scope%2fpkg"]
-    );
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[1], &context),
-        vec!["https://registry.example.test/left-pad"]
+    assert_registry_case(
+        document_input(
+            &package_dir.join("package.json"),
+            &root,
+            "npm-registry-urls-use-document-npmrc-scope-registry.txt",
+        ),
+        &[
+            &["https://scope.example.test/npm/@scope%2fpkg"],
+            &["https://registry.example.test/left-pad"],
+        ],
     );
 
     remove_dir_all(root).unwrap();
@@ -59,21 +46,18 @@ fn package_npmrc_registry_takes_precedence_over_workspace_npmrc() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", package_dir.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture(
-            "package-npmrc-registry-takes-precedence-over-workspace-npmrc.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
+    let input = document_input(
+        &package_dir.join("package.json"),
+        &root,
+        "package-npmrc-registry-takes-precedence-over-workspace-npmrc.txt",
+    );
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
 
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://package-registry.example.test/left-pad"]
+    assert_registry_urls(
+        &session,
+        &context,
+        &dependencies,
+        &[&["https://package-registry.example.test/left-pad"]],
     );
     let headers =
         context.auth_headers_for_url(Npm, "https://package-registry.example.test/left-pad");
@@ -97,13 +81,13 @@ fn npm_auth_headers_use_most_specific_document_npmrc_token() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-auth-headers-use-most-specific-document-npmrc-token.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
+    let input = DocumentInput::new(
+        format!("file://{}", root.join("package.json").display()),
+        "json".to_owned(),
+        package_file_fixture("npm-auth-headers-use-most-specific-document-npmrc-token.txt"),
+        Some(root.to_string_lossy().into_owned()),
+    );
+    let context = crate::registry::RegistryContext::from_document(&input);
 
     let default_headers =
         context.auth_headers_for_url(Npm, "https://registry.example.test/left-pad");
@@ -136,13 +120,13 @@ fn npm_http_config_uses_document_npmrc_proxy_and_strict_ssl() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-http-config-uses-document-npmrc-proxy-and-strict-ssl.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
+    let input = DocumentInput::new(
+        format!("file://{}", root.join("package.json").display()),
+        "json".to_owned(),
+        package_file_fixture("npm-http-config-uses-document-npmrc-proxy-and-strict-ssl.txt"),
+        Some(root.to_string_lossy().into_owned()),
+    );
+    let context = crate::registry::RegistryContext::from_document(&input);
     let session = standard_session();
     let http = context.http_config_for_request(
         Npm,
@@ -174,26 +158,26 @@ fn npm_env_file_without_npmrc_does_not_override_registry_or_http_defaults() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", package_dir.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture(
+    let input = DocumentInput::new(
+        format!("file://{}", package_dir.join("package.json").display()),
+        "json".to_owned(),
+        package_file_fixture(
             "npm-env-file-without-npmrc-does-not-override-registry-or-http-defaults.txt",
         ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
+        Some(root.to_string_lossy().into_owned()),
+    );
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
     let http = context.http_config_for_request(
         Npm,
         "https://registry.npmjs.org/left-pad",
         session.http_config(Npm),
     );
 
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://registry.npmjs.org/left-pad"]
+    assert_registry_urls(
+        &session,
+        &context,
+        &dependencies,
+        &[&["https://registry.npmjs.org/left-pad"]],
     );
     assert!(http.strict_ssl);
     assert_eq!(http.proxy, None);
@@ -219,19 +203,18 @@ fn npm_env_file_without_npmrc_does_not_select_userconfig() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", package_dir.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-env-file-without-npmrc-does-not-select-userconfig.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
+    let input = document_input(
+        &package_dir.join("package.json"),
+        &root,
+        "npm-env-file-without-npmrc-does-not-select-userconfig.txt",
+    );
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
 
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://registry.npmjs.org/left-pad"]
+    assert_registry_urls(
+        &session,
+        &context,
+        &dependencies,
+        &[&["https://registry.npmjs.org/left-pad"]],
     );
 
     let headers = context.auth_headers_for_url(Npm, "https://user-registry.example.test/left-pad");
@@ -258,17 +241,13 @@ fn npm_env_file_without_npmrc_does_not_select_home_userconfig() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", package_dir.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture(
-            "npm-env-file-without-npmrc-does-not-select-home-userconfig.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
+    let input = DocumentInput::new(
+        format!("file://{}", package_dir.join("package.json").display()),
+        "json".to_owned(),
+        package_file_fixture("npm-env-file-without-npmrc-does-not-select-home-userconfig.txt"),
+        Some(root.to_string_lossy().into_owned()),
+    );
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
 
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
@@ -292,23 +271,21 @@ fn package_json_uses_workspace_yarnrc_registry_and_token() {
     .unwrap();
     write(root.join(".env"), "SCOPE_TOKEN=scoped-secret\n").unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("package-json-uses-workspace-yarnrc-registry-and-token.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://scope.example.test/npm/@scope%2fpkg"]
+    let input = document_input(
+        &root.join("package.json"),
+        &root,
+        "package-json-uses-workspace-yarnrc-registry-and-token.txt",
     );
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[1], &context),
-        vec!["https://registry.example.test/left-pad"]
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
+
+    assert_registry_urls(
+        &session,
+        &context,
+        &dependencies,
+        &[
+            &["https://scope.example.test/npm/@scope%2fpkg"],
+            &["https://registry.example.test/left-pad"],
+        ],
     );
 
     let headers = context.auth_headers_for_url(Npm, "https://scope.example.test/npm/@scope%2fpkg");
@@ -321,15 +298,13 @@ fn package_json_uses_workspace_yarnrc_registry_and_token() {
 
 #[test]
 fn yarnrc_document_ignores_unsaved_registry_text() {
-    let input = DocumentInput {
-        uri: "file:///work/.yarnrc.yml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture("yarnrc-document-ignores-unsaved-registry-text.yarnrc.yml"),
-        workspace_root: None,
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
+    let input = DocumentInput::new(
+        "file:///work/.yarnrc.yml".to_owned(),
+        "yaml".to_owned(),
+        package_file_fixture("yarnrc-document-ignores-unsaved-registry-text.yarnrc.yml"),
+        None,
+    );
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
 
     assert_eq!(dependencies[0].name, "left-pad");
     assert_eq!(
@@ -349,18 +324,18 @@ fn npm_basic_auth_headers_use_document_npmrc_auth() {
     .unwrap();
     write(root.join(".env"), "BASIC_TOKEN=dXNlcjpwYXNz\n").unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-basic-auth-headers-use-document-npmrc-auth.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let headers = context.auth_headers_for_url(Npm, "https://registry.example.test/left-pad");
-
-    assert_eq!(headers.len(), 1);
-    assert_eq!(headers[0].name, "authorization");
-    assert_eq!(headers[0].value, "Basic dXNlcjpwYXNz");
+    let input = document_input(
+        &root.join("package.json"),
+        &root,
+        "npm-basic-auth-headers-use-document-npmrc-auth.txt",
+    );
+    let context = crate::registry::RegistryContext::from_document(&input);
+    assert_single_auth_header(
+        &context,
+        Npm,
+        "https://registry.example.test/left-pad",
+        "Basic dXNlcjpwYXNz",
+    );
 
     remove_dir_all(root).unwrap();
 }
@@ -376,18 +351,48 @@ fn yarnrc_auth_ident_headers_use_workspace_yarnrc_auth() {
     .unwrap();
     write(root.join(".env"), "YARN_IDENT=user:pass\n").unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("yarnrc-auth-ident-headers-use-workspace-yarnrc-auth.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let headers = context.auth_headers_for_url(Npm, "https://registry.example.test/left-pad");
-
-    assert_eq!(headers.len(), 1);
-    assert_eq!(headers[0].name, "authorization");
-    assert_eq!(headers[0].value, "Basic dXNlcjpwYXNz");
+    let input = DocumentInput::new(
+        format!("file://{}", root.join("package.json").display()),
+        "json".to_owned(),
+        package_file_fixture("yarnrc-auth-ident-headers-use-workspace-yarnrc-auth.txt"),
+        Some(root.to_string_lossy().into_owned()),
+    );
+    let context = crate::registry::RegistryContext::from_document(&input);
+    assert_single_auth_header(
+        &context,
+        Npm,
+        "https://registry.example.test/left-pad",
+        "Basic dXNlcjpwYXNz",
+    );
 
     remove_dir_all(root).unwrap();
+}
+
+fn assert_registry_urls(
+    session: &crate::VersionLensSession,
+    context: &crate::registry::RegistryContext,
+    dependencies: &[versionlens_model::Dependency],
+    expected: &[&[&str]],
+) {
+    for (dependency, urls) in dependencies.iter().zip(expected) {
+        crate::support::tests::assert_registry_urls(session, context, dependency, urls);
+    }
+}
+
+fn assert_registry_case(input: DocumentInput, expected: &[&[&str]]) {
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
+    assert_registry_urls(&session, &context, &dependencies, expected);
+}
+
+fn document_input(
+    document: &std::path::Path,
+    workspace_root: &std::path::Path,
+    fixture: &str,
+) -> DocumentInput {
+    DocumentInput::new(
+        format!("file://{}", document.display()),
+        "json".to_owned(),
+        package_file_fixture(fixture),
+        Some(workspace_root.to_string_lossy().into_owned()),
+    )
 }

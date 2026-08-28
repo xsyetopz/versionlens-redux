@@ -1,10 +1,12 @@
 use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::GitHub;
 use versionlens_providers::build_versions_from_response;
 use versionlens_suggestions::UpdateChoice;
 
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
 use crate::error::FetchError;
+use crate::fetch::github_current_ref_is_proven;
 use crate::fetch::response_update_choices;
 use crate::registry::{RegistryContext, registry_response_matches};
 
@@ -24,14 +26,21 @@ impl VersionLensSession {
         } = request;
         if has_registry_response {
             self.cache_registry_response_bodies(dependency, responses, context);
-            let latest = self.latest_from_responses(dependency, responses);
+            let latest = matching_dependency_response(responses, dependency)
+                .filter(|response| github_current_ref_is_proven(dependency, &response.body))
+                .and_then(|_| self.latest_from_responses(dependency, responses));
             let choices = latest
                 .as_deref()
                 .map(|version| self.update_choices_from_responses(dependency, version, responses))
                 .unwrap_or_default();
+            let builds = if dependency.ecosystem == GitHub && latest.is_none() {
+                vec![]
+            } else {
+                build_versions_from_responses(dependency, responses)
+            };
             Ok(LatestLookup {
                 latest,
-                builds: build_versions_from_responses(dependency, responses),
+                builds,
                 choices,
                 fetch_error: None,
             })
@@ -91,9 +100,10 @@ fn matching_dependency_response<'a>(
     responses: &'a [RegistryResponseInput],
     dependency: &Dependency,
 ) -> Option<&'a RegistryResponseInput> {
-    responses
-        .iter()
-        .find(|response| registry_response_matches(response, dependency))
+    responses.iter().find(|response| {
+        registry_response_matches(response, dependency)
+            && github_current_ref_is_proven(dependency, &response.body)
+    })
 }
 
 impl VersionLensSession {

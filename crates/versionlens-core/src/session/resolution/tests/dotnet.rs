@@ -1,12 +1,4 @@
-use super::{DocumentInput, standard_session};
-use std::env;
-use std::env::temp_dir;
-use std::fs::create_dir_all;
-use std::fs::read_to_string;
-use std::fs::remove_dir_all;
-use std::fs::write;
-use std::path::PathBuf;
-use std::process::id;
+use super::*;
 
 #[test]
 fn dotnet_local_nuget_source_does_not_resolve_versions_from_package_folder() {
@@ -26,18 +18,16 @@ fn dotnet_local_nuget_source_does_not_resolve_versions_from_package_folder() {
     )
     .unwrap();
 
-    let output = standard_session().resolve_document(DocumentInput {
-        uri: format!("file://{}", root.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture(
+    let output = standard_session().resolve_document(DocumentInput::new(
+        format!("file://{}", root.join("app.csproj").display()),
+        "xml".to_owned(),
+        package_file_fixture(
             "dotnet-local-nuget-source-does-not-resolve-versions-from-package-folder.txt",
         ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    });
+        Some(root.to_string_lossy().into_owned()),
+    ));
 
-    assert_eq!(output.suggestions[0].status, "unresolved");
-    assert_eq!(output.suggestions[0].latest, None);
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_suggestion_without_edits(&output, 0, "unresolved", None);
 
     remove_dir_all(root).unwrap();
 }
@@ -58,39 +48,18 @@ fn dotnet_local_nuget_source_does_not_resolve_flat_nupkg_files() {
     )
     .unwrap();
 
-    let output = standard_session().resolve_document(DocumentInput {
-        uri: format!("file://{}", root.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture(
-            "dotnet-local-nuget-source-does-not-resolve-flat-nupkg-files.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    });
+    let output = standard_session().resolve_document(DocumentInput::new(
+        format!("file://{}", root.join("app.csproj").display()),
+        "xml".to_owned(),
+        package_file_fixture("dotnet-local-nuget-source-does-not-resolve-flat-nupkg-files.txt"),
+        Some(root.to_string_lossy().into_owned()),
+    ));
 
-    assert_eq!(output.suggestions[0].status, "unresolved");
-    assert_eq!(output.suggestions[0].latest, None);
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_suggestion_without_edits(&output, 0, "unresolved", None);
 
     remove_dir_all(root).unwrap();
 }
 
 fn package_file_fixture(name: &str) -> String {
-    let path = repo_root()
-        .join("tests/fixtures/session/resolution/tests/dotnet")
-        .join(name);
-    read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read session resolution fixture {}: {error}",
-            path.display()
-        )
-    })
-}
-
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("core crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/dotnet", name)
 }

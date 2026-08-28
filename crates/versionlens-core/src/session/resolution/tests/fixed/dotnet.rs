@@ -1,6 +1,5 @@
-use super::{DocumentInput, RegistryResponseInput, standard_session};
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use super::{DocumentInput, standard_session};
+use crate::RegistryResponseInput;
 use versionlens_model::Ecosystem::Dotnet;
 
 #[test]
@@ -8,17 +7,17 @@ fn dotnet_nuget_versions_return_registry_suggestions() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/app.csproj".to_owned(),
-            language_id: "xml".to_owned(),
-            text: package_file_fixture("dotnet-nuget-versions-return-registry-suggestions.csproj"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "Microsoft.Extensions.Logging".to_owned(),
-            ecosystem: Dotnet,
-            body: r#"{"versions":["5.0.0","5.0.1"]}"#.to_owned(),
-        }],
+        DocumentInput::new(
+            "file:///repo/app.csproj".to_owned(),
+            "xml".to_owned(),
+            package_file_fixture("dotnet-nuget-versions-return-registry-suggestions.csproj"),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "Microsoft.Extensions.Logging".to_owned(),
+            Dotnet,
+            r#"{"versions":["5.0.0","5.0.1"]}"#.to_owned(),
+        )],
     );
 
     assert_eq!(
@@ -26,8 +25,7 @@ fn dotnet_nuget_versions_return_registry_suggestions() {
         "Microsoft.Extensions.Logging"
     );
     assert_eq!(output.suggestions[0].dependency.requirement, "5.0.0");
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("5.0.0"));
+    crate::support::tests::assert_suggestion(&output, 0, "fixed", Some("5.0.0"));
 }
 
 #[test]
@@ -35,19 +33,19 @@ fn dotnet_four_segment_versions_return_empty_suggestions_from_registry() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/app.csproj".to_owned(),
-            language_id: "xml".to_owned(),
-            text: package_file_fixture(
+        DocumentInput::new(
+            "file:///repo/app.csproj".to_owned(),
+            "xml".to_owned(),
+            package_file_fixture(
                 "dotnet-four-segment-versions-return-empty-suggestions-from-registry.csproj",
             ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "Test.Package".to_owned(),
-            ecosystem: Dotnet,
-            body: r#"{"versions":["1.2.4"]}"#.to_owned(),
-        }],
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "Test.Package".to_owned(),
+            Dotnet,
+            r#"{"versions":["1.2.4"]}"#.to_owned(),
+        )],
     );
 
     assert!(output.suggestions.is_empty());
@@ -57,39 +55,24 @@ fn dotnet_four_segment_versions_return_empty_suggestions_from_registry() {
 #[test]
 fn dotnet_invalid_versions_return_no_match_from_registry() {
     let session = standard_session();
-    let input = DocumentInput {
-        uri: "file:///repo/app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture("dotnet-invalid-versions-return-no-match-from-registry.csproj"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new(
+        "file:///repo/app.csproj".to_owned(),
+        "xml".to_owned(),
+        package_file_fixture("dotnet-invalid-versions-return-no-match-from-registry.csproj"),
+        None,
+    );
 
     let output = session.resolve_document_with_responses(
         input.clone(),
-        &[RegistryResponseInput {
-            package: "Test.Package".to_owned(),
-            ecosystem: Dotnet,
-            body: r#"{"versions":["1.2.4","1.3.0","2.0.0","2.1.0-beta.1"]}"#.to_owned(),
-        }],
+        &[RegistryResponseInput::new(
+            "Test.Package".to_owned(),
+            Dotnet,
+            r#"{"versions":["1.2.4","1.3.0","2.0.0","2.1.0-beta.1"]}"#.to_owned(),
+        )],
     );
     let analysis = session.analyze_document(input);
-    let titles = analysis
-        .code_lenses
-        .iter()
-        .map(|lens| lens.title.as_str())
-        .collect::<Vec<_>>();
-    let arguments = analysis
-        .code_lenses
-        .iter()
-        .skip(1)
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(|value| value.as_str())
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
+    let (titles, arguments) =
+        crate::session::resolution::tests::lens_titles_and_arguments(&analysis);
 
     assert_eq!(output.suggestions[0].status, "noMatch");
     assert_eq!(output.suggestions[0].dependency.name, "Test.Package");
@@ -100,22 +83,5 @@ fn dotnet_invalid_versions_return_no_match_from_registry() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    let path = repo_root()
-        .join("tests/fixtures/session/resolution/tests/fixed/dotnet")
-        .join(name);
-    read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read session resolution fixture {}: {error}",
-            path.display()
-        )
-    })
-}
-
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("core crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/fixed/dotnet", name)
 }

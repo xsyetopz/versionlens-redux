@@ -1,19 +1,10 @@
-use super::{DocumentInput, RegistryResponseInput, session_without_vulnerabilities};
-use std::env;
-use std::env::temp_dir;
-use std::fs::create_dir_all;
-use std::fs::read_to_string;
-use std::fs::remove_dir_all;
-use std::fs::write;
-use std::path::PathBuf;
-use std::process::id;
+use super::*;
 use std::sync::Barrier;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::thread::current;
 use std::thread::scope;
 use std::thread::sleep;
 use std::thread::spawn;
-use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn registry_context_resolution_reuses_cached_response_body_by_url() {
@@ -30,22 +21,18 @@ fn registry_context_resolution_reuses_cached_response_body_by_url() {
     .unwrap();
 
     let session = session_without_vulnerabilities();
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture(
-            "registry-context-resolution-reuses-cached-response-body-by-url.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
+    let input = DocumentInput::new(
+        format!("file://{}", root.join("package.json").display()),
+        "json".to_owned(),
+        package_file_fixture("registry-context-resolution-reuses-cached-response-body-by-url.txt"),
+        Some(root.to_string_lossy().into_owned()),
+    );
 
     let first = session.resolve_document_with_responses(
         input.clone(),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
-        }],
+        &[crate::support::tests::npm_latest_response(
+            "left-pad", "1.1.0",
+        )],
     );
     let second = session.resolve_document_with_responses(input, &[]);
 
@@ -64,13 +51,13 @@ fn concurrent_registry_resolution_deduplicates_inflight_request_body_fetches() {
     use std::io::{Read, Write};
     use std::sync::atomic::Ordering::SeqCst;
 
-    let listener = crate::tcp_listener_bind("127.0.0.1:0").unwrap();
+    let listener = crate::support::tests::tcp_listener_bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let registry_url = format!("http://{}/", listener.local_addr().unwrap());
     let request_count = crate::arc(<AtomicUsize>::default());
     let stop = crate::arc(<AtomicBool>::default());
-    let server_request_count = crate::clone_arc(&request_count);
-    let server_stop = crate::clone_arc(&stop);
+    let server_request_count = crate::support::tests::clone_arc(&request_count);
+    let server_stop = crate::support::tests::clone_arc(&stop);
     let server = spawn(move || {
         while !server_stop.load(SeqCst) {
             let Ok((mut stream, _)) = listener.accept() else {
@@ -100,26 +87,26 @@ fn concurrent_registry_resolution_deduplicates_inflight_request_body_fetches() {
     write(root.join(".npmrc"), format!("registry={registry_url}\n")).unwrap();
 
     let session = session_without_vulnerabilities();
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("package.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture(
+    let input = DocumentInput::new(
+        format!("file://{}", root.join("package.json").display()),
+        "json".to_owned(),
+        package_file_fixture(
             "concurrent-registry-resolution-deduplicates-inflight-request-body-fetches.txt",
         ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
+        Some(root.to_string_lossy().into_owned()),
+    );
     let barrier = crate::arc(barrier(2));
 
     scope(|scope| {
         let session_ref = &session;
-        let first_barrier = crate::clone_arc(&barrier);
+        let first_barrier = crate::support::tests::clone_arc(&barrier);
         let first_input = input.clone();
         let first = scope.spawn(move || {
             first_barrier.wait();
             session_ref.resolve_document_with_responses(first_input, &[])
         });
         let session_ref = &session;
-        let second_barrier = crate::clone_arc(&barrier);
+        let second_barrier = crate::support::tests::clone_arc(&barrier);
         let second = scope.spawn(move || {
             second_barrier.wait();
             session_ref.resolve_document_with_responses(input, &[])
@@ -137,22 +124,8 @@ fn concurrent_registry_resolution_deduplicates_inflight_request_body_fetches() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    let path = repo_root()
-        .join("tests/fixtures/session/resolution/tests/npm_request_cache")
-        .join(name);
-    read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read session resolution fixture {}: {error}",
-            path.display()
-        )
-    })
-}
-
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("core crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/session/resolution/tests/npm_request_cache",
+        name,
+    )
 }

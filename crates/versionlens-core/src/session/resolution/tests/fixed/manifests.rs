@@ -1,25 +1,13 @@
-use versionlens_model::Ecosystem::{Composer, Dub, Hex, Pub, Python};
 #[test]
 fn pub_path_dependencies_resolve_as_directories() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/app/pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture("pub-path-dependencies-resolve-as-directories.yaml"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "http_parser".to_owned(),
-            ecosystem: Pub,
-            body: r#"{"latest":{"version":"9.9.9"}}"#.to_owned(),
-        }],
+        DocumentInput::new("file:///repo/app/pubspec.yaml".to_owned(), "yaml".to_owned(), package_file_fixture("pub-path-dependencies-resolve-as-directories.yaml"), None),
+        &[RegistryResponseInput::new("http_parser".to_owned(), Pub, r#"{"latest":{"version":"9.9.9"}}"#.to_owned())],
     );
 
-    assert_eq!(output.suggestions[0].status, "directory");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("../../"));
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_suggestion_without_edits(&output, 0, "directory", Some("../../"));
 }
 
 #[test]
@@ -27,24 +15,13 @@ fn pub_sdk_dependencies_resolve_as_fixed_without_registry_lookup() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/app/pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture(
+        DocumentInput::new("file:///repo/app/pubspec.yaml".to_owned(), "yaml".to_owned(), package_file_fixture(
                 "pub-sdk-dependencies-resolve-as-fixed-without-registry-lookup.yaml",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "flutter".to_owned(),
-            ecosystem: Pub,
-            body: r#"{"latest":{"version":"9.9.9"}}"#.to_owned(),
-        }],
+            ), None),
+        &[RegistryResponseInput::new("flutter".to_owned(), Pub, r#"{"latest":{"version":"9.9.9"}}"#.to_owned())],
     );
 
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("sdk:flutter"));
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_suggestion_without_edits(&output, 0, "fixed", Some("sdk:flutter"));
 }
 
 #[test]
@@ -56,17 +33,8 @@ fn pub_workspace_paths_resolve_as_directories() {
     create_dir_all(&shared).unwrap();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: file_uri(&root.join("pubspec.yaml")),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture("pub-workspace-paths-resolve-as-directories.txt"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "packages/shared".to_owned(),
-            ecosystem: Pub,
-            body: r#"{"latest":{"version":"9.9.9"}}"#.to_owned(),
-        }],
+        DocumentInput::new(file_uri(&root.join("pubspec.yaml")), "yaml".to_owned(), package_file_fixture("pub-workspace-paths-resolve-as-directories.txt"), None),
+        &[RegistryResponseInput::new("packages/shared".to_owned(), Pub, r#"{"latest":{"version":"9.9.9"}}"#.to_owned())],
     );
 
     assert_eq!(output.suggestions[0].status, "directory");
@@ -82,34 +50,19 @@ fn pub_workspace_paths_resolve_as_directories() {
 fn dub_sdl_path_dependencies_resolve_as_directories() {
     let session = standard_session();
     let root = local_test_root("dub-directory");
-    let local = root.join("localdep");
-    let bare_local = root.join("vendor/localdep");
-    create_dir_all(&local).unwrap();
-    create_dir_all(&bare_local).unwrap();
+    create_two_local_dependencies(&root);
+    let output = resolve_local_fixture(LocalFixtureCase {
+        session: &session,
+        root: &root,
+        manifest: "dub.sdl",
+        language_id: "plaintext",
+        fixture_name: "dub-sdl-path-dependencies-resolve-as-directories.txt",
+        package: "localdep",
+        ecosystem: Dub,
+        response: r#"{"versions":[{"version":"9.9.9"}]}"#,
+    });
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: file_uri(&root.join("dub.sdl")),
-            language_id: "plaintext".to_owned(),
-            text: package_file_fixture("dub-sdl-path-dependencies-resolve-as-directories.txt"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "localdep".to_owned(),
-            ecosystem: Dub,
-            body: r#"{"versions":[{"version":"9.9.9"}]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions.len(), 2);
-    assert_eq!(output.suggestions[0].status, "directory");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("./localdep"));
-    assert_eq!(output.suggestions[1].status, "directory");
-    assert_eq!(
-        output.suggestions[1].latest.as_deref(),
-        Some("vendor/localdep")
-    );
-    assert!(output.edits.is_empty());
+    assert_two_directory_suggestions(&output, "./localdep", "vendor/localdep");
     remove_dir_all(root).unwrap();
 }
 
@@ -121,22 +74,11 @@ fn dub_json_path_dependencies_resolve_as_directories() {
     create_dir_all(&local).unwrap();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: file_uri(&root.join("dub.json")),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("dub-json-path-dependencies-resolve-as-directories.txt"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "localdep".to_owned(),
-            ecosystem: Dub,
-            body: r#"{"versions":[{"version":"9.9.9"}]}"#.to_owned(),
-        }],
+        DocumentInput::new(file_uri(&root.join("dub.json")), "json".to_owned(), package_file_fixture("dub-json-path-dependencies-resolve-as-directories.txt"), None),
+        &[RegistryResponseInput::new("localdep".to_owned(), Dub, r#"{"versions":[{"version":"9.9.9"}]}"#.to_owned())],
     );
 
-    assert_eq!(output.suggestions[0].status, "directory");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("./localdep"));
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_suggestion_without_edits(&output, 0, "directory", Some("./localdep"));
     remove_dir_all(root).unwrap();
 }
 
@@ -144,147 +86,106 @@ fn dub_json_path_dependencies_resolve_as_directories() {
 fn gleam_path_dependencies_resolve_as_directories() {
     let session = standard_session();
     let root = local_test_root("gleam-directory");
-    let local = root.join("localdep");
-    let bare_local = root.join("vendor/localdep");
-    create_dir_all(&local).unwrap();
-    create_dir_all(&bare_local).unwrap();
+    create_two_local_dependencies(&root);
+    let output = resolve_local_fixture(LocalFixtureCase {
+        session: &session,
+        root: &root,
+        manifest: "gleam.toml",
+        language_id: "toml",
+        fixture_name: "gleam-path-dependencies-resolve-as-directories.txt",
+        package: "localdep",
+        ecosystem: Hex,
+        response: r#"{"releases":[{"version":"9.9.9"}]}"#,
+    });
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: file_uri(&root.join("gleam.toml")),
-            language_id: "toml".to_owned(),
-            text: package_file_fixture("gleam-path-dependencies-resolve-as-directories.txt"),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "localdep".to_owned(),
-            ecosystem: Hex,
-            body: r#"{"releases":[{"version":"9.9.9"}]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions.len(), 2);
-    assert_eq!(output.suggestions[0].status, "directory");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("./localdep"));
-    assert_eq!(output.suggestions[1].status, "directory");
-    assert_eq!(
-        output.suggestions[1].latest.as_deref(),
-        Some("vendor/localdep")
-    );
-    assert!(output.edits.is_empty());
+    assert_two_directory_suggestions(&output, "./localdep", "vendor/localdep");
     remove_dir_all(root).unwrap();
 }
 
 #[test]
 fn gleam_git_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
+    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/gleam.toml", language_id: "toml", fixture_name: "gleam-git-dependencies-are-fixed-without-registry-updates.toml", package: "my_library", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# });
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/gleam.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: package_file_fixture(
-                "gleam-git-dependencies-are-fixed-without-registry-updates.toml",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "my_library".to_owned(),
-            ecosystem: Hex,
-            body: r#"{"releases":[{"version":"9.9.9"}]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("git repository")
-    );
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_fixed_git_repository(&output);
 }
 
 #[test]
 fn mix_umbrella_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
+    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/mix.exs", language_id: "elixir", fixture_name: "mix-umbrella-dependencies-are-fixed-without-registry-updates.exs", package: "shared_app", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# });
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/mix.exs".to_owned(),
-            language_id: "elixir".to_owned(),
-            text: package_file_fixture(
-                "mix-umbrella-dependencies-are-fixed-without-registry-updates.exs",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "shared_app".to_owned(),
-            ecosystem: Hex,
-            body: r#"{"releases":[{"version":"9.9.9"}]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("umbrella dependency")
-    );
-    assert!(output.edits.is_empty());
+    assert_fixed_without_edits(&output, "umbrella dependency");
 }
 
 #[test]
 fn rebar_git_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
+    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/rebar.config", language_id: "erlang", fixture_name: "rebar-git-dependencies-are-fixed-without-registry-updates.config", package: "gettext", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# });
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/rebar.config".to_owned(),
-            language_id: "erlang".to_owned(),
-            text: package_file_fixture(
-                "rebar-git-dependencies-are-fixed-without-registry-updates.config",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "gettext".to_owned(),
-            ecosystem: Hex,
-            body: r#"{"releases":[{"version":"9.9.9"}]}"#.to_owned(),
-        }],
-    );
-
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("git repository")
-    );
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_fixed_git_repository(&output);
 }
 
 #[test]
 fn rebar_mercurial_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
+    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/rebar.config", language_id: "erlang", fixture_name: "rebar-mercurial-dependencies-are-fixed-without-registry-updates.config", package: "legacy", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# });
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/rebar.config".to_owned(),
-            language_id: "erlang".to_owned(),
-            text: package_file_fixture(
-                "rebar-mercurial-dependencies-are-fixed-without-registry-updates.config",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "legacy".to_owned(),
-            ecosystem: Hex,
-            body: r#"{"releases":[{"version":"9.9.9"}]}"#.to_owned(),
-        }],
-    );
+    assert_fixed_without_edits(&output, "hg repository");
+}
 
+fn assert_fixed_without_edits(
+    output: &crate::contract::ResolveDocumentOutput,
+    latest: &str,
+) {
     assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("hg repository")
-    );
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some(latest));
     assert!(output.edits.is_empty());
+}
+
+fn assert_two_directory_suggestions(
+    output: &crate::contract::ResolveDocumentOutput,
+    first: &str,
+    second: &str,
+) {
+    assert_eq!(output.suggestions.len(), 2);
+    for (suggestion, expected) in output.suggestions.iter().zip([first, second]) {
+        assert_eq!(suggestion.status, "directory");
+        assert_eq!(suggestion.latest.as_deref(), Some(expected));
+    }
+    assert!(output.edits.is_empty());
+}
+
+fn create_two_local_dependencies(root: &std::path::Path) {
+    create_dir_all(root.join("localdep")).unwrap();
+    create_dir_all(root.join("vendor/localdep")).unwrap();
+}
+
+struct LocalFixtureCase<'a> {
+    session: &'a crate::VersionLensSession,
+    root: &'a std::path::Path,
+    manifest: &'a str,
+    language_id: &'a str,
+    fixture_name: &'a str,
+    package: &'a str,
+    ecosystem: versionlens_model::Ecosystem,
+    response: &'a str,
+}
+
+fn resolve_local_fixture(case: LocalFixtureCase<'_>) -> crate::contract::ResolveDocumentOutput {
+    case.session.resolve_document_with_responses(
+        DocumentInput::new(
+            file_uri(&case.root.join(case.manifest)),
+            case.language_id.to_owned(),
+            package_file_fixture(case.fixture_name),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            case.package.to_owned(),
+            case.ecosystem,
+            case.response.to_owned(),
+        )],
+    )
 }
 
 #[test]
@@ -292,19 +193,10 @@ fn python_direct_url_requirements_remain_fixed_without_registry_lookup() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///repo/requirements.txt".to_owned(),
-            language_id: "pip-requirements".to_owned(),
-            text: package_file_fixture(
+        DocumentInput::new("file:///repo/requirements.txt".to_owned(), "pip-requirements".to_owned(), package_file_fixture(
                 "python-direct-url-requirements-resolve-as-blank-versions-like-upstream.txt",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "local".to_owned(),
-            ecosystem: Python,
-            body: r#"{"info":{"version":"9.9.9"}}"#.to_owned(),
-        }],
+            ), None),
+        &[RegistryResponseInput::new("local".to_owned(), Python, r#"{"info":{"version":"9.9.9"}}"#.to_owned())],
     );
 
     assert_eq!(output.suggestions[0].status, "fixed");
@@ -320,12 +212,7 @@ fn npm_workspace_and_catalog_dependencies_are_skipped() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("npm-workspace-and-catalog-dependencies-are-skipped.json"),
-            workspace_root: None,
-        },
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("workspace-and-catalog-dependencies-are-skipped.json"), None),
         &[],
     );
 
@@ -338,19 +225,10 @@ fn bun_trusted_dependency_name_arrays_are_fixed_by_default() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture(
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture(
                 "bun-trusted-dependency-name-arrays-are-fixed-by-default.json",
-            ),
-            workspace_root: None,
-        },
-        &[RegistryResponseInput {
-            package: "my-trusted-package".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned(),
-        }],
+            ), None),
+        &[RegistryResponseInput::new("my-trusted-package".to_owned(), Npm, r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned())],
     );
 
     assert_eq!(output.suggestions[0].status, "fixed");
@@ -366,23 +244,10 @@ fn npm_bundle_name_arrays_are_fixed_by_default() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("npm-bundle-name-arrays-are-fixed-by-default.json"),
-            workspace_root: None,
-        },
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("bundle-name-arrays-are-fixed-by-default.json"), None),
         &[
-            RegistryResponseInput {
-                package: "left-pad".to_owned(),
-                ecosystem: Npm,
-                body: r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned(),
-            },
-            RegistryResponseInput {
-                package: "right-pad".to_owned(),
-                ecosystem: Npm,
-                body: r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned(),
-            },
+            RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned()),
+            RegistryResponseInput::new("right-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned()),
         ],
     );
 

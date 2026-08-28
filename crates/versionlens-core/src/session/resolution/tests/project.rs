@@ -1,9 +1,7 @@
 use std::env::temp_dir;
 use std::fs::create_dir_all;
-use std::fs::read_to_string;
 use std::fs::remove_dir_all;
 use std::fs::write;
-use std::path::PathBuf;
 use std::process::id;
 
 use super::{DocumentInput, standard_session};
@@ -14,17 +12,16 @@ fn resolves_project_version_without_registry_response() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///Cargo.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: package_file_fixture("resolves-project-version-without-registry-response.toml"),
-            workspace_root: None,
-        },
+        DocumentInput::new(
+            "file:///Cargo.toml".to_owned(),
+            "toml".to_owned(),
+            package_file_fixture("version-without-registry-response.toml"),
+            None,
+        ),
         &[],
     );
 
-    assert_eq!(output.suggestions[0].status, "updateAvailable");
-    assert_eq!(output.edits[0].new_text, "1.2.4");
+    assert_update(&output, "1.2.4");
 }
 
 #[test]
@@ -32,14 +29,12 @@ fn resolves_jsr_project_version_without_registry_response() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///jsr.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture(
-                "resolves-jsr-project-version-without-registry-response.json",
-            ),
-            workspace_root: None,
-        },
+        DocumentInput::new(
+            "file:///jsr.json".to_owned(),
+            "json".to_owned(),
+            package_file_fixture("jsr-project-version-without-registry-response.json"),
+            None,
+        ),
         &[],
     );
 
@@ -53,14 +48,12 @@ fn resolves_gleam_project_version_without_registry_response() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
-        DocumentInput {
-            uri: "file:///gleam.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: package_file_fixture(
-                "resolves-gleam-project-version-without-registry-response.toml",
-            ),
-            workspace_root: None,
-        },
+        DocumentInput::new(
+            "file:///gleam.toml".to_owned(),
+            "toml".to_owned(),
+            package_file_fixture("gleam-project-version-without-registry-response.toml"),
+            None,
+        ),
         &[],
     );
 
@@ -74,25 +67,19 @@ fn resolves_gleam_project_version_without_registry_response() {
 fn analyzes_project_version_code_lens_without_registry_response() {
     let session = standard_session();
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture(
-            "analyzes-project-version-code-lens-without-registry-response.yaml",
-        ),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new(
+        "file:///pubspec.yaml".to_owned(),
+        "yaml".to_owned(),
+        package_file_fixture("analyzes-project-version-code-lens-without-registry-response.yaml"),
+        None,
+    ));
 
     let titles = output
         .code_lenses
         .iter()
         .map(|lens| lens.title.as_str())
         .collect::<Vec<_>>();
-    let commands = output
-        .code_lenses
-        .iter()
-        .filter_map(|lens| lens.arguments.get(2).map(|value| value.as_str()))
-        .collect::<Vec<_>>();
+    let commands = crate::support::tests::code_lens_commands(&output);
 
     assert_eq!(titles.len(), 3);
     assert!(titles.iter().any(|title| title.contains("major 2.0.0")));
@@ -104,15 +91,13 @@ fn analyzes_project_version_code_lens_without_registry_response() {
 
 #[test]
 fn composer_repositories_override_registry_urls() {
-    let input = DocumentInput {
-        uri: "file:///repo/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("composer-repositories-override-registry-urls.json"),
-        workspace_root: None,
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
+    let input = DocumentInput::new(
+        "file:///repo/composer.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture("composer-repositories-override-registry-urls.json"),
+        None,
+    );
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
 
     assert_eq!(dependencies[0].name, "phpunit/phpunit");
     assert_eq!(
@@ -139,13 +124,13 @@ fn composer_auth_json_supplies_request_scoped_auth_headers() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("composer.json").display()),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("composer-auth-json-supplies-request-scoped-auth-headers.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
+    let input = DocumentInput::new(
+        format!("file://{}", root.join("composer.json").display()),
+        "json".to_owned(),
+        package_file_fixture("composer-auth-json-supplies-request-scoped-auth-headers.txt"),
+        Some(root.to_string_lossy().into_owned()),
+    );
+    let context = crate::registry::RegistryContext::from_document(&input);
     let default_headers = context.auth_headers_for_url(
         Composer,
         "https://composer.example.test/p2/phpunit/phpunit.json",
@@ -175,22 +160,6 @@ fn composer_auth_json_supplies_request_scoped_auth_headers() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    let path = repo_root()
-        .join("tests/fixtures/session/resolution/project")
-        .join(name);
-    read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read session resolution project fixture {}: {error}",
-            path.display()
-        )
-    })
+    crate::support::tests::fixture("tests/fixtures/session/resolution/project", name)
 }
-
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("core crate should be under crates/")
-        .to_path_buf()
-}
+use super::assert_update;

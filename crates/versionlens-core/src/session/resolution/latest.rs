@@ -1,8 +1,8 @@
 use versionlens_model::Dependency;
 use versionlens_suggestions::UpdateChoice;
 
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
 use crate::error::FetchError;
 use crate::registry::RegistryContext;
 use crate::session::operation::OperationContext;

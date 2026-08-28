@@ -1,8 +1,9 @@
+use crate::prerelease;
 use semver::Version;
 use serde_json::Value;
 use serde_json::from_str;
 use versionlens_model::Dependency;
-use versionlens_model::Ecosystem::{Composer, Docker, Dotnet, Npm};
+use versionlens_model::Ecosystem::{Composer, Docker, Dotnet};
 use versionlens_providers::{
     is_registry_dependency, is_unsupported_dotnet_requirement,
     release_versions_from_response_for_package,
@@ -14,20 +15,17 @@ use versionlens_suggestions::SuggestionStatus::{
 use versionlens_suggestions::{
     Suggestion, UpdateChoice, error, fixed, invalid, no_match, resolve_dependency,
 };
-use versionlens_versions::{
-    ProjectVersionBump, is_build_update, is_dotnet_requirement_parseable, normalized_version,
-    strip_version_prefix,
-};
+use versionlens_versions::{ProjectVersionBump, is_build_update, is_dotnet_requirement_parseable};
 
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
 use crate::docker::response::docker_response_missing_tag;
 use crate::non_registry::{deno_import_has_no_suggestions, known_non_registry_suggestion};
 use crate::project::project_version_latest;
 use crate::registry::{RegistryContext, registry_response_matches};
 use crate::session::operation::OperationContext;
 
-use super::latest::LatestResolutionRequest;
+use super::latest::{LatestLookup, LatestResolutionRequest};
 
 type UpdateChoices = Vec<UpdateChoice>;
 
@@ -131,20 +129,8 @@ impl VersionLensSession {
     }
 
     fn docker_no_match_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
-        let LatestSuggestionRequest {
-            dependency,
-            responses,
-            has_registry_response,
-            context,
-            operation,
-        } = request;
-        let lookup = self.resolve_latest(LatestResolutionRequest {
-            dependency: &dependency,
-            responses,
-            has_registry_response,
-            context,
-            operation,
-        });
+        let lookup = self.resolve_latest_for_request(&request);
+        let dependency = request.dependency;
         if let Some(message) = lookup.fetch_error {
             return error(dependency, message.to_string());
         }
@@ -156,20 +142,13 @@ impl VersionLensSession {
     }
 
     fn latest_lookup_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
+        let lookup = self.resolve_latest_for_request(&request);
         let LatestSuggestionRequest {
             dependency,
             responses,
             has_registry_response,
-            context,
-            operation,
+            ..
         } = request;
-        let lookup = self.resolve_latest(LatestResolutionRequest {
-            dependency: &dependency,
-            responses,
-            has_registry_response,
-            context,
-            operation,
-        });
         if let Some(message) = lookup.fetch_error {
             return error(dependency, message.to_string());
         }
@@ -222,6 +201,16 @@ impl VersionLensSession {
             None if has_registry_response => no_match(dependency),
             None => resolve_dependency(dependency, None),
         }
+    }
+
+    fn resolve_latest_for_request(&self, request: &LatestSuggestionRequest<'_>) -> LatestLookup {
+        self.resolve_latest(LatestResolutionRequest {
+            dependency: &request.dependency,
+            responses: request.responses,
+            has_registry_response: request.has_registry_response,
+            context: request.context,
+            operation: request.operation,
+        })
     }
 }
 
@@ -329,32 +318,8 @@ fn dotnet_invalid_requirement_choices(latest: Option<String>) -> UpdateChoices {
 }
 
 fn invalid_composer_registry_requirement(dependency: &Dependency) -> bool {
-    dependency.ecosystem == Composer && !composer_semver_spec_parseable(&dependency.requirement)
-}
-
-fn composer_semver_spec_parseable(requirement: &str) -> bool {
-    let requirement = requirement.trim();
-    if requirement.is_empty() {
-        return false;
-    }
-    if normalized_version(requirement).is_some() {
-        return true;
-    }
-
-    let normalized = normalize_composer_requirement(requirement);
-    crate::parse_semver_req(&normalized)
-        .or_else(|_| {
-            crate::parse_semver_req(&normalized.split_whitespace().collect::<Vec<_>>().join(", "))
-        })
-        .is_ok()
-}
-
-fn normalize_composer_requirement(requirement: &str) -> String {
-    requirement
-        .split_whitespace()
-        .map(strip_version_prefix)
-        .collect::<Vec<_>>()
-        .join(" ")
+    dependency.ecosystem == Composer
+        && !versionlens_versions::composer_requirement_is_parseable(&dependency.requirement)
 }
 
 fn npm_dist_tag_missing_from_responses(
@@ -362,12 +327,7 @@ fn npm_dist_tag_missing_from_responses(
     responses: &[RegistryResponseInput],
 ) -> bool {
     let requirement = dependency.requirement.trim();
-    dependency.ecosystem == Npm
-        && !requirement.is_empty()
-        && requirement.chars().any(|char| char.is_ascii_alphabetic())
-        && requirement
-            .chars()
-            .all(|char| char.is_ascii_alphanumeric() || matches!(char, '-' | '_' | '.'))
+    prerelease::npm_requirement_may_be_dist_tag(dependency)
         && crate::parse_semver(requirement).is_err()
         && crate::parse_semver_req(requirement).is_err()
         && responses
@@ -392,24 +352,9 @@ fn fixed_requirement_missing_from_responses(
     dependency: &Dependency,
     responses: &[RegistryResponseInput],
 ) -> bool {
-    let Some(current) = fixed_current(dependency) else {
+    let Some((current, releases)) = fixed_response_releases(dependency, responses) else {
         return false;
     };
-    let Some(response) = responses
-        .iter()
-        .find(|response| registry_response_matches(response, dependency))
-    else {
-        return false;
-    };
-
-    let releases = release_versions_from_response_for_package(
-        dependency.ecosystem,
-        dependency
-            .hosted_name
-            .as_deref()
-            .unwrap_or(&dependency.name),
-        &response.body,
-    );
     !releases.is_empty()
         && !releases
             .iter()
@@ -420,26 +365,32 @@ fn fixed_requirement_matches_response(
     dependency: &Dependency,
     responses: &[RegistryResponseInput],
 ) -> bool {
-    let Some(current) = fixed_current(dependency) else {
-        return false;
-    };
-    let Some(response) = responses
-        .iter()
-        .find(|response| registry_response_matches(response, dependency))
-    else {
+    let Some((current, releases)) = fixed_response_releases(dependency, responses) else {
         return false;
     };
 
-    release_versions_from_response_for_package(
+    releases
+        .iter()
+        .any(|release| fixed_release_matches(release, &current))
+}
+
+fn fixed_response_releases(
+    dependency: &Dependency,
+    responses: &[RegistryResponseInput],
+) -> Option<(Version, Vec<String>)> {
+    let current = fixed_current(dependency)?;
+    let response = responses
+        .iter()
+        .find(|response| registry_response_matches(response, dependency))?;
+    let releases = release_versions_from_response_for_package(
         dependency.ecosystem,
         dependency
             .hosted_name
             .as_deref()
             .unwrap_or(&dependency.name),
         &response.body,
-    )
-    .iter()
-    .any(|release| fixed_release_matches(release, &current))
+    );
+    Some((current, releases))
 }
 
 fn fixed_current(dependency: &Dependency) -> Option<Version> {
@@ -451,9 +402,7 @@ fn latest_matches_fixed_current(dependency: &Dependency, latest: &str) -> bool {
 }
 
 fn fixed_release_matches(release: &str, current: &Version) -> bool {
-    crate::parse_semver(release.trim())
-        .ok()
-        .is_some_and(|release| release.eq(current))
+    crate::parse_semver(release.trim()).is_ok_and(|release| release.eq(current))
 }
 
 #[cfg(test)]

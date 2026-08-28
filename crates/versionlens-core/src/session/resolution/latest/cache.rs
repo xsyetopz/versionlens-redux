@@ -40,12 +40,7 @@ impl VersionLensSession {
                 }
                 lookup
             }
-            Err(fetch_error) => LatestLookup {
-                latest: None,
-                builds: vec![],
-                choices: vec![],
-                fetch_error: Some(fetch_error),
-            },
+            Err(fetch_error) => failed_latest_lookup(fetch_error),
         }
     }
 
@@ -55,12 +50,7 @@ impl VersionLensSession {
     ) -> LatestLookup {
         match self.lookup_latest(request) {
             Ok(lookup) => lookup,
-            Err(fetch_error) => LatestLookup {
-                latest: None,
-                builds: vec![],
-                choices: vec![],
-                fetch_error: Some(fetch_error),
-            },
+            Err(fetch_error) => failed_latest_lookup(fetch_error),
         }
     }
 
@@ -72,6 +62,15 @@ impl VersionLensSession {
         !context.has_urls()
             && !npm_requirement_may_be_dist_tag(dependency)
             && (self.config.show_prereleases || !dependency_allows_prereleases(dependency))
+    }
+}
+
+fn failed_latest_lookup(fetch_error: crate::error::FetchError) -> LatestLookup {
+    LatestLookup {
+        latest: None,
+        builds: vec![],
+        choices: vec![],
+        fetch_error: Some(fetch_error),
     }
 }
 

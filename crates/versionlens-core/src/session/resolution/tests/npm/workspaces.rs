@@ -1,8 +1,3 @@
-use std::env::temp_dir;
-use std::fs::create_dir_all;
-use std::fs::remove_dir_all;
-use std::fs::write;
-use std::process::id;
 #[test]
 fn deno_npm_imports_use_document_npmrc_registry() {
     let root = temp_dir().join(format!("versionlens-deno-npmrc-{}", id()));
@@ -13,15 +8,8 @@ fn deno_npm_imports_use_document_npmrc_registry() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("deno.json").display()),
-        language_id: "jsonc".to_owned(),
-        text: package_file_fixture("deno-npm-imports-use-document-npmrc-registry.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
+    let input = DocumentInput::new(format!("file://{}", root.join("deno.json").display()), "jsonc".to_owned(), package_file_fixture("deno-npm-imports-use-document-npmrc-registry.txt"), Some(root.to_string_lossy().into_owned()));
+    let (session, context, dependencies) = crate::session::resolution::tests::registry_case(&input);
 
     assert_eq!(dependencies[0].ecosystem, Npm);
     assert_eq!(
@@ -42,24 +30,15 @@ fn pnpm_yaml_dependencies_use_document_npmrc_registry() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("pnpm-workspace.yaml").display()),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture("pnpm-yaml-dependencies-use-document-npmrc-registry.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = standard_session().dependencies(&input);
-    let session = standard_session();
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://scope.example.test/npm/@scope%2fpkg"]
-    );
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[1], &context),
-        vec!["https://registry.example.test/left-pad"]
-    );
+    let input = DocumentInput::new(format!("file://{}", root.join("pnpm-workspace.yaml").display()), "yaml".to_owned(), package_file_fixture("pnpm-yaml-dependencies-use-document-npmrc-registry.txt"), Some(root.to_string_lossy().into_owned()));
+    let (_session, _context, _dependencies) =
+        crate::session::resolution::tests::registry_case_with_expected_urls(
+            &input,
+            &[
+                &["https://scope.example.test/npm/@scope%2fpkg"],
+                &["https://registry.example.test/left-pad"],
+            ],
+        );
 
     remove_dir_all(root).unwrap();
 }
