@@ -1,266 +1,140 @@
-use std::fs::read_to_string;
-use std::path::PathBuf;
-use versionlens_model::{DocumentInput, ManifestKind};
+use versionlens_model::DocumentInput;
 
 use super::classify_document;
-use versionlens_model::ManifestKind::{
-    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
-    ClojureDepsEdn, Cmake, ComposerJson, Cpanfile, DenoImportMapJson, DenoJson, DockerComposeYaml,
-    Dockerfile, DotnetProjectJson, DotnetXml, DubJson, DubSdl, DuneProject, Gemfile, GleamToml,
-    GoMod, GradleBuild, GradleSettings, GradleVersionCatalogToml, HaxelibJson, HelmChartYaml,
-    JsrJson, JuliaManifestToml, JuliaProjectToml, KustomizationYaml, LeiningenProjectClj,
-    LuaRockspec, MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5,
-    NpmPackageYaml, Opam, PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml,
-    PubspecYaml, PythonPipfile, PythonPyprojectToml, PythonRequirementsTxt, RDescription,
-    RebarConfig, RenvLock, RubyGemspec, SbtBuild, StackYaml, SwiftPackage, TerraformTf,
-    UnityProjectManifestJson, Unknown, VcpkgJson, VersionLensMultiRegistries, XmakeLua,
-    ZigBuildZon,
-};
+use versionlens_model::ManifestKind;
+
+mod cases;
+
+use cases::{JSON_TOML_XML_CASES, YAML_PLAINTEXT_OTHER_CASES};
 
 #[test]
 fn classifies_supported_json_toml_and_xml_manifest_files() {
-    for (uri, language_id, kind) in [
-        ("file:///work/package.json", "jsonc", NpmPackageJson),
-        ("file:///work/package.json5", "json5", NpmPackageJson5),
-        ("file:///work/package.yaml", "yaml", NpmPackageYaml),
-        ("file:///work/Cargo.toml", "toml", CargoToml),
-        ("file:///work/composer.json", "json", ComposerJson),
-        ("file:///work/deno.json", "jsonc", DenoJson),
-        ("file:///work/deno.jsonc", "jsonc", DenoJson),
-        ("file:///work/import_map.json", "json", DenoImportMapJson),
-        ("file:///work/jsr.json", "json", JsrJson),
-        ("file:///work/jsr.jsonc", "jsonc", JsrJson),
-        ("file:///work/project.json", "json", DotnetProjectJson),
-        ("file:///work/packages.config", "xml", DotnetXml),
-        (
-            "file:///work/paket.dependencies",
-            "plaintext",
-            PaketDependencies,
-        ),
-        (
-            "file:///work/paket.references",
-            "plaintext",
-            PaketReferences,
-        ),
-        ("file:///work/app.csproj", "xml", DotnetXml),
-        ("file:///work/app.fsproj", "xml", DotnetXml),
-        ("file:///work/app.vbproj", "xml", DotnetXml),
-        ("file:///work/Directory.Packages.props", "xml", DotnetXml),
-        ("file:///work/Directory.Build.targets", "xml", DotnetXml),
-        ("file:///work/dub.json", "json", DubJson),
-        ("file:///work/vcpkg.json", "json", VcpkgJson),
-        ("file:///work/CMakeLists.txt", "cmake", Cmake),
-        ("file:///work/toolchain.cmake", "cmake", Cmake),
-        ("file:///work/xmake.lua", "lua", XmakeLua),
-        ("file:///work/Package.swift", "swift", SwiftPackage),
-        ("file:///work/build.zig.zon", "zig", ZigBuildZon),
-        ("file:///work/demo.nimble", "nim", Nimble),
-        ("file:///work/cpanfile", "perl", Cpanfile),
-        (
-            "file:///work/luasocket-3.1.0-1.rockspec",
-            "lua",
-            LuaRockspec,
-        ),
-        ("file:///work/Pipfile", "toml", PythonPipfile),
-        ("file:///work/pyproject.toml", "toml", PythonPyprojectToml),
-        (
-            "file:///work/gradle/libs.versions.toml",
-            "toml",
-            GradleVersionCatalogToml,
-        ),
-        ("file:///work/build.gradle", "groovy", GradleBuild),
-        ("file:///work/build.gradle.kts", "kotlin", GradleBuild),
-        ("file:///work/settings.gradle", "groovy", GradleSettings),
-        ("file:///work/settings.gradle.kts", "kotlin", GradleSettings),
-        ("file:///work/build.sbt", "scala", SbtBuild),
-        ("file:///work/deps.edn", "clojure", ClojureDepsEdn),
-        ("file:///work/project.clj", "clojure", LeiningenProjectClj),
-        ("file:///work/pom.xml", "xml", MavenPomXml),
-    ] {
+    for &(uri, language_id, kind) in JSON_TOML_XML_CASES {
         assert_manifest(uri, language_id, kind);
     }
+}
+#[test]
+fn classifies_github_actions_only_in_supported_repository_locations() {
+    assert_manifest(
+        "file:///work/.github/workflows/ci.yml",
+        "yaml",
+        ManifestKind::GitHubActions,
+    );
+    assert_manifest(
+        "file:///work/.github/actions/release/action.yaml",
+        "yaml",
+        ManifestKind::GitHubActions,
+    );
+    assert_manifest("file:///work/ci.yml", "yaml", ManifestKind::Unknown);
+    assert_manifest(
+        "file:///work/.github/workflows/README.md",
+        "markdown",
+        ManifestKind::Unknown,
+    );
 }
 
 #[test]
-#[expect(
-    clippy::too_many_lines,
-    reason = "table-driven manifest coverage stays readable as one scenario"
-)]
 fn classifies_supported_yaml_plaintext_and_other_manifest_files() {
-    for (uri, language_id, kind) in [
-        ("file:///work/Dockerfile", "dockerfile", Dockerfile),
-        ("file:///work/build.Dockerfile", "dockerfile", Dockerfile),
-        ("file:///work/compose.yaml", "yaml", DockerComposeYaml),
-        (
-            "file:///work/docker-compose.yaml",
-            "yaml",
-            DockerComposeYaml,
-        ),
-        (
-            "file:///work/docker-compose.override.yml",
-            "dockercompose",
-            DockerComposeYaml,
-        ),
-        (
-            "file:///work/docker-compose.prod.yaml",
-            "yaml",
-            DockerComposeYaml,
-        ),
-        ("file:///work/Chart.yaml", "yaml", HelmChartYaml),
-        (
-            "file:///work/requirements.yml",
-            "yaml",
-            AnsibleGalaxyRequirementsYaml,
-        ),
-        (
-            "file:///work/requirements.yaml",
-            "yaml",
-            AnsibleGalaxyRequirementsYaml,
-        ),
-        ("file:///work/MODULE.bazel", "starlark", BazelModule),
-        ("file:///work/WORKSPACE", "starlark", BazelWorkspace),
-        ("file:///work/WORKSPACE.bazel", "starlark", BazelWorkspace),
-        ("file:///work/subprojects/zlib.wrap", "meson", MesonWrap),
-        ("file:///work/flake.nix", "nix", NixFlake),
-        ("file:///work/kustomization.yaml", "yaml", KustomizationYaml),
-        (
-            "file:///work/Packages/manifest.json",
-            "json",
-            UnityProjectManifestJson,
-        ),
-        (
-            "file:///work/compose.override.yaml",
-            "yaml",
-            DockerComposeYaml,
-        ),
-        ("file:///work/Gemfile", "ruby", Gemfile),
-        ("file:///work/example.gemspec", "ruby", RubyGemspec),
-        ("file:///work/go.mod", "go.mod", GoMod),
-        ("file:///work/go.work", "go.mod", GoMod),
-        ("file:///work/dub.sdl", "plaintext", DubSdl),
-        ("file:///work/mix.exs", "elixir", MixExs),
-        ("file:///work/rebar.config", "erlang", RebarConfig),
-        ("file:///work/gleam.toml", "toml", GleamToml),
-        ("file:///work/opam", "plaintext", Opam),
-        ("file:///work/lwt.opam", "plaintext", Opam),
-        ("file:///work/dune-project", "plaintext", DuneProject),
-        ("file:///work/demo.cabal", "plaintext", Cabal),
-        ("file:///work/cabal.project", "plaintext", CabalProject),
-        ("file:///work/stack.yaml", "yaml", StackYaml),
-        ("file:///work/Project.toml", "toml", JuliaProjectToml),
-        ("file:///work/Manifest.toml", "toml", JuliaManifestToml),
-        (
-            "file:///work/Manifest-v1.11.toml",
-            "toml",
-            JuliaManifestToml,
-        ),
-        (
-            "file:///work/Manifest-v1.10.toml",
-            "toml",
-            JuliaManifestToml,
-        ),
-        (
-            "file:///work/requirements-dev.txt",
-            "plaintext",
-            PythonRequirementsTxt,
-        ),
-        (
-            "file:///work/constraints.txt",
-            "plaintext",
-            PythonRequirementsTxt,
-        ),
-        ("file:///work/pubspec.yaml", "yaml", PubspecYaml),
-        ("file:///work/pubspec.yml", "yaml", PubspecYaml),
-        (
-            "file:///work/pubspec_overrides.yaml",
-            "yaml",
-            PubspecOverridesYaml,
-        ),
-        ("file:///work/pnpm-workspace.yaml", "yaml", PnpmYaml),
-        ("file:///work/pnpm-workspace.yml", "yaml", PnpmYaml),
-        ("file:///work/.yarnrc.yaml", "yaml", PnpmYaml),
-        ("file:///work/.yarnrc.yml", "yaml", PnpmYaml),
-        (
-            "file:///work/service.compose.yml",
-            "yaml",
-            DockerComposeYaml,
-        ),
-        ("file:///work/build.dockerfile", "dockerfile", Dockerfile),
-        (
-            "versionlens:/versionlens.multi-registries.json",
-            "json",
-            VersionLensMultiRegistries,
-        ),
-    ] {
+    for &(uri, language_id, kind) in YAML_PLAINTEXT_OTHER_CASES {
         assert_manifest(uri, language_id, kind);
     }
 }
-
 #[test]
 fn classifies_known_manifest_paths_without_language_ids() {
     let cases = [
-        ("file:///work/Cargo.toml", CargoToml),
-        ("file:///work/composer.json", ComposerJson),
-        ("file:///work/deno.jsonc", DenoJson),
-        ("file:///work/import_map.json", DenoImportMapJson),
-        ("file:///work/jsr.json", JsrJson),
-        ("file:///work/jsr.jsonc", JsrJson),
-        ("file:///work/packages.config", DotnetXml),
-        ("file:///work/paket.dependencies", PaketDependencies),
-        ("file:///work/paket.references", PaketReferences),
-        ("file:///work/project.csproj", DotnetXml),
-        ("file:///work/project.vbproj", DotnetXml),
-        ("file:///work/pom.xml", MavenPomXml),
-        ("file:///work/docker-compose.yaml", DockerComposeYaml),
+        ("file:///work/Cargo.toml", ManifestKind::CargoToml),
+        ("file:///work/composer.json", ManifestKind::ComposerJson),
+        ("file:///work/deno.jsonc", ManifestKind::DenoJson),
+        (
+            "file:///work/import_map.json",
+            ManifestKind::DenoImportMapJson,
+        ),
+        ("file:///work/jsr.json", ManifestKind::JsrJson),
+        ("file:///work/jsr.jsonc", ManifestKind::JsrJson),
+        ("file:///work/packages.config", ManifestKind::DotnetXml),
+        (
+            "file:///work/paket.dependencies",
+            ManifestKind::PaketDependencies,
+        ),
+        (
+            "file:///work/paket.references",
+            ManifestKind::PaketReferences,
+        ),
+        ("file:///work/project.csproj", ManifestKind::DotnetXml),
+        ("file:///work/project.vbproj", ManifestKind::DotnetXml),
+        ("file:///work/pom.xml", ManifestKind::MavenPomXml),
+        (
+            "file:///work/docker-compose.yaml",
+            ManifestKind::DockerComposeYaml,
+        ),
         (
             "file:///work/docker-compose.override.yml",
-            DockerComposeYaml,
+            ManifestKind::DockerComposeYaml,
         ),
-        ("file:///work/compose.override.yaml", DockerComposeYaml),
-        ("file:///work/pnpm-workspace.yaml", PnpmYaml),
-        ("file:///work/dub.selections.json", DubJson),
-        ("file:///work/dub.sdl", DubSdl),
-        ("file:///work/Gemfile", Gemfile),
-        ("file:///work/example.gemspec", RubyGemspec),
-        ("file:///work/go.mod", GoMod),
-        ("file:///work/go.work", GoMod),
-        ("file:///work/opam", Opam),
-        ("file:///work/lwt.opam", Opam),
-        ("file:///work/dune-project", DuneProject),
-        ("file:///work/demo.cabal", Cabal),
-        ("file:///work/cabal.project", CabalProject),
-        ("file:///work/stack.yaml", StackYaml),
-        ("file:///work/Project.toml", JuliaProjectToml),
-        ("file:///work/Manifest.toml", JuliaManifestToml),
-        ("file:///work/DESCRIPTION", RDescription),
-        ("file:///work/renv.lock", RenvLock),
-        ("file:///work/Manifest-v1.11.toml", JuliaManifestToml),
-        ("file:///work/Manifest-v1.10.toml", JuliaManifestToml),
-        ("file:///work/package.json", NpmPackageJson),
-        ("file:///work/package.json5", NpmPackageJson5),
-        ("file:///work/package.yaml", NpmPackageYaml),
-        ("file:///work/CMakeLists.txt", Cmake),
-        ("file:///work/toolchain.cmake", Cmake),
-        ("file:///work/xmake.lua", XmakeLua),
-        ("file:///work/subprojects/zlib.wrap", MesonWrap),
-        ("file:///work/WORKSPACE", BazelWorkspace),
-        ("file:///work/Pipfile", PythonPipfile),
-        ("file:///work/pyproject.toml", PythonPyprojectToml),
-        ("file:///work/pubspec.yaml", PubspecYaml),
-        ("file:///work/pubspec_overrides.yaml", PubspecOverridesYaml),
+        (
+            "file:///work/compose.override.yaml",
+            ManifestKind::DockerComposeYaml,
+        ),
+        ("file:///work/pnpm-workspace.yaml", ManifestKind::PnpmYaml),
+        ("file:///work/dub.selections.json", ManifestKind::DubJson),
+        ("file:///work/dub.sdl", ManifestKind::DubSdl),
+        ("file:///work/Gemfile", ManifestKind::Gemfile),
+        ("file:///work/example.gemspec", ManifestKind::RubyGemspec),
+        ("file:///work/go.mod", ManifestKind::GoMod),
+        ("file:///work/go.work", ManifestKind::GoMod),
+        ("file:///work/opam", ManifestKind::Opam),
+        ("file:///work/lwt.opam", ManifestKind::Opam),
+        ("file:///work/dune-project", ManifestKind::DuneProject),
+        ("file:///work/demo.cabal", ManifestKind::Cabal),
+        ("file:///work/cabal.project", ManifestKind::CabalProject),
+        ("file:///work/stack.yaml", ManifestKind::StackYaml),
+        ("file:///work/Project.toml", ManifestKind::JuliaProjectToml),
+        (
+            "file:///work/Manifest.toml",
+            ManifestKind::JuliaManifestToml,
+        ),
+        ("file:///work/DESCRIPTION", ManifestKind::RDescription),
+        ("file:///work/renv.lock", ManifestKind::RenvLock),
+        (
+            "file:///work/Manifest-v1.11.toml",
+            ManifestKind::JuliaManifestToml,
+        ),
+        (
+            "file:///work/Manifest-v1.10.toml",
+            ManifestKind::JuliaManifestToml,
+        ),
+        ("file:///work/package.json", ManifestKind::NpmPackageJson),
+        ("file:///work/package.json5", ManifestKind::NpmPackageJson5),
+        ("file:///work/package.yaml", ManifestKind::NpmPackageYaml),
+        ("file:///work/CMakeLists.txt", ManifestKind::Cmake),
+        ("file:///work/toolchain.cmake", ManifestKind::Cmake),
+        ("file:///work/xmake.lua", ManifestKind::XmakeLua),
+        (
+            "file:///work/subprojects/zlib.wrap",
+            ManifestKind::MesonWrap,
+        ),
+        ("file:///work/WORKSPACE", ManifestKind::BazelWorkspace),
+        ("file:///work/Pipfile", ManifestKind::PythonPipfile),
+        (
+            "file:///work/pyproject.toml",
+            ManifestKind::PythonPyprojectToml,
+        ),
+        ("file:///work/pubspec.yaml", ManifestKind::PubspecYaml),
+        (
+            "file:///work/pubspec_overrides.yaml",
+            ManifestKind::PubspecOverridesYaml,
+        ),
     ];
 
     for (uri, expected) in cases {
         assert_eq!(
-            classify_document(&DocumentInput {
-                uri: uri.to_owned(),
-                language_id: "plaintext".to_owned(),
-                text: package_file_fixture(
-                    "classifies-known-manifest-paths-without-language-ids.txt"
-                )
-                .to_owned(),
-                workspace_root: None,
-            }),
+            classify_document(&DocumentInput::new(
+                uri.to_owned(),
+                "plaintext".to_owned(),
+                package_file_fixture("classifies-known-manifest-paths-without-language-ids.txt")
+                    .to_owned(),
+                None
+            )),
             expected,
         );
     }
@@ -274,36 +148,36 @@ fn ignores_ordinary_manifests_from_non_file_uris() {
         "vscode-notebook-cell:/work/Cargo.toml",
     ] {
         assert_eq!(
-            classify_document(&DocumentInput {
-                uri: uri.to_owned(),
-                language_id: "json".to_owned(),
-                text: package_file_fixture("ignores-ordinary-manifests-from-non-file-uris.txt")
+            classify_document(&DocumentInput::new(
+                uri.to_owned(),
+                "json".to_owned(),
+                package_file_fixture("ignores-ordinary-manifests-from-non-file-uris.txt")
                     .to_owned(),
-                workspace_root: None,
-            }),
-            Unknown,
+                None
+            )),
+            ManifestKind::Unknown,
         );
     }
 
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "versionlens:/versionlens.multi-registries.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        VersionLensMultiRegistries,
+        classify_document(&DocumentInput::new(
+            "versionlens:/multi-registries.json".to_owned(),
+            "json".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::VersionLensMultiRegistries,
     );
 }
 
 fn assert_manifest(uri: &str, language_id: &str, kind: ManifestKind) {
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: uri.to_owned(),
-            language_id: language_id.to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
+        classify_document(&DocumentInput::new(
+            uri.to_owned(),
+            language_id.to_owned(),
+            String::new(),
+            None
+        )),
         kind
     );
 }
@@ -311,18 +185,18 @@ fn assert_manifest(uri: &str, language_id: &str, kind: ManifestKind) {
 #[test]
 fn classifies_package_like_custom_json_as_npm() {
     for text in [
-        package_file_fixture("package-like-dev-dependencies.json"),
-        package_file_fixture("package-like-jspm-dependencies.json"),
-        package_file_fixture("package-like-workspace-catalog.json"),
+        package_file_fixture("like-dev-dependencies.json"),
+        package_file_fixture("like-jspm-dependencies.json"),
+        package_file_fixture("like-workspace-catalog.json"),
     ] {
         assert_eq!(
-            classify_document(&DocumentInput {
-                uri: "file:///work/web-module.json".to_owned(),
-                language_id: "json".to_owned(),
-                text: text.to_owned(),
-                workspace_root: None,
-            }),
-            NpmPackageJson
+            classify_document(&DocumentInput::new(
+                "file:///work/web-module.json".to_owned(),
+                "json".to_owned(),
+                text.to_owned(),
+                None
+            )),
+            ManifestKind::NpmPackageJson
         );
     }
 }
@@ -330,88 +204,104 @@ fn classifies_package_like_custom_json_as_npm() {
 #[test]
 fn classifies_case_insensitive_manifest_extensions() {
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "file:///work/PACKAGE.JSON".to_owned(),
-            language_id: "json".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        NpmPackageJson
+        classify_document(&DocumentInput::new(
+            "file:///work/PACKAGE.JSON".to_owned(),
+            "json".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::NpmPackageJson
     );
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "file:///work/DENO.JSONC".to_owned(),
-            language_id: "jsonc".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        DenoJson
+        classify_document(&DocumentInput::new(
+            "file:///work/DENO.JSONC".to_owned(),
+            "jsonc".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::DenoJson
     );
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "file:///work/app.CSPROJ".to_owned(),
-            language_id: "xml".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        DotnetXml
+        classify_document(&DocumentInput::new(
+            "file:///work/app.CSPROJ".to_owned(),
+            "xml".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::DotnetXml
     );
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "file:///work/Requirements.TXT".to_owned(),
-            language_id: "plaintext".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        PythonRequirementsTxt
+        classify_document(&DocumentInput::new(
+            "file:///work/Requirements.TXT".to_owned(),
+            "plaintext".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::PythonRequirementsTxt
     );
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "file:///work/PIPFILE".to_owned(),
-            language_id: "toml".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        PythonPipfile
+        classify_document(&DocumentInput::new(
+            "file:///work/PIPFILE".to_owned(),
+            "toml".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::PythonPipfile
     );
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "file:///work/PYPROJECT.TOML".to_owned(),
-            language_id: "toml".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        PythonPyprojectToml
+        classify_document(&DocumentInput::new(
+            "file:///work/PYPROJECT.TOML".to_owned(),
+            "toml".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::PythonPyprojectToml
     );
     assert_eq!(
-        classify_document(&DocumentInput {
-            uri: "file:///work/HAXELIB.JSON".to_owned(),
-            language_id: "json".to_owned(),
-            text: String::new(),
-            workspace_root: None,
-        }),
-        HaxelibJson
+        classify_document(&DocumentInput::new(
+            "file:///work/HAXELIB.JSON".to_owned(),
+            "json".to_owned(),
+            String::new(),
+            None
+        )),
+        ManifestKind::HaxelibJson
     );
 }
 
 #[test]
 fn classifies_case_insensitive_docker_and_workspace_manifests() {
     for (uri, language_id, kind) in [
-        ("file:///work/COMPOSE.YAML", "yaml", DockerComposeYaml),
+        (
+            "file:///work/COMPOSE.YAML",
+            "yaml",
+            ManifestKind::DockerComposeYaml,
+        ),
         (
             "file:///work/DOCKER-COMPOSE.OVERRIDE.YML",
             "yaml",
-            DockerComposeYaml,
+            ManifestKind::DockerComposeYaml,
         ),
         (
             "file:///work/SERVICE.COMPOSE.YML",
             "yaml",
-            DockerComposeYaml,
+            ManifestKind::DockerComposeYaml,
         ),
-        ("file:///work/DOCKERFILE", "dockerfile", Dockerfile),
-        ("file:///work/build.DOCKERFILE", "dockerfile", Dockerfile),
-        ("file:///work/PNPM-WORKSPACE.YAML", "yaml", PnpmYaml),
-        ("file:///work/.YARNRC.YML", "yaml", PnpmYaml),
+        (
+            "file:///work/DOCKERFILE",
+            "dockerfile",
+            ManifestKind::Dockerfile,
+        ),
+        (
+            "file:///work/build.DOCKERFILE",
+            "dockerfile",
+            ManifestKind::Dockerfile,
+        ),
+        (
+            "file:///work/PNPM-WORKSPACE.YAML",
+            "yaml",
+            ManifestKind::PnpmYaml,
+        ),
+        ("file:///work/.YARNRC.YML", "yaml", ManifestKind::PnpmYaml),
     ] {
         assert_manifest(uri, language_id, kind);
     }
@@ -426,13 +316,13 @@ fn does_not_classify_generated_dotnet_outputs() {
         "file:///work/BIN/Debug/net8.0/generated.targets",
     ] {
         assert_eq!(
-            classify_document(&DocumentInput {
-                uri: uri.to_owned(),
-                language_id: "xml".to_owned(),
-                text: String::new(),
-                workspace_root: None,
-            }),
-            Unknown,
+            classify_document(&DocumentInput::new(
+                uri.to_owned(),
+                "xml".to_owned(),
+                String::new(),
+                None
+            )),
+            ManifestKind::Unknown,
         );
     }
 }
@@ -447,13 +337,13 @@ fn does_not_classify_manifest_name_suffixes() {
         "file:///work/otherpubspec.yaml",
     ] {
         assert_eq!(
-            classify_document(&DocumentInput {
-                uri: uri.to_owned(),
-                language_id: "plaintext".to_owned(),
-                text: String::new(),
-                workspace_root: None,
-            }),
-            Unknown,
+            classify_document(&DocumentInput::new(
+                uri.to_owned(),
+                "plaintext".to_owned(),
+                String::new(),
+                None
+            )),
+            ManifestKind::Unknown,
         );
     }
 }
@@ -461,27 +351,13 @@ fn does_not_classify_manifest_name_suffixes() {
 #[test]
 fn classifies_terraform_and_opentofu_files() {
     for uri in ["file:///work/main.tf", "file:///work/providers.tofu"] {
-        assert_manifest(uri, "terraform", TerraformTf);
+        assert_manifest(uri, "terraform", ManifestKind::TerraformTf);
     }
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/classify/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/classify/tests",
+        name,
+    )
 }

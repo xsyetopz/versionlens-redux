@@ -11,6 +11,7 @@ use crate::dotnet_xml::parse_dotnet_xml_with_paths;
 use crate::dub_sdl::parse_dub_sdl;
 use crate::dune_project::parse_dune_project;
 use crate::gemfile::{parse_gemfile, parse_gemspec};
+use crate::github_actions::parse_github_actions;
 use crate::gleam_toml::parse_gleam_toml;
 use crate::go_mod::parse_go_mod;
 use crate::gradle::{parse_gradle_build, parse_gradle_settings, parse_gradle_version_catalog_toml};
@@ -44,19 +45,6 @@ use crate::terraform_hcl::parse_terraform_hcl;
 use crate::unity_manifest::parse_unity_project_manifest_json_with_paths;
 use crate::vcpkg::parse_vcpkg_json_with_paths;
 use crate::zig_zon::parse_zig_build_zon;
-use versionlens_model::ManifestKind::{
-    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
-    ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
-    DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson, DotnetXml,
-    DubJson, DubSdl, DuneProject, Gemfile, GleamToml, GoMod, GradleBuild, GradleSettings,
-    GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml,
-    JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap,
-    MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam,
-    PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml, PythonPipfile,
-    PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
-    SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
-    ZigBuildZon,
-};
 use versionlens_model::{Dependency, ManifestKind};
 
 use self::ManifestParser::{Direct as ParserDirect, WithPaths as ParserWithPaths};
@@ -79,110 +67,201 @@ impl ManifestParser {
 }
 
 const MANIFEST_PARSERS: &[(ManifestKind, ManifestParser)] = &[
-    (CargoToml, ParserWithPaths(parse_cargo_toml_with_paths)),
     (
-        ComposerJson,
+        ManifestKind::CargoToml,
+        ParserWithPaths(parse_cargo_toml_with_paths),
+    ),
+    (
+        ManifestKind::ComposerJson,
         ParserWithPaths(parse_composer_json_with_paths),
     ),
-    (DenoJson, ParserWithPaths(parse_deno_json_with_paths)),
     (
-        DenoImportMapJson,
+        ManifestKind::DenoJson,
         ParserWithPaths(parse_deno_json_with_paths),
     ),
-    (JsrJson, ParserWithPaths(parse_jsr_json_with_paths)),
     (
-        DotnetProjectJson,
+        ManifestKind::DenoImportMapJson,
+        ParserWithPaths(parse_deno_json_with_paths),
+    ),
+    (
+        ManifestKind::JsrJson,
+        ParserWithPaths(parse_jsr_json_with_paths),
+    ),
+    (
+        ManifestKind::DotnetProjectJson,
         ParserWithPaths(parse_dotnet_project_json_with_paths),
     ),
-    (DotnetXml, ParserWithPaths(parse_dotnet_xml_with_paths)),
-    (PaketDependencies, ParserDirect(parse_paket_dependencies)),
-    (PaketReferences, ParserDirect(parse_paket_references)),
-    (DockerComposeYaml, ParserDirect(parse_docker_compose_yaml)),
-    (Dockerfile, ParserDirect(parse_dockerfile)),
     (
-        KustomizationYaml,
+        ManifestKind::DotnetXml,
+        ParserWithPaths(parse_dotnet_xml_with_paths),
+    ),
+    (
+        ManifestKind::PaketDependencies,
+        ParserDirect(parse_paket_dependencies),
+    ),
+    (
+        ManifestKind::PaketReferences,
+        ParserDirect(parse_paket_references),
+    ),
+    (
+        ManifestKind::DockerComposeYaml,
+        ParserDirect(parse_docker_compose_yaml),
+    ),
+    (ManifestKind::Dockerfile, ParserDirect(parse_dockerfile)),
+    (
+        ManifestKind::KustomizationYaml,
         ParserWithPaths(parse_kustomization_yaml_with_paths),
     ),
-    (DubJson, ParserWithPaths(parse_dub_json_with_paths)),
-    (DubSdl, ParserDirect(parse_dub_sdl)),
-    (Gemfile, ParserDirect(parse_gemfile)),
-    (RubyGemspec, ParserDirect(parse_gemspec)),
-    (GoMod, ParserDirect(parse_go_mod)),
-    (MavenPomXml, ParserWithPaths(parse_maven_xml_with_paths)),
-    (GradleBuild, ParserDirect(parse_gradle_build)),
-    (GradleSettings, ParserDirect(parse_gradle_settings)),
     (
-        GradleVersionCatalogToml,
+        ManifestKind::DubJson,
+        ParserWithPaths(parse_dub_json_with_paths),
+    ),
+    (ManifestKind::DubSdl, ParserDirect(parse_dub_sdl)),
+    (ManifestKind::Gemfile, ParserDirect(parse_gemfile)),
+    (ManifestKind::RubyGemspec, ParserDirect(parse_gemspec)),
+    (ManifestKind::GoMod, ParserDirect(parse_go_mod)),
+    (
+        ManifestKind::MavenPomXml,
+        ParserWithPaths(parse_maven_xml_with_paths),
+    ),
+    (ManifestKind::GradleBuild, ParserDirect(parse_gradle_build)),
+    (
+        ManifestKind::GradleSettings,
+        ParserDirect(parse_gradle_settings),
+    ),
+    (
+        ManifestKind::GradleVersionCatalogToml,
         ParserDirect(parse_gradle_version_catalog_toml),
     ),
-    (SbtBuild, ParserDirect(parse_sbt_build)),
-    (ClojureDepsEdn, ParserDirect(parse_clojure_deps_edn)),
+    (ManifestKind::SbtBuild, ParserDirect(parse_sbt_build)),
     (
-        LeiningenProjectClj,
+        ManifestKind::ClojureDepsEdn,
+        ParserDirect(parse_clojure_deps_edn),
+    ),
+    (
+        ManifestKind::LeiningenProjectClj,
         ParserDirect(parse_leiningen_project_clj),
     ),
-    (MixExs, ParserDirect(parse_mix_exs)),
-    (RebarConfig, ParserDirect(parse_rebar_config)),
-    (GleamToml, ParserDirect(parse_gleam_toml)),
-    (Opam, ParserDirect(parse_opam)),
-    (DuneProject, ParserDirect(parse_dune_project)),
-    (Cabal, ParserDirect(parse_cabal)),
-    (CabalProject, ParserDirect(parse_cabal_project)),
-    (StackYaml, ParserDirect(parse_stack_yaml)),
-    (JuliaProjectToml, ParserDirect(parse_julia_project)),
-    (JuliaManifestToml, ParserDirect(parse_julia_manifest)),
-    (RDescription, ParserDirect(parse_r_description)),
-    (RenvLock, ParserDirect(parse_renv_lock)),
-    (ConanfileTxt, ParserDirect(parse_conanfile_txt)),
-    (ConanfilePy, ParserDirect(parse_conanfile_py)),
-    (VcpkgJson, ParserWithPaths(parse_vcpkg_json_with_paths)),
-    (Cmake, ParserDirect(parse_cmake)),
-    (XmakeLua, ParserDirect(parse_xmake_lua)),
-    (MesonWrap, ParserDirect(parse_meson_wrap)),
-    (BazelWorkspace, ParserDirect(parse_bazel_workspace)),
-    (SwiftPackage, ParserDirect(parse_swift_package)),
-    (ZigBuildZon, ParserDirect(parse_zig_build_zon)),
-    (Nimble, ParserDirect(parse_nimble)),
-    (LuaRockspec, ParserDirect(parse_luarocks_rockspec)),
-    (Cpanfile, ParserDirect(parse_cpanfile)),
-    (HaxelibJson, ParserWithPaths(parse_haxelib_json_with_paths)),
-    (TerraformTf, ParserDirect(parse_terraform_hcl)),
+    (ManifestKind::MixExs, ParserDirect(parse_mix_exs)),
+    (ManifestKind::RebarConfig, ParserDirect(parse_rebar_config)),
+    (ManifestKind::GleamToml, ParserDirect(parse_gleam_toml)),
+    (ManifestKind::Opam, ParserDirect(parse_opam)),
+    (ManifestKind::DuneProject, ParserDirect(parse_dune_project)),
+    (ManifestKind::Cabal, ParserDirect(parse_cabal)),
     (
-        HelmChartYaml,
+        ManifestKind::CabalProject,
+        ParserDirect(parse_cabal_project),
+    ),
+    (ManifestKind::StackYaml, ParserDirect(parse_stack_yaml)),
+    (
+        ManifestKind::JuliaProjectToml,
+        ParserDirect(parse_julia_project),
+    ),
+    (
+        ManifestKind::JuliaManifestToml,
+        ParserDirect(parse_julia_manifest),
+    ),
+    (
+        ManifestKind::RDescription,
+        ParserDirect(parse_r_description),
+    ),
+    (ManifestKind::RenvLock, ParserDirect(parse_renv_lock)),
+    (
+        ManifestKind::ConanfileTxt,
+        ParserDirect(parse_conanfile_txt),
+    ),
+    (ManifestKind::ConanfilePy, ParserDirect(parse_conanfile_py)),
+    (
+        ManifestKind::VcpkgJson,
+        ParserWithPaths(parse_vcpkg_json_with_paths),
+    ),
+    (ManifestKind::Cmake, ParserDirect(parse_cmake)),
+    (ManifestKind::XmakeLua, ParserDirect(parse_xmake_lua)),
+    (ManifestKind::MesonWrap, ParserDirect(parse_meson_wrap)),
+    (
+        ManifestKind::BazelWorkspace,
+        ParserDirect(parse_bazel_workspace),
+    ),
+    (
+        ManifestKind::SwiftPackage,
+        ParserDirect(parse_swift_package),
+    ),
+    (ManifestKind::ZigBuildZon, ParserDirect(parse_zig_build_zon)),
+    (ManifestKind::Nimble, ParserDirect(parse_nimble)),
+    (
+        ManifestKind::LuaRockspec,
+        ParserDirect(parse_luarocks_rockspec),
+    ),
+    (ManifestKind::Cpanfile, ParserDirect(parse_cpanfile)),
+    (
+        ManifestKind::HaxelibJson,
+        ParserWithPaths(parse_haxelib_json_with_paths),
+    ),
+    (ManifestKind::TerraformTf, ParserDirect(parse_terraform_hcl)),
+    (
+        ManifestKind::HelmChartYaml,
         ParserWithPaths(parse_helm_chart_yaml_with_paths),
     ),
     (
-        AnsibleGalaxyRequirementsYaml,
+        ManifestKind::AnsibleGalaxyRequirementsYaml,
         ParserWithPaths(parse_ansible_galaxy_requirements_yaml_with_paths),
     ),
-    (BazelModule, ParserWithPaths(parse_bazel_module_with_paths)),
-    (NixFlake, ParserWithPaths(parse_nix_flake_with_paths)),
     (
-        UnityProjectManifestJson,
+        ManifestKind::BazelModule,
+        ParserWithPaths(parse_bazel_module_with_paths),
+    ),
+    (
+        ManifestKind::NixFlake,
+        ParserWithPaths(parse_nix_flake_with_paths),
+    ),
+    (
+        ManifestKind::UnityProjectManifestJson,
         ParserWithPaths(parse_unity_project_manifest_json_with_paths),
     ),
-    (CocoaPodsPodfile, ParserDirect(parse_cocoapods_podfile)),
     (
-        NpmPackageJson,
+        ManifestKind::CocoaPodsPodfile,
+        ParserDirect(parse_cocoapods_podfile),
+    ),
+    (
+        ManifestKind::NpmPackageJson,
         ParserWithPaths(parse_package_json_with_paths),
     ),
     (
-        NpmPackageJson5,
+        ManifestKind::NpmPackageJson5,
         ParserWithPaths(parse_package_json_with_paths),
     ),
-    (NpmPackageYaml, ParserWithPaths(parse_pnpm_yaml_with_paths)),
-    (PnpmYaml, ParserWithPaths(parse_pnpm_yaml_with_paths)),
-    (PythonPipfile, ParserWithPaths(parse_pipfile_with_paths)),
     (
-        PythonPyprojectToml,
+        ManifestKind::NpmPackageYaml,
+        ParserWithPaths(parse_pnpm_yaml_with_paths),
+    ),
+    (
+        ManifestKind::PnpmYaml,
+        ParserWithPaths(parse_pnpm_yaml_with_paths),
+    ),
+    (
+        ManifestKind::PythonPipfile,
+        ParserWithPaths(parse_pipfile_with_paths),
+    ),
+    (
+        ManifestKind::PythonPyprojectToml,
         ParserWithPaths(parse_pyproject_toml_with_paths),
     ),
-    (PythonRequirementsTxt, ParserDirect(parse_requirements_txt)),
     (
-        PubspecOverridesYaml,
+        ManifestKind::PythonRequirementsTxt,
+        ParserDirect(parse_requirements_txt),
+    ),
+    (
+        ManifestKind::PubspecOverridesYaml,
         ParserWithPaths(parse_pubspec_overrides_yaml_with_paths),
     ),
-    (PubspecYaml, ParserWithPaths(parse_pubspec_yaml_with_paths)),
+    (
+        ManifestKind::PubspecYaml,
+        ParserWithPaths(parse_pubspec_yaml_with_paths),
+    ),
+    (
+        ManifestKind::GitHubActions,
+        ParserDirect(parse_github_actions),
+    ),
 ];
 
 pub(super) fn parse_manifest_kind(

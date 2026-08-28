@@ -1,31 +1,23 @@
-use crate::document::test_support::extract_range;
-use crate::{DocumentInput, parse_document, parse_document_with_dependency_paths};
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use crate::document::test_support::{extract_range, parse_fixture};
+use crate::{DocumentInput, parse_document_with_dependency_paths};
 use versionlens_model::Ecosystem::Pub;
 
 #[test]
 fn parses_pubspec_yaml_dependencies() {
-    let text = package_file_fixture("parses-pubspec-yaml-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("pubspec-yaml-dependencies.txt");
+    let dependencies = parse_fixture(text, "file:///work/pubspec.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 8);
-    assert_eq!(dependencies[0].ecosystem, Pub);
-    assert_eq!(dependencies[0].group, "version");
-    assert_eq!(dependencies[0].name, "version");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
-    assert_eq!(
-        extract_range(text, dependencies[0].requirement_range),
-        "1.2.3"
+    crate::support::tests::assert_dependency_with_range(
+        text,
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Pub, "version", "version", "1.2.3"),
+        "1.2.3",
     );
-    assert_eq!(dependencies[1].group, "dependencies");
-    assert_eq!(dependencies[1].name, "http");
-    assert_eq!(dependencies[1].requirement, "^1.2.0");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(1, Pub, "dependencies", "http", "^1.2.0"),
+    );
     assert_eq!(dependencies[2].requirement, "*");
     assert_eq!(dependencies[3].name, "local");
     assert_eq!(dependencies[3].requirement, "./local");
@@ -50,14 +42,8 @@ fn parses_pubspec_yaml_dependencies() {
 
 #[test]
 fn parses_pubspec_git_tag_pattern_dependencies_as_git_source() {
-    let text =
-        package_file_fixture("parses-pubspec-git-tag-pattern-dependencies-as-git-source.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("pubspec-git-tag-pattern-dependencies-as-git-source.txt");
+    let dependencies = parse_fixture(text, "file:///work/pubspec.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "kittens");
@@ -73,13 +59,8 @@ fn parses_pubspec_git_tag_pattern_dependencies_as_git_source() {
 
 #[test]
 fn parses_pubspec_yaml_blank_versions() {
-    let text = package_file_fixture("parses-pubspec-yaml-blank-versions.yaml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("yaml-blank-versions.yaml");
+    let dependencies = parse_fixture(text, "file:///work/pubspec.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].name, "http");
@@ -92,14 +73,14 @@ fn parses_pubspec_yaml_blank_versions() {
 
 #[test]
 fn parses_configured_pubspec_member_dependency_paths() {
-    let text = package_file_fixture("parses-configured-pubspec-member-dependency-paths.yaml");
+    let text = package_file_fixture("configured-pubspec-member-dependency-paths.yaml");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/pubspec.yaml".to_owned(),
+            "yaml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &[
             "dependencies.http".to_owned(),
             "dev_dependencies.*".to_owned(),
@@ -117,12 +98,12 @@ fn parses_configured_pubspec_member_dependency_paths() {
 fn ignores_configured_pubspec_array_dependency_paths() {
     let text = package_file_fixture("ignores-configured-pubspec-array-dependency-paths.yaml");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/pubspec.yaml".to_owned(),
+            "yaml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["fonts".to_owned()],
     );
 
@@ -131,13 +112,8 @@ fn ignores_configured_pubspec_array_dependency_paths() {
 
 #[test]
 fn parses_smoke_pubspec_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-pubspec-smoke-shapes.yaml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("smoke-pubspec-smoke-shapes.yaml");
+    let dependencies = parse_fixture(text, "file:///work/pubspec.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 20);
     assert_eq!(dependencies[0].name, "version");
@@ -170,14 +146,8 @@ fn parses_smoke_pubspec_smoke_shapes() {
 
 #[test]
 fn parses_hosted_pub_dependency_without_version_with_insert_range() {
-    let text =
-        package_file_fixture("parses-hosted-pub-dependency-without-version-with-insert-range.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("hosted-pub-dependency-without-version-with-insert-range.txt");
+    let dependencies = parse_fixture(text, "file:///work/pubspec.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "hosted_dep");
@@ -193,13 +163,8 @@ fn parses_hosted_pub_dependency_without_version_with_insert_range() {
 
 #[test]
 fn parses_pubspec_overrides_dependency_overrides_only() {
-    let text = package_file_fixture("parses-pubspec-overrides-dependency-overrides-only.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec_overrides.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("pubspec-overrides-dependency-overrides-only.txt");
+    let dependencies = parse_fixture(text, "file:///work/pubspec_overrides.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "dependency_overrides");
@@ -212,13 +177,8 @@ fn parses_pubspec_overrides_dependency_overrides_only() {
 
 #[test]
 fn parses_pubspec_sdk_dependencies_as_non_registry_specs() {
-    let text = package_file_fixture("parses-pubspec-sdk-dependencies-as-non-registry-specs.yaml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("sdk-dependencies-as-non-registry-specs.yaml");
+    let dependencies = parse_fixture(text, "file:///work/pubspec.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "dependencies");
@@ -235,13 +195,8 @@ fn parses_pubspec_sdk_dependencies_as_non_registry_specs() {
 
 #[test]
 fn parses_pubspec_workspace_paths_as_local_dependencies() {
-    let text = package_file_fixture("parses-pubspec-workspace-paths-as-local-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("pubspec-workspace-paths-as-local-dependencies.txt");
+    let dependencies = parse_fixture(text, "file:///work/pubspec.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].group, "workspace");
@@ -259,22 +214,8 @@ fn parses_pubspec_workspace_paths_as_local_dependencies() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/pubspec_yaml/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/pubspec_yaml/tests",
+        name,
+    )
 }

@@ -1,7 +1,7 @@
 use jsonc_parser::ast::ObjectProp;
 use jsonc_parser::common::Ranged;
 
-use versionlens_model::Dependency;
+use versionlens_model::{Dependency, GithubRepository};
 
 use super::super::dependency::{
     JsonDependencyRanges, JsonDependencySource, json_manifest_dependency,
@@ -43,10 +43,10 @@ pub(in crate::json_manifest) fn github_dependency(
     );
     dependency.requirement_prefix =
         requirement_prefix(value, requirement, reference.fragment.is_none());
-    dependency.hosted_url = Some(format!(
-        "https://api.github.com/repos/{}/{}",
-        reference.name,
-        github_api_path(reference.fragment, requirement)
+    let repository = GithubRepository::parse(reference.name)?;
+    dependency.hosted_url = Some(repository.api_url(
+        "https://api.github.com/repos",
+        &format!("/{}", github_api_path(reference.fragment, requirement)),
     ));
     Some(dependency)
 }

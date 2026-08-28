@@ -1,30 +1,23 @@
-use crate::document::test_support::extract_range;
+use crate::document::test_support::{extract_range, parse_fixture};
 use crate::{DocumentInput, parse_document, parse_document_with_dependency_paths};
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Cargo;
 
 #[test]
 fn parses_cargo_toml_dependency_tables() {
-    let text = package_file_fixture("parses-cargo-toml-dependency-tables.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Cargo.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("cargo-toml-dependency-tables.txt");
+    let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
 
     assert_eq!(dependencies.len(), 9);
-    assert_eq!(dependencies[0].ecosystem, Cargo);
-    assert_eq!(dependencies[0].group, "package");
-    assert_eq!(dependencies[0].name, "version");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
-    assert_eq!(
-        extract_range(text, dependencies[0].requirement_range),
-        "1.2.3"
+    crate::support::tests::assert_dependency_with_range(
+        text,
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Cargo, "package", "version", "1.2.3"),
+        "1.2.3",
     );
-    assert_eq!(dependencies[1].group, "dependencies");
-    assert_eq!(dependencies[1].name, "serde");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(1, Cargo, "dependencies", "serde", "1.0"),
+    );
     assert_eq!(
         extract_range(text, dependencies[1].requirement_range),
         "1.0"
@@ -60,12 +53,7 @@ fn cargo_path_dependencies_prefer_path_over_version() {
 [dependencies]
 local = { version = "1.2.3", path = "crates/local" }
 "#;
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Cargo.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "local");
@@ -79,14 +67,14 @@ local = { version = "1.2.3", path = "crates/local" }
 
 #[test]
 fn parses_configured_cargo_target_dependency_tables() {
-    let text = package_file_fixture("parses-configured-cargo-target-dependency-tables.txt");
+    let text = package_file_fixture("configured-cargo-target-dependency-tables.txt");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/Cargo.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/Cargo.toml".to_owned(),
+            "toml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &[
             "dependencies",
             "target.*.dependencies",
@@ -109,13 +97,12 @@ fn parses_configured_cargo_target_dependency_tables() {
 
 #[test]
 fn parses_cargo_toml_nested_dependency_table_names() {
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Cargo.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: package_file_fixture("parses-cargo-toml-nested-dependency-table-names.toml")
-            .to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/Cargo.toml".to_owned(),
+        "toml".to_owned(),
+        package_file_fixture("toml-nested-dependency-table-names.toml").to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "dependencies.serde");
@@ -128,13 +115,8 @@ fn parses_cargo_toml_nested_dependency_table_names() {
 
 #[test]
 fn parses_cargo_target_dependency_tables_by_default() {
-    let text = package_file_fixture("parses-cargo-target-dependency-tables-by-default.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Cargo.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("cargo-target-dependency-tables-by-default.txt");
+    let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].group, "target.cfg(unix).dependencies");
@@ -157,13 +139,13 @@ fn parses_cargo_target_dependency_tables_by_default() {
 
 #[test]
 fn parses_cargo_workspace_inherited_dependencies() {
-    let text = package_file_fixture("parses-cargo-workspace-inherited-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/member/Cargo.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: Some("/work".to_owned()),
-    });
+    let text = package_file_fixture("cargo-workspace-inherited-dependencies.txt");
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/member/Cargo.toml".to_owned(),
+        "toml".to_owned(),
+        text.to_owned(),
+        Some("/work".to_owned()),
+    ));
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].group, "dependencies");
@@ -194,12 +176,12 @@ fn configured_cargo_suffix_wildcard_paths_match_deeper_tables() {
     let text =
         package_file_fixture("configured-cargo-suffix-wildcard-paths-match-deeper-tables.txt");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/Cargo.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/Cargo.toml".to_owned(),
+            "toml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["workspace.metadata.*"],
     );
 
@@ -214,13 +196,8 @@ fn configured_cargo_suffix_wildcard_paths_match_deeper_tables() {
 
 #[test]
 fn parses_cargo_toml_renamed_package_dependency() {
-    let text = package_file_fixture("parses-cargo-toml-renamed-package-dependency.toml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Cargo.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("toml-renamed-package-dependency.toml");
+    let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].name, "serde_json");
@@ -237,13 +214,8 @@ fn parses_cargo_toml_renamed_package_dependency() {
 
 #[test]
 fn parses_smoke_cargo_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-cargo-smoke-shapes.toml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Cargo.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("smoke-cargo-smoke-shapes.toml");
+    let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
 
     assert_eq!(dependencies.len(), 12);
     assert_eq!(dependencies[0].name, "version");
@@ -269,22 +241,8 @@ fn parses_smoke_cargo_smoke_shapes() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/cargo_toml/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/cargo_toml/tests",
+        name,
+    )
 }

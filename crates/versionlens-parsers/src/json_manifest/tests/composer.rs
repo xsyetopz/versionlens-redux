@@ -1,18 +1,16 @@
 use crate::document::test_support::extract_range;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 
 use super::{DocumentInput, parse_document};
 use versionlens_model::Ecosystem::Composer;
 
 #[test]
 fn parses_composer_json_dependency_groups() {
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("parses-composer-json-dependency-groups.json").to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/composer.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture("parses-composer-json-dependency-groups.json").to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 6);
     assert_eq!(dependencies[0].ecosystem, Composer);
@@ -27,12 +25,12 @@ fn parses_composer_json_dependency_groups() {
 
 #[test]
 fn parses_composer_package_link_groups() {
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("parses-composer-package-link-groups.json").to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/composer.json".to_owned(),
+        "json".to_owned(),
+        package_file_fixture("parses-composer-package-link-groups.json").to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].ecosystem, Composer);
@@ -51,12 +49,8 @@ fn parses_composer_package_link_groups() {
 fn parses_composer_stability_flags_and_references_as_suffixes() {
     let text =
         package_file_fixture("parses-composer-stability-flags-and-references-as-suffixes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/composer.json", "json");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].name, "monolog/monolog");
@@ -92,12 +86,8 @@ fn parses_composer_stability_flags_and_references_as_suffixes() {
 #[test]
 fn parses_smoke_composer_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-composer-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/composer.json", "json");
 
     assert_eq!(dependencies.len(), 7);
     assert_eq!(dependencies[0].ecosystem, Composer);
@@ -114,22 +104,8 @@ fn parses_smoke_composer_smoke_shapes() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/json_manifest/tests/composer")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/json_manifest/tests/composer",
+        name,
+    )
 }

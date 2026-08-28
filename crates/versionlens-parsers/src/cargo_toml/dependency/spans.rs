@@ -1,8 +1,6 @@
 use std::ops::Range as ByteRange;
 
-use versionlens_model::{Position, Range};
-
-use crate::positions::offset_range;
+use crate::positions::dependency_ranges;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Cargo;
 
@@ -24,14 +22,9 @@ pub(super) fn cargo_dependency_from_span(
     source: CargoDependencySource<'_>,
     spans: CargoDependencySpans,
 ) -> Dependency {
-    let range = spans
-        .name
-        .map(|span| offset_range(source.text, span.start, span.end))
-        .unwrap_or_else(empty_range);
-    let requirement_range = spans
-        .requirement
-        .map(|span| string_content_range(source.text, span.start, span.end))
-        .unwrap_or(range);
+    let byte_spans = (spans.name, spans.requirement);
+    let (range, requirement_range) =
+        dependency_ranges(source.text, byte_spans.0, byte_spans.1, true);
 
     Dependency {
         name: source.name.to_owned(),
@@ -44,26 +37,5 @@ pub(super) fn cargo_dependency_from_span(
         requirement_range,
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
-    }
-}
-
-fn string_content_range(text: &str, start: usize, end: usize) -> Range {
-    let content_start = start + usize::from(text.as_bytes().get(start) == Some(&b'"'));
-    let content_end = end.saturating_sub(usize::from(
-        end > start && text.as_bytes().get(end - 1) == Some(&b'"'),
-    ));
-    offset_range(text, content_start, content_end)
-}
-
-fn empty_range() -> Range {
-    Range {
-        start: Position {
-            line: 0,
-            character: 0,
-        },
-        end: Position {
-            line: 0,
-            character: 0,
-        },
     }
 }

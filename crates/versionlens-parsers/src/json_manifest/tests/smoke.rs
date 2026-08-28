@@ -1,17 +1,11 @@
 use super::{DocumentInput, parse_document};
-use std::fs::read_to_string;
-use std::path::PathBuf;
-use versionlens_model::Ecosystem::{Dub, Npm};
+use versionlens_model::Ecosystem::*;
 
 #[test]
 fn parses_smoke_pnpm_package_json_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-pnpm-package-json-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("smoke-pnpm-package-json-smoke-shapes.txt");
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 6);
     assert_eq!(dependencies[0].ecosystem, Npm);
@@ -32,13 +26,9 @@ fn parses_smoke_pnpm_package_json_smoke_shapes() {
 
 #[test]
 fn parses_smoke_npm_custom_file_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-npm-custom-file-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/web-module.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("smoke-npm-custom-file-smoke-shapes.txt");
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/web-module.json", "json");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].ecosystem, Npm);
@@ -49,17 +39,11 @@ fn parses_smoke_npm_custom_file_smoke_shapes() {
 
 #[test]
 fn parses_smoke_npm_git_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-npm-git-smoke-shapes.json");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("npm-git-smoke-shapes.json");
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
-    assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].ecosystem, Npm);
-    assert_eq!(dependencies[0].group, "devDependencies");
+    crate::support::tests::assert_dependency_group(&dependencies, 2, 0, Npm, "devDependencies");
     assert_eq!(dependencies[0].name, "gitpkgnotfound1");
     assert_eq!(
         dependencies[0].requirement,
@@ -81,12 +65,12 @@ fn parses_smoke_npm_faq_and_npmrc_smoke_shapes() {
     "typescript": "^6.0.3"
   }
 }"#;
-    let faq_dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: faq.to_owned(),
-        workspace_root: None,
-    });
+    let faq_dependencies = parse_document(&DocumentInput::new(
+        "file:///work/package.json".to_owned(),
+        "json".to_owned(),
+        faq.to_owned(),
+        None,
+    ));
 
     assert_eq!(faq_dependencies.len(), 3);
     assert_eq!(faq_dependencies[0].ecosystem, Npm);
@@ -106,12 +90,12 @@ fn parses_smoke_npm_faq_and_npmrc_smoke_shapes() {
     "@scope/some-package": "0.1"
   }
 }"#;
-    let npmrc_dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: npmrc.to_owned(),
-        workspace_root: None,
-    });
+    let npmrc_dependencies = parse_document(&DocumentInput::new(
+        "file:///work/package.json".to_owned(),
+        "json".to_owned(),
+        npmrc.to_owned(),
+        None,
+    ));
 
     assert_eq!(npmrc_dependencies.len(), 1);
     assert_eq!(npmrc_dependencies[0].ecosystem, Npm);
@@ -122,13 +106,9 @@ fn parses_smoke_npm_faq_and_npmrc_smoke_shapes() {
 
 #[test]
 fn parses_smoke_dub_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-dub-smoke-shapes.json");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/dub.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("dub-smoke-shapes.json");
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/dub.json", "json");
 
     assert_eq!(dependencies.len(), 8);
     assert_eq!(dependencies[0].ecosystem, Dub);
@@ -140,13 +120,12 @@ fn parses_smoke_dub_smoke_shapes() {
 
 #[test]
 fn parses_smoke_dub_selections_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-dub-selections-smoke-shapes.json");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/dub.selections.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("dub-selections-smoke-shapes.json");
+    let dependencies = crate::support::tests::parse_test_document(
+        text,
+        "file:///work/dub.selections.json",
+        "json",
+    );
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].ecosystem, Dub);
@@ -158,22 +137,8 @@ fn parses_smoke_dub_selections_smoke_shapes() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/json_manifest/tests/smoke")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/json_manifest/tests/smoke",
+        name,
+    )
 }

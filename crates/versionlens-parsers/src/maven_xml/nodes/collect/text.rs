@@ -7,8 +7,7 @@ pub(super) fn collect_xml_text(
     collector: &mut XmlCollector,
     start: usize,
     end: usize,
-) -> Option<()> {
-    let value = event.decode().ok()?;
+) {
+    let value = event.xml10_content();
     collector.append_text(value.as_ref(), start, end);
-    Some(())
 }

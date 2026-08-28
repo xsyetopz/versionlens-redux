@@ -1,10 +1,10 @@
 use crate::json_manifest::npm::trim_selector;
 use jsonc_parser::ast::ObjectProp;
-use jsonc_parser::ast::Value::{Object as JsonValueObject, StringLit as JsonValueStringLit};
+use jsonc_parser::ast::Value::StringLit as JsonValueStringLit;
 use jsonc_parser::common::Ranged;
 use jsonc_parser::errors::ParseError as JsonParseError;
-use jsonc_parser::parse_to_ast;
 
+use crate::support;
 use versionlens_model::Dependency;
 
 use super::dependency::{
@@ -16,39 +16,37 @@ pub(super) fn parse_deno_imports(
     text: &str,
     dependency_paths: &[&str],
 ) -> Result<Vec<Dependency>, JsonParseError> {
-    let parse_result = parse_to_ast(text, &crate::default(), &crate::default())?;
-    let Some(JsonValueObject(root)) = parse_result.value else {
-        return Ok(vec![]);
-    };
-    let mut dependencies = vec![];
-    if dependency_paths.contains(&"imports")
-        && let Some(imports) = root.get_object("imports")
-    {
-        dependencies.extend(
-            imports
-                .properties
-                .iter()
-                .filter_map(|prop| deno_import_dependency(text, "imports", prop)),
-        );
-    }
-    if dependency_paths.contains(&"scopes")
-        && let Some(scopes) = root.get_object("scopes")
-    {
-        for scope in &scopes.properties {
-            let JsonValueObject(imports) = &scope.value else {
-                continue;
-            };
-            let group = deno_scope_group(scope.name.as_str());
+    Ok(support::try_with_json_object(text, |root| {
+        let mut dependencies = vec![];
+        if dependency_paths.contains(&"imports")
+            && let Some(imports) = root.get_object("imports")
+        {
             dependencies.extend(
                 imports
                     .properties
                     .iter()
-                    .filter_map(|prop| deno_import_dependency(text, &group, prop)),
+                    .filter_map(|prop| deno_import_dependency(text, "imports", prop)),
             );
         }
-    }
-
-    Ok(dependencies)
+        if dependency_paths.contains(&"scopes")
+            && let Some(scopes) = root.get_object("scopes")
+        {
+            for scope in &scopes.properties {
+                let jsonc_parser::ast::Value::Object(imports) = &scope.value else {
+                    continue;
+                };
+                let group = deno_scope_group(scope.name.as_str());
+                dependencies.extend(
+                    imports
+                        .properties
+                        .iter()
+                        .filter_map(|prop| deno_import_dependency(text, &group, prop)),
+                );
+            }
+        }
+        dependencies
+    })?
+    .unwrap_or_default())
 }
 
 fn deno_scope_group(scope: &str) -> String {

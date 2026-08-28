@@ -1,10 +1,9 @@
 use toml_edit::Value as TomlValue;
 
-use crate::positions::offset_range;
+use crate::positions::{offset_range, string_content_bounds};
 use crate::requirements_txt::split_python_requirement;
 use versionlens_model::Dependency;
 
-use super::spans::string_content_bounds;
 use versionlens_model::Ecosystem::Python;
 
 pub(in crate::pyproject_toml) fn collect_requirement_array(

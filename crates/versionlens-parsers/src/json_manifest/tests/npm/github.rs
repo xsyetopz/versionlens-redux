@@ -1,17 +1,10 @@
-use super::{DocumentInput, parse_document};
 use crate::document::test_support::extract_range;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 
 #[test]
 fn parses_package_json_github_dependencies() {
     let text = package_file_fixture("parses-package-json-github-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 8);
     assert_eq!(dependencies[0].name, "octokit/core.js");
@@ -95,12 +88,8 @@ fn parses_package_json_github_dependencies() {
 #[test]
 fn parses_package_json_github_ssh_colon_dependencies() {
     let text = package_file_fixture("parses-package-json-github-ssh-colon-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "owner/git-ssh-colon");
@@ -118,12 +107,8 @@ fn parses_package_json_github_ssh_colon_dependencies() {
 #[test]
 fn parses_github_url_without_ref_as_plain_git_dependency() {
     let text = package_file_fixture("parses-github-url-without-ref-as-plain-git-dependency.json");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "git-url");
@@ -138,12 +123,8 @@ fn parses_github_url_without_ref_as_plain_git_dependency() {
 fn parses_package_json_github_branch_dependencies_as_commits() {
     let text =
         package_file_fixture("parses-package-json-github-branch-dependencies-as-commits.json");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "owner/branch");
@@ -155,22 +136,8 @@ fn parses_package_json_github_branch_dependencies_as_commits() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_github")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_github",
+        name,
+    )
 }

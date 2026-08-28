@@ -1,4 +1,4 @@
-use super::{DocumentInput, parse_document, parse_document_with_dependency_paths};
+use super::{DocumentInput, parse_document_with_dependency_paths};
 
 mod basic;
 mod github;

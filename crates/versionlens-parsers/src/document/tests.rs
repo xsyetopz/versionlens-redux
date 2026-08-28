@@ -1,5 +1,5 @@
 use super::parse_document;
-use super::test_support::extract_range;
+use super::test_support::{extract_range, parse_fixture};
 use crate::DocumentInput;
 use crate::parse_clojure_maven_repositories;
 use crate::parse_gradle_dependency_maven_repositories;
@@ -7,25 +7,61 @@ use crate::parse_gradle_maven_repositories;
 use crate::parse_gradle_plugin_maven_repositories;
 use crate::parse_leiningen_maven_repositories;
 use crate::parse_sbt_maven_repositories;
-use std::fs::read_to_string;
-use std::path::PathBuf;
-use versionlens_model::Ecosystem::{CocoaPods, Docker, Hex, Maven, Unity};
+use versionlens_model::Ecosystem::*;
+
+#[test]
+fn parses_versioned_github_actions_and_ignores_unsafe_refs() {
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/.github/workflows/ci.yml".to_owned(),
+        "yaml".to_owned(),
+        package_file_fixture("parses-github-actions-version-refs.yaml").to_owned(),
+        None,
+    ));
+
+    assert_eq!(dependencies.len(), 3);
+    assert!(
+        dependencies
+            .iter()
+            .all(|dependency| dependency.ecosystem == GitHub)
+    );
+    assert_eq!(dependencies[0].name, "actions/checkout");
+    assert_eq!(dependencies[0].requirement, "4");
+    assert_eq!(
+        dependencies[0].hosted_name.as_deref(),
+        Some("actions/checkout")
+    );
+    assert_eq!(dependencies[1].requirement, "4.1.0");
+    assert_eq!(
+        dependencies[1].hosted_name.as_deref(),
+        Some("actions/setup-node")
+    );
+    assert_eq!(
+        dependencies[2].name,
+        "acme/automation/.github/workflows/release.yml"
+    );
+    assert_eq!(dependencies[2].requirement, "1.2.0");
+    assert_eq!(
+        dependencies[2].hosted_name.as_deref(),
+        Some("acme/automation")
+    );
+}
 #[test]
 fn parses_unity_project_manifest_dependencies() {
     let text = package_file_fixture("parses-unity-project-manifest-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Packages/manifest.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Packages/manifest.json", "json");
 
     assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].ecosystem, Unity);
-    assert_eq!(dependencies[0].group, "dependencies");
-    assert_eq!(dependencies[0].name, "com.unity.timeline");
-    assert_eq!(dependencies[0].requirement, "1.8.7");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Unity,
+            "dependencies",
+            "com.unity.timeline",
+            "1.8.7",
+        ),
+    );
     assert_eq!(dependencies[0].hosted_url, None);
     assert_eq!(dependencies[1].name, "com.example.tools.physics");
     assert_eq!(
@@ -42,18 +78,19 @@ fn parses_unity_project_manifest_dependencies() {
 fn parses_cocoapods_podfile_dependencies() {
     let text = package_file_fixture("parses-cocoapods-podfile-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Podfile".to_owned(),
-        language_id: "ruby".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Podfile", "ruby");
 
     assert_eq!(dependencies.len(), 6);
-    assert_eq!(dependencies[0].ecosystem, CocoaPods);
-    assert_eq!(dependencies[0].group, "target App");
-    assert_eq!(dependencies[0].name, "AFNetworking");
-    assert_eq!(dependencies[0].requirement, "~> 4.0");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            CocoaPods,
+            "target App",
+            "AFNetworking",
+            "~> 4.0",
+        ),
+    );
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "~> 4.0"
@@ -90,18 +127,19 @@ fn parses_cocoapods_podfile_dependencies() {
 fn parses_kustomization_yaml_images() {
     let text = package_file_fixture("parses-kustomization-yaml-images.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/kustomization.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/kustomization.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].ecosystem, Docker);
-    assert_eq!(dependencies[0].group, "images");
-    assert_eq!(dependencies[0].name, "platform/nginx");
-    assert_eq!(dependencies[0].requirement, "1.25.3");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Docker,
+            "images",
+            "platform/nginx",
+            "1.25.3",
+        ),
+    );
     assert_eq!(
         dependencies[0].hosted_url,
         Some("registry.example.com".to_owned())
@@ -115,18 +153,13 @@ fn parses_kustomization_yaml_images() {
 fn parses_rebar_config_dependencies() {
     let text = package_file_fixture("parses-rebar-config-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/rebar.config".to_owned(),
-        language_id: "erlang".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/rebar.config", "erlang");
 
     assert_eq!(dependencies.len(), 6);
-    assert_eq!(dependencies[0].ecosystem, Hex);
-    assert_eq!(dependencies[0].group, "deps");
-    assert_eq!(dependencies[0].name, "rebar");
-    assert_eq!(dependencies[0].requirement, "latest");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Hex, "deps", "rebar", "latest"),
+    );
     assert_eq!(dependencies[1].name, "cowboy");
     assert_eq!(dependencies[1].requirement, "2.12.0");
     assert_eq!(dependencies[2].name, "lager_fork");
@@ -153,18 +186,13 @@ fn parses_rebar_config_dependencies() {
 fn parses_gleam_toml_dependencies() {
     let text = package_file_fixture("parses-gleam-toml-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/gleam.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/gleam.toml", "toml");
 
     assert_eq!(dependencies.len(), 5);
-    assert_eq!(dependencies[0].ecosystem, Hex);
-    assert_eq!(dependencies[0].group, "version");
-    assert_eq!(dependencies[0].name, "demo");
-    assert_eq!(dependencies[0].requirement, "1.0.0");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Hex, "version", "demo", "1.0.0"),
+    );
     assert_eq!(dependencies[1].group, "dependencies");
     assert_eq!(dependencies[1].name, "gleam_stdlib");
     assert_eq!(dependencies[1].requirement, ">= 0.44.0 and < 2.0.0");
@@ -185,18 +213,13 @@ fn parses_gleam_toml_dependencies() {
 fn parses_gradle_version_catalog_dependencies() {
     let text = package_file_fixture("parses-gradle-version-catalog-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/gradle/libs.versions.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/gradle/libs.versions.toml", "toml");
 
     assert_eq!(dependencies.len(), 6);
-    assert_eq!(dependencies[0].ecosystem, Maven);
-    assert_eq!(dependencies[0].group, "versions");
-    assert_eq!(dependencies[0].name, "groovy");
-    assert_eq!(dependencies[0].requirement, "3.0.5");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Maven, "versions", "groovy", "3.0.5"),
+    );
     assert_eq!(dependencies[1].name, "kotlin");
     assert_eq!(dependencies[1].requirement, "2.0.20");
     assert_eq!(dependencies[1].requirement_prefix, "prefer = \"");
@@ -225,18 +248,19 @@ fn parses_gradle_version_catalog_dependencies() {
 fn parses_sbt_build_dependencies() {
     let text = package_file_fixture("parses-sbt-build-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.sbt".to_owned(),
-        language_id: "scala".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.sbt", "scala");
 
     assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].ecosystem, Maven);
-    assert_eq!(dependencies[0].group, "libraryDependencies");
-    assert_eq!(dependencies[0].name, "org.apache.derby:derby");
-    assert_eq!(dependencies[0].requirement, "10.4.1.3");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Maven,
+            "libraryDependencies",
+            "org.apache.derby:derby",
+            "10.4.1.3",
+        ),
+    );
     assert_eq!(dependencies[1].name, "org.scala-stm:scala-stm_2.13");
     assert_eq!(dependencies[1].requirement, "0.9.1");
     assert_eq!(dependencies[1].hosted_name, Some("scala-stm".to_owned()));
@@ -250,12 +274,7 @@ fn parses_sbt_build_dependencies() {
 fn parses_sbt_multiple_dependencies_on_one_line() {
     let text = package_file_fixture("parses-sbt-multiple-dependencies-on-one-line.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.sbt".to_owned(),
-        language_id: "scala".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.sbt", "scala");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].name, "org.zeta:zeta");
@@ -269,15 +288,50 @@ fn parses_sbt_multiple_dependencies_on_one_line() {
 }
 
 #[test]
+fn parses_zig_github_repository_urls_only_when_the_identity_is_valid() {
+    let valid = parse_document(&DocumentInput::new(
+        "file:///work/build.zig.zon".to_owned(),
+        "zig".to_owned(),
+        r#".dependencies = .{
+            .known_folders = .{ .url = "https://github.com/ziglibs/known-folders/archive/refs/tags/0.7.0.tar.gz" },
+        };"#
+        .to_owned(),
+        None,
+    ));
+    assert_eq!(
+        valid[0].hosted_name.as_deref(),
+        Some("ziglibs/known-folders")
+    );
+    assert_eq!(valid[0].requirement, "0.7.0");
+
+    for url in [
+        "https://github.com/../repo/archive/refs/tags/1.0.0.tar.gz",
+        "https://github.com/owner/../repo/archive/refs/tags/1.0.0.tar.gz",
+        "https://github.com/owner/re%2Fpo/archive/refs/tags/1.0.0.tar.gz",
+        "https://github.com/owner/repo?query=1/archive/refs/tags/1.0.0.tar.gz",
+        "https://github.com/owner/repo#fragment/archive/refs/tags/1.0.0.tar.gz",
+        "https://github.com/owner/repo name/archive/refs/tags/1.0.0.tar.gz",
+    ] {
+        let dependencies = parse_document(&DocumentInput::new(
+            "file:///work/build.zig.zon".to_owned(),
+            "zig".to_owned(),
+            format!(".dependencies = .{{ .dependency = .{{ .url = \"{url}\" }} }};"),
+            None,
+        ));
+        assert_eq!(dependencies.len(), 1, "unexpected parse result for {url}");
+        assert_eq!(
+            dependencies[0].hosted_name, None,
+            "unsafe URL accepted: {url}"
+        );
+        assert_eq!(dependencies[0].hosted_url.as_deref(), Some("url"));
+    }
+}
+
+#[test]
 fn parses_sbt_dependency_overrides() {
     let text = package_file_fixture("parses-sbt-dependency-overridesbuild.sbt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.sbt".to_owned(),
-        language_id: "scala".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.sbt", "scala");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "dependencyOverrides");
@@ -291,12 +345,7 @@ fn parses_sbt_double_percent_without_scala_version_as_fixed_source() {
         "parses-sbt-double-percent-without-scala-version-as-fixed-sourcebuild.sbt",
     );
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.sbt".to_owned(),
-        language_id: "scala".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.sbt", "scala");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "org.typelevel:cats-core");
@@ -312,12 +361,7 @@ fn parses_sbt_scoped_scala_version_for_cross_dependencies() {
     let text =
         package_file_fixture("parses-sbt-scoped-scala-version-for-cross-dependenciesbuild.sbt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.sbt".to_owned(),
-        language_id: "scala".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.sbt", "scala");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "org.typelevel:cats-core_2.13");
@@ -330,12 +374,7 @@ fn parses_sbt_url_artifact_dependency_as_non_registry_source() {
     let text =
         package_file_fixture("parses-sbt-url-artifact-dependency-as-non-registry-sourcebuild.sbt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.sbt".to_owned(),
-        language_id: "scala".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.sbt", "scala");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "jquery:jquery");
@@ -365,12 +404,7 @@ resolvers ++= Seq(
 fn parses_gradle_build_dependencies_and_plugins() {
     let text = package_file_fixture("parses-gradle-build-dependencies-and-plugins.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.gradle".to_owned(),
-        language_id: "groovy".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.gradle", "groovy");
 
     assert_eq!(dependencies.len(), 7);
     assert_eq!(dependencies[0].ecosystem, Maven);
@@ -409,12 +443,7 @@ fn parses_gradle_build_dependencies_and_plugins() {
 fn parses_gradle_settings_plugins() {
     let text = package_file_fixture("parses-gradle-settings-plugins.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/settings.gradle.kts".to_owned(),
-        language_id: "kotlin".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/settings.gradle.kts", "kotlin");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].group, "plugins");
@@ -430,12 +459,7 @@ fn parses_gradle_kotlin_named_argument_dependencies() {
     let text =
         package_file_fixture("parses-gradle-kotlin-named-argument-dependenciessettings.gradle.kts");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.gradle.kts".to_owned(),
-        language_id: "kotlin".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.gradle.kts", "kotlin");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "implementation");
@@ -508,22 +532,8 @@ include!("tests/jvm.rs");
 include!("tests/native_infra.rs");
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/document/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/document/tests",
+        name,
+    )
 }

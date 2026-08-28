@@ -1,24 +1,19 @@
-use crate::document::test_support::extract_range;
+use crate::document::test_support::{assert_parenthesized_pep508, extract_range, parse_fixture};
 use crate::{DocumentInput, parse_document, parse_document_with_dependency_paths};
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Python;
 
 #[test]
 fn parses_pipfile_dependencies() {
     let text = package_file_fixture("parses-pipfile-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Pipfile".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Pipfile", "toml");
 
     assert_eq!(dependencies.len(), 3);
-    assert_eq!(dependencies[0].ecosystem, Python);
-    assert_eq!(dependencies[0].group, "packages");
-    assert_eq!(dependencies[0].name, "requests");
-    assert_eq!(dependencies[0].requirement, "==2.32");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0, Python, "packages", "requests", "==2.32",
+        ),
+    );
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "==2.32"
@@ -36,18 +31,13 @@ fn parses_pipfile_dependencies() {
 )]
 fn parses_pyproject_toml_dependencies() {
     let text = package_file_fixture("parses-pyproject-toml-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pyproject.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/pyproject.toml", "toml");
 
     assert_eq!(dependencies.len(), 15);
-    assert_eq!(dependencies[0].ecosystem, Python);
-    assert_eq!(dependencies[0].group, "project");
-    assert_eq!(dependencies[0].name, "version");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Python, "project", "version", "1.2.3"),
+    );
     assert_eq!(dependencies[1].group, "project.dependencies");
     assert_eq!(dependencies[1].name, "httpx");
     assert_eq!(dependencies[1].requirement, "");
@@ -118,12 +108,12 @@ fn configured_project_table_does_not_match_optional_dependencies_table() {
         "configured-project-table-does-not-match-optional-dependencies-table.txt",
     );
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/pyproject.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/pyproject.toml".to_owned(),
+            "toml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["project"],
     );
 
@@ -136,18 +126,19 @@ fn configured_project_table_does_not_match_optional_dependencies_table() {
 #[test]
 fn parses_poetry_python_version_dependency() {
     let text = package_file_fixture("parses-poetry-python-version-dependency.toml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pyproject.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/pyproject.toml", "toml");
 
     assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].ecosystem, Python);
-    assert_eq!(dependencies[0].group, "tool.poetry.dependencies");
-    assert_eq!(dependencies[0].name, "python");
-    assert_eq!(dependencies[0].requirement, "^3.12");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Python,
+            "tool.poetry.dependencies",
+            "python",
+            "^3.12",
+        ),
+    );
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "^3.12"
@@ -167,58 +158,43 @@ fn parses_poetry_python_version_dependency() {
 #[test]
 fn parses_dependency_groups_and_uv_sources_by_default() {
     let text = package_file_fixture("parses-dependency-groups-and-uv-sources-by-default.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pyproject.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
-
-    assert_eq!(dependencies.len(), 3);
-    assert_eq!(dependencies[0].group, "dependency-groups.dev");
-    assert_eq!(dependencies[0].name, "mypy");
-    assert_eq!(dependencies[0].requirement, ">=1.16");
-    assert_eq!(dependencies[1].group, "tool.uv.sources");
-    assert_eq!(dependencies[1].name, "local");
-    assert_eq!(dependencies[1].requirement, "../local");
-    assert_eq!(dependencies[2].group, "tool.uv.sources");
-    assert_eq!(dependencies[2].name, "remote");
-    assert_eq!(dependencies[2].requirement, "https://example.test/repo.git");
+    let dependencies = parse_fixture(text, "file:///work/pyproject.toml", "toml");
+    assert_dependency_groups_and_sources(&dependencies);
 }
 
 #[test]
 fn parses_configured_dependency_groups_and_uv_sources() {
     let text = package_file_fixture("parses-configured-dependency-groups-and-uv-sources.txt");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/pyproject.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/pyproject.toml".to_owned(),
+            "toml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["dependency-groups", "tool.uv.sources"],
     );
 
+    assert_dependency_groups_and_sources(&dependencies);
+}
+
+fn assert_dependency_groups_and_sources(dependencies: &[versionlens_model::Dependency]) {
     assert_eq!(dependencies.len(), 3);
-    assert_eq!(dependencies[0].group, "dependency-groups.dev");
-    assert_eq!(dependencies[0].name, "mypy");
-    assert_eq!(dependencies[0].requirement, ">=1.16");
-    assert_eq!(dependencies[1].group, "tool.uv.sources");
-    assert_eq!(dependencies[1].name, "local");
-    assert_eq!(dependencies[1].requirement, "../local");
-    assert_eq!(dependencies[2].name, "remote");
-    assert_eq!(dependencies[2].requirement, "https://example.test/repo.git");
+    for (dependency, (group, name, requirement)) in dependencies.iter().zip([
+        ("dependency-groups.dev", "mypy", ">=1.16"),
+        ("tool.uv.sources", "local", "../local"),
+        ("tool.uv.sources", "remote", "https://example.test/repo.git"),
+    ]) {
+        assert_eq!(dependency.group, group);
+        assert_eq!(dependency.name, name);
+        assert_eq!(dependency.requirement, requirement);
+    }
 }
 
 #[test]
 fn parses_legacy_poetry_dev_dependencies_by_default() {
     let text = package_file_fixture("parses-legacy-poetry-dev-dependencies-by-default.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pyproject.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/pyproject.toml", "toml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "tool.poetry.dev-dependencies");
@@ -233,12 +209,12 @@ fn parses_legacy_poetry_dev_dependencies_by_default() {
 fn parses_configured_poetry_dev_dependencies() {
     let text = package_file_fixture("parses-configured-poetry-dev-dependencies.toml");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/pyproject.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/pyproject.toml".to_owned(),
+            "toml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["tool.poetry.dev-dependencies".to_owned()],
     );
 
@@ -264,24 +240,9 @@ fn parses_parenthesized_pep_508_requirements_without_polluting_package_names() {
     let text = r#"[project]
 dependencies = ["unfat (>=0.0.13)", "httpx[http2] (>=0.28,<1); python_version >= '3.11'"]
 "#;
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pyproject.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/pyproject.toml", "toml");
 
-    assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].name, "unfat");
-    assert_eq!(dependencies[0].requirement, ">=0.0.13");
-    assert_eq!(dependencies[0].requirement_suffix, ")");
-    assert_eq!(
-        extract_range(text, dependencies[0].requirement_range),
-        ">=0.0.13"
-    );
-    assert_eq!(dependencies[1].name, "httpx");
-    assert_eq!(dependencies[1].requirement, ">=0.28,<1");
-    assert_eq!(dependencies[1].requirement_suffix, ")");
+    assert_parenthesized_pep508(text, &dependencies);
 }
 
 #[test]
@@ -308,12 +269,12 @@ mysqlclient = "2.2.8"
 pip = { version = "26.1.2", source = "private" }
 my-package = { path = ".." }
 "#;
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pyproject.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: pyproject.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/pyproject.toml".to_owned(),
+        "toml".to_owned(),
+        pyproject.to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 12);
     assert_eq!(dependencies[0].name, "httpx");
@@ -347,12 +308,12 @@ pip = { version = "24.0", source = "private" }
 my_script = "0.1.0"
 magic = ""
 "#;
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Pipfile".to_owned(),
-        language_id: "toml".to_owned(),
-        text: pipfile.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/Pipfile".to_owned(),
+        "toml".to_owned(),
+        pipfile.to_owned(),
+        None,
+    ));
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].name, "version");
@@ -366,22 +327,8 @@ magic = ""
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/pyproject_toml/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/pyproject_toml/tests",
+        name,
+    )
 }

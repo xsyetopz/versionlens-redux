@@ -1,4 +1,5 @@
-use super::super::nodes::{XmlNode, child_named, collect_nodes, direct_children, texts_from_nodes};
+use super::super::nodes::{XmlNode, collect_nodes, texts_from_nodes};
+use super::profile::{active_profile_ids, profile_is_active};
 
 const SETTINGS_LOCAL_REPOSITORY_PATH: &str = "settings.localRepository";
 const SETTINGS_REPOSITORY_URL_PATH: &str = "settings.profiles.profile.repositories.repository.url";
@@ -39,31 +40,6 @@ fn active_profile_url_texts(
         .filter(|node| profile_is_active(node, nodes, active_profiles))
         .map(|node| node.text.as_str().to_owned())
         .collect()
-}
-
-fn active_profile_ids(nodes: &[XmlNode]) -> Vec<String> {
-    nodes
-        .iter()
-        .filter(|node| node.path == "settings.activeProfiles.activeProfile")
-        .filter(|node| !node.text.is_empty())
-        .map(|node| node.text.as_str().to_owned())
-        .collect()
-}
-
-fn profile_is_active(node: &XmlNode, nodes: &[XmlNode], active_profiles: &[String]) -> bool {
-    active_profiles.is_empty()
-        || profile_id_for_node(node, nodes)
-            .is_some_and(|profile_id| active_profiles.iter().any(|active| active == profile_id))
-}
-
-fn profile_id_for_node<'a>(node: &XmlNode, nodes: &'a [XmlNode]) -> Option<&'a str> {
-    let profile = nodes.iter().find(|candidate| {
-        candidate.path == "settings.profiles.profile"
-            && candidate.open_start < node.open_start
-            && candidate.close_end > node.close_end
-    })?;
-    let children = direct_children(profile, nodes);
-    child_named(&children, "id").map(|id| id.text.as_str())
 }
 
 fn settings_xml(text: &str) -> Option<&str> {

@@ -1,18 +1,11 @@
-use super::{DocumentInput, parse_document};
 use crate::document::test_support::extract_range;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Dotnet;
 
 #[test]
 fn parses_dotnet_project_json_dependencies() {
     let text = package_file_fixture("parses-dotnet-project-json-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/project.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/project.json", "json");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Dotnet);
@@ -42,22 +35,8 @@ fn parses_dotnet_project_json_dependencies() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/json_manifest/tests/dotnet")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/json_manifest/tests/dotnet",
+        name,
+    )
 }

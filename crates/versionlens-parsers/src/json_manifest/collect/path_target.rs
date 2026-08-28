@@ -4,8 +4,7 @@ use jsonc_parser::ast::Value::{
 use jsonc_parser::ast::{Object, Value};
 
 use crate::json_manifest::dependency::{
-    JsonDependencyRanges, JsonDependencySource, collect_dependency_object,
-    json_manifest_dependency, string_content_end, string_content_start,
+    JsonDependencySource, collect_dependency_object, json_manifest_string_dependency,
 };
 use versionlens_model::Dependency;
 
@@ -83,15 +82,5 @@ fn collect_dev_engines_package_manager(
         group: context.path,
         ecosystem: context.manifest.ecosystem,
     };
-    out.push(json_manifest_dependency(
-        &source,
-        name.value.as_ref(),
-        version.value.as_ref().to_owned(),
-        JsonDependencyRanges {
-            name_start: string_content_start(name.range.start, name.range.end),
-            name_end: string_content_end(name.range.start, name.range.end),
-            requirement_start: string_content_start(version.range.start, version.range.end),
-            requirement_end: string_content_end(version.range.start, version.range.end),
-        },
-    ));
+    out.push(json_manifest_string_dependency(&source, name, version));
 }

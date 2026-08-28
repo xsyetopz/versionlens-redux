@@ -33,7 +33,7 @@ fn collect_xml_event(
     }
 
     if let XmlEventText(event) = event {
-        return collect_xml_text(event, collector, start, end);
+        collect_xml_text(event, collector, start, end);
     }
 
     Some(())
@@ -46,11 +46,11 @@ fn collect_xml_element_event(
     end: usize,
 ) -> Option<bool> {
     if let XmlEventStart(event) = event {
-        collector.open_node(event, start)?;
+        collector.open_node(event, start);
         return Some(true);
     }
     if let XmlEventEmpty(event) = event {
-        collector.empty_node(event, start, end)?;
+        collector.empty_node(event, start, end);
         return Some(true);
     }
     if let XmlEventEnd(event) = event {

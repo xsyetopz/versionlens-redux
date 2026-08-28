@@ -1,8 +1,6 @@
 use super::MavenRepository;
-use crate::document::test_support::extract_range;
-use crate::{DocumentInput, parse_document, parse_document_with_dependency_paths};
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use crate::document::test_support::{extract_range, parse_fixture};
+use crate::{DocumentInput, parse_document_with_dependency_paths};
 
 use super::{
     extract_maven_repository_urls, parse_maven_effective_settings_https_repositories,
@@ -16,19 +14,20 @@ use versionlens_model::Ecosystem::Maven;
 
 #[test]
 fn parses_maven_pom_dependencies() {
-    let text = package_file_fixture("parses-maven-pom-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("maven-pom-dependencies.txt");
+    let dependencies = parse_fixture(text, "file:///work/pom.xml", "xml");
 
     assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].ecosystem, Maven);
-    assert_eq!(dependencies[0].group, "project.version");
-    assert_eq!(dependencies[0].name, "version");
-    assert_eq!(dependencies[0].requirement, "1.3.6-SNAPSHOT");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(
+            0,
+            Maven,
+            "project.version",
+            "version",
+            "1.3.6-SNAPSHOT",
+        ),
+    );
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "1.3.6-SNAPSHOT"
@@ -58,13 +57,8 @@ fn parses_maven_pom_dependencies() {
 
 #[test]
 fn parses_maven_plugin_dependencies_by_default() {
-    let text = package_file_fixture("parses-maven-plugin-dependencies-by-default.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("maven-plugin-dependencies-by-default.txt");
+    let dependencies = parse_fixture(text, "file:///work/pom.xml", "xml");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "project.build.plugins.plugin");
@@ -88,12 +82,7 @@ fn parses_maven_plugin_dependencies_by_default() {
 fn maven_property_references_trim_before_resolution_like_upstream() {
     let text =
         package_file_fixture("maven-property-references-trim-before-resolution-like-upstream.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/pom.xml", "xml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "com.example:demo");
@@ -108,12 +97,7 @@ fn maven_property_references_trim_before_resolution_like_upstream() {
 fn resolves_maven_project_and_parent_interpolation_properties() {
     let text =
         package_file_fixture("resolves-maven-project-and-parent-interpolation-properties.xml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/pom.xml", "xml");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].name, "org.parent:parent-pom");
@@ -126,13 +110,8 @@ fn resolves_maven_project_and_parent_interpolation_properties() {
 
 #[test]
 fn parses_smoke_maven_pom_smoke_shapes() {
-    let text = package_file_fixture("parses-smoke-maven-pom-smoke-shapes.xml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("smoke-maven-pom-smoke-shapes.xml");
+    let dependencies = parse_fixture(text, "file:///work/pom.xml", "xml");
 
     assert_eq!(dependencies.len(), 8);
     assert_eq!(dependencies[0].group, "project.version");
@@ -154,14 +133,9 @@ fn parses_smoke_maven_pom_smoke_shapes() {
 
 #[test]
 fn parses_maven_dependency_management_dependencies_by_default() {
-    let text =
-        package_file_fixture("parses-maven-dependency-management-dependencies-by-default.txt");
-    let default_dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("maven-dependency-management-dependencies-by-default.txt");
+    let default_dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/pom.xml", "xml");
     assert_eq!(default_dependencies.len(), 1);
     let dependencies = default_dependencies;
 
@@ -180,13 +154,8 @@ fn parses_maven_dependency_management_dependencies_by_default() {
 
 #[test]
 fn parses_maven_profile_dependencies_by_default() {
-    let text = package_file_fixture("parses-maven-profile-dependencies-by-default.xml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("profile-dependencies-by-default.xml");
+    let dependencies = parse_fixture(text, "file:///work/pom.xml", "xml");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(
@@ -226,14 +195,14 @@ fn parses_maven_profile_dependencies_by_default() {
 
 #[test]
 fn parses_configured_maven_plugin_dependency_paths() {
-    let text = package_file_fixture("parses-configured-maven-plugin-dependency-paths.txt");
+    let text = package_file_fixture("configured-maven-plugin-dependency-paths.txt");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/pom.xml".to_owned(),
-            language_id: "xml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/pom.xml".to_owned(),
+            "xml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["project.build.plugins.plugin"],
     );
 
@@ -250,12 +219,12 @@ fn parses_configured_maven_plugin_dependency_paths() {
 fn configured_maven_dependency_paths_match_exact_nodes_only() {
     let text = package_file_fixture("configured-maven-dependency-paths-match-exact-nodes-only.xml");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/pom.xml".to_owned(),
-            language_id: "xml".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/pom.xml".to_owned(),
+            "xml".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["project.dependencies"],
     );
 
@@ -264,13 +233,8 @@ fn configured_maven_dependency_paths_match_exact_nodes_only() {
 
 #[test]
 fn maven_property_resolution_uses_first_matching_property() {
-    let text = package_file_fixture("maven-property-resolution-uses-first-matching-property.xml");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/pom.xml".to_owned(),
-        language_id: "xml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let text = package_file_fixture("property-resolution-uses-first-matching-property.xml");
+    let dependencies = parse_fixture(text, "file:///work/pom.xml", "xml");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "org.apache.tomcat:tomcat");
@@ -283,7 +247,7 @@ fn maven_property_resolution_uses_first_matching_property() {
 
 #[test]
 fn parses_maven_pom_repository_urls() {
-    let text = package_file_fixture("parses-maven-pom-repository-urls.xml");
+    let text = package_file_fixture("pom-repository-urls.xml");
 
     assert_eq!(
         parse_maven_pom_repository_urls(text),
@@ -299,7 +263,7 @@ fn parses_maven_pom_repository_urls() {
 
 #[test]
 fn parses_maven_effective_settings_repositories() {
-    let text = package_file_fixture("parses-maven-effective-settings-repositories.txt");
+    let text = package_file_fixture("maven-effective-settings-repositories.txt");
 
     assert_eq!(
         parse_maven_effective_settings_repositories(text),
@@ -325,7 +289,7 @@ fn parses_maven_effective_settings_repositories() {
 
 #[test]
 fn parses_maven_metadata_versions() {
-    let text = package_file_fixture("parses-maven-metadata-versions.txt");
+    let text = package_file_fixture("maven-metadata-versions.txt");
 
     assert_eq!(
         parse_maven_metadata_versions(text),
@@ -335,7 +299,7 @@ fn parses_maven_metadata_versions() {
 
 #[test]
 fn parses_maven_repository_sources() {
-    let text = package_file_fixture("parses-maven-repository-sources.txt");
+    let text = package_file_fixture("maven-repository-sources.txt");
 
     let sources = parse_maven_effective_settings_repository_sources(text);
 
@@ -369,7 +333,7 @@ fn parses_maven_repository_sources() {
 
 #[test]
 fn parses_maven_settings_repositories_and_auth_entries() {
-    let text = package_file_fixture("parses-maven-settings-repositories-and-auth-entries.txt");
+    let text = package_file_fixture("maven-settings-repositories-and-auth-entries.txt");
 
     assert_eq!(
         parse_maven_settings_repository_urls(text),
@@ -397,7 +361,7 @@ fn parses_maven_settings_repositories_and_auth_entries() {
 #[test]
 fn parses_only_active_maven_settings_profile_repositories_when_active_profiles_are_declared() {
     let text = package_file_fixture(
-        "parses-only-active-maven-settings-profile-repositories-when-active-profiles-are-declared.txt",
+        "only-active-maven-settings-profile-repositories-when-active-profiles-are-declared.txt",
     );
 
     assert_eq!(
@@ -417,22 +381,8 @@ fn parses_only_active_maven_settings_profile_repositories_when_active_profiles_a
 include!("tests/repositories.rs");
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/maven_xml/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/maven_xml/tests",
+        name,
+    )
 }

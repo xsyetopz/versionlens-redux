@@ -1,14 +1,8 @@
-use versionlens_model::Ecosystem::{AnsibleGalaxy, Bazel, Cpan, Cran, Haxelib, Helm, Julia, Nix, Terraform};
 #[test]
 fn parses_cpanfile_dependencies() {
     let text = package_file_fixture("parses-cpanfile-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/cpanfile".to_owned(),
-        language_id: "perl".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/cpanfile", "perl");
 
     assert_eq!(dependencies.len(), 7);
     assert_eq!(dependencies[0].ecosystem, Cpan);
@@ -36,12 +30,7 @@ fn parses_cpanfile_dependencies() {
 fn parses_r_description_dependencies() {
     let text = package_file_fixture("parses-r-description-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/DESCRIPTION".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/DESCRIPTION", "plaintext");
 
     assert_eq!(dependencies.len(), 7);
     assert_eq!(dependencies[0].ecosystem, Cran);
@@ -63,12 +52,7 @@ fn parses_r_description_dependencies() {
 fn parses_renv_lock_repository_packages_and_sources() {
     let text = package_file_fixture("parses-renv-lock-repository-packages-and-sources.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/renv.lock".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/renv.lock", "json");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].ecosystem, Cran);
@@ -84,12 +68,7 @@ fn parses_renv_lock_repository_packages_and_sources() {
 fn parses_julia_project_dependencies_and_sources() {
     let text = package_file_fixture("parses-julia-project-dependencies-and-sources.lock");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Project.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Project.toml", "toml");
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].ecosystem, Julia);
@@ -116,12 +95,7 @@ fn parses_julia_project_dependencies_and_sources() {
 fn parses_julia_manifest_entries() {
     let text = package_file_fixture("parses-julia-manifest-entries.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Manifest.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Manifest.toml", "toml");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].ecosystem, Julia);
@@ -146,20 +120,16 @@ fn parses_julia_manifest_entries() {
 fn parses_mix_exs_dependencies() {
     let text = package_file_fixture("parses-mix-exs-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/mix.exs".to_owned(),
-        language_id: "elixir".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/mix.exs", "elixir");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Hex);
-    assert_eq!(dependencies[0].group, "deps");
-    assert_eq!(dependencies[0].name, "plug");
-    assert_eq!(dependencies[0].requirement, ">= 1.15.0");
-    assert_eq!(dependencies[1].name, "phoenix");
-    assert_eq!(dependencies[1].requirement, "~> 1.7");
+    crate::support::tests::assert_dependency_metadata(
+        &dependencies, 0, "deps", "plug", ">= 1.15.0",
+    );
+    crate::support::tests::assert_two_dependency_requirements(
+        &dependencies, "plug", ">= 1.15.0", "phoenix", "~> 1.7",
+    );
     assert_eq!(dependencies[1].group, "deps.dev,test");
     assert_eq!(dependencies[2].name, "gettext");
     assert_eq!(
@@ -176,12 +146,7 @@ fn parses_mix_exs_dependencies() {
 fn parses_haxelib_json_dependencies() {
     let text = package_file_fixture("parses-haxelib-json-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/haxelib.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/haxelib.json", "json");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].ecosystem, Haxelib);
@@ -202,12 +167,7 @@ fn parses_haxelib_json_dependencies() {
 fn parses_terraform_required_providers() {
     let text = package_file_fixture("parses-terraform-required-providers.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/main.tf".to_owned(),
-        language_id: "terraform".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/main.tf", "terraform");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].ecosystem, Terraform);
@@ -232,12 +192,7 @@ fn parses_terraform_required_providers() {
 fn parses_helm_chart_dependencies() {
     let text = package_file_fixture("parses-helm-chart-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Chart.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Chart.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Helm);
@@ -273,12 +228,7 @@ fn parses_helm_chart_dependencies() {
 fn parses_ansible_galaxy_requirements() {
     let text = package_file_fixture("parses-ansible-galaxy-requirements.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/requirements.yml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/requirements.yml", "yaml");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, AnsibleGalaxy);
@@ -311,12 +261,7 @@ fn parses_ansible_galaxy_requirements() {
 fn parses_bazel_module_dependencies_and_overrides() {
     let text = package_file_fixture("parses-bazel-module-dependencies-and-overrides.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/MODULE.bazel".to_owned(),
-        language_id: "starlark".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/MODULE.bazel", "starlark");
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].ecosystem, Bazel);
@@ -351,12 +296,7 @@ fn parses_bazel_module_dependencies_and_overrides() {
 fn parses_nix_flake_inputs() {
     let text = package_file_fixture("parses-nix-flake-inputs.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/flake.nix".to_owned(),
-        language_id: "nix".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/flake.nix", "nix");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Nix);

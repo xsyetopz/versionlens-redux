@@ -96,6 +96,24 @@ pub(super) fn json_manifest_dependency(
     dependency
 }
 
+pub(super) fn json_manifest_string_dependency(
+    source: &JsonDependencySource<'_>,
+    name: &StringLit<'_>,
+    requirement: &StringLit<'_>,
+) -> Dependency {
+    json_manifest_dependency(
+        source,
+        name.value.as_ref(),
+        requirement.value.as_ref().to_owned(),
+        JsonDependencyRanges {
+            name_start: string_content_start(name.range.start, name.range.end),
+            name_end: string_content_end(name.range.start, name.range.end),
+            requirement_start: string_content_start(requirement.range.start, requirement.range.end),
+            requirement_end: string_content_end(requirement.range.start, requirement.range.end),
+        },
+    )
+}
+
 fn apply_composer_requirement_suffix(dependency: &mut Dependency) {
     if dependency.ecosystem != Composer {
         return;

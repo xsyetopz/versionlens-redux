@@ -1,0 +1,317 @@
+use versionlens_model::ManifestKind;
+
+pub(super) const JSON_TOML_XML_CASES: &[(&str, &str, ManifestKind)] = &[
+    (
+        "file:///work/package.json",
+        "jsonc",
+        ManifestKind::NpmPackageJson,
+    ),
+    (
+        "file:///work/package.json5",
+        "json5",
+        ManifestKind::NpmPackageJson5,
+    ),
+    (
+        "file:///work/package.yaml",
+        "yaml",
+        ManifestKind::NpmPackageYaml,
+    ),
+    ("file:///work/Cargo.toml", "toml", ManifestKind::CargoToml),
+    (
+        "file:///work/composer.json",
+        "json",
+        ManifestKind::ComposerJson,
+    ),
+    ("file:///work/deno.json", "jsonc", ManifestKind::DenoJson),
+    ("file:///work/deno.jsonc", "jsonc", ManifestKind::DenoJson),
+    (
+        "file:///work/import_map.json",
+        "json",
+        ManifestKind::DenoImportMapJson,
+    ),
+    ("file:///work/jsr.json", "json", ManifestKind::JsrJson),
+    ("file:///work/jsr.jsonc", "jsonc", ManifestKind::JsrJson),
+    (
+        "file:///work/project.json",
+        "json",
+        ManifestKind::DotnetProjectJson,
+    ),
+    (
+        "file:///work/packages.config",
+        "xml",
+        ManifestKind::DotnetXml,
+    ),
+    (
+        "file:///work/paket.dependencies",
+        "plaintext",
+        ManifestKind::PaketDependencies,
+    ),
+    (
+        "file:///work/paket.references",
+        "plaintext",
+        ManifestKind::PaketReferences,
+    ),
+    ("file:///work/app.csproj", "xml", ManifestKind::DotnetXml),
+    ("file:///work/app.fsproj", "xml", ManifestKind::DotnetXml),
+    ("file:///work/app.vbproj", "xml", ManifestKind::DotnetXml),
+    (
+        "file:///work/Directory.Packages.props",
+        "xml",
+        ManifestKind::DotnetXml,
+    ),
+    (
+        "file:///work/Directory.Build.targets",
+        "xml",
+        ManifestKind::DotnetXml,
+    ),
+    ("file:///work/dub.json", "json", ManifestKind::DubJson),
+    ("file:///work/vcpkg.json", "json", ManifestKind::VcpkgJson),
+    ("file:///work/CMakeLists.txt", "cmake", ManifestKind::Cmake),
+    ("file:///work/toolchain.cmake", "cmake", ManifestKind::Cmake),
+    ("file:///work/xmake.lua", "lua", ManifestKind::XmakeLua),
+    (
+        "file:///work/Package.swift",
+        "swift",
+        ManifestKind::SwiftPackage,
+    ),
+    (
+        "file:///work/build.zig.zon",
+        "zig",
+        ManifestKind::ZigBuildZon,
+    ),
+    ("file:///work/demo.nimble", "nim", ManifestKind::Nimble),
+    ("file:///work/cpanfile", "perl", ManifestKind::Cpanfile),
+    (
+        "file:///work/luasocket-3.1.0-1.rockspec",
+        "lua",
+        ManifestKind::LuaRockspec,
+    ),
+    ("file:///work/Pipfile", "toml", ManifestKind::PythonPipfile),
+    (
+        "file:///work/pyproject.toml",
+        "toml",
+        ManifestKind::PythonPyprojectToml,
+    ),
+    (
+        "file:///work/gradle/libs.versions.toml",
+        "toml",
+        ManifestKind::GradleVersionCatalogToml,
+    ),
+    (
+        "file:///work/build.gradle",
+        "groovy",
+        ManifestKind::GradleBuild,
+    ),
+    (
+        "file:///work/build.gradle.kts",
+        "kotlin",
+        ManifestKind::GradleBuild,
+    ),
+    (
+        "file:///work/settings.gradle",
+        "groovy",
+        ManifestKind::GradleSettings,
+    ),
+    (
+        "file:///work/settings.gradle.kts",
+        "kotlin",
+        ManifestKind::GradleSettings,
+    ),
+    ("file:///work/build.sbt", "scala", ManifestKind::SbtBuild),
+    (
+        "file:///work/deps.edn",
+        "clojure",
+        ManifestKind::ClojureDepsEdn,
+    ),
+    (
+        "file:///work/project.clj",
+        "clojure",
+        ManifestKind::LeiningenProjectClj,
+    ),
+    ("file:///work/pom.xml", "xml", ManifestKind::MavenPomXml),
+];
+pub(super) const YAML_PLAINTEXT_OTHER_CASES: &[(&str, &str, ManifestKind)] = &[
+    (
+        "file:///work/Dockerfile",
+        "dockerfile",
+        ManifestKind::Dockerfile,
+    ),
+    (
+        "file:///work/build.Dockerfile",
+        "dockerfile",
+        ManifestKind::Dockerfile,
+    ),
+    (
+        "file:///work/compose.yaml",
+        "yaml",
+        ManifestKind::DockerComposeYaml,
+    ),
+    (
+        "file:///work/docker-compose.yaml",
+        "yaml",
+        ManifestKind::DockerComposeYaml,
+    ),
+    (
+        "file:///work/docker-compose.override.yml",
+        "dockercompose",
+        ManifestKind::DockerComposeYaml,
+    ),
+    (
+        "file:///work/docker-compose.prod.yaml",
+        "yaml",
+        ManifestKind::DockerComposeYaml,
+    ),
+    (
+        "file:///work/Chart.yaml",
+        "yaml",
+        ManifestKind::HelmChartYaml,
+    ),
+    (
+        "file:///work/requirements.yml",
+        "yaml",
+        ManifestKind::AnsibleGalaxyRequirementsYaml,
+    ),
+    (
+        "file:///work/requirements.yaml",
+        "yaml",
+        ManifestKind::AnsibleGalaxyRequirementsYaml,
+    ),
+    (
+        "file:///work/MODULE.bazel",
+        "starlark",
+        ManifestKind::BazelModule,
+    ),
+    (
+        "file:///work/WORKSPACE",
+        "starlark",
+        ManifestKind::BazelWorkspace,
+    ),
+    (
+        "file:///work/WORKSPACE.bazel",
+        "starlark",
+        ManifestKind::BazelWorkspace,
+    ),
+    (
+        "file:///work/subprojects/zlib.wrap",
+        "meson",
+        ManifestKind::MesonWrap,
+    ),
+    ("file:///work/flake.nix", "nix", ManifestKind::NixFlake),
+    (
+        "file:///work/kustomization.yaml",
+        "yaml",
+        ManifestKind::KustomizationYaml,
+    ),
+    (
+        "file:///work/Packages/manifest.json",
+        "json",
+        ManifestKind::UnityProjectManifestJson,
+    ),
+    (
+        "file:///work/compose.override.yaml",
+        "yaml",
+        ManifestKind::DockerComposeYaml,
+    ),
+    ("file:///work/Gemfile", "ruby", ManifestKind::Gemfile),
+    (
+        "file:///work/example.gemspec",
+        "ruby",
+        ManifestKind::RubyGemspec,
+    ),
+    ("file:///work/go.mod", "go.mod", ManifestKind::GoMod),
+    ("file:///work/go.work", "go.mod", ManifestKind::GoMod),
+    ("file:///work/dub.sdl", "plaintext", ManifestKind::DubSdl),
+    ("file:///work/mix.exs", "elixir", ManifestKind::MixExs),
+    (
+        "file:///work/rebar.config",
+        "erlang",
+        ManifestKind::RebarConfig,
+    ),
+    ("file:///work/gleam.toml", "toml", ManifestKind::GleamToml),
+    ("file:///work/opam", "plaintext", ManifestKind::Opam),
+    ("file:///work/lwt.opam", "plaintext", ManifestKind::Opam),
+    (
+        "file:///work/dune-project",
+        "plaintext",
+        ManifestKind::DuneProject,
+    ),
+    ("file:///work/demo.cabal", "plaintext", ManifestKind::Cabal),
+    (
+        "file:///work/cabal.project",
+        "plaintext",
+        ManifestKind::CabalProject,
+    ),
+    ("file:///work/stack.yaml", "yaml", ManifestKind::StackYaml),
+    (
+        "file:///work/Project.toml",
+        "toml",
+        ManifestKind::JuliaProjectToml,
+    ),
+    (
+        "file:///work/Manifest.toml",
+        "toml",
+        ManifestKind::JuliaManifestToml,
+    ),
+    (
+        "file:///work/Manifest-v1.11.toml",
+        "toml",
+        ManifestKind::JuliaManifestToml,
+    ),
+    (
+        "file:///work/Manifest-v1.10.toml",
+        "toml",
+        ManifestKind::JuliaManifestToml,
+    ),
+    (
+        "file:///work/requirements-dev.txt",
+        "plaintext",
+        ManifestKind::PythonRequirementsTxt,
+    ),
+    (
+        "file:///work/constraints.txt",
+        "plaintext",
+        ManifestKind::PythonRequirementsTxt,
+    ),
+    (
+        "file:///work/pubspec.yaml",
+        "yaml",
+        ManifestKind::PubspecYaml,
+    ),
+    (
+        "file:///work/pubspec.yml",
+        "yaml",
+        ManifestKind::PubspecYaml,
+    ),
+    (
+        "file:///work/pubspec_overrides.yaml",
+        "yaml",
+        ManifestKind::PubspecOverridesYaml,
+    ),
+    (
+        "file:///work/pnpm-workspace.yaml",
+        "yaml",
+        ManifestKind::PnpmYaml,
+    ),
+    (
+        "file:///work/pnpm-workspace.yml",
+        "yaml",
+        ManifestKind::PnpmYaml,
+    ),
+    ("file:///work/.yarnrc.yaml", "yaml", ManifestKind::PnpmYaml),
+    ("file:///work/.yarnrc.yml", "yaml", ManifestKind::PnpmYaml),
+    (
+        "file:///work/service.compose.yml",
+        "yaml",
+        ManifestKind::DockerComposeYaml,
+    ),
+    (
+        "file:///work/build.dockerfile",
+        "dockerfile",
+        ManifestKind::Dockerfile,
+    ),
+    (
+        "versionlens:/multi-registries.json",
+        "json",
+        ManifestKind::VersionLensMultiRegistries,
+    ),
+];

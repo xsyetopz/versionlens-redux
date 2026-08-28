@@ -1,7 +1,7 @@
 use crate::json_manifest::npm::trim_package_descriptor;
+use jsonc_parser::ast::Object;
 use jsonc_parser::ast::ObjectProp as JsonObjectProp;
 use jsonc_parser::ast::Value::{Array as JsonValueArray, Object as JsonValueObject};
-use jsonc_parser::ast::{Object, Value};
 
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Npm;
@@ -130,7 +130,7 @@ fn collect_json_array_wildcard_path(
         let JsonValueObject(child) = element else {
             continue;
         };
-        let Some(JsonValueObject(object)) = value_at_path_from_object(child, child_path) else {
+        let Some(JsonValueObject(object)) = value_at_path(child, child_path) else {
             continue;
         };
         let group = format!(
@@ -148,18 +148,6 @@ fn collect_json_array_wildcard_path(
     }
 
     true
-}
-
-fn value_at_path_from_object<'a>(root: JsonObject<'a>, path: &[&str]) -> Option<&'a Value<'a>> {
-    let mut current = root;
-    let Some((last, parents)) = path.split_last() else {
-        return None;
-    };
-
-    for segment in parents {
-        current = current.get_object(segment)?;
-    }
-    current.get(last).map(|prop| &prop.value)
 }
 
 fn wildcard_array_segment(object: JsonObject<'_>, index: usize) -> String {

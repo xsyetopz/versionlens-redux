@@ -1,22 +1,13 @@
-use super::{DocumentInput, parse_document};
 use crate::document::test_support::extract_range;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn parses_smoke_npm_range_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-npm-range-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
-    assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].ecosystem, Npm);
-    assert_eq!(dependencies[0].group, "dependencies");
+    crate::support::tests::assert_dependency_group(&dependencies, 2, 0, Npm, "dependencies");
     assert_eq!(dependencies[0].name, "@faker-js/faker");
     assert_eq!(dependencies[0].requirement, "> 10.0.0 < 10.5.0");
     assert_eq!(
@@ -30,12 +21,8 @@ fn parses_smoke_npm_range_smoke_shapes() {
 #[test]
 fn parses_smoke_jspm_package_json_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-jspm-package-json-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 6);
     assert_eq!(dependencies[0].group, "jspm.dependencies");
@@ -53,12 +40,8 @@ fn parses_smoke_jspm_package_json_smoke_shapes() {
 #[test]
 fn parses_smoke_typical_package_json_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-typical-package-json-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 14);
     assert_eq!(dependencies[1].name, "typescript");
@@ -83,12 +66,8 @@ fn parses_smoke_typical_package_json_smoke_shapes() {
 #[test]
 fn parses_smoke_npm_workspaces_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-npm-workspaces-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].group, "workspaces.catalog");
@@ -104,12 +83,8 @@ fn parses_smoke_npm_workspaces_smoke_shapes() {
 #[test]
 fn parses_smoke_npm_overrides_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-npm-overrides-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].ecosystem, Npm);
@@ -122,22 +97,8 @@ fn parses_smoke_npm_overrides_smoke_shapes() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_smoke")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_smoke",
+        name,
+    )
 }

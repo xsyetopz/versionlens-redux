@@ -1,14 +1,8 @@
-use versionlens_model::Ecosystem::{Conan, Hackage, LuaRocks, Nim, Opam, Swift, Vcpkg, Zig};
 #[test]
 fn parses_clojure_deps_edn_dependencies() {
     let text = package_file_fixture("parses-clojure-deps-edn-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/deps.edn".to_owned(),
-        language_id: "clojure".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/deps.edn", "clojure");
 
     assert_eq!(dependencies.len(), 6);
     assert_eq!(dependencies[0].ecosystem, Maven);
@@ -40,23 +34,18 @@ fn parses_clojure_deps_edn_mvn_repositories() {
              "snapshots" {:url "https://maven.example.test/snapshots"}}}"#,
     );
 
-    assert_eq!(repositories.len(), 2);
-    assert_eq!(repositories[0].id, "private");
-    assert_eq!(repositories[0].url, "https://maven.example.test/releases");
-    assert_eq!(repositories[1].id, "snapshots");
-    assert_eq!(repositories[1].url, "https://maven.example.test/snapshots");
+    super::test_support::assert_two_repositories(
+        &repositories,
+        ("private", "https://maven.example.test/releases"),
+        ("snapshots", "https://maven.example.test/snapshots"),
+    );
 }
 
 #[test]
 fn parses_leiningen_project_clj_dependencies() {
     let text = package_file_fixture("parses-leiningen-project-clj-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/project.clj".to_owned(),
-        language_id: "clojure".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/project.clj", "clojure");
 
     assert_eq!(dependencies.len(), 7);
     assert_eq!(dependencies[0].ecosystem, Maven);
@@ -86,32 +75,20 @@ fn parses_leiningen_project_clj_repositories() {
                  ["snapshots" {:url "https://maven.example.test/snapshots"}]])"#,
     );
 
-    assert_eq!(repositories.len(), 2);
-    assert_eq!(repositories[0].id, "private");
-    assert_eq!(repositories[0].url, "https://maven.example.test/releases");
-    assert_eq!(repositories[1].id, "snapshots");
-    assert_eq!(repositories[1].url, "https://maven.example.test/snapshots");
+    super::test_support::assert_two_repositories(
+        &repositories,
+        ("private", "https://maven.example.test/releases"),
+        ("snapshots", "https://maven.example.test/snapshots"),
+    );
 }
 
 #[test]
 fn parses_dune_project_package_dependencies() {
     let text = package_file_fixture("parses-dune-project-package-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/dune-project".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/dune-project", "plaintext");
 
-    assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].ecosystem, Opam);
-    assert_eq!(dependencies[0].group, "version");
-    assert_eq!(dependencies[0].name, "demo");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
-    assert_eq!(dependencies[1].group, "depends");
-    assert_eq!(dependencies[1].name, "ocaml");
-    assert_eq!(dependencies[1].requirement, ">= 4.14");
+    assert_common_opam_dependencies(&dependencies);
     assert_eq!(dependencies[2].name, "fmt");
     assert_eq!(dependencies[2].requirement, ">= 0.6");
     assert_eq!(dependencies[3].name, "lwt");
@@ -122,21 +99,10 @@ fn parses_dune_project_package_dependencies() {
 fn parses_opam_dependencies() {
     let text = package_file_fixture("parses-opam-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/demo.opam".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/demo.opam", "plaintext");
 
     assert_eq!(dependencies.len(), 6);
-    assert_eq!(dependencies[0].ecosystem, Opam);
-    assert_eq!(dependencies[0].group, "version");
-    assert_eq!(dependencies[0].name, "demo");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
-    assert_eq!(dependencies[1].group, "depends");
-    assert_eq!(dependencies[1].name, "ocaml");
-    assert_eq!(dependencies[1].requirement, ">= 4.14");
+    assert_common_opam_dependencies(&dependencies);
     assert_eq!(dependencies[1].requirement_prefix, ">= \"");
     assert_eq!(dependencies[1].requirement_suffix, "\"");
     assert_eq!(dependencies[2].name, "dune");
@@ -151,16 +117,21 @@ fn parses_opam_dependencies() {
     assert_eq!(dependencies[5].requirement, "< 1.0");
 }
 
+fn assert_common_opam_dependencies(dependencies: &[versionlens_model::Dependency]) {
+    assert_eq!(dependencies[0].ecosystem, Opam);
+    assert_eq!(dependencies[0].group, "version");
+    assert_eq!(dependencies[0].name, "demo");
+    assert_eq!(dependencies[0].requirement, "1.2.3");
+    assert_eq!(dependencies[1].group, "depends");
+    assert_eq!(dependencies[1].name, "ocaml");
+    assert_eq!(dependencies[1].requirement, ">= 4.14");
+}
+
 #[test]
 fn parses_cabal_dependencies() {
     let text = package_file_fixture("parses-cabal-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/demo.cabal".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/demo.cabal", "plaintext");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Hackage);
@@ -181,12 +152,7 @@ fn parses_cabal_dependencies() {
 fn parses_cabal_project_constraints() {
     let text = package_file_fixture("parses-cabal-project-constraints.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/cabal.project".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/cabal.project", "plaintext");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].ecosystem, Hackage);
@@ -201,12 +167,7 @@ fn parses_cabal_project_constraints() {
 fn parses_stack_yaml_extra_deps() {
     let text = package_file_fixture("parses-stack-yaml-extra-deps.project");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/stack.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/stack.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].ecosystem, Hackage);
@@ -232,18 +193,13 @@ fn parses_stack_yaml_extra_deps() {
 fn parses_conanfile_txt_requirements() {
     let text = package_file_fixture("parses-conanfile-txt-requirements.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/conanfile.txt".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/conanfile.txt", "plaintext");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Conan);
-    assert_eq!(dependencies[0].group, "requires");
-    assert_eq!(dependencies[0].name, "zlib");
-    assert_eq!(dependencies[0].requirement, "1.3.1");
+    crate::support::tests::assert_dependency_metadata(
+        &dependencies, 0, "requires", "zlib", "1.3.1",
+    );
     assert_eq!(dependencies[1].name, "poco");
     assert_eq!(dependencies[1].requirement, ">1.0 <1.9");
     assert_eq!(dependencies[1].requirement_prefix, "[");
@@ -259,18 +215,13 @@ fn parses_conanfile_txt_requirements() {
 fn parses_conanfile_py_requirement_attributes() {
     let text = package_file_fixture("parses-conanfile-py-requirement-attributes.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/conanfile.py".to_owned(),
-        language_id: "python".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/conanfile.py", "python");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Conan);
-    assert_eq!(dependencies[0].group, "requires");
-    assert_eq!(dependencies[0].name, "hello");
-    assert_eq!(dependencies[0].requirement, "1.0");
+    crate::support::tests::assert_dependency_metadata(
+        &dependencies, 0, "requires", "hello", "1.0",
+    );
     assert_eq!(dependencies[1].name, "otherlib");
     assert_eq!(dependencies[1].requirement, "2.1");
     assert_eq!(dependencies[1].requirement_suffix, "@otheruser/testing");
@@ -282,12 +233,7 @@ fn parses_conanfile_py_requirement_attributes() {
 fn parses_vcpkg_json_dependencies_features_and_overrides() {
     let text = package_file_fixture("parses-vcpkg-json-dependencies-features-and-overrides.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/vcpkg.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/vcpkg.json", "json");
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].ecosystem, Vcpkg);
@@ -315,12 +261,7 @@ fn parses_vcpkg_json_dependencies_features_and_overrides() {
 fn parses_swift_package_dependencies_and_unsupported_sources() {
     let text = package_file_fixture("parses-swift-package-dependencies-and-unsupported-sources.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/Package.swift".to_owned(),
-        language_id: "swift".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/Package.swift", "swift");
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].ecosystem, Swift);
@@ -355,12 +296,7 @@ fn parses_swift_package_dependencies_and_unsupported_sources() {
 fn parses_zig_package_dependencies_from_zon() {
     let text = package_file_fixture("parses-zig-package-dependencies-from-zon.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/build.zig.zon".to_owned(),
-        language_id: "zig".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/build.zig.zon", "zig");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].ecosystem, Zig);
@@ -384,12 +320,7 @@ fn parses_zig_package_dependencies_from_zon() {
 fn parses_nimble_requires_dependencies() {
     let text = package_file_fixture("parses-nimble-requires-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/demo.nimble".to_owned(),
-        language_id: "nim".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/demo.nimble", "nim");
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].ecosystem, Nim);
@@ -416,12 +347,7 @@ fn parses_nimble_requires_dependencies() {
 fn parses_luarocks_rockspec_dependencies() {
     let text = package_file_fixture("parses-luarocks-rockspec-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/demo-1.0.0-1.rockspec".to_owned(),
-        language_id: "lua".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/demo-1.0.0-1.rockspec", "lua");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, LuaRocks);

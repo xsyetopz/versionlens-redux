@@ -4,12 +4,7 @@ use versionlens_model::Ecosystem::Cpp;
 fn parses_cpp_cmake_dependencies() {
     let text = package_file_fixture("parses-cpp-cmake-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/CMakeLists.txt".to_owned(),
-        language_id: "cmake".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/CMakeLists.txt", "cmake");
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Cpp);
@@ -35,12 +30,7 @@ fn parses_cpp_cmake_dependencies() {
 fn parses_cpp_xmake_dependencies() {
     let text = package_file_fixture("parses-cpp-xmake-dependencies.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/xmake.lua".to_owned(),
-        language_id: "lua".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/xmake.lua", "lua");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].ecosystem, Cpp);
@@ -59,12 +49,7 @@ fn parses_cpp_xmake_dependencies() {
 fn parses_cpp_meson_wrap_dependency() {
     let text = package_file_fixture("parses-cpp-meson-wrap-dependency.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/subprojects/gtest.wrap".to_owned(),
-        language_id: "meson".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/subprojects/gtest.wrap", "meson");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].ecosystem, Cpp);
@@ -79,12 +64,7 @@ fn parses_cpp_meson_wrap_dependency() {
 fn parses_cpp_bazel_workspace_dependency() {
     let text = package_file_fixture("parses-cpp-bazel-workspace-dependency.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/WORKSPACE".to_owned(),
-        language_id: "starlark".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/WORKSPACE", "starlark");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].ecosystem, Cpp);

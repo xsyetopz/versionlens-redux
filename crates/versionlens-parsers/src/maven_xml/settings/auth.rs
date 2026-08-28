@@ -4,6 +4,7 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 
 use super::super::nodes::{XmlNode, child_named, collect_nodes, direct_children};
 use super::entries::{MavenAuthEntry, MavenMirror, MavenNamedRepository};
+use super::profile::{active_profile_ids, profile_is_active};
 
 pub fn parse_maven_settings_auth_entries(text: &str) -> Vec<MavenAuthEntry> {
     let Some(nodes) = collect_nodes(text) else {
@@ -118,31 +119,6 @@ fn repository_source(node: &XmlNode, nodes: &[XmlNode]) -> Option<(String, Strin
     let id = child_named(&children, "id")?.text.as_str().to_owned();
     let url = child_named(&children, "url")?.text.as_str().to_owned();
     Some((id, url))
-}
-
-fn active_profile_ids(nodes: &[XmlNode]) -> Vec<String> {
-    nodes
-        .iter()
-        .filter(|node| node.path == "settings.activeProfiles.activeProfile")
-        .filter(|node| !node.text.is_empty())
-        .map(|node| node.text.as_str().to_owned())
-        .collect()
-}
-
-fn profile_is_active(node: &XmlNode, nodes: &[XmlNode], active_profiles: &[String]) -> bool {
-    active_profiles.is_empty()
-        || profile_id_for_node(node, nodes)
-            .is_some_and(|profile_id| active_profiles.iter().any(|active| active == profile_id))
-}
-
-fn profile_id_for_node<'a>(node: &XmlNode, nodes: &'a [XmlNode]) -> Option<&'a str> {
-    let profile = nodes.iter().find(|candidate| {
-        candidate.path == "settings.profiles.profile"
-            && candidate.open_start < node.open_start
-            && candidate.close_end > node.close_end
-    })?;
-    let children = direct_children(profile, nodes);
-    child_named(&children, "id").map(|id| id.text.as_str())
 }
 
 fn server_credentials(nodes: &[XmlNode]) -> HashMap<String, (String, String)> {

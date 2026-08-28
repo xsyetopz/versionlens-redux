@@ -1,29 +1,16 @@
-use super::{DocumentInput, parse_document, parse_document_with_dependency_paths};
+use super::{DocumentInput, parse_document_with_dependency_paths};
 use crate::document::test_support::extract_range;
-use std::fs::read_to_string;
-use std::path::PathBuf;
-use versionlens_model::Ecosystem::{Deno, Npm};
+use versionlens_model::Ecosystem::*;
 
 #[test]
 fn parses_deno_json_imports() {
     let text = package_file_fixture("parses-deno-json-imports.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/deno.json".to_owned(),
-        language_id: "jsonc".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/deno.json", "jsonc");
 
     assert_eq!(dependencies.len(), 8);
     assert_eq!(dependencies[0].ecosystem, Deno);
-    assert_eq!(dependencies[0].group, "imports");
-    assert_eq!(dependencies[0].name, "@std/assert");
-    assert_eq!(dependencies[0].requirement, "^1.0.0");
-    assert_eq!(dependencies[0].requirement_prefix, "jsr:@std/assert@");
-    assert_eq!(
-        extract_range(text, dependencies[0].requirement_range),
-        "jsr:@std/assert@^1.0.0"
-    );
+    assert_deno_jsr_dependency(text, &dependencies, "@std/assert");
     assert_eq!(dependencies[1].name, "luca");
     assert_eq!(dependencies[1].requirement, "1.0.0");
     assert_eq!(dependencies[1].requirement_prefix, "jsr:@luca/cases@");
@@ -60,12 +47,8 @@ fn deno_imports_preserve_import_specifiers_like_upstream_npm_parser() {
     let text = package_file_fixture(
         "deno-imports-preserve-import-specifiers-like-upstream-npm-parser.txt",
     );
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/deno.json".to_owned(),
-        language_id: "jsonc".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/deno.json", "jsonc");
 
     assert_eq!(dependencies.len(), 3);
     assert_eq!(dependencies[0].ecosystem, Deno);
@@ -89,12 +72,12 @@ fn deno_imports_preserve_import_specifiers_like_upstream_npm_parser() {
 fn parses_configured_deno_scopes() {
     let text = package_file_fixture("parses-configured-deno-scopes.txt");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/deno.json".to_owned(),
-            language_id: "jsonc".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/deno.json".to_owned(),
+            "jsonc".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["imports", "scopes"],
     );
 
@@ -115,16 +98,11 @@ fn parses_configured_deno_scopes() {
 #[test]
 fn parses_smoke_deno_smoke_shapes() {
     let text = package_file_fixture("parses-smoke-deno-smoke-shapes.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/deno.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/deno.json", "json");
 
     assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].ecosystem, Deno);
-    assert_eq!(dependencies[0].group, "imports");
+    crate::support::tests::assert_dependency_group(&dependencies, 4, 0, Deno, "imports");
     assert_eq!(dependencies[0].name, "@std/assert");
     assert_eq!(dependencies[0].requirement, "1.0.19");
     assert_eq!(dependencies[0].requirement_prefix, "jsr:@std/assert@");
@@ -150,12 +128,8 @@ fn parses_unversioned_deno_imports_as_empty_requirements_with_specifier_prefixes
     let text = package_file_fixture(
         "parses-unversioned-deno-imports-as-empty-requirements-with-specifier-prefixes.txt",
     );
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/deno.json".to_owned(),
-        language_id: "jsonc".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/deno.json", "jsonc");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].ecosystem, Deno);
@@ -172,12 +146,8 @@ fn parses_unversioned_deno_imports_as_empty_requirements_with_specifier_prefixes
 #[test]
 fn parses_deno_scopes_by_default() {
     let text = package_file_fixture("parses-deno-scopes-by-default.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/deno.json".to_owned(),
-        language_id: "jsonc".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/deno.json", "jsonc");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(dependencies[0].group, "imports");
@@ -190,23 +160,11 @@ fn parses_deno_scopes_by_default() {
 #[test]
 fn parses_deno_json_jsr_project_version() {
     let text = package_file_fixture("parses-deno-json-jsr-project-version.json");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/deno.json".to_owned(),
-        language_id: "jsonc".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/deno.json", "jsonc");
 
     assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].ecosystem, Deno);
-    assert_eq!(dependencies[0].group, "version");
-    assert_eq!(dependencies[0].name, "@scope/pkg");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
-    assert_eq!(extract_range(text, dependencies[0].range), "@scope/pkg");
-    assert_eq!(
-        extract_range(text, dependencies[0].requirement_range),
-        "1.2.3"
-    );
+    assert_deno_project_version(text, &dependencies[0]);
     assert_eq!(dependencies[1].group, "imports");
     assert_eq!(dependencies[1].name, "@std/assert");
 }
@@ -214,16 +172,10 @@ fn parses_deno_json_jsr_project_version() {
 #[test]
 fn parses_import_map_json_dependencies() {
     let text = package_file_fixture("parses-import-map-json-dependencies.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/import_map.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/import_map.json", "json");
 
-    assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].ecosystem, Deno);
-    assert_eq!(dependencies[0].group, "imports");
+    crate::support::tests::assert_dependency_group(&dependencies, 4, 0, Deno, "imports");
     assert_eq!(dependencies[0].name, "@std/async");
     assert_eq!(dependencies[0].requirement, "^1.0.0");
     assert_eq!(dependencies[0].requirement_prefix, "jsr:@std/async@");
@@ -252,42 +204,42 @@ fn parses_import_map_json_dependencies() {
 #[test]
 fn parses_jsr_json_project_version() {
     let text = package_file_fixture("parses-jsr-json-project-version.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/jsr.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/jsr.json", "json");
 
     assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].ecosystem, Deno);
-    assert_eq!(dependencies[0].group, "version");
-    assert_eq!(dependencies[0].name, "@scope/pkg");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
-    assert_eq!(extract_range(text, dependencies[0].range), "@scope/pkg");
-    assert_eq!(
-        extract_range(text, dependencies[0].requirement_range),
-        "1.2.3"
-    );
+    assert_deno_project_version(text, &dependencies[0]);
+}
+
+fn assert_deno_project_version(text: &str, dependency: &versionlens_model::Dependency) {
+    assert_eq!(dependency.ecosystem, Deno);
+    assert_eq!(dependency.group, "version");
+    assert_eq!(dependency.name, "@scope/pkg");
+    assert_eq!(dependency.requirement, "1.2.3");
+    assert_eq!(extract_range(text, dependency.range), "@scope/pkg");
+    assert_eq!(extract_range(text, dependency.requirement_range), "1.2.3");
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/json_manifest/tests/deno")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/json_manifest/tests/deno",
+        name,
+    )
 }
 
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+fn assert_deno_jsr_dependency(
+    text: &str,
+    dependencies: &[versionlens_model::Dependency],
+    name: &str,
+) {
+    assert_eq!(dependencies[0].group, "imports");
+    assert_eq!(dependencies[0].name, name);
+    assert_eq!(dependencies[0].requirement, "^1.0.0");
+    assert_eq!(dependencies[0].requirement_prefix, "jsr:@std/assert@");
+    crate::support::tests::assert_dependency_requirement_range(
+        text,
+        dependencies,
+        0,
+        "jsr:@std/assert@^1.0.0",
+    );
 }

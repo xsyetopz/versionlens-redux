@@ -1,6 +1,5 @@
-use jsonc_parser::ast::Value::Object as JsonValueObject;
+use crate::support;
 use jsonc_parser::errors::ParseError as JsonParseError;
-use jsonc_parser::parse_to_ast;
 use versionlens_model::Ecosystem;
 
 use versionlens_model::Dependency;
@@ -12,19 +11,17 @@ pub(super) fn parse_json_manifest(
     dependency_paths: &[&str],
     ecosystem: Ecosystem,
 ) -> Result<Vec<Dependency>, JsonParseError> {
-    let parse_result = parse_to_ast(text, &crate::default(), &crate::default())?;
-    let Some(JsonValueObject(root)) = parse_result.value else {
-        return Ok(vec![]);
-    };
-
-    let mut dependencies = vec![];
-    let context = JsonManifestContext {
-        text,
-        root: &root,
-        ecosystem,
-    };
-    for path in dependency_paths {
-        collect_json_path(&context, path, &mut dependencies);
-    }
-    Ok(dependencies)
+    Ok(support::try_with_json_object(text, |root| {
+        let mut dependencies = vec![];
+        let context = JsonManifestContext {
+            text,
+            root,
+            ecosystem,
+        };
+        for path in dependency_paths {
+            collect_json_path(&context, path, &mut dependencies);
+        }
+        dependencies
+    })?
+    .unwrap_or_default())
 }

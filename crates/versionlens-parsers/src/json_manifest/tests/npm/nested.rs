@@ -1,18 +1,12 @@
-use super::{DocumentInput, parse_document, parse_document_with_dependency_paths};
+use super::{DocumentInput, parse_document_with_dependency_paths};
 use crate::document::test_support::extract_range;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use versionlens_model::Ecosystem::Npm;
 
 #[test]
 fn parses_package_json_nested_wildcard_and_scalars() {
     let text = package_file_fixture("parses-package-json-nested-wildcard-and-scalars.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "jsonc".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "jsonc");
 
     assert_eq!(dependencies.len(), 9);
     assert_eq!(dependencies[0].group, "version");
@@ -40,12 +34,8 @@ fn parses_package_json_nested_wildcard_and_scalars() {
 #[test]
 fn parses_package_json_pnpm_package_extensions_by_default() {
     let text = package_file_fixture("parses-package-json-pnpm-package-extensions-by-default.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 2);
     assert_eq!(
@@ -66,12 +56,8 @@ fn parses_package_json_pnpm_package_extensions_by_default() {
 #[test]
 fn parses_package_json_bun_catalogs_by_default() {
     let text = package_file_fixture("parses-package-json-bun-catalogs-by-default.txt");
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies =
+        crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 5);
     assert_eq!(dependencies[0].group, "catalog");
@@ -89,12 +75,12 @@ fn parses_package_json_bun_catalogs_by_default() {
 fn parses_configured_smoke_npm_custom_dependency_paths() {
     let text = package_file_fixture("parses-configured-smoke-npm-custom-dependency-paths.txt");
     let dependencies = parse_document_with_dependency_paths(
-        &DocumentInput {
-            uri: "file:///work/package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: text.to_owned(),
-            workspace_root: None,
-        },
+        &DocumentInput::new(
+            "file:///work/package.json".to_owned(),
+            "json".to_owned(),
+            text.to_owned(),
+            None,
+        ),
         &["customDependencies".to_owned()],
     );
 
@@ -110,22 +96,8 @@ fn parses_configured_smoke_npm_custom_dependency_paths() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_nested")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_nested",
+        name,
+    )
 }

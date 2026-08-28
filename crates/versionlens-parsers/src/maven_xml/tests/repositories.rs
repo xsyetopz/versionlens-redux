@@ -10,7 +10,7 @@ fn effective_maven_settings_repositories_ignore_inactive_profiles() {
 
 #[test]
 fn parses_maven_settings_local_repository_as_named_repository() {
-    let text = package_file_fixture("parses-maven-settings-local-repository-as-named-repository.txt");
+    let text = package_file_fixture("maven-settings-local-repository-as-named-repository.txt");
 
     let repositories = parse_maven_settings_mirrors(text);
     assert!(repositories.is_empty());
@@ -22,7 +22,7 @@ fn parses_maven_settings_local_repository_as_named_repository() {
 
 #[test]
 fn parses_maven_settings_mirrors() {
-    let text = package_file_fixture("parses-maven-settings-mirrors.txt");
+    let text = package_file_fixture("maven-settings-mirrors.txt");
 
     let mirrors = parse_maven_settings_mirrors(text);
     assert_eq!(mirrors.len(), 1);

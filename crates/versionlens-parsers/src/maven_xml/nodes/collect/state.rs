@@ -14,8 +14,8 @@ pub(super) struct XmlCollector {
 }
 
 impl XmlCollector {
-    pub(super) fn open_node(&mut self, event: &MavenXmlEvent<'_>, start: usize) -> Option<()> {
-        let name = event_name(event)?;
+    pub(super) fn open_node(&mut self, event: &MavenXmlEvent<'_>, start: usize) {
+        let name = event_name(event);
         let path = child_path(&self.stack, &name);
         self.stack.push(OpenNode {
             name,
@@ -24,7 +24,6 @@ impl XmlCollector {
             text: "".to_owned(),
             text_range: None,
         });
-        Some(())
     }
 
     pub(super) fn empty_node(
@@ -32,8 +31,8 @@ impl XmlCollector {
         event: &MavenXmlEvent<'_>,
         open_start: usize,
         close_end: usize,
-    ) -> Option<()> {
-        let name = event_name(event)?;
+    ) {
+        let name = event_name(event);
         let path = child_path(&self.stack, &name);
         self.nodes.push(XmlNode {
             name,
@@ -43,7 +42,6 @@ impl XmlCollector {
             text: "".to_owned(),
             text_range: None,
         });
-        Some(())
     }
 
     pub(super) fn append_text(&mut self, value: &str, start: usize, end: usize) {
@@ -57,9 +55,9 @@ impl XmlCollector {
         });
     }
 
-    pub(super) fn close_node(&mut self, end_name: &[u8], close_end: usize) -> Option<()> {
+    pub(super) fn close_node(&mut self, end_name: &str, close_end: usize) -> Option<()> {
         let open = self.stack.pop()?;
-        if end_name != open.name.as_bytes() {
+        if end_name != open.name {
             return None;
         }
         self.nodes.push(XmlNode {
@@ -95,8 +93,6 @@ fn child_path(stack: &[OpenNode], name: &str) -> String {
     parts.join(".")
 }
 
-fn event_name(event: &MavenXmlEvent<'_>) -> Option<String> {
-    str::from_utf8(event.name().as_ref())
-        .ok()
-        .map(|value| value.to_owned())
+fn event_name(event: &MavenXmlEvent<'_>) -> String {
+    event.name().as_ref().to_owned()
 }
