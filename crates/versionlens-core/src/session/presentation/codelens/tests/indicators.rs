@@ -1,43 +1,14 @@
 #[test]
 fn code_lens_title_uses_configured_indicators() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: test_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("package-left-pad-1.0.0.json"),
-        workspace_root: None,
-    };
-
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
-        }],
+    let session = standard_session();
+    let output = analyze_npm_fixture_with_response(
+        &session,
+        "left-pad-1.0.0.json",
+        r#"{"dist-tags":{"latest":"1.1.0"}}"#,
     );
 
-    let output = session.analyze_document(input);
-
-    let titles = output
-        .code_lenses
-        .iter()
-        .map(|lens| lens.title.as_str())
-        .collect::<Vec<_>>();
-    let commands = output
-        .code_lenses
-        .iter()
-        .map(|lens| lens.command.as_str())
-        .collect::<Vec<_>>();
+    let titles = lens_titles(&output);
+    let commands = lens_commands(&output);
 
     assert_eq!(titles, ["M fixed 1.0.0", "U latest 1.1.0"]);
     assert_eq!(commands, ["", "versionlens.suggestion.onUpdateDependency"]);
@@ -70,23 +41,11 @@ fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
         session.config.suggestion_indicators,
         crate::standard_suggestion_indicators()
     );
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("package-left-pad-1.0.0.json"),
-        workspace_root: None,
-    };
-
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
-        }],
+    let output = analyze_npm_fixture_with_response(
+        &session,
+        "left-pad-1.0.0.json",
+        r#"{"dist-tags":{"latest":"1.1.0"}}"#,
     );
-
-    let output = session.analyze_document(input);
 
     assert_eq!(
         output
@@ -104,119 +63,53 @@ fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
 
 #[test]
 fn code_lenses_offer_release_update_choices_for_fixed_versions() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: test_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("package-left-pad-1.0.0.json"),
-        workspace_root: None,
-    };
+    let session = standard_session();
+    let input = package_document("left-pad-1.0.0.json");
 
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{
-              "dist-tags": { "latest": "2.1.0" },
-              "versions": {
-                "1.0.0": {},
-                "1.0.1": {},
-                "1.1.0": {},
-                "2.0.0": {},
-                "2.1.0": {}
-              }
-            }"#
-            .to_owned(),
-        }],
+    let output = crate::support::tests::analyze_with_responses(
+        &session,
+        &input,
+        &[npm_versions_response(
+            "2.1.0",
+            &["1.0.0", "1.0.1", "1.1.0", "2.0.0", "2.1.0"],
+        )],
     );
 
-    let output = session.analyze_document(input);
-
-    let titles = output
-        .code_lenses
-        .iter()
-        .map(|lens| lens.title.as_str())
-        .collect::<Vec<_>>();
-    let arguments = output
-        .code_lenses
-        .iter()
-        .skip(1)
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(|value| value.as_str())
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
+    let titles = lens_titles(&output);
+    let arguments = crate::support::tests::code_lens_arguments(&output);
 
     assert_eq!(
         titles,
         [
             "M fixed 1.0.0",
-            "U latest 2.1.0",
+            "U patch 1.0.1",
             "U minor 1.1.0",
-            "U patch 1.0.1"
+            "U latest 2.1.0"
         ]
     );
     assert_eq!(
         arguments,
         [
-            vec!["update", "2.1.0"],
+            vec!["updatePatch", "1.0.1"],
             vec!["updateMinor", "1.1.0"],
-            vec!["updatePatch", "1.0.1"]
+            vec!["update", "2.1.0"]
         ]
     );
 }
 
 #[test]
 fn code_lens_ranges_encode_suggestion_order() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: test_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("package-left-pad-1.0.0.json"),
-        workspace_root: None,
-    };
+    let session = session_with_indicators(test_indicators(), false);
+    let input = package_document("left-pad-1.0.0.json");
 
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{
-              "dist-tags": { "latest": "2.1.0" },
-              "versions": {
-                "1.0.0": {},
-                "1.0.1": {},
-                "1.1.0": {},
-                "2.1.0": {}
-              }
-            }"#
-            .to_owned(),
-        }],
+    let output = crate::support::tests::analyze_with_responses(
+        &session,
+        &input,
+        &[npm_versions_response(
+            "2.1.0",
+            &["1.0.0", "1.0.1", "1.1.0", "2.1.0"],
+        )],
     );
-
-    let output = session.analyze_document(input);
     let dependency_start = output.dependencies[0].range.start.character;
     let starts = output
         .code_lenses
@@ -237,25 +130,12 @@ fn code_lens_ranges_encode_suggestion_order() {
 
 #[test]
 fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: test_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("package-dev-dependencies.json"),
-        workspace_root: None,
-    };
+    let session = session_with_indicators(test_indicators(), false);
+    let input = package_document("dev-dependencies.json");
 
-    session.resolve_document_with_responses(
-        input.clone(),
+    let output = crate::support::tests::analyze_with_responses(
+        &session,
+        &input,
         &[
             npm_response("@biomejs/biome", "2.5.2"),
             npm_response("@types/bun", "1.3.14"),
@@ -265,8 +145,6 @@ fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
             npm_response("typescript", "6.0.3"),
         ],
     );
-
-    let output = session.analyze_document(input);
     let lenses = output
         .code_lenses
         .iter()

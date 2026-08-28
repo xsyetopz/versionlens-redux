@@ -1,8 +1,8 @@
 use versionlens_model::Dependency;
 use versionlens_vscode_model::DiagnosticPayload;
 
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
 use crate::presentation::vulnerability_diagnostics;
 
 impl VersionLensSession {

@@ -1,16 +1,14 @@
 use versionlens_model::Dependency;
 use versionlens_model::Range;
-use versionlens_suggestions::SuggestionStatus::{
-    BuildAvailable as StatusBuildAvailable, Current as StatusCurrent, Directory as StatusDirectory,
-    DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,
-    Invalid as StatusInvalid, InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
-    NotSupported as StatusNotSupported, Satisfies as StatusSatisfies,
-    SatisfiesLatest as StatusSatisfiesLatest, UpdateAvailable as StatusUpdateAvailable,
-};
-use versionlens_suggestions::{Suggestion, SuggestionStatus};
+use versionlens_suggestions::Suggestion;
 use versionlens_versions::update_level;
 use versionlens_vscode_model::CodeLensPayload;
 
+use crate::presentation::statuses::{
+    StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
+    StatusFixed, StatusInvalid, StatusInvalidRange, StatusNoMatch, StatusNotSupported,
+    StatusSatisfies, StatusSatisfiesLatest, StatusUpdateAvailable, SuggestionStatus,
+};
 use crate::presentation::{
     code_lens_title, project_version_code_lens_payload, suggested_code_lens_payload,
     update_choice_code_lens_payload,
