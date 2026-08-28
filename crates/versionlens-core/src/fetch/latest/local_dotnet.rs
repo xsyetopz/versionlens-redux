@@ -1,5 +1,5 @@
 use serde_json::to_string as to_json_string;
-use std::fs::read_dir;
+use std::fs::{ReadDir, read_dir};
 use std::io::ErrorKind::NotFound as IoNotFound;
 use std::path::{Path, PathBuf};
 
@@ -55,17 +55,8 @@ fn collect_hierarchical_versions(
     package_dir: &Path,
     versions: &mut LocalDotnetVersions,
 ) -> Result<(), FetchError> {
-    let entries = match read_dir(package_dir) {
-        Ok(entries) => entries,
-        Err(error) if error.kind() == IoNotFound => return Ok(()),
-        Err(error) => {
-            return Err(crate::anyhow_error(error)
-                .context(format!(
-                    "failed to read NuGet package directory {}",
-                    package_dir.display()
-                ))
-                .into());
-        }
+    let Some(entries) = read_local_entries(package_dir, "NuGet package directory")? else {
+        return Ok(());
     };
 
     for entry in entries {
@@ -84,17 +75,8 @@ fn collect_flat_package_versions(
     name: &str,
     versions: &mut LocalDotnetVersions,
 ) -> Result<(), FetchError> {
-    let entries = match read_dir(source) {
-        Ok(entries) => entries,
-        Err(error) if error.kind() == IoNotFound => return Ok(()),
-        Err(error) => {
-            return Err(crate::anyhow_error(error)
-                .context(format!(
-                    "failed to read NuGet source directory {}",
-                    source.display()
-                ))
-                .into());
-        }
+    let Some(entries) = read_local_entries(source, "NuGet source directory")? else {
+        return Ok(());
     };
     let prefix = format!("{}.", name.to_lowercase());
 
@@ -113,6 +95,16 @@ fn collect_flat_package_versions(
         }
     }
     Ok(())
+}
+
+fn read_local_entries(path: &Path, description: &str) -> Result<Option<ReadDir>, FetchError> {
+    match read_dir(path) {
+        Ok(entries) => Ok(Some(entries)),
+        Err(error) if error.kind() == IoNotFound => Ok(None),
+        Err(error) => Err(crate::anyhow_error(error)
+            .context(format!("failed to read {description} {}", path.display()))
+            .into()),
+    }
 }
 
 fn push_unique_version(versions: &mut LocalDotnetVersions, version: &str) {

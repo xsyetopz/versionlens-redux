@@ -1,6 +1,5 @@
 use serde_json::from_str;
-use std::cmp::Ordering;
-use std::cmp::Ordering::{Equal as OrderingEqual, Greater as OrderingGreater};
+use std::cmp::Ordering::Greater as OrderingGreater;
 
 use semver::Version;
 use serde_json::Value;
@@ -9,13 +8,15 @@ use versionlens_providers::{
     RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
     release_versions_from_response_for_package,
 };
-use versionlens_suggestions::{UpdateChoice, release_update_choices_with_prereleases};
+use versionlens_suggestions::{
+    UpdateChoice, push_unique_choice, release_update_choices_with_prereleases,
+};
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::registry::RegistryContext;
 use crate::session::operation::OperationContext;
-use versionlens_model::Ecosystem::{Docker, Npm};
+use versionlens_model::Ecosystem::{Docker, GitHub, Npm};
 
 mod body;
 mod local_dotnet;
@@ -25,6 +26,33 @@ pub(crate) struct LatestFetch {
     pub(crate) latest: Option<String>,
     pub(crate) builds: Vec<String>,
     pub(crate) choices: Vec<UpdateChoice>,
+}
+
+pub(crate) fn github_current_ref_is_proven(dependency: &Dependency, body: &str) -> bool {
+    if dependency.ecosystem != GitHub {
+        return true;
+    }
+
+    let requirement = dependency.requirement.trim();
+    if requirement.is_empty()
+        || requirement.bytes().any(|byte| {
+            matches!(
+                byte,
+                b' ' | b'^' | b'~' | b'<' | b'>' | b'=' | b'*' | b'|' | b','
+            )
+        })
+    {
+        return false;
+    }
+    let requirement = requirement.trim_start_matches(['v', 'V']);
+    let package = dependency
+        .hosted_name
+        .as_deref()
+        .unwrap_or(&dependency.name);
+
+    release_versions_from_response_for_package(GitHub, package, body)
+        .iter()
+        .any(|release| release == requirement)
 }
 
 type UpdateChoices = Vec<UpdateChoice>;
@@ -86,7 +114,9 @@ impl VersionLensSession {
             });
         };
 
-        let latest = self.latest_from_fetched_body(dependency, endpoint, &body);
+        let latest = github_current_ref_is_proven(dependency, &body)
+            .then(|| self.latest_from_fetched_body(dependency, endpoint, &body))
+            .flatten();
         let choices = latest
             .as_deref()
             .map(|version| {
@@ -222,16 +252,16 @@ fn docker_update_choices(requirement: &str, latest: &str, body: &str) -> UpdateC
         |candidate| candidate.tag.as_str().to_owned(),
     );
     let mut choices = vec![];
-    push_unique_docker_choice(&mut choices, "latest", &latest_version, "update");
+    push_unique_choice(&mut choices, "latest", &latest_version, "update");
 
     if let Some(version) = docker_next_major_update(&current.numbers, &updates) {
-        push_unique_docker_choice(&mut choices, "major", version, "updateMajor");
+        push_unique_choice(&mut choices, "major", version, "updateMajor");
     }
     if let Some(version) = docker_next_minor_update(&current.numbers, &updates) {
-        push_unique_docker_choice(&mut choices, "minor", version, "updateMinor");
+        push_unique_choice(&mut choices, "minor", version, "updateMinor");
     }
     if let Some(version) = docker_next_patch_update(&current.numbers, &updates) {
-        push_unique_docker_choice(&mut choices, "patch", version, "updatePatch");
+        push_unique_choice(&mut choices, "patch", version, "updatePatch");
     }
 
     choices
@@ -261,7 +291,9 @@ fn docker_matching_tag_shape_updates(
         if candidate.suffix != current.suffix || candidate.numbers.len() != current.numbers.len() {
             continue;
         }
-        if compare_docker_numbers(&candidate.numbers, &current.numbers) != OrderingGreater {
+        if versionlens_versions::compare_numeric_segments(&candidate.numbers, &current.numbers)
+            != OrderingGreater
+        {
             continue;
         }
         updates.push(DockerTagCandidate {
@@ -270,7 +302,9 @@ fn docker_matching_tag_shape_updates(
         });
     }
 
-    updates.sort_by(|left, right| compare_docker_numbers(&left.numbers, &right.numbers));
+    updates.sort_by(|left, right| {
+        versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+    });
     updates
 }
 
@@ -284,7 +318,9 @@ fn docker_next_major_update<'a>(
             candidate.numbers.first() > current.first()
                 && docker_trailing_components_are_zero(&candidate.numbers, 1)
         })
-        .min_by(|left, right| compare_docker_numbers(&left.numbers, &right.numbers))
+        .min_by(|left, right| {
+            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+        })
         .map(|candidate| candidate.tag.as_str())
 }
 
@@ -301,7 +337,9 @@ fn docker_next_minor_update<'a>(
                 && candidate.numbers.get(1).is_some_and(|value| *value > minor)
                 && docker_trailing_components_are_zero(&candidate.numbers, 2)
         })
-        .min_by(|left, right| compare_docker_numbers(&left.numbers, &right.numbers))
+        .min_by(|left, right| {
+            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+        })
         .map(|candidate| candidate.tag.as_str())
 }
 
@@ -320,29 +358,14 @@ fn docker_next_patch_update<'a>(
                 && candidate.numbers.get(2).is_some_and(|value| *value > patch)
                 && docker_trailing_components_are_zero(&candidate.numbers, 3)
         })
-        .min_by(|left, right| compare_docker_numbers(&left.numbers, &right.numbers))
+        .min_by(|left, right| {
+            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+        })
         .map(|candidate| candidate.tag.as_str())
 }
 
 fn docker_trailing_components_are_zero(numbers: &[u64], start: usize) -> bool {
     numbers.iter().skip(start).all(|value| *value == 0)
-}
-
-fn push_unique_docker_choice(
-    choices: &mut Vec<UpdateChoice>,
-    label: &str,
-    version: &str,
-    command: &str,
-) {
-    if choices.iter().any(|choice| choice.version == version) {
-        return;
-    }
-
-    choices.push(UpdateChoice {
-        label: label.to_owned(),
-        version: version.to_owned(),
-        command: command.to_owned(),
-    });
 }
 
 fn docker_tag_shape(tag: &str) -> Option<DockerTagShape> {
@@ -351,27 +374,11 @@ fn docker_tag_shape(tag: &str) -> Option<DockerTagShape> {
         .map_or((tag, None), |(version, suffix)| {
             (version, (!suffix.is_empty()).then_some(suffix))
         });
-    let numbers = version
-        .split('.')
-        .map(str::parse::<u64>)
-        .collect::<Result<Vec<_>, _>>()
-        .ok()?;
-    (!numbers.is_empty()).then_some(DockerTagShape {
+    let numbers = versionlens_versions::numeric_segments(version)?;
+    Some(DockerTagShape {
         numbers,
         suffix: suffix.map(|value| value.to_owned()),
     })
-}
-
-fn compare_docker_numbers(left: &[u64], right: &[u64]) -> Ordering {
-    let len = left.len().max(right.len());
-    (0..len)
-        .map(|index| {
-            left.get(index)
-                .unwrap_or(&0)
-                .cmp(right.get(index).unwrap_or(&0))
-        })
-        .find(|ordering| *ordering != OrderingEqual)
-        .unwrap_or(OrderingEqual)
 }
 
 fn docker_response_tag_names(body: &str) -> Vec<String> {

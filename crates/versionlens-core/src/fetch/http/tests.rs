@@ -7,7 +7,7 @@ use versionlens_http::ACCEPT_GITHUB_V3;
 use super::{accept_header_for_request, lock_request_before_deadline, retry_policy_for_request};
 use crate::error::FetchError;
 use crate::session::operation::OperationContext;
-use versionlens_model::Ecosystem::{Docker, Npm};
+use versionlens_model::Ecosystem::*;
 
 #[test]
 fn npm_registry_requests_omit_accept_header_like_npm_registry_fetch() {
@@ -59,7 +59,7 @@ fn contended_request_lock_stops_at_the_operation_deadline() {
 
     let request_lock = crate::arc(crate::mutex(()));
     let held_guard = request_lock.lock().unwrap();
-    let waiting_lock = crate::clone_arc(&request_lock);
+    let waiting_lock = crate::support::tests::clone_arc(&request_lock);
     let (result_tx, result_rx) = sync_channel(1);
     let started = Instant::now();
     let waiter = spawn(move || {

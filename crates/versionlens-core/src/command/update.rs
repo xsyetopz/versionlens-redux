@@ -97,7 +97,13 @@ fn choice_version_for_command<'a>(
     suggestion
         .choices
         .iter()
-        .find(|choice| choice.command == command)
+        .find(|choice| choice.command == command && choice.label.starts_with("latest"))
+        .or_else(|| {
+            suggestion
+                .choices
+                .iter()
+                .find(|choice| choice.command == command)
+        })
         .map(|choice| choice.version.as_str())
 }
 

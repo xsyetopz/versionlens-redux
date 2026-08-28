@@ -1,7 +1,5 @@
 use super::{install_task_config_key, install_task_config_key_for_manifest};
-use versionlens_model::Ecosystem::{
-    Cargo, Composer, Deno, Dotnet, Dub, Go, Maven, Npm, Pub, Python, Ruby,
-};
+use versionlens_model::Ecosystem::*;
 use versionlens_model::ManifestKind::{
     DenoJson, DockerComposeYaml, Dockerfile, NpmPackageJson, PnpmYaml,
 };
