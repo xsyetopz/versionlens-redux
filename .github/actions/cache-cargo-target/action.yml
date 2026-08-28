@@ -1,0 +1,17 @@
+name: Cache Cargo registry and target
+description: Cache the shared Cargo registry and target directories for a package job.
+inputs:
+  scope:
+    description: Cache key scope for the packaged editor.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Cache Cargo registry and target
+      uses: actions/cache@v6.1.0
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ inputs.scope }}-${{ matrix.rust_target }}-${{ hashFiles('Cargo.lock') }}

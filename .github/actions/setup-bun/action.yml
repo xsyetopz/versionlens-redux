@@ -1,0 +1,9 @@
+name: Setup Bun
+description: Install the repository Bun toolchain.
+runs:
+  using: composite
+  steps:
+    - name: Install Bun
+      uses: oven-sh/setup-bun@v2.2.0
+      with:
+        bun-version: latest

@@ -1,0 +1,28 @@
+name: Setup Rust
+description: Install and select the repository Rust toolchain and optional target.
+inputs:
+  target:
+    description: Optional Rust compilation target.
+    required: false
+  components:
+    description: Space-separated optional Rust components.
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Install repository Rust toolchain
+      shell: bash
+      env:
+        RUST_TARGET: ${{ inputs.target }}
+        RUST_COMPONENTS: ${{ inputs.components }}
+      run: |
+        set -euo pipefail
+        channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+        rustup toolchain install "$channel" --profile minimal
+        rustup default "$channel"
+        for component in $RUST_COMPONENTS; do
+          rustup component add "$component" --toolchain "$channel"
+        done
+        if [[ -n "$RUST_TARGET" ]]; then
+          rustup target add "$RUST_TARGET"
+        fi

@@ -1,0 +1,15 @@
+name: Setup Bun and Rust target
+description: Install Bun and the repository Rust toolchain with a target.
+inputs:
+  target:
+    description: Rust compilation target.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: ./.github/actions/setup-bun
+    - name: Setup Rust target
+      uses: ./.github/actions/setup-rust
+      with:
+        target: ${{ inputs.target }}
