@@ -21,11 +21,7 @@ pub fn parse_cargo_config_registry_sources(text: &str) -> CargoRegistrySources {
 }
 
 fn push_registries(out: &mut CargoRegistrySources, item: Option<&Item>) {
-    let Some(table) = item.and_then(|value| value.as_table()) else {
-        return;
-    };
-
-    out.extend(table.iter().filter_map(|(name, item)| {
+    out.extend(table_items(item).filter_map(|(name, item)| {
         registry_url_item(item, "index").map(|url| CargoRegistrySource {
             name: name.to_owned(),
             url,
@@ -35,15 +31,13 @@ fn push_registries(out: &mut CargoRegistrySources, item: Option<&Item>) {
 }
 
 fn push_sources(out: &mut CargoRegistrySources, item: Option<&Item>) {
-    let Some(table) = item.and_then(|value| value.as_table()) else {
-        return;
-    };
+    out.extend(table_items(item).filter_map(|(name, item)| source_registry(name, item)));
+}
 
-    out.extend(
-        table
-            .iter()
-            .filter_map(|(name, item)| source_registry(name, item)),
-    );
+fn table_items(item: Option<&Item>) -> impl Iterator<Item = (&str, &Item)> {
+    item.and_then(Item::as_table)
+        .into_iter()
+        .flat_map(|table| table.iter())
 }
 
 fn source_registry(name: &str, item: &Item) -> Option<CargoRegistrySource> {

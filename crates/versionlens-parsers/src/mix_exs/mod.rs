@@ -1,4 +1,4 @@
-use crate::positions::offset_range;
+use crate::support;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Hex;
 
@@ -30,7 +30,7 @@ pub(crate) fn parse_mix_exs(text: &str) -> Vec<Dependency> {
                 text: line.to_owned(),
             });
         } else {
-            for (tuple_start, tuple_end) in mix_dependency_tuple_spans(line) {
+            for (tuple_start, tuple_end) in support::balanced_brace_spans(line, 0, true) {
                 if let Some(dependency) = parse_mix_dependency_source(
                     text,
                     &line[tuple_start..tuple_end],
@@ -49,35 +49,6 @@ pub(crate) fn parse_mix_exs(text: &str) -> Vec<Dependency> {
 struct MixDependencyBlock {
     start_offset: usize,
     text: String,
-}
-
-fn mix_dependency_tuple_spans(line: &str) -> Vec<(usize, usize)> {
-    let mut spans = vec![];
-    let mut depth = 0usize;
-    let mut tuple_start = None;
-
-    for (index, ch) in line.char_indices() {
-        match ch {
-            '{' => {
-                if depth == 0 {
-                    tuple_start = Some(index);
-                }
-                depth += 1;
-            }
-            '}' if depth > 0 => {
-                depth -= 1;
-                if depth == 0
-                    && let Some(start) = tuple_start.take()
-                    && line.get(start..start + 2) == Some("{:")
-                {
-                    spans.push((start, index + ch.len_utf8()));
-                }
-            }
-            _ => {}
-        }
-    }
-
-    spans
 }
 
 fn parse_mix_dependency_source(
@@ -116,22 +87,18 @@ fn parse_mix_dependency_source(
         .find(source_requirement)
         .map(|index| source_offset + tuple_start + index)?;
 
-    Some(Dependency {
-        name: package_name.to_owned(),
-        requirement: requirement.to_owned(),
+    let group = mix_dependency_group(tuple);
+    Some(support::sourced_dependency(support::SourcedDependency {
+        text,
         ecosystem: Hex,
-        group: mix_dependency_group(tuple),
-        hosted_url: hosted_url.map(|value| value.to_owned()),
-        hosted_name: hosted_name.map(|value| value.to_owned()),
-        range: offset_range(text, source_offset + tuple_start, source_offset + tuple_end),
-        requirement_range: offset_range(
-            text,
-            requirement_offset,
-            requirement_offset + source_requirement.len(),
-        ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
-    })
+        group: &group,
+        name: package_name,
+        requirement,
+        hosted_url,
+        hosted_name,
+        range: source_offset + tuple_start..source_offset + tuple_end,
+        requirement_range: requirement_offset..requirement_offset + source_requirement.len(),
+    }))
 }
 
 fn quoted_requirement(tuple: &str) -> Option<&str> {
@@ -143,11 +110,7 @@ fn quoted_requirement(tuple: &str) -> Option<&str> {
 
 fn option_requirement<'a>(tuple: &'a str, option: &str) -> Option<&'a str> {
     let key = format!("{option}: ");
-    let start = tuple.find(&key)? + key.len();
-    let value = tuple.get(start..)?.trim_start();
-    let value = value.strip_prefix('"')?;
-    let end = value.find('"')?;
-    value.get(..end)
+    support::quoted_value_after(tuple, &key)
 }
 
 fn mix_umbrella_requirement(tuple: &str) -> Option<&str> {

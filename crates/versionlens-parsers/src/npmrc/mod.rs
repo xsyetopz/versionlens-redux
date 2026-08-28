@@ -143,32 +143,14 @@ fn parse_npmrc_registry_line_with_env(
     line: &str,
     env: &[(String, String)],
 ) -> Option<NpmRegistryEntry> {
-    let trimmed = line.trim();
-    if ignored_line(trimmed) {
-        return None;
-    }
-
-    let (key, value) = trimmed.split_once('=')?;
+    let (key, value) = npmrc_key_value(line)?;
     let value = expand_env(&unquote_value(value.trim()), env);
     let url = value.trim();
     if url.is_empty() {
         return None;
     }
 
-    let key = key.trim();
-    if key == "registry" {
-        return Some(NpmRegistryEntry {
-            scope: None,
-            url: url.to_owned(),
-        });
-    }
-
-    key.strip_suffix(":registry")
-        .filter(|scope| scope.starts_with('@') && scope.len() > 1)
-        .map(|scope| NpmRegistryEntry {
-            scope: Some(scope.to_owned()),
-            url: url.to_owned(),
-        })
+    registry_entry(key, url)
 }
 
 fn parse_npm_env_registry_entry(key: &str, value: &str) -> Option<NpmRegistryEntry> {
@@ -178,6 +160,10 @@ fn parse_npm_env_registry_entry(key: &str, value: &str) -> Option<NpmRegistryEnt
         return None;
     }
 
+    registry_entry(&key, url)
+}
+
+fn registry_entry(key: &str, url: &str) -> Option<NpmRegistryEntry> {
     if key == "registry" {
         return Some(NpmRegistryEntry {
             scope: None,
@@ -194,16 +180,20 @@ fn parse_npm_env_registry_entry(key: &str, value: &str) -> Option<NpmRegistryEnt
 }
 
 fn push_npmrc_http_line(config: &mut NpmHttpConfig, line: &str, env: &[(String, String)]) {
-    let trimmed = line.trim();
-    if ignored_line(trimmed) {
-        return;
-    }
-
-    let Some((key, value)) = trimmed.split_once('=') else {
+    let Some((key, value)) = npmrc_key_value(line) else {
         return;
     };
-    let key = key.trim();
-    let value = expanded_value(value, env);
+    apply_npm_http_option(config, key, expanded_value(value, env));
+}
+
+fn push_npm_env_http_entry(config: &mut NpmHttpConfig, key: &str, value: &str) {
+    let Some(key) = normalized_npm_env_key(key) else {
+        return;
+    };
+    apply_npm_http_option(config, key.as_str(), value.trim().to_owned());
+}
+
+fn apply_npm_http_option(config: &mut NpmHttpConfig, key: &str, value: String) {
     match key {
         "strict-ssl" => config.strict_ssl = npmrc_bool(&value),
         "https-proxy" if !value.is_empty() && !config.proxy_disabled => config.proxy = Some(value),
@@ -220,33 +210,6 @@ fn push_npmrc_http_line(config: &mut NpmHttpConfig, line: &str, env: &[(String, 
         "cert" if !value.is_empty() => config.cert = Some(value),
         "key" if !value.is_empty() => config.key = Some(value),
         "fetch-timeout" => config.timeout_ms = npmrc_timeout_ms(&value),
-        _ => {}
-    }
-}
-
-fn push_npm_env_http_entry(config: &mut NpmHttpConfig, key: &str, value: &str) {
-    let Some(key) = normalized_npm_env_key(key) else {
-        return;
-    };
-    let value = value.trim();
-    match key.as_str() {
-        "strict-ssl" => config.strict_ssl = npmrc_bool(value),
-        "https-proxy" if !value.is_empty() && !config.proxy_disabled => {
-            config.proxy = Some(value.to_owned());
-        }
-        "proxy" if value == "false" => {
-            config.proxy = None;
-            config.proxy_disabled = true;
-        }
-        "proxy" if !value.is_empty() && config.proxy.is_none() && !config.proxy_disabled => {
-            config.proxy = Some(value.to_owned());
-        }
-        "noproxy" if !value.is_empty() => config.no_proxy = Some(value.to_owned()),
-        "cafile" if !value.is_empty() => config.ca_file = Some(value.to_owned()),
-        "ca" if !value.is_empty() => push_ca_value(config, value.to_owned()),
-        "cert" if !value.is_empty() => config.cert = Some(value.to_owned()),
-        "key" if !value.is_empty() => config.key = Some(value.to_owned()),
-        "fetch-timeout" => config.timeout_ms = npmrc_timeout_ms(value),
         _ => {}
     }
 }
@@ -305,24 +268,13 @@ fn push_npmrc_client_cert_entry(
     line: &str,
     env: &[(String, String)],
 ) {
-    let trimmed = line.trim();
-    if ignored_line(trimmed) {
-        return;
-    }
-
-    let Some((key, value)) = trimmed.split_once('=') else {
-        return;
-    };
-    let key = key.trim();
-    if let Some(registry) = npmrc_auth_registry(key, ":certfile") {
-        let cert_file = expanded_value(value, env);
+    if let Some((registry, cert_file)) = npmrc_expanded_entry(line, env, ":certfile") {
         if !cert_file.is_empty() {
             npm_client_cert_entry(entries, registry).cert_file = Some(cert_file);
         }
         return;
     }
-    if let Some(registry) = npmrc_auth_registry(key, ":keyfile") {
-        let key_file = expanded_value(value, env);
+    if let Some((registry, key_file)) = npmrc_expanded_entry(line, env, ":keyfile") {
         if !key_file.is_empty() {
             npm_client_cert_entry(entries, registry).key_file = Some(key_file);
         }
@@ -350,13 +302,7 @@ fn npm_username_password_auth_into_entry(auth: NpmUsernamePasswordAuth) -> Optio
 }
 
 fn parse_npmrc_auth_line_with_env(line: &str, env: &[(String, String)]) -> NpmAuthResult {
-    let trimmed = line.trim();
-    if ignored_line(trimmed) {
-        return None;
-    }
-
-    let (key, value) = trimmed.split_once('=')?;
-    let key = key.trim();
+    let (key, value) = npmrc_key_value(line)?;
     parse_bearer_auth(key, value, env).or_else(|| parse_basic_auth(key, value, env))
 }
 
@@ -365,26 +311,36 @@ fn push_npmrc_username_password_auth(
     line: &str,
     env: &[(String, String)],
 ) {
-    let trimmed = line.trim();
-    if ignored_line(trimmed) {
-        return;
-    }
-
-    let Some((key, value)) = trimmed.split_once('=') else {
-        return;
-    };
-    let key = key.trim();
-    if let Some(registry) = npmrc_auth_registry(key, ":username") {
-        let username = expanded_value(value, env);
+    if let Some((registry, username)) = npmrc_expanded_entry(line, env, ":username") {
         let auth = npm_username_password_auth(auths, registry);
         auth.username = (!username.is_empty()).then_some(username);
         return;
     }
-    if let Some(registry) = npmrc_auth_registry(key, ":_password") {
-        let password = decoded_npm_password(&expanded_value(value, env));
+    if let Some((registry, password)) = npmrc_expanded_entry(line, env, ":_password") {
         let auth = npm_username_password_auth(auths, registry);
-        auth.password = password.filter(|password| !password.is_empty());
+        auth.password = decoded_npm_password(&password).filter(|password| !password.is_empty());
     }
+}
+
+fn npmrc_expanded_entry(
+    line: &str,
+    env: &[(String, String)],
+    suffix: &str,
+) -> Option<(String, String)> {
+    let (key, value) = npmrc_key_value(line)?;
+    Some((
+        npmrc_auth_registry(key, suffix)?,
+        expanded_value(value, env),
+    ))
+}
+
+fn npmrc_key_value(line: &str) -> Option<(&str, &str)> {
+    let trimmed = line.trim();
+    if ignored_line(trimmed) {
+        return None;
+    }
+    let (key, value) = trimmed.split_once('=')?;
+    Some((key.trim(), value))
 }
 
 fn npm_username_password_auth(

@@ -77,11 +77,13 @@ fn parses_npmrc_basic_auth_entries() {
         &env,
     );
 
-    assert_eq!(entries.len(), 2);
-    assert_eq!(entries[0].registry, "//registry.example.test");
-    assert_eq!(entries[0].header_value, "Basic dXNlcjpwYXNz");
-    assert_eq!(entries[1].registry, "//scope.example.test/npm");
-    assert_eq!(entries[1].header_value, "Basic literal-basic");
+    crate::support::tests::assert_auth_entries(
+        &entries,
+        &[
+            ("//registry.example.test", "Basic dXNlcjpwYXNz"),
+            ("//scope.example.test/npm", "Basic literal-basic"),
+        ],
+    );
 }
 
 #[test]
@@ -101,11 +103,13 @@ fn parses_npmrc_username_password_auth_entries() {
         ],
     );
 
-    assert_eq!(entries.len(), 2);
-    assert_eq!(entries[0].registry, "//registry.example.test");
-    assert_eq!(entries[0].header_value, "Basic dXNlcjpwYXNz");
-    assert_eq!(entries[1].registry, "//scope.example.test/npm");
-    assert_eq!(entries[1].header_value, "Basic c2NvcGVkOnNlY3JldA==");
+    crate::support::tests::assert_auth_entries(
+        &entries,
+        &[
+            ("//registry.example.test", "Basic dXNlcjpwYXNz"),
+            ("//scope.example.test/npm", "Basic c2NvcGVkOnNlY3JldA=="),
+        ],
+    );
 }
 
 #[test]

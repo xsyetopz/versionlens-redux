@@ -1,24 +1,17 @@
-use crate::{DocumentInput, document::test_support::extract_range, parse_document};
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use crate::document::test_support::{extract_range, parse_fixture};
 use versionlens_model::Ecosystem::Hex;
 
 #[test]
 fn parses_mix_exs_dependency_tuple_forms() {
     let text = package_file_fixture("parses-mix-exs-dependency-tuple-forms.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/mix.exs".to_owned(),
-        language_id: "elixir".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/mix.exs", "elixir");
 
     assert_eq!(dependencies.len(), 5);
-    assert_eq!(dependencies[0].ecosystem, Hex);
-    assert_eq!(dependencies[0].group, "deps");
-    assert_eq!(dependencies[0].name, "plug");
-    assert_eq!(dependencies[0].requirement, ">= 1.15.0");
+    crate::support::tests::assert_dependency(
+        &dependencies,
+        crate::support::tests::DependencyExpectation::new(0, Hex, "deps", "plug", ">= 1.15.0"),
+    );
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         ">= 1.15.0"
@@ -38,12 +31,7 @@ fn parses_mix_exs_dependency_tuple_forms() {
 fn parses_mix_exs_umbrella_dependency_tuple() {
     let text = package_file_fixture("parses-mix-exs-umbrella-dependency-tuple.txt");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/mix.exs".to_owned(),
-        language_id: "elixir".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/mix.exs", "elixir");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "shared_app");
@@ -59,20 +47,9 @@ fn parses_mix_exs_umbrella_dependency_tuple() {
 fn parses_mix_exs_multiline_dependency_tuple() {
     let text = package_file_fixture("parses-mix-exs-multiline-dependency-tuplemix.exs");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/mix.exs".to_owned(),
-        language_id: "elixir".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/mix.exs", "elixir");
 
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].name, "gettext");
-    assert_eq!(
-        dependencies[0].requirement,
-        "https://github.com/elixir-lang/gettext.git"
-    );
-    assert_eq!(dependencies[0].hosted_url.as_deref(), Some("git"));
+    crate::support::tests::assert_single_git_dependency(&dependencies, "gettext");
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "https://github.com/elixir-lang/gettext.git"
@@ -83,37 +60,18 @@ fn parses_mix_exs_multiline_dependency_tuple() {
 fn parses_mix_exs_dependencies_from_compact_list() {
     let text = package_file_fixture("parses-mix-exs-dependencies-from-compact-listmix.exs");
 
-    let dependencies = parse_document(&DocumentInput {
-        uri: "file:///work/mix.exs".to_owned(),
-        language_id: "elixir".to_owned(),
-        text: text.to_owned(),
-        workspace_root: None,
-    });
+    let dependencies = parse_fixture(text, "file:///work/mix.exs", "elixir");
 
     assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].name, "plug");
-    assert_eq!(dependencies[0].requirement, ">= 1.15.0");
-    assert_eq!(dependencies[1].name, "phoenix");
-    assert_eq!(dependencies[1].requirement, "~> 1.7");
+    crate::support::tests::assert_two_dependency_requirements(
+        &dependencies,
+        "plug",
+        ">= 1.15.0",
+        "phoenix",
+        "~> 1.7",
+    );
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/mix_exs/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture("tests/fixtures/versionlens-parsers/src/mix_exs/tests", name)
 }
