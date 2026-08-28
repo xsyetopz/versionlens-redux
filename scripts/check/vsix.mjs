@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-
 import { constants as bufferConstants } from "node:buffer";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -57,7 +56,7 @@ const expectedEntries = [
   "extension/native/versionlens_napi.node",
   "extension/package.json",
   "extension/readme.md",
-  "extension/src/schema/versionlens.multi-registries.json",
+  "extension/src/schema/multi-registries.json",
 ];
 
 function stableJson(value) {

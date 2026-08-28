@@ -24,7 +24,7 @@
     "noUnusedParameters": true,
     "sourceMap": true,
     "strict": true,
-    "target": "ES2022",
+    "target": "es2022",
     "types": ["bun", "node"]
   }
 }

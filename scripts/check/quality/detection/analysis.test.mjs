@@ -8,7 +8,7 @@ import {
   registerMultilineParameterCase,
   registerQualityShapeCase,
   registerStringCommentCase,
-} from "./analysis/type-cases.mjs";
+} from "./analysis/type-cases.test.mjs";
 import {
   registerQualityShapeCase0,
   registerQualityShapeCase1,
@@ -19,7 +19,7 @@ import {
   registerQualityShapeCase6,
   registerQualityShapeCase7,
   registerQualityShapeCase8,
-} from "./analysis/usage.mjs";
+} from "./analysis/usage.test.mjs";
 
 const { describe, expect, it } = Bun.jest(import.meta.path);
 

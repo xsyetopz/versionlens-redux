@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-
 import process from "node:process";
 import { runRepositoryCheck } from "./quality/repository.mjs";
 
@@ -8,4 +7,6 @@ const message = result.error ?? result.output;
 if (message) {
   console.error(message);
 }
-process.exit(result.exitCode);
+if (result.exitCode !== 0) {
+  process.exit(result.exitCode);
+}

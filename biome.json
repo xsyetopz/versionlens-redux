@@ -11,7 +11,6 @@
       "**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc}",
       "!!**/node_modules",
       "!!**/dist",
-      "!!**/coverage",
       "!!**/*.generated.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"
     ],
     "ignoreUnknown": true
@@ -33,11 +32,12 @@
     "rules": {
       "preset": "recommended",
       "complexity": {
-        "useLiteralKeys": "off"
+        "useLiteralKeys": "error"
       }
     },
     "domains": {
       "project": "recommended",
+      "react": "recommended",
       "test": "recommended",
       "types": "recommended"
     }

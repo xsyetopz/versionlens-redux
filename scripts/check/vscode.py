@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
-
 from __future__ import annotations
 
-from pathlib import Path
 import json
 import os
 import re
 import sys
+from pathlib import Path
 from typing import Any
 
 ROOTS = [Path("packages/vscode-extension/src"), Path("tests")]
@@ -19,7 +17,10 @@ APPROVED_PACKAGE_OVERRIDES: dict[str, Any] = {
     "displayName": "VersionLens Redux",
     "publisher": "xsyetopz",
     "engines": {"vscode": ">=1.75.0"},
-    "repository": {"type": "git", "url": "https://github.com/xsyetopz/versionlens-redux.git"},
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/xsyetopz/versionlens-redux.git",
+    },
 }
 INTERNAL_REGISTERED_COMMANDS = {
     "versionlens.suggestion.onChooseBuild",
@@ -27,9 +28,13 @@ INTERNAL_REGISTERED_COMMANDS = {
     "versionlens.suggestion.onUpdateDependency",
 }
 
-IMPORT_PATTERN = re.compile(r"\b(?:import|export)\b(?:[^\"'`]*?\bfrom\s*)?[\"']([^\"']+)[\"']|createRequire\([^)]*\)\([\"']([^\"']+)[\"']\)")
+IMPORT_PATTERN = re.compile(
+    r"\b(?:import|export)\b(?:[^\"'`]*?\bfrom\s*)?[\"']([^\"']+)[\"']|createRequire\([^)]*\)\([\"']([^\"']+)[\"']\)"
+)
 JSON_BRIDGE_PATTERN = re.compile(r"\bJSON\.(?:parse|stringify)\s*\(")
-CONFIG_READ_PATTERN = re.compile(r"\b(?:configuredValue(?:<[^>]+>)?|get(?:<[^>]+>)?)\(\s*\"([^\"]+)\"")
+CONFIG_READ_PATTERN = re.compile(
+    r"\b(?:configuredValue(?:<[^>]+>)?|get(?:<[^>]+>)?)\(\s*\"([^\"]+)\""
+)
 CONFIG_PAIR_PATTERN = re.compile(r"\[\s*\"[^\"]+\"\s*,\s*\"([^\"]+)\"")
 CONFIG_TUPLE_PATTERN = re.compile(r"\[\s*\"([^\"]+)\"\s*,\s*\"([^\"]+)\"")
 CONFIG_KEY_PATTERN = re.compile(r"^[a-z][a-z.]*\.[A-Za-z]")
@@ -38,7 +43,9 @@ MARKDOWN_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 IMAGE_ASSET_PATTERN = re.compile(r"^images/")
 ABSOLUTE_URL_PATTERN = re.compile(r"^[a-z]+:", re.IGNORECASE)
 PACKAGED_IMAGE_BUDGET_BYTES = 147_000
-FILE_PATTERN_DETAILS_PATTERN = re.compile(r"\[\s*\"([^\"]+)\"\s*,\s*\"([^\"]+)\"\s*,\s*\[([^\]]*)\]")
+FILE_PATTERN_DETAILS_PATTERN = re.compile(
+    r"\[\s*\"([^\"]+)\"\s*,\s*\"([^\"]+)\"\s*,\s*\[([^\]]*)\]"
+)
 STRING_LITERAL_PATTERN = re.compile(r"\"([^\"]+)\"")
 RUST_COMMAND_PATTERN = re.compile(r"\"(?P<command>versionlens\.[^\"]+)\"")
 REGISTER_COMMAND_PATTERN = re.compile(r"registerCommand\(\s*\"([^\"]+)\"")
@@ -86,11 +93,15 @@ def as_posix(path: str | Path) -> str:
 
 
 def is_allowed_import(specifier: str) -> bool:
-    return specifier.startswith(".") or specifier.startswith("node:") or specifier in ALLOWED_BARE_IMPORTS
+    return (
+        specifier.startswith(".")
+        or specifier.startswith("node:")
+        or specifier in ALLOWED_BARE_IMPORTS
+    )
 
 
 def const_section(source: str, name: str) -> str:
-    start = source.find(f"export const {name}")
+    start = source.find(f"const {name}")
     if start < 0:
         return ""
     end = source.find("] as const;", start)
@@ -98,7 +109,11 @@ def const_section(source: str, name: str) -> str:
 
 
 def config_tuples(source: str) -> list[tuple[str, str]]:
-    return [(m.group(1), m.group(2)) for m in CONFIG_TUPLE_PATTERN.finditer(source) if CONFIG_KEY_PATTERN.search(m.group(2))]
+    return [
+        (m.group(1), m.group(2))
+        for m in CONFIG_TUPLE_PATTERN.finditer(source)
+        if CONFIG_KEY_PATTERN.search(m.group(2))
+    ]
 
 
 def file_pattern_details(source: str) -> dict[str, dict[str, Any]]:
@@ -106,49 +121,90 @@ def file_pattern_details(source: str) -> dict[str, dict[str, Any]]:
     for match in FILE_PATTERN_DETAILS_PATTERN.finditer(source):
         details[match.group(2)] = {
             "ecosystem": match.group(1),
-            "languages": [entry.group(1) for entry in STRING_LITERAL_PATTERN.finditer(match.group(3))],
+            "languages": [
+                entry.group(1)
+                for entry in STRING_LITERAL_PATTERN.finditer(match.group(3))
+            ],
         }
     return details
 
 
 def rust_string_array(offenders: list[str], file_path: str, name: str) -> list[str]:
     source = read(file_path)
-    pattern = re.compile(rf"const\s+{re.escape(name)}:\s*&\[&str\]\s*=\s*&\[(?P<body>[\s\S]*?)\];")
+    pattern = re.compile(
+        rf"const\s+{re.escape(name)}:\s*&\[&str\]\s*=\s*&\[(?P<body>[\s\S]*?)\];"
+    )
     match = pattern.search(source)
     if not match:
         offenders.append(f"{file_path} missing Rust array {name}")
         return []
-    return [entry.group(1) for entry in STRING_LITERAL_PATTERN.finditer(match.group("body"))]
+    return [
+        entry.group(1) for entry in STRING_LITERAL_PATTERN.finditer(match.group("body"))
+    ]
 
 
-def dependency_properties_default(offenders: list[str], extension_package: dict[str, Any], key: str) -> list[Any]:
-    setting = (((extension_package.get("contributes") or {}).get("configuration") or {}).get("properties") or {}).get(
-        f"versionlens.{key}.dependencyProperties"
-    )
+def dependency_properties_default(
+    offenders: list[str], extension_package: dict[str, Any], key: str
+) -> list[Any]:
+    setting = (
+        ((extension_package.get("contributes") or {}).get("configuration") or {}).get(
+            "properties"
+        )
+        or {}
+    ).get(f"versionlens.{key}.dependencyProperties")
     default = setting.get("default") if isinstance(setting, dict) else None
     if not isinstance(default, list):
-        offenders.append(f"versionlens.{key}.dependencyProperties default is not an array")
+        offenders.append(
+            f"versionlens.{key}.dependencyProperties default is not an array"
+        )
         return []
     return default
 
 
 def menu_commands(package_json: dict[str, Any], menu: str) -> list[Any]:
-    return [item.get("command") for item in (((package_json.get("contributes") or {}).get("menus") or {}).get(menu) or [])]
+    return [
+        item.get("command")
+        for item in (
+            ((package_json.get("contributes") or {}).get("menus") or {}).get(menu) or []
+        )
+    ]
 
 
 def menu_placements(package_json: dict[str, Any], menu: str) -> list[str]:
-    return [f"{item.get('command')}\0{item.get('group') or ''}" for item in (((package_json.get("contributes") or {}).get("menus") or {}).get(menu) or [])]
+    return [
+        f"{item.get('command')}\0{item.get('group') or ''}"
+        for item in (
+            ((package_json.get("contributes") or {}).get("menus") or {}).get(menu) or []
+        )
+    ]
 
 
 def json_validation_file_matches(package_json: dict[str, Any]) -> list[Any]:
-    return [item.get("fileMatch") for item in ((package_json.get("contributes") or {}).get("jsonValidation") or [])]
+    return [
+        item.get("fileMatch")
+        for item in (
+            (package_json.get("contributes") or {}).get("jsonValidation") or []
+        )
+    ]
 
 
 def rust_versionlens_command_strings(file_path: str) -> list[str]:
-    return [match.group("command") for match in RUST_COMMAND_PATTERN.finditer(read(file_path))]
+    return [
+        match.group("command")
+        for match in RUST_COMMAND_PATTERN.finditer(read(file_path))
+    ]
 
 
-def collect_package_asset_paths(value: Any, paths: list[str] | None = None) -> list[str]:
+def rust_presentation_sources() -> list[Path]:
+    presentation_root = Path("crates/versionlens-core/src/presentation")
+    if not presentation_root.is_dir():
+        return []
+    return sorted(presentation_root.rglob("*.rs"))
+
+
+def collect_package_asset_paths(
+    value: Any, paths: list[str] | None = None
+) -> list[str]:
     if paths is None:
         paths = []
     if not value:
@@ -170,8 +226,10 @@ def collect_package_asset_paths(value: Any, paths: list[str] | None = None) -> l
 def markdown_asset_path(markdown_path: Path, asset_path: str) -> str | None:
     if ABSOLUTE_URL_PATTERN.search(asset_path):
         return None
-    joined = (markdown_path.parent / asset_path).resolve(strict=False)
-    package_root = Path("packages/vscode-extension").resolve(strict=False)
+    # Keep the package-relative path lexical: the VS Code package mirror is
+    # intentionally backed by symlinks to the repository's canonical assets.
+    joined = Path(os.path.normpath(str(markdown_path.parent / asset_path)))
+    package_root = Path("packages/vscode-extension")
     try:
         package_relative = joined.relative_to(package_root).as_posix()
     except ValueError:
@@ -180,15 +238,23 @@ def markdown_asset_path(markdown_path: Path, asset_path: str) -> str | None:
 
 
 def collect_markdown_asset_paths(markdown_path: Path) -> list[str]:
-    return [path for match in MARKDOWN_IMAGE_PATTERN.finditer(read(markdown_path)) if (path := markdown_asset_path(markdown_path, match.group(1)))]
+    return [
+        path
+        for match in MARKDOWN_IMAGE_PATTERN.finditer(read(markdown_path))
+        if (path := markdown_asset_path(markdown_path, match.group(1)))
+    ]
 
 
 def check_adapter_source_layout(offenders: list[str]) -> None:
     for entry in Path("packages/vscode-extension/src").iterdir():
         if entry.is_dir() and entry.name not in ALLOWED_EXTENSION_SOURCE_DIRS:
-            offenders.append(f"packages/vscode-extension/src/{entry.name}/ is not adapter-owned source")
+            offenders.append(
+                f"packages/vscode-extension/src/{entry.name}/ is not adapter-owned source"
+            )
         if entry.is_file() and entry.name not in ALLOWED_ROOT_SOURCE_FILES:
-            offenders.append(f"packages/vscode-extension/src/{entry.name} must live under extension/ or be an entrypoint")
+            offenders.append(
+                f"packages/vscode-extension/src/{entry.name} must live under extension/ or be an entrypoint"
+            )
 
 
 def check_typescript_adapter_files(offenders: list[str]) -> None:
@@ -198,7 +264,9 @@ def check_typescript_adapter_files(offenders: list[str]) -> None:
             file_label = as_posix(file_path)
             for index, line in enumerate(source.split("\n"), start=1):
                 if JSON_BRIDGE_PATTERN.search(line):
-                    offenders.append(f"{file_label}:{index} uses JSON bridge in TypeScript adapter")
+                    offenders.append(
+                        f"{file_label}:{index} uses JSON bridge in TypeScript adapter"
+                    )
             for match in IMPORT_PATTERN.finditer(source):
                 specifier = match.group(1) or match.group(2)
                 if not specifier:
@@ -206,23 +274,40 @@ def check_typescript_adapter_files(offenders: list[str]) -> None:
                 if not is_allowed_import(specifier):
                     offenders.append(f"{file_label} imports {specifier}")
                 if specifier in FORBIDDEN_NODE_IMPORTS:
-                    offenders.append(f"{file_label} imports {specifier}; Rust owns CLI/domain discovery")
+                    offenders.append(
+                        f"{file_label} imports {specifier}; Rust owns CLI/domain discovery"
+                    )
 
 
-def check_package_metadata(offenders: list[str], extension_package: dict[str, Any]) -> None:
+def check_package_metadata(
+    offenders: list[str], extension_package: dict[str, Any]
+) -> None:
     for field, expected in APPROVED_PACKAGE_OVERRIDES.items():
         if stable_json(extension_package.get(field)) != stable_json(expected):
-            offenders.append(f"package.json {field} differs from approved local rebrand")
+            offenders.append(
+                f"package.json {field} differs from approved local rebrand"
+            )
     if extension_package.get("dependencies"):
-        offenders.append("packages/vscode-extension/package.json must not have runtime dependencies")
+        offenders.append(
+            "packages/vscode-extension/package.json must not have runtime dependencies"
+        )
     if extension_package.get("devDependencies"):
-        offenders.append("packages/vscode-extension/package.json must not have package-local devDependencies; use the root Bun workspace")
+        offenders.append(
+            "packages/vscode-extension/package.json must not have package-local devDependencies; use the root Bun workspace"
+        )
     if extension_package.get("main") != "./dist/extension.js":
-        offenders.append("packages/vscode-extension/package.json main must point at ./dist/extension.js")
+        offenders.append(
+            "packages/vscode-extension/package.json main must point at ./dist/extension.js"
+        )
 
 
 def check_assets(offenders: list[str], extension_package: dict[str, Any]) -> None:
-    package_asset_paths = collect_package_asset_paths({"icon": extension_package.get("icon"), "contributes": extension_package.get("contributes")})
+    package_asset_paths = collect_package_asset_paths(
+        {
+            "icon": extension_package.get("icon"),
+            "contributes": extension_package.get("contributes"),
+        }
+    )
     markdown_asset_paths: list[str] = []
     for file_path in package_files("packages/vscode-extension"):
         if file_path.name.endswith(".md"):
@@ -233,92 +318,200 @@ def check_assets(offenders: list[str], extension_package: dict[str, Any]) -> Non
             offenders.append(f"package asset {asset_path} does not exist")
     packaged_image_paths = package_files("packages/vscode-extension/images")
     for image_path in packaged_image_paths:
-        package_relative_path = os.path.relpath(image_path, "packages/vscode-extension").replace(os.sep, "/")
-        if IMAGE_ASSET_PATTERN.search(package_relative_path) and package_relative_path not in referenced_asset_paths:
+        package_relative_path = os.path.relpath(
+            image_path, "packages/vscode-extension"
+        ).replace(os.sep, "/")
+        if (
+            IMAGE_ASSET_PATTERN.search(package_relative_path)
+            and package_relative_path not in referenced_asset_paths
+        ):
             offenders.append(f"{package_relative_path} is packaged but unreferenced")
-    packaged_image_bytes = sum(image_path.stat().st_size for image_path in packaged_image_paths)
+    packaged_image_bytes = sum(
+        image_path.stat().st_size for image_path in packaged_image_paths
+    )
     if packaged_image_bytes > PACKAGED_IMAGE_BUDGET_BYTES:
-        offenders.append(f"packaged image assets use {packaged_image_bytes} bytes; budget is {PACKAGED_IMAGE_BUDGET_BYTES} bytes")
+        offenders.append(
+            f"packaged image assets use {packaged_image_bytes} bytes; budget is {PACKAGED_IMAGE_BUDGET_BYTES} bytes"
+        )
 
 
 def check_vscodeignore(offenders: list[str]) -> None:
     package_ignore_path = Path("packages/vscode-extension/.vscodeignore")
-    package_ignore_lines = read(package_ignore_path).split("\n") if package_ignore_path.exists() else []
-    for required_file in ["README.md", "LICENSE", "src/schema/versionlens.multi-registries.json"]:
+    package_ignore_lines = (
+        read(package_ignore_path).split("\n") if package_ignore_path.exists() else []
+    )
+    for required_file in [
+        "README.md",
+        "LICENSE",
+        "src/schema/multi-registries.json",
+    ]:
         if not Path("packages/vscode-extension", required_file).exists():
             offenders.append(f"packages/vscode-extension missing {required_file}")
-    for required_ignore in ["src/**", "dist/*.node", "*.vsix", "*.tsbuildinfo", "tsconfig.json", "node_modules/**"]:
+    for required_ignore in [
+        "src/**",
+        "dist/*.node",
+        "*.vsix",
+        "*.tsbuildinfo",
+        "tsconfig.json",
+        "node_modules/**",
+    ]:
         if required_ignore not in package_ignore_lines:
-            offenders.append(f"{package_ignore_path.as_posix()} missing {required_ignore}")
+            offenders.append(
+                f"{package_ignore_path.as_posix()} missing {required_ignore}"
+            )
     for forbidden_ignore in ["native/**", "native/*.node", "*.node", "**/*.node"]:
         if forbidden_ignore in package_ignore_lines:
-            offenders.append(f"{package_ignore_path.as_posix()} must not ignore packaged native module via {forbidden_ignore}")
+            offenders.append(
+                f"{package_ignore_path.as_posix()} must not ignore packaged native module via {forbidden_ignore}"
+            )
 
 
 def check_commands(offenders: list[str], extension_package: dict[str, Any]) -> None:
     command_source = "\n".join(
         read(command_path)
-        for command_path in package_files("packages/vscode-extension/src/extension/commands")
+        for command_path in package_files(
+            "packages/vscode-extension/src/extension/commands"
+        )
         if command_path.suffix == ".ts"
     )
-    registered_commands = set([m.group(1) for m in REGISTER_COMMAND_PATTERN.finditer(command_source)] + [m.group(1) for m in COMMAND_TUPLE_PATTERN.finditer(command_source)])
-    contributed_commands_list = [command.get("command") for command in ((extension_package.get("contributes") or {}).get("commands") or [])]
+    registered_commands = set(
+        [m.group(1) for m in REGISTER_COMMAND_PATTERN.finditer(command_source)]
+        + [m.group(1) for m in COMMAND_TUPLE_PATTERN.finditer(command_source)]
+    )
+    contributed_commands_list = [
+        command.get("command")
+        for command in (
+            (extension_package.get("contributes") or {}).get("commands") or []
+        )
+    ]
     contributed_commands = set(contributed_commands_list)
-    local_activation_events = extension_package.get("activationEvents") or []
-    for item in ((extension_package.get("contributes") or {}).get("jsonValidation") or []):
+    extension_package.get("activationEvents") or []
+    for item in (extension_package.get("contributes") or {}).get(
+        "jsonValidation"
+    ) or []:
         if not Path("packages/vscode-extension", item.get("url", "")).exists():
             offenders.append(f"jsonValidation URL {item.get('url')} does not exist")
 
     for command in registered_commands:
-        if command not in contributed_commands and command not in INTERNAL_REGISTERED_COMMANDS:
+        if (
+            command not in contributed_commands
+            and command not in INTERNAL_REGISTERED_COMMANDS
+        ):
             offenders.append(f"{command} is registered but not contributed")
     for command in contributed_commands:
         if command not in registered_commands:
             offenders.append(f"{command} is contributed but not registered")
-    for command in rust_versionlens_command_strings("crates/versionlens-core/src/presentation.rs"):
-        if command not in contributed_commands and command not in INTERNAL_REGISTERED_COMMANDS:
-            offenders.append(f"{command} is emitted by Rust but not contributed")
-        if command not in registered_commands:
-            offenders.append(f"{command} is emitted by Rust but not registered")
+    presentation_sources = rust_presentation_sources()
+    if not presentation_sources:
+        offenders.append("Rust presentation source directory is missing")
+    for source_path in presentation_sources:
+        for command in rust_versionlens_command_strings(source_path):
+            if (
+                command not in contributed_commands
+                and command not in INTERNAL_REGISTERED_COMMANDS
+            ):
+                offenders.append(f"{command} is emitted by Rust but not contributed")
+            if command not in registered_commands:
+                offenders.append(f"{command} is emitted by Rust but not registered")
 
 
-def check_configuration(offenders: list[str], extension_package: dict[str, Any]) -> None:
-    contributed_configuration = (((extension_package.get("contributes") or {}).get("configuration") or {}).get("properties") or {})
+def check_configuration(
+    offenders: list[str], extension_package: dict[str, Any]
+) -> None:
+    contributed_configuration = (
+        (extension_package.get("contributes") or {}).get("configuration") or {}
+    ).get("properties") or {}
     contributed_settings = set(contributed_configuration.keys())
 
     dependency_default_specs = [
-        ("cargo", "crates/versionlens-parsers/src/cargo_toml/paths.rs", "CARGO_DEPENDENCY_PATHS"),
-        ("composer", "crates/versionlens-parsers/src/json_manifest/paths.rs", "COMPOSER_DEPENDENCY_PATHS"),
-        ("deno", "crates/versionlens-parsers/src/json_manifest/paths.rs", "DENO_DEPENDENCY_PATHS"),
-        ("dotnet", "crates/versionlens-parsers/src/dotnet_xml.rs", "DOTNET_DEPENDENCY_PATHS"),
-        ("dub", "crates/versionlens-parsers/src/json_manifest/paths.rs", "DUB_DEPENDENCY_PATHS"),
-        ("maven", "crates/versionlens-parsers/src/maven_xml.rs", "MAVEN_DEPENDENCY_PATHS"),
-        ("npm", "crates/versionlens-parsers/src/json_manifest/paths.rs", "NPM_DEPENDENCY_PATHS"),
-        ("pnpm", "crates/versionlens-parsers/src/pnpm_yaml/paths.rs", "PNPM_DEPENDENCY_PATHS"),
-        ("pub", "crates/versionlens-parsers/src/pubspec_yaml/paths.rs", "PUBSPEC_DEPENDENCY_PATHS"),
-        ("pypi", "crates/versionlens-parsers/src/pyproject_toml/paths/defaults.rs", "PYPI_DEPENDENCY_PATHS"),
+        (
+            "cargo",
+            "crates/versionlens-parsers/src/cargo_toml/paths.rs",
+            "CARGO_DEPENDENCY_PATHS",
+        ),
+        (
+            "composer",
+            "crates/versionlens-parsers/src/json_manifest/paths.rs",
+            "COMPOSER_DEPENDENCY_PATHS",
+        ),
+        (
+            "deno",
+            "crates/versionlens-parsers/src/json_manifest/paths.rs",
+            "DENO_DEPENDENCY_PATHS",
+        ),
+        (
+            "dotnet",
+            "crates/versionlens-parsers/src/dotnet_xml/mod.rs",
+            "DOTNET_DEPENDENCY_PATHS",
+        ),
+        (
+            "dub",
+            "crates/versionlens-parsers/src/json_manifest/paths.rs",
+            "DUB_DEPENDENCY_PATHS",
+        ),
+        (
+            "maven",
+            "crates/versionlens-parsers/src/maven_xml/mod.rs",
+            "MAVEN_DEPENDENCY_PATHS",
+        ),
+        (
+            "npm",
+            "crates/versionlens-parsers/src/json_manifest/paths.rs",
+            "NPM_DEPENDENCY_PATHS",
+        ),
+        (
+            "pnpm",
+            "crates/versionlens-parsers/src/pnpm_yaml/paths.rs",
+            "PNPM_DEPENDENCY_PATHS",
+        ),
+        (
+            "pub",
+            "crates/versionlens-parsers/src/pubspec_yaml/paths.rs",
+            "PUBSPEC_DEPENDENCY_PATHS",
+        ),
+        (
+            "pypi",
+            "crates/versionlens-parsers/src/pyproject_toml/paths/defaults.rs",
+            "PYPI_DEPENDENCY_PATHS",
+        ),
     ]
     for key, rust_path, rust_const in dependency_default_specs:
         rust_defaults = set(rust_string_array(offenders, rust_path, rust_const))
-        for dependency_path in dependency_properties_default(offenders, extension_package, key):
+        for dependency_path in dependency_properties_default(
+            offenders, extension_package, key
+        ):
             if dependency_path not in rust_defaults:
-                offenders.append(f"versionlens.{key}.dependencyProperties default {dependency_path} is not recognized by {rust_const}")
+                offenders.append(
+                    f"versionlens.{key}.dependencyProperties default {dependency_path} is not recognized by {rust_const}"
+                )
 
-    config_keys_source = "\n".join(
-        read(f"packages/vscode-extension/src/extension/config/keys/{name}.ts")
-        for name in ["cache", "dependency-properties", "files", "http", "prerelease", "registry"]
+    config_keys_source = read(
+        "packages/vscode-extension/src/extension/config/keys.ts"
     )
-    config_key_pairs = [m.group(1) for m in CONFIG_PAIR_PATTERN.finditer(config_keys_source) if CONFIG_KEY_PATTERN.search(m.group(1))]
+    config_key_pairs = [
+        m.group(1)
+        for m in CONFIG_PAIR_PATTERN.finditer(config_keys_source)
+        if CONFIG_KEY_PATTERN.search(m.group(1))
+    ]
     config_reads: list[str] = []
     for file_path in walk_ts("packages/vscode-extension/src"):
         if not file_path.name.endswith(".test.ts"):
-            config_reads.extend(match.group(1) for match in CONFIG_READ_PATTERN.finditer(read(file_path)))
-    versionlens_config_keys = {key for key in [*config_key_pairs, *config_reads] if key not in {"proxy", "proxyStrictSSL"}}
+            config_reads.extend(
+                match.group(1)
+                for match in CONFIG_READ_PATTERN.finditer(read(file_path))
+            )
+    versionlens_config_keys = {
+        key
+        for key in [*config_key_pairs, *config_reads]
+        if key not in {"proxy", "proxyStrictSSL"}
+    }
     for key in versionlens_config_keys:
         if f"versionlens.{key}" not in contributed_settings:
             offenders.append(f"versionlens.{key} is read but not contributed")
 
-    file_pattern_keys = dict(config_tuples(const_section(config_keys_source, "filePatternKeys")))
+    file_pattern_keys = dict(
+        config_tuples(const_section(config_keys_source, "filePatternKeys"))
+    )
     rust_supported_file_defaults = {
         "deno.files": "**/{deno.json,deno.jsonc,import_map.json,jsr.json,jsr.jsonc}",
         "docker.files": "**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml}",
@@ -329,29 +522,77 @@ def check_configuration(offenders: list[str], extension_package: dict[str, Any])
     }
     rust_supported_file_languages = {"dotnet.files": ["xml", "json", "jsonc"]}
     for key, expected_default in rust_supported_file_defaults.items():
-        contributed_default = (contributed_configuration.get(f"versionlens.{key}") or {}).get("default")
+        contributed_default = (
+            contributed_configuration.get(f"versionlens.{key}") or {}
+        ).get("default")
         if contributed_default != expected_default:
-            offenders.append(f"versionlens.{key} default does not cover Rust-supported manifest variants")
+            offenders.append(
+                f"versionlens.{key} default does not cover Rust-supported manifest variants"
+            )
     file_pattern_details_by_key = file_pattern_details(config_keys_source)
     for key, expected_languages in rust_supported_file_languages.items():
         languages = (file_pattern_details_by_key.get(key) or {}).get("languages") or []
         for language in expected_languages:
             if language not in languages:
-                offenders.append(f"{key} selectors missing {language} for Rust-supported manifests")
+                offenders.append(
+                    f"{key} selectors missing {language} for Rust-supported manifests"
+                )
 
     provider_setting_lists: list[tuple[str, set[str]]] = [
-        (".apiUrl", {key for _, key in config_tuples(const_section(config_keys_source, "registryUrlKeys"))}),
+        (
+            ".apiUrl",
+            {
+                key
+                for _, key in config_tuples(
+                    const_section(config_keys_source, "registryUrlKeys")
+                )
+            },
+        ),
         (".files", set(file_pattern_keys.values())),
-        (".prereleaseTagFilter", {key for _, key in config_tuples(const_section(config_keys_source, "prereleaseTagKeys"))}),
-        (".http.strictSSL", {key for _, key in config_tuples(const_section(config_keys_source, "providerStrictSslKeys"))}),
-        (".caching.duration", {key for _, key in config_tuples(const_section(config_keys_source, "providerCacheKeys"))}),
-        (".dependencyProperties", {key for _, key in config_tuples(const_section(config_keys_source, "dependencyPropertyKeys"))}),
+        (
+            ".prereleaseTagFilter",
+            {
+                key
+                for _, key in config_tuples(
+                    const_section(config_keys_source, "prereleaseTagKeys")
+                )
+            },
+        ),
+        (
+            ".http.strictSSL",
+            {
+                key
+                for _, key in config_tuples(
+                    const_section(config_keys_source, "providerStrictSslKeys")
+                )
+            },
+        ),
+        (
+            ".caching.duration",
+            {
+                key
+                for _, key in config_tuples(
+                    const_section(config_keys_source, "providerCacheKeys")
+                )
+            },
+        ),
+        (
+            ".dependencyProperties",
+            {
+                key
+                for _, key in config_tuples(
+                    const_section(config_keys_source, "dependencyPropertyKeys")
+                )
+            },
+        ),
     ]
     for key in contributed_settings:
         short_key = re.sub(r"^versionlens\.", "", key)
         for suffix, known_keys in provider_setting_lists:
             if short_key.endswith(suffix) and short_key not in known_keys:
-                offenders.append(f"{key} is contributed but missing from extension/config/keys/*.ts")
+                offenders.append(
+                    f"{key} is contributed but missing from extension/config/keys.ts"
+                )
 
 
 def main() -> int:

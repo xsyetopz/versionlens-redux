@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
-
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
 import re
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 
 MAX_FIELDS = 10
 SPLIT_HINT = (
@@ -32,7 +30,9 @@ TYPESCRIPT_INTERFACE_PATTERN = re.compile(
 )
 TYPESCRIPT_CLASS_PATTERN = re.compile(r"\bclass\s+([A-Za-z_$][\w$]*)[^\{]*\{")
 TYPESCRIPT_TYPE_ALIAS_PATTERN = re.compile(r"\btype\s+([A-Za-z_$][\w$]*)\s*=")
-TYPESCRIPT_CONST_OBJECT_PATTERN = re.compile(r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)[^=]*=\s*\{")
+TYPESCRIPT_CONST_OBJECT_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)[^=]*=\s*\{"
+)
 TYPESCRIPT_REFERENCE_NAME_PATTERN = re.compile(r"^([A-Za-z_$][\w$]*)\b")
 WHITESPACE_PATTERN = re.compile(r"\s+")
 BLOCK_COMMENT_PATTERN = re.compile(r"/\*[\s\S]*?\*/")
@@ -116,33 +116,33 @@ def update_depth(state: DepthState, char: str) -> None:
 
 
 def is_top_level(state: DepthState) -> bool:
-    return state.brace_depth == 0 and state.paren_depth == 0 and state.bracket_depth == 0
+    return (
+        state.brace_depth == 0 and state.paren_depth == 0 and state.bracket_depth == 0
+    )
 
 
-def find_matching_brace(source: str, open_index: int) -> int:
+def find_matching_delimiter(source: str, open_index: int, opening: str, closing: str) -> int:
     state = DepthState()
     for index in range(open_index, len(source)):
         char = source[index]
         previous = source[index - 1] if index > 0 else ""
         if track_quote(state, char, previous):
             continue
-        update_depth(state, char)
+        if char == opening:
+            state.brace_depth += 1
+        elif char == closing:
+            state.brace_depth -= 1
         if state.brace_depth == 0:
             return index
     return -1
 
 
+def find_matching_brace(source: str, open_index: int) -> int:
+    return find_matching_delimiter(source, open_index, "{", "}")
+
+
 def find_matching_paren(source: str, open_index: int) -> int:
-    state = DepthState()
-    for index in range(open_index, len(source)):
-        char = source[index]
-        previous = source[index - 1] if index > 0 else ""
-        if track_quote(state, char, previous):
-            continue
-        update_depth(state, char)
-        if state.paren_depth == 0:
-            return index
-    return -1
+    return find_matching_delimiter(source, open_index, "(", ")")
 
 
 def find_type_alias_end(source: str, body_start: int) -> int:
@@ -228,7 +228,9 @@ def base_names(source: str) -> list[str]:
     return names
 
 
-def collect_named_object_fields(source: str, language: str, patterns: list[re.Pattern[str]]) -> CollectedObjects:
+def collect_named_object_fields(
+    source: str, language: str, patterns: list[re.Pattern[str]]
+) -> CollectedObjects:
     objects: list[ObjectInfo] = []
     inherited: list[InheritedObject] = []
     field_counts: dict[str, int] = {}
@@ -238,16 +240,26 @@ def collect_named_object_fields(source: str, language: str, patterns: list[re.Pa
             close_index = find_matching_brace(source, open_index)
             if close_index < 0:
                 continue
-            fields = len(top_level_fields(source[open_index + 1 : close_index], language))
+            fields = len(
+                top_level_fields(source[open_index + 1 : close_index], language)
+            )
             if language == "typescript" and pattern is TYPESCRIPT_CLASS_PATTERN:
-                fields += count_typescript_constructor_parameter_fields(source[open_index + 1 : close_index])
+                fields += count_typescript_constructor_parameter_fields(
+                    source[open_index + 1 : close_index]
+                )
             name = match.group(1)
             field_counts[name] = fields
-            obj = ObjectInfo(fields=fields, line=line_number(source, match.start()), name=name)
+            obj = ObjectInfo(
+                fields=fields, line=line_number(source, match.start()), name=name
+            )
             objects.append(obj)
             if language == "typescript" and len(match.groups()) >= 2 and match.group(2):
-                inherited.append(InheritedObject(bases=base_names(match.group(2)), object=obj))
-    return CollectedObjects(field_counts=field_counts, inherited=inherited, objects=objects)
+                inherited.append(
+                    InheritedObject(bases=base_names(match.group(2)), object=obj)
+                )
+    return CollectedObjects(
+        field_counts=field_counts, inherited=inherited, objects=objects
+    )
 
 
 def type_reference_name(type_part: str) -> str | None:
@@ -269,7 +281,9 @@ def top_level_object_literal_field_count(type_part: str) -> int:
             close_index = find_matching_brace(type_part, index)
             if close_index < 0:
                 return fields
-            fields += len(top_level_fields(type_part[index + 1 : close_index], "typescript"))
+            fields += len(
+                top_level_fields(type_part[index + 1 : close_index], "typescript")
+            )
             index = close_index + 1
             continue
         update_depth(state, char)
@@ -277,7 +291,9 @@ def top_level_object_literal_field_count(type_part: str) -> int:
     return fields
 
 
-def type_alias_intersection_part_fields(type_part: str, field_counts: dict[str, int]) -> int:
+def type_alias_intersection_part_fields(
+    type_part: str, field_counts: dict[str, int]
+) -> int:
     own_fields = top_level_object_literal_field_count(type_part)
     if own_fields > 0:
         return own_fields
@@ -286,14 +302,19 @@ def type_alias_intersection_part_fields(type_part: str, field_counts: dict[str, 
 
 
 def type_alias_variant_fields(variant: str, field_counts: dict[str, int]) -> int:
-    return sum(type_alias_intersection_part_fields(part, field_counts) for part in split_top_level(variant, {"&"}))
+    return sum(
+        type_alias_intersection_part_fields(part, field_counts)
+        for part in split_top_level(variant, {"&"})
+    )
 
 
 def type_alias_object_name(alias_name: str, variant_index: int) -> str:
     return alias_name if variant_index == 1 else f"{alias_name}#{variant_index}"
 
 
-def scan_type_alias_objects(source: str, field_counts: dict[str, int], name: str, body: str, body_start: int) -> tuple[int, list[ObjectInfo]]:
+def scan_type_alias_objects(
+    source: str, field_counts: dict[str, int], name: str, body: str, body_start: int
+) -> tuple[int, list[ObjectInfo]]:
     objects: list[ObjectInfo] = []
     variant_index = 0
     max_fields = 0
@@ -303,25 +324,39 @@ def scan_type_alias_objects(source: str, field_counts: dict[str, int], name: str
             continue
         variant_index += 1
         objects.append(
-            ObjectInfo(fields=fields, line=line_number(source, body_start + start), name=type_alias_object_name(name, variant_index))
+            ObjectInfo(
+                fields=fields,
+                line=line_number(source, body_start + start),
+                name=type_alias_object_name(name, variant_index),
+            )
         )
         max_fields = max(max_fields, fields)
     return max_fields, objects
 
 
-def collect_type_alias_objects(source: str, field_counts: dict[str, int]) -> list[ObjectInfo]:
+def collect_type_alias_objects(
+    source: str, field_counts: dict[str, int]
+) -> list[ObjectInfo]:
     objects: list[ObjectInfo] = []
     for match in TYPESCRIPT_TYPE_ALIAS_PATTERN.finditer(source):
         body_start = source.find("=", match.start()) + 1
         body_end = find_type_alias_end(source, body_start)
-        max_fields, scanned = scan_type_alias_objects(source, field_counts, match.group(1), source[body_start:body_end], body_start)
+        max_fields, scanned = scan_type_alias_objects(
+            source,
+            field_counts,
+            match.group(1),
+            source[body_start:body_end],
+            body_start,
+        )
         objects.extend(scanned)
         if max_fields > 0:
             field_counts[match.group(1)] = max_fields
     return objects
 
 
-def rust_enum_variant_object(source: str, enum_name: str, variant: str, variant_offset: int) -> ObjectInfo | None:
+def rust_enum_variant_object(
+    source: str, enum_name: str, variant: str, variant_offset: int
+) -> ObjectInfo | None:
     named_open = variant.find("{")
     tuple_open = variant.find("(")
     if named_open >= 0 and (tuple_open < 0 or named_open < tuple_open):
@@ -343,7 +378,11 @@ def rust_enum_variant_object(source: str, enum_name: str, variant: str, variant_
         if is_tuple
         else len(top_level_fields(body, "rust"))
     )
-    return ObjectInfo(fields=fields, line=line_number(source, variant_offset), name=f"{enum_name}::{name}")
+    return ObjectInfo(
+        fields=fields,
+        line=line_number(source, variant_offset),
+        name=f"{enum_name}::{name}",
+    )
 
 
 def collect_rust_enum_variant_objects(source: str) -> list[ObjectInfo]:
@@ -356,7 +395,9 @@ def collect_rust_enum_variant_objects(source: str) -> list[ObjectInfo]:
         enum_body = source[open_index + 1 : close_index]
         for variant in split_top_level(strip_comments(enum_body), {","}):
             variant_offset = open_index + 1 + enum_body.find(variant)
-            obj = rust_enum_variant_object(source, match.group(1), variant, variant_offset)
+            obj = rust_enum_variant_object(
+                source, match.group(1), variant, variant_offset
+            )
             if obj:
                 objects.append(obj)
     return objects
@@ -371,10 +412,18 @@ def collect_rust_tuple_struct_objects(source: str) -> list[ObjectInfo]:
             continue
         fields = sum(
             1
-            for field in split_top_level(strip_comments(source[open_index + 1 : close_index]), {","})
+            for field in split_top_level(
+                strip_comments(source[open_index + 1 : close_index]), {","}
+            )
             if field.strip()
         )
-        objects.append(ObjectInfo(fields=fields, line=line_number(source, match.start()), name=match.group(1)))
+        objects.append(
+            ObjectInfo(
+                fields=fields,
+                line=line_number(source, match.start()),
+                name=match.group(1),
+            )
+        )
     return objects
 
 
@@ -385,10 +434,18 @@ def collect_typescript_const_object_literals(source: str) -> list[ObjectInfo]:
         close_index = find_matching_brace(source, open_index)
         if close_index < 0:
             continue
-        fields = len(top_level_fields(source[open_index + 1 : close_index], "typescript"))
+        fields = len(
+            top_level_fields(source[open_index + 1 : close_index], "typescript")
+        )
         if fields == 0:
             continue
-        objects.append(ObjectInfo(fields=fields, line=line_number(source, match.start()), name=match.group(1)))
+        objects.append(
+            ObjectInfo(
+                fields=fields,
+                line=line_number(source, match.start()),
+                name=match.group(1),
+            )
+        )
     return objects
 
 
@@ -410,7 +467,11 @@ def build_typescript_field_counts(files: list[Path]) -> dict[str, int]:
     ts_files = [file for file in files if file.suffix == ".ts"]
     for file_path in ts_files:
         source = file_path.read_text()
-        collected = collect_named_object_fields(source, "typescript", [TYPESCRIPT_INTERFACE_PATTERN, TYPESCRIPT_CLASS_PATTERN])
+        collected = collect_named_object_fields(
+            source,
+            "typescript",
+            [TYPESCRIPT_INTERFACE_PATTERN, TYPESCRIPT_CLASS_PATTERN],
+        )
         merge_field_counts(field_counts, collected.field_counts)
 
     remaining_passes = len(ts_files)
@@ -427,11 +488,19 @@ def build_typescript_field_counts(files: list[Path]) -> dict[str, int]:
     return field_counts
 
 
-def collect_objects(file_path: Path, global_ts_field_counts: dict[str, int], checked_files: dict[str, int]) -> list[ObjectInfo]:
+def collect_objects(
+    file_path: Path,
+    global_ts_field_counts: dict[str, int],
+    checked_files: dict[str, int],
+) -> list[ObjectInfo]:
     source = file_path.read_text()
     language = "rust" if file_path.suffix == ".rs" else "typescript"
     checked_files[language] += 1
-    patterns = [RUST_STRUCT_PATTERN] if language == "rust" else [TYPESCRIPT_INTERFACE_PATTERN, TYPESCRIPT_CLASS_PATTERN]
+    patterns = (
+        [RUST_STRUCT_PATTERN]
+        if language == "rust"
+        else [TYPESCRIPT_INTERFACE_PATTERN, TYPESCRIPT_CLASS_PATTERN]
+    )
     collected = collect_named_object_fields(source, language, patterns)
     if language == "typescript":
         field_counts = dict(global_ts_field_counts)
@@ -467,7 +536,10 @@ def main() -> int:
 
     if offenders:
         for file_path, obj in offenders:
-            print(f"{file_path}:{obj.line} {obj.name} has {obj.fields} fields; {SPLIT_HINT}", file=sys.stderr)
+            print(
+                f"{file_path}:{obj.line} {obj.name} has {obj.fields} fields; {SPLIT_HINT}",
+                file=sys.stderr,
+            )
         return 1
     return 0
 
