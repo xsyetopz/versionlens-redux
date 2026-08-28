@@ -47,8 +47,4 @@ pub(crate) use support::{
     anyhow_error, arc, boxed, default, duration_from_millis, memory_cache, mutex, parse_semver,
     parse_semver_req, path, recover_poison, string_from_utf8,
 };
-#[cfg(test)]
-pub(crate) use support::{
-    clone_arc, session_config_from_input, system_time_now, tcp_listener_bind,
-};
 pub use versionlens_suggestions::{Suggestion, SuggestionStatus};

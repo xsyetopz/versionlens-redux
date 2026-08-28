@@ -2,11 +2,16 @@ use std::collections::{HashMap, hash_map::RandomState};
 use std::sync::{Mutex, Weak};
 
 use versionlens_cache::{CacheKey, MemoryCache};
-use versionlens_model::{Ecosystem, ManifestKind};
+use versionlens_model::{Ecosystem, ManifestKind, TextEdit};
 use versionlens_providers::VulnerabilityAdvisory;
 use versionlens_suggestions::Suggestion;
 
 use crate::config::SessionConfig;
+use crate::contract::{
+    AuthorizationRequestPayload, ResolveDocumentOutput, ResolveDocumentOutputParts,
+    resolve_document_output,
+};
+use crate::suggestion::into_suggestion_payloads;
 use cache::CachedLatest;
 
 mod cache;
@@ -68,5 +73,30 @@ pub fn version_lens_session(config: SessionConfig) -> VersionLensSession {
         suggestion_cache: crate::mutex(crate::memory_cache(cache_ttl)),
         vulnerability_cache: crate::mutex(crate::memory_cache(cache_ttl)),
         dotnet_registry_sources: crate::mutex(None),
+    }
+}
+
+pub(crate) fn finish_resolve_output(
+    suggestions: Vec<Suggestion>,
+    mut parts: ResolveDocumentOutputParts,
+) -> ResolveDocumentOutput {
+    parts.suggestions = into_suggestion_payloads(suggestions);
+    resolve_document_output(parts)
+}
+
+pub(crate) fn resolve_output_parts(
+    edits: Vec<TextEdit>,
+    authorization_required_count: u32,
+    authorization_required_requests: Vec<AuthorizationRequestPayload>,
+    vulnerable_update_count: u32,
+) -> ResolveDocumentOutputParts {
+    ResolveDocumentOutputParts {
+        suggestions: Vec::new(),
+        edits,
+        authorization_required_count,
+        authorization_required_requests,
+        vulnerable_update_count,
+        vulnerable_update_package: None,
+        vulnerable_update_version: None,
     }
 }

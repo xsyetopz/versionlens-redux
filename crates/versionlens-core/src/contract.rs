@@ -31,6 +31,28 @@ pub struct ResolveDocumentOutput {
     pub vulnerable_update_version: Option<String>,
 }
 
+pub(crate) struct ResolveDocumentOutputParts {
+    pub(crate) suggestions: Vec<SuggestionPayload>,
+    pub(crate) edits: Vec<TextEdit>,
+    pub(crate) authorization_required_count: u32,
+    pub(crate) authorization_required_requests: Vec<AuthorizationRequestPayload>,
+    pub(crate) vulnerable_update_count: u32,
+    pub(crate) vulnerable_update_package: Option<String>,
+    pub(crate) vulnerable_update_version: Option<String>,
+}
+
+pub(crate) fn resolve_document_output(parts: ResolveDocumentOutputParts) -> ResolveDocumentOutput {
+    ResolveDocumentOutput {
+        suggestions: parts.suggestions,
+        edits: parts.edits,
+        authorization_required_count: parts.authorization_required_count,
+        authorization_required_requests: parts.authorization_required_requests,
+        vulnerable_update_count: parts.vulnerable_update_count,
+        vulnerable_update_package: parts.vulnerable_update_package,
+        vulnerable_update_version: parts.vulnerable_update_version,
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthorizationRequestPayload {
@@ -44,4 +66,14 @@ pub struct RegistryResponseInput {
     pub package: String,
     pub ecosystem: Ecosystem,
     pub body: String,
+}
+
+impl RegistryResponseInput {
+    pub fn new(package: impl Into<String>, ecosystem: Ecosystem, body: impl Into<String>) -> Self {
+        Self {
+            package: package.into(),
+            ecosystem,
+            body: body.into(),
+        }
+    }
 }

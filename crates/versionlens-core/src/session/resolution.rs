@@ -4,8 +4,8 @@ use versionlens_suggestions::Suggestion;
 use versionlens_versions::ProjectVersionBump;
 
 use super::operation::OperationContext;
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
 use crate::registry::RegistryContext;
 
 pub(crate) struct ResolutionRequest<'a> {

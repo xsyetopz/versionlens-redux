@@ -17,7 +17,6 @@ use crate::command::{filter_update_command, project_version_bump};
 use crate::contract::{RegistryResponseInput, ResolveDocumentOutput};
 use crate::project::is_project_version_dependency;
 use crate::status::to_u32;
-use crate::suggestion::into_suggestion_payloads;
 
 pub struct ApplyCommandRequest<'a> {
     pub input: DocumentInput,
@@ -113,16 +112,15 @@ impl VersionLensSession {
         let authorization_required_requests = operation.take_authorization_requests();
         let authorization_required_count =
             authorization_required_count.max(to_u32(authorization_required_requests.len()));
-        let suggestion_payloads = into_suggestion_payloads(suggestions);
-        ResolveDocumentOutput {
-            suggestions: suggestion_payloads,
+        let mut parts = super::resolve_output_parts(
             edits,
             authorization_required_count,
             authorization_required_requests,
             vulnerable_update_count,
-            vulnerable_update_package,
-            vulnerable_update_version,
-        }
+        );
+        parts.vulnerable_update_package = vulnerable_update_package;
+        parts.vulnerable_update_version = vulnerable_update_version;
+        super::finish_resolve_output(suggestions, parts)
     }
 
     pub(crate) fn vulnerable_update_count(
