@@ -3,21 +3,21 @@ use serde::{Deserialize, Serialize};
 use crate::Ecosystem;
 use crate::Ecosystem::{
     AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Cran, Deno, Docker, Dotnet,
-    Dub, Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm,
+    Dub, GitHub, Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm,
     Opam as OpamEcosystem, Pub, Python, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
 };
 use crate::ManifestKind::{
     AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
     ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
     DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson, DotnetXml,
-    DubJson, DubSdl, DuneProject, Gemfile, GleamToml, GoMod, GradleBuild, GradleSettings,
-    GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml,
-    JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap,
-    MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam,
-    PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml, PythonPipfile,
-    PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
-    SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
-    ZigBuildZon,
+    DubJson, DubSdl, DuneProject, Gemfile, GitHubActions, GleamToml, GoMod, GradleBuild,
+    GradleSettings, GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson,
+    JuliaManifestToml, JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec,
+    MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5,
+    NpmPackageYaml, Opam, PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml,
+    PubspecYaml, PythonPipfile, PythonPyprojectToml, PythonRequirementsTxt, RDescription,
+    RebarConfig, RenvLock, RubyGemspec, SbtBuild, StackYaml, SwiftPackage, TerraformTf,
+    UnityProjectManifestJson, VcpkgJson, XmakeLua, ZigBuildZon,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -90,9 +90,10 @@ pub enum ManifestKind {
     PubspecYaml,
     VersionLensMultiRegistries,
     Unknown,
+    GitHubActions,
 }
 
-const MANIFEST_ECOSYSTEMS: &[(ManifestKind, Ecosystem)] = &[
+pub(crate) const MANIFEST_ECOSYSTEMS: &[(ManifestKind, Ecosystem)] = &[
     (CargoToml, Cargo),
     (ComposerJson, Composer),
     (DenoJson, Deno),
@@ -158,12 +159,61 @@ const MANIFEST_ECOSYSTEMS: &[(ManifestKind, Ecosystem)] = &[
     (PythonRequirementsTxt, Python),
     (PubspecOverridesYaml, Pub),
     (PubspecYaml, Pub),
+    (GitHubActions, GitHub),
 ];
 
 pub fn ecosystem_for_manifest(kind: ManifestKind) -> Option<Ecosystem> {
     MANIFEST_ECOSYSTEMS
         .iter()
         .find_map(|(candidate, ecosystem)| (*candidate == kind).then_some(*ecosystem))
+}
+
+pub fn provider_name_for_manifest(kind: ManifestKind) -> Option<&'static str> {
+    match kind {
+        CargoToml => Some("cargo"),
+        ComposerJson => Some("composer"),
+        DenoJson | DenoImportMapJson | JsrJson => Some("deno"),
+        DotnetProjectJson | DotnetXml | PaketDependencies | PaketReferences => Some("dotnet"),
+        DockerComposeYaml | Dockerfile => Some("docker"),
+        KustomizationYaml => Some("kustomize"),
+        DubJson | DubSdl => Some("dub"),
+        Gemfile | RubyGemspec => Some("ruby"),
+        GoMod => Some("golang"),
+        MavenPomXml
+        | GradleBuild
+        | GradleSettings
+        | GradleVersionCatalogToml
+        | SbtBuild
+        | ClojureDepsEdn
+        | LeiningenProjectClj => Some("maven"),
+        MixExs | RebarConfig | GleamToml => Some("hex"),
+        Opam | DuneProject => Some("opam"),
+        Cabal | CabalProject | StackYaml => Some("hackage"),
+        JuliaProjectToml | JuliaManifestToml => Some("julia"),
+        RDescription | RenvLock => Some("cran"),
+        ConanfileTxt | ConanfilePy => Some("conan"),
+        VcpkgJson => Some("vcpkg"),
+        Cmake | XmakeLua | MesonWrap | BazelWorkspace => Some("cpp"),
+        SwiftPackage => Some("swift"),
+        ZigBuildZon => Some("zig"),
+        Nimble => Some("nim"),
+        LuaRockspec => Some("luarocks"),
+        Cpanfile => Some("cpan"),
+        HaxelibJson => Some("haxelib"),
+        TerraformTf => Some("terraform"),
+        HelmChartYaml => Some("helm"),
+        AnsibleGalaxyRequirementsYaml => Some("ansible"),
+        BazelModule => Some("bazel"),
+        NixFlake => Some("nix"),
+        UnityProjectManifestJson => Some("unity"),
+        CocoaPodsPodfile => Some("cocoapods"),
+        NpmPackageJson | NpmPackageJson5 | NpmPackageYaml => Some("npm"),
+        PnpmYaml => Some("pnpm"),
+        PubspecOverridesYaml | PubspecYaml => Some("pub"),
+        PythonPipfile | PythonPyprojectToml | PythonRequirementsTxt => Some("pypi"),
+        GitHubActions => Some("github"),
+        ManifestKind::Unknown | ManifestKind::VersionLensMultiRegistries => None,
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::read;
 use std::sync::{Mutex, OnceLock};
+use std::time::Duration;
 use ureq::Error as UreqError;
 
 use ureq::Agent;
@@ -26,7 +27,7 @@ pub(super) fn agent(config: &HttpConfig) -> Result<Agent, HttpError> {
     if let Some(key) = cache_key(config) {
         let cached_agent = agent_cache()
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&key)
             .cloned();
         if let Some(agent) = cached_agent {
@@ -36,7 +37,7 @@ pub(super) fn agent(config: &HttpConfig) -> Result<Agent, HttpError> {
         let agent = build_agent(config)?;
         let mut cache = agent_cache()
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         return Ok(cache.entry(key).or_insert(agent).clone());
     }
 
@@ -44,7 +45,7 @@ pub(super) fn agent(config: &HttpConfig) -> Result<Agent, HttpError> {
 }
 
 fn agent_cache() -> &'static Mutex<HashMap<AgentCacheKey, Agent>> {
-    AGENT_CACHE.get_or_init(|| crate::mutex(<HashMap<AgentCacheKey, Agent>>::new()))
+    AGENT_CACHE.get_or_init(|| Mutex::new(<HashMap<AgentCacheKey, Agent>>::new()))
 }
 
 fn cache_key(config: &HttpConfig) -> Option<AgentCacheKey> {
@@ -67,8 +68,8 @@ fn cache_key(config: &HttpConfig) -> Option<AgentCacheKey> {
 
 fn build_agent(config: &HttpConfig) -> Result<Agent, HttpError> {
     let timeout_ms = config.timeout_ms;
-    let mut builder = ureq::config::Config::builder()
-        .timeout_global(Some(crate::duration_from_millis(timeout_ms)));
+    let mut builder =
+        ureq::config::Config::builder().timeout_global(Some(Duration::from_millis(timeout_ms)));
 
     builder = match &config.proxy {
         Some(proxy) => builder.proxy(Some(ureq::Proxy::new(proxy)?)),
@@ -81,14 +82,7 @@ fn build_agent(config: &HttpConfig) -> Result<Agent, HttpError> {
 }
 
 #[cfg(test)]
-pub(super) fn uses_same_agent_cache_key(first: &HttpConfig, second: &HttpConfig) -> bool {
-    cache_key(first) == cache_key(second)
-}
-
-#[cfg(test)]
-pub(super) fn uses_agent_cache(config: &HttpConfig) -> bool {
-    cache_key(config).is_some()
-}
+pub(super) mod tests;
 
 fn root_certs_from_certs(certs: &StaticCertificates) -> RootCerts {
     <RootCerts>::new_with_certs(certs)

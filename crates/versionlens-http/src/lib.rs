@@ -2,6 +2,7 @@ mod client;
 mod config;
 mod error;
 mod retry;
+#[cfg(test)]
 mod support;
 
 pub use client::{
@@ -15,6 +16,3 @@ pub use config::{
 };
 pub use error::HttpError;
 pub use retry::{RetryPolicy, disabled_retry_policy, npm_registry_fetch_retry_policy};
-#[cfg(test)]
-pub(crate) use support::io_error_from_kind;
-pub(crate) use support::{duration_from_millis, mutex, recover_poison};

@@ -19,4 +19,22 @@ pub use range::{
     requirement_is_parseable, requirement_is_parseable_for_dialect, requirement_satisfies_latest,
     requirement_satisfies_latest_for_dialect, update_level,
 };
+pub use support::{compare_numeric_segments, compare_numeric_text, numeric_segments};
+
+pub fn composer_requirement_is_parseable(requirement: &str) -> bool {
+    let requirement = requirement.trim();
+    if requirement.is_empty() || normalized_version(requirement).is_some() {
+        return !requirement.is_empty();
+    }
+    let normalized = requirement
+        .split_whitespace()
+        .map(strip_version_prefix)
+        .collect::<Vec<_>>()
+        .join(" ");
+    parse_semver_req(&normalized)
+        .or_else(|_| {
+            parse_semver_req(&normalized.split_whitespace().collect::<Vec<_>>().join(", "))
+        })
+        .is_ok()
+}
 pub(crate) use support::{parse_semver, parse_semver_req, semver_version};

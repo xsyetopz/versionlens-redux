@@ -8,9 +8,6 @@ use ureq::Error::{
     Timeout as UreqTimeout,
 };
 
-#[cfg(test)]
-const INITIAL_BACKOFF_MS: u64 = 100;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RetryPolicy {
     max_retries: u32,
@@ -78,16 +75,6 @@ impl RetryPolicy {
             .saturating_mul(multiplier)
             .min(self.max_timeout_ms)
     }
-}
-
-#[cfg(test)]
-pub(crate) fn should_retry_error() -> bool {
-    false
-}
-
-#[cfg(test)]
-pub(crate) fn retry_backoff_ms(attempt: u32) -> u64 {
-    INITIAL_BACKOFF_MS * 2_u64.pow(attempt)
 }
 
 #[cfg(test)]

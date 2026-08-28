@@ -1,0 +1,12 @@
+[package]
+name = "versionlens-test-support"
+description = "Shared test-only fixture support for Version Lens crates."
+publish = false
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true

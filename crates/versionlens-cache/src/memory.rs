@@ -48,11 +48,3 @@ impl<T> MemoryCache<T> {
 
 #[cfg(test)]
 mod tests;
-
-#[cfg(test)]
-pub(crate) fn memory_cache<T>(ttl: Duration) -> MemoryCache<T> {
-    MemoryCache {
-        ttl,
-        entries: crate::default(),
-    }
-}

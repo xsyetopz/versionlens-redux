@@ -106,7 +106,7 @@ fn request_with_timeout<B>(
     let Some(remaining) = remaining else {
         return request;
     };
-    let timeout = crate::duration_from_millis(config.timeout_ms).min(remaining);
+    let timeout = Duration::from_millis(config.timeout_ms).min(remaining);
     request.config().timeout_global(Some(timeout)).build()
 }
 

@@ -1,33 +1,31 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct HttpConfig {
-    pub timeout_ms: u64,
-    pub strict_ssl: bool,
-    pub proxy: Option<String>,
-    pub ca_file: Option<String>,
-    pub ca: Option<String>,
-    pub cert_file: Option<String>,
-    pub key_file: Option<String>,
-    pub cert: Option<String>,
-    pub key: Option<String>,
-    pub auth_headers: Vec<HttpHeader>,
+macro_rules! define_http_config {
+    ($name:ident, $(#[$attr:meta])*, $timeout:ty, $strict_ssl:ty, $proxy:ty, $ca_file:ty, $ca:ty, $cert_file:ty, $key_file:ty, $cert:ty, $key:ty, $headers:ty) => {
+        $(#[$attr])*
+        pub struct $name {
+            pub timeout_ms: $timeout,
+            pub strict_ssl: $strict_ssl,
+            pub proxy: $proxy,
+            pub ca_file: $ca_file,
+            pub ca: $ca,
+            pub cert_file: $cert_file,
+            pub key_file: $key_file,
+            pub cert: $cert,
+            pub key: $key,
+            pub auth_headers: $headers,
+        }
+    };
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct HttpConfigInput {
-    pub timeout_ms: Option<u64>,
-    pub strict_ssl: Option<bool>,
-    pub proxy: Option<String>,
-    pub ca_file: Option<String>,
-    pub ca: Option<String>,
-    pub cert_file: Option<String>,
-    pub key_file: Option<String>,
-    pub cert: Option<String>,
-    pub key: Option<String>,
-    pub auth_headers: Option<Vec<HttpHeaderInput>>,
-}
+define_http_config!(HttpConfig,
+    #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")],
+    u64, bool, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Vec<HttpHeader>);
+
+define_http_config!(HttpConfigInput,
+    #[derive(Debug, PartialEq, Eq)],
+    Option<u64>, Option<bool>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<Vec<HttpHeaderInput>>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,6 +40,16 @@ pub struct HttpHeaderInput {
     pub name: String,
     pub value: String,
     pub url: Option<String>,
+}
+
+impl HttpHeaderInput {
+    pub fn new(name: impl Into<String>, value: impl Into<String>, url: Option<String>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+            url,
+        }
+    }
 }
 
 fn http_header_from_input(input: HttpHeaderInput) -> Option<HttpHeader> {

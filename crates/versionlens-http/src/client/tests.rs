@@ -11,7 +11,7 @@ use crate::HttpError::{Client as HttpClientError, Io as HttpIoError};
 
 use super::{
     ACCEPT_GITHUB_V3, ACCEPT_JSON,
-    agent::{uses_agent_cache, uses_same_agent_cache_key},
+    agent::tests::{uses_agent_cache, uses_same_agent_cache_key},
     get_text, get_text_with_accept_and_retry_timeout, post_text, request_with_headers,
 };
 
@@ -81,8 +81,7 @@ fn configured_ca_file_is_loaded_before_requests() {
 
     let result = get_text("not a url", &config);
 
-    assert!(result.is_err());
-    assert!(matches!(result, Err(HttpIoError(_))));
+    assert_io_error(result);
 }
 
 #[test]
@@ -126,8 +125,7 @@ fn configured_direct_ca_pem_is_loaded_before_requests() {
 
     let result = get_text("not a url", &config);
 
-    assert!(result.is_err());
-    assert!(matches!(result, Err(HttpClientError(_))));
+    assert_client_error(result);
 }
 
 #[test]
@@ -140,8 +138,7 @@ fn configured_direct_client_cert_pem_is_loaded_before_requests() {
 
     let result = get_text("not a url", &config);
 
-    assert!(result.is_err());
-    assert!(matches!(result, Err(HttpClientError(_))));
+    assert_client_error(result);
 }
 
 #[test]
@@ -154,8 +151,7 @@ fn configured_client_cert_files_are_loaded_before_requests() {
 
     let result = get_text("not a url", &config);
 
-    assert!(result.is_err());
-    assert!(matches!(result, Err(HttpIoError(_))));
+    assert_io_error(result);
 }
 
 #[test]
@@ -183,6 +179,16 @@ fn applies_default_json_accept_header_to_request() {
     );
 
     assert_eq!(request.headers_ref().unwrap()["accept"], "application/json");
+}
+
+fn assert_io_error(result: Result<String, crate::HttpError>) {
+    assert!(result.is_err());
+    assert!(matches!(result, Err(HttpIoError(_))));
+}
+
+fn assert_client_error(result: Result<String, crate::HttpError>) {
+    assert!(result.is_err());
+    assert!(matches!(result, Err(HttpClientError(_))));
 }
 
 #[test]

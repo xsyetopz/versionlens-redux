@@ -37,5 +37,5 @@ fn retry_delay(
     policy
         .retry_backoff_ms(attempt)
         .filter(|_| policy.should_retry_error(method, error))
-        .map(crate::duration_from_millis)
+        .map(std::time::Duration::from_millis)
 }

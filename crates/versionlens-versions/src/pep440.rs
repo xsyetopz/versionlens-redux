@@ -188,7 +188,6 @@ fn release_end(value: &str) -> Option<usize> {
 }
 
 fn parse_prerelease(suffix: &mut &str) -> Result<Option<Prerelease>, ()> {
-    let candidate = trim_separator(suffix);
     let markers = [
         ("preview", PrereleaseKind::ReleaseCandidate),
         ("alpha", PrereleaseKind::Alpha),
@@ -199,16 +198,7 @@ fn parse_prerelease(suffix: &mut &str) -> Result<Option<Prerelease>, ()> {
         ("a", PrereleaseKind::Alpha),
         ("b", PrereleaseKind::Beta),
     ];
-    let Some((marker, kind)) = markers
-        .into_iter()
-        .find(|(marker, _)| candidate.starts_with(marker))
-    else {
-        return Ok(None);
-    };
-    let rest = trim_separator(&candidate[marker.len()..]);
-    let (number, rest) = take_optional_number(rest).ok_or(())?;
-    *suffix = rest;
-    Ok(Some(Prerelease { kind, number }))
+    Ok(parse_marked_number(suffix, &markers)?.map(|(kind, number)| Prerelease { kind, number }))
 }
 
 type OptionalReleaseNumber = Result<Option<u64>, ()>;
@@ -222,17 +212,25 @@ fn parse_postrelease(suffix: &mut &str) -> OptionalReleaseNumber {
         return Ok(Some(number));
     }
 
+    let markers = [("post", ()), ("rev", ()), ("r", ())];
+    Ok(parse_marked_number(suffix, &markers)?.map(|((), number)| number))
+}
+
+fn parse_marked_number<T: Copy>(
+    suffix: &mut &str,
+    markers: &[(&str, T)],
+) -> Result<Option<(T, u64)>, ()> {
     let candidate = trim_separator(suffix);
-    let Some(marker) = ["post", "rev", "r"]
-        .into_iter()
-        .find(|marker| candidate.starts_with(marker))
+    let Some((marker, value)) = markers
+        .iter()
+        .find(|(marker, _)| candidate.starts_with(marker))
     else {
         return Ok(None);
     };
     let rest = trim_separator(&candidate[marker.len()..]);
     let (number, rest) = take_optional_number(rest).ok_or(())?;
     *suffix = rest;
-    Ok(Some(number))
+    Ok(Some((*value, number)))
 }
 
 fn parse_devrelease(suffix: &mut &str) -> OptionalReleaseNumber {

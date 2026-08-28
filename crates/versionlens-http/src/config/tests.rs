@@ -1,8 +1,7 @@
 use super::{HttpConfigInput, HttpHeaderInput};
 
-#[test]
-fn config_input_uses_standard_defaults_for_missing_options() {
-    let config = crate::http_config_from_input(HttpConfigInput {
+fn empty_input() -> HttpConfigInput {
+    HttpConfigInput {
         timeout_ms: None,
         strict_ssl: None,
         proxy: None,
@@ -13,7 +12,12 @@ fn config_input_uses_standard_defaults_for_missing_options() {
         cert: None,
         key: None,
         auth_headers: None,
-    });
+    }
+}
+
+#[test]
+fn config_input_uses_standard_defaults_for_missing_options() {
+    let config = crate::http_config_from_input(empty_input());
 
     assert_eq!(config.timeout_ms, 10_000);
     assert!(config.strict_ssl);
@@ -72,21 +76,13 @@ fn config_input_trims_header_names_and_urls_and_rejects_blank_names() {
         cert: None,
         key: None,
         auth_headers: Some(vec![
-            HttpHeaderInput {
-                name: "   ".to_owned(),
-                value: "ignored".to_owned(),
-                url: None,
-            },
-            HttpHeaderInput {
-                name: " authorization ".to_owned(),
-                value: " Bearer token ".to_owned(),
-                url: Some(" https://registry.example.test ".to_owned()),
-            },
-            HttpHeaderInput {
-                name: "x-global".to_owned(),
-                value: " global ".to_owned(),
-                url: Some("   ".to_owned()),
-            },
+            HttpHeaderInput::new("   ", "ignored", None),
+            HttpHeaderInput::new(
+                " authorization ",
+                " Bearer token ",
+                Some(" https://registry.example.test ".to_owned()),
+            ),
+            HttpHeaderInput::new("x-global", " global ", Some("   ".to_owned())),
         ]),
     });
 
