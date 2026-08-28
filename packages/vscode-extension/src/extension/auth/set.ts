@@ -19,7 +19,6 @@ import {
 } from "./store.ts";
 import {
   type AuthenticationScheme,
-  type AuthorizationPromptResult,
   authorizationValue,
   confirmInsecureUrl,
 } from "./value.ts";
@@ -66,7 +65,7 @@ async function addAuthHeader(
   }
 
   const url = await promptAuthorizationUrl(options);
-  if (!url) {
+  if (url === undefined) {
     await suppressAuthPrompt(context, options.authUrl);
     return false;
   }
@@ -86,7 +85,7 @@ async function addAuthHeader(
   }
 
   const value = await authorizationValue(provider.providerScheme, url);
-  if (!value) {
+  if (value.kind === "cancelled") {
     await suppressAuthPrompt(context, url);
     return false;
   }
@@ -95,7 +94,7 @@ async function addAuthHeader(
   if (!secret) {
     return false;
   }
-  await context.secrets.store(secret, value);
+  await context.secrets.store(secret, value.value);
   await writeUrlAuthentication(context, url, {
     label: provider.label,
     scheme: provider.providerScheme,
@@ -136,14 +135,14 @@ async function retryExistingAuthHeader(
     authSchemeForHeader(header, previousValue),
     options.authUrl,
   );
-  if (!value) {
+  if (value.kind === "cancelled") {
     await suppressAuthPrompt(context, options.authUrl);
     return false;
   }
   if (!secret) {
     return false;
   }
-  await context.secrets.store(secret, value);
+  await context.secrets.store(secret, value.value);
   await writeUrlAuthentication(
     context,
     options.authUrl,
@@ -204,7 +203,7 @@ function isAuthHeaderSuppressed(
 async function promptAuthorizationUrl(
   options: AddAuthHeaderOptions,
   suggestedUrl = options.authUrl,
-): AuthorizationPromptResult {
+): Promise<string | undefined> {
   const url = normalizedAuthorizationUrl(
     await window.showInputBox({
       ignoreFocusOut: true,

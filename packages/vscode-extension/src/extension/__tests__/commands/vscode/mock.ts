@@ -237,7 +237,7 @@ function createWorkspaceMock(
       uri: unknown;
     } {
       return {
-        getText: (): string => packageFileFixture("package-left-pad.json"),
+        getText: (): string => packageFileFixture("left-pad.json"),
         languageId: "json",
         uri,
       };

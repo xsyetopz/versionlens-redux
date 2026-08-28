@@ -1,5 +1,4 @@
-import type { NativeApplyCommand } from "../native/input.ts";
-import type { ResolveDocumentOutput } from "../native/output.ts";
+import type { NativeApplyCommand, ResolveDocumentOutput } from "../native.ts";
 
 type AuthenticationResolution = Promise<ResolveDocumentOutput | undefined>;
 type CodeLensReplacementMode = "disable" | "disableThenEnable" | "preserve";

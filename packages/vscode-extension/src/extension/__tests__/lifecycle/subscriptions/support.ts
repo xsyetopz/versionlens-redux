@@ -34,6 +34,17 @@ const activeEditorChangeListeners: Array<
 > = [];
 const createdWatcherPatterns: unknown[] = [];
 
+interface SubscriptionState {
+  snapshots: {
+    editedDependencies: Map<string, string>;
+    savedDependencies: Map<string, string>;
+  };
+  ui: {
+    diagnostics: { delete: () => undefined };
+    outputChannel: Record<string, never>;
+  };
+}
+
 function relativePattern(
   this: { base: unknown; pattern: string },
   base: unknown,
@@ -123,6 +134,23 @@ function updateContext(): boolean {
   return subscriptionHarness.updateContextsResult;
 }
 
+function subscriptionContext(): { subscriptions: never[] } {
+  return { subscriptions: [] };
+}
+
+function subscriptionState(): SubscriptionState {
+  return {
+    snapshots: {
+      editedDependencies: new Map<string, string>(),
+      savedDependencies: new Map<string, string>(),
+    },
+    ui: {
+      diagnostics: { delete: (): undefined => undefined },
+      outputChannel: {},
+    },
+  };
+}
+
 mockVscodeHost(vscodeMock);
 mock.module(
   "../../../commands/register.ts",
@@ -176,7 +204,9 @@ export {
   activeEditorChangeListeners,
   createdWatcherPatterns,
   refreshedDocuments,
+  subscriptionContext,
   subscriptionHarness,
+  subscriptionState,
   textDocumentChangeListeners,
   textDocumentCloseListeners,
 };

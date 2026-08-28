@@ -6,7 +6,7 @@ import type {
   OutputChannel,
   Uri,
 } from "#vscode-host";
-import type { NativeSession } from "./native/module.ts";
+import type { NativeSession } from "./native.ts";
 
 export interface ResourceSession {
   resource: Uri | undefined;

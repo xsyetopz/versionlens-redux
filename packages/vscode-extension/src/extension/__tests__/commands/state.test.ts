@@ -13,7 +13,7 @@ import {
   contexts,
   createdSessionConfigs,
   fileSystemWatchers,
-  registeredCommands,
+  registeredCommand,
   shownTextDocuments,
   testState,
 } from "./support.ts";
@@ -66,8 +66,7 @@ it("updateContexts disables provider actions for non-file active editors", async
     document: {
       uri: {
         scheme: "versionlens",
-        toString: (): string =>
-          "versionlens:/versionlens.multi-registries.json",
+        toString: (): string => "versionlens:/multi-registries.json",
       },
     },
   };
@@ -223,7 +222,7 @@ it("clear cache command clears native cache, diagnostics, and dependency snapsho
   );
 
   registerCommands(state as never);
-  await registeredCommands["versionlens.suggestion.onClearCache"]?.();
+  await registeredCommand("versionlens.suggestion.onClearCache")();
 
   expect(nativeClearCount).toBe(1);
   expect(diagnosticsClearCount).toBe(1);

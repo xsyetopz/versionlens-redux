@@ -9,13 +9,13 @@ import {
   outputFor,
   type ResolveOutput,
   reset,
+  type SessionStub,
 } from "./state.ts";
 
-it("analyze failure decrements only its provider busy operation", async (): Promise<void> => {
-  const { analyzeDocument } = await import("../../diagnostics/analyze.ts");
-  reset();
-  const document = documentStub("file:///workspace/package.json");
-  const currentState = createExtensionState({
+function failedProviderState(
+  session: SessionStub,
+): ReturnType<typeof createExtensionState> {
+  return createExtensionState({
     flags: {
       codeLensReplace: true,
       providerBusy: 2,
@@ -25,10 +25,17 @@ it("analyze failure decrements only its provider busy operation", async (): Prom
       showSuggestionStats: false,
       showVersionLenses: true,
     },
-    session: {
-      analyzeDocument(): never {
-        throw new Error("provider failed");
-      },
+    session,
+  });
+}
+
+it("analyze failure decrements only its provider busy operation", async (): Promise<void> => {
+  const { analyzeDocument } = await import("../../diagnostics/analyze.ts");
+  reset();
+  const document = documentStub("file:///workspace/package.json");
+  const currentState = failedProviderState({
+    analyzeDocument(): never {
+      throw new Error("provider failed");
     },
   });
 
@@ -44,20 +51,9 @@ it("resolve failure decrements only its provider busy operation", async (): Prom
   );
   reset();
   const document = documentStub("file:///workspace/package.json");
-  const currentState = createExtensionState({
-    flags: {
-      codeLensReplace: true,
-      providerBusy: 2,
-      providerError: false,
-      showOutdated: false,
-      showPrereleases: false,
-      showSuggestionStats: false,
-      showVersionLenses: true,
-    },
-    session: {
-      resolveDocument(): never {
-        throw new Error("provider failed");
-      },
+  const currentState = failedProviderState({
+    resolveDocument(): never {
+      throw new Error("provider failed");
     },
   });
 

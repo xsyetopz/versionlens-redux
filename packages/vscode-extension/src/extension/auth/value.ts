@@ -3,7 +3,21 @@ import { normalizedRequiredInput } from "./input.ts";
 import { customScheme } from "./store.ts";
 
 type AuthenticationScheme = "Basic" | "Custom";
-type AuthorizationPromptResult = Promise<string | undefined>;
+type AuthorizationValue =
+  | { kind: "cancelled" }
+  | { kind: "provided"; value: string };
+type AuthorizationPromptResult = Promise<AuthorizationValue>;
+
+const cancelledAuthorization = (): { kind: "cancelled" } => ({
+  kind: "cancelled",
+});
+
+const providedAuthorization = (
+  value: string,
+): { kind: "provided"; value: string } => ({
+  kind: "provided",
+  value,
+});
 
 async function confirmInsecureUrl(url: string): Promise<boolean> {
   if (url.startsWith("https:")) {
@@ -22,7 +36,7 @@ async function authorizationValue(
   url: string,
 ): AuthorizationPromptResult {
   if (scheme === customScheme) {
-    return normalizedRequiredInput(
+    const value = normalizedRequiredInput(
       await window.showInputBox({
         ignoreFocusOut: true,
         password: true,
@@ -30,6 +44,10 @@ async function authorizationValue(
         prompt: `Enter the authorization value for ${url}`,
       }),
     );
+    if (value === undefined) {
+      return cancelledAuthorization();
+    }
+    return providedAuthorization(value);
   }
   return await basicAuthorizationValue(url);
 }
@@ -42,7 +60,7 @@ async function basicAuthorizationValue(url: string): AuthorizationPromptResult {
     prompt: `Enter the basic auth username for ${url}`,
   });
   if (username === undefined) {
-    return;
+    return cancelledAuthorization();
   }
   if (username.includes(":")) {
     const retry = await window.showInformationMessage(
@@ -53,7 +71,7 @@ async function basicAuthorizationValue(url: string): AuthorizationPromptResult {
     if (retry) {
       return basicAuthorizationValue(url);
     }
-    return;
+    return cancelledAuthorization();
   }
   const password = await window.showInputBox({
     ignoreFocusOut: true,
@@ -62,10 +80,16 @@ async function basicAuthorizationValue(url: string): AuthorizationPromptResult {
     prompt: `Enter the basic auth password for ${url}`,
   });
   if (password === undefined) {
-    return;
+    return cancelledAuthorization();
   }
-  return Buffer.from(`${username}:${password}`).toString("base64");
+  return providedAuthorization(
+    Buffer.from(`${username}:${password}`).toString("base64"),
+  );
 }
 
-export type { AuthenticationScheme, AuthorizationPromptResult };
+export type {
+  AuthenticationScheme,
+  AuthorizationPromptResult,
+  AuthorizationValue,
+};
 export { authorizationValue, confirmInsecureUrl };

@@ -16,6 +16,22 @@ const warningMessages: string[] = [];
 const errorMessages: string[] = [];
 const executedCommands: unknown[][] = [];
 
+function activationState(): {
+  context: undefined;
+  flags: { showVersionLenses: boolean };
+  ui: Record<string, never>;
+} {
+  return { context: undefined, ui: {}, flags: { showVersionLenses: true } };
+}
+
+async function activateForTest(): Promise<void> {
+  const { activateExtension } = await import("../../lifecycle/activate.ts");
+  await activateExtension(
+    activationState() as never,
+    { subscriptions: [] } as never,
+  );
+}
+
 mockVscodeHost(() => ({
   commands: {
     executeCommand(...args: unknown[]): void {
@@ -127,14 +143,7 @@ function reset(): void {
 it("activation warns when VS Code editor code lenses are disabled", async (): Promise<void> => {
   reset();
   editorCodeLens = false;
-  const { activateExtension } = await import("../../lifecycle/activate.ts");
-  const state = {
-    context: undefined,
-    ui: {},
-    flags: { showVersionLenses: true },
-  };
-
-  await activateExtension(state as never, { subscriptions: [] } as never);
+  await activateForTest();
 
   expect(outputLines).toContain(
     "Code lenses are disabled. This extension won't work unless you enable 'editor.codeLens' in your vscode settings",
@@ -151,14 +160,12 @@ it("activation registers commands before native session creation can fail", asyn
   reset();
   recreateSessionError = new Error("native session failed");
   const { activateExtension } = await import("../../lifecycle/activate.ts");
-  const state = {
-    context: undefined,
-    ui: {},
-    flags: { showVersionLenses: true },
-  };
 
   await expect(
-    activateExtension(state as never, { subscriptions: [] } as never),
+    activateExtension(
+      activationState() as never,
+      { subscriptions: [] } as never,
+    ),
   ).rejects.toThrow("native session failed");
   const runtime = [nodeProcess.platform, nodeProcess.arch].join("-");
   expect(errorMessages).toEqual([
@@ -176,14 +183,7 @@ it("activation registers commands before native session creation can fail", asyn
 
 it("activation does not warn when VS Code editor code lenses are enabled", async (): Promise<void> => {
   reset();
-  const { activateExtension } = await import("../../lifecycle/activate.ts");
-  const state = {
-    context: undefined,
-    ui: {},
-    flags: { showVersionLenses: true },
-  };
-
-  await activateExtension(state as never, { subscriptions: [] } as never);
+  await activateForTest();
 
   expect(outputLines).toEqual([]);
 });
@@ -191,14 +191,7 @@ it("activation does not warn when VS Code editor code lenses are enabled", async
 it("activation warns when original VersionLens is installed", async (): Promise<void> => {
   reset();
   originalVersionLensInstalled = true;
-  const { activateExtension } = await import("../../lifecycle/activate.ts");
-  const state = {
-    context: undefined,
-    ui: {},
-    flags: { showVersionLenses: true },
-  };
-
-  await activateExtension(state as never, { subscriptions: [] } as never);
+  await activateForTest();
 
   const message =
     "VersionLens Redux conflicts with the original VersionLens extension. Disable the original extension before using VersionLens Redux in this workspace.";
@@ -211,14 +204,7 @@ it("activation can disable original VersionLens from the conflict prompt", async
   reset();
   originalVersionLensInstalled = true;
   warningSelection = "Disable original VersionLens";
-  const { activateExtension } = await import("../../lifecycle/activate.ts");
-  const state = {
-    context: undefined,
-    ui: {},
-    flags: { showVersionLenses: true },
-  };
-
-  await activateExtension(state as never, { subscriptions: [] } as never);
+  await activateForTest();
 
   expect(executedCommands).toEqual([
     [

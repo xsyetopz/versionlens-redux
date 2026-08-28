@@ -1,5 +1,5 @@
 import { type Uri, workspace } from "#vscode-host";
-import type { NativeSuggestionIndicators } from "../native/config.ts";
+import type { NativeSuggestionIndicators } from "../native.ts";
 import { configuredValue } from "./configured.ts";
 
 const suggestionIndicatorKeys = [

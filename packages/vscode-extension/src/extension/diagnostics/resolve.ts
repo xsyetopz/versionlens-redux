@@ -1,8 +1,8 @@
 import { type TextDocument, window } from "#vscode-host";
 import { authorizationRequiredMessage } from "../auth/required.ts";
 import { addAuthHeader, isAuthHeaderSuppressed } from "../auth/set.ts";
-import { documentInput } from "../documents/input.ts";
-import type { NativeSession } from "../native/module.ts";
+import { documentInput } from "../documents.ts";
+import type { NativeSession } from "../native.ts";
 import { recreateSessions, sessionForResource } from "../session/registry.ts";
 import type { ExtensionState } from "../state.ts";
 import { invalidateDocumentAnalysis } from "./analyze.ts";

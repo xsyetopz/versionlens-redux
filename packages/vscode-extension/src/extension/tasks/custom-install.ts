@@ -1,11 +1,11 @@
 import { window, workspace } from "#vscode-host";
 import { analyzeDocument } from "../diagnostics/analyze.ts";
-import { activeFileDocument, fileDocument } from "../documents/file.ts";
+import { fileDocument } from "../documents.ts";
 import type { ExtensionState } from "../state.ts";
 import { runTask } from "./runner.ts";
 
 export async function runCustomInstall(state: ExtensionState): Promise<void> {
-  const document = activeFileDocument();
+  const document = fileDocument(window.activeTextEditor?.document);
   if (!document) {
     return;
   }

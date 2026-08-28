@@ -24,18 +24,19 @@ Direct-distribution packages are platform-specific and embed the matching releas
 3. `versionlens-lsp` on `PATH`.
 4. Repository-local debug binary at `target/debug/versionlens-lsp`.
 
-## Development checks
+The Zed package carries the native language server selected by its platform and architecture arguments.
+
+## Zed verification
 
 ```bash
-cargo check --manifest-path packages/zed-extension/Cargo.toml
-cargo test -p versionlens-lsp
+cargo check --manifest-path packages/zed-extension/Cargo.toml --locked
+cargo test --manifest-path packages/zed-extension/Cargo.toml --locked
+cargo build --manifest-path packages/zed-extension/Cargo.toml --release --locked
 ```
 
-Run `bun run check` from the repository root before committing broad changes.
+The repository-wide integration gate is `bun run check`.
 
-## License
-
-[ISC](../../LICENSE)
+License information is maintained in [`../../LICENSE`](../../LICENSE).
 
 ## Attribution
 

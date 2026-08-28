@@ -100,14 +100,14 @@ function cachedLensState(
 }
 
 it("documentSelectors stays file-backed like upstream CodeLens providers", async (): Promise<void> => {
-  const { documentSelectors } = await import("../../documents/selectors.ts");
+  const { documentSelectors } = await import("../../documents.ts");
 
   expect(documentSelectors()).not.toContainEqual({ scheme: "versionlens" });
 });
 
 it("documentSelectors uses configured npm file patterns", async (): Promise<void> => {
   configured["npm.files"] = "**/{package.json,web-module.json}";
-  const { documentSelectors } = await import("../../documents/selectors.ts");
+  const { documentSelectors } = await import("../../documents.ts");
 
   expect(documentSelectors()).toContainEqual({
     language: "json",
@@ -122,7 +122,7 @@ it("documentSelectors uses configured npm file patterns", async (): Promise<void
 });
 
 it("documentSelectors mirrors upstream provider language and file pattern filters", async (): Promise<void> => {
-  const { documentSelectors } = await import("../../documents/selectors.ts");
+  const { documentSelectors } = await import("../../documents.ts");
   configured["npm.files"] = undefined;
   configured.enabledProviders = undefined;
   const selectors = documentSelectors();
@@ -141,7 +141,7 @@ it("documentSelectors mirrors upstream provider language and file pattern filter
 });
 
 it("documentSelectors filters file-backed providers using enabledProviders like upstream", async (): Promise<void> => {
-  const { documentSelectors } = await import("../../documents/selectors.ts");
+  const { documentSelectors } = await import("../../documents.ts");
   configured.enabledProviders = ["npm"];
   configured["npm.files"] = undefined;
   const selectors = documentSelectors();

@@ -4,45 +4,29 @@ import { commandState, documentStub } from "./state.ts";
 
 import {
   appliedEdits,
+  applyResult,
   applyTestState,
   registeredCommand,
   reset,
 } from "./support.ts";
+
+const sortStartCharacter = 17;
+const sortEndCharacter = 41;
+const updateStartCharacter = 30;
+const updateEndCharacter = 35;
 
 it("sort command bypasses CodeLens replacement gate like upstream", async (): Promise<void> => {
   const { registerCommands } = await import("../../../commands/register.ts");
   reset();
   const applyInputs: unknown[] = [];
   const session = {
-    applyCommand: (
-      input: unknown,
-    ): {
-      authorizationRequiredCount: number;
-      authorizationRequiredRequests: never[];
-      edits: Array<{
-        newText: string;
-        range: {
-          end: { character: number; line: number };
-          start: { character: number; line: number };
-        };
-      }>;
-      vulnerableUpdateCount: number;
-    } => {
+    applyCommand(input: unknown): ReturnType<typeof applyResult> {
       applyInputs.push(input);
-      return {
-        authorizationRequiredCount: 0,
-        authorizationRequiredRequests: [],
-        edits: [
-          {
-            newText: '"a":"1.0.0",\n"b":"1.0.0"',
-            range: {
-              end: { character: 41, line: 0 },
-              start: { character: 17, line: 0 },
-            },
-          },
-        ],
-        vulnerableUpdateCount: 0,
-      };
+      return applyResult(
+        '"a":"1.0.0",\n"b":"1.0.0"',
+        sortStartCharacter,
+        sortEndCharacter,
+      );
     },
   };
 
@@ -72,31 +56,7 @@ it("single update leaves CodeLens replacement disabled after applying like upstr
   reset();
   const document = documentStub("left-pad");
   const state = commandState({
-    applyCommand: (): {
-      authorizationRequiredCount: number;
-      authorizationRequiredRequests: never[];
-      edits: Array<{
-        newText: string;
-        range: {
-          end: { character: number; line: number };
-          start: { character: number; line: number };
-        };
-      }>;
-      vulnerableUpdateCount: number;
-    } => ({
-      authorizationRequiredCount: 0,
-      authorizationRequiredRequests: [],
-      edits: [
-        {
-          newText: "1.1.0",
-          range: {
-            end: { character: 35, line: 0 },
-            start: { character: 30, line: 0 },
-          },
-        },
-      ],
-      vulnerableUpdateCount: 0,
-    }),
+    applyCommand: (): ReturnType<typeof applyResult> => applyResult(),
   });
 
   applyTestState.activeTextEditor = { document };
@@ -109,93 +69,41 @@ it("single update leaves CodeLens replacement disabled after applying like upstr
   expect(state.flags.codeLensReplace).toBe(false);
 });
 
-it("bulk update leaves CodeLens replacement disabled when applyEdit rejects like upstream", async (): Promise<void> => {
-  const { registerCommands } = await import("../../../commands/register.ts");
-  reset();
-  const document = documentStub("left-pad");
-  applyTestState.applyEditBlocker = Promise.reject(new Error("apply failed"));
-  const state = commandState({
-    applyCommand: (): {
-      authorizationRequiredCount: number;
-      authorizationRequiredRequests: never[];
-      edits: Array<{
-        newText: string;
-        range: {
-          end: { character: number; line: number };
-          start: { character: number; line: number };
-        };
-      }>;
-      vulnerableUpdateCount: number;
-    } => ({
-      authorizationRequiredCount: 0,
-      authorizationRequiredRequests: [],
-      edits: [
-        {
-          newText: "1.1.0",
-          range: {
-            end: { character: 35, line: 0 },
-            start: { character: 30, line: 0 },
-          },
-        },
-      ],
-      vulnerableUpdateCount: 0,
-    }),
+for (const testCase of [
+  {
+    name: "bulk update leaves CodeLens replacement disabled when applyEdit rejects like upstream",
+    blocker: (): Promise<never> => Promise.reject(new Error("apply failed")),
+    expectedError: "apply failed",
+  },
+  {
+    name: "workspace applyEdit false is reported as a failed edit",
+    blocker: (): Promise<boolean> => Promise.resolve(false),
+    expectedError: "could not apply",
+  },
+] as const) {
+  it(testCase.name, async (): Promise<void> => {
+    const { registerCommands } = await import("../../../commands/register.ts");
+    reset();
+    applyTestState.applyEditBlocker = testCase.blocker();
+    const state = commandState({
+      applyCommand: (): ReturnType<typeof applyResult> => applyResult(),
+    });
+
+    applyTestState.activeTextEditor = {
+      document: documentStub("left-pad"),
+    };
+    registerCommands(state as never);
+    await expect(
+      registeredCommand("versionlens.editor.onUpdateDependenciesLatest")(),
+    ).rejects.toThrow(testCase.expectedError);
+    expect(state.flags.codeLensReplace).toBe(false);
   });
-
-  applyTestState.activeTextEditor = { document };
-  registerCommands(state as never);
-  await expect(
-    registeredCommand("versionlens.editor.onUpdateDependenciesLatest")(),
-  ).rejects.toThrow("apply failed");
-
-  expect(state.flags.codeLensReplace).toBe(false);
-});
-
-it("workspace applyEdit false is reported as a failed edit", async (): Promise<void> => {
-  const { registerCommands } = await import("../../../commands/register.ts");
-  reset();
-  const document = documentStub("left-pad");
-  applyTestState.applyEditBlocker = Promise.resolve(false);
-  const state = commandState({
-    applyCommand: (): {
-      authorizationRequiredCount: number;
-      authorizationRequiredRequests: never[];
-      edits: Array<{
-        newText: string;
-        range: {
-          end: { character: number; line: number };
-          start: { character: number; line: number };
-        };
-      }>;
-      vulnerableUpdateCount: number;
-    } => ({
-      authorizationRequiredCount: 0,
-      authorizationRequiredRequests: [],
-      edits: [
-        {
-          newText: "1.1.0",
-          range: {
-            end: { character: 35, line: 0 },
-            start: { character: 30, line: 0 },
-          },
-        },
-      ],
-      vulnerableUpdateCount: 0,
-    }),
-  });
-
-  applyTestState.activeTextEditor = { document };
-  registerCommands(state as never);
-  await expect(
-    registeredCommand("versionlens.editor.onUpdateDependenciesLatest")(),
-  ).rejects.toThrow("could not apply");
-  expect(state.flags.codeLensReplace).toBe(false);
-});
+}
 
 it("vulnerability confirmation rejects edits after the document changes", async (): Promise<void> => {
   const { registerCommands } = await import("../../../commands/register.ts");
   reset();
-  let text = packageFileFixture("package-left-pad-template.json").replace(
+  let text = packageFileFixture("left-pad-template.json").replace(
     "__PACKAGE__",
     "left-pad",
   );
@@ -215,27 +123,8 @@ it("vulnerability confirmation rejects edits after the document changes", async 
   applyTestState.activeTextEditor = { document };
   registerCommands(
     commandState({
-      applyCommand: (): {
-        edits: Array<{
-          newText: string;
-          range: {
-            end: { character: number; line: number };
-            start: { character: number; line: number };
-          };
-        }>;
-        vulnerableUpdateCount: number;
-      } => ({
-        edits: [
-          {
-            newText: "1.1.0",
-            range: {
-              end: { character: 35, line: 0 },
-              start: { character: 30, line: 0 },
-            },
-          },
-        ],
-        vulnerableUpdateCount: 1,
-      }),
+      applyCommand: (): ReturnType<typeof applyResult> =>
+        applyResult("1.1.0", updateStartCharacter, updateEndCharacter, 1),
     }) as never,
   );
   const pending = registeredCommand(

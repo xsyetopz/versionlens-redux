@@ -1,6 +1,7 @@
 import { expect, it } from "../runtime.ts";
 
 import "./support.ts";
+import { expectCustomAuthenticationSetting } from "../support.ts";
 import {
   type AnalyzeOutput,
   authContext,
@@ -108,19 +109,10 @@ it("diagnostic refresh offers authentication when registry auth is required", as
       value: "Bearer token",
     },
   ]);
-  expect(diagnosticState.configurationAuth.updatedSettings[0]).toMatchObject({
-    key: "UrlAuthenticationStore",
-    target: false,
-    value: {
-      [registryUrl]: {
-        label: "Custom Value",
-        protocol: "https:",
-        scheme: "Custom",
-        status: "NoStatus",
-        url: registryUrl,
-      },
-    },
-  });
+  expectCustomAuthenticationSetting(
+    diagnosticState.configurationAuth.updatedSettings[0],
+    registryUrl,
+  );
   expect(
     diagnosticState.diagnosticSession.createdSessionConfigs[0],
   ).toMatchObject({

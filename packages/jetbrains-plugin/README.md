@@ -35,6 +35,8 @@ packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin buildPlugin --no-
 
 The built plugin artifact is written under `packages/jetbrains-plugin/build/distributions/`.
 
+The Gradle build embeds the platform-specific native LSP launcher selected by `versionlensRustTarget`.
+
 ## Development checks
 
 ```bash

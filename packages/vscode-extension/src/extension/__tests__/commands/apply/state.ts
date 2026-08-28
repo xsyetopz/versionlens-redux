@@ -52,7 +52,7 @@ function documentStub(packageName: string): DocumentStub {
   const dependencyName = packageName;
   return {
     getText: (): string =>
-      packageFileFixture("package-left-pad-template.json").replace(
+      packageFileFixture("left-pad-template.json").replace(
         "__PACKAGE__",
         dependencyName,
       ),

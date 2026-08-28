@@ -1,13 +1,13 @@
-import { commands } from "#vscode-host";
+import { commands, window } from "#vscode-host";
 import { analyzeDocument } from "../diagnostics/analyze.ts";
-import { activeFileDocument } from "../documents/file.ts";
+import { fileDocument } from "../documents.ts";
 import type { ExtensionState } from "../state.ts";
 import { customInstallTaskLabel } from "../tasks/custom-install.ts";
 
 export async function updateContexts(
   state: ExtensionState,
 ): Promise<string | false> {
-  const activeDocument = activeFileDocument();
+  const activeDocument = fileDocument(window.activeTextEditor?.document);
   let activeOutput: ReturnType<typeof analyzeDocument>;
   if (activeDocument) {
     activeOutput = analyzeDocument(state, activeDocument);

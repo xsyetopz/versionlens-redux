@@ -121,7 +121,7 @@ mockVscodeHost(
 );
 
 mock.module(
-  "../../native/module.ts",
+  "../../native.ts",
   (): MockModule => ({
     loadNative(): {
       createSession: (config: unknown) => {

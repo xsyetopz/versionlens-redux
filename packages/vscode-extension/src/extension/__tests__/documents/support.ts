@@ -1,21 +1,23 @@
 import { mockVscodeHost } from "../runtime.ts";
+import {
+  createCommandsMock,
+  appliedEdits as sharedAppliedEdits,
+  registeredCommands as sharedRegisteredCommands,
+} from "../support.ts";
 import { packageFileFixture } from "./fixture.ts";
 import { defaultFilePatternByKey } from "./patterns.ts";
 
 type MockModule = Record<string, unknown>;
+
+const appliedEdits: unknown[] = sharedAppliedEdits;
+const registeredCommands: Record<string, (...args: unknown[]) => unknown> =
+  sharedRegisteredCommands;
 interface Disposable {
   dispose: () => void;
 }
 interface CodeLensProvider {
   onDidChangeCodeLenses?: (listener: () => void) => Disposable;
   provideCodeLenses: (document: unknown) => unknown[];
-}
-interface CommandsMock {
-  executeCommand: () => undefined;
-  registerCommand: (
-    command: string,
-    callback: (...args: unknown[]) => unknown,
-  ) => Disposable;
 }
 interface LanguagesMock {
   registerCodeLensProvider: (
@@ -77,18 +79,6 @@ const configured: DocumentConfiguration = { enabledProviders: undefined };
 const codeLensProviders: CodeLensProvider[] = [];
 const diagnosticsSets: { diagnostics: unknown[]; uri: unknown }[] = [];
 let activeTextEditor: { document: unknown } | undefined;
-const testGlobals = globalThis as typeof globalThis & {
-  __versionLensAppliedEdits?: unknown[];
-  __versionLensRegisteredCommands?: Record<
-    string,
-    (...args: unknown[]) => unknown
-  >;
-};
-testGlobals.__versionLensRegisteredCommands ??= {};
-testGlobals.__versionLensAppliedEdits ??= [];
-const registeredCommands: Record<string, (...args: unknown[]) => unknown> =
-  testGlobals.__versionLensRegisteredCommands;
-const appliedEdits: unknown[] = testGlobals.__versionLensAppliedEdits;
 
 function mockCodeLens(
   this: { command: unknown; range: unknown },
@@ -153,21 +143,6 @@ function mockWorkspaceEdit(this: MockWorkspaceEdit): void {
   };
 }
 
-function commandsMock(): CommandsMock {
-  return {
-    executeCommand: (): undefined => undefined,
-    registerCommand(
-      command: string,
-      callback: (...args: unknown[]) => unknown,
-    ): Disposable {
-      registeredCommands[command] = async (
-        ...args: unknown[]
-      ): Promise<unknown> => callback(...args);
-      return { dispose: (): undefined => undefined };
-    },
-  };
-}
-
 function languagesMock(): LanguagesMock {
   return {
     registerCodeLensProvider(
@@ -225,7 +200,7 @@ function vscodeMock(): MockModule {
       },
     ],
     ["WorkspaceEdit", mockWorkspaceEdit],
-    ["commands", commandsMock()],
+    ["commands", createCommandsMock(registeredCommands)],
     ["env", { openExternal: (): undefined => undefined }],
     ["languages", languagesMock()],
     [
@@ -266,7 +241,7 @@ function analysisOutput(): AnalysisOutput {
 
 function testDocument(uri = "file:///package.json"): TestDocument {
   return {
-    getText: (): string => packageFileFixture("package-left-pad.json"),
+    getText: (): string => packageFileFixture("left-pad.json"),
     languageId: "json",
     uri: { toString: (): string => uri },
   };

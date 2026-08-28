@@ -87,7 +87,7 @@ it("initial workspace scan analyzes discovered package files through the native 
   ).toContain("file:///workspace/package.json");
   expect(analyzedInputs).toContainEqual({
     languageId: "json",
-    text: packageFileFixture("package-left-pad.json"),
+    text: packageFileFixture("left-pad.json"),
     uri: "file:///workspace/package.json",
     workspaceRoot: "/workspace",
   });
@@ -174,7 +174,7 @@ it("single-file activation analyzes the active file without workspace scanning",
   expect(findFilesCalls).toEqual([]);
   expect(analyzedInputs).toContainEqual({
     languageId: "json",
-    text: packageFileFixture("package-left-pad.json"),
+    text: packageFileFixture("left-pad.json"),
     uri: "file:///standalone/package.json",
   });
   expect(
@@ -219,7 +219,7 @@ it("workspace mode watches activated package files outside the workspace", async
 
   expect(analyzedInputs).toContainEqual({
     languageId: "json",
-    text: packageFileFixture("package-left-pad.json"),
+    text: packageFileFixture("left-pad.json"),
     uri: "file:///outside/package.json",
   });
   expect(

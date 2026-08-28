@@ -15,10 +15,7 @@ impl VersionLensExtension {
     }
 
     fn bundled_binary() -> Option<String> {
-        let binary = Path::new("bin").join(Self::server_binary());
-        std::fs::metadata(&binary)
-            .is_ok_and(|metadata| metadata.is_file())
-            .then(|| binary.to_string_lossy().to_string())
+        Self::existing_binary(Path::new("bin").join(Self::server_binary()))
     }
 
     fn repo_binary(worktree: &Worktree) -> Option<String> {
@@ -26,6 +23,11 @@ impl VersionLensExtension {
         let binary = Path::new(&root)
             .join("target/debug")
             .join(Self::server_binary());
+        Self::existing_binary(binary)
+    }
+
+    fn existing_binary(binary: impl AsRef<Path>) -> Option<String> {
+        let binary = binary.as_ref();
         std::fs::metadata(&binary)
             .is_ok_and(|metadata| metadata.is_file())
             .then(|| binary.to_string_lossy().to_string())

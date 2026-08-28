@@ -8,7 +8,7 @@
     "#vscode-host": "./src/extension/platform/host.ts"
   },
   "preview": false,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "main": "./dist/extension.js",
   "repository": {
     "type": "git",
@@ -273,8 +273,8 @@
     },
     "jsonValidation": [
       {
-        "fileMatch": "versionlens:/versionlens.multi-registries.json",
-        "url": "./src/schema/versionlens.multi-registries.json"
+        "fileMatch": "versionlens:/multi-registries.json",
+        "url": "./src/schema/multi-registries.json"
       }
     ],
     "configuration": {
@@ -794,7 +794,8 @@
               "pnpm",
               "pub",
               "pypi",
-              "ruby"
+              "ruby",
+              "github"
             ]
           },
           "default": [],
@@ -2198,6 +2199,55 @@
           "type": "string",
           "default": "https://raw.githubusercontent.com/xmake-io/xmake-repo/master",
           "description": "C/C++ fallback package registry base URL for Xmake package recipes."
+        },
+        "versionlens.github.files": {
+          "type": "string",
+          "default": "**/.github/{workflows,actions}/**/*.{yml,yaml}",
+          "description": "GitHub Actions workflow and composite action files to scan."
+        },
+        "versionlens.github.prereleaseTagFilter": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "GitHub Actions tag prerelease identifiers to include when prerelease suggestions are enabled."
+        },
+        "versionlens.github.dependencyProperties": {
+          "type": "array",
+          "default": [
+            "uses"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "GitHub Actions dependency declarations to scan."
+        },
+        "versionlens.github.caching.duration": {
+          "type": [
+            "null",
+            "number"
+          ],
+          "default": null,
+          "description": "GitHub Actions tag cache duration in minutes."
+        },
+        "versionlens.github.http.strictSSL": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "default": null,
+          "description": "Whether to require strict SSL for GitHub API requests."
+        },
+        "versionlens.github.onSaveChanges": {
+          "type": "string",
+          "default": null,
+          "description": "A task label defined in your tasks.json that will be executed when you save a GitHub Actions file with dependency changes."
+        },
+        "versionlens.github.apiUrl": {
+          "type": "string",
+          "default": "https://api.github.com/repos",
+          "description": "GitHub API base URL for Actions repository tag lookups."
         }
       }
     }

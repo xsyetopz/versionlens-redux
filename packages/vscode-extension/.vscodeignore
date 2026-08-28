@@ -1,7 +1,7 @@
 .vscode/**
 src/**
 !src/schema/
-!src/schema/versionlens.multi-registries.json
+!src/schema/multi-registries.json
 dist/*.node
 *.vsix
 *.tsbuildinfo

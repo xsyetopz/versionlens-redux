@@ -16,16 +16,13 @@ import {
   setProviderError,
 } from "../diagnostics/provider.ts";
 import { refreshDiagnostics } from "../diagnostics/refresh.ts";
-import { documentInput } from "../documents/input.ts";
-import { toRange } from "../documents/range.ts";
+import { documentInput, toRange } from "../documents.ts";
 import type {
   NativeApplyCommand,
   NativeApplyCommandInput,
-} from "../native/input.ts";
-import type {
   NativeTextEdit,
   ResolveDocumentOutput,
-} from "../native/output.ts";
+} from "../native.ts";
 import { recreateSessions, sessionForResource } from "../session/registry.ts";
 import type { ExtensionState } from "../state.ts";
 import type {
@@ -33,7 +30,7 @@ import type {
   ApplySelection,
   AuthenticationResolution,
   CodeLensReplacementMode,
-} from "./apply-types.ts";
+} from "./apply_contract.ts";
 import { updateContexts } from "./contexts.ts";
 
 function registerApplyCommands(

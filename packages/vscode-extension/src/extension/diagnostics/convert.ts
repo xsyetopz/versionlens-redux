@@ -1,6 +1,6 @@
 import { Diagnostic, type DiagnosticSeverity, Uri } from "#vscode-host";
-import { toRange } from "../documents/range.ts";
-import type { NativeDiagnosticPayload } from "../native/output.ts";
+import { toRange } from "../documents.ts";
+import type { NativeDiagnosticPayload } from "../native.ts";
 
 export function toDiagnostic(diagnostic: NativeDiagnosticPayload): Diagnostic {
   const rendered = new Diagnostic(

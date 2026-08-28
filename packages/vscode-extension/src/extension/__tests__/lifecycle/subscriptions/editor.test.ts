@@ -4,29 +4,22 @@ import {
   activeEditorChangeListeners,
   createdWatcherPatterns,
   refreshedDocuments,
+  subscriptionContext,
   subscriptionHarness,
+  subscriptionState,
 } from "./support.ts";
 
 it("empty active editor changes update toolbar contexts without status UI", async (): Promise<void> => {
   const { registerExtensionSubscriptions } = await import(
     "../../../lifecycle/subscriptions.ts"
   );
-  const context = { subscriptions: [] };
+  const context = subscriptionContext();
   activeEditorChangeListeners.length = 0;
   subscriptionHarness.updateContextCount = 0;
   subscriptionHarness.updateContextsResult = false;
 
   registerExtensionSubscriptions(
-    {
-      snapshots: {
-        editedDependencies: new Map<string, string>(),
-        savedDependencies: new Map<string, string>(),
-      },
-      ui: {
-        diagnostics: { delete: (): undefined => undefined },
-        outputChannel: {},
-      },
-    } as never,
+    subscriptionState() as never,
     context as never,
   );
   await activeEditorChangeListeners[0]?.(undefined);
@@ -38,20 +31,11 @@ it("registers package file system watchers with extension subscriptions", async 
   const { registerExtensionSubscriptions } = await import(
     "../../../lifecycle/subscriptions.ts"
   );
-  const context = { subscriptions: [] };
+  const context = subscriptionContext();
   createdWatcherPatterns.length = 0;
 
   registerExtensionSubscriptions(
-    {
-      snapshots: {
-        editedDependencies: new Map<string, string>(),
-        savedDependencies: new Map<string, string>(),
-      },
-      ui: {
-        diagnostics: { delete: (): undefined => undefined },
-        outputChannel: {},
-      },
-    } as never,
+    subscriptionState() as never,
     context as never,
   );
 
@@ -63,107 +47,48 @@ it("registers package file system watchers with extension subscriptions", async 
   ).toHaveLength(1);
 });
 
-it("non-file active editor changes update contexts without refreshing diagnostics", async (): Promise<void> => {
-  const { registerExtensionSubscriptions } = await import(
-    "../../../lifecycle/subscriptions.ts"
-  );
-  const context = { subscriptions: [] };
-  const document = {
-    uri: {
-      scheme: "versionlens",
-      toString: (): string => "versionlens:/schema.json",
-    },
-  };
-  activeEditorChangeListeners.length = 0;
-  refreshedDocuments.length = 0;
-  subscriptionHarness.updateContextCount = 0;
-  subscriptionHarness.updateContextsResult = false;
-
-  registerExtensionSubscriptions(
-    {
-      snapshots: {
-        editedDependencies: new Map<string, string>(),
-        savedDependencies: new Map<string, string>(),
+for (const testCase of [
+  {
+    name: "non-file active editor changes update contexts without refreshing diagnostics",
+    scheme: "versionlens",
+    uri: "versionlens:/schema.json",
+    updateContextsResult: false,
+  },
+  {
+    name: "unsupported file active editor changes update contexts without refreshing diagnostics",
+    scheme: "file",
+    uri: "file:///workspace/README.md",
+    updateContextsResult: false,
+  },
+  {
+    name: "supported workspace active editor changes update contexts without refreshing diagnostics",
+    scheme: "file",
+    uri: "file:///workspace/package.json",
+    updateContextsResult: true,
+  },
+] as const) {
+  it(testCase.name, async (): Promise<void> => {
+    const { registerExtensionSubscriptions } = await import(
+      "../../../lifecycle/subscriptions.ts"
+    );
+    const document = {
+      uri: {
+        scheme: testCase.scheme,
+        toString: (): string => testCase.uri,
       },
-      ui: {
-        diagnostics: { delete: (): undefined => undefined },
-        outputChannel: {},
-      },
-    } as never,
-    context as never,
-  );
-  await activeEditorChangeListeners[0]?.({ document });
+    };
+    activeEditorChangeListeners.length = 0;
+    refreshedDocuments.length = 0;
+    subscriptionHarness.updateContextCount = 0;
+    subscriptionHarness.updateContextsResult = testCase.updateContextsResult;
 
-  expect(subscriptionHarness.updateContextCount).toBe(1);
-  expect(refreshedDocuments).toEqual([]);
-});
+    registerExtensionSubscriptions(
+      subscriptionState() as never,
+      subscriptionContext() as never,
+    );
+    await activeEditorChangeListeners[0]?.({ document });
 
-it("unsupported file active editor changes update contexts without refreshing diagnostics", async (): Promise<void> => {
-  const { registerExtensionSubscriptions } = await import(
-    "../../../lifecycle/subscriptions.ts"
-  );
-  const context = { subscriptions: [] };
-  const document = {
-    uri: {
-      scheme: "file",
-      toString: (): string => "file:///workspace/README.md",
-    },
-  };
-  activeEditorChangeListeners.length = 0;
-  refreshedDocuments.length = 0;
-  subscriptionHarness.updateContextCount = 0;
-  subscriptionHarness.updateContextsResult = false;
-
-  registerExtensionSubscriptions(
-    {
-      snapshots: {
-        editedDependencies: new Map<string, string>(),
-        savedDependencies: new Map<string, string>(),
-      },
-      ui: {
-        diagnostics: { delete: (): undefined => undefined },
-        outputChannel: {},
-      },
-    } as never,
-    context as never,
-  );
-  await activeEditorChangeListeners[0]?.({ document });
-
-  expect(subscriptionHarness.updateContextCount).toBe(1);
-  expect(refreshedDocuments).toEqual([]);
-});
-
-it("supported workspace active editor changes update contexts without refreshing diagnostics", async (): Promise<void> => {
-  const { registerExtensionSubscriptions } = await import(
-    "../../../lifecycle/subscriptions.ts"
-  );
-  const context = { subscriptions: [] };
-  const document = {
-    uri: {
-      scheme: "file",
-      toString: (): string => "file:///workspace/package.json",
-    },
-  };
-  activeEditorChangeListeners.length = 0;
-  refreshedDocuments.length = 0;
-  subscriptionHarness.updateContextCount = 0;
-  subscriptionHarness.updateContextsResult = true;
-
-  registerExtensionSubscriptions(
-    {
-      snapshots: {
-        editedDependencies: new Map<string, string>(),
-        savedDependencies: new Map<string, string>(),
-      },
-      ui: {
-        diagnostics: { delete: (): undefined => undefined },
-        outputChannel: {},
-      },
-    } as never,
-    context as never,
-  );
-  await activeEditorChangeListeners[0]?.({ document });
-
-  expect(subscriptionHarness.updateContextCount).toBe(1);
-  expect(refreshedDocuments).toEqual([]);
-});
+    expect(subscriptionHarness.updateContextCount).toBe(1);
+    expect(refreshedDocuments).toEqual([]);
+  });
+}

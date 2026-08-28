@@ -7,7 +7,7 @@ interface ManifestSupportMatrix {
 
 interface MatrixEntry {
   dependencyProperties?: {
-    default: string[];
+    default?: string[];
     settingKey: string;
   };
   ecosystem: string;
@@ -47,6 +47,7 @@ const readmeLabelGroups: Record<string, string>[] = [
     dotnet: ".NET",
     dub: "Dub",
     golang: "Go",
+    github: "GitHub Actions",
     hackage: "Haskell",
     haxelib: "Haxelib",
     helm: "Helm",
@@ -96,6 +97,30 @@ async function readPackageJson(): Promise<{
       };
     };
   };
+}
+
+function dependencyPropertiesForMatrix(
+  matrix: ManifestSupportMatrix,
+  properties: Record<string, { default?: unknown }>,
+): Map<string, string[]> {
+  return new Map(
+    matrix.entries.flatMap(
+      ({ dependencyProperties }): [readonly [string, string[]]] | [] => {
+        if (!dependencyProperties) {
+          return [];
+        }
+        const configuredDefault =
+          dependencyProperties.default ??
+          properties[dependencyProperties.settingKey]?.default;
+        if (!Array.isArray(configuredDefault)) {
+          throw new Error(
+            `Missing dependency-property default for ${dependencyProperties.settingKey}`,
+          );
+        }
+        return [[dependencyProperties.settingKey, configuredDefault] as const];
+      },
+    ),
+  );
 }
 
 it("readme documents every manifest support matrix provider", async (): Promise<void> => {
@@ -150,20 +175,9 @@ it("manifest support matrix covers supported file defaults", async (): Promise<v
   const dependencyPropertyKeys = Object.keys(properties).filter(
     (key): boolean => key.endsWith(".dependencyProperties"),
   );
-  const matrixDependencyProperties = new Map(
-    matrix.entries.flatMap(
-      ({ dependencyProperties }): [readonly [string, string[]]] | [] => {
-        if (!dependencyProperties) {
-          return [];
-        }
-        return [
-          [
-            dependencyProperties.settingKey,
-            dependencyProperties.default,
-          ] as const,
-        ];
-      },
-    ),
+  const matrixDependencyProperties = dependencyPropertiesForMatrix(
+    matrix,
+    properties,
   );
 
   expect(matrix.entries.length).toBeGreaterThan(0);

@@ -7,11 +7,13 @@ import {
   appliedEdits,
   clearRegisteredCommands,
   completeTask,
+  documentWithUri,
   executedTasks,
   openedExternalUris,
   quickPickItems,
   quickPickOptions,
-  registeredCommands,
+  registeredCommand,
+  saveTaskState,
   shownTextDocuments,
   smokeTaskLabel,
   testState,
@@ -61,7 +63,7 @@ function buildDocument(): {
   uri: { toString: () => string };
 } {
   return {
-    getText: (): string => packageFileFixture("package-left-pad-build.json"),
+    getText: (): string => packageFileFixture("left-pad-build.json"),
     languageId: "json",
     uri: { toString: (): string => "file:///package.json" },
   };
@@ -71,19 +73,8 @@ it("save task can retry while install is running or failed", async (): Promise<v
   const { handleDidSaveTextDocument } = await import("../../tasks.ts");
   executedTasks.length = 0;
   testState.taskCompletionMode = "manual";
-  const state = {
-    flags: { showOutdated: false },
-    snapshots: {
-      editedDependencies: new Map<string, string>(),
-      savedDependencies: new Map<string, string>(),
-    },
-  };
-  const document = {
-    uri: {
-      scheme: "file",
-      toString: (): string => "file:///retry-package.json",
-    },
-  };
+  const state = saveTaskState(false);
+  const document = documentWithUri("file:///retry-package.json");
   const key = "file:///retry-package.json";
 
   testState.analyzed = {
@@ -124,7 +115,7 @@ it("resolve command applies Rust-produced edits", async (): Promise<void> => {
   appliedEdits.length = 0;
   clearRegisteredCommands();
   const document = {
-    getText: (): string => packageFileFixture("package-left-pad.json"),
+    getText: (): string => packageFileFixture("left-pad.json"),
     languageId: "json",
     uri: { toString: (): string => "file:///package.json" },
   };
@@ -158,13 +149,13 @@ it("resolve command applies Rust-produced edits", async (): Promise<void> => {
   testState.activeTextEditor = { document };
   const state = commandState(session);
   registerCommands(state as never);
-  await registeredCommands["versionlens.suggestion.onUpdateDependency"]?.(
+  await registeredCommand("versionlens.suggestion.onUpdateDependency")(
     "left-pad",
     "left-pad\u001f0:30,0:35",
   );
-  await registeredCommands["versionlens.editor.onSortDependencies"]?.();
+  await registeredCommand("versionlens.editor.onSortDependencies")();
   state.flags.codeLensReplace = true;
-  await registeredCommands["versionlens.editor.onUpdateDependenciesMinor"]?.();
+  await registeredCommand("versionlens.editor.onUpdateDependenciesMinor")();
 
   expect(applyInputs).toMatchObject([
     { dependencyName: "left-pad\u001f0:30,0:35" },
@@ -184,9 +175,7 @@ it("open dependency command opens Rust-produced local paths", async (): Promise<
   clearRegisteredCommands();
 
   registerCommands(commandState(undefined) as never);
-  await registeredCommands["versionlens.suggestion.onFileLink"]?.(
-    "/repo/local",
-  );
+  await registeredCommand("versionlens.suggestion.onFileLink")("/repo/local");
 
   expect(openedExternalUris).toEqual([{ path: "/repo/local", scheme: "file" }]);
   expect(shownTextDocuments).toEqual([]);
@@ -202,7 +191,7 @@ it("choose build command applies the selected Rust build edit", async (): Promis
 
   testState.activeTextEditor = { document: buildDocument() };
   registerCommands(commandState(buildSelectionSession(applyInputs)) as never);
-  await registeredCommands["versionlens.suggestion.onChooseBuild"]?.(
+  await registeredCommand("versionlens.suggestion.onChooseBuild")(
     "left-pad\u001f0:30,0:43",
     "left-pad",
     "1.0.0+build.1",
@@ -236,7 +225,7 @@ it("resolve command confirms vulnerable updates before applying edits", async ()
   testState.warningChoice = undefined;
   clearRegisteredCommands();
   const document = {
-    getText: (): string => packageFileFixture("package-left-pad.json"),
+    getText: (): string => packageFileFixture("left-pad.json"),
     languageId: "json",
     uri: { toString: (): string => "file:///package.json" },
   };
@@ -270,7 +259,7 @@ it("resolve command confirms vulnerable updates before applying edits", async ()
 
   testState.activeTextEditor = { document };
   registerCommands(commandState(session) as never);
-  await registeredCommands["versionlens.suggestion.onUpdateDependency"]?.(
+  await registeredCommand("versionlens.suggestion.onUpdateDependency")(
     "left-pad",
   );
 
@@ -278,7 +267,7 @@ it("resolve command confirms vulnerable updates before applying edits", async ()
   expect(appliedEdits).toEqual([]);
 
   testState.warningChoice = "Update Anyway";
-  await registeredCommands["versionlens.suggestion.onUpdateDependency"]?.(
+  await registeredCommand("versionlens.suggestion.onUpdateDependency")(
     "left-pad",
   );
 

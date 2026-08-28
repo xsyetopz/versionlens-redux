@@ -2,7 +2,7 @@ import { commands, type Disposable } from "#vscode-host";
 import { removeAuthHeader } from "../auth/remove.ts";
 import { addAuthHeader } from "../auth/set.ts";
 import { refreshActiveDiagnostics } from "../diagnostics/refresh.ts";
-import type { NativeApplyCommand } from "../native/input.ts";
+import type { NativeApplyCommand } from "../native.ts";
 import { recreateSessions } from "../session/registry.ts";
 import type { ExtensionState } from "../state.ts";
 import { runCustomInstall } from "../tasks/custom-install.ts";

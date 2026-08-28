@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import process from "node:process";
 
+import { createAuthContext } from "../support.ts";
+
 interface TextDocumentStub {
   getText: () => string;
   languageId: string;
@@ -70,19 +72,6 @@ interface ExtensionState {
   ui: {
     diagnostics: { set: (uri: unknown, diagnostics: unknown[]) => void };
     outputChannel: { appendLine: () => undefined };
-  };
-}
-
-interface AuthenticationContext {
-  extensionPath: string;
-  secrets: {
-    get: (key: string) => string | undefined;
-    store: (key: string, value: string) => void;
-  };
-  storageUri: { path: string };
-  workspaceState: {
-    get: (key: string, fallback: unknown) => unknown;
-    update: (key: string, value: unknown) => void;
   };
 }
 
@@ -199,31 +188,13 @@ function createExtensionState(
   };
 }
 
-function authContext(): AuthenticationContext {
-  return {
-    extensionPath: "/test/extension",
-    secrets: {
-      get: (key: string): string | undefined =>
-        diagnosticState.configurationAuth.secretValues[key],
-      store(key: string, value: string): void {
-        diagnosticState.configurationAuth.secretValues[key] = value;
-        diagnosticState.configurationAuth.storedSecrets.push({ key, value });
-      },
-    },
-    storageUri: { path: "/workspace/.vscode" },
-    workspaceState: {
-      get: (key: string, fallback: unknown): unknown =>
-        diagnosticState.configurationAuth.workspaceValues[key] ?? fallback,
-      update: (key: string, value: unknown): void => {
-        diagnosticState.configurationAuth.workspaceValues[key] = value;
-        diagnosticState.configurationAuth.updatedSettings.push({
-          key,
-          target: false,
-          value,
-        });
-      },
-    },
-  };
+function authContext(): ReturnType<typeof createAuthContext> {
+  return createAuthContext({
+    secretValues: diagnosticState.configurationAuth.secretValues,
+    storedSecrets: diagnosticState.configurationAuth.storedSecrets,
+    updatedSettings: diagnosticState.configurationAuth.updatedSettings,
+    workspaceValues: diagnosticState.configurationAuth.workspaceValues,
+  });
 }
 
 function documentStub(uri: string): TextDocumentStub {
@@ -232,6 +203,14 @@ function documentStub(uri: string): TextDocumentStub {
     languageId: "json",
     uri: { toString: (): string => uri },
   };
+}
+
+function analyzeDocumentStub(
+  documentUri: string,
+  onAnalyze: () => void = (): void => undefined,
+): AnalyzeOutput {
+  onAnalyze();
+  return outputFor(documentUri);
 }
 
 function reset(): void {
@@ -270,6 +249,7 @@ function packageFileFixture(name: string): string {
 
 export type { AnalyzeOutput, ResolveOutput, SessionStub, TextDocumentStub };
 export {
+  analyzeDocumentStub,
   authContext,
   authorizationSecret,
   createExtensionState,

@@ -1,7 +1,7 @@
 import { basename, dirname } from "node:path";
 import { RelativePattern, type Uri, window, workspace } from "#vscode-host";
-import { enabledFilePatternKeys } from "../config/keys/files.ts";
-import { fileDocument } from "../documents/file.ts";
+import { enabledFilePatternKeys } from "../config/keys.ts";
+import { fileDocument } from "../documents.ts";
 
 const defaultExcludes = [
   "**/node_modules/**",

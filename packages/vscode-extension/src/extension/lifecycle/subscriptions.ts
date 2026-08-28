@@ -9,7 +9,7 @@ import { updateContexts } from "../commands/contexts.ts";
 import { registerCommands } from "../commands/register.ts";
 import { analyzeDocument } from "../diagnostics/analyze.ts";
 import { refreshDiagnostics } from "../diagnostics/refresh.ts";
-import { fileDocument } from "../documents/file.ts";
+import { fileDocument } from "../documents.ts";
 import type { ExtensionState } from "../state.ts";
 import { handleDidSaveTextDocument } from "../tasks.ts";
 import {

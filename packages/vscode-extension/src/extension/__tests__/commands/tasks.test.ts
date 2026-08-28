@@ -4,9 +4,11 @@ import { commandState } from "./command-state.ts";
 import {
   clearRegisteredCommands,
   createdSessionConfigs,
+  documentWithUri,
   executedTasks,
   quickPickItems,
-  registeredCommands,
+  registeredCommand,
+  saveTaskState,
   smokeTaskLabel,
   testState,
 } from "./support.ts";
@@ -80,9 +82,9 @@ it("version lens toggles refresh registered code lenses", async (): Promise<void
   );
 
   registerCommands(state as never);
-  await registeredCommands["versionlens.editor.onHideVersionLenses"]?.();
-  await registeredCommands["versionlens.editor.onShowVersionLenses"]?.();
-  await registeredCommands["versionlens.editor.onShowPrereleaseVersions"]?.();
+  await registeredCommand("versionlens.editor.onHideVersionLenses")();
+  await registeredCommand("versionlens.editor.onShowVersionLenses")();
+  await registeredCommand("versionlens.editor.onShowPrereleaseVersions")();
 
   expect(testState.codeLensRefreshCount).toBe(toggleRefreshCount);
   expect(diagnosticsClearCount).toBe(1);
@@ -158,13 +160,12 @@ it("custom install command only runs for file-backed active editors", async (): 
     document: {
       uri: {
         scheme: "versionlens",
-        toString: (): string =>
-          "versionlens:/versionlens.multi-registries.json",
+        toString: (): string => "versionlens:/multi-registries.json",
       },
     },
   };
   registerCommands(commandState({}) as never);
-  await registeredCommands["versionlens.editor.onCustomInstall"]?.();
+  await registeredCommand("versionlens.editor.onCustomInstall")();
   expect(executedTasks).toEqual([]);
 
   testState.activeTextEditor = {
@@ -172,7 +173,7 @@ it("custom install command only runs for file-backed active editors", async (): 
       uri: { scheme: "file", toString: (): string => "file:///package.json" },
     },
   };
-  await registeredCommands["versionlens.editor.onCustomInstall"]?.();
+  await registeredCommand("versionlens.editor.onCustomInstall")();
   expect(executedTasks).toEqual([smokeTaskLabel]);
 });
 
@@ -184,16 +185,8 @@ it("save task ignores unsupported documents without creating snapshots", async (
     isSupportedManifest: false,
   };
   testState.dependencySnapshotValue = "";
-  const state = {
-    flags: { showOutdated: true },
-    snapshots: {
-      editedDependencies: new Map<string, string>(),
-      savedDependencies: new Map<string, string>(),
-    },
-  };
-  const document = {
-    uri: { scheme: "file", toString: (): string => "file:///README.md" },
-  };
+  const state = saveTaskState(true);
+  const document = documentWithUri("file:///README.md");
 
   await handleDidSaveTextDocument(state as never, document as never);
 
@@ -212,16 +205,8 @@ it("save task runs only after dependency signature changes", async (): Promise<v
   executedTasks.length = 0;
   const startingRefreshCount = testState.refreshCount;
   testState.taskCompletionMode = "auto";
-  const state = {
-    flags: { showOutdated: false },
-    snapshots: {
-      editedDependencies: new Map<string, string>(),
-      savedDependencies: new Map<string, string>(),
-    },
-  };
-  const document = {
-    uri: { scheme: "file", toString: (): string => "file:///package.json" },
-  };
+  const state = saveTaskState(false);
+  const document = documentWithUri("file:///package.json");
 
   testState.analyzed = {
     activeProviderName: "npm",

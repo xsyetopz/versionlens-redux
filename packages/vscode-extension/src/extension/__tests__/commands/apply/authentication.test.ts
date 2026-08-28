@@ -1,9 +1,9 @@
 import { expect, it } from "../../runtime.ts";
-
+import { expectCustomAuthenticationSetting } from "../../support.ts";
 import { authContext } from "./auth.ts";
 
 import { commandState, documentStub } from "./state.ts";
-
+import type { ApplyResult } from "./support.ts";
 import {
   appliedEdits,
   applyTestState,
@@ -30,18 +30,7 @@ interface AuthorizationResult {
   edits: never[];
   vulnerableUpdateCount: number;
 }
-interface SuccessfulResult {
-  authorizationRequiredCount: number;
-  authorizationRequiredRequests: never[];
-  edits: Array<{
-    newText: string;
-    range: {
-      end: { character: number; line: number };
-      start: { character: number; line: number };
-    };
-  }>;
-  vulnerableUpdateCount: number;
-}
+type SuccessfulResult = ApplyResult;
 
 interface SuccessfulReloadedSession {
   analyzeDocument: () => undefined;
@@ -53,6 +42,13 @@ interface SuccessfulReloadedSession {
 interface AuthorizationRequiredSession {
   applyCommand: (input: unknown) => AuthorizationResult;
   disposeSession: () => undefined;
+}
+
+function prepareAuthenticationPrompt(): void {
+  reset();
+  applyTestState.warningChoice = "Add Authentication";
+  inputValues.push(registryUrl, "Bearer token");
+  quickPickValues.push({ label: "Custom Value", providerScheme: "Custom" });
 }
 
 function authorizationRequiredSession(
@@ -108,10 +104,7 @@ function successfulReloadedSession(
 
 it("resolve command offers authentication when registry auth is required", async (): Promise<void> => {
   const { registerCommands } = await import("../../../commands/register.ts");
-  reset();
-  applyTestState.warningChoice = "Add Authentication";
-  inputValues.push(registryUrl, "Bearer token");
-  quickPickValues.push({ label: "Custom Value", providerScheme: "Custom" });
+  prepareAuthenticationPrompt();
   const document = documentStub("private-package");
   const session = {
     disposeSession: (): undefined => undefined,
@@ -154,28 +147,13 @@ it("resolve command offers authentication when registry auth is required", async
       value: "Bearer token",
     },
   ]);
-  expect(updatedConfig[0]).toMatchObject({
-    key: "UrlAuthenticationStore",
-    target: false,
-    value: {
-      [registryUrl]: {
-        label: "Custom Value",
-        protocol: "https:",
-        scheme: "Custom",
-        status: "NoStatus",
-        url: registryUrl,
-      },
-    },
-  });
+  expectCustomAuthenticationSetting(updatedConfig[0], registryUrl);
   expect(appliedEdits).toEqual([]);
 });
 
 it("resolve command retries and applies edits after adding authentication", async (): Promise<void> => {
   const { registerCommands } = await import("../../../commands/register.ts");
-  reset();
-  applyTestState.warningChoice = "Add Authentication";
-  inputValues.push(registryUrl, "Bearer token");
-  quickPickValues.push({ label: "Custom Value", providerScheme: "Custom" });
+  prepareAuthenticationPrompt();
   const document = documentStub("private-package");
   const applyInputs: unknown[] = [];
   const session = authorizationRequiredSession(applyInputs);

@@ -1,5 +1,5 @@
 import { optionalProperty } from "../config/optional.ts";
-import type { NativeHttpHeader } from "../native/config.ts";
+import type { NativeHttpHeader } from "../native.ts";
 import type { ExtensionState } from "../state.ts";
 import {
   authorizationHeaderName,

@@ -1,6 +1,6 @@
 import type { TextDocument } from "#vscode-host";
-import { documentInput } from "../documents/input.ts";
-import type { NativeSession } from "../native/module.ts";
+import { documentInput } from "../documents.ts";
+import type { NativeSession } from "../native.ts";
 import { sessionForResource } from "../session/registry.ts";
 import type { ExtensionState } from "../state.ts";
 import { logProviderError } from "./log.ts";

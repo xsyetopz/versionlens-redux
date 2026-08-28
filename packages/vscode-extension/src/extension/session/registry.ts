@@ -5,9 +5,8 @@ import {
   workspace,
 } from "#vscode-host";
 import { optionalProperty } from "../config/optional.ts";
-import type { NativeSessionConfig } from "../native/config.ts";
-import type { NativeSession } from "../native/module.ts";
-import { loadNative } from "../native/module.ts";
+import type { NativeSession, NativeSessionConfig } from "../native.ts";
+import { loadNative } from "../native.ts";
 import type { ExtensionState, ResourceSession } from "../state.ts";
 import { cacheDurationMinutes } from "./cache.ts";
 import {

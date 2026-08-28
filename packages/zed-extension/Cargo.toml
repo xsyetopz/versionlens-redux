@@ -1,6 +1,6 @@
 [package]
 name = "versionlens-zed-extension"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 publish = false
 
@@ -11,4 +11,3 @@ crate-type = ["cdylib"]
 zed_extension_api = "0.7.0"
 
 [workspace]
-

@@ -7,9 +7,8 @@ import {
 } from "#vscode-host";
 import { analyzeDocument } from "../diagnostics/analyze.ts";
 import { resolveDocumentForDiagnostics } from "../diagnostics/resolve.ts";
-import { toRange } from "../documents/range.ts";
-import { documentSelectors } from "../documents/selectors.ts";
-import type { NativeCodeLensPayload } from "../native/output.ts";
+import { documentSelectors, toRange } from "../documents.ts";
+import type { NativeCodeLensPayload } from "../native.ts";
 import type { ExtensionState } from "../state.ts";
 
 const nativeArgumentsByCodeLens = new WeakMap<object, string[]>();

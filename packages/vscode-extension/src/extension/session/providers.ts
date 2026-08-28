@@ -1,10 +1,12 @@
 import { type Uri, workspace } from "#vscode-host";
-import { providerCacheKeys } from "../config/keys/cache.ts";
-import { dependencyPropertyKeys } from "../config/keys/dependency-properties.ts";
-import { filePatternKeys } from "../config/keys/files.ts";
-import { providerStrictSslKeys } from "../config/keys/http.ts";
-import { prereleaseTagKeys } from "../config/keys/prerelease.ts";
-import { registryUrlKeys } from "../config/keys/registry.ts";
+import {
+  dependencyPropertyKeys,
+  filePatternKeys,
+  prereleaseTagKeys,
+  providerCacheKeys,
+  providerStrictSslKeys,
+  registryUrlKeys,
+} from "../config/keys.ts";
 import type {
   NativeDependencyPropertyConfig,
   NativeFilePatternConfig,
@@ -12,7 +14,7 @@ import type {
   NativeProviderCacheConfig,
   NativeProviderHttpConfig,
   NativeRegistryUrl,
-} from "../native/config.ts";
+} from "../native.ts";
 import { configuredValue } from "./configured.ts";
 
 export function dependencyProperties(

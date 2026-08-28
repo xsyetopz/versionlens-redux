@@ -1,4 +1,5 @@
 import { mock, mockVscodeHost } from "../../runtime.ts";
+import { createCommandsMock } from "../../support.ts";
 import {
   codeLens,
   range,
@@ -24,12 +25,17 @@ interface NativeSessionStub {
   disposeSession: () => undefined;
   resolveDocument: () => undefined;
 }
-interface CommandsMock {
-  executeCommand: () => undefined;
-  registerCommand: (
-    command: string,
-    callback: (...args: unknown[]) => unknown,
-  ) => Disposable;
+interface ApplyResult {
+  authorizationRequiredCount: number;
+  authorizationRequiredRequests: never[];
+  edits: Array<{
+    newText: string;
+    range: {
+      end: { character: number; line: number };
+      start: { character: number; line: number };
+    };
+  }>;
+  vulnerableUpdateCount: number;
 }
 interface WindowMock {
   readonly activeTextEditor: { document: unknown } | undefined;
@@ -77,21 +83,6 @@ function eventEmitter(this: EventEmitterMock): void {
   this.dispose = (): undefined => undefined;
   this.fire = (): void => {
     applyTestState.codeLensRefreshCount += 1;
-  };
-}
-
-function commandsMock(): CommandsMock {
-  return {
-    executeCommand: (): undefined => undefined,
-    registerCommand(
-      command: string,
-      callback: (...args: unknown[]) => unknown,
-    ): Disposable {
-      registeredCommands[command] = async (
-        ...args: unknown[]
-      ): Promise<unknown> => callback(...args);
-      return { dispose: (): undefined => undefined };
-    },
   };
 }
 
@@ -148,7 +139,7 @@ function vscodeMock(): MockModule {
       },
     ],
     ["WorkspaceEdit", workspaceEdit],
-    ["commands", commandsMock()],
+    ["commands", createCommandsMock(registeredCommands)],
     ["env", { openExternal: (): undefined => undefined }],
     ["extensions", { getExtension: (): undefined => undefined }],
     [
@@ -183,7 +174,7 @@ mock.module(
   }),
 );
 mock.module(
-  "../../../native/module.ts",
+  "../../../native.ts",
   (): MockModule => ({
     loadNative: (): { createSession: (config: unknown) => object } => ({
       createSession(config: unknown): object {
@@ -201,6 +192,28 @@ function defaultNativeSession(): NativeSessionStub {
     clearCache: (): undefined => undefined,
     disposeSession: (): undefined => undefined,
     resolveDocument: (): undefined => undefined,
+  };
+}
+
+function applyResult(
+  newText = "1.1.0",
+  startCharacter = 30,
+  endCharacter = 35,
+  vulnerableUpdateCount = 0,
+): ApplyResult {
+  return {
+    authorizationRequiredCount: 0,
+    authorizationRequiredRequests: [],
+    edits: [
+      {
+        newText,
+        range: {
+          end: { character: endCharacter, line: 0 },
+          start: { character: startCharacter, line: 0 },
+        },
+      },
+    ],
+    vulnerableUpdateCount,
   };
 }
 
@@ -239,8 +252,10 @@ function reset(): void {
   clearRecord(registeredCommands);
 }
 
+export type { ApplyResult };
 export {
   appliedEdits,
+  applyResult,
   applyTestState,
   authorizationSecret,
   createdNativeSessions,

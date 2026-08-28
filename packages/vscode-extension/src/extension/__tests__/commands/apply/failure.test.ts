@@ -1,7 +1,7 @@
 import { expect, it } from "../../runtime.ts";
 
 import { commandState, documentStub } from "./state.ts";
-
+import type { ApplyResult } from "./support.ts";
 import {
   appliedEdits,
   applyTestState,
@@ -20,26 +20,23 @@ it("vulnerability confirmation rejects invalid native edit ranges", async (): Pr
   registerCommands(
     commandState({
       applyCommand: (): {
-        edits: Array<{
-          newText: string;
-          range: {
-            end: { character: number; line: number };
-            start: { character: number; line: number };
-          };
-        }>;
+        edits: ApplyResult["edits"];
         vulnerableUpdateCount: number;
-      } => ({
-        edits: [
-          {
-            newText: "1.1.0",
-            range: {
-              end: { character: 999, line: 0 },
-              start: { character: 30, line: 0 },
+      } =>
+        ({
+          authorizationRequiredCount: 0,
+          authorizationRequiredRequests: [],
+          edits: [
+            {
+              newText: "1.1.0",
+              range: {
+                end: { character: 999, line: 0 },
+                start: { character: 30, line: 0 },
+              },
             },
-          },
-        ],
-        vulnerableUpdateCount: 1,
-      }),
+          ],
+          vulnerableUpdateCount: 1,
+        }) as ApplyResult,
     }) as never,
   );
   await registeredCommand("versionlens.suggestion.onUpdateDependency")(
@@ -58,20 +55,7 @@ it("resolve command ignores reentry while an edit is pending", async (): Promise
     releaseApplyEdit = (): void => resolve(true);
   });
   const session = {
-    applyCommand: (
-      input: unknown,
-    ): {
-      authorizationRequiredCount: number;
-      authorizationRequiredRequests: never[];
-      edits: Array<{
-        newText: string;
-        range: {
-          end: { character: number; line: number };
-          start: { character: number; line: number };
-        };
-      }>;
-      vulnerableUpdateCount: number;
-    } => {
+    applyCommand: (input: unknown): ApplyResult => {
       applyInputs.push(input);
       return {
         authorizationRequiredCount: 0,
@@ -152,12 +136,13 @@ it("resolve command forwards CodeLens-selected update commands", async (): Promi
   const session = {
     applyCommand: (
       input: unknown,
-    ): {
-      authorizationRequiredCount: number;
-      authorizationRequiredRequests: never[];
-      edits: never[];
-      vulnerableUpdateCount: number;
-    } => {
+    ): Pick<
+      ApplyResult,
+      | "authorizationRequiredCount"
+      | "authorizationRequiredRequests"
+      | "edits"
+      | "vulnerableUpdateCount"
+    > => {
       applyInputs.push(input);
       return {
         authorizationRequiredCount: 0,

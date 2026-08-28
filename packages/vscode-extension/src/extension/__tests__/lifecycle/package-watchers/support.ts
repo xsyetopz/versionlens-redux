@@ -53,7 +53,7 @@ function uri(value: string): TestUri {
 
 function document(
   value: string,
-  text = packageFileFixture("package-left-pad.json"),
+  text = packageFileFixture("left-pad.json"),
 ): TestDocument {
   const documentValue = value;
   const documentText = text;

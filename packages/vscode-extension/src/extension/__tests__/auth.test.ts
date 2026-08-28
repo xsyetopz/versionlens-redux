@@ -85,6 +85,49 @@ it("stores basic auth metadata in workspace state and secret storage", async ():
   ]);
 });
 
+it("stores a custom authorization value after a successful prompt", async (): Promise<void> => {
+  const { addAuthHeader } = await import("../auth/set.ts");
+  const context = extensionContext();
+  inputValues = ["https://registry.example.com", "Bearer token"];
+  quickPickResult = { label: "Custom Value", providerScheme: "Custom" };
+
+  const added = await addAuthHeader({ context } as never);
+
+  expect(added).toBe(true);
+  expect(
+    context.secrets.values.get("/storage__https://registry.example.com"),
+  ).toBe("Bearer token");
+  expect(context.workspaceState.value).toEqual({
+    "https://registry.example.com": {
+      label: "Custom Value",
+      protocol: "https:",
+      scheme: "Custom",
+      status: "NoStatus",
+      url: "https://registry.example.com",
+    },
+  });
+});
+
+it("records cancellation when the authorization value prompt is cancelled", async (): Promise<void> => {
+  const { addAuthHeader } = await import("../auth/set.ts");
+  const context = extensionContext();
+  inputValues = ["https://registry.example.com", undefined];
+  quickPickResult = { label: "Custom Value", providerScheme: "Custom" };
+
+  const added = await addAuthHeader({ context } as never);
+
+  expect(added).toBe(false);
+  expect(context.secrets.values.size).toBe(0);
+  expect(context.workspaceState.value).toEqual({
+    "https://registry.example.com": {
+      protocol: "https:",
+      scheme: "NotSet",
+      status: "User cancelled",
+      url: "https://registry.example.com",
+    },
+  });
+});
+
 it("accepts normalized same-origin child paths without discarding queries", async (): Promise<void> => {
   const { addAuthHeader } = await import("../auth/set.ts");
   const context = extensionContext();

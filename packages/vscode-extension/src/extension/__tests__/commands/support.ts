@@ -1,9 +1,17 @@
 import { mock, mockVscodeHost } from "../runtime.ts";
+import {
+  appliedEdits as sharedAppliedEdits,
+  registeredCommands as sharedRegisteredCommands,
+} from "../support.ts";
 import { workspaceSessionKey } from "./command-state.ts";
 import { type AnalyzedDocument, createCommandTestState } from "./test-state.ts";
 import { createVscodeMock, type TaskExecution } from "./vscode/mock.ts";
 
 type MockModule = Record<string, unknown>;
+
+const appliedEdits: unknown[] = sharedAppliedEdits;
+const registeredCommands: Record<string, (...args: unknown[]) => unknown> =
+  sharedRegisteredCommands;
 
 interface NativeSession {
   analyzeDocument: () => AnalyzedDocument;
@@ -14,6 +22,28 @@ interface NativeSession {
 }
 
 const smokeTaskLabel = "smoke bun install";
+
+function saveTaskState(showOutdated: boolean): {
+  flags: { showOutdated: boolean };
+  snapshots: {
+    editedDependencies: Map<string, string>;
+    savedDependencies: Map<string, string>;
+  };
+} {
+  return {
+    flags: { showOutdated },
+    snapshots: {
+      editedDependencies: new Map<string, string>(),
+      savedDependencies: new Map<string, string>(),
+    },
+  };
+}
+
+function documentWithUri(uri: string): {
+  uri: { scheme: "file"; toString: () => string };
+} {
+  return { uri: { scheme: "file", toString: (): string => uri } };
+}
 const contexts: Record<string, unknown> = {};
 const executedTasks: string[] = [];
 const taskExecutions: TaskExecution[] = [];
@@ -38,26 +68,19 @@ const taskEndListeners: ((event: {
   exitCode: number | undefined;
 }) => void)[] = [];
 const testState = createCommandTestState();
-const testGlobals = globalThis as typeof globalThis & {
-  __versionLensAppliedEdits?: unknown[];
-  __versionLensRegisteredCommands?: Record<
-    string,
-    (...args: unknown[]) => unknown
-  >;
-};
-testGlobals.__versionLensRegisteredCommands ??= {};
-testGlobals.__versionLensAppliedEdits ??= [];
-const registeredCommands: NonNullable<
-  (typeof testGlobals)["__versionLensRegisteredCommands"]
-> = testGlobals.__versionLensRegisteredCommands;
-const appliedEdits: NonNullable<
-  (typeof testGlobals)["__versionLensAppliedEdits"]
-> = testGlobals.__versionLensAppliedEdits;
 
 function clearRegisteredCommands(): void {
   for (const command of Object.keys(registeredCommands)) {
     delete registeredCommands[command];
   }
+}
+
+function registeredCommand(name: string): (...args: unknown[]) => unknown {
+  const command = registeredCommands[name];
+  if (!command) {
+    throw new Error(`Command ${name} was not registered`);
+  }
+  return command;
 }
 
 function completeTask(name: string, exitCode: number | undefined): void {
@@ -124,7 +147,7 @@ mockVscodeHost(
 );
 
 mock.module(
-  "../../native/module.ts",
+  "../../native.ts",
   (): MockModule => ({
     loadNative: (): MockModule => ({
       createSession(config: unknown): NativeSession {
@@ -193,13 +216,16 @@ export {
   configurationChangeListeners,
   contexts,
   createdSessionConfigs,
+  documentWithUri,
   executedTasks,
   fileSystemWatchers,
   findFilesCalls,
   openedExternalUris,
   quickPickItems,
   quickPickOptions,
+  registeredCommand,
   registeredCommands,
+  saveTaskState,
   shownTextDocuments,
   smokeTaskLabel,
   testState,

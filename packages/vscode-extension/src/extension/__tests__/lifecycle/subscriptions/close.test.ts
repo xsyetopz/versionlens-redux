@@ -1,99 +1,73 @@
 import { expect, it } from "../../runtime.ts";
 
-import { subscriptionHarness, textDocumentCloseListeners } from "./support.ts";
+import {
+  subscriptionContext,
+  subscriptionHarness,
+  textDocumentCloseListeners,
+} from "./support.ts";
 
-it("supported file closes clear edited snapshots without touching diagnostics", async (): Promise<void> => {
-  const { registerExtensionSubscriptions } = await import(
-    "../../../lifecycle/subscriptions.ts"
-  );
-  const uri = {
+for (const testCase of [
+  {
+    name: "supported file closes clear edited snapshots without touching diagnostics",
     scheme: "file",
-    toString: (): string => "file:///package.json",
-  };
-  const document = { uri };
-  const context = { subscriptions: [] };
-  const deletedUris: unknown[] = [];
-  textDocumentCloseListeners.length = 0;
-  subscriptionHarness.analyzeDocumentResult = { isSupportedManifest: true };
-
-  const state = {
-    snapshots: {
-      editedDependencies: new Map([[uri.toString(), "edited"]]),
-      savedDependencies: new Map([[uri.toString(), "saved"]]),
-    },
-    ui: {
-      diagnostics: {
-        delete(uriToDelete: unknown): void {
-          deletedUris.push(uriToDelete);
-        },
-      },
-      outputChannel: {},
-    },
-  };
-
-  registerExtensionSubscriptions(state as never, context as never);
-  textDocumentCloseListeners[0]?.(document);
-
-  expect(state.snapshots.editedDependencies.has(uri.toString())).toBe(false);
-  expect(state.snapshots.savedDependencies.get(uri.toString())).toBe("saved");
-  expect(deletedUris).toEqual([]);
-});
-
-it("non-file closes preserve dependency snapshots", async (): Promise<void> => {
-  const { registerExtensionSubscriptions } = await import(
-    "../../../lifecycle/subscriptions.ts"
-  );
-  const uri = {
+    uri: "file:///package.json",
+    supported: true,
+    editedPresent: false,
+  },
+  {
+    name: "non-file closes preserve dependency snapshots",
     scheme: "versionlens",
-    toString: (): string => "versionlens:/schema.json",
-  };
-  const document = { uri };
-  const context = { subscriptions: [] };
-  textDocumentCloseListeners.length = 0;
-  subscriptionHarness.analyzeDocumentResult = { isSupportedManifest: true };
+    uri: "versionlens:/schema.json",
+    supported: true,
+    editedPresent: true,
+  },
+  {
+    name: "unsupported file closes preserve dependency snapshots",
+    scheme: "file",
+    uri: "file:///README.md",
+    supported: false,
+    editedPresent: true,
+  },
+] as const) {
+  it(testCase.name, async (): Promise<void> => {
+    const { registerExtensionSubscriptions } = await import(
+      "../../../lifecycle/subscriptions.ts"
+    );
+    const uri = {
+      scheme: testCase.scheme,
+      toString: (): string => testCase.uri,
+    };
+    const document = { uri };
+    const deletedUris: unknown[] = [];
+    textDocumentCloseListeners.length = 0;
+    subscriptionHarness.analyzeDocumentResult = {
+      isSupportedManifest: testCase.supported,
+    };
+    const state = {
+      snapshots: {
+        editedDependencies: new Map([[testCase.uri, "edited"]]),
+        savedDependencies: new Map([[testCase.uri, "saved"]]),
+      },
+      ui: {
+        diagnostics: {
+          delete(uriToDelete: unknown): void {
+            deletedUris.push(uriToDelete);
+          },
+        },
+        outputChannel: {},
+      },
+    };
 
-  const state = {
-    snapshots: {
-      editedDependencies: new Map([[uri.toString(), "edited"]]),
-      savedDependencies: new Map([[uri.toString(), "saved"]]),
-    },
-    ui: {
-      diagnostics: { delete: (): undefined => undefined },
-      outputChannel: {},
-    },
-  };
+    registerExtensionSubscriptions(
+      state as never,
+      subscriptionContext() as never,
+    );
+    textDocumentCloseListeners[0]?.(document);
 
-  registerExtensionSubscriptions(state as never, context as never);
-  textDocumentCloseListeners[0]?.(document);
-
-  expect(state.snapshots.editedDependencies.get(uri.toString())).toBe("edited");
-  expect(state.snapshots.savedDependencies.get(uri.toString())).toBe("saved");
-});
-
-it("unsupported file closes preserve dependency snapshots", async (): Promise<void> => {
-  const { registerExtensionSubscriptions } = await import(
-    "../../../lifecycle/subscriptions.ts"
-  );
-  const uri = { scheme: "file", toString: (): string => "file:///README.md" };
-  const document = { uri };
-  const context = { subscriptions: [] };
-  textDocumentCloseListeners.length = 0;
-  subscriptionHarness.analyzeDocumentResult = { isSupportedManifest: false };
-
-  const state = {
-    snapshots: {
-      editedDependencies: new Map([[uri.toString(), "edited"]]),
-      savedDependencies: new Map([[uri.toString(), "saved"]]),
-    },
-    ui: {
-      diagnostics: { delete: (): undefined => undefined },
-      outputChannel: {},
-    },
-  };
-
-  registerExtensionSubscriptions(state as never, context as never);
-  textDocumentCloseListeners[0]?.(document);
-
-  expect(state.snapshots.editedDependencies.get(uri.toString())).toBe("edited");
-  expect(state.snapshots.savedDependencies.get(uri.toString())).toBe("saved");
-});
+    expect(state.snapshots.editedDependencies.has(testCase.uri)).toBe(
+      testCase.editedPresent,
+    );
+    expect(state.snapshots.savedDependencies.get(testCase.uri)).toBe("saved");
+    expect(deletedUris).toHaveLength(0);
+  });
+}

@@ -24,7 +24,7 @@ it("command activation events rely on VS Code 1.75 automatic generation", async 
 it("all configured manifest languages activate the extension", async (): Promise<void> => {
   const local = await packageJson("packages/vscode-extension/package.json");
   const activationEvents = new Set(local.activationEvents ?? []);
-  const { filePatternKeys } = await import("../config/keys/files.ts");
+  const { filePatternKeys } = await import("../config/keys.ts");
 
   for (const [, , languages] of filePatternKeys) {
     for (const language of languages) {

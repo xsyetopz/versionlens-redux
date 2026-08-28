@@ -1,7 +1,7 @@
 import { type Uri, workspace } from "#vscode-host";
 import { authHeaders } from "../auth/headers.ts";
 import { optionalProperty } from "../config/optional.ts";
-import type { NativeHttpConfig, NativeHttpHeader } from "../native/config.ts";
+import type { NativeHttpConfig, NativeHttpHeader } from "../native.ts";
 import type { ExtensionState } from "../state.ts";
 import { configuredValue } from "./configured.ts";
 
