@@ -15,6 +15,7 @@ use versionlens_versions::{
 
 use crate::constructors::no_match;
 use crate::suggestion::{Suggestion, SuggestionStatus};
+use crate::support;
 
 mod github;
 mod npm;
@@ -126,22 +127,13 @@ fn comparable_nix_release(value: &str) -> Option<NumericSegments> {
 
 fn comparable_requirement<'a>(dependency: &'a Dependency) -> &'a str {
     if matches!(dependency.ecosystem, Deno | Npm)
-        && let Some(requirement) = registry_alias_requirement(&dependency.requirement)
+        && let Some(requirement) =
+            versionlens_model::registry_alias_requirement(&dependency.requirement)
     {
         return requirement;
     }
 
     &dependency.requirement
-}
-
-fn registry_alias_requirement(requirement: &str) -> Option<&str> {
-    let spec = requirement
-        .strip_prefix("jsr:")
-        .or_else(|| requirement.strip_prefix("npm:"))?;
-    let Some(split) = spec.rfind('@').filter(|index| *index > 0) else {
-        return Some("");
-    };
-    Some(&spec[split + 1..])
 }
 
 fn registry_requirement_is_not_parseable(
@@ -175,27 +167,7 @@ fn range_minimum_matches_latest(requirement: &str, latest: &str) -> bool {
 
 fn range_minimum(requirement: &str) -> Option<String> {
     let token = range_minimum_token(requirement)?;
-    let (core, suffix) = token
-        .split_once('-')
-        .map_or((token, None), |(core, suffix)| (core, Some(suffix)));
-    let parts = core.split('.').collect::<Vec<_>>();
-    if parts.is_empty() || parts.len() > 3 {
-        return None;
-    }
-
-    let mut normalized = vec![];
-    for part in parts {
-        normalized.push(normalize_range_part(part)?);
-    }
-    while normalized.len() < 3 {
-        normalized.push("0".to_owned());
-    }
-
-    let core = normalized.join(".");
-    Some(match suffix {
-        Some(suffix) => format!("{core}-{suffix}"),
-        None => core,
-    })
+    support::normalize_version_token(token)
 }
 
 fn range_minimum_token(requirement: &str) -> Option<&str> {
@@ -213,52 +185,23 @@ fn range_minimum_token(requirement: &str) -> Option<&str> {
     (!token.is_empty()).then_some(token)
 }
 
-fn normalize_range_part(part: &str) -> Option<String> {
-    if part == "*" || part.eq_ignore_ascii_case("x") {
-        return Some("0".to_owned());
-    }
-    part.chars()
-        .all(|char| char.is_ascii_digit())
-        .then(|| part.to_owned())
-}
-
 fn docker_tag_update_available(dependency: &Dependency, latest: &str) -> bool {
     if dependency.ecosystem != Docker {
         return false;
     }
 
-    let Some(latest) = docker_tag_numbers(latest) else {
+    let Some(latest) = versionlens_versions::numeric_segments(latest) else {
         return false;
     };
-    let Some(current) = docker_tag_numbers(&dependency.requirement) else {
+    let Some(current) = versionlens_versions::numeric_segments(&dependency.requirement) else {
         return false;
     };
 
     docker_numbers_are_newer(&latest, &current)
 }
 
-fn docker_tag_numbers(tag: &str) -> Option<NumericSegments> {
-    let version = tag.split_once('-').map_or(tag, |(version, _)| version);
-    let numbers = version
-        .split('.')
-        .map(str::parse::<u64>)
-        .collect::<Result<Vec<_>, _>>()
-        .ok()?;
-    (!numbers.is_empty()).then_some(numbers)
-}
-
 fn docker_numbers_are_newer(left: &[u64], right: &[u64]) -> bool {
-    let len = left.len().max(right.len());
-    for index in 0..len {
-        let ordering = left
-            .get(index)
-            .unwrap_or(&0)
-            .cmp(right.get(index).unwrap_or(&0));
-        if !ordering.is_eq() {
-            return ordering.is_gt();
-        }
-    }
-    false
+    versionlens_versions::compare_numeric_segments(left, right).is_gt()
 }
 
 #[cfg(test)]

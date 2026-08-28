@@ -2,15 +2,14 @@ use crate::suggestion::SuggestionStatus::{
     Current as StatusCurrent, InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
     UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_model::Dependency;
-use versionlens_model::{Position, Range};
 
 use super::resolve_dependency;
-use versionlens_model::Ecosystem::{Cargo, Dotnet, Npm, Python, Ruby};
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::*;
 
 #[test]
 fn npm_dist_tag_requirement_resolves_as_update() {
-    let mut current = dependency("typescript", "next");
+    let mut current = crate::support::tests::test_dependency("typescript", "next");
     current.ecosystem = Npm;
 
     assert_eq!(
@@ -21,7 +20,7 @@ fn npm_dist_tag_requirement_resolves_as_update() {
 
 #[test]
 fn npm_latest_dist_tag_resolves_as_current() {
-    let mut current = dependency("typescript", "latest");
+    let mut current = crate::support::tests::test_dependency("typescript", "latest");
     current.ecosystem = Npm;
 
     assert_eq!(
@@ -32,7 +31,7 @@ fn npm_latest_dist_tag_resolves_as_current() {
 
 #[test]
 fn npm_alias_specifiers_compare_embedded_version_ranges() {
-    let mut current = dependency("chalk", "npm:chalk@^5.3.0");
+    let mut current = crate::support::tests::test_dependency("chalk", "npm:chalk@^5.3.0");
     current.ecosystem = Npm;
 
     assert_eq!(
@@ -43,7 +42,7 @@ fn npm_alias_specifiers_compare_embedded_version_ranges() {
 
 #[test]
 fn invalid_dotnet_requirements_resolve_as_no_match() {
-    let mut current = dependency("Test.Package", "invalid");
+    let mut current = crate::support::tests::test_dependency("Test.Package", "invalid");
     current.ecosystem = Dotnet;
 
     let suggestion = resolve_dependency(current, Some("1.1.0".to_owned()));
@@ -53,7 +52,7 @@ fn invalid_dotnet_requirements_resolve_as_no_match() {
 
 #[test]
 fn invalid_semver_requirements_resolve_as_no_match() {
-    let current = dependency("serde", "not-a-version");
+    let current = crate::support::tests::test_dependency("serde", "not-a-version");
 
     let suggestion = resolve_dependency(current, Some("1.1.0".to_owned()));
 
@@ -63,7 +62,7 @@ fn invalid_semver_requirements_resolve_as_no_match() {
 #[test]
 fn empty_semver_ranges_resolve_as_invalid_range() {
     for requirement in [">1 <1", ">1.0.0 <1.0.1", ">2 <1"] {
-        let current = dependency("typescript", requirement);
+        let current = crate::support::tests::test_dependency("typescript", requirement);
 
         assert_eq!(
             resolve_dependency(current, Some("5.0.0".to_owned())).status,
@@ -74,7 +73,7 @@ fn empty_semver_ranges_resolve_as_invalid_range() {
 
 #[test]
 fn ranges_whose_minimum_matches_latest_resolve_as_current_like_upstream() {
-    let current = dependency("typescript", "~1.1.0");
+    let current = crate::support::tests::test_dependency("typescript", "~1.1.0");
 
     assert_eq!(
         resolve_dependency(current, Some("1.1.0".to_owned())).status,
@@ -82,14 +81,18 @@ fn ranges_whose_minimum_matches_latest_resolve_as_current_like_upstream() {
     );
 }
 
-#[test]
-fn ruby_github_commit_refs_compare_as_shas() {
-    let mut current = dependency("rspec/rspec-core", "abcdef1234567890");
-    current.ecosystem = Ruby;
-    current.hosted_url = Some("https://api.github.com/repos/rspec/rspec-core/commits".to_owned());
+fn assert_github_commit_status(
+    ecosystem: Ecosystem,
+    name: &str,
+    current_requirement: &str,
+    stale_requirement: &str,
+) {
+    let mut current = crate::support::tests::test_dependency(name, current_requirement);
+    current.ecosystem = ecosystem;
+    current.hosted_url = Some(format!("https://api.github.com/repos/{name}/commits"));
 
     let mut stale = current.clone();
-    stale.requirement = "main".to_owned();
+    stale.requirement = stale_requirement.to_owned();
 
     assert_eq!(
         resolve_dependency(current, Some("abcdef1".to_owned())).status,
@@ -99,37 +102,28 @@ fn ruby_github_commit_refs_compare_as_shas() {
         resolve_dependency(stale, Some("abcdef1".to_owned())).status,
         StatusUpdateAvailable
     );
+}
+
+#[test]
+fn ruby_github_commit_refs_compare_as_shas() {
+    assert_github_commit_status(Ruby, "rspec/rspec-core", "abcdef1234567890", "main");
 }
 
 #[test]
 fn npm_github_commit_refs_compare_as_shas() {
-    let mut current = dependency("owner/commit", "abcdef1234567890");
-    current.ecosystem = Npm;
-    current.hosted_url = Some("https://api.github.com/repos/owner/commit/commits".to_owned());
-
-    let mut stale = current.clone();
-    stale.requirement = "1234567".to_owned();
-
-    assert_eq!(
-        resolve_dependency(current, Some("abcdef1".to_owned())).status,
-        StatusCurrent
-    );
-    assert_eq!(
-        resolve_dependency(stale, Some("abcdef1".to_owned())).status,
-        StatusUpdateAvailable
-    );
+    assert_github_commit_status(Npm, "owner/commit", "abcdef1234567890", "1234567");
 }
 
 #[test]
 fn python_pep440_constraints_and_releases_are_resolved() {
-    let mut excluded = dependency("demo", ">=1!2.0.0.0,!=1!2.1.0.0");
+    let mut excluded = crate::support::tests::test_dependency("demo", ">=1!2.0.0.0,!=1!2.1.0.0");
     excluded.ecosystem = Python;
     assert_eq!(
         resolve_dependency(excluded, Some("1!2.0.0.4+linux.1".to_owned())).status,
         crate::suggestion::SuggestionStatus::SatisfiesLatest,
     );
 
-    let mut prerelease = dependency("demo", ">=1.0rc1,<2.0");
+    let mut prerelease = crate::support::tests::test_dependency("demo", ">=1.0rc1,<2.0");
     prerelease.ecosystem = Python;
     assert_eq!(
         resolve_dependency(prerelease, Some("1.1-rc.2".to_owned())).status,
@@ -140,39 +134,11 @@ fn python_pep440_constraints_and_releases_are_resolved() {
 #[test]
 fn python_provider_versions_older_than_declared_bounds_are_not_updates() {
     for requirement in ["2.0", "==2.0", ">=2.0,<3.0"] {
-        let mut current = dependency("demo", requirement);
+        let mut current = crate::support::tests::test_dependency("demo", requirement);
         current.ecosystem = Python;
         assert_eq!(
             resolve_dependency(current, Some("1.9.post1".to_owned())).status,
             StatusCurrent,
         );
-    }
-}
-
-fn dependency(name: &str, requirement: &str) -> Dependency {
-    Dependency {
-        name: name.to_owned(),
-        requirement: requirement.to_owned(),
-        ecosystem: Cargo,
-        group: "dependencies".to_owned(),
-        hosted_url: None,
-        hosted_name: None,
-        range: empty_range(),
-        requirement_range: empty_range(),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
-    }
-}
-
-fn empty_range() -> Range {
-    Range {
-        start: Position {
-            line: 0,
-            character: 0,
-        },
-        end: Position {
-            line: 0,
-            character: 0,
-        },
     }
 }

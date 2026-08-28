@@ -2,15 +2,12 @@ use crate::suggestion::SuggestionStatus::{
     Directory as StatusDirectory, DirectoryNotFound as StatusDirectoryNotFound,
     Error as StatusError, Fixed as StatusFixed, NoMatch as StatusNoMatch,
 };
-use versionlens_model::Dependency;
-use versionlens_model::{Position, Range};
 
 use super::{directory, directory_not_found, error, fixed, no_match, no_match_with_message};
-use versionlens_model::Ecosystem::Cargo;
 
 #[test]
 fn no_match_marks_dependency_no_match() {
-    let suggestion = no_match(dependency("serde", "1.0.0"));
+    let suggestion = no_match(crate::support::tests::test_dependency("serde", "1.0.0"));
 
     assert_eq!(suggestion.status, StatusNoMatch);
     assert_eq!(suggestion.latest, None);
@@ -19,7 +16,7 @@ fn no_match_marks_dependency_no_match() {
 #[test]
 fn no_match_can_carry_a_message() {
     let suggestion = no_match_with_message(
-        dependency("serde", "1.0.0"),
+        crate::support::tests::test_dependency("serde", "1.0.0"),
         Some("not supported".to_owned()),
     );
 
@@ -30,7 +27,7 @@ fn no_match_can_carry_a_message() {
 #[test]
 fn directory_marks_dependency_directory() {
     let suggestion = directory(
-        dependency("local", "file:../local"),
+        crate::support::tests::test_dependency("local", "file:../local"),
         "../local".to_owned(),
         "/repo/local".to_owned(),
     );
@@ -43,7 +40,7 @@ fn directory_marks_dependency_directory() {
 #[test]
 fn directory_not_found_marks_dependency_directory_not_found() {
     let suggestion = directory_not_found(
-        dependency("local", "file:../missing"),
+        crate::support::tests::test_dependency("local", "file:../missing"),
         "../missing".to_owned(),
     );
 
@@ -55,7 +52,7 @@ fn directory_not_found_marks_dependency_directory_not_found() {
 #[test]
 fn fixed_marks_dependency_fixed() {
     let suggestion = fixed(
-        dependency("remote", "git repository"),
+        crate::support::tests::test_dependency("remote", "git repository"),
         "git repository".to_owned(),
     );
 
@@ -65,36 +62,11 @@ fn fixed_marks_dependency_fixed() {
 
 #[test]
 fn error_marks_dependency_error() {
-    let suggestion = error(dependency("serde", "1.0.0"), "not found".to_owned());
+    let suggestion = error(
+        crate::support::tests::test_dependency("serde", "1.0.0"),
+        "not found".to_owned(),
+    );
 
     assert_eq!(suggestion.status, StatusError);
     assert_eq!(suggestion.latest.as_deref(), Some("not found"));
-}
-
-fn dependency(name: &str, requirement: &str) -> Dependency {
-    Dependency {
-        name: name.to_owned(),
-        requirement: requirement.to_owned(),
-        ecosystem: Cargo,
-        group: "dependencies".to_owned(),
-        hosted_url: None,
-        hosted_name: None,
-        range: empty_range(),
-        requirement_range: empty_range(),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
-    }
-}
-
-fn empty_range() -> Range {
-    Range {
-        start: Position {
-            line: 0,
-            character: 0,
-        },
-        end: Position {
-            line: 0,
-            character: 0,
-        },
-    }
 }
