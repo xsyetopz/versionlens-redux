@@ -19,14 +19,14 @@ pub(super) fn element_text_event(
     event: Event<'_>,
     in_element: bool,
     element_name: &[u8],
-) -> Option<ElementTextEvent> {
+) -> ElementTextEvent {
     match event {
-        XmlEventStart(event) if event.name().as_ref() == element_name => Some(ElementTextStart),
-        XmlEventText(event) if in_element => {
-            Some(ElementTextText(event.decode().ok()?.into_owned()))
+        XmlEventStart(event) if event.name().as_ref().as_bytes() == element_name => {
+            ElementTextStart
         }
-        XmlEventEnd(event) if event.name().as_ref() == element_name => Some(ElementTextEnd),
-        XmlEventEof => Some(ElementTextFinished),
-        _ => Some(ElementTextIgnored),
+        XmlEventText(event) if in_element => ElementTextText(event.xml10_content().into_owned()),
+        XmlEventEnd(event) if event.name().as_ref().as_bytes() == element_name => ElementTextEnd,
+        XmlEventEof => ElementTextFinished,
+        _ => ElementTextIgnored,
     }
 }

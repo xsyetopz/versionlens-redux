@@ -1,4 +1,3 @@
-use versionlens_model::Ecosystem::{Dub, Haxelib, Helm};
 #[test]
 fn reads_npm_build_versions_in_upstream_compare_build_order() {
     assert_eq!(

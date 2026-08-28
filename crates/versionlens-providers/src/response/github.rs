@@ -26,6 +26,7 @@ pub(crate) fn latest_github_commit(value: &Value) -> Option<String> {
     (!sha.is_empty()).then(|| sha.chars().take(7).collect())
 }
 
-fn is_commit_sha(value: &str) -> bool {
+pub(crate) fn is_commit_sha(value: &str) -> bool {
+    let value = value.trim_start_matches(['v', 'V']);
     value.len() >= 7 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }

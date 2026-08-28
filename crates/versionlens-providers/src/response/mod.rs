@@ -1,5 +1,8 @@
 use versionlens_model::Ecosystem;
-use versionlens_model::Ecosystem::{Composer, Cran, Docker, Dotnet, Hex, Maven, Npm, Python, Ruby};
+use versionlens_model::Ecosystem::{
+    Composer, Cran, Docker, Dotnet, GitHub, Hex, Maven, Npm, Python, Ruby,
+};
+use versionlens_versions::compare_versions;
 mod cargo;
 mod composer;
 mod conan;
@@ -34,6 +37,12 @@ mod versions;
 mod xml;
 mod zig;
 
+pub(super) fn sort_versions(versions: &mut [String]) {
+    versions.sort_by(|left, right| {
+        compare_versions(left, right).unwrap_or_else(|| left.as_str().cmp(right.as_str()))
+    });
+}
+
 use composer::composer_release_versions_for_package;
 use cran::cran_release_versions;
 pub use dispatch::{
@@ -49,6 +58,7 @@ pub use endpoint::{
 pub use errors::{
     RegistryErrorStatus, http_status_message_from_code, npm_error_status_from_response,
 };
+use github::is_commit_sha;
 use hex::hex_release_versions;
 pub use npm::{npm_build_versions, npm_release_versions};
 use python::python_release_versions;
@@ -89,10 +99,32 @@ pub fn release_versions_from_response_for_package(
         Hex => hex_release_versions(body),
         Maven => maven_release_versions(body),
         Npm => npm_release_versions(body),
+        GitHub => github_release_versions(body),
         Python => python_release_versions(body),
         Ruby => ruby_release_versions(body),
         _ => vec![],
     }
+}
+
+fn github_release_versions(body: &str) -> Vec<String> {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(body) else {
+        return vec![];
+    };
+    let Some(tags) = value.as_array() else {
+        return vec![];
+    };
+    let mut versions = tags
+        .iter()
+        .filter_map(|entry| entry.as_str().or_else(|| entry.get("name")?.as_str()))
+        .filter(|tag| !tag.is_empty() && !is_commit_sha(tag))
+        .map(|tag| tag.trim_start_matches(['v', 'V']).to_owned())
+        .collect::<Vec<_>>();
+    versions.sort_by(|left, right| {
+        versionlens_versions::normalized_version(left)
+            .cmp(&versionlens_versions::normalized_version(right))
+    });
+    versions.dedup();
+    versions
 }
 
 #[cfg(test)]

@@ -11,6 +11,33 @@ fn reads_latest_versions_from_normalized_github_commit_arrays() {
 }
 
 #[test]
+fn reads_github_action_tags_and_release_history() {
+    let body = r#"[{"name":"v0.7.0"},{"name":"v0.6.1"},{"name":"v0.6.0"}]"#;
+    assert_latest(GitHub, "actions/checkout", body, "v0.7.0");
+    assert_latest(
+        GitHub,
+        "acme/automation",
+        r#"[{"name":"v1.3.0"},{"name":"v1"}]"#,
+        "v1.3.0",
+    );
+    assert_eq!(
+        release_versions_from_response_for_package(GitHub, "actions/checkout", body),
+        ["0.6.0".to_owned(), "0.6.1".to_owned(), "0.7.0".to_owned()]
+    );
+}
+
+#[test]
+fn github_action_tag_responses_ignore_commit_sha_tags() {
+    let body = r#"[{"name":"vabcdef1234567890abcdef1234567890abcdef12"},{"name":"v4.2.0"}]"#;
+
+    assert_latest(GitHub, "actions/checkout", body, "v4.2.0");
+    assert_eq!(
+        release_versions_from_response_for_package(GitHub, "actions/checkout", body),
+        ["4.2.0".to_owned()]
+    );
+}
+
+#[test]
 fn github_tag_responses_ignore_non_semver_names() {
     for ecosystem in [Npm, Ruby] {
         assert_latest(

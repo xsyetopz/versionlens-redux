@@ -39,47 +39,33 @@ fn detects_docker_tag_existence() {
 
 #[test]
 fn reads_docker_build_versions_from_same_digest_aliases() {
-    assert_eq!(
-        build_versions_from_response(
-            Docker,
-            r#"{"results":[{"name":"latest","tag_status":"active","digest":"sha256-23"},{"name":"current-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"current","tag_status":"active","digest":"sha256-23"},{"name":"bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0","tag_status":"active","digest":"sha256-23"},{"name":"23.11-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11","tag_status":"active","digest":"sha256-23"},{"name":"23-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23","tag_status":"active","digest":"sha256-23"},{"name":"22.4.3","tag_status":"active","digest":"sha256-22"}]}"#,
-            "23.11.0",
-        ),
-        [
-            "latest".to_owned(),
-            "23".to_owned(),
-            "23-bookworm".to_owned(),
-            "23.11".to_owned(),
-            "23.11-bookworm".to_owned(),
-            "23.11.0".to_owned(),
-            "23.11.0-bookworm".to_owned(),
-            "bookworm".to_owned(),
-            "current".to_owned(),
-            "current-bookworm".to_owned(),
-        ]
-    );
+    assert_same_digest_build_versions("23.11.0");
 }
 
 #[test]
 fn reads_docker_build_versions_for_empty_requirement_from_latest_alias() {
+    assert_same_digest_build_versions("");
+}
+
+fn assert_same_digest_build_versions(requirement: &str) {
     assert_eq!(
         build_versions_from_response(
             Docker,
-            r#"{"results":[{"name":"latest","tag_status":"active","digest":"sha256-23"},{"name":"current-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"current","tag_status":"active","digest":"sha256-23"},{"name":"bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0","tag_status":"active","digest":"sha256-23"},{"name":"23.11-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11","tag_status":"active","digest":"sha256-23"},{"name":"23-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23","tag_status":"active","digest":"sha256-23"},{"name":"22.4.3","tag_status":"active","digest":"sha256-22"}]}"#,
-            "",
+            &versionlens_test_support::fixture!(
+                "tests/fixtures/shared/docker",
+                "node-same-digest.json"
+            )
+            .expect("shared Docker response fixture must be readable"),
+            requirement,
         ),
-        [
-            "latest".to_owned(),
-            "23".to_owned(),
-            "23-bookworm".to_owned(),
-            "23.11".to_owned(),
-            "23.11-bookworm".to_owned(),
-            "23.11.0".to_owned(),
-            "23.11.0-bookworm".to_owned(),
-            "bookworm".to_owned(),
-            "current".to_owned(),
-            "current-bookworm".to_owned(),
-        ]
+        serde_json::from_str::<Vec<String>>(
+            &versionlens_test_support::fixture!(
+                "tests/fixtures/shared/docker",
+                "node-same-digest-builds.json"
+            )
+            .expect("shared Docker build fixture must be readable"),
+        )
+        .expect("shared Docker build fixture must be valid")
     );
 }
 

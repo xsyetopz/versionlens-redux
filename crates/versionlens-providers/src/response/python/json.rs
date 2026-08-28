@@ -2,6 +2,7 @@ use serde_json::Value;
 use versionlens_versions::{VersionDialect, latest_version_for_dialect};
 
 use super::yanked::python_release_is_yanked;
+use crate::response::versions::latest_version_strings_for_dialect;
 
 pub(super) fn latest_python_json_version(
     value: &Value,
@@ -27,26 +28,14 @@ pub(super) fn latest_python_json_version(
             )
         })
         .or_else(|| latest_python_release_key(value, false, prerelease_tags))
-        .or_else(|| latest_python_version_strings(value, include_prereleases, prerelease_tags))
-}
-
-fn latest_python_version_strings(
-    value: &Value,
-    include_prereleases: bool,
-    prerelease_tags: &[String],
-) -> Option<String> {
-    let versions = value
-        .get("versions")
-        .unwrap_or(value)
-        .as_array()?
-        .iter()
-        .filter_map(Value::as_str);
-    latest_version_for_dialect(
-        versions,
-        include_prereleases,
-        prerelease_tags,
-        VersionDialect::Pep440,
-    )
+        .or_else(|| {
+            latest_version_strings_for_dialect(
+                value,
+                include_prereleases,
+                prerelease_tags,
+                VersionDialect::Pep440,
+            )
+        })
 }
 
 fn latest_python_release_key(

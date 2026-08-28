@@ -1,5 +1,17 @@
 use serde_json::Value;
-use versionlens_versions::latest_version_with_prerelease_tags;
+use versionlens_versions::{
+    VersionDialect, latest_version_for_dialect, latest_version_with_prerelease_tags,
+};
+
+pub(crate) fn object_version_values(value: &Value) -> Option<impl Iterator<Item = &str>> {
+    Some(
+        value
+            .get("versions")?
+            .as_array()?
+            .iter()
+            .filter_map(|entry| entry.get("version").and_then(Value::as_str)),
+    )
+}
 
 pub(crate) fn latest_version_array(
     value: &Value,
@@ -34,4 +46,19 @@ pub(crate) fn latest_version_strings(
         .filter_map(|value| value.as_str());
 
     latest_version_with_prerelease_tags(versions, include_prereleases, prerelease_tags)
+}
+
+pub(crate) fn latest_version_strings_for_dialect(
+    value: &Value,
+    include_prereleases: bool,
+    prerelease_tags: &[String],
+    dialect: VersionDialect,
+) -> Option<String> {
+    let versions = value
+        .get("versions")
+        .unwrap_or(value)
+        .as_array()?
+        .iter()
+        .filter_map(Value::as_str);
+    latest_version_for_dialect(versions, include_prereleases, prerelease_tags, dialect)
 }

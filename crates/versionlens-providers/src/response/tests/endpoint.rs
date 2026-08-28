@@ -2,7 +2,7 @@ use crate::{
     LatestVersionRequest, RegistryEndpoint, RegistryResponseKind,
     latest_version_from_response_for_endpoint, release_versions_from_response_for_endpoint,
 };
-use versionlens_model::Ecosystem::{Go, Python};
+use versionlens_model::Ecosystem::*;
 
 fn latest(endpoint: &RegistryEndpoint, package: &str, body: &str) -> Option<String> {
     latest_version_from_response_for_endpoint(

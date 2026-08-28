@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::cmp::Ordering::Equal as OrderingEqual;
 
 pub(super) fn docker_version_key(
     tag: &str,
@@ -25,12 +24,8 @@ pub(super) fn docker_version_key(
     if first_part.len() > 4 {
         return None;
     }
-    let parts = version
-        .split('.')
-        .map(str::parse::<u64>)
-        .collect::<Result<Vec<_>, _>>()
-        .ok()?;
-    (!parts.is_empty() && parts.len() <= 3).then_some(parts)
+    let parts = versionlens_versions::numeric_segments(version)?;
+    (parts.len() <= 3).then_some(parts)
 }
 
 pub(super) fn canonical_docker_tag(tag: &str, key: &[u64]) -> String {
@@ -55,17 +50,9 @@ fn docker_prerelease_suffix_matches(suffix: &str, tag: &str) -> bool {
 }
 
 pub(super) fn compare_docker_key(left: &[u64], right: &[u64]) -> Ordering {
-    let len = left.len().max(right.len());
-    let number_ordering = (0..len)
-        .map(|index| {
-            left.get(index)
-                .unwrap_or(&0)
-                .cmp(right.get(index).unwrap_or(&0))
-        })
-        .find(|ordering| *ordering != OrderingEqual)
-        .unwrap_or(OrderingEqual);
+    let number_ordering = versionlens_versions::compare_numeric_segments(left, right);
 
-    if number_ordering == OrderingEqual {
+    if number_ordering == Ordering::Equal {
         left.len().cmp(&right.len())
     } else {
         number_ordering

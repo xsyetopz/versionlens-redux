@@ -1,7 +1,7 @@
 use super::versions::latest_version_array;
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_versions::{compare_versions, normalized_version};
+use versionlens_versions::normalized_version;
 
 use super::github::{latest_github_commit, latest_github_tag};
 
@@ -43,13 +43,7 @@ pub(crate) fn ruby_release_versions(body: &str) -> Vec<String> {
         .filter_map(normalized_version)
         .collect::<Vec<_>>();
 
-    sort_versions(&mut versions);
+    super::sort_versions(&mut versions);
     versions.dedup();
     versions
-}
-
-fn sort_versions(versions: &mut [String]) {
-    versions.sort_by(|left, right| {
-        compare_versions(left, right).unwrap_or_else(|| left.as_str().cmp(right.as_str()))
-    });
 }

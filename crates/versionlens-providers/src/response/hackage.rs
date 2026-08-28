@@ -46,7 +46,7 @@ fn latest_stackage_snapshot(value: &Value, package: &str) -> Option<String> {
 }
 
 fn compare_stackage_snapshots(left: &&str, right: &&str) -> Ordering {
-    compare_release_segments(left, right).then_with(|| left.cmp(right))
+    versionlens_versions::compare_numeric_text(left, right, &['.']).then_with(|| left.cmp(right))
 }
 
 fn hackage_prerelease_allowed(
@@ -67,14 +67,14 @@ fn hackage_prerelease_allowed(
 fn compare_hackage_versions(left: &&str, right: &&str) -> Ordering {
     let (left_release, left_prerelease) = split_prerelease(left);
     let (right_release, right_prerelease) = split_prerelease(right);
-    compare_release_segments(left_release, right_release).then_with(|| {
-        match (left_prerelease, right_prerelease) {
+    versionlens_versions::compare_numeric_text(left_release, right_release, &['.']).then_with(
+        || match (left_prerelease, right_prerelease) {
             (None, None) => OrderingEqual,
             (None, Some(_)) => OrderingGreater,
             (Some(_), None) => OrderingLess,
             (Some(left), Some(right)) => left.cmp(right),
-        }
-    })
+        },
+    )
 }
 
 fn split_prerelease(version: &str) -> (&str, Option<&str>) {
@@ -82,28 +82,4 @@ fn split_prerelease(version: &str) -> (&str, Option<&str>) {
         .split_once('-')
         .map(|(release, prerelease)| (release, Some(prerelease)))
         .unwrap_or((version, None))
-}
-
-fn compare_release_segments(left: &str, right: &str) -> Ordering {
-    let left = numeric_segments(left).collect::<Vec<_>>();
-    let right = numeric_segments(right).collect::<Vec<_>>();
-    let len = left.len().max(right.len());
-    for index in 0..len {
-        let ordering = left
-            .get(index)
-            .copied()
-            .unwrap_or(0)
-            .cmp(&right.get(index).copied().unwrap_or(0));
-        if ordering != OrderingEqual {
-            return ordering;
-        }
-    }
-
-    OrderingEqual
-}
-
-fn numeric_segments(version: &str) -> impl Iterator<Item = u64> + '_ {
-    version
-        .split('.')
-        .map(|segment| segment.parse::<u64>().unwrap_or(0))
 }

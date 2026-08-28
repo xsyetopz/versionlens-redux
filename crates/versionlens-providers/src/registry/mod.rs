@@ -17,44 +17,8 @@ pub use urls::{
     python_package_json_url_template, registry_url, registry_url_with_base,
 };
 
-const PROVIDER_IDS: &[&str] = &[
-    "cargo",
-    "composer",
-    "deno",
-    "dotnet",
-    "docker",
-    "dub",
-    "go",
-    "maven",
-    "npm",
-    "python",
-    "pub",
-    "ruby",
-    "hex",
-    "opam",
-    "hackage",
-    "julia",
-    "cran",
-    "conan",
-    "vcpkg",
-    "swift",
-    "zig",
-    "nim",
-    "luarocks",
-    "cpan",
-    "haxelib",
-    "terraform",
-    "helm",
-    "ansible",
-    "bazel",
-    "nix",
-    "unity",
-    "cocoapods",
-    "cpp",
-];
-
 pub fn provider_id(ecosystem: Ecosystem) -> &'static str {
-    PROVIDER_IDS[ecosystem as usize]
+    versionlens_model::ecosystem_provider_id(ecosystem)
 }
 
 #[cfg(test)]

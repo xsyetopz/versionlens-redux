@@ -1,8 +1,6 @@
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_versions::{
-    compare_versions, latest_version_with_prerelease_tags, normalized_version,
-};
+use versionlens_versions::{latest_version_with_prerelease_tags, normalized_version};
 
 pub(crate) fn latest_composer_version(
     value: &Value,
@@ -30,7 +28,7 @@ pub(crate) fn composer_release_versions_for_package(body: &str, package: &str) -
     };
 
     let mut versions = composer_versions_from_package_value(package_versions);
-    sort_versions(&mut versions);
+    super::sort_versions(&mut versions);
     versions.dedup();
     versions
 }
@@ -101,10 +99,4 @@ fn is_composer_branch_alias(alias: &str) -> bool {
             .bytes()
             .next()
             .is_some_and(|byte| byte.is_ascii_digit())
-}
-
-fn sort_versions(versions: &mut [String]) {
-    versions.sort_by(|left, right| {
-        compare_versions(left, right).unwrap_or_else(|| left.as_str().cmp(right.as_str()))
-    });
 }

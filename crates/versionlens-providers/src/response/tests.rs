@@ -52,6 +52,20 @@ fn assert_latest(ecosystem: Ecosystem, package: &str, body: &str, expected: &str
     );
 }
 
+fn osv_range_response(id: &str, summary: &str, introduced: &str, fixed: &str) -> String {
+    serde_json::json!({
+        "vulns": [{
+            "id": id,
+            "summary": summary,
+            "affected": [{
+                "package": {"name": "left-pad"},
+                "ranges": [{"events": [{"introduced": introduced}, {"fixed": fixed}]}]
+            }]
+        }]
+    })
+    .to_string()
+}
+
 mod composer;
 mod docker;
 mod dotnet;

@@ -1,12 +1,12 @@
-use crate::registry::urls::encoding::encode_component;
+use super::github::github_registry_url;
 
 pub(in crate::registry::urls) fn nix_registry_url(name: &str) -> String {
-    let (owner, repo) = name.split_once('/').unwrap_or(("NixOS", name));
-    format!(
-        "https://api.github.com/repos/{}/{}/tags",
-        encode_component(owner),
-        encode_component(repo)
-    )
+    let identity = if name.contains('/') {
+        name.to_owned()
+    } else {
+        format!("NixOS/{name}")
+    };
+    github_registry_url(&identity)
 }
 
 pub(in crate::registry::urls) fn nix_registry_url_with_base(base_url: &str, name: &str) -> String {

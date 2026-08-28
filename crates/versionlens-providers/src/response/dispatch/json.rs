@@ -5,7 +5,7 @@ use versionlens_model::Ecosystem;
 use super::ResponseRequest;
 use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Deno, Docker, Dotnet, Dub,
-    Hackage, Hex, Maven, Nim, Nix, Npm, Pub, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
+    GitHub, Hackage, Hex, Maven, Nim, Nix, Npm, Pub, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
 };
 
 mod ansible;
@@ -33,6 +33,7 @@ mod vcpkg;
 mod zig;
 
 use crate::response::cpp::latest_cpp_json_version;
+use crate::response::github::latest_github_tag;
 use ansible::latest_ansible_json_response;
 use bazel::latest_bazel_json_response;
 use cargo::latest_cargo_json_response;
@@ -63,6 +64,9 @@ pub(super) fn latest_json_response(
     request: &ResponseRequest<'_>,
 ) -> Option<String> {
     let value = from_str::<Value>(body).ok()?;
+    if ecosystem == GitHub {
+        return latest_github_tag(&value, request.include_prereleases, request.prerelease_tags);
+    }
     JSON_RESPONSE_PARSERS
         .iter()
         .find_map(|(known, parse)| (*known == ecosystem).then(|| parse(&value, request)))

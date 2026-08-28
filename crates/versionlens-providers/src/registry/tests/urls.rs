@@ -16,6 +16,11 @@ fn builds_registry_urls() {
         registry_url(Npm, "octokit/core.js"),
         "https://api.github.com/repos/octokit/core.js/tags"
     );
+    assert_eq!(provider_id(GitHub), "github");
+    assert_eq!(
+        registry_url(GitHub, "actions/checkout"),
+        "https://api.github.com/repos/actions/checkout/tags"
+    );
     assert_eq!(
         registry_url(Cargo, "serde"),
         "https://crates.io/api/v1/crates/serde/versions"
@@ -270,6 +275,14 @@ fn builds_custom_registry_urls() {
     assert_eq!(
         registry_url_with_base(Npm, "@types/node", Some("https://registry.test/npm/")),
         "https://registry.test/npm/@types%2fnode"
+    );
+    assert_eq!(
+        registry_url_with_base(
+            GitHub,
+            "actions/checkout",
+            Some("https://github.example.test/api/repos/"),
+        ),
+        "https://github.example.test/api/repos/actions/checkout/tags"
     );
     assert_eq!(
         registry_url_with_base(

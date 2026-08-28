@@ -36,7 +36,7 @@ where
 
     loop {
         let event = reader.read_event().ok()?;
-        if collector.event_finished(event)? {
+        if collector.event_finished(event) {
             break;
         }
     }
@@ -58,16 +58,16 @@ impl<'a, F> ElementTextCollector<'a, F>
 where
     F: FnMut(&str) -> Option<String>,
 {
-    fn event_finished(&mut self, event: Event<'_>) -> Option<bool> {
-        match element_text_event(event, self.in_element, self.element_name)? {
+    fn event_finished(&mut self, event: Event<'_>) -> bool {
+        match element_text_event(event, self.in_element, self.element_name) {
             ElementTextStart => self.in_element = true,
             ElementTextText(text) => self.collect_text(&text),
             ElementTextEnd => self.in_element = false,
-            ElementTextFinished => return Some(true),
+            ElementTextFinished => return true,
             ElementTextIgnored => {}
         }
 
-        Some(false)
+        false
     }
 
     fn collect_text(&mut self, text: &str) {

@@ -70,18 +70,18 @@ fn latest_object_key(
 }
 
 pub fn npm_build_versions(body: &str, requirement: &str) -> Vec<String> {
-    let Ok(value) = from_str::<Value>(body) else {
+    let Some(versions) = npm_versions(body) else {
         return vec![];
     };
 
-    if let Some(versions) = value.get("versions").and_then(|value| value.as_object()) {
+    if let Some(versions) = versions.as_object() {
         return sorted_npm_versions(build_variants(
             requirement,
             versions.keys().map(|value| value.as_str()),
         ));
     }
 
-    let Some(versions) = value.get("versions").and_then(|value| value.as_array()) else {
+    let Some(versions) = versions.as_array() else {
         return vec![];
     };
 
@@ -108,15 +108,15 @@ pub fn npm_release_versions(body: &str) -> Vec<String> {
         return sorted_npm_versions(versions);
     }
 
-    let Ok(value) = from_str::<Value>(body) else {
+    let Some(versions) = npm_versions(body) else {
         return vec![];
     };
 
-    if let Some(versions) = value.get("versions").and_then(|value| value.as_object()) {
+    if let Some(versions) = versions.as_object() {
         return sorted_npm_versions(versions.keys().map(|value| value.to_owned()).collect());
     }
 
-    let Some(versions) = value.get("versions").and_then(|value| value.as_array()) else {
+    let Some(versions) = versions.as_array() else {
         return vec![];
     };
 
@@ -127,6 +127,10 @@ pub fn npm_release_versions(body: &str) -> Vec<String> {
             .map(|value| value.to_owned())
             .collect(),
     )
+}
+
+fn npm_versions(body: &str) -> Option<Value> {
+    from_str::<Value>(body).ok()?.get("versions").cloned()
 }
 
 fn ordered_version_object_keys(body: &str) -> Option<Vec<String>> {

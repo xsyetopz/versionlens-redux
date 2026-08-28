@@ -55,22 +55,12 @@ pub(crate) fn docker_build_versions(body: &str, requirement: &str) -> Vec<String
     if requirement != "latest"
         && let Some(core) = docker_canonical_core(requirement, &fixed_cores)
     {
-        for entry in entries.iter().filter(|entry| {
-            docker_canonical_core(entry.name, &fixed_cores)
-                .is_some_and(|entry_core| entry_core == core)
-        }) {
-            aliases.insert(entry.name);
-        }
+        insert_canonical_aliases(&mut aliases, &entries, &fixed_cores, core);
     }
     if requirement == "latest"
         && let Some(core) = docker_latest_canonical_core(&entries, &fixed_cores, target_digest)
     {
-        for entry in entries.iter().filter(|entry| {
-            docker_canonical_core(entry.name, &fixed_cores)
-                .is_some_and(|entry_core| entry_core == core)
-        }) {
-            aliases.insert(entry.name);
-        }
+        insert_canonical_aliases(&mut aliases, &entries, &fixed_cores, core);
     }
 
     let mut builds = vec![];
@@ -79,6 +69,19 @@ pub(crate) fn docker_build_versions(body: &str, requirement: &str) -> Vec<String
     }
     builds.extend(aliases.into_iter().map(|value| value.to_owned()));
     builds
+}
+
+fn insert_canonical_aliases<'a>(
+    aliases: &mut BTreeSet<&'a str>,
+    entries: DockerTagEntries<'a>,
+    fixed_cores: &[[u64; 3]],
+    core: [u64; 3],
+) {
+    aliases.extend(entries.iter().filter_map(|entry| {
+        docker_canonical_core(entry.name, fixed_cores)
+            .is_some_and(|entry_core| entry_core == core)
+            .then_some(entry.name)
+    }));
 }
 
 fn docker_latest_canonical_core(

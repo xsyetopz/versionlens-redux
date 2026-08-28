@@ -1,11 +1,6 @@
 use self::json::latest_json_response;
 use self::text::latest_text_response;
 use versionlens_model::Ecosystem;
-use versionlens_model::Ecosystem::{
-    AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Cran, Deno, Docker, Dotnet,
-    Dub, Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm, Opam, Pub, Python,
-    Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
-};
 
 mod json;
 mod request;
@@ -53,18 +48,45 @@ pub fn latest_version_from_response_for_request(
     let parser_request = response_request_from_latest(&request);
 
     match request.ecosystem {
-        Cran | Go | Julia | LuaRocks | Opam | Python | Haxelib => {
+        Ecosystem::Cran
+        | Ecosystem::Go
+        | Ecosystem::Julia
+        | Ecosystem::LuaRocks
+        | Ecosystem::Opam
+        | Ecosystem::Python
+        | Ecosystem::Haxelib => {
             latest_text_response(request.ecosystem, request.body, &parser_request)
         }
-        Cpp => latest_json_response(request.ecosystem, request.body, &parser_request)
+        Ecosystem::Cpp => latest_json_response(request.ecosystem, request.body, &parser_request)
             .or_else(|| latest_text_response(request.ecosystem, request.body, &parser_request)),
-        Helm => latest_text_response(request.ecosystem, request.body, &parser_request)
+        Ecosystem::Helm => latest_text_response(request.ecosystem, request.body, &parser_request)
             .or_else(|| latest_json_response(request.ecosystem, request.body, &parser_request)),
-        Maven => latest_json_response(request.ecosystem, request.body, &parser_request)
+        Ecosystem::Maven => latest_json_response(request.ecosystem, request.body, &parser_request)
             .or_else(|| latest_text_response(request.ecosystem, request.body, &parser_request)),
-        Cargo | AnsibleGalaxy | Bazel | Nix | Composer | CocoaPods | Conan | Cpan | Deno
-        | Dotnet | Docker | Dub | Hackage | Hex | Nim | Npm | Unity | Pub | Ruby | Vcpkg
-        | Swift | Zig | Terraform => {
+        Ecosystem::Cargo
+        | Ecosystem::AnsibleGalaxy
+        | Ecosystem::Bazel
+        | Ecosystem::Nix
+        | Ecosystem::Composer
+        | Ecosystem::CocoaPods
+        | Ecosystem::Conan
+        | Ecosystem::Cpan
+        | Ecosystem::Deno
+        | Ecosystem::Dotnet
+        | Ecosystem::Docker
+        | Ecosystem::Dub
+        | Ecosystem::Hackage
+        | Ecosystem::Hex
+        | Ecosystem::Nim
+        | Ecosystem::Npm
+        | Ecosystem::Unity
+        | Ecosystem::Pub
+        | Ecosystem::Ruby
+        | Ecosystem::Vcpkg
+        | Ecosystem::Swift
+        | Ecosystem::Zig
+        | Ecosystem::Terraform
+        | Ecosystem::GitHub => {
             latest_json_response(request.ecosystem, request.body, &parser_request)
         }
     }

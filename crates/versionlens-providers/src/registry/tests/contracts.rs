@@ -133,44 +133,8 @@ fn builds_haxelib_registry_urls() {
 
 #[test]
 fn registry_urls_escape_unsafe_bytes_for_every_ecosystem() {
-    let ecosystems = [
-        Cargo,
-        Composer,
-        Deno,
-        Dotnet,
-        Docker,
-        Dub,
-        Go,
-        Maven,
-        Npm,
-        Python,
-        Pub,
-        Ruby,
-        Hex,
-        Opam,
-        Hackage,
-        Julia,
-        Cran,
-        Conan,
-        Vcpkg,
-        Swift,
-        Zig,
-        Nim,
-        LuaRocks,
-        Cpan,
-        Haxelib,
-        Terraform,
-        Helm,
-        AnsibleGalaxy,
-        Bazel,
-        Nix,
-        Unity,
-        CocoaPods,
-        Cpp,
-    ];
-
-    for ecosystem in ecosystems {
-        let url = registry_url(ecosystem, " package name\\with\nnewline ");
+    for ecosystem in versionlens_model::ALL_ECOSYSTEMS {
+        let url = registry_url(*ecosystem, " package name\\with\nnewline ");
         assert!(
             url.bytes().all(|byte| byte.is_ascii_graphic()),
             "{ecosystem:?} produced an unsafe registry URL: {url:?}"
