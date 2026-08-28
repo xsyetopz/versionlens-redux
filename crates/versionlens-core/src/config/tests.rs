@@ -10,10 +10,10 @@ use super::{
     provider_http_config_from_name, provider_settings_manifest_kind_from_name,
     registry_url_config_from_name,
 };
-use versionlens_model::Ecosystem::{Cargo, Deno, Npm};
+use versionlens_model::Ecosystem::*;
 use versionlens_model::ManifestKind::{
-    Cabal, ComposerJson, DenoImportMapJson, DenoJson, JsrJson, MixExs, NpmPackageJson,
-    NpmPackageJson5, NpmPackageYaml, Opam, PnpmYaml,
+    Cabal, ComposerJson, DenoImportMapJson, DenoJson, GitHubActions, JsrJson, MixExs,
+    NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam, PnpmYaml,
 };
 
 #[test]
@@ -33,6 +33,10 @@ fn enabled_provider_config_names_are_manifest_scoped() {
     let cargo = enabled_provider_config_from_name("cargo").expect("cargo provider");
     assert_eq!(cargo.ecosystem, Cargo);
     assert_eq!(cargo.manifest_kind, None);
+
+    let github = enabled_provider_config_from_name("github").expect("github provider");
+    assert_eq!(github.ecosystem, GitHub);
+    assert_eq!(github.manifest_kind, Some(GitHubActions));
 
     assert_eq!(enabled_provider_config_from_name("unknown"), None);
 }
@@ -72,6 +76,10 @@ fn dependency_property_names_are_manifest_scoped() {
         Some(PnpmYaml)
     );
     assert_eq!(dependency_property_manifest_kind_from_name("cargo"), None);
+    assert_eq!(
+        dependency_property_manifest_kind_from_name("github"),
+        Some(GitHubActions)
+    );
 }
 
 #[test]
@@ -82,6 +90,25 @@ fn provider_setting_names_are_manifest_scoped() {
     );
     assert_eq!(provider_settings_manifest_kind_from_name("npm"), None);
     assert_eq!(provider_settings_manifest_kind_from_name("cargo"), None);
+    assert_eq!(
+        provider_settings_manifest_kind_from_name("github"),
+        Some(GitHubActions)
+    );
+}
+
+#[test]
+fn github_file_pattern_config_routes_to_github_actions() {
+    let config = file_pattern_config_from_name(
+        "github",
+        " **/.github/{workflows,actions}/**/*.{yml,yaml} ".to_owned(),
+    )
+    .expect("GitHub Actions file pattern config");
+
+    assert_eq!(config.manifest_kind, GitHubActions);
+    assert_eq!(
+        config.pattern,
+        "**/.github/{workflows,actions}/**/*.{yml,yaml}"
+    );
 }
 
 #[test]
@@ -176,7 +203,7 @@ fn provider_http_config_maps_manifest_scope() {
 
 #[test]
 fn session_config_input_applies_core_defaults() {
-    let config = crate::session_config_from_input(SessionConfigInput {
+    let config = crate::support::tests::session_config_from_input(SessionConfigInput {
         cache_duration_minutes: None,
         cache_ttl_seconds: None,
         enabled_providers: None,
@@ -323,7 +350,7 @@ fn session_config_input_normalizes_provider_values() {
 }
 
 fn normalized_session_config() -> SessionConfig {
-    crate::session_config_from_input(SessionConfigInput {
+    crate::support::tests::session_config_from_input(SessionConfigInput {
         cache_duration_minutes: Some(0.5),
         cache_ttl_seconds: Some(90),
         enabled_providers: Some(vec![
@@ -382,16 +409,12 @@ fn normalized_session_config() -> SessionConfig {
             cert: None,
             key: None,
             auth_headers: Some(vec![
-                HttpHeaderInput {
-                    name: " ".to_owned(),
-                    value: "ignored".to_owned(),
-                    url: None,
-                },
-                HttpHeaderInput {
-                    name: " authorization ".to_owned(),
-                    value: " Bearer token ".to_owned(),
-                    url: Some(" https://registry.example.test ".to_owned()),
-                },
+                HttpHeaderInput::new(" ", "ignored", None),
+                HttpHeaderInput::new(
+                    " authorization ",
+                    " Bearer token ",
+                    Some(" https://registry.example.test ".to_owned()),
+                ),
             ]),
         }),
     })

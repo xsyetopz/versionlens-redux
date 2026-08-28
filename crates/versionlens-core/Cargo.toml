@@ -26,5 +26,8 @@ versionlens-suggestions.workspace = true
 versionlens-versions.workspace = true
 versionlens-vscode-model.workspace = true
 
+[dev-dependencies]
+versionlens-test-support.workspace = true
+
 [lints]
 workspace = true

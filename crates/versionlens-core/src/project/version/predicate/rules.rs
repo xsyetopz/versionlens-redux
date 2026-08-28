@@ -1,20 +1,7 @@
-mod dotnet;
-mod generic;
-mod package;
-mod python;
-
-use versionlens_model::{Dependency, Ecosystem};
-
-use dotnet::is_dotnet_property_version;
-use generic::is_name_version_requirement;
-use package::{
-    is_cargo_package_version, is_deno_project_version, is_hex_project_version,
-    is_maven_project_version, is_pub_version,
-};
-use python::is_python_project_version;
 use versionlens_model::Ecosystem::{
     Cargo, Composer, Cran, Deno, Dotnet, Hackage, Hex, Julia, Maven, Npm, Opam, Pub, Python,
 };
+use versionlens_model::{Dependency, Ecosystem};
 
 type ProjectVersionPredicate = fn(&Dependency) -> bool;
 
@@ -41,4 +28,37 @@ pub(super) fn project_version_match(dependency: &Dependency) -> bool {
             (*ecosystem == dependency.ecosystem).then(|| predicate(dependency))
         })
         .unwrap_or(false)
+}
+
+pub(super) fn is_dotnet_property_version(dependency: &Dependency) -> bool {
+    dependency.group == "PropertyGroup"
+        && matches!(dependency.name.as_str(), "Version" | "AssemblyVersion")
+}
+
+pub(super) fn is_name_version_requirement(dependency: &Dependency) -> bool {
+    dependency.group == "version" && dependency.name == dependency.requirement
+}
+
+pub(super) fn is_cargo_package_version(dependency: &Dependency) -> bool {
+    dependency.group == "package" && dependency.name == "version"
+}
+
+pub(super) fn is_deno_project_version(dependency: &Dependency) -> bool {
+    dependency.group == "version" && dependency.name.starts_with('@')
+}
+
+pub(super) fn is_hex_project_version(dependency: &Dependency) -> bool {
+    dependency.group == "version" && !dependency.name.is_empty()
+}
+
+pub(super) fn is_maven_project_version(dependency: &Dependency) -> bool {
+    dependency.group == "project.version" && dependency.name == "version"
+}
+
+pub(super) fn is_pub_version(dependency: &Dependency) -> bool {
+    dependency.group == "version" && dependency.name == "version"
+}
+
+pub(super) fn is_python_project_version(dependency: &Dependency) -> bool {
+    dependency.group == "project" && dependency.name == "version"
 }

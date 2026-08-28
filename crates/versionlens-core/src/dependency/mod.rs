@@ -1,4 +1,17 @@
-use versionlens_model::{Dependency, ecosystem_config_namespace};
+pub(crate) mod properties;
+
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::Npm;
+
+pub(crate) fn is_npm_package_manager(dependency: &Dependency) -> bool {
+    dependency.ecosystem == Npm
+        && matches!(
+            dependency.group.as_str(),
+            "packageManager" | "devEngines.packageManager"
+        )
+}
+
+use versionlens_model::ecosystem_config_namespace;
 use versionlens_vscode_model::DependencyPayload;
 
 pub(crate) fn into_dependency_payloads(dependencies: Vec<Dependency>) -> Vec<DependencyPayload> {

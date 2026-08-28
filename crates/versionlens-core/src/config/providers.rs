@@ -1,17 +1,6 @@
 use serde::{Deserialize, Serialize};
 use versionlens_cache::minutes_to_ms;
-use versionlens_model::ManifestKind::{
-    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
-    ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
-    DenoImportMapJson, DenoJson, DockerComposeYaml, DotnetXml, DubJson, DuneProject, Gemfile,
-    GleamToml, GoMod, GradleBuild, GradleSettings, GradleVersionCatalogToml, HaxelibJson,
-    HelmChartYaml, JsrJson, JuliaManifestToml, JuliaProjectToml, KustomizationYaml,
-    LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake,
-    NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam, PaketDependencies, PaketReferences,
-    PnpmYaml, PubspecYaml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
-    SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
-    ZigBuildZon,
-};
+
 use versionlens_model::{Ecosystem, ManifestKind, ecosystem_from_config_name};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -169,54 +158,56 @@ impl EnabledProviderConfig {
 
 fn manifest_kind_matches(candidate: ManifestKind, kind: ManifestKind) -> bool {
     candidate == kind
-        || (candidate == NpmPackageJson && matches!(kind, NpmPackageJson5 | NpmPackageYaml))
-        || (candidate == DenoJson && matches!(kind, DenoImportMapJson | JsrJson))
-        || (candidate == DotnetXml && matches!(kind, PaketDependencies | PaketReferences))
-        || (candidate == Gemfile && kind == RubyGemspec)
-        || (candidate == MavenPomXml
+        || (candidate == ManifestKind::NpmPackageJson
             && matches!(
                 kind,
-                GradleBuild
-                    | GradleSettings
-                    | GradleVersionCatalogToml
-                    | SbtBuild
-                    | ClojureDepsEdn
-                    | LeiningenProjectClj
+                ManifestKind::NpmPackageJson5 | ManifestKind::NpmPackageYaml
             ))
-        || (candidate == Cabal && matches!(kind, CabalProject | StackYaml))
-        || (candidate == JuliaProjectToml && kind == JuliaManifestToml)
-        || (candidate == RDescription && kind == RenvLock)
-        || (candidate == Opam && kind == DuneProject)
-        || (candidate == ConanfileTxt && kind == ConanfilePy)
-        || (candidate == Cmake && matches!(kind, XmakeLua | MesonWrap | BazelWorkspace))
+        || (candidate == ManifestKind::DenoJson
+            && matches!(
+                kind,
+                ManifestKind::DenoImportMapJson | ManifestKind::JsrJson
+            ))
+        || (candidate == ManifestKind::DotnetXml
+            && matches!(
+                kind,
+                ManifestKind::PaketDependencies | ManifestKind::PaketReferences
+            ))
+        || (candidate == ManifestKind::Gemfile && kind == ManifestKind::RubyGemspec)
+        || (candidate == ManifestKind::MavenPomXml
+            && matches!(
+                kind,
+                ManifestKind::GradleBuild
+                    | ManifestKind::GradleSettings
+                    | ManifestKind::GradleVersionCatalogToml
+                    | ManifestKind::SbtBuild
+                    | ManifestKind::ClojureDepsEdn
+                    | ManifestKind::LeiningenProjectClj
+            ))
+        || (candidate == ManifestKind::Cabal
+            && matches!(kind, ManifestKind::CabalProject | ManifestKind::StackYaml))
+        || (candidate == ManifestKind::JuliaProjectToml && kind == ManifestKind::JuliaManifestToml)
+        || (candidate == ManifestKind::RDescription && kind == ManifestKind::RenvLock)
+        || (candidate == ManifestKind::Opam && kind == ManifestKind::DuneProject)
+        || (candidate == ManifestKind::ConanfileTxt && kind == ManifestKind::ConanfilePy)
+        || (candidate == ManifestKind::Cmake
+            && matches!(
+                kind,
+                ManifestKind::XmakeLua | ManifestKind::MesonWrap | ManifestKind::BazelWorkspace
+            ))
 }
 
 pub fn enabled_provider_config_from_name(provider: &str) -> Option<EnabledProviderConfig> {
     Some(EnabledProviderConfig {
         ecosystem: ecosystem_from_config_name(provider)?,
-        manifest_kind: enabled_provider_manifest_kind_from_name(provider),
+        manifest_kind: dependency_property_manifest_kind_from_name(provider),
     })
-}
-
-fn enabled_provider_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
-    match provider {
-        "npm" | "bun" => Some(NpmPackageJson),
-        "pnpm" => Some(PnpmYaml),
-        "kustomize" => Some(KustomizationYaml),
-        "unity" => Some(UnityProjectManifestJson),
-        "cocoapods" => Some(CocoaPodsPodfile),
-        _ => None,
-    }
 }
 
 pub fn dependency_property_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
-        "npm" | "bun" => Some(NpmPackageJson),
-        "pnpm" => Some(PnpmYaml),
-        "kustomize" => Some(KustomizationYaml),
-        "unity" => Some(UnityProjectManifestJson),
-        "cocoapods" => Some(CocoaPodsPodfile),
-        _ => None,
+        "npm" | "bun" => Some(ManifestKind::NpmPackageJson),
+        _ => provider_settings_manifest_kind_from_name(provider),
     }
 }
 
@@ -235,66 +226,70 @@ pub fn dependency_property_config_from_name(
 
 pub fn provider_settings_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
-        "pnpm" => Some(PnpmYaml),
-        "kustomize" => Some(KustomizationYaml),
-        "unity" => Some(UnityProjectManifestJson),
-        "cocoapods" => Some(CocoaPodsPodfile),
+        "pnpm" => Some(ManifestKind::PnpmYaml),
+        "kustomize" => Some(ManifestKind::KustomizationYaml),
+        "unity" => Some(ManifestKind::UnityProjectManifestJson),
+        "cocoapods" => Some(ManifestKind::CocoaPodsPodfile),
+        "github" => Some(ManifestKind::GitHubActions),
         _ => None,
     }
 }
 
 pub fn file_pattern_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
-        "cargo" => Some(CargoToml),
-        "composer" => Some(ComposerJson),
-        "deno" => Some(DenoJson),
-        "docker" => Some(DockerComposeYaml),
-        "kustomize" => Some(KustomizationYaml),
-        "unity" => Some(UnityProjectManifestJson),
-        "dotnet" => Some(DotnetXml),
-        "dub" => Some(DubJson),
-        "go" | "golang" => Some(GoMod),
-        "hex" | "beam" => Some(MixExs),
-        "gleam" => Some(GleamToml),
-        "rebar" => Some(RebarConfig),
-        "opam" | "ocaml" => Some(Opam),
-        "dune" => Some(DuneProject),
-        "hackage" | "haskell" => Some(Cabal),
-        "stack" => Some(StackYaml),
-        "julia" => Some(JuliaProjectToml),
-        "julia-manifest" => Some(JuliaManifestToml),
-        "cran" | "r" => Some(RDescription),
-        "renv" => Some(RenvLock),
-        "conan" => Some(ConanfileTxt),
-        "vcpkg" => Some(VcpkgJson),
-        "cpp" | "c-cpp" | "cmake" => Some(Cmake),
-        "xmake" => Some(XmakeLua),
-        "meson" => Some(MesonWrap),
-        "bazel-workspace" => Some(BazelWorkspace),
-        "swift" => Some(SwiftPackage),
-        "zig" => Some(ZigBuildZon),
-        "nim" => Some(Nimble),
-        "luarocks" | "lua" => Some(LuaRockspec),
-        "cpan" | "perl" => Some(Cpanfile),
-        "haxelib" | "haxe" => Some(HaxelibJson),
-        "terraform" | "opentofu" | "tofu" => Some(TerraformTf),
-        "helm" => Some(HelmChartYaml),
-        "ansible" | "ansible-galaxy" | "galaxy" => Some(AnsibleGalaxyRequirementsYaml),
-        "bazel" | "bzlmod" => Some(BazelModule),
-        "nix" => Some(NixFlake),
-        "cocoapods" => Some(CocoaPodsPodfile),
-        "gradle" | "gradle-build" => Some(GradleBuild),
-        "gradle-settings" => Some(GradleSettings),
-        "gradle-version-catalog" => Some(GradleVersionCatalogToml),
-        "sbt" | "scala" => Some(SbtBuild),
-        "clojure" | "deps-edn" => Some(ClojureDepsEdn),
-        "leiningen" | "lein" | "project-clj" => Some(LeiningenProjectClj),
-        "maven" => Some(MavenPomXml),
-        "bun" | "npm" => Some(NpmPackageJson),
-        "pnpm" => Some(PnpmYaml),
-        "pypi" | "python" => Some(PythonRequirementsTxt),
-        "pub" => Some(PubspecYaml),
-        "ruby" => Some(Gemfile),
+        "cargo" => Some(ManifestKind::CargoToml),
+        "composer" => Some(ManifestKind::ComposerJson),
+        "deno" => Some(ManifestKind::DenoJson),
+        "docker" => Some(ManifestKind::DockerComposeYaml),
+        "kustomize" => Some(ManifestKind::KustomizationYaml),
+        "unity" => Some(ManifestKind::UnityProjectManifestJson),
+        "dotnet" => Some(ManifestKind::DotnetXml),
+        "dub" => Some(ManifestKind::DubJson),
+        "go" | "golang" => Some(ManifestKind::GoMod),
+        "hex" | "beam" => Some(ManifestKind::MixExs),
+        "gleam" => Some(ManifestKind::GleamToml),
+        "rebar" => Some(ManifestKind::RebarConfig),
+        "opam" | "ocaml" => Some(ManifestKind::Opam),
+        "dune" => Some(ManifestKind::DuneProject),
+        "hackage" | "haskell" => Some(ManifestKind::Cabal),
+        "stack" => Some(ManifestKind::StackYaml),
+        "julia" => Some(ManifestKind::JuliaProjectToml),
+        "julia-manifest" => Some(ManifestKind::JuliaManifestToml),
+        "cran" | "r" => Some(ManifestKind::RDescription),
+        "renv" => Some(ManifestKind::RenvLock),
+        "conan" => Some(ManifestKind::ConanfileTxt),
+        "vcpkg" => Some(ManifestKind::VcpkgJson),
+        "cpp" | "c-cpp" | "cmake" => Some(ManifestKind::Cmake),
+        "xmake" => Some(ManifestKind::XmakeLua),
+        "meson" => Some(ManifestKind::MesonWrap),
+        "bazel-workspace" => Some(ManifestKind::BazelWorkspace),
+        "swift" => Some(ManifestKind::SwiftPackage),
+        "zig" => Some(ManifestKind::ZigBuildZon),
+        "nim" => Some(ManifestKind::Nimble),
+        "luarocks" | "lua" => Some(ManifestKind::LuaRockspec),
+        "cpan" | "perl" => Some(ManifestKind::Cpanfile),
+        "haxelib" | "haxe" => Some(ManifestKind::HaxelibJson),
+        "terraform" | "opentofu" | "tofu" => Some(ManifestKind::TerraformTf),
+        "helm" => Some(ManifestKind::HelmChartYaml),
+        "ansible" | "ansible-galaxy" | "galaxy" => {
+            Some(ManifestKind::AnsibleGalaxyRequirementsYaml)
+        }
+        "bazel" | "bzlmod" => Some(ManifestKind::BazelModule),
+        "nix" => Some(ManifestKind::NixFlake),
+        "cocoapods" => Some(ManifestKind::CocoaPodsPodfile),
+        "github" => Some(ManifestKind::GitHubActions),
+        "gradle" | "gradle-build" => Some(ManifestKind::GradleBuild),
+        "gradle-settings" => Some(ManifestKind::GradleSettings),
+        "gradle-version-catalog" => Some(ManifestKind::GradleVersionCatalogToml),
+        "sbt" | "scala" => Some(ManifestKind::SbtBuild),
+        "clojure" | "deps-edn" => Some(ManifestKind::ClojureDepsEdn),
+        "leiningen" | "lein" | "project-clj" => Some(ManifestKind::LeiningenProjectClj),
+        "maven" => Some(ManifestKind::MavenPomXml),
+        "bun" | "npm" => Some(ManifestKind::NpmPackageJson),
+        "pnpm" => Some(ManifestKind::PnpmYaml),
+        "pypi" | "python" => Some(ManifestKind::PythonRequirementsTxt),
+        "pub" => Some(ManifestKind::PubspecYaml),
+        "ruby" => Some(ManifestKind::Gemfile),
         _ => None,
     }
 }

@@ -14,18 +14,28 @@ pub struct SuggestionIndicators {
     pub build: String,
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct SuggestionIndicatorsInput {
-    pub latest: Option<String>,
-    pub satisfies_latest: Option<String>,
-    pub directory: Option<String>,
-    pub error: Option<String>,
-    pub no_match: Option<String>,
-    pub matched: Option<String>,
-    pub updateable: Option<String>,
-    pub updateable_vulnerable: Option<String>,
-    pub build: Option<String>,
+#[macro_export]
+macro_rules! define_suggestion_indicators_input {
+    ($(#[$meta:meta])* $name:ident) => {
+        $(#[$meta])*
+        pub struct $name {
+            pub latest: Option<String>,
+            pub satisfies_latest: Option<String>,
+            pub directory: Option<String>,
+            pub error: Option<String>,
+            pub no_match: Option<String>,
+            pub matched: Option<String>,
+            pub updateable: Option<String>,
+            pub updateable_vulnerable: Option<String>,
+            pub build: Option<String>,
+        }
+    };
 }
+
+define_suggestion_indicators_input!(
+    #[derive(Debug, Default, PartialEq, Eq)]
+    SuggestionIndicatorsInput
+);
 
 impl SuggestionIndicators {
     pub fn standard() -> Self {

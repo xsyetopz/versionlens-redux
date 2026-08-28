@@ -5,12 +5,12 @@ use versionlens_model::Ecosystem::Pub;
 fn dependency_properties_allow_custom_pub_paths() {
     let session = session_with_properties(Pub, &["custom_dependencies"]);
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture("pubspec-custom-dependencies.yaml"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new(
+        "file:///pubspec.yaml".to_owned(),
+        "yaml".to_owned(),
+        package_file_fixture("custom-dependencies.yaml"),
+        None,
+    ));
 
     assert_eq!(output.dependencies.len(), 1);
     assert_eq!(output.dependencies[0].name, "retry");
@@ -20,12 +20,12 @@ fn dependency_properties_allow_custom_pub_paths() {
 fn pub_dependency_properties_allow_member_paths() {
     let session = session_with_properties(Pub, &["dependencies.http", "dev_dependencies.*"]);
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture("pubspec-member-paths.yaml"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new(
+        "file:///pubspec.yaml".to_owned(),
+        "yaml".to_owned(),
+        package_file_fixture("member-paths.yaml"),
+        None,
+    ));
 
     assert_eq!(output.dependencies.len(), 2);
     assert_eq!(output.dependencies[0].name, "http");
@@ -36,12 +36,12 @@ fn pub_dependency_properties_allow_member_paths() {
 fn pub_dependency_properties_allow_workspace_paths() {
     let session = session_with_properties(Pub, &["workspace"]);
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///pubspec.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture("pubspec-workspace.yaml"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new(
+        "file:///pubspec.yaml".to_owned(),
+        "yaml".to_owned(),
+        package_file_fixture("workspace.yaml"),
+        None,
+    ));
 
     assert_eq!(output.dependencies.len(), 1);
     assert_eq!(output.dependencies[0].group, "workspace");
