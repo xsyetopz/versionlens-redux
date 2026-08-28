@@ -1,5 +1,7 @@
 pub(super) fn semver_selector_latest<'a>(prefix: &str, latest: &'a str) -> &'a str {
-    if prefix.ends_with("semver:") {
+    if prefix == "v" {
+        latest.strip_prefix(['v', 'V']).unwrap_or(latest)
+    } else if prefix.ends_with("semver:") {
         latest.strip_prefix('v').unwrap_or(latest)
     } else {
         latest

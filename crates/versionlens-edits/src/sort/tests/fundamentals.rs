@@ -45,9 +45,7 @@ fn sorts_dependency_names_like_upstream_locale_compare() {
 
     let edits = sort_dependency_edits(text, &dependencies);
 
-    assert_eq!(edits.len(), 4);
-    assert_eq!(edits[0].new_text, "alpha==1");
-    assert_eq!(edits[1].new_text, "Alpha==1");
+    assert_sorted_prefix(&edits, "Alpha==1");
     assert_eq!(edits[2].new_text, "beta==1");
     assert_eq!(edits[3].new_text, "Beta==1");
 }
@@ -133,9 +131,7 @@ fn sorts_each_dependency_group_independently() {
 
     let edits = sort_dependency_edits(text, &dependencies);
 
-    assert_eq!(edits.len(), 4);
-    assert_eq!(edits[0].new_text, "alpha==1");
-    assert_eq!(edits[1].new_text, "zeta==1");
+    assert_sorted_prefix(&edits, "zeta==1");
     assert_eq!(edits[2].new_text, "a-dev==1");
     assert_eq!(edits[3].new_text, "z-dev==1");
 }
@@ -143,18 +139,11 @@ fn sorts_each_dependency_group_independently() {
 #[test]
 fn sorts_pub_dependencies_with_leading_comments() {
     let text = package_file_fixture("sorts-pub-dependencies-with-leading-comments.txt");
-    let dependencies = vec![
-        dependency_with(Pub, "dependencies", "zeta", range(1, 2, 1, 6)),
-        dependency_with(Pub, "dependencies", "alpha", range(3, 2, 3, 7)),
-    ];
+    let dependencies = pub_comment_dependencies();
 
     let edits = sort_dependency_edits(text, &dependencies);
 
-    assert_eq!(edits.len(), 2);
-    assert_eq!(edits[0].range, range(0, 0, 1, 9));
-    assert_eq!(edits[0].new_text, "  # alpha\n  alpha: 1");
-    assert_eq!(edits[1].range, range(2, 0, 3, 10));
-    assert_eq!(edits[1].new_text, "  # zeta\n  zeta: 1");
+    assert_comment_sort(&edits, "  # alpha\n  alpha: 1", "  # zeta\n  zeta: 1");
 }
 
 #[test]
@@ -258,7 +247,32 @@ fn preserves_json_trailing_commas_for_target_slots() {
 
     let edits = sort_dependency_edits(text, &dependencies);
 
+    assert_json_sort(&edits);
+}
+
+fn assert_sorted_prefix(edits: &[versionlens_model::TextEdit], second: &str) {
+    assert_eq!(edits.len(), 4);
+    assert_eq!(edits[0].new_text, "alpha==1");
+    assert_eq!(edits[1].new_text, second);
+}
+
+fn assert_comment_sort(edits: &[versionlens_model::TextEdit], first: &str, second: &str) {
+    assert_eq!(edits.len(), 2);
+    assert_eq!(edits[0].range, range(0, 0, 1, 9));
+    assert_eq!(edits[0].new_text, first);
+    assert_eq!(edits[1].range, range(2, 0, 3, 10));
+    assert_eq!(edits[1].new_text, second);
+}
+
+fn assert_json_sort(edits: &[versionlens_model::TextEdit]) {
     assert_eq!(edits.len(), 2);
     assert_eq!(edits[0].new_text, "    \"alpha\": \"1\",");
     assert_eq!(edits[1].new_text, "    \"zeta\": \"1\"");
+}
+
+fn pub_comment_dependencies() -> Vec<versionlens_model::Dependency> {
+    vec![
+        dependency_with(Pub, "dependencies", "zeta", range(1, 2, 1, 6)),
+        dependency_with(Pub, "dependencies", "alpha", range(3, 2, 3, 7)),
+    ]
 }

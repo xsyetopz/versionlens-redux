@@ -1,13 +1,13 @@
 use semver::{Version, VersionReq};
-use versionlens_model::Dependency;
-use versionlens_model::{Position, Range};
+use versionlens_model::{Dependency, Ecosystem};
 use versionlens_suggestions::Suggestion;
 use versionlens_suggestions::SuggestionStatus::{
     Current as StatusCurrent, UpdateAvailable as StatusUpdateAvailable,
 };
 
 use super::update_edits;
-use versionlens_model::Ecosystem::{Cargo, Cpp, Dotnet, Go, Npm, Python, Ruby};
+use crate::support::tests::range;
+use versionlens_model::Ecosystem::*;
 
 #[test]
 fn replaces_requirement_range_with_latest_version() {
@@ -78,14 +78,7 @@ fn preserves_python_requirement_operators() {
         (">=1, <3, !=2", ">=2.0.0, <3"),
         (">=1, <3, !=2.*, !=3.*", ">=2.0.0, <3, !=3.*"),
     ] {
-        let edits = update_edits(&[Suggestion {
-            dependency: python_dependency(requirement),
-            latest: Some("2.0.0".to_owned()),
-            resolved: None,
-            status: StatusUpdateAvailable,
-            builds: vec![],
-            choices: vec![],
-        }]);
+        let edits = update_edits(&[update_suggestion(python_dependency(requirement), "2.0.0")]);
 
         assert_eq!(edits[0].new_text, expected);
     }
@@ -107,14 +100,7 @@ fn preserves_pep440_extended_bounds_and_local_exclusions() {
             ">=1.5, <2.0, !=1.5+linux",
         ),
     ] {
-        let edits = update_edits(&[Suggestion {
-            dependency: python_dependency(requirement),
-            latest: Some(latest.to_owned()),
-            resolved: None,
-            status: StatusUpdateAvailable,
-            builds: vec![],
-            choices: vec![],
-        }]);
+        let edits = update_edits(&[update_suggestion(python_dependency(requirement), latest)]);
 
         assert_eq!(edits[0].new_text, expected);
     }
@@ -127,14 +113,7 @@ fn preserves_ruby_requirement_operators() {
         (">= 1.2.3", ">= 2.0.0"),
         ("!=1.2.3", "==2.0.0"),
     ] {
-        let edits = update_edits(&[Suggestion {
-            dependency: ruby_dependency(requirement),
-            latest: Some("2.0.0".to_owned()),
-            resolved: None,
-            status: StatusUpdateAvailable,
-            builds: vec![],
-            choices: vec![],
-        }]);
+        let edits = update_edits(&[update_suggestion(ruby_dependency(requirement), "2.0.0")]);
 
         assert_eq!(edits[0].new_text, expected);
     }
@@ -194,50 +173,14 @@ fn inserts_missing_xmake_requirement_with_separator() {
 
 #[test]
 fn switches_ruby_github_branches_to_ref_updates() {
-    let edits = update_edits(&[Suggestion {
-        dependency: Dependency {
-            name: "rails/rails".to_owned(),
-            requirement: "main".to_owned(),
-            ecosystem: Ruby,
-            group: "dependencies".to_owned(),
-            hosted_url: Some("https://api.github.com/repos/rails/rails/commits".to_owned()),
-            hosted_name: Some("rails".to_owned()),
-            range: range(0, 5, 0, 12),
-            requirement_range: range(0, 30, 0, 44),
-            requirement_prefix: r#"ref: ""#.to_owned(),
-            requirement_suffix: r#"""#.to_owned(),
-        },
-        latest: Some("a1b2c3d4e5f6".to_owned()),
-        resolved: None,
-        status: StatusUpdateAvailable,
-        builds: vec![],
-        choices: vec![],
-    }]);
+    let edits = update_edits(&[github_ref_suggestion("main", "commits", "ref: ")]);
 
     assert_eq!(edits[0].new_text, r#"ref: "a1b2c3d4e5f6""#);
 }
 
 #[test]
 fn switches_ruby_github_tags_to_ref_updates_for_sha_latest() {
-    let edits = update_edits(&[Suggestion {
-        dependency: Dependency {
-            name: "rails/rails".to_owned(),
-            requirement: "v6.0.0".to_owned(),
-            ecosystem: Ruby,
-            group: "dependencies".to_owned(),
-            hosted_url: Some("https://api.github.com/repos/rails/rails/tags".to_owned()),
-            hosted_name: Some("rails".to_owned()),
-            range: range(0, 5, 0, 12),
-            requirement_range: range(0, 30, 0, 44),
-            requirement_prefix: r#"tag: ""#.to_owned(),
-            requirement_suffix: r#"""#.to_owned(),
-        },
-        latest: Some("a1b2c3d4e5f6".to_owned()),
-        resolved: None,
-        status: StatusUpdateAvailable,
-        builds: vec![],
-        choices: vec![],
-    }]);
+    let edits = update_edits(&[github_ref_suggestion("v6.0.0", "tags", "tag: ")]);
 
     assert_eq!(edits[0].new_text, r#"ref: "a1b2c3d4e5f6""#);
 }
@@ -275,25 +218,7 @@ fn preserves_semver_requirement_operators() {
         (">=1.2.3", ">=2.0.0"),
         ("v1.2.3", "2.0.0"),
     ] {
-        let edits = update_edits(&[Suggestion {
-            dependency: Dependency {
-                name: "left-pad".to_owned(),
-                requirement: requirement.to_owned(),
-                ecosystem: Npm,
-                group: "dependencies".to_owned(),
-                hosted_url: None,
-                hosted_name: None,
-                range: range(0, 0, 0, 8),
-                requirement_range: range(0, 8, 0, 8 + u32::try_from(requirement.len()).unwrap()),
-                requirement_prefix: "".to_owned(),
-                requirement_suffix: "".to_owned(),
-            },
-            latest: Some("2.0.0".to_owned()),
-            resolved: None,
-            status: StatusUpdateAvailable,
-            builds: vec![],
-            choices: vec![],
-        }]);
+        let edits = update_edits(&[update_suggestion(npm_dependency(requirement), "2.0.0")]);
 
         assert_eq!(edits[0].new_text, expected);
     }
@@ -424,30 +349,34 @@ fn skips_current_dependencies() {
 }
 
 fn python_dependency(requirement: &str) -> Dependency {
-    Dependency {
-        name: "requests".to_owned(),
-        requirement: requirement.to_owned(),
-        ecosystem: Python,
-        group: "requirements".to_owned(),
-        hosted_url: None,
-        hosted_name: None,
-        range: range(0, 0, 0, 8),
-        requirement_range: range(0, 8, 0, 8 + u32::try_from(requirement.len()).unwrap()),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
-    }
+    dependency_shape("requests", Python, "requirements", 8, requirement)
 }
 
 fn ruby_dependency(requirement: &str) -> Dependency {
+    dependency_shape("rails", Ruby, "dependencies", 5, requirement)
+}
+
+fn dependency_shape(
+    name: &str,
+    ecosystem: Ecosystem,
+    group: &str,
+    name_end: u32,
+    requirement: &str,
+) -> Dependency {
     Dependency {
-        name: "rails".to_owned(),
+        name: name.to_owned(),
         requirement: requirement.to_owned(),
-        ecosystem: Ruby,
-        group: "dependencies".to_owned(),
+        ecosystem,
+        group: group.to_owned(),
         hosted_url: None,
         hosted_name: None,
-        range: range(0, 0, 0, 5),
-        requirement_range: range(0, 5, 0, 5 + u32::try_from(requirement.len()).unwrap()),
+        range: range(0, 0, 0, name_end),
+        requirement_range: range(
+            0,
+            name_end,
+            0,
+            name_end + u32::try_from(requirement.len()).unwrap(),
+        ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
     }
@@ -468,6 +397,37 @@ fn npm_dependency(requirement: &str) -> Dependency {
     }
 }
 
+fn update_suggestion(dependency: Dependency, latest: &str) -> Suggestion {
+    Suggestion {
+        dependency,
+        latest: Some(latest.to_owned()),
+        resolved: None,
+        status: StatusUpdateAvailable,
+        builds: vec![],
+        choices: vec![],
+    }
+}
+
+fn github_ref_suggestion(requirement: &str, reference_kind: &str, prefix: &str) -> Suggestion {
+    update_suggestion(
+        Dependency {
+            name: "rails/rails".to_owned(),
+            requirement: requirement.to_owned(),
+            ecosystem: Ruby,
+            group: "dependencies".to_owned(),
+            hosted_url: Some(format!(
+                "https://api.github.com/repos/rails/rails/{reference_kind}"
+            )),
+            hosted_name: Some("rails".to_owned()),
+            range: range(0, 5, 0, 12),
+            requirement_range: range(0, 30, 0, 44),
+            requirement_prefix: format!("{prefix}\""),
+            requirement_suffix: "\"".to_owned(),
+        },
+        "a1b2c3d4e5f6",
+    )
+}
+
 fn assert_requirement_matches(requirement: &str, version: &str) {
     let requirement = normalize_exact_requirement(requirement);
     let requirement = VersionReq::parse(&requirement).expect("parse rewritten requirement");
@@ -486,17 +446,4 @@ fn normalize_exact_requirement(requirement: &str) -> String {
     requirement
         .strip_prefix("==")
         .map_or_else(|| requirement.to_owned(), |version| format!("={version}"))
-}
-
-fn range(start_line: u32, start_character: u32, end_line: u32, end_character: u32) -> Range {
-    Range {
-        start: Position {
-            line: start_line,
-            character: start_character,
-        },
-        end: Position {
-            line: end_line,
-            character: end_character,
-        },
-    }
 }

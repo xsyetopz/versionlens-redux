@@ -10,9 +10,7 @@ fn sorts_package_json_dependencies_when_metadata_is_parsed() {
 
     let edits = sort_dependency_edits(text, &dependencies);
 
-    assert_eq!(edits.len(), 2);
-    assert_eq!(edits[0].new_text, "    \"alpha\": \"1\",");
-    assert_eq!(edits[1].new_text, "    \"zeta\": \"1\"");
+    assert_json_sort(&edits);
 }
 
 #[test]

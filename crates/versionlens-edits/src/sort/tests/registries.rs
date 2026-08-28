@@ -128,13 +128,13 @@ fn sorts_maven_dependency_management_nodes() {
             Maven,
             "project.dependencyManagement.dependencies.dependency",
             "org.zeta:zeta",
-            range(2, 4, 6, 17),
+            range(2, 4, 7, 17),
         ),
         dependency_with(
             Maven,
             "project.dependencyManagement.dependencies.dependency",
             "org.alpha:alpha",
-            range(7, 4, 11, 17),
+            range(8, 4, 13, 17),
         ),
     ];
 
@@ -143,11 +143,11 @@ fn sorts_maven_dependency_management_nodes() {
     assert_eq!(edits.len(), 2);
     assert_eq!(
         edits[0].new_text,
-        "    <dependency>\n      <groupId>org.alpha</groupId>\n      <artifactId>alpha</artifactId>\n      <version>1</version>\n    </dependency>"
+        "    <dependency>\n      <groupId>org.alpha</groupId>\n      <type>pom</type>\n      <artifactId>alpha</artifactId>\n      <version>1</version>\n    </dependency>"
     );
     assert_eq!(
         edits[1].new_text,
-        "    <dependency>\n      <groupId>org.zeta</groupId>\n      <artifactId>zeta</artifactId>\n      <version>1</version>\n    </dependency>"
+        "    <dependency>\n      <groupId>org.zeta</groupId>\n      <type>pom</type>\n      <artifactId>zeta</artifactId>\n      <version>1</version>\n    </dependency>"
     );
 }
 

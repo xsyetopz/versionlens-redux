@@ -1,12 +1,9 @@
-use versionlens_model::Ecosystem::{
-    Conan, Cpan, Cran, Dotnet, Haxelib, Helm, Julia, LuaRocks, Nim, Swift, Terraform, Vcpkg, Zig,
-};
 #[test]
 fn does_not_sort_ruby_dependencies_across_group_blocks() {
     let text = package_file_fixture("does-not-sort-ruby-dependencies-across-group-blocks.txt");
     let dependencies = vec![
-        dependency_with(Ruby, "group :production", "zeta", range(1, 7, 1, 11)),
-        dependency_with(Ruby, "group :production", "alpha", range(5, 7, 5, 12)),
+        dependency_with(Ruby, "group :production", "zeta", unsupported_range(1, 7, 1, 11)),
+        dependency_with(Ruby, "group :production", "alpha", unsupported_range(5, 7, 5, 12)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -22,13 +19,13 @@ fn sorts_dotnet_single_line_package_references() {
             Dotnet,
             "PackageReference",
             "Zeta.Package",
-            range(1, 2, 1, 61),
+            unsupported_range(1, 2, 1, 61),
         ),
         dependency_with(
             Dotnet,
             "PackageReference",
             "Alpha.Package",
-            range(2, 2, 2, 62),
+            unsupported_range(2, 2, 2, 62),
         ),
     ];
 
@@ -56,7 +53,7 @@ fn skips_dotnet_version_insertion_ranges() {
                 Dotnet,
                 "PackageReference",
                 "Zeta.Package",
-                range(1, 28, 1, 40),
+                unsupported_range(1, 28, 1, 40),
             )
         },
         Dependency {
@@ -66,7 +63,7 @@ fn skips_dotnet_version_insertion_ranges() {
                 Dotnet,
                 "PackageReference",
                 "Alpha.Package",
-                range(2, 28, 2, 41),
+                unsupported_range(2, 28, 2, 41),
             )
         },
     ];
@@ -80,8 +77,8 @@ fn skips_dotnet_version_insertion_ranges() {
 fn skips_julia_dependencies() {
     let text = package_file_fixture("skips-julia-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Julia, "compat", "Zeta", range(1, 0, 1, 10)),
-        dependency_with(Julia, "compat", "Alpha", range(2, 0, 2, 11)),
+        dependency_with(Julia, "compat", "Zeta", unsupported_range(1, 0, 1, 10)),
+        dependency_with(Julia, "compat", "Alpha", unsupported_range(2, 0, 2, 11)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -94,8 +91,8 @@ fn skips_julia_dependencies() {
 fn skips_cran_dependencies() {
     let text = package_file_fixture("skips-cran-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Cran, "Imports", "zeta", range(0, 9, 0, 13)),
-        dependency_with(Cran, "Imports", "alpha", range(0, 24, 0, 29)),
+        dependency_with(Cran, "Imports", "zeta", unsupported_range(0, 9, 0, 13)),
+        dependency_with(Cran, "Imports", "alpha", unsupported_range(0, 24, 0, 29)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -108,8 +105,8 @@ fn skips_cran_dependencies() {
 fn skips_conan_dependencies() {
     let text = package_file_fixture("skips-conan-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Conan, "requires", "zlib", range(1, 0, 1, 4)),
-        dependency_with(Conan, "requires", "poco", range(2, 0, 2, 4)),
+        dependency_with(Conan, "requires", "zlib", unsupported_range(1, 0, 1, 4)),
+        dependency_with(Conan, "requires", "poco", unsupported_range(2, 0, 2, 4)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -122,8 +119,8 @@ fn skips_conan_dependencies() {
 fn skips_vcpkg_dependencies() {
     let text = package_file_fixture("skips-vcpkg-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Vcpkg, "dependencies", "zlib", range(0, 18, 0, 22)),
-        dependency_with(Vcpkg, "dependencies", "fmt", range(0, 32, 0, 35)),
+        dependency_with(Vcpkg, "dependencies", "zlib", unsupported_range(0, 18, 0, 22)),
+        dependency_with(Vcpkg, "dependencies", "fmt", unsupported_range(0, 32, 0, 35)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -136,8 +133,8 @@ fn skips_vcpkg_dependencies() {
 fn skips_swift_package_dependencies() {
     let text = package_file_fixture("skips-swift-package-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Swift, "dependencies", "zlib", range(1, 60, 1, 65)),
-        dependency_with(Swift, "dependencies", "fmt", range(2, 59, 2, 65)),
+        dependency_with(Swift, "dependencies", "zlib", unsupported_range(1, 60, 1, 65)),
+        dependency_with(Swift, "dependencies", "fmt", unsupported_range(2, 59, 2, 65)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -150,8 +147,8 @@ fn skips_swift_package_dependencies() {
 fn skips_zig_zon_dependencies() {
     let text = package_file_fixture("skips-zig-zon-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Zig, "dependencies", "zlib", range(0, 44, 0, 72)),
-        dependency_with(Zig, "dependencies", "fmt", range(0, 95, 0, 122)),
+        dependency_with(Zig, "dependencies", "zlib", unsupported_range(0, 44, 0, 72)),
+        dependency_with(Zig, "dependencies", "fmt", unsupported_range(0, 95, 0, 122)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -164,8 +161,8 @@ fn skips_zig_zon_dependencies() {
 fn skips_nimble_dependencies() {
     let text = package_file_fixture("skips-nimble-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Nim, "requires", "zlib", range(0, 10, 0, 14)),
-        dependency_with(Nim, "requires", "fmt", range(1, 10, 1, 13)),
+        dependency_with(Nim, "requires", "zlib", unsupported_range(0, 10, 0, 14)),
+        dependency_with(Nim, "requires", "fmt", unsupported_range(1, 10, 1, 13)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -178,8 +175,8 @@ fn skips_nimble_dependencies() {
 fn skips_luarocks_rockspec_dependencies() {
     let text = package_file_fixture("skips-luarocks-rockspec-dependencies.txt");
     let dependencies = vec![
-        dependency_with(LuaRocks, "dependencies", "zlib", range(1, 4, 1, 8)),
-        dependency_with(LuaRocks, "dependencies", "busted", range(2, 4, 2, 10)),
+        dependency_with(LuaRocks, "dependencies", "zlib", unsupported_range(1, 4, 1, 8)),
+        dependency_with(LuaRocks, "dependencies", "busted", unsupported_range(2, 4, 2, 10)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -192,8 +189,8 @@ fn skips_luarocks_rockspec_dependencies() {
 fn skips_cpanfile_dependencies() {
     let text = package_file_fixture("skips-cpanfile-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Cpan, "requires", "Zeta", range(0, 10, 0, 14)),
-        dependency_with(Cpan, "requires", "Alpha", range(1, 10, 1, 15)),
+        dependency_with(Cpan, "requires", "Zeta", unsupported_range(0, 10, 0, 14)),
+        dependency_with(Cpan, "requires", "Alpha", unsupported_range(1, 10, 1, 15)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -206,8 +203,8 @@ fn skips_cpanfile_dependencies() {
 fn skips_haxelib_json_dependencies() {
     let text = package_file_fixture("skips-haxelib-json-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Haxelib, "dependencies", "zeta", range(0, 18, 0, 22)),
-        dependency_with(Haxelib, "dependencies", "alpha", range(0, 35, 0, 40)),
+        dependency_with(Haxelib, "dependencies", "zeta", unsupported_range(0, 18, 0, 22)),
+        dependency_with(Haxelib, "dependencies", "alpha", unsupported_range(0, 35, 0, 40)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -224,13 +221,13 @@ fn skips_terraform_required_providers() {
             Terraform,
             "required_providers",
             "hashicorp/zeta",
-            range(0, 33, 0, 37),
+            unsupported_range(0, 33, 0, 37),
         ),
         dependency_with(
             Terraform,
             "required_providers",
             "hashicorp/alpha",
-            range(0, 47, 0, 52),
+            unsupported_range(0, 47, 0, 52),
         ),
     ];
 
@@ -244,8 +241,8 @@ fn skips_terraform_required_providers() {
 fn skips_helm_chart_dependencies() {
     let text = package_file_fixture("skips-helm-chart-dependencies.txt");
     let dependencies = vec![
-        dependency_with(Helm, "dependencies", "zeta", range(1, 10, 1, 14)),
-        dependency_with(Helm, "dependencies", "alpha", range(3, 10, 3, 15)),
+        dependency_with(Helm, "dependencies", "zeta", unsupported_range(1, 10, 1, 14)),
+        dependency_with(Helm, "dependencies", "alpha", unsupported_range(3, 10, 3, 15)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -258,8 +255,8 @@ fn skips_helm_chart_dependencies() {
 fn skips_sort_when_each_sortable_group_has_one_dependency() {
     let text = package_file_fixture("skips-sort-when-each-sortable-group-has-one-dependency.txt");
     let dependencies = vec![
-        dependency_with(Npm, "dependencies", "zeta", range(2, 4, 2, 15)),
-        dependency_with(Npm, "devDependencies", "alpha", range(5, 4, 5, 16)),
+        dependency_with(Npm, "dependencies", "zeta", unsupported_range(2, 4, 2, 15)),
+        dependency_with(Npm, "devDependencies", "alpha", unsupported_range(5, 4, 5, 16)),
     ];
 
     let edits = sort_dependency_edits(text, &dependencies);
@@ -286,7 +283,7 @@ fn dependency_with(ecosystem: Ecosystem, group: &str, name: &str, range: Range) 
     }
 }
 
-fn range(start_line: u32, start_character: u32, end_line: u32, end_character: u32) -> Range {
+fn unsupported_range(start_line: u32, start_character: u32, end_line: u32, end_character: u32) -> Range {
     Range {
         start: Position {
             line: start_line,

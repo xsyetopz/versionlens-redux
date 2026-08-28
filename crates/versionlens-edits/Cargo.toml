@@ -19,6 +19,7 @@ versionlens-versions.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
+versionlens-test-support.workspace = true
 
 [lints]
 workspace = true

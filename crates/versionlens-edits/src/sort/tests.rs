@@ -1,11 +1,9 @@
 use std::cmp::Reverse;
-use std::fs::read_to_string;
-use std::path::PathBuf;
-use versionlens_model::{Dependency, Ecosystem};
-use versionlens_model::{Position, Range, TextEdit};
+use versionlens_model::{Dependency, Ecosystem, Position, Range, TextEdit};
 
 use super::{can_sort_dependencies, sort_dependency_edits};
-use versionlens_model::Ecosystem::{Cargo, Composer, Deno, Go, Maven, Npm, Pub, Python, Ruby};
+use crate::support::tests::range;
+use versionlens_model::Ecosystem::*;
 
 include!("tests/fundamentals.rs");
 include!("tests/manifests.rs");
@@ -26,23 +24,5 @@ fn apply_same_line_edits(text: &str, edits: &[TextEdit]) -> String {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-edits/src/sort/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture("tests/fixtures/versionlens-edits/src/sort/tests", name)
 }

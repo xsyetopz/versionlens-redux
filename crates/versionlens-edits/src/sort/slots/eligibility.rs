@@ -3,11 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use versionlens_model::Dependency;
 
 use super::lines::{dependency_end_line, dependency_start_line};
-use versionlens_model::Ecosystem::{
-    AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Cran, Deno, Docker, Dotnet,
-    Dub, Go, Hackage, Haxelib, Helm, Hex, Julia, LuaRocks, Maven, Nim, Nix, Npm, Opam, Pub, Python,
-    Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
-};
+use versionlens_model::Ecosystem;
 
 const CARGO_DEPENDENCY_GROUPS: &[&str] =
     &["dependencies", "dev-dependencies", "build-dependencies"];
@@ -36,23 +32,43 @@ pub(in crate::sort) fn is_sortable_dependency(dependency: &Dependency) -> bool {
     let group = dependency.group.as_str();
 
     match dependency.ecosystem {
-        Cargo => is_cargo_sortable_group(group),
-        Composer => matches!(
+        Ecosystem::Cargo => is_cargo_sortable_group(group),
+        Ecosystem::Composer => matches!(
             group,
             "require" | "require-dev" | "conflict" | "replace" | "provide"
         ),
-        Deno => is_deno_sortable_group(group),
-        Dotnet => is_dotnet_sortable_dependency(dependency),
-        Dub => matches!(group, "dependencies" | "versions"),
-        Go => matches!(group, "require" | "exclude"),
-        Maven => is_maven_sortable_group(group),
-        Npm => is_npm_sortable_group(group),
-        Python => is_python_sortable_group(group),
-        Pub => PUB_DEPENDENCY_GROUPS.contains(&group),
-        Ruby => true,
-        Hex | Opam | Hackage | Julia | Cran | Conan | Vcpkg | Swift | Zig | Nim | LuaRocks
-        | Cpan | Haxelib | Terraform | Helm | AnsibleGalaxy | Bazel | Nix | Unity | CocoaPods
-        | Docker | Cpp => false,
+        Ecosystem::Deno => is_deno_sortable_group(group),
+        Ecosystem::Dotnet => is_dotnet_sortable_dependency(dependency),
+        Ecosystem::Dub => matches!(group, "dependencies" | "versions"),
+        Ecosystem::Go => matches!(group, "require" | "exclude"),
+        Ecosystem::Maven => is_maven_sortable_group(group),
+        Ecosystem::Npm => is_npm_sortable_group(group),
+        Ecosystem::Python => is_python_sortable_group(group),
+        Ecosystem::Pub => PUB_DEPENDENCY_GROUPS.contains(&group),
+        Ecosystem::Ruby => true,
+        Ecosystem::Hex
+        | Ecosystem::Opam
+        | Ecosystem::Hackage
+        | Ecosystem::Julia
+        | Ecosystem::Cran
+        | Ecosystem::Conan
+        | Ecosystem::Vcpkg
+        | Ecosystem::Swift
+        | Ecosystem::Zig
+        | Ecosystem::Nim
+        | Ecosystem::LuaRocks
+        | Ecosystem::Cpan
+        | Ecosystem::Haxelib
+        | Ecosystem::Terraform
+        | Ecosystem::Helm
+        | Ecosystem::AnsibleGalaxy
+        | Ecosystem::Bazel
+        | Ecosystem::Nix
+        | Ecosystem::Unity
+        | Ecosystem::CocoaPods
+        | Ecosystem::Docker
+        | Ecosystem::Cpp
+        | Ecosystem::GitHub => false,
     }
 }
 
@@ -182,6 +198,6 @@ fn dependency_lines_are_unique<'a>(dependencies: impl Iterator<Item = &'a Depend
 }
 
 fn has_sortable_span(dependency: &Dependency) -> bool {
-    dependency.ecosystem == Maven
+    dependency.ecosystem == Ecosystem::Maven
         || dependency_start_line(dependency) == dependency_end_line(dependency)
 }
