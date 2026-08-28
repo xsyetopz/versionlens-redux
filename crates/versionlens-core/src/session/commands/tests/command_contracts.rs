@@ -15,10 +15,7 @@ fn apply_command_updates_only_selected_dependency() {
         ],
     );
 
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.name, "left-pad");
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "1.1.0");
+    super::assert_single_named_edit(&output, "left-pad", "1.1.0");
 }
 
 #[test]

@@ -2,17 +2,7 @@
 fn apply_command_sorts_requirements_dependencies() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///requirements.txt".to_owned(),
-            language_id: "pip-requirements".to_owned(),
-            text: package_file_fixture("requirements-unsorted-with-comment.txt"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///requirements.txt", "pip-requirements", "requirements-unsorted-with-comment.txt");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -26,12 +16,7 @@ fn apply_command_sorts_smoke_requirements_dependencies() {
 
     let text = package_file_fixture("requirements-smoke.txt");
     let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///requirements.txt".to_owned(),
-            language_id: "pip-requirements".to_owned(),
-            text: text.clone(),
-            workspace_root: None,
-        },
+        DocumentInput::new("file:///requirements.txt".to_owned(), "pip-requirements".to_owned(), text.clone(), None),
         Some("sort"),
         None,
         &[],
@@ -46,69 +31,43 @@ fn apply_command_sorts_smoke_requirements_dependencies() {
 
 #[test]
 fn apply_command_sorts_pyproject_project_dependencies() {
-    let session = standard_session();
-
-    let text = package_file_fixture("pyproject-project-unsorted.toml");
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///pyproject.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: text.clone(),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
-
-    assert!(output.suggestions.is_empty());
-    assert_eq!(output.edits.len(), 2);
-    assert_eq!(
-        apply_line_edits(&text, &output.edits),
-        "[project]\ndependencies = [\n  \"alpha==1\",\n  \"zeta==1\"\n]"
+    assert_sorted_pyproject_fixture(
+        "pyproject-project-unsorted.toml",
+        "[project]\ndependencies = [\n  \"alpha==1\",\n  \"zeta==1\"\n]",
     );
 }
 
 #[test]
 fn apply_command_sorts_pyproject_poetry_dependencies() {
-    let session = standard_session();
+    assert_sorted_pyproject_fixture(
+        "pyproject-poetry-unsorted.toml",
+        "[tool.poetry.dependencies]\nalpha = \"1\"\nzeta = \"1\"",
+    );
+}
 
-    let text = package_file_fixture("pyproject-poetry-unsorted.toml");
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///pyproject.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: text.clone(),
-            workspace_root: None,
-        },
+fn assert_sorted_pyproject_fixture(fixture: &str, expected: &str) {
+    let text = package_file_fixture(fixture);
+    let output = standard_session().apply_command(
+        DocumentInput::new(
+            "file:///pyproject.toml".to_owned(),
+            "toml".to_owned(),
+            text.clone(),
+            None,
+        ),
         Some("sort"),
         None,
         &[],
     );
-
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
-    assert_eq!(
-        apply_line_edits(&text, &output.edits),
-        "[tool.poetry.dependencies]\nalpha = \"1\"\nzeta = \"1\""
-    );
+    assert_eq!(apply_line_edits(&text, &output.edits), expected);
 }
 
 #[test]
 fn apply_command_sorts_pub_dependencies_by_group() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture("pubspec-groups-unsorted.yaml"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "groups-unsorted.yaml");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 4);
@@ -122,17 +81,7 @@ fn apply_command_sorts_pub_dependencies_by_group() {
 fn apply_command_sorts_pub_dependencies_with_blank_versions() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture("pubspec-blank-version.yaml"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "blank-version.yaml");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -144,17 +93,7 @@ fn apply_command_sorts_pub_dependencies_with_blank_versions() {
 fn apply_command_sorts_complex_pub_dependencies() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///pubspec.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture("pubspec-complex.yaml"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "complex.yaml");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -169,17 +108,7 @@ fn apply_command_sorts_complex_pub_dependencies() {
 fn apply_command_sorts_package_json_dependencies_by_group() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("package-groups-unsorted.json"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///package.json", "json", "groups-unsorted.json");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 4);
@@ -193,17 +122,7 @@ fn apply_command_sorts_package_json_dependencies_by_group() {
 fn apply_command_sorts_package_json_dependencies_with_metadata_entries() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("package-metadata-unsorted.json"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///package.json", "json", "metadata-unsorted.json");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -215,17 +134,7 @@ fn apply_command_sorts_package_json_dependencies_with_metadata_entries() {
 fn apply_command_does_not_sort_docker_compose_images() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///docker-compose.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture("docker-compose-images.yaml"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///docker-compose.yaml", "yaml", "docker-compose-images.yaml");
 
     assert!(output.suggestions.is_empty());
     assert!(output.edits.is_empty());
@@ -235,17 +144,7 @@ fn apply_command_does_not_sort_docker_compose_images() {
 fn apply_command_sorts_composer_require_dependencies() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///composer.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("composer-require-unsorted.json"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///composer.json", "json", "composer-require-unsorted.json");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -263,16 +162,11 @@ fn apply_command_sorts_composer_require_dependencies() {
 fn apply_command_sorts_deno_scoped_imports_within_each_scope() {
     let session = session_with_dependency_properties(Deno, &["scopes"]);
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///deno.json".to_owned(),
-            language_id: "jsonc".to_owned(),
-            text: package_file_fixture("deno-scopes-unsorted.json"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
+    let output = sort_fixture(
+        &session,
+        "file:///deno.json",
+        "jsonc",
+        "deno-scopes-unsorted.json",
     );
 
     assert!(output.suggestions.is_empty());
@@ -299,17 +193,7 @@ fn apply_command_sorts_deno_scoped_imports_within_each_scope() {
 fn apply_command_sorts_pnpm_named_catalog_dependencies() {
     let session = standard_session();
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///pnpm-workspace.yaml".to_owned(),
-            language_id: "yaml".to_owned(),
-            text: package_file_fixture("pnpm-workspace-named-catalog-unsorted.yaml"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///pnpm-workspace.yaml", "yaml", "pnpm-workspace-named-catalog-unsorted.yaml");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -321,17 +205,7 @@ fn apply_command_sorts_pnpm_named_catalog_dependencies() {
 fn apply_command_sorts_package_json_named_workspace_catalog_dependencies() {
     let session = session_with_dependency_properties(Npm, &["workspaces.catalogs.*"]);
 
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("package-workspace-catalog-unsorted.json"),
-            workspace_root: None,
-        },
-        Some("sort"),
-        None,
-        &[],
-    );
+    let output = sort_fixture(&session, "file:///package.json", "json", "workspace-catalog-unsorted.json");
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);

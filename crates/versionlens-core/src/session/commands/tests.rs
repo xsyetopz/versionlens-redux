@@ -7,20 +7,13 @@ use crate::{
 };
 
 fn standard_session() -> VersionLensSession {
-    session_with_vulnerability_visibility(true)
+    crate::support::tests::test_session(true)
 }
 
 fn session_with_vulnerability_visibility(show_vulnerabilities: bool) -> VersionLensSession {
-    crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    })
+    let mut session = standard_session();
+    session.config.show_vulnerabilities = show_vulnerabilities;
+    session
 }
 
 fn session_with_dependency_properties(
@@ -49,6 +42,17 @@ fn session_with_dependency_properties(
     })
 }
 
+fn assert_single_named_edit(
+    output: &crate::contract::ResolveDocumentOutput,
+    name: &str,
+    new_text: &str,
+) {
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].dependency.name, name);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, new_text);
+}
+
+mod command_contracts;
 mod sort;
 mod update;
-mod validation;

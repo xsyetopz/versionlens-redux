@@ -1,20 +1,11 @@
 #[test]
 fn apply_command_uses_code_lens_selector_for_duplicate_names() {
     let session = standard_session();
-    let input = DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture(
-            "apply-command-uses-code-lens-selector-for-duplicate-names.json",
-        ),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture(
+            "command-uses-code-lens-selector-for-duplicate-names.json",
+        ), None);
 
-    let responses = [RegistryResponseInput {
-        package: "left-pad".to_owned(),
-        ecosystem: Npm,
-        body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
-    }];
+    let responses = [RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned())];
     session.resolve_document_with_responses(input.clone(), &responses);
     let analyzed = session.analyze_document(input.clone());
     let selector = analyzed
@@ -35,27 +26,14 @@ fn apply_command_uses_code_lens_selector_for_duplicate_names() {
 #[test]
 fn pyproject_update_code_lenses_advance_lower_bounds_and_preserve_upper_caps() {
     let session = standard_session();
-    let input = DocumentInput {
-        uri: "file:///pyproject.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: package_file_fixture(
+    let input = DocumentInput::new("file:///pyproject.toml".to_owned(), "toml".to_owned(), package_file_fixture(
             "pyproject-update-code-lenses-advance-lower-bounds-and-preserve-upper-caps.toml",
-        ),
-        workspace_root: None,
-    };
+        ), None);
     let responses = [
-        RegistryResponseInput {
-            package: "httpx".to_owned(),
-            ecosystem: versionlens_model::Ecosystem::Python,
-            body: r#"{"info":{"version":"0.28.1"},"releases":{"0.27.0":[],"0.28.1":[{"yanked":false}]}}"#
-                .to_owned(),
-        },
-        RegistryResponseInput {
-            package: "httpcore".to_owned(),
-            ecosystem: versionlens_model::Ecosystem::Python,
-            body: r#"{"info":{"version":"0.28.1"},"releases":{"0.27.0":[],"0.28.1":[{"yanked":false}]}}"#
-                .to_owned(),
-        },
+        RegistryResponseInput::new("httpx".to_owned(), versionlens_model::Ecosystem::Python, r#"{"info":{"version":"0.28.1"},"releases":{"0.27.0":[],"0.28.1":[{"yanked":false}]}}"#
+                .to_owned()),
+        RegistryResponseInput::new("httpcore".to_owned(), versionlens_model::Ecosystem::Python, r#"{"info":{"version":"0.28.1"},"releases":{"0.27.0":[],"0.28.1":[{"yanked":false}]}}"#
+                .to_owned()),
     ];
 
     session.resolve_document_with_responses(input.clone(), &responses);
@@ -126,19 +104,10 @@ fn pyproject_selected_pep440_updates_preserve_or_repair_extended_bounds() {
         ),
     ] {
         let session = standard_session();
-        let input = DocumentInput {
-            uri: "file:///pyproject.toml".to_owned(),
-            language_id: "toml".to_owned(),
-            text: format!("[project]\ndependencies = [\"{package}{requirement}\"]\n"),
-            workspace_root: None,
-        };
-        let responses = [RegistryResponseInput {
-            package: package.to_owned(),
-            ecosystem: versionlens_model::Ecosystem::Python,
-            body: format!(
+        let input = DocumentInput::new("file:///pyproject.toml".to_owned(), "toml".to_owned(), format!("[project]\ndependencies = [\"{package}{requirement}\"]\n"), None);
+        let responses = [RegistryResponseInput::new(package.to_owned(), versionlens_model::Ecosystem::Python, format!(
                 r#"{{"info":{{"version":"{provider_latest}"}},"releases":{{"{provider_latest}":[{{"yanked":false}}]}}}}"#,
-            ),
-        }];
+            ))];
 
         let output = session.apply_command_with_selected_version(ApplyCommandRequest {
             input,
@@ -163,30 +132,13 @@ fn apply_command_updates_only_requested_level() {
     let session = standard_session();
 
     let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("apply-command-updates-only-requested-level.json"),
-            workspace_root: None,
-        },
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("command-updates-only-requested-level.json"), None),
         Some("updateMinor"),
         None,
         &[
-            RegistryResponseInput {
-                package: "major".to_owned(),
-                ecosystem: Npm,
-                body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
-            },
-            RegistryResponseInput {
-                package: "minor".to_owned(),
-                ecosystem: Npm,
-                body: r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
-            },
-            RegistryResponseInput {
-                package: "patch".to_owned(),
-                ecosystem: Npm,
-                body: r#"{"dist-tags":{"latest":"1.0.1"}}"#.to_owned(),
-            },
+            RegistryResponseInput::new("major".to_owned(), Npm, r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned()),
+            RegistryResponseInput::new("minor".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned()),
+            RegistryResponseInput::new("patch".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.0.1"}}"#.to_owned()),
         ],
     );
 
@@ -198,56 +150,39 @@ fn apply_command_updates_only_requested_level() {
 
 #[test]
 fn apply_command_updates_ranged_dependency_to_requested_minor_choice() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("apply-command-updates-ranged-dependency-to-requested-minor-choice.json"),
-            workspace_root: None,
-        },
-        Some("updateMinor"),
-        None,
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"1.0.1":{},"1.1.0":{},"2.0.0":{}}}"#
-                .to_owned(),
-        }],
+    assert_ranged_choice(
+        "command-updates-ranged-dependency-to-requested-minor-choice.json",
+        "updateMinor",
+        "~1.1.0",
     );
-
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.name, "left-pad");
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "~1.1.0");
 }
 
 #[test]
 fn apply_command_updates_ranged_dependency_to_requested_patch_choice() {
-    let session = standard_session();
-
-    let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture("apply-command-updates-ranged-dependency-to-requested-patch-choice.json"),
-            workspace_root: None,
-        },
-        Some("updatePatch"),
-        None,
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"1.0.1":{},"1.1.0":{},"2.0.0":{}}}"#
-                .to_owned(),
-        }],
+    assert_ranged_choice(
+        "command-updates-ranged-dependency-to-requested-patch-choice.json",
+        "updatePatch",
+        "1.0.1",
     );
+}
 
-    assert_eq!(output.suggestions.len(), 1);
-    assert_eq!(output.suggestions[0].dependency.name, "left-pad");
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "1.0.1");
+fn assert_ranged_choice(fixture: &str, command: &str, expected: &str) {
+    let output = standard_session().apply_command(
+        DocumentInput::new(
+            "file:///package.json".to_owned(),
+            "json".to_owned(),
+            package_file_fixture(fixture),
+            None,
+        ),
+        Some(command),
+        None,
+        &[RegistryResponseInput::new(
+            "left-pad".to_owned(),
+            Npm,
+            r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"1.0.1":{},"1.1.0":{},"2.0.0":{}}}"#.to_owned(),
+        )],
+    );
+    super::assert_single_named_edit(&output, "left-pad", expected);
 }
 
 #[test]
@@ -255,21 +190,12 @@ fn apply_command_level_filter_does_not_bump_project_version() {
     let session = standard_session();
 
     let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture(
-                "apply-command-level-filter-does-not-bump-project-version.json",
-            ),
-            workspace_root: None,
-        },
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture(
+                "command-level-filter-does-not-bump-project-version.json",
+            ), None),
         Some("updateMajor"),
         None,
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
-        }],
+        &[RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned())],
     );
 
     assert_eq!(output.suggestions.len(), 1);
@@ -283,14 +209,9 @@ fn apply_command_bulk_update_skips_project_version_edits() {
     let session = standard_session();
 
     let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture(
-                "apply-command-bulk-update-skips-project-version-edits.json",
-            ),
-            workspace_root: None,
-        },
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture(
+                "command-bulk-update-skips-project-version-edits.json",
+            ), None),
         Some("update"),
         None,
         &[],
@@ -305,27 +226,18 @@ fn bulk_update_skips_prerelease_only_invalid_range_updates() {
     let session = standard_session();
 
     let output = session.apply_command(
-        DocumentInput {
-            uri: "file:///package.json".to_owned(),
-            language_id: "json".to_owned(),
-            text: package_file_fixture(
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture(
                 "bulk-update-skips-prerelease-only-invalid-range-updates.json",
-            ),
-            workspace_root: None,
-        },
+            ), None),
         Some("update"),
         None,
-        &[RegistryResponseInput {
-            package: "left-pad".to_owned(),
-            ecosystem: Npm,
-            body: r#"{
+        &[RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{
               "dist-tags": { "latest": "5.0.0-beta.1" },
               "versions": {
                 "5.0.0-beta.1": {}
               }
             }"#
-            .to_owned(),
-        }],
+            .to_owned())],
     );
 
     assert_eq!(output.suggestions.len(), 1);

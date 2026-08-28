@@ -1,283 +1,83 @@
-#[test]
-fn configured_file_pattern_classifies_custom_composer_manifest() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
-            file_patterns: vec![FilePatternConfig {
-                manifest_kind: ComposerJson,
-                pattern: "**/acme.composer.json".to_owned(),
-            }],
-            ..crate::default()
-        },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
+struct ConfiguredPatternCase<'a> {
+    manifest_kind: versionlens_model::ManifestKind,
+    pattern: &'a str,
+    uri: &'a str,
+    language: &'a str,
+    fixture: &'a str,
+    workspace_root: Option<&'a str>,
+    expected_ecosystem: &'a str,
+    expected_group: &'a str,
+    expected_name: &'a str,
+    expected_requirement: &'a str,
+}
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/acme.composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("acme.composer.json"),
-        workspace_root: None,
+fn assert_configured_pattern(case: ConfiguredPatternCase<'_>) {
+    let session = session_with_file_pattern(crate::FilePatternConfig {
+        manifest_kind: case.manifest_kind,
+        pattern: case.pattern.to_owned(),
     });
+    let output = session.analyze_document(DocumentInput::new(
+        case.uri.to_owned(),
+        case.language.to_owned(),
+        package_file_fixture(case.fixture),
+        case.workspace_root.map(str::to_owned),
+    ));
 
     assert!(output.is_supported_manifest);
     assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].ecosystem, "composer");
-    assert_eq!(output.dependencies[0].name, "acme/package");
+    let dependency = &output.dependencies[0];
+    assert_eq!(dependency.ecosystem, case.expected_ecosystem);
+    assert_eq!(dependency.group, case.expected_group);
+    assert_eq!(dependency.name, case.expected_name);
+    assert_eq!(dependency.requirement, case.expected_requirement);
+}
+
+#[test]
+fn configured_file_pattern_classifies_custom_composer_manifest() {
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: ComposerJson, pattern: "**/acme.composer.json", uri: "file:///workspace/acme.composer.json", language: "json", fixture: "acme.composer.json", workspace_root: None, expected_ecosystem: "composer", expected_group: "require", expected_name: "acme/package", expected_requirement: "1.2.3" });
 }
 
 #[test]
 fn configured_file_pattern_supports_brace_alternatives() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
-            file_patterns: vec![FilePatternConfig {
-                manifest_kind: ComposerJson,
-                pattern: "**/{composer.json,acme.composer.json}".to_owned(),
-            }],
-            ..crate::default()
-        },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/acme.composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("acme.composer.json"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].name, "acme/package");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: ComposerJson, pattern: "**/{composer.json,acme.composer.json}", uri: "file:///workspace/acme.composer.json", language: "json", fixture: "acme.composer.json", workspace_root: None, expected_ecosystem: "composer", expected_group: "require", expected_name: "acme/package", expected_requirement: "1.2.3" });
 }
 
 #[test]
 fn configured_file_pattern_supports_workspace_relative_recursive_segments() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
-            file_patterns: vec![FilePatternConfig {
-                manifest_kind: ComposerJson,
-                pattern: "packages/**/acme.composer.json".to_owned(),
-            }],
-            ..crate::default()
-        },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/packages/backend/acme.composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("acme.composer.json"),
-        workspace_root: Some("/workspace".to_owned()),
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].name, "acme/package");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: ComposerJson, pattern: "packages/**/acme.composer.json", uri: "file:///workspace/packages/backend/acme.composer.json", language: "json", fixture: "acme.composer.json", workspace_root: Some("/workspace"), expected_ecosystem: "composer", expected_group: "require", expected_name: "acme/package", expected_requirement: "1.2.3" });
 }
 
 #[test]
 fn configured_file_pattern_supports_character_classes() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
-            file_patterns: vec![FilePatternConfig {
-                manifest_kind: ComposerJson,
-                pattern: "**/acme.composer.jso[n]".to_owned(),
-            }],
-            ..crate::default()
-        },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/acme.composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("acme.composer.json"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].name, "acme/package");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: ComposerJson, pattern: "**/acme.composer.jso[n]", uri: "file:///workspace/acme.composer.json", language: "json", fixture: "acme.composer.json", workspace_root: None, expected_ecosystem: "composer", expected_group: "require", expected_name: "acme/package", expected_requirement: "1.2.3" });
 }
 
 #[test]
 fn configured_file_pattern_supports_character_class_ranges() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
-            file_patterns: vec![FilePatternConfig {
-                manifest_kind: ComposerJson,
-                pattern: "**/acme.composer.jso[m-o]".to_owned(),
-            }],
-            ..crate::default()
-        },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/acme.composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("acme.composer.json"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].name, "acme/package");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: ComposerJson, pattern: "**/acme.composer.jso[m-o]", uri: "file:///workspace/acme.composer.json", language: "json", fixture: "acme.composer.json", workspace_root: None, expected_ecosystem: "composer", expected_group: "require", expected_name: "acme/package", expected_requirement: "1.2.3" });
 }
 
 #[test]
 fn configured_file_pattern_supports_negated_character_classes() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
-            file_patterns: vec![FilePatternConfig {
-                manifest_kind: ComposerJson,
-                pattern: "**/acme.composer.jso[!x]".to_owned(),
-            }],
-            ..crate::default()
-        },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/acme.composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("acme.composer.json"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].name, "acme/package");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: ComposerJson, pattern: "**/acme.composer.jso[!x]", uri: "file:///workspace/acme.composer.json", language: "json", fixture: "acme.composer.json", workspace_root: None, expected_ecosystem: "composer", expected_group: "require", expected_name: "acme/package", expected_requirement: "1.2.3" });
 }
 
 #[test]
 fn configured_file_pattern_supports_micromatch_extglob_alternatives() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
-            file_patterns: vec![FilePatternConfig {
-                manifest_kind: ComposerJson,
-                pattern: "**/@(composer|acme.composer).json".to_owned(),
-            }],
-            ..crate::default()
-        },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: true,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/acme.composer.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("acme.composer.json"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].name, "acme/package");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: ComposerJson, pattern: "**/@(composer|acme.composer).json", uri: "file:///workspace/acme.composer.json", language: "json", fixture: "acme.composer.json", workspace_root: None, expected_ecosystem: "composer", expected_group: "require", expected_name: "acme/package", expected_requirement: "1.2.3" });
 }
 
 #[test]
 fn configured_docker_file_pattern_routes_non_yaml_matches_to_dockerfile_parser() {
-    let session = session_with_file_pattern(FilePatternConfig {
-        manifest_kind: DockerComposeYaml,
-        pattern: "**/Containerfile".to_owned(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/Containerfile".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: package_file_fixture("Containerfile"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].ecosystem, "docker");
-    assert_eq!(output.dependencies[0].group, "FROM");
-    assert_eq!(output.dependencies[0].name, "node");
-    assert_eq!(output.dependencies[0].requirement, "20");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: DockerComposeYaml, pattern: "**/Containerfile", uri: "file:///workspace/Containerfile", language: "plaintext", fixture: "Containerfile", workspace_root: None, expected_ecosystem: "docker", expected_group: "FROM", expected_name: "node", expected_requirement: "20" });
 }
 
 #[test]
 fn configured_pypi_file_pattern_routes_non_txt_matches_to_toml_parser() {
-    let session = session_with_file_pattern(FilePatternConfig {
-        manifest_kind: PythonRequirementsTxt,
-        pattern: "**/pyproject-prod.toml".to_owned(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/pyproject-prod.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: package_file_fixture("pyproject-prod.toml"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].ecosystem, "pypi");
-    assert_eq!(output.dependencies[0].group, "project.dependencies");
-    assert_eq!(output.dependencies[0].name, "requests");
-    assert_eq!(output.dependencies[0].requirement, "==2.32.0");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: PythonRequirementsTxt, pattern: "**/pyproject-prod.toml", uri: "file:///workspace/pyproject-prod.toml", language: "toml", fixture: "pyproject-prod.toml", workspace_root: None, expected_ecosystem: "pypi", expected_group: "project.dependencies", expected_name: "requests", expected_requirement: "==2.32.0" });
 }
 
 #[test]
 fn configured_dub_file_pattern_routes_sdl_matches_to_sdl_parser() {
-    let session = session_with_file_pattern(FilePatternConfig {
-        manifest_kind: DubJson,
-        pattern: "**/*.sdl".to_owned(),
-    });
-
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/dub.sdl".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: package_file_fixture("dub.sdl"),
-        workspace_root: None,
-    });
-
-    assert!(output.is_supported_manifest);
-    assert_eq!(output.dependencies.len(), 1);
-    assert_eq!(output.dependencies[0].ecosystem, "dub");
-    assert_eq!(output.dependencies[0].group, "dependencies");
-    assert_eq!(output.dependencies[0].name, "vibe-d");
-    assert_eq!(output.dependencies[0].requirement, "~>0.9.7");
+    assert_configured_pattern(ConfiguredPatternCase { manifest_kind: DubJson, pattern: "**/*.sdl", uri: "file:///workspace/dub.sdl", language: "plaintext", fixture: "dub.sdl", workspace_root: None, expected_ecosystem: "dub", expected_group: "dependencies", expected_name: "vibe-d", expected_requirement: "~>0.9.7" });
 }

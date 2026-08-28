@@ -3,7 +3,10 @@ use std::collections::HashSet;
 use versionlens_edits::can_sort_dependencies;
 use versionlens_edits::update_edits;
 
-use versionlens_model::{DocumentInput, ManifestKind, ecosystem_for_manifest};
+use versionlens_model::ManifestKind::VersionLensMultiRegistries;
+use versionlens_model::{
+    DocumentInput, ManifestKind, ecosystem_for_manifest, provider_name_for_manifest,
+};
 use versionlens_suggestions::Suggestion;
 use versionlens_versions::ProjectVersionBump;
 use versionlens_vscode_model::DiagnosticPayload;
@@ -18,21 +21,6 @@ use crate::registry;
 use crate::schema::schema_output;
 use crate::snapshot::dependency_signature;
 use crate::status::{status_payload, to_u32};
-use crate::suggestion::into_suggestion_payloads;
-use versionlens_model::ManifestKind::{
-    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
-    ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
-    DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson, DotnetXml,
-    DubJson, DubSdl, DuneProject, Gemfile, GleamToml, GoMod, GradleBuild, GradleSettings,
-    GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml,
-    JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap,
-    MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam,
-    PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml, PythonPipfile,
-    PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
-    SbtBuild, StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, Unknown, VcpkgJson,
-    VersionLensMultiRegistries, XmakeLua, ZigBuildZon,
-};
-
 pub(super) struct DependencySuggestionsRequest<'a> {
     pub(super) input: DocumentInput,
     pub(super) selector: &'a str,
@@ -54,7 +42,7 @@ impl VersionLensSession {
         let manifest_kind = self.classify_document(&input);
         let is_supported_manifest = self.manifest_enabled(manifest_kind);
         let active_provider_name = is_supported_manifest
-            .then(|| active_provider_name_for_manifest(manifest_kind))
+            .then(|| provider_name_for_manifest(manifest_kind))
             .flatten()
             .map(ToOwned::to_owned);
         if manifest_kind == VersionLensMultiRegistries {
@@ -139,16 +127,15 @@ impl VersionLensSession {
         let authorization_required_requests = operation.take_authorization_requests();
         let authorization_required_count =
             authorization_required_count.max(to_u32(authorization_required_requests.len()));
-        let suggestion_payloads = into_suggestion_payloads(suggestions);
-        ResolveDocumentOutput {
-            suggestions: suggestion_payloads,
-            edits,
-            authorization_required_count,
-            authorization_required_requests,
-            vulnerable_update_count,
-            vulnerable_update_package: None,
-            vulnerable_update_version: None,
-        }
+        super::finish_resolve_output(
+            suggestions,
+            super::resolve_output_parts(
+                edits,
+                authorization_required_count,
+                authorization_required_requests,
+                vulnerable_update_count,
+            ),
+        )
     }
 
     pub(crate) fn resolve_suggestions(
@@ -205,50 +192,3 @@ impl VersionLensSession {
 
 #[cfg(test)]
 mod tests;
-
-fn active_provider_name_for_manifest(manifest_kind: ManifestKind) -> Option<&'static str> {
-    match manifest_kind {
-        CargoToml => Some("cargo"),
-        ComposerJson => Some("composer"),
-        DenoJson | DenoImportMapJson | JsrJson => Some("deno"),
-        DotnetProjectJson | DotnetXml | PaketDependencies | PaketReferences => Some("dotnet"),
-        DockerComposeYaml | Dockerfile => Some("docker"),
-        KustomizationYaml => Some("kustomize"),
-        DubJson | DubSdl => Some("dub"),
-        Gemfile | RubyGemspec => Some("ruby"),
-        GoMod => Some("golang"),
-        MavenPomXml
-        | GradleBuild
-        | GradleSettings
-        | GradleVersionCatalogToml
-        | SbtBuild
-        | ClojureDepsEdn
-        | LeiningenProjectClj => Some("maven"),
-        MixExs | RebarConfig | GleamToml => Some("hex"),
-        Opam | DuneProject => Some("opam"),
-        Cabal | CabalProject | StackYaml => Some("hackage"),
-        JuliaProjectToml | JuliaManifestToml => Some("julia"),
-        RDescription | RenvLock => Some("cran"),
-        ConanfileTxt | ConanfilePy => Some("conan"),
-        VcpkgJson => Some("vcpkg"),
-        Cmake | XmakeLua | MesonWrap | BazelWorkspace => Some("cpp"),
-        SwiftPackage => Some("swift"),
-        ZigBuildZon => Some("zig"),
-        Nimble => Some("nim"),
-        LuaRockspec => Some("luarocks"),
-        Cpanfile => Some("cpan"),
-        HaxelibJson => Some("haxelib"),
-        TerraformTf => Some("terraform"),
-        HelmChartYaml => Some("helm"),
-        AnsibleGalaxyRequirementsYaml => Some("ansible"),
-        BazelModule => Some("bazel"),
-        NixFlake => Some("nix"),
-        UnityProjectManifestJson => Some("unity"),
-        CocoaPodsPodfile => Some("cocoapods"),
-        NpmPackageJson | NpmPackageJson5 | NpmPackageYaml => Some("npm"),
-        PnpmYaml => Some("pnpm"),
-        PubspecOverridesYaml | PubspecYaml => Some("pub"),
-        PythonPipfile | PythonPyprojectToml | PythonRequirementsTxt => Some("pypi"),
-        Unknown | VersionLensMultiRegistries => None,
-    }
-}

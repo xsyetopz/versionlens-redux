@@ -105,26 +105,27 @@ fn has_extension<const N: usize>(path: &str, extensions: [&str; N]) -> bool {
 
 fn glob_matches(pattern: &str, text: &str) -> bool {
     if let Some((prefix, alternatives, suffix)) = extglob_alternative_parts(pattern) {
-        return alternatives.split('|').any(|alternative| {
-            let mut expanded: String = crate::default();
-            expanded.push_str(prefix);
-            expanded.push_str(alternative);
-            expanded.push_str(suffix);
-            glob_matches(&expanded, text)
-        });
+        return expanded_glob_matches(prefix, alternatives, suffix, '|', text);
     }
 
     if let Some((prefix, alternatives, suffix)) = brace_parts(pattern) {
-        return alternatives.split(',').any(|alternative| {
-            let mut expanded: String = crate::default();
-            expanded.push_str(prefix);
-            expanded.push_str(alternative);
-            expanded.push_str(suffix);
-            glob_matches(&expanded, text)
-        });
+        return expanded_glob_matches(prefix, alternatives, suffix, ',', text);
     }
 
     glob_matches_bytes(pattern.as_bytes(), text.as_bytes())
+}
+
+fn expanded_glob_matches(
+    prefix: &str,
+    alternatives: &str,
+    suffix: &str,
+    separator: char,
+    text: &str,
+) -> bool {
+    alternatives.split(separator).any(|alternative| {
+        let expanded = format!("{prefix}{alternative}{suffix}");
+        glob_matches(&expanded, text)
+    })
 }
 
 fn extglob_alternative_parts(pattern: &str) -> Option<(&str, &str, &str)> {

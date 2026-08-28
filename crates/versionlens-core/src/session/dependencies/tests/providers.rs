@@ -1,3 +1,5 @@
+use versionlens_model::Ecosystem::Opam as OpamEcosystem;
+
 #[test]
 fn disabled_providers_are_filtered_in_rust() {
     let session = crate::version_lens_session(SessionConfig {
@@ -14,12 +16,7 @@ fn disabled_providers_are_filtered_in_rust() {
         http: versionlens_http::standard_http_config(),
     });
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-dependencies.json"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("npm-dependencies.json"), None));
 
     assert!(output.dependencies.is_empty());
     assert!(output.code_lenses.is_empty());
@@ -34,12 +31,7 @@ fn enabled_npm_provider_enables_package_json5() {
         ecosystem: Npm,
         manifest_kind: Some(NpmPackageJson),
     });
-    let input = DocumentInput {
-        uri: "file:///package.json5".to_owned(),
-        language_id: "json5".to_owned(),
-        text: package_file_fixture("package.json5"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///package.json5".to_owned(), "json5".to_owned(), package_file_fixture("package.json5"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -54,12 +46,7 @@ fn enabled_npm_provider_enables_package_yaml() {
         manifest_kind: Some(NpmPackageJson),
     });
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///package.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture("package.yaml"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new("file:///package.yaml".to_owned(), "yaml".to_owned(), package_file_fixture("package.yaml"), None));
 
     assert!(output.is_supported_manifest);
     assert_eq!(output.dependencies.len(), 1);
@@ -73,12 +60,7 @@ fn enabled_npm_provider_does_not_enable_pnpm_yaml() {
         manifest_kind: Some(NpmPackageJson),
     });
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///pnpm-workspace.yaml".to_owned(),
-        language_id: "yaml".to_owned(),
-        text: package_file_fixture("pnpm-workspace.yaml"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new("file:///pnpm-workspace.yaml".to_owned(), "yaml".to_owned(), package_file_fixture("pnpm-workspace.yaml"), None));
 
     assert!(!output.is_supported_manifest);
     assert!(output.dependencies.is_empty());
@@ -91,12 +73,7 @@ fn enabled_pnpm_provider_does_not_enable_package_json() {
         manifest_kind: Some(PnpmYaml),
     });
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///package.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("npm-dependencies.json"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("npm-dependencies.json"), None));
 
     assert!(!output.is_supported_manifest);
     assert!(output.dependencies.is_empty());
@@ -109,12 +86,7 @@ fn enabled_deno_provider_enables_import_map_json() {
         manifest_kind: Some(DenoJson),
     });
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///import_map.json".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("import_map.json"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new("file:///import_map.json".to_owned(), "json".to_owned(), package_file_fixture("import_map.json"), None));
 
     assert!(output.is_supported_manifest);
     assert_eq!(output.dependencies.len(), 1);
@@ -128,12 +100,7 @@ fn enabled_deno_provider_keeps_npm_prefixed_deno_imports() {
         manifest_kind: None,
     });
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///deno.json".to_owned(),
-        language_id: "jsonc".to_owned(),
-        text: package_file_fixture("deno.json"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new("file:///deno.json".to_owned(), "jsonc".to_owned(), package_file_fixture("deno.json"), None));
 
     assert!(output.is_supported_manifest);
     assert_eq!(output.dependencies.len(), 1);
@@ -147,12 +114,7 @@ fn enabled_hex_provider_enables_mix_exs() {
         ecosystem: Hex,
         manifest_kind: Some(MixExs),
     });
-    let input = DocumentInput {
-        uri: "file:///mix.exs".to_owned(),
-        language_id: "elixir".to_owned(),
-        text: package_file_fixture("mix.exs"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///mix.exs".to_owned(), "elixir".to_owned(), package_file_fixture("mix.exs"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -167,12 +129,7 @@ fn enabled_hex_provider_enables_rebar_config() {
         ecosystem: Hex,
         manifest_kind: Some(RebarConfig),
     });
-    let input = DocumentInput {
-        uri: "file:///rebar.config".to_owned(),
-        language_id: "erlang".to_owned(),
-        text: package_file_fixture("rebar.config"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///rebar.config".to_owned(), "erlang".to_owned(), package_file_fixture("rebar.config"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -187,12 +144,7 @@ fn enabled_hex_provider_enables_gleam_toml() {
         ecosystem: Hex,
         manifest_kind: Some(GleamToml),
     });
-    let input = DocumentInput {
-        uri: "file:///gleam.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: package_file_fixture("gleam.toml"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///gleam.toml".to_owned(), "toml".to_owned(), package_file_fixture("gleam.toml"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -207,12 +159,7 @@ fn enabled_opam_provider_enables_opam_files() {
         ecosystem: OpamEcosystem,
         manifest_kind: Some(Opam),
     });
-    let input = DocumentInput {
-        uri: "file:///demo.opam".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: package_file_fixture("demo.opam"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///demo.opam".to_owned(), "plaintext".to_owned(), package_file_fixture("demo.opam"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -227,12 +174,7 @@ fn enabled_opam_provider_enables_dune_project_files() {
         ecosystem: OpamEcosystem,
         manifest_kind: Some(Opam),
     });
-    let input = DocumentInput {
-        uri: "file:///dune-project".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: package_file_fixture("dune-project"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///dune-project".to_owned(), "plaintext".to_owned(), package_file_fixture("dune-project"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -247,12 +189,7 @@ fn enabled_hackage_provider_enables_cabal_files() {
         ecosystem: Hackage,
         manifest_kind: Some(Cabal),
     });
-    let input = DocumentInput {
-        uri: "file:///demo.cabal".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: package_file_fixture("demo.cabal"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///demo.cabal".to_owned(), "plaintext".to_owned(), package_file_fixture("demo.cabal"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -268,24 +205,14 @@ fn enabled_julia_provider_enables_project_and_manifest_files() {
         manifest_kind: Some(JuliaProjectToml),
     });
 
-    let project_dependencies = session.dependencies(&DocumentInput {
-        uri: "file:///Project.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: package_file_fixture("Project.toml"),
-        workspace_root: None,
-    });
+    let project_dependencies = session.dependencies(&DocumentInput::new("file:///Project.toml".to_owned(), "toml".to_owned(), package_file_fixture("Project.toml"), None));
     assert_eq!(project_dependencies.len(), 2);
     assert_eq!(project_dependencies[0].name, "Demo");
     assert_eq!(project_dependencies[0].group, "version");
     assert_eq!(project_dependencies[1].name, "Example");
     assert_eq!(project_dependencies[1].group, "compat");
 
-    let manifest_dependencies = session.dependencies(&DocumentInput {
-        uri: "file:///Manifest-v1.11.toml".to_owned(),
-        language_id: "toml".to_owned(),
-        text: package_file_fixture("Manifest-v1.11.toml"),
-        workspace_root: None,
-    });
+    let manifest_dependencies = session.dependencies(&DocumentInput::new("file:///Manifest-v1.11.toml".to_owned(), "toml".to_owned(), package_file_fixture("Manifest-v1.11.toml"), None));
     assert_eq!(manifest_dependencies.len(), 1);
     assert_eq!(manifest_dependencies[0].name, "Example");
     assert_eq!(manifest_dependencies[0].group, "deps");
@@ -298,22 +225,12 @@ fn enabled_cran_provider_enables_description_and_renv_lock_files() {
         manifest_kind: Some(RDescription),
     });
 
-    let description_dependencies = session.dependencies(&DocumentInput {
-        uri: "file:///DESCRIPTION".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: package_file_fixture("DESCRIPTION"),
-        workspace_root: None,
-    });
+    let description_dependencies = session.dependencies(&DocumentInput::new("file:///DESCRIPTION".to_owned(), "plaintext".to_owned(), package_file_fixture("DESCRIPTION"), None));
     assert_eq!(description_dependencies.len(), 2);
     assert_eq!(description_dependencies[1].name, "dplyr");
     assert_eq!(description_dependencies[1].group, "Imports");
 
-    let renv_dependencies = session.dependencies(&DocumentInput {
-        uri: "file:///renv.lock".to_owned(),
-        language_id: "json".to_owned(),
-        text: package_file_fixture("renv.lock"),
-        workspace_root: None,
-    });
+    let renv_dependencies = session.dependencies(&DocumentInput::new("file:///renv.lock".to_owned(), "json".to_owned(), package_file_fixture("renv.lock"), None));
     assert_eq!(renv_dependencies.len(), 1);
     assert_eq!(renv_dependencies[0].name, "dplyr");
     assert_eq!(renv_dependencies[0].group, "Packages");
@@ -325,12 +242,7 @@ fn enabled_ruby_provider_enables_gemspec() {
         ecosystem: Ruby,
         manifest_kind: Some(Gemfile),
     });
-    let input = DocumentInput {
-        uri: "file:///example.gemspec".to_owned(),
-        language_id: "ruby".to_owned(),
-        text: package_file_fixture("example.gemspec"),
-        workspace_root: None,
-    };
+    let input = DocumentInput::new("file:///example.gemspec".to_owned(), "ruby".to_owned(), package_file_fixture("example.gemspec"), None);
 
     let dependencies = session.dependencies(&input);
 
@@ -346,12 +258,7 @@ fn configured_ruby_file_pattern_routes_gemspec_matches_to_gemspec_parser() {
         pattern: "**/*.gemspec".to_owned(),
     });
 
-    let output = session.analyze_document(DocumentInput {
-        uri: "file:///workspace/example.gemspec".to_owned(),
-        language_id: "ruby".to_owned(),
-        text: package_file_fixture("development.example.gemspec"),
-        workspace_root: None,
-    });
+    let output = session.analyze_document(DocumentInput::new("file:///workspace/example.gemspec".to_owned(), "ruby".to_owned(), package_file_fixture("development.example.gemspec"), None));
 
     assert!(output.is_supported_manifest);
     assert_eq!(output.dependencies.len(), 1);

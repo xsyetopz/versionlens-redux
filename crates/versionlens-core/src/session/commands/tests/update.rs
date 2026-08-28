@@ -1,36 +1,46 @@
-use std::fs::read_to_string;
-use std::path::PathBuf;
-
 use super::{
-    ApplyCommandRequest, DocumentInput, RegistryResponseInput,
-    session_with_vulnerability_visibility, standard_session,
+    ApplyCommandRequest, DocumentInput, session_with_vulnerability_visibility, standard_session,
 };
-use versionlens_model::Ecosystem::{
-    AnsibleGalaxy, Bazel, CocoaPods, Docker, Helm, Nix, Npm, Terraform, Unity,
-};
+use crate::RegistryResponseInput;
+use crate::contract::ResolveDocumentOutput;
+use versionlens_model::Ecosystem::*;
 
 include!("update/platforms.rs");
 include!("update/security.rs");
 include!("update/selection.rs");
 fn package_file_fixture(name: &str) -> String {
-    let path = repo_root()
-        .join("tests/fixtures/session/commands/update")
-        .join(name);
-    read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read session command update fixture {}: {error}",
-            path.display()
-        )
-    })
+    crate::support::tests::fixture("tests/fixtures/session/commands/update", name)
 }
 
-fn repo_root() -> PathBuf {
-    let manifest_dir: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    manifest_dir
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("core crate should be under crates/")
-        .to_path_buf()
+fn assert_single_edit(output: &ResolveDocumentOutput, expected: &str) {
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, expected);
+}
+
+fn assert_single_dependency_update(
+    output: &ResolveDocumentOutput,
+    group: &str,
+    current: &str,
+    selected: &str,
+) {
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].dependency.group, group);
+    assert_eq!(output.suggestions[0].dependency.requirement, current);
+    assert_single_edit(output, selected);
+}
+
+fn assert_project_update(output: &ResolveDocumentOutput, name: &str, expected: &str) {
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].dependency.group, "version");
+    assert_eq!(output.suggestions[0].dependency.name, name);
+    assert_single_edit(output, expected);
+}
+
+fn assert_project_edit(output: &ResolveDocumentOutput, expected: &str) {
+    assert_eq!(output.suggestions.len(), 1);
+    assert_eq!(output.suggestions[0].dependency.group, "version");
+    assert_single_edit(output, expected);
 }
 
 include!("update/project.rs");
