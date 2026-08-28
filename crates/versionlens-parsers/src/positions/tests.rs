@@ -1,6 +1,4 @@
 use super::{line_range, offset_range};
-use std::fs::read_to_string;
-use std::path::PathBuf;
 
 #[test]
 fn offset_ranges_count_utf16_code_units_like_vscode_position_at() {
@@ -26,22 +24,8 @@ fn line_ranges_count_utf16_code_units_like_vscode_position_at() {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    let path = repo_root()
-        .join("tests/fixtures/versionlens-parsers/src/positions/tests")
-        .join(name);
-    let contents = read_to_string(&path).unwrap_or_else(|error| {
-        panic!(
-            "failed to read package-file fixture {}: {error}",
-            path.display()
-        )
-    });
-    crate::leaked_string(contents)
-}
-
-fn repo_root() -> PathBuf {
-    <PathBuf as From<&str>>::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .expect("crate should be under crates/")
-        .to_path_buf()
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/positions/tests",
+        name,
+    )
 }
