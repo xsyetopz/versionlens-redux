@@ -1,6 +1,6 @@
 use super::auth_header;
 use super::document_parent_path;
-use super::full_url_or_origin_match_len;
+use super::{best_matching_auth_entry, full_url_or_origin_match_len};
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
@@ -181,13 +181,13 @@ fn remote_url(url: &str) -> bool {
 }
 
 fn best_dotnet_auth_entry<'a>(entries: &'a [DotnetAuthEntry], url: &str) -> Option<&'a str> {
-    entries
-        .iter()
-        .filter_map(|entry| {
-            full_url_or_origin_match_len(&entry.registry, url).map(|len| (entry, len))
-        })
-        .max_by_key(|(_, len)| *len)
-        .map(|(entry, _)| entry.header_value.as_str())
+    best_matching_auth_entry(
+        entries,
+        url,
+        |entry| &entry.registry,
+        full_url_or_origin_match_len,
+    )
+    .map(|entry| entry.header_value.as_str())
 }
 
 fn dotnet_source_matches_package(

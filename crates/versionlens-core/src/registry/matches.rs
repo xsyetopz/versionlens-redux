@@ -1,6 +1,5 @@
-use versionlens_model::Dependency;
-
 use crate::RegistryResponseInput;
+use versionlens_model::Dependency;
 
 pub(crate) fn registry_response_matches(
     response: &RegistryResponseInput,

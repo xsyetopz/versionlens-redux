@@ -10,8 +10,8 @@ use versionlens_suggestions::{
     Suggestion, UpdateChoice, error, invalid, no_match_with_message, not_supported,
 };
 
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
 use crate::registry::registry_response_matches;
 
 impl VersionLensSession {

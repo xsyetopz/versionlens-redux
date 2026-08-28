@@ -227,7 +227,12 @@ fn parse_env_line(line: &str) -> Option<(String, String)> {
 
     let (key, value) = trimmed.split_once('=')?;
     let key = key.trim();
-    (!key.is_empty()).then(|| (key.to_owned(), unquote_env_value(value.trim()).to_owned()))
+    (!key.is_empty()).then(|| {
+        (
+            key.to_owned(),
+            versionlens_model::strip_matching_quotes(value.trim()).to_owned(),
+        )
+    })
 }
 
 fn env_config_value<'a>(env: &'a [(String, String)], key: &str) -> Option<&'a str> {
@@ -235,18 +240,6 @@ fn env_config_value<'a>(env: &'a [(String, String)], key: &str) -> Option<&'a st
         .rev()
         .find(|(name, _)| name == key)
         .map(|(_, value)| value.as_str())
-}
-
-fn unquote_env_value(value: &str) -> &str {
-    value
-        .strip_prefix('"')
-        .and_then(|value| value.strip_suffix('"'))
-        .or_else(|| {
-            value
-                .strip_prefix('\'')
-                .and_then(|value| value.strip_suffix('\''))
-        })
-        .unwrap_or(value)
 }
 
 fn auth_registry_match_len(registry: &str, url: &str) -> Option<usize> {
@@ -262,6 +255,19 @@ fn auth_registry_match_len(registry: &str, url: &str) -> Option<usize> {
         .map(|prefix| prefix.len())
 }
 
+pub(super) fn best_matching_auth_entry<'a, T>(
+    entries: &'a [T],
+    url: &str,
+    registry: fn(&T) -> &str,
+    match_len: fn(&str, &str) -> Option<usize>,
+) -> Option<&'a T> {
+    entries
+        .iter()
+        .filter_map(|entry| match_len(registry(entry), url).map(|len| (entry, len)))
+        .max_by_key(|(_, len)| *len)
+        .map(|(entry, _)| entry)
+}
+
 fn auth_header(entry: Option<&str>) -> Vec<HttpHeader> {
     entry
         .map(|value| {
@@ -275,19 +281,18 @@ fn auth_header(entry: Option<&str>) -> Vec<HttpHeader> {
 }
 
 fn best_composer_auth_entry<'a>(entries: &'a [ComposerAuthEntry], url: &str) -> Option<&'a str> {
-    entries
-        .iter()
-        .filter_map(|entry| auth_registry_match_len(&entry.registry, url).map(|len| (entry, len)))
-        .max_by_key(|(_, len)| *len)
-        .map(|(entry, _)| entry.header_value.as_str())
+    best_matching_auth_entry(entries, url, |entry| &entry.registry, auth_registry_match_len)
+        .map(|entry| entry.header_value.as_str())
 }
 
 fn best_maven_auth_entry<'a>(entries: &'a [MavenAuthEntry], url: &str) -> Option<&'a str> {
-    entries
-        .iter()
-        .filter_map(|entry| full_url_or_origin_match_len(&entry.registry, url).map(|len| (entry, len)))
-        .max_by_key(|(_, len)| *len)
-        .map(|(entry, _)| entry.header_value.as_str())
+    best_matching_auth_entry(
+        entries,
+        url,
+        |entry| &entry.registry,
+        full_url_or_origin_match_len,
+    )
+    .map(|entry| entry.header_value.as_str())
 }
 
 fn full_url_or_origin_match_len(registry: &str, url: &str) -> Option<usize> {

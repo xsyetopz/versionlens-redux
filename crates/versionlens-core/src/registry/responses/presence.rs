@@ -1,7 +1,7 @@
 use versionlens_model::Dependency;
 
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
 use crate::registry::registry_response_matches;
 
 impl VersionLensSession {

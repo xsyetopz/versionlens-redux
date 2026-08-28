@@ -1,4 +1,4 @@
-use super::auth_registry_match_len;
+use super::{auth_registry_match_len, best_matching_auth_entry};
 use versionlens_parsers::{
     NpmAuthEntry, NpmClientCertEntry, NpmGenericProxyConfig, NpmHttpConfig, NpmRegistryEntry,
     parse_bunfig_npm_auth_entries_with_env, parse_bunfig_npm_registry_entries_with_env,
@@ -71,13 +71,13 @@ pub(super) fn npm_registry_entry_applies(entry: &NpmRegistryEntry, name: &str) -
 }
 
 pub(super) fn best_npm_auth_entry<'a>(entries: &'a [NpmAuthEntry], url: &str) -> Option<&'a str> {
-    entries
-        .iter()
-        .filter_map(|entry| {
-            auth_registry_match_len(entry.registry.strip_prefix("//")?, url).map(|len| (entry, len))
-        })
-        .max_by_key(|(_, len)| *len)
-        .map(|(entry, _)| entry.header_value.as_str())
+    best_matching_auth_entry(
+        entries,
+        url,
+        |entry| entry.registry.strip_prefix("//").unwrap_or_default(),
+        auth_registry_match_len,
+    )
+    .map(|entry| entry.header_value.as_str())
 }
 
 fn npm_http_config(npmrc_texts: &[String], env: &[(String, String)]) -> NpmHttpConfig {
@@ -123,14 +123,17 @@ pub(super) fn best_npm_client_cert_entry<'a>(
     entries: &'a [NpmClientCertEntry],
     url: &str,
 ) -> Option<&'a NpmClientCertEntry> {
-    entries
+    let eligible = entries
         .iter()
         .filter(|entry| entry.cert_file.is_some() && entry.key_file.is_some())
-        .filter_map(|entry| {
-            auth_registry_match_len(entry.registry.strip_prefix("//")?, url).map(|len| (entry, len))
-        })
-        .max_by_key(|(_, len)| *len)
-        .map(|(entry, _)| entry)
+        .collect::<Vec<_>>();
+    best_matching_auth_entry(
+        &eligible,
+        url,
+        |entry| entry.registry.strip_prefix("//").unwrap_or_default(),
+        auth_registry_match_len,
+    )
+    .copied()
 }
 
 pub(super) fn npm_generic_proxy_for_request(

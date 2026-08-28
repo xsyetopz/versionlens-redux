@@ -1,28 +1,32 @@
 use versionlens_model::Ecosystem::Dotnet;
+
+fn write_nuget_config(root: &std::path::Path, package_source_policy: &str) {
+    create_dir_all(root).unwrap();
+    write(
+        root.join("NuGet.config"),
+        format!(
+            "<configuration>\n  <packageSources>\n    <add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" />\n    <add key=\"private\" value=\"https://nuget.example.test/v3/index.json\" />\n  </packageSources>\n{package_source_policy}\n</configuration>\n"
+        ),
+    )
+    .unwrap();
+}
+
+const DISABLED_NUGET_SOURCE_POLICY: &str = "  <disabledPackageSources>\n    <add key=\"nuget.org\" value=\"true\" />\n  </disabledPackageSources>";
+
+const MAPPED_NUGET_SOURCE_POLICY: &str = "  <packageSourceMapping>\n    <packageSource key=\"nuget.org\">\n      <package pattern=\"Newtonsoft.*\" />\n    </packageSource>\n    <packageSource key=\"private\">\n      <package pattern=\"Contoso.*\" />\n    </packageSource>\n  </packageSourceMapping>";
 #[test]
 fn dotnet_sources_are_service_indexes_not_package_urls() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: ProviderSettings {
+    let session = crate::support::tests::session_with_provider_settings(
+        ProviderSettings {
             registry_urls: vec![RegistryUrlConfig {
                 ecosystem: Dotnet,
                 url: "https://nuget.example.test/v3/index.json".to_owned(),
             }],
             ..crate::default()
         },
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///app.csproj".to_owned(),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture("dotnet-sources-are-service-indexes-not-package-urls.csproj"),
-        workspace_root: None,
-    };
+        false,
+    );
+    let input = registry_input("file:///app.csproj", "xml", "dotnet-sources-are-service-indexes-not-package-urls.csproj");
     let dependencies = session.dependencies(&input);
 
     let urls = session.registry_urls(&dependencies[0]);
@@ -36,75 +40,20 @@ fn dotnet_sources_are_service_indexes_not_package_urls() {
 #[test]
 fn dotnet_documents_use_workspace_nuget_config_sources() {
     let root = temp_dir().join(format!("versionlens-nuget-config-{}", id()));
-    create_dir_all(&root).unwrap();
-    write(
-        root.join("NuGet.config"),
-        r#"
-<configuration>
-  <packageSources>
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <add key="private" value="https://nuget.example.test/v3/index.json" />
-  </packageSources>
-  <disabledPackageSources>
-    <add key="nuget.org" value="true" />
-  </disabledPackageSources>
-</configuration>
-"#,
-    )
-    .unwrap();
+    write_nuget_config(&root, DISABLED_NUGET_SOURCE_POLICY);
 
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture("dotnet-documents-use-workspace-nuget-config-sources.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://nuget.example.test/v3/index.json"]
-    );
+    let session = crate::support::tests::test_session(false);
+    let input = DocumentInput::new(format!("file://{}", root.join("app.csproj").display()), "xml".to_owned(), package_file_fixture("dotnet-documents-use-workspace-nuget-config-sources.txt"), Some(root.to_string_lossy().into_owned()));
+    assert_first_registry_urls(&session, &input, &["https://nuget.example.test/v3/index.json"]);
 
     remove_dir_all(root).unwrap();
 }
 
 #[test]
 fn paket_dependencies_use_declared_source_urls() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///paket.dependencies".to_owned(),
-        language_id: "plaintext".to_owned(),
-        text: package_file_fixture("paket-dependencies-use-declared-source-urls.dependencies"),
-        workspace_root: None,
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://nuget.example.test/v3/index.json"]
-    );
+    let session = crate::support::tests::test_session(false);
+    let input = registry_input("file:///paket.dependencies", "plaintext", "paket-dependencies-use-declared-source-urls.dependencies");
+    assert_first_registry_urls(&session, &input, &["https://nuget.example.test/v3/index.json"]);
 }
 
 #[test]
@@ -123,29 +72,9 @@ fn dotnet_child_nuget_config_clear_removes_workspace_sources() {
     )
     .unwrap();
 
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: format!("file://{}", app.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture("dotnet-child-nuget-config-clear-removes-workspace-sources.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://child.example.test/v3/index.json"]
-    );
+    let session = crate::support::tests::test_session(false);
+    let input = DocumentInput::new(format!("file://{}", app.join("app.csproj").display()), "xml".to_owned(), package_file_fixture("dotnet-child-nuget-config-clear-removes-workspace-sources.txt"), Some(root.to_string_lossy().into_owned()));
+    assert_first_registry_urls(&session, &input, &["https://child.example.test/v3/index.json"]);
 
     remove_dir_all(root).unwrap();
 }
@@ -166,34 +95,12 @@ fn dotnet_child_nuget_config_remove_does_not_delete_inherited_cli_sources() {
     )
     .unwrap();
 
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: format!("file://{}", app.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture(
+    let session = crate::support::tests::test_session(false);
+    let input = DocumentInput::new(format!("file://{}", app.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-child-nuget-config-remove-does-not-delete-inherited-cli-sources.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec![
-            "https://root.example.test/v3/index.json",
-            "https://keep.example.test/v3/index.json"
-        ]
-    );
+        ), Some(root.to_string_lossy().into_owned()));
+    assert_first_registry_urls(&session, &input, &["https://root.example.test/v3/index.json",
+            "https://keep.example.test/v3/index.json"]);
 
     remove_dir_all(root).unwrap();
 }
@@ -220,35 +127,13 @@ fn dotnet_nuget_config_reads_intermediate_ancestors_nearest_first() {
     )
     .unwrap();
 
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: format!("file://{}", app.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture(
+    let session = crate::support::tests::test_session(false);
+    let input = DocumentInput::new(format!("file://{}", app.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-nuget-config-reads-intermediate-ancestors-nearest-first.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec![
-            "https://app.example.test/v3/index.json",
+        ), Some(root.to_string_lossy().into_owned()));
+    assert_first_registry_urls(&session, &input, &["https://app.example.test/v3/index.json",
             "https://src.example.test/v3/index.json",
-            "https://root.example.test/v3/index.json"
-        ]
-    );
+            "https://root.example.test/v3/index.json"]);
 
     remove_dir_all(root).unwrap();
 }
@@ -263,26 +148,11 @@ fn dotnet_nuget_config_ignores_local_file_sources_for_suggestions() {
     )
     .unwrap();
 
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture(
+    let session = crate::support::tests::test_session(false);
+    let input = DocumentInput::new(format!("file://{}", root.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-nuget-config-ignores-local-file-sources-for-suggestions.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
+        ), Some(root.to_string_lossy().into_owned()));
+    let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 
     assert!(
         session
@@ -315,13 +185,8 @@ fn dotnet_nuget_config_supplies_request_scoped_auth_headers() {
     )
     .unwrap();
 
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture("dotnet-nuget-config-supplies-request-scoped-auth-headers.txt"),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
+    let input = DocumentInput::new(format!("file://{}", root.join("app.csproj").display()), "xml".to_owned(), package_file_fixture("dotnet-nuget-config-supplies-request-scoped-auth-headers.txt"), Some(root.to_string_lossy().into_owned()));
+    let context = crate::registry::RegistryContext::from_document(&input);
     let service_index_headers =
         context.auth_headers_for_url(Dotnet, "https://nuget.example.test/v3/index.json");
     let package_headers = context.auth_headers_for_url(
@@ -343,57 +208,22 @@ fn dotnet_nuget_config_supplies_request_scoped_auth_headers() {
 #[test]
 fn dotnet_nuget_config_package_source_mapping_filters_sources() {
     let root = temp_dir().join(format!("versionlens-nuget-config-mapping-{}", id()));
-    create_dir_all(&root).unwrap();
-    write(
-        root.join("NuGet.config"),
-        r#"
-<configuration>
-  <packageSources>
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <add key="private" value="https://nuget.example.test/v3/index.json" />
-  </packageSources>
-  <packageSourceMapping>
-    <packageSource key="nuget.org">
-      <package pattern="Newtonsoft.*" />
-    </packageSource>
-    <packageSource key="private">
-      <package pattern="Contoso.*" />
-    </packageSource>
-  </packageSourceMapping>
-</configuration>
-"#,
-    )
-    .unwrap();
+    write_nuget_config(&root, MAPPED_NUGET_SOURCE_POLICY);
 
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: format!("file://{}", root.join("app.csproj").display()),
-        language_id: "xml".to_owned(),
-        text: package_file_fixture(
+    let session = crate::support::tests::test_session(false);
+    let input = DocumentInput::new(format!("file://{}", root.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-nuget-config-package-source-mapping-filters-sources.txt",
-        ),
-        workspace_root: Some(root.to_string_lossy().into_owned()),
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
-
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[0], &context),
-        vec!["https://api.nuget.org/v3/index.json"]
-    );
-    assert_eq!(
-        session.registry_urls_with_context(&dependencies[1], &context),
-        vec!["https://nuget.example.test/v3/index.json"]
-    );
+        ), Some(root.to_string_lossy().into_owned()));
+    let (context, dependencies) = registry_context_and_dependencies(&session, &input);
+    for (index, expected) in [
+        (0, "https://api.nuget.org/v3/index.json"),
+        (1, "https://nuget.example.test/v3/index.json"),
+    ] {
+        assert_eq!(
+            session.registry_urls_with_context(&dependencies[index], &context),
+            vec![expected]
+        );
+    }
 
     remove_dir_all(root).unwrap();
 }

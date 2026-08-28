@@ -17,23 +17,6 @@ use configured::{
 use hosted::hosted_registry_endpoints;
 
 impl VersionLensSession {
-    #[cfg(test)]
-    pub(crate) fn registry_urls(&self, dependency: &Dependency) -> Vec<String> {
-        self.registry_urls_with_context(dependency, &crate::default())
-    }
-
-    #[cfg(test)]
-    pub(crate) fn registry_urls_with_context(
-        &self,
-        dependency: &Dependency,
-        context: &RegistryContext,
-    ) -> Vec<String> {
-        self.registry_endpoints_with_context(dependency, context)
-            .into_iter()
-            .map(|endpoint| endpoint.url)
-            .collect()
-    }
-
     pub(crate) fn registry_endpoints_with_context(
         &self,
         dependency: &Dependency,

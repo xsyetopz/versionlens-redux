@@ -140,25 +140,14 @@ fn npm_registry_timeout_ms(timeout_ms: Option<u64>) -> u64 {
     }
 }
 
-fn parse_mix_hex_api_urls(text: &str) -> Vec<String> {
+fn parse_quoted_config_urls(text: &str, marker: &str, separator: Option<char>) -> Vec<String> {
     text.lines()
         .filter_map(|line| {
-            let start = line.find("api_url:")? + "api_url:".len();
+            let start = line.find(marker)? + marker.len();
             let value = line.get(start..)?.trim_start();
-            let value = value.strip_prefix('"')?;
-            let end = value.find('"')?;
-            let url = value.get(..end)?.trim();
-            (!url.is_empty()).then(|| url.to_owned())
-        })
-        .collect()
-}
-
-fn parse_rebar_packages_cdn_urls(text: &str) -> Vec<String> {
-    text.lines()
-        .filter_map(|line| {
-            let start = line.find("rebar_packages_cdn")? + "rebar_packages_cdn".len();
-            let value = line.get(start..)?.trim_start();
-            let value = value.strip_prefix(',')?.trim_start();
+            let value = separator
+                .map_or(Some(value), |separator| value.strip_prefix(separator))?
+                .trim_start();
             let value = value.strip_prefix('"')?;
             let end = value.find('"')?;
             let url = value.get(..end)?.trim();
@@ -183,13 +172,13 @@ fn hex_registry_url_configs(input: &DocumentInput, kind: ManifestKind) -> Vec<St
             return vec![url.to_owned()];
         }
 
-        let urls = parse_rebar_packages_cdn_urls(&input.text);
+        let urls = parse_quoted_config_urls(&input.text, "rebar_packages_cdn", Some(','));
         if !urls.is_empty() {
             return urls;
         }
     }
 
-    parse_mix_hex_api_urls(&input.text)
+    parse_quoted_config_urls(&input.text, "api_url:", None)
 }
 
 fn maven_auth_entries(input: &DocumentInput) -> Vec<MavenAuthEntry> {

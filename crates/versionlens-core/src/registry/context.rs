@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use versionlens_http::{HttpConfig, HttpHeader};
 use versionlens_model::Ecosystem::{Cargo, Composer, Dotnet, Go, Hex, Maven, Npm, Python, Ruby};
 use versionlens_model::ManifestKind::{
     CargoToml, ClojureDepsEdn, ComposerJson, DenoImportMapJson, DenoJson, DotnetProjectJson,
@@ -7,10 +8,6 @@ use versionlens_model::ManifestKind::{
     PaketDependencies, PaketReferences, PnpmYaml, PythonPipfile, PythonPyprojectToml,
     PythonRequirementsTxt, RebarConfig, RubyGemspec, SbtBuild,
 };
-#[cfg(test)]
-use versionlens_parsers::classify_document;
-
-use versionlens_http::{HttpConfig, HttpHeader};
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 use versionlens_parsers::{
     CargoRegistrySource, ComposerAuthEntry, ComposerRepository, MavenAuthEntry, MavenMirror,
@@ -73,11 +70,6 @@ struct GoContext {
     no_proxy_patterns: Vec<String>,
 }
 
-#[cfg(test)]
-pub(crate) fn registry_context_from_document(input: &DocumentInput) -> RegistryContext {
-    <RegistryContext>::from_document(input)
-}
-
 pub(crate) fn registry_context_from_document_kind(
     input: &DocumentInput,
     kind: ManifestKind,
@@ -86,12 +78,6 @@ pub(crate) fn registry_context_from_document_kind(
 }
 
 impl RegistryContext {
-    #[cfg(test)]
-    pub(crate) fn from_document(input: &DocumentInput) -> Self {
-        let kind = classify_document(input);
-        Self::from_document_kind(input, kind)
-    }
-
     pub(crate) fn from_document_kind(input: &DocumentInput, kind: ManifestKind) -> Self {
         let mut context = match kind {
             CargoToml => Self::from_cargo_document(input),
@@ -127,52 +113,30 @@ impl RegistryContext {
 
     fn from_composer_document(input: &DocumentInput) -> Self {
         Self {
-            manifest_kind: None,
-            urls: vec![],
             composer: composer_context(input),
-            npm: crate::default(),
-            dotnet: crate::default(),
-            maven: crate::default(),
-            cargo_registries: vec![],
-            python_sources: vec![],
-            go: crate::default(),
+            ..Self::default()
         }
     }
 
     fn from_cargo_document(input: &DocumentInput) -> Self {
         Self {
-            manifest_kind: None,
-            urls: vec![],
-            composer: crate::default(),
-            npm: crate::default(),
-            dotnet: crate::default(),
-            maven: crate::default(),
             cargo_registries: cargo_config_texts(input)
                 .iter()
                 .flat_map(|text| parse_cargo_config_registry_sources(text))
                 .collect(),
-            python_sources: vec![],
-            go: crate::default(),
+            ..Self::default()
         }
     }
 
     fn from_dotnet_document(input: &DocumentInput) -> Self {
         Self {
-            manifest_kind: None,
-            urls: vec![],
-            composer: crate::default(),
-            npm: crate::default(),
             dotnet: dotnet_context(input),
-            maven: crate::default(),
-            cargo_registries: vec![],
-            python_sources: vec![],
-            go: crate::default(),
+            ..Self::default()
         }
     }
 
     fn from_ruby_document(input: &DocumentInput) -> Self {
         Self {
-            manifest_kind: None,
             urls: parse_gemfile_source_urls(&input.text)
                 .into_iter()
                 .map(|url| RegistryUrlConfig {
@@ -180,20 +144,13 @@ impl RegistryContext {
                     url,
                 })
                 .collect(),
-            composer: crate::default(),
-            npm: crate::default(),
-            dotnet: crate::default(),
-            maven: crate::default(),
-            cargo_registries: vec![],
-            python_sources: vec![],
-            go: crate::default(),
+            ..Self::default()
         }
     }
 
     fn from_go_document(input: &DocumentInput) -> Self {
         let env = env_entries(input);
         Self {
-            manifest_kind: None,
             urls: parse_go_proxy_urls(&env)
                 .into_iter()
                 .map(|url| RegistryUrlConfig { ecosystem: Go, url })
@@ -208,12 +165,12 @@ impl RegistryContext {
                 proxy_disables_default: go_proxy_disables_default_registry(&env),
                 no_proxy_patterns: go_no_proxy_patterns(&env),
             },
+            ..Self::default()
         }
     }
 
     fn from_hex_document(input: &DocumentInput, kind: ManifestKind) -> Self {
         Self {
-            manifest_kind: None,
             urls: hex_registry_url_configs(input, kind)
                 .into_iter()
                 .map(|url| RegistryUrlConfig {
@@ -221,19 +178,12 @@ impl RegistryContext {
                     url,
                 })
                 .collect(),
-            composer: crate::default(),
-            npm: crate::default(),
-            dotnet: crate::default(),
-            maven: crate::default(),
-            cargo_registries: vec![],
-            python_sources: vec![],
-            go: crate::default(),
+            ..Self::default()
         }
     }
 
     fn from_maven_document(input: &DocumentInput, kind: ManifestKind) -> Self {
         Self {
-            manifest_kind: None,
             urls: parse_maven_registry_urls(input, kind)
                 .into_iter()
                 .map(|url| RegistryUrlConfig {
@@ -249,9 +199,7 @@ impl RegistryContext {
                 auth_entries: maven_auth_entries(input),
                 uses_mirror: maven_uses_mirror(input),
             },
-            cargo_registries: vec![],
-            python_sources: vec![],
-            go: crate::default(),
+            ..Self::default()
         }
     }
 
@@ -558,4 +506,7 @@ impl RegistryContext {
 }
 
 include!("context_sources.rs");
-include!("context_helpers.rs");
+include!("context_state.rs");
+
+#[cfg(test)]
+mod tests;

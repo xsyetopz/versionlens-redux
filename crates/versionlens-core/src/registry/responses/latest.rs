@@ -1,8 +1,9 @@
 use versionlens_model::Dependency;
 use versionlens_providers::{LatestVersionRequest, latest_version_from_response_for_request};
 
+use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::contract::RegistryResponseInput;
+use crate::fetch::github_current_ref_is_proven;
 use crate::registry::registry_response_matches;
 
 impl VersionLensSession {
@@ -13,7 +14,10 @@ impl VersionLensSession {
     ) -> Option<String> {
         responses
             .iter()
-            .filter(|response| registry_response_matches(response, dependency))
+            .filter(|response| {
+                registry_response_matches(response, dependency)
+                    && github_current_ref_is_proven(dependency, &response.body)
+            })
             .find_map(|response| self.latest_from_response(dependency, response))
     }
 

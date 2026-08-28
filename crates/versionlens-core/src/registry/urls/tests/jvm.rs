@@ -1,23 +1,8 @@
 #[test]
 fn sbt_resolvers_are_used_before_maven_central() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///build.sbt".to_owned(),
-        language_id: "scala".to_owned(),
-        text: package_file_fixture("sbt-resolvers-are-used-before-maven-central.sbt"),
-        workspace_root: None,
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
+    let session = crate::support::tests::test_session(false);
+    let input = registry_input("file:///build.sbt", "scala", "sbt-resolvers-are-used-before-maven-central.sbt");
+    let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 
     assert_eq!(dependencies[0].name, "com.example:demo");
     assert_eq!(
@@ -31,24 +16,9 @@ fn sbt_resolvers_are_used_before_maven_central() {
 
 #[test]
 fn clojure_deps_edn_uses_maven_central_then_clojars() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///deps.edn".to_owned(),
-        language_id: "clojure".to_owned(),
-        text: package_file_fixture("clojure-deps-edn-uses-maven-central-then-clojars.edn"),
-        workspace_root: None,
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
+    let session = crate::support::tests::test_session(false);
+    let input = registry_input("file:///deps.edn", "clojure", "clojure-deps-edn-uses-maven-central-then-clojars.edn");
+    let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 
     assert_eq!(dependencies[0].name, "metosin:malli");
     assert_eq!(
@@ -62,24 +32,9 @@ fn clojure_deps_edn_uses_maven_central_then_clojars() {
 
 #[test]
 fn leiningen_project_clj_uses_maven_central_then_clojars() {
-    let session = crate::version_lens_session(SessionConfig {
-        cache_ttl_ms: 300_000,
-        enabled_providers: vec![],
-        providers: crate::default(),
-        suggestion_indicators: crate::standard_suggestion_indicators(),
-        show_vulnerabilities: false,
-        show_suggestion_stats: false,
-        show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
-    });
-    let input = DocumentInput {
-        uri: "file:///project.clj".to_owned(),
-        language_id: "clojure".to_owned(),
-        text: package_file_fixture("leiningen-project-clj-uses-maven-central-then-clojars.clj"),
-        workspace_root: None,
-    };
-    let context = crate::registry::registry_context_from_document(&input);
-    let dependencies = session.dependencies(&input);
+    let session = crate::support::tests::test_session(false);
+    let input = registry_input("file:///project.clj", "clojure", "leiningen-project-clj-uses-maven-central-then-clojars.clj");
+    let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 
     assert_eq!(dependencies[1].name, "metosin:malli");
     assert_eq!(
