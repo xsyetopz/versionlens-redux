@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-
 import { chmodSync, copyFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import process, {

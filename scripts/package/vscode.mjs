@@ -1,8 +1,7 @@
 #!/usr/bin/env bun
-
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import process from "node:process";
+import { run } from "../package.mjs";
 
 const [, , vscodeTarget, rustTarget] = Bun.argv;
 if (!(vscodeTarget && rustTarget)) {
@@ -30,18 +29,8 @@ if (rustTarget !== expectedRustTarget) {
     `VS Code target ${vscodeTarget} requires Rust target ${expectedRustTarget}, not ${rustTarget}`,
   );
 }
-function run(command, options = {}) {
-  const result = Bun.spawnSync(command, {
-    ...options,
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-  if (result.exitCode !== 0) {
-    process.exit(result.exitCode);
-  }
-}
-run(["bun", "scripts/build/native.mjs", "--release", "--target", rustTarget]);
-run(["bun", "scripts/build/extension.mjs"]);
+run(["bun", "scripts/package/native.mjs", "--release", "--target", rustTarget]);
+run(["bun", "scripts/package/extension.mjs"]);
 const { version } = JSON.parse(readFileSync("package.json", "utf8"));
 const output = `versionlens-redux-${version}-${vscodeTarget}.vsix`;
 run(
