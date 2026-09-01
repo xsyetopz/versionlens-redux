@@ -34,5 +34,20 @@ pub(crate) fn normalize_version_token(token: &str) -> Option<String> {
     })
 }
 
+pub(crate) fn minimum_version_token(requirement: &str) -> Option<&str> {
+    let first_range = requirement
+        .trim()
+        .split("||")
+        .next()?
+        .split(',')
+        .next()?
+        .trim();
+    let token = first_range
+        .trim_start_matches(['^', '~', '>', '<', '=', 'v', 'V'])
+        .split_whitespace()
+        .next()?;
+    (!token.is_empty()).then_some(token)
+}
+
 #[cfg(test)]
 pub(crate) mod tests;

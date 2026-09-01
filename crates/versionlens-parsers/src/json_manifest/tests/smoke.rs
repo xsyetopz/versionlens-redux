@@ -7,21 +7,23 @@ fn parses_smoke_pnpm_package_json_smoke_shapes() {
     let dependencies =
         crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
-    assert_eq!(dependencies.len(), 6);
+    assert_eq!(dependencies.len(), 8);
     assert_eq!(dependencies[0].ecosystem, Npm);
     assert_eq!(dependencies[0].group, "packageManager");
     assert_eq!(dependencies[0].name, "pnpm");
     assert_eq!(dependencies[0].requirement, "10.34.4");
+    assert_eq!(dependencies[1].requirement, "workspace:*");
+    assert_eq!(dependencies[2].requirement, "catalog:*");
     assert_eq!(
-        dependencies[1].requirement,
+        dependencies[3].requirement,
         "file:../overrides/package.json"
     );
-    assert_eq!(dependencies[2].name, "types-react");
-    assert_eq!(dependencies[2].requirement, "");
-    assert_eq!(dependencies[2].requirement_prefix, "npm:types-react@");
-    assert_eq!(dependencies[3].group, "pnpm.overrides");
-    assert_eq!(dependencies[4].name, "axios");
-    assert_eq!(dependencies[5].name, "typescript");
+    assert_eq!(dependencies[4].name, "types-react");
+    assert_eq!(dependencies[4].requirement, "");
+    assert_eq!(dependencies[4].requirement_prefix, "npm:types-react@");
+    assert_eq!(dependencies[5].group, "pnpm.overrides");
+    assert_eq!(dependencies[6].name, "axios");
+    assert_eq!(dependencies[7].name, "typescript");
 }
 
 #[test]

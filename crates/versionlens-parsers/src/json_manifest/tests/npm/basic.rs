@@ -5,7 +5,7 @@ use versionlens_model::Ecosystem::Npm;
 fn parses_package_json_dependency_groups() {
     let (text, dependencies) = parse_package_fixture("package-json-dependency-groups.txt");
 
-    assert_eq!(dependencies.len(), 9);
+    assert_eq!(dependencies.len(), 11);
     assert_eq!(dependencies[0].ecosystem, Npm);
     assert_eq!(dependencies[0].group, "dependencies");
     assert_eq!(dependencies[0].name, "@types/node");
@@ -48,8 +48,8 @@ fn parses_package_json_dependency_groups() {
         extract_range(text, dependencies[6].requirement_range),
         "link:../local"
     );
-    assert_eq!(dependencies[7].group, "devDependencies");
-    assert_eq!(dependencies[8].group, "peerDependencies");
+    assert_eq!(dependencies[9].group, "devDependencies");
+    assert_eq!(dependencies[10].group, "peerDependencies");
 }
 
 #[test]

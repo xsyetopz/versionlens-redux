@@ -17,6 +17,7 @@ use crate::command::{filter_update_command, project_version_bump};
 use crate::contract::{RegistryResponseInput, ResolveDocumentOutput};
 use crate::project::is_project_version_dependency;
 use crate::status::to_u32;
+use crate::workspace::WorkspaceGraph;
 
 pub struct ApplyCommandRequest<'a> {
     pub input: DocumentInput,
@@ -63,12 +64,11 @@ impl VersionLensSession {
         if command == Some("sort") {
             let dependencies = self.dependencies(&input);
             let edits = sort_dependency_edits(&input.text, &dependencies);
-            return ResolveDocumentOutput {
-                edits,
-                ..empty_resolve_output()
-            };
+            let parts = super::resolve_output_parts_with_plan(&input, edits, 0, vec![], 0);
+            return super::finish_resolve_output(vec![], parts);
         }
         let selected_version = selected_version.filter(|_| recognized_update_command(command));
+        let plan_input = input.clone();
 
         let manifest_kind = self.classify_document(&input);
         let project_bump = project_version_bump(command, dependency_name);
@@ -112,7 +112,8 @@ impl VersionLensSession {
         let authorization_required_requests = operation.take_authorization_requests();
         let authorization_required_count =
             authorization_required_count.max(to_u32(authorization_required_requests.len()));
-        let mut parts = super::resolve_output_parts(
+        let mut parts = super::resolve_output_parts_with_plan(
+            &plan_input,
             edits,
             authorization_required_count,
             authorization_required_requests,
@@ -120,6 +121,24 @@ impl VersionLensSession {
         );
         parts.vulnerable_update_package = vulnerable_update_package;
         parts.vulnerable_update_version = vulnerable_update_version;
+        let graph = WorkspaceGraph::for_document(&plan_input);
+        let proven_internal = dependency_name
+            .and_then(|name| {
+                suggestions
+                    .iter()
+                    .find(|suggestion| suggestion.dependency.name == name)
+            })
+            .is_some_and(|suggestion| graph.resolve(&suggestion.dependency).is_some());
+        if proven_internal {
+            if let (Some(name), Some(version)) = (dependency_name, selected_version) {
+                if let Ok(Some(plan)) =
+                    graph.coordinated_plan(&plan_input, &parts.edits, name, version)
+                {
+                    parts.edit_plan = Some(plan);
+                    parts.edits.clear();
+                }
+            }
+        }
         super::finish_resolve_output(suggestions, parts)
     }
 
@@ -243,6 +262,7 @@ fn empty_resolve_output() -> ResolveDocumentOutput {
         vulnerable_update_count: 0,
         vulnerable_update_package: None,
         vulnerable_update_version: None,
+        edit_plan: None,
     }
 }
 

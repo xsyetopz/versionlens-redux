@@ -129,11 +129,5 @@ fn unity_local_and_git_dependencies_resolve_as_fixed_without_registry_updates() 
         ), None));
 
     assert_eq!(output.suggestions.len(), 2);
-    assert!(
-        output
-            .suggestions
-            .iter()
-            .all(|suggestion| suggestion.status == "fixed")
-    );
-    assert!(output.edits.is_empty());
+    crate::support::tests::assert_all_fixed_without_edits(&output);
 }

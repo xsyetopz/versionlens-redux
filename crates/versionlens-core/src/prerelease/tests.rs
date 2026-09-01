@@ -138,8 +138,25 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
     assert_eq!(resolved.suggestions[0].status, "current");
     assert_eq!(resolved.suggestions[0].latest.as_deref(), Some("3.0.0"));
     assert!(resolved.edits.is_empty());
-    assert_eq!(titles, ["🟢 latest 3.0.0", "↑  next 4.0.0-next"]);
-    assert_eq!(arguments, [vec!["update", "4.0.0-next"]]);
+    assert_eq!(
+        titles,
+        [
+            "🟢 latest 3.0.0",
+            "↓  downgrade 1.0.0",
+            "↓  downgrade 2.0.0",
+            "↓  downgrade 2.1.0",
+            "↑  next 4.0.0-next"
+        ]
+    );
+    assert_eq!(
+        arguments,
+        [
+            vec!["update", "1.0.0"],
+            vec!["update", "2.0.0"],
+            vec!["update", "2.1.0"],
+            vec!["update", "4.0.0-next"]
+        ]
+    );
 }
 
 #[test]

@@ -62,15 +62,7 @@ test = ["httpcore>=0.27,<1"]
         &lenses,
         &[
             ("S satisfies latest 0.28.1", ""),
-            (
-                "U latest 0.28.1",
-                "versionlens.suggestion.onUpdateDependency",
-            ),
             ("S satisfies latest 0.28.1", ""),
-            (
-                "U latest 0.28.1",
-                "versionlens.suggestion.onUpdateDependency",
-            ),
         ],
     );
 }
@@ -97,14 +89,5 @@ fn requirements_ranges_offer_updates_from_canonical_pypi_releases() {
 
     assert_eq!(output.suggestions[0].status, "satisfiesLatest");
     let lenses = session.analyze_document(input);
-    assert_python_code_lenses(
-        &lenses,
-        &[
-            ("S satisfies latest 0.28.1", ""),
-            (
-                "U latest 0.28.1",
-                "versionlens.suggestion.onUpdateDependency",
-            ),
-        ],
-    );
+    assert_python_code_lenses(&lenses, &[("S satisfies latest 0.28.1", "")]);
 }

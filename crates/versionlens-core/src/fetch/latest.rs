@@ -45,14 +45,26 @@ pub(crate) fn github_current_ref_is_proven(dependency: &Dependency, body: &str) 
         return false;
     }
     let requirement = requirement.trim_start_matches(['v', 'V']);
+    let requested = requirement.split('.').collect::<Vec<_>>();
     let package = dependency
         .hosted_name
         .as_deref()
         .unwrap_or(&dependency.name);
-
     release_versions_from_response_for_package(GitHub, package, body)
         .iter()
-        .any(|release| release == requirement)
+        .any(|release| {
+            if release == requirement {
+                return true;
+            }
+            if requested.len() > 2 || requested.iter().any(|part| part.is_empty()) {
+                return false;
+            }
+            let release_parts = release.split('.').collect::<Vec<_>>();
+            requested
+                .iter()
+                .enumerate()
+                .all(|(index, part)| release_parts.get(index) == Some(part))
+        })
 }
 
 type UpdateChoices = Vec<UpdateChoice>;

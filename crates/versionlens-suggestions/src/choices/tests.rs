@@ -59,8 +59,8 @@ fn release_update_choices_offer_latest_for_stale_fixed_versions_without_history(
 }
 
 #[test]
-fn release_update_choices_offer_latest_for_stale_satisfying_ranges_without_history() {
-    assert_latest_choice("^1.0.0", "1.2.0");
+fn release_update_choices_omit_latest_when_range_already_resolves_latest_without_history() {
+    assert!(release_update_choices("^1.0.0", "1.2.0", &[]).is_empty());
 }
 
 #[test]
@@ -78,9 +78,9 @@ fn release_update_choices_omit_noop_latest_for_current_registry_alias_ranges_wit
 }
 
 #[test]
-fn release_update_choices_offer_latest_for_stale_registry_alias_ranges_without_history() {
+fn release_update_choices_omit_latest_for_registry_alias_ranges_resolving_latest() {
     for requirement in ["npm:chalk@^1.0.0", "jsr:@scope/chalk@^1.0.0"] {
-        assert_latest_choice(requirement, "1.2.0");
+        assert!(release_update_choices(requirement, "1.2.0", &[]).is_empty());
     }
 }
 
@@ -154,6 +154,11 @@ fn release_update_choices_offer_bump_targets_for_ranges() {
     assert_eq!(
         labels,
         [
+            ("downgrade", "2.1.2", "update"),
+            ("downgrade", "3.0.0", "update"),
+            ("downgrade", "3.1.0", "update"),
+            ("downgrade", "4.0.0", "update"),
+            ("downgrade", "4.0.1", "update"),
             ("bump", "4.1.10", "update"),
             ("version", "5.1.1", "update"),
             ("version", "5.2.0", "update"),
@@ -185,6 +190,36 @@ fn release_update_choices_offer_intermediate_major_targets_for_ranges() {
             ("bump", "1.1.0", "update"),
             ("major", "2.0.0", "updateMajor"),
             ("latest", "3.0.0", "update")
+        ]
+    );
+}
+
+#[test]
+fn release_update_choices_offer_every_older_stable_release_as_a_downgrade() {
+    let releases = releases(&["1.0.0", "1.5.0", "2.0.0"]);
+
+    let choices = release_update_choices("2.0.0", "2.0.0", &releases);
+
+    assert_eq!(
+        labels(&choices),
+        [
+            ("downgrade", "1.0.0", "update"),
+            ("downgrade", "1.5.0", "update")
+        ]
+    );
+}
+
+#[test]
+fn release_update_choices_normalize_v_prefixes_and_never_offer_latest_as_a_noop() {
+    let releases = releases(&["v6.0.0", "v7.0.0", "v7.0.1"]);
+
+    let choices = release_update_choices("v7.0.1", "v7.0.1", &releases);
+
+    assert_eq!(
+        labels(&choices),
+        [
+            ("downgrade", "v6.0.0", "update"),
+            ("downgrade", "v7.0.0", "update")
         ]
     );
 }

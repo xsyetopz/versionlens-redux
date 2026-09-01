@@ -1,5 +1,6 @@
 use crate::document::test_support::{extract_range, parse_fixture};
 use versionlens_model::Ecosystem::Npm;
+use versionlens_model::VersionableKind;
 
 #[test]
 fn parses_catalog_and_named_catalogs() {
@@ -138,13 +139,13 @@ fn parses_smoke_pnpm_workspace_smoke_shapes() {
 }
 
 #[test]
-fn parses_package_yaml_npm_aliases_and_skips_workspace_catalog_specs() {
+fn parses_package_yaml_npm_aliases_and_surfaces_workspace_catalog_specs() {
     let text = package_file_fixture(
         "parses-package-yaml-npm-aliases-and-skips-workspace-catalog-specs.txt",
     );
     let dependencies = parse_fixture(text, "file:///work/package.yaml", "yaml");
 
-    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies.len(), 4);
     crate::support::tests::assert_dependency(
         &dependencies,
         crate::support::tests::DependencyExpectation::new(
@@ -164,6 +165,28 @@ fn parses_package_yaml_npm_aliases_and_skips_workspace_catalog_specs() {
     assert_eq!(dependencies[1].requirement, "");
     assert_eq!(dependencies[1].requirement_prefix, "npm:types-react@");
     assert_eq!(extract_range(text, dependencies[1].requirement_range), "");
+    assert_eq!(dependencies[2].name, "workspace-only");
+    assert_eq!(dependencies[2].requirement, "workspace:*");
+    assert_eq!(
+        extract_range(text, dependencies[2].requirement_range),
+        "workspace:*"
+    );
+    assert_eq!(
+        dependencies[2].versionable_kind(),
+        VersionableKind::WorkspaceReference
+    );
+    assert_eq!(dependencies[2].hosted_url.as_deref(), Some("workspace"));
+    assert_eq!(dependencies[3].name, "catalog-only");
+    assert_eq!(dependencies[3].requirement, "catalog:");
+    assert_eq!(
+        extract_range(text, dependencies[3].requirement_range),
+        "catalog:"
+    );
+    assert_eq!(
+        dependencies[3].versionable_kind(),
+        VersionableKind::WorkspaceReference
+    );
+    assert_eq!(dependencies[3].hosted_url.as_deref(), Some("workspace"));
 }
 
 #[test]
@@ -172,16 +195,10 @@ fn parses_package_yaml_dependency_groups() {
     let dependencies = parse_fixture(text, "file:///work/package.yaml", "yaml");
 
     assert_eq!(dependencies.len(), 4);
-    crate::support::tests::assert_dependency(
-        &dependencies,
-        crate::support::tests::DependencyExpectation::new(
-            0,
-            Npm,
-            "dependencies",
-            "react",
-            "^19.0.0",
-        ),
-    );
+    assert_eq!(dependencies[0].name, "react");
+    assert_eq!(dependencies[0].requirement, "^19.0.0");
+    assert_eq!(dependencies[0].ecosystem, Npm);
+    assert_eq!(dependencies[0].group, "dependencies");
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
         "^19.0.0"

@@ -21,6 +21,7 @@ pub(crate) fn empty_resolve_document_output() -> NativeResolveDocumentOutput {
         vulnerable_update_count: 0,
         vulnerable_update_package: None,
         vulnerable_update_version: None,
+        edit_plan: None,
     }
 }
 

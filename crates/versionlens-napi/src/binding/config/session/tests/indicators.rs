@@ -10,6 +10,7 @@ fn blank_indicators() -> NativeSuggestionIndicators {
         error: None,
         no_match: None,
         matched: None,
+        downgradeable: None,
         updateable: None,
         updateable_vulnerable: None,
         build: None,
@@ -32,6 +33,7 @@ fn partial_indicator_config_keeps_core_defaults() {
     assert_eq!(config.suggestion_indicators.directory, "\u{1F4C1}");
     assert_eq!(config.suggestion_indicators.error, "\u{1F534}");
     assert_eq!(config.suggestion_indicators.matched, "\u{1F7E1}");
+    assert_eq!(config.suggestion_indicators.downgradeable, "\u{2193} ");
     assert_eq!(config.suggestion_indicators.build, "\u{224C} ");
     assert_eq!(
         config.suggestion_indicators.updateable_vulnerable,

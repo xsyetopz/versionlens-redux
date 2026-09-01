@@ -64,6 +64,7 @@ fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
         titles,
         [
             "🟡 fixed 1.1.1",
+            "↓  downgrade 1.1.0",
             "↑  patch 1.1.2",
             "↑  minor 1.2.2",
             "↑  latest 2.2.2"
@@ -72,6 +73,7 @@ fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
     assert_eq!(
         arguments,
         [
+            vec!["update", "1.1.0"],
             vec!["updatePatch", "1.1.2"],
             vec!["updateMinor", "1.2.2"],
             vec!["update", "2.2.2"]

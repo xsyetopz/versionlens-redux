@@ -280,6 +280,16 @@ pub(crate) fn assert_no_edits(output: &contract::ResolveDocumentOutput) {
     assert!(output.edits.is_empty());
 }
 
+pub(crate) fn assert_all_fixed_without_edits(output: &contract::ResolveDocumentOutput) {
+    assert!(
+        output
+            .suggestions
+            .iter()
+            .all(|suggestion| suggestion.status == "fixed")
+    );
+    assert_no_edits(output);
+}
+
 pub(crate) fn assert_fixed_git_repository(output: &contract::ResolveDocumentOutput) {
     assert_eq!(output.suggestions[0].status, "fixed");
     assert_eq!(

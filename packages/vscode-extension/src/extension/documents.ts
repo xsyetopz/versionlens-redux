@@ -27,6 +27,7 @@ function documentInput(document: TextDocument): NativeDocumentInput {
     uri: document.uri.toString(),
     languageId: document.languageId,
     text: document.getText(),
+    version: document.version,
     ...optionalProperty("workspaceRoot", workspaceRoot),
   };
 }

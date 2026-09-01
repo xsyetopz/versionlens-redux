@@ -27,10 +27,8 @@ fn resolve_github_fixture(
     )
 }
 
-#[test]
-fn resolves_github_action_tag_references_with_incremental_choices() {
-    let session = standard_session();
-    let output = session.resolve_document_with_responses(
+fn resolve_checkout_tag(body: &str) -> ResolveDocumentOutput {
+    standard_session().resolve_document_with_responses(
         DocumentInput::new(
             "file:///work/.github/workflows/ci.yml".to_owned(),
             "yaml".to_owned(),
@@ -40,11 +38,49 @@ fn resolves_github_action_tag_references_with_incremental_choices() {
         &[RegistryResponseInput::new(
             "actions/checkout".to_owned(),
             GitHub,
-            github_action_tags(),
+            body.to_owned(),
+        )],
+    )
+}
+
+#[test]
+fn resolves_github_action_tag_references_with_incremental_choices() {
+    let output = resolve_checkout_tag(&github_action_tags());
+
+    assert_update(&output, "v4.2.0");
+}
+
+#[test]
+fn resolves_major_action_refs_when_registry_has_only_concrete_release_tags() {
+    let output = resolve_checkout_tag(r#"[{"name":"v4.2.0"},{"name":"v4.1.0"},{"name":"v4.0.0"}]"#);
+
+    assert_update(&output, "v4.2.0");
+}
+
+#[test]
+fn does_not_resolve_major_action_ref_from_a_mismatched_major() {
+    let session = standard_session();
+    let output = session.resolve_document_with_responses(
+        DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml".to_owned(),
+            "yaml".to_owned(),
+            "steps:\n  - uses: actions/checkout@v3\n".to_owned(),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "actions/checkout".to_owned(),
+            GitHub,
+            r#"[{"name":"v4.2.0"},{"name":"v4.1.0"}]"#.to_owned(),
         )],
     );
 
-    assert_update(&output, "v4.2.0");
+    assert!(output.edits.is_empty());
+    assert!(
+        output
+            .suggestions
+            .iter()
+            .all(|suggestion| suggestion.status != "updateAvailable")
+    );
 }
 
 #[test]

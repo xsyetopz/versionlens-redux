@@ -59,16 +59,18 @@ fn parses_package_json_bun_catalogs_by_default() {
     let dependencies =
         crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
-    assert_eq!(dependencies.len(), 5);
-    assert_eq!(dependencies[0].group, "catalog");
-    assert_eq!(dependencies[0].name, "typescript");
-    assert_eq!(dependencies[1].group, "catalogs.build");
-    assert_eq!(dependencies[1].name, "webpack");
-    assert_eq!(dependencies[2].group, "workspaces.catalog");
-    assert_eq!(dependencies[2].name, "react");
-    assert_eq!(dependencies[3].name, "react-dom");
-    assert_eq!(dependencies[4].group, "workspaces.catalogs.testing");
-    assert_eq!(dependencies[4].name, "jest");
+    assert_eq!(dependencies.len(), 6);
+    assert_eq!(dependencies[0].group, "dependencies");
+    assert_eq!(dependencies[0].name, "react");
+    assert_eq!(dependencies[1].group, "catalog");
+    assert_eq!(dependencies[1].name, "typescript");
+    assert_eq!(dependencies[2].group, "catalogs.build");
+    assert_eq!(dependencies[2].name, "webpack");
+    assert_eq!(dependencies[3].group, "workspaces.catalog");
+    assert_eq!(dependencies[3].name, "react");
+    assert_eq!(dependencies[4].name, "react-dom");
+    assert_eq!(dependencies[5].group, "workspaces.catalogs.testing");
+    assert_eq!(dependencies[5].name, "jest");
 }
 
 #[test]

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[repr(usize)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Ecosystem {
     Cargo,

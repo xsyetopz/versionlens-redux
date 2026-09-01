@@ -69,15 +69,15 @@ fn parses_smoke_npm_workspaces_smoke_shapes() {
     let dependencies =
         crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
-    assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].group, "workspaces.catalog");
+    assert_eq!(dependencies.len(), 5);
+    assert_eq!(dependencies[0].group, "dependencies");
     assert_eq!(dependencies[0].name, "react");
     assert_eq!(dependencies[1].group, "workspaces.catalog");
-    assert_eq!(dependencies[1].name, "react-dom");
-    assert_eq!(dependencies[2].group, "workspaces.catalogs.testing");
-    assert_eq!(dependencies[2].name, "jest");
+    assert_eq!(dependencies[1].name, "react");
+    assert_eq!(dependencies[2].name, "react-dom");
     assert_eq!(dependencies[3].group, "workspaces.catalogs.testing");
-    assert_eq!(dependencies[3].name, "testing-library");
+    assert_eq!(dependencies[3].name, "jest");
+    assert_eq!(dependencies[4].name, "testing-library");
 }
 
 #[test]

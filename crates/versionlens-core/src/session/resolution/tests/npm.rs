@@ -267,11 +267,13 @@ fn fixed_npm_release_resolves_fixed_with_release_update_choices() {
         expected_latest: Some("1.1.1"),
         expected_titles: &[
             "🟡 fixed 1.1.1",
+            "↓  downgrade 1.1.0",
             "↑  patch 1.1.2",
             "↑  minor 1.2.2",
             "↑  latest 2.2.2",
         ],
         expected_arguments: &[
+            ("update", "1.1.0"),
             ("updatePatch", "1.1.2"),
             ("updateMinor", "1.2.2"),
             ("update", "2.2.2"),

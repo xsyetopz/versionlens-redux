@@ -15,9 +15,8 @@ pub(super) fn dependency(
     let name_range = scalar_range(text, key)?;
     let value_range = scalar_range(text, value)?;
     let raw_requirement = value.as_str();
-    if raw_requirement.starts_with("catalog:") || raw_requirement.starts_with("workspace:") {
-        return None;
-    }
+    let workspace_reference =
+        raw_requirement.starts_with("catalog:") || raw_requirement.starts_with("workspace:");
 
     let (name, requirement, requirement_start, requirement_end, requirement_prefix) =
         npm_alias_dependency(raw_requirement, value_range.start, value_range.end).unwrap_or((
@@ -33,7 +32,7 @@ pub(super) fn dependency(
         requirement: requirement.to_owned(),
         ecosystem: Npm,
         group: group.to_owned(),
-        hosted_url: None,
+        hosted_url: workspace_reference.then(|| "workspace".to_owned()),
         hosted_name: None,
         range: offset_range(text, name_range.start, name_range.end),
         requirement_range: offset_range(text, requirement_start, requirement_end),

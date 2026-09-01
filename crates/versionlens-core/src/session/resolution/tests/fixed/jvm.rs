@@ -99,6 +99,29 @@ fn gradle_plugin_markers_use_maven_lookup() {
 }
 
 #[test]
+fn gradle_kotlin_shorthand_plugin_routes_to_maven_marker_and_updates() {
+    let session = standard_session();
+    let output = session.resolve_document_with_responses(
+        DocumentInput::new(
+            "file:///repo/build.gradle.kts".to_owned(),
+            "kotlin".to_owned(),
+            "plugins {\n    kotlin(\"jvm\") version \"2.0.0\"\n}".to_owned(),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin".to_owned(),
+            Maven,
+            r#"{"versions":["2.0.0","2.1.0"]}"#.to_owned(),
+        )],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_suggestion(&output, 0, "updateAvailable", Some("2.1.0"));
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "2.1.0");
+}
+
+#[test]
 fn gradle_project_and_file_dependencies_are_fixed() {
     let output = resolve_fixture!(
         "file:///repo/build.gradle",

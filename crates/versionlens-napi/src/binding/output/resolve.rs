@@ -1,5 +1,6 @@
 use napi_derive::napi;
 use versionlens_core::{AuthorizationRequestPayload, ResolveDocumentOutput};
+use versionlens_model::{DocumentEditPlan, WorkspaceEditPlan};
 
 use super::suggestion::NativeSuggestion;
 use super::text_edit::NativeTextEdit;
@@ -13,6 +14,7 @@ pub struct NativeResolveDocumentOutput {
     pub vulnerable_update_count: u32,
     pub vulnerable_update_package: Option<String>,
     pub vulnerable_update_version: Option<String>,
+    pub edit_plan: Option<NativeWorkspaceEditPlan>,
 }
 
 impl NativeResolveDocumentOutput {
@@ -25,6 +27,7 @@ impl NativeResolveDocumentOutput {
             vulnerable_update_count: 0,
             vulnerable_update_package: None,
             vulnerable_update_version: None,
+            edit_plan: None,
         }
     }
     pub(crate) fn from_core(output: ResolveDocumentOutput) -> Self {
@@ -44,6 +47,49 @@ impl NativeResolveDocumentOutput {
             vulnerable_update_count: output.vulnerable_update_count,
             vulnerable_update_package: output.vulnerable_update_package,
             vulnerable_update_version: output.vulnerable_update_version,
+            edit_plan: output.edit_plan.map(Into::into),
+        }
+    }
+}
+
+#[napi(object)]
+pub struct NativeDocumentEditPlan {
+    pub document: NativeDocumentSnapshot,
+    pub edits: Vec<NativeTextEdit>,
+}
+
+#[napi(object)]
+pub struct NativeWorkspaceEditPlan {
+    pub documents: Vec<NativeDocumentEditPlan>,
+}
+
+#[napi(object)]
+pub struct NativeDocumentSnapshot {
+    pub uri: String,
+    pub version: Option<u32>,
+    pub text_hash: String,
+}
+
+impl From<DocumentEditPlan> for NativeDocumentEditPlan {
+    fn from(value: DocumentEditPlan) -> Self {
+        Self {
+            document: NativeDocumentSnapshot {
+                uri: value.document.uri,
+                version: value
+                    .document
+                    .version
+                    .and_then(|version| u32::try_from(version).ok()),
+                text_hash: value.document.text_hash,
+            },
+            edits: value.edits.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<WorkspaceEditPlan> for NativeWorkspaceEditPlan {
+    fn from(value: WorkspaceEditPlan) -> Self {
+        Self {
+            documents: value.documents.into_iter().map(Into::into).collect(),
         }
     }
 }

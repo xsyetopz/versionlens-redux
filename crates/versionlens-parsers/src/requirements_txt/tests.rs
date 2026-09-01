@@ -175,6 +175,7 @@ fn requirements_txt_bare_direct_references_are_not_registry_dependencies() {
         language_id: "pip-requirements".to_owned(),
         text,
         workspace_root: None,
+        version: None,
     });
 
     assert_eq!(dependencies.len(), 1);

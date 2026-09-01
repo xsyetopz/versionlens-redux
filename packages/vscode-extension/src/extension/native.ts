@@ -34,6 +34,7 @@ export interface NativeFilePatternConfig {
 
 export interface NativeSuggestionIndicators {
   build?: string;
+  downgradeable?: string;
   directory?: string;
   error?: string;
   latest?: string;
@@ -88,6 +89,7 @@ export interface NativeDocumentInput {
   text: string;
   uri: string;
   workspaceRoot?: string;
+  version?: number;
 }
 
 export type NativeApplyCommand =
@@ -127,10 +129,26 @@ export interface ResolveDocumentOutput {
   authorizationRequiredCount: number;
   authorizationRequiredRequests: NativeAuthorizationRequest[];
   edits: NativeTextEdit[];
+  editPlan?: NativeWorkspaceEditPlan;
   suggestions: NativeSuggestion[];
   vulnerableUpdateCount: number;
   vulnerableUpdatePackage?: string;
   vulnerableUpdateVersion?: string;
+}
+
+export interface NativeDocumentEditPlan {
+  document: NativeDocumentSnapshot;
+  edits: NativeTextEdit[];
+}
+
+export interface NativeWorkspaceEditPlan {
+  documents: NativeDocumentEditPlan[];
+}
+
+export interface NativeDocumentSnapshot {
+  uri: string;
+  version?: number;
+  textHash: string;
 }
 
 export interface NativeSuggestion {

@@ -1,8 +1,8 @@
-use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, CocoaPods, Composer, Cran, Deno, Docker, Dotnet, Go, Haxelib, Helm,
     LuaRocks, Maven, Nim, Nix, Npm, Swift, Terraform, Unity, Vcpkg, Zig,
 };
+use versionlens_model::{Dependency, VersionableKind};
 use versionlens_providers::{
     is_composer_platform_dependency, is_registry_dependency, is_unsupported_dotnet_requirement,
 };
@@ -28,6 +28,9 @@ pub(crate) fn known_non_registry_suggestion(
     dependency: Dependency,
     document_uri: Option<&str>,
 ) -> Result<Suggestion, Box<Dependency>> {
+    if dependency.versionable_kind() == VersionableKind::RuntimeConstraint {
+        return Ok(fixed(dependency, "runtime constraint".to_owned()));
+    }
     if is_npm_name_only_metadata(&dependency) {
         let label = if dependency.group == "trustedDependencies" {
             "trusted dependency"
@@ -176,6 +179,9 @@ pub(crate) fn known_non_registry_suggestion(
     }
     if dependency.ecosystem == Maven && dependency.hosted_url.as_deref() == Some("version.ref") {
         return Ok(fixed(dependency, "version catalog reference".to_owned()));
+    }
+    if dependency.hosted_url.as_deref() == Some("toolchain") {
+        return Ok(fixed(dependency, "toolchain constraint".to_owned()));
     }
     if dependency.ecosystem == Maven && dependency.hosted_url.as_deref() == Some("version.alias") {
         return Ok(fixed(dependency, "version catalog alias".to_owned()));

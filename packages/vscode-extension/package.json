@@ -494,6 +494,7 @@
           "type": "object",
           "default": {
             "Directory": "\ud83d\udcc1 ",
+            "Downgradeable": "\u2193 ",
             "Error": "\ud83d\udd34",
             "Latest": "\ud83d\udfe2",
             "SatisfiesLatest": "\ud83d\udfe2",
@@ -509,6 +510,10 @@
               "pattern": "\\S"
             },
             "Directory": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "Downgradeable": {
               "type": "string",
               "pattern": "\\S"
             },

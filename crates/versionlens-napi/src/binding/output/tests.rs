@@ -13,6 +13,7 @@ fn maps_authorization_requests_from_core_output() {
         vulnerable_update_count: 0,
         vulnerable_update_package: None,
         vulnerable_update_version: None,
+        edit_plan: None,
     });
 
     assert_eq!(output.authorization_required_count, 1);

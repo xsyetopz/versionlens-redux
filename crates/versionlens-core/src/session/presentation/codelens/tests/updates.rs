@@ -15,6 +15,11 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
         titles,
         [
             "M satisfies 4.1.10",
+            "D downgrade 2.1.2",
+            "D downgrade 3.0.0",
+            "D downgrade 3.1.0",
+            "D downgrade 4.0.0",
+            "D downgrade 4.0.1",
             "U bump 4.1.10",
             "U version 5.1.1",
             "U version 5.2.0",
@@ -26,6 +31,11 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
         arguments,
         [
             Vec::<&str>::new(),
+            vec!["update", "2.1.2"],
+            vec!["update", "3.0.0"],
+            vec!["update", "3.1.0"],
+            vec!["update", "4.0.0"],
+            vec!["update", "4.0.1"],
             vec!["update", "4.1.10"],
             vec!["update", "5.1.1"],
             vec!["update", "5.2.0"],
@@ -50,7 +60,7 @@ fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
 }
 
 #[test]
-fn code_lenses_keep_latest_update_choice_for_ranges_satisfying_latest() {
+fn code_lenses_omit_latest_update_choice_for_ranges_satisfying_latest() {
     let output = build_code_lens_output(
         "left-pad-gte-2.json",
         "3.0.0",
@@ -59,8 +69,22 @@ fn code_lenses_keep_latest_update_choice_for_ranges_satisfying_latest() {
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::all_code_lens_arguments(&output);
 
-    assert_eq!(titles, ["S satisfies latest 3.0.0", "U latest 3.0.0"]);
-    assert_eq!(arguments, [Vec::<&str>::new(), vec!["update", "3.0.0"]]);
+    assert_eq!(
+        titles,
+        [
+            "S satisfies latest 3.0.0",
+            "D downgrade 1.0.0",
+            "D downgrade 2.1.0"
+        ]
+    );
+    assert_eq!(
+        arguments,
+        [
+            Vec::<&str>::new(),
+            vec!["update", "1.0.0"],
+            vec!["update", "2.1.0"]
+        ]
+    );
 }
 
 #[test]
@@ -75,14 +99,64 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
 
     assert_eq!(
         titles,
-        ["M satisfies 2.1.0", "U bump 2.1.0", "U latest 3.0.0"]
+        [
+            "M satisfies 2.1.0",
+            "D downgrade 1.0.0",
+            "U bump 2.1.0",
+            "U latest 3.0.0"
+        ]
     );
     assert_eq!(
         arguments,
         [
             Vec::<&str>::new(),
+            vec!["update", "1.0.0"],
             vec!["update", "2.1.0"],
             vec!["update", "3.0.0"]
+        ]
+    );
+}
+
+#[test]
+fn github_current_release_omits_noop_latest_and_offers_downgrades() {
+    let session = standard_session();
+    let input = DocumentInput::new(
+        "file:///work/.github/workflows/ci.yml".to_owned(),
+        "yaml".to_owned(),
+        "steps:\n  - uses: actions/checkout@v7.0.1\n".to_owned(),
+        None,
+    );
+
+    let responses = [RegistryResponseInput::new(
+        "actions/checkout".to_owned(),
+        versionlens_model::Ecosystem::GitHub,
+        r#"[{"name":"v7.0.1"},{"name":"v7.0.0"},{"name":"v6.0.0"}]"#.to_owned(),
+    )];
+    let resolved = session.resolve_document_with_responses(input.clone(), &responses);
+    let output = session.analyze_document(input);
+
+    assert_eq!(
+        (
+            resolved.suggestions[0].status.as_str(),
+            resolved.suggestions[0].latest.as_deref()
+        ),
+        ("current", Some("v7.0.1"))
+    );
+
+    assert_eq!(
+        lens_titles(&output),
+        [
+            "L latest v7.0.1",
+            "D downgrade v6.0.0",
+            "D downgrade v7.0.0"
+        ]
+    );
+    assert_eq!(
+        crate::support::tests::all_code_lens_arguments(&output),
+        [
+            Vec::<&str>::new(),
+            vec!["update", "6.0.0"],
+            vec!["update", "7.0.0"]
         ]
     );
 }

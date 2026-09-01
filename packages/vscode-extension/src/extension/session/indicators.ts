@@ -4,6 +4,7 @@ import { configuredValue } from "./configured.ts";
 
 const suggestionIndicatorKeys = [
   ["build", "Build"],
+  ["downgradeable", "Downgradeable"],
   ["latest", "Latest"],
   ["satisfiesLatest", "SatisfiesLatest"],
   ["directory", "Directory"],

@@ -110,6 +110,7 @@ fn test_indicators() -> SuggestionIndicators {
         error: "E".to_owned(),
         no_match: "N".to_owned(),
         matched: "M".to_owned(),
+        downgradeable: "D".to_owned(),
         updateable: "U".to_owned(),
         updateable_vulnerable: "V".to_owned(),
         build: "B".to_owned(),

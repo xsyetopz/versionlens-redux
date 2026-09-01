@@ -7,6 +7,7 @@ fn maps_document_workspace_root_to_core() {
         language_id: "json".to_owned(),
         text: package_file_fixture("maps-document-workspace-root-to-core.json").to_owned(),
         workspace_root: Some("/work".to_owned()),
+        version: None,
     }
     .into_core();
 
@@ -21,6 +22,7 @@ fn maps_apply_input_document_to_core() {
             language_id: "json".to_owned(),
             text: package_file_fixture("maps-apply-input-document-to-core.json").to_owned(),
             workspace_root: Some("/work".to_owned()),
+            version: None,
         },
         command: Some("updateMajor".to_owned()),
         dependency_name: Some("left-pad".to_owned()),

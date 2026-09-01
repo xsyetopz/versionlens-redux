@@ -1,5 +1,5 @@
 use super::{ApplyCommandRequest, DocumentInput, RegistryResponseInput, standard_session};
-use versionlens_model::Ecosystem::Npm;
+use versionlens_model::Ecosystem::{GitHub, Npm};
 
 #[test]
 fn apply_command_updates_only_selected_dependency() {
@@ -58,12 +58,37 @@ fn selected_version_without_update_command_is_ignored() {
     assert_ne!(output.suggestions[0].latest.as_deref(), Some("999.0.0"));
 }
 
+#[test]
+fn selected_older_github_release_applies_as_a_downgrade() {
+    let session = standard_session();
+    let output = session.apply_command_with_selected_version(ApplyCommandRequest {
+        input: DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml".to_owned(),
+            "yaml".to_owned(),
+            "steps:\n  - uses: actions/checkout@v7.0.1\n".to_owned(),
+            None,
+        ),
+        command: Some("update"),
+        dependency_name: Some("actions/checkout"),
+        selected_version: Some("6.0.0"),
+        responses: &[RegistryResponseInput::new(
+            "actions/checkout".to_owned(),
+            GitHub,
+            r#"[{"name":"v7.0.1"},{"name":"v7.0.0"},{"name":"v6.0.0"}]"#.to_owned(),
+        )],
+    });
+
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "v6.0.0");
+}
+
 fn package_input(text: &str) -> DocumentInput {
     DocumentInput {
         uri: "file:///package.json".to_owned(),
         language_id: "json".to_owned(),
         text: text.to_owned(),
         workspace_root: None,
+        version: None,
     }
 }
 

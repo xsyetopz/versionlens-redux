@@ -1,6 +1,7 @@
 use self::indicator::{code_lens_indicator, update_indicator, with_indicator};
 use self::title::code_lens_title_text;
 use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::GitHub;
 use versionlens_suggestions::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
 };
@@ -95,8 +96,12 @@ pub(crate) fn update_choice_code_lens_payload(
     has_vulnerabilities: bool,
 ) -> CodeLensPayload {
     let title = with_indicator(
-        update_indicator(indicators, has_vulnerabilities),
-        format!("{} {}", choice.label.as_str(), choice.version.as_str()),
+        choice_indicator(choice, indicators, has_vulnerabilities),
+        format!(
+            "{} {}",
+            choice.label.as_str(),
+            displayed_choice_version(dependency, choice)
+        ),
     );
     CodeLensPayload {
         range: dependency.range,
@@ -109,6 +114,30 @@ pub(crate) fn update_choice_code_lens_payload(
             choice.version.as_str().to_owned(),
         ],
     }
+}
+
+fn displayed_choice_version(dependency: &Dependency, choice: &UpdateChoice) -> String {
+    if dependency.ecosystem == GitHub
+        && dependency.requirement_prefix == "v"
+        && !choice.version.starts_with(['v', 'V'])
+    {
+        return format!("v{}", choice.version);
+    }
+    choice.version.clone()
+}
+
+fn choice_indicator<'a>(
+    choice: &UpdateChoice,
+    indicators: &'a SuggestionIndicators,
+    has_vulnerabilities: bool,
+) -> &'a str {
+    if has_vulnerabilities {
+        return update_indicator(indicators, true);
+    }
+    if choice.label == "downgrade" {
+        return &indicators.downgradeable;
+    }
+    update_indicator(indicators, false)
 }
 
 pub(crate) fn code_lens_title(

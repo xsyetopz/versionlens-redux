@@ -134,7 +134,9 @@ fn parse_gradle_script(text: &str, include_dependencies: bool) -> GradleDependen
 
 fn parse_plugin_line(text: &str, line: &str, line_offset: usize) -> ParsedGradleDependency {
     let trimmed = line.trim_start();
-    if !trimmed.starts_with("id") || !trimmed.contains("version") {
+    if (!trimmed.starts_with("id") && !trimmed.starts_with("kotlin("))
+        || !trimmed.contains("version")
+    {
         return None;
     }
 
@@ -150,8 +152,13 @@ fn parse_plugin_line(text: &str, line: &str, line_offset: usize) -> ParsedGradle
         return None;
     }
 
+    let plugin_id = if trimmed.starts_with("kotlin(") {
+        format!("org.jetbrains.kotlin.{id}")
+    } else {
+        id.to_owned()
+    };
     Some(Dependency {
-        name: format!("{id}:{id}.gradle.plugin"),
+        name: format!("{plugin_id}:{plugin_id}.gradle.plugin"),
         requirement: version.to_owned(),
         ecosystem: Maven,
         group: "plugins".to_owned(),

@@ -8,6 +8,85 @@ use crate::parse_gradle_plugin_maven_repositories;
 use crate::parse_leiningen_maven_repositories;
 use crate::parse_sbt_maven_repositories;
 use versionlens_model::Ecosystem::*;
+use versionlens_model::VersionableKind;
+
+#[test]
+fn parses_package_engines_as_runtime_constraints() {
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/package.json".to_owned(),
+        "json".to_owned(),
+        r#"{"engines":{"node":">=20","npm":"10"},"packageManager":"pnpm@9.1.0"}"#.to_owned(),
+        None,
+    ));
+
+    assert_eq!(dependencies.len(), 3);
+    let node = dependencies
+        .iter()
+        .find(|dependency| dependency.name == "node")
+        .expect("node engine should be extracted");
+    assert_eq!(node.group, "engines");
+    assert_eq!(node.versionable_kind(), VersionableKind::RuntimeConstraint);
+    assert!(
+        dependencies
+            .iter()
+            .any(|dependency| dependency.group == "packageManager")
+    );
+}
+
+#[test]
+fn surfaces_npm_workspace_and_catalog_references_as_workspace_versionables() {
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/package.json".to_owned(),
+        "json".to_owned(),
+        r#"{"dependencies":{"local":"workspace:*","cataloged":"catalog:"}}"#.to_owned(),
+        None,
+    ));
+
+    assert_eq!(dependencies.len(), 2);
+    assert!(dependencies.iter().all(|dependency| {
+        dependency.versionable_kind() == VersionableKind::WorkspaceReference
+            && dependency.hosted_url.as_deref() == Some("workspace")
+    }));
+}
+
+#[test]
+fn parses_cargo_rust_version_as_a_toolchain_constraint() {
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/Cargo.toml".to_owned(),
+        "toml".to_owned(),
+        "[package]\nname = \"demo\"\nversion = \"1.0.0\"\nrust-version = \"1.78\"\n".to_owned(),
+        None,
+    ));
+
+    let rust_version = dependencies
+        .iter()
+        .find(|dependency| dependency.group == "rust-version")
+        .expect("rust-version should be extracted");
+    assert_eq!(rust_version.name, "rust");
+    assert_eq!(rust_version.requirement, "1.78");
+    assert_eq!(rust_version.hosted_url.as_deref(), Some("toolchain"));
+    assert_eq!(
+        rust_version.versionable_kind(),
+        VersionableKind::RuntimeConstraint
+    );
+}
+
+#[test]
+fn parses_kotlin_dsl_plugin_declarations() {
+    let dependencies = parse_document(&DocumentInput::new(
+        "file:///work/build.gradle.kts".to_owned(),
+        "kotlin".to_owned(),
+        "plugins {\n    kotlin(\"jvm\") version \"2.0.0\"\n}".to_owned(),
+        None,
+    ));
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(
+        dependencies[0].name,
+        "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin"
+    );
+    assert_eq!(dependencies[0].requirement, "2.0.0");
+}
 
 #[test]
 fn parses_versioned_github_actions_and_ignores_unsafe_refs() {

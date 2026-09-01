@@ -227,10 +227,10 @@ function setActiveTextEditor(value: { document: unknown } | undefined): void {
   activeTextEditor = value;
 }
 
-function analysisOutput(): AnalysisOutput {
+function analysisOutput(codeLenses: unknown[] = []): AnalysisOutput {
   return {
     canSortDependencies: true,
-    codeLenses: [],
+    codeLenses,
     dependencies: [],
     dependencySignature: "left-pad@1.0.0",
     diagnostics: [],
@@ -239,10 +239,14 @@ function analysisOutput(): AnalysisOutput {
   };
 }
 
-function testDocument(uri = "file:///package.json"): TestDocument {
+function testDocument(
+  uri = "file:///package.json",
+  languageId = "json",
+  text = packageFileFixture("left-pad.json"),
+): TestDocument {
   return {
-    getText: (): string => packageFileFixture("left-pad.json"),
-    languageId: "json",
+    getText: (): string => text,
+    languageId,
     uri: { toString: (): string => uri },
   };
 }

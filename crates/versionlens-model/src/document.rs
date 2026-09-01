@@ -2,6 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Ecosystem, Range};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VersionableKind {
+    Dependency,
+    RuntimeConstraint,
+    ProjectVersion,
+    WorkspaceReference,
+    EcosystemHandle,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentInput {
@@ -9,6 +18,8 @@ pub struct DocumentInput {
     pub language_id: String,
     pub text: String,
     pub workspace_root: Option<String>,
+    #[serde(default)]
+    pub version: Option<u64>,
 }
 
 impl DocumentInput {
@@ -23,6 +34,15 @@ impl DocumentInput {
             language_id: language_id.into(),
             text: text.into(),
             workspace_root,
+            version: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_version(self, version: u64) -> Self {
+        Self {
+            version: Some(version),
+            ..self
         }
     }
 }
@@ -62,3 +82,59 @@ pub struct Dependency {
     pub requirement_prefix: String,
     pub requirement_suffix: String,
 }
+
+impl Dependency {
+    pub fn versionable_kind(&self) -> VersionableKind {
+        if self.ecosystem == Ecosystem::GitHub {
+            return VersionableKind::EcosystemHandle;
+        }
+        if matches!(
+            self.group.as_str(),
+            "packageManager" | "devEngines.packageManager"
+        ) {
+            return VersionableKind::EcosystemHandle;
+        }
+        if self.requirement.starts_with("workspace:")
+            || self.requirement.starts_with("catalog:")
+            || matches!(
+                self.hosted_url.as_deref(),
+                Some("local" | "path" | "workspace")
+            )
+        {
+            return VersionableKind::WorkspaceReference;
+        }
+        if self.is_project_version() {
+            return VersionableKind::ProjectVersion;
+        }
+        if matches!(self.group.as_str(), "engines" | "rust-version") {
+            return VersionableKind::RuntimeConstraint;
+        }
+        VersionableKind::Dependency
+    }
+
+    fn is_project_version(&self) -> bool {
+        match self.ecosystem {
+            Ecosystem::Cargo => self.group == "package" && self.name == "version",
+            Ecosystem::Maven => self.group == "project.version" && self.name == "version",
+            Ecosystem::Dotnet => {
+                self.group == "PropertyGroup"
+                    && matches!(self.name.as_str(), "Version" | "AssemblyVersion")
+            }
+            Ecosystem::Python => self.group == "project" && self.name == "version",
+            Ecosystem::Npm | Ecosystem::Composer => {
+                self.group == "version" && self.name == self.requirement
+            }
+            Ecosystem::Deno => self.group == "version" && self.name.starts_with('@'),
+            Ecosystem::Hex
+            | Ecosystem::Hackage
+            | Ecosystem::Julia
+            | Ecosystem::Cran
+            | Ecosystem::Opam => self.group == "version" && !self.name.is_empty(),
+            Ecosystem::Pub => self.group == "version" && self.name == "version",
+            _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

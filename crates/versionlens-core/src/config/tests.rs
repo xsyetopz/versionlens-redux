@@ -238,6 +238,7 @@ fn suggestion_indicators_replace_blank_values_with_standard_indicators() {
             error: Some(blank.to_owned()),
             no_match: Some(blank.to_owned()),
             matched: Some(blank.to_owned()),
+            downgradeable: Some(blank.to_owned()),
             updateable: Some(blank.to_owned()),
             updateable_vulnerable: Some(blank.to_owned()),
             build: Some(blank.to_owned()),
@@ -256,6 +257,7 @@ fn suggestion_indicators_preserve_nonblank_custom_values_verbatim() {
         error: Some(" error ".to_owned()),
         no_match: Some(" no-match ".to_owned()),
         matched: Some(" matched ".to_owned()),
+        downgradeable: Some(" downgrade ".to_owned()),
         updateable: Some(" update ".to_owned()),
         updateable_vulnerable: Some(" vulnerable ".to_owned()),
         build: Some(" build ".to_owned()),
@@ -267,6 +269,7 @@ fn suggestion_indicators_preserve_nonblank_custom_values_verbatim() {
     assert_eq!(indicators.error, " error ");
     assert_eq!(indicators.no_match, " no-match ");
     assert_eq!(indicators.matched, " matched ");
+    assert_eq!(indicators.downgradeable, " downgrade ");
     assert_eq!(indicators.updateable, " update ");
     assert_eq!(indicators.updateable_vulnerable, " vulnerable ");
     assert_eq!(indicators.build, " build ");
@@ -281,6 +284,7 @@ fn direct_session_config_preserves_nonblank_custom_indicators() {
         error: " error ".to_owned(),
         no_match: " no-match ".to_owned(),
         matched: " matched ".to_owned(),
+        downgradeable: " downgrade ".to_owned(),
         updateable: " update ".to_owned(),
         updateable_vulnerable: " vulnerable ".to_owned(),
         build: " build ".to_owned(),

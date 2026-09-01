@@ -7,7 +7,8 @@ fn apply_command_uses_code_lens_selector_for_duplicate_names() {
 
     let responses = [RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned())];
     session.resolve_document_with_responses(input.clone(), &responses);
-    let analyzed = session.analyze_document(input.clone());
+    let command_input = input.clone();
+    let analyzed = session.analyze_document(input);
     let selector = analyzed
         .code_lenses
         .iter()
@@ -15,7 +16,7 @@ fn apply_command_uses_code_lens_selector_for_duplicate_names() {
         .and_then(|lens| lens.arguments.get(1))
         .expect("update code lens selector")
         .clone();
-    let output = session.apply_command(input, None, Some(&selector), &responses);
+    let output = session.apply_command(command_input, None, Some(&selector), &responses);
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].dependency.group, "dependencies");
@@ -24,7 +25,7 @@ fn apply_command_uses_code_lens_selector_for_duplicate_names() {
 }
 
 #[test]
-fn pyproject_update_code_lenses_advance_lower_bounds_and_preserve_upper_caps() {
+fn pyproject_ranges_resolving_latest_do_not_offer_noop_lower_bound_bumps() {
     let session = standard_session();
     let input = DocumentInput::new("file:///pyproject.toml".to_owned(), "toml".to_owned(), package_file_fixture(
             "pyproject-update-code-lenses-advance-lower-bounds-and-preserve-upper-caps.toml",
@@ -37,38 +38,19 @@ fn pyproject_update_code_lenses_advance_lower_bounds_and_preserve_upper_caps() {
     ];
 
     session.resolve_document_with_responses(input.clone(), &responses);
-    let analyzed = session.analyze_document(input.clone());
+    let analyzed = session.analyze_document(input);
 
-    for (package, group) in [
-        ("httpx", "project.dependencies"),
-        ("httpcore", "project.optional-dependencies.test"),
-    ] {
-        let arguments = analyzed
+    assert_eq!(
+        analyzed
             .code_lenses
             .iter()
-            .find(|lens| {
-                lens.command == "versionlens.suggestion.onUpdateDependency"
-                    && lens.arguments.first().is_some_and(|name| name == package)
-            })
-            .map(|lens| lens.arguments.as_slice())
-            .expect("Python update code lens arguments");
-        let output = session.apply_command_with_selected_version(ApplyCommandRequest {
-            input: input.clone(),
-            command: arguments.get(2).map(String::as_str),
-            dependency_name: arguments.get(1).map(String::as_str),
-            selected_version: arguments.get(3).map(String::as_str),
-            responses: &responses,
-        });
-
-        assert_eq!(output.suggestions.len(), 1);
-        assert_eq!(output.suggestions[0].dependency.group, group);
-        assert_eq!(output.edits.len(), 1);
-        assert_eq!(
-            output.edits[0].range,
-            output.suggestions[0].dependency.requirement_range
-        );
-        assert_eq!(output.edits[0].new_text, ">=0.28.1, <1");
-    }
+            .map(|lens| (lens.title.as_str(), lens.command.as_str()))
+            .collect::<Vec<_>>(),
+        [
+            ("🟢 satisfies latest 0.28.1", ""),
+            ("🟢 satisfies latest 0.28.1", "")
+        ]
+    );
 }
 
 #[test]

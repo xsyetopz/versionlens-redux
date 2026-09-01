@@ -119,6 +119,7 @@ impl VersionLensSession {
             self.config.http.timeout_ms,
         ));
         let manifest_kind = self.classify_document(&input);
+        let plan_input = input.clone();
         let suggestions = self.resolve_suggestions(input, responses, None, &operation);
         let edits = update_edits(&suggestions);
         let authorization_required_count = Self::authorization_required_count(&suggestions);
@@ -127,15 +128,14 @@ impl VersionLensSession {
         let authorization_required_requests = operation.take_authorization_requests();
         let authorization_required_count =
             authorization_required_count.max(to_u32(authorization_required_requests.len()));
-        super::finish_resolve_output(
-            suggestions,
-            super::resolve_output_parts(
-                edits,
-                authorization_required_count,
-                authorization_required_requests,
-                vulnerable_update_count,
-            ),
-        )
+        let parts = super::resolve_output_parts_with_plan(
+            &plan_input,
+            edits,
+            authorization_required_count,
+            authorization_required_requests,
+            vulnerable_update_count,
+        );
+        super::finish_resolve_output(suggestions, parts)
     }
 
     pub(crate) fn resolve_suggestions(
@@ -148,6 +148,7 @@ impl VersionLensSession {
         let manifest_kind = self.classify_document(&input);
         let context = registry::registry_context_from_document_kind(&input, manifest_kind);
         let suggestions = self.resolve_dependencies(ResolutionRequest {
+            input: &input,
             dependencies: self.dependencies(&input),
             document_uri: &input.uri,
             responses,
@@ -180,6 +181,7 @@ impl VersionLensSession {
             .filter(|dependency| matches_dependency(dependency, selector))
             .collect();
         self.resolve_dependencies(ResolutionRequest {
+            input: &input,
             dependencies,
             document_uri: &input.uri,
             responses,

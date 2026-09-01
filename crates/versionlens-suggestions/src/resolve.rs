@@ -166,23 +166,8 @@ fn range_minimum_matches_latest(requirement: &str, latest: &str) -> bool {
 }
 
 fn range_minimum(requirement: &str) -> Option<String> {
-    let token = range_minimum_token(requirement)?;
+    let token = support::minimum_version_token(requirement)?;
     support::normalize_version_token(token)
-}
-
-fn range_minimum_token(requirement: &str) -> Option<&str> {
-    let first_range = requirement
-        .trim()
-        .split("||")
-        .next()?
-        .split(',')
-        .next()?
-        .trim();
-    let token = first_range
-        .trim_start_matches(['^', '~', '>', '<', '=', 'v', 'V'])
-        .split_whitespace()
-        .next()?;
-    (!token.is_empty()).then_some(token)
 }
 
 fn docker_tag_update_available(dependency: &Dependency, latest: &str) -> bool {

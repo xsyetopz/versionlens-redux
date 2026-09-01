@@ -42,7 +42,7 @@ fn comparable_requirement(requirement: &str) -> &str {
 
 fn stable_update_choices(requirement: &str, latest: &str, versions: &[String]) -> UpdateChoices {
     let stable_versions = stable_versions(versions);
-    let Some(current) = crate::parse_semver(requirement.trim()).ok() else {
+    let Some(current) = parse_release_semver(requirement.trim()) else {
         return range_update_choices(requirement, latest, &stable_versions, versions.is_empty());
     };
 
@@ -54,6 +54,8 @@ fn stable_update_choices(requirement: &str, latest: &str, versions: &[String]) -
     if stable_versions.is_empty() {
         return if versions.is_empty() { choices } else { vec![] };
     }
+
+    push_downgrade_choices(&mut choices, &current, &stable_versions, None);
 
     if let Some(version) = next_major(&current, versions, &stable_versions) {
         push_unique_choice(&mut choices, "major", &version, "updateMajor");
@@ -70,7 +72,7 @@ fn stable_update_choices(requirement: &str, latest: &str, versions: &[String]) -
 }
 
 fn current_matches_latest(current: &Version, latest: &str) -> bool {
-    crate::parse_semver(latest.trim()).is_ok_and(|latest| {
+    parse_release_semver(latest.trim()).is_some_and(|latest| {
         current.major == latest.major
             && current.minor == latest.minor
             && current.patch == latest.patch
@@ -98,7 +100,9 @@ fn range_update_choices(
     }
 
     if let Some(version) = latest_satisfying_range(requirement, stable_versions) {
-        if let Ok(current) = crate::parse_semver(&version) {
+        if let Some(current) = parse_release_semver(&version) {
+            let unchanged = minimum_version(requirement);
+            push_downgrade_choices(&mut choices, &current, stable_versions, unchanged.as_ref());
             if let Some(version) = next_range_major(&current, stable_versions) {
                 push_unique_choice(&mut choices, "major", &version, "updateMajor");
             }
@@ -110,7 +114,7 @@ fn range_update_choices(
             }
         }
         if !requirement_satisfies_latest(requirement, latest)
-            && range_latest_update_is_useful(requirement, &version)
+            && range_target_update_is_useful(requirement, &version)
         {
             push_unique_choice(&mut choices, "bump", &version, "update");
         }
@@ -148,21 +152,42 @@ fn push_intermediate_range_choices(
 }
 
 fn range_latest_update_is_useful(requirement: &str, latest: &str) -> bool {
-    if !requirement_satisfies_latest(requirement, latest) {
+    !requirement_satisfies_latest(requirement, latest)
+}
+
+fn range_target_update_is_useful(requirement: &str, target: &str) -> bool {
+    if !requirement_satisfies_latest(requirement, target) {
         return true;
     }
 
     let Some(minimum) = minimum_version(requirement) else {
         return true;
     };
-    let Some(latest) = crate::parse_semver(latest.trim()).ok() else {
+    let Some(target) = parse_release_semver(target) else {
         return true;
     };
 
-    minimum.major != latest.major
-        || minimum.minor != latest.minor
-        || minimum.patch != latest.patch
-        || minimum.pre != latest.pre
+    release_precedence(&minimum) != release_precedence(&target)
+}
+
+fn push_downgrade_choices(
+    choices: &mut UpdateChoices,
+    current: &Version,
+    stable_versions: &[(&str, Version)],
+    unchanged: Option<&Version>,
+) {
+    for (release, _version) in stable_versions.iter().filter(|(_, version)| {
+        release_precedence(version) < release_precedence(current)
+            && unchanged.is_none_or(|unchanged| {
+                release_precedence(version) != release_precedence(unchanged)
+            })
+    }) {
+        push_unique_choice(choices, "downgrade", release, "update");
+    }
+}
+
+fn release_precedence(version: &Version) -> (u64, u64, u64, &semver::Prerelease) {
+    (version.major, version.minor, version.patch, &version.pre)
 }
 
 fn next_range_major(current: &Version, stable_versions: &[(&str, Version)]) -> Option<String> {
@@ -276,8 +301,17 @@ fn stable_versions(versions: &[String]) -> Vec<(&str, Version)> {
 }
 
 fn stable_version(release: &str) -> Option<(&str, Version)> {
-    let version = crate::parse_semver(release).ok()?;
+    let version = parse_release_semver(release)?;
     version.pre.is_empty().then_some((release, version))
+}
+
+fn parse_release_semver(value: &str) -> Option<Version> {
+    crate::parse_semver(value.trim()).ok().or_else(|| {
+        value
+            .trim()
+            .strip_prefix(['v', 'V'])
+            .and_then(|value| crate::parse_semver(value).ok())
+    })
 }
 
 fn prerelease_update_choices(
@@ -417,23 +451,9 @@ const COMMON_PRERELEASE_IDENTITIES: &[&[&str]] = &[
 ];
 
 fn minimum_version(requirement: &str) -> Option<Version> {
-    let token = minimum_version_token(requirement)?;
+    let token = support::minimum_version_token(requirement)?;
     let normalized = support::normalize_version_token(token)?;
     crate::parse_semver(&normalized).ok()
-}
-
-fn minimum_version_token(requirement: &str) -> Option<&str> {
-    let trimmed = requirement.trim();
-    if trimmed == "*" {
-        return Some("0.0.0");
-    }
-
-    let first_range = trimmed.split("||").next()?.split(',').next()?.trim();
-    let token = first_range
-        .trim_start_matches(['^', '~', '>', '<', '=', 'v'])
-        .split_whitespace()
-        .next()?;
-    (!token.is_empty()).then_some(token)
 }
 
 pub fn push_unique_choice(
@@ -456,13 +476,13 @@ pub fn push_unique_choice(
 fn sort_choices_incrementally(choices: &mut UpdateChoices) {
     choices.sort_by(|left, right| {
         match (
-            crate::parse_semver(left.version.trim()),
-            crate::parse_semver(right.version.trim()),
+            parse_release_semver(left.version.trim()),
+            parse_release_semver(right.version.trim()),
         ) {
-            (Ok(left), Ok(right)) => left.cmp(&right),
-            (Ok(_), Err(_)) => OrderingLess,
-            (Err(_), Ok(_)) => OrderingGreater,
-            (Err(_), Err(_)) => OrderingEqual,
+            (Some(left), Some(right)) => left.cmp(&right),
+            (Some(_), None) => OrderingLess,
+            (None, Some(_)) => OrderingGreater,
+            (None, None) => OrderingEqual,
         }
     });
     if let Some(index) = choices

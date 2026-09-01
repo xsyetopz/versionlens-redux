@@ -34,6 +34,7 @@ fn resolve_sequential(
     request: ResolutionRequest<'_>,
 ) -> ResolvedSuggestions {
     let ResolutionRequest {
+        input,
         dependencies,
         document_uri,
         responses,
@@ -49,6 +50,7 @@ fn resolve_sequential(
                 session,
                 ResolveDependencyInput {
                     dependency,
+                    document: input,
                     document_uri: Some(document_uri),
                     responses,
                     project_bump,
@@ -66,6 +68,7 @@ fn resolve_parallel(
     worker_count: usize,
 ) -> ResolvedSuggestions {
     let ResolutionRequest {
+        input,
         dependencies,
         document_uri,
         responses,
@@ -86,6 +89,7 @@ fn resolve_parallel(
                             session,
                             ResolveDependencyInput {
                                 dependency,
+                                document: input,
                                 document_uri: Some(document_uri),
                                 responses,
                                 project_bump,

@@ -33,6 +33,9 @@ import type {
 } from "./apply_contract.ts";
 import { updateContexts } from "./contexts.ts";
 
+type AsyncBoolean = Promise<boolean>;
+type NativeRange = NativeTextEdit["range"];
+
 function registerApplyCommands(
   state: ExtensionState,
   commands: [string, NativeApplyCommand][],
@@ -85,7 +88,10 @@ async function applyRustEdits(
   if (!output) {
     return;
   }
-  if (output.edits.length === 0) {
+  if (
+    output.edits.length === 0 &&
+    !output.editPlan?.documents.some((doc) => doc.edits.length > 0)
+  ) {
     return;
   }
   if (output.vulnerableUpdateCount > 0) {
@@ -115,6 +121,7 @@ async function applyRustEdits(
     editor.document,
     output.edits,
     codeLensReplacementMode(selection),
+    output.editPlan,
   );
 }
 
@@ -135,10 +142,26 @@ async function applyTextEdits(
   document: TextDocument,
   edits: NativeTextEdit[],
   replacementMode: CodeLensReplacementMode,
+  editPlan?: ResolveDocumentOutput["editPlan"],
 ): Promise<void> {
+  if (editPlan && !(await validateEditPlan(editPlan))) {
+    return;
+  }
   const workspaceEdit = new WorkspaceEdit();
-  for (const edit of edits) {
-    workspaceEdit.replace(document.uri, toRange(edit.range), edit.newText);
+  if (editPlan) {
+    for (const plannedDocument of editPlan.documents) {
+      const target =
+        plannedDocument.document.uri === document.uri.toString()
+          ? document
+          : await workspace.openTextDocument(plannedDocument.document.uri);
+      for (const edit of plannedDocument.edits) {
+        workspaceEdit.replace(target.uri, toRange(edit.range), edit.newText);
+      }
+    }
+  } else {
+    for (const edit of edits) {
+      workspaceEdit.replace(document.uri, toRange(edit.range), edit.newText);
+    }
   }
   if (replacementMode !== "preserve") {
     state.flags.codeLensReplace = false;
@@ -155,6 +178,60 @@ async function applyTextEdits(
       state.flags.codeLensReplace = true;
     }
   }
+}
+
+async function validateEditPlan(
+  plan: NonNullable<ResolveDocumentOutput["editPlan"]>,
+): AsyncBoolean {
+  const uris = new Set<string>();
+  for (const plannedDocument of plan.documents) {
+    if (uris.has(plannedDocument.document.uri)) return false;
+    uris.add(plannedDocument.document.uri);
+    const target = await workspace.openTextDocument(
+      plannedDocument.document.uri,
+    );
+    if (
+      (plannedDocument.document.version !== undefined &&
+        target.version !== plannedDocument.document.version) ||
+      textHash(target.getText()) !== plannedDocument.document.textHash ||
+      !areEditRangesValid(target.getText(), plannedDocument.edits) ||
+      hasOverlappingEdits(plannedDocument.edits)
+    )
+      return false;
+  }
+  return true;
+}
+
+function hasOverlappingEdits(edits: NativeTextEdit[]): boolean {
+  const sorted = [...edits].sort(compareEdits);
+  return sorted.some((edit, index) => {
+    const next = sorted[index + 1];
+    return next !== undefined && rangesOverlap(edit.range, next.range);
+  });
+}
+
+function compareEdits(left: NativeTextEdit, right: NativeTextEdit): number {
+  return (
+    left.range.start.line - right.range.start.line ||
+    left.range.start.character - right.range.start.character ||
+    left.range.end.line - right.range.end.line ||
+    left.range.end.character - right.range.end.character
+  );
+}
+
+function rangesOverlap(left: NativeRange, right: NativeRange): boolean {
+  const before = (a: typeof left.start, b: typeof left.start): boolean =>
+    a.line < b.line || (a.line === b.line && a.character < b.character);
+  return before(left.start, right.end) && before(right.start, left.end);
+}
+
+function textHash(text: string): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(text)) {
+    hash ^= BigInt(byte);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return hash.toString(16).padStart(16, "0");
 }
 
 function areEditRangesValid(text: string, edits: NativeTextEdit[]): boolean {
@@ -242,7 +319,7 @@ async function retryAfterAddingAuthentication(
 async function reloadAuthBackedSession(
   state: ExtensionState,
   document: TextDocument,
-): Promise<boolean> {
+): AsyncBoolean {
   if (state.context?.extensionPath && !(await recreateSessions(state))) {
     return false;
   }

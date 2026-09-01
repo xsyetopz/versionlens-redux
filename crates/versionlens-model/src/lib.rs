@@ -7,13 +7,16 @@ mod position;
 mod range;
 
 pub use document::{
-    Dependency, DocumentInput, is_npm_dist_tag_requirement, registry_alias_requirement,
+    Dependency, DocumentInput, VersionableKind, is_npm_dist_tag_requirement,
+    registry_alias_requirement,
 };
 pub use ecosystem::{
     ALL_ECOSYSTEMS, Ecosystem, ecosystem_config_namespace, ecosystem_from_config_name,
     ecosystem_provider_id,
 };
-pub use edit::TextEdit;
+pub use edit::{
+    DocumentEditPlan, DocumentSnapshot, TextEdit, WorkspaceEditPlan, document_text_hash,
+};
 pub use github::GithubRepository;
 pub use manifest::{ManifestKind, ecosystem_for_manifest, provider_name_for_manifest};
 pub use position::Position;

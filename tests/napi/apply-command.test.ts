@@ -76,7 +76,7 @@ it("applyCommand updates project version", (): void => {
   expect(output.edits[0]?.newText).toBe("2.0.0");
 });
 
-it("resolveDocument is callable without registry work", async (): Promise<void> => {
+it("resolveDocument surfaces workspace references without registry work", async (): Promise<void> => {
   const session = createSession();
 
   const output = await session.resolveDocument({
@@ -86,7 +86,16 @@ it("resolveDocument is callable without registry work", async (): Promise<void> 
   });
 
   expect(output.edits).toHaveLength(0);
-  expect(output.suggestions).toHaveLength(0);
+  expect(output.suggestions).toEqual([
+    expect.objectContaining({
+      dependency: expect.objectContaining({
+        name: "local",
+        requirement: "workspace:*",
+      }),
+      latest: "workspace:*",
+      status: "fixed",
+    }),
+  ]);
 });
 
 it("clearCache and disposeSession are callable", (): void => {

@@ -71,6 +71,31 @@ fn npm_package_manager_dependencies_ignore_registry_updates() {
 }
 
 #[test]
+fn npm_engine_constraints_do_not_query_the_npm_package_registry() {
+    let session = standard_session();
+    let output = session.resolve_document_with_responses(
+        DocumentInput::new(
+            "file:///repo/project/package.json".to_owned(),
+            "json".to_owned(),
+            r#"{"engines":{"node":">=20"}}"#.to_owned(),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "node".to_owned(),
+            Npm,
+            r#"{"dist-tags":{"latest":"99.0.0"}}"#.to_owned(),
+        )],
+    );
+
+    crate::support::tests::assert_suggestion_without_edits(
+        &output,
+        0,
+        "fixed",
+        Some("runtime constraint"),
+    );
+}
+
+#[test]
 fn npm_dev_engines_package_manager_dependencies_ignore_registry_updates() {
     let session = standard_session();
 

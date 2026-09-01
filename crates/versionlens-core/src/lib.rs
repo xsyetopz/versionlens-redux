@@ -22,6 +22,7 @@ mod status;
 mod suggestion;
 mod support;
 mod vulnerability;
+mod workspace;
 
 pub use config::{
     DependencyPropertyConfig, DependencyPropertyConfigInput, EnabledProviderConfig,
@@ -36,6 +37,7 @@ pub use config::{
     provider_http_config_from_name, provider_settings_manifest_kind_from_name,
     registry_url_config_from_name, standard_suggestion_indicators,
 };
+pub use contract::validate_workspace_edit_plan;
 pub use contract::{
     AnalyzeDocumentOutput, AuthorizationRequestPayload, RegistryResponseInput,
     ResolveDocumentOutput,

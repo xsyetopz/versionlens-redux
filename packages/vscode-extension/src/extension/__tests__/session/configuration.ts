@@ -179,6 +179,7 @@ function configureHttpAndIndicators(): void {
   configured["suggestions.indicators"] = Object.fromEntries([
     ["Build", "B"],
     ["Directory", "D"],
+    ["Downgradeable", "W"],
     ["Error", "E"],
     ["Latest", "L"],
     ["Match", "M"],

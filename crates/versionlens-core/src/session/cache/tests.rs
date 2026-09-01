@@ -339,12 +339,18 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
     assert_eq!(cached_range.suggestions[0].status, "satisfies");
     assert_eq!(
         titles,
-        ["🟡 satisfies 1.1.2", "↑  bump 1.1.2", "↑  latest 2.0.0"]
+        [
+            "🟡 satisfies 1.1.2",
+            "↓  downgrade 1.1.1",
+            "↑  bump 1.1.2",
+            "↑  latest 2.0.0"
+        ]
     );
     assert_eq!(
         arguments,
         [
             Vec::<&str>::new(),
+            vec!["update", "1.1.1"],
             vec!["update", "1.1.2"],
             vec!["update", "2.0.0"]
         ]

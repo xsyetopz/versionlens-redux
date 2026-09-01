@@ -19,7 +19,9 @@ pub(super) fn npm_string_json_manifest_dependency(
 ) -> Option<Dependency> {
     let value = lit.value.as_ref();
     if value.starts_with("catalog:") || value.starts_with("workspace:") {
-        return None;
+        let mut dependency = string_literal_json_manifest_dependency(source, prop, lit);
+        dependency.hosted_url = Some("workspace".to_owned());
+        return Some(dependency);
     }
 
     let value_start = string_content_start(lit.range.start, lit.range.end);

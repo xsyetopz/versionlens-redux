@@ -1,5 +1,5 @@
 use self::parallel::resolve_dependencies;
-use versionlens_model::Dependency;
+use versionlens_model::{Dependency, DocumentInput};
 use versionlens_suggestions::Suggestion;
 use versionlens_versions::ProjectVersionBump;
 
@@ -9,6 +9,7 @@ use crate::VersionLensSession;
 use crate::registry::RegistryContext;
 
 pub(crate) struct ResolutionRequest<'a> {
+    pub(super) input: &'a DocumentInput,
     pub(super) dependencies: Vec<Dependency>,
     pub(super) document_uri: &'a str,
     pub(super) responses: &'a [RegistryResponseInput],

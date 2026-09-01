@@ -48,7 +48,7 @@ fn scalar_dependency_parts<'a>(
 ) -> Option<ScalarDependencyParts<'a>> {
     match source.group {
         "packageManager" if source.ecosystem == Npm => package_manager_parts(raw, value_end),
-        "version" => Some(ScalarDependencyParts {
+        "version" | "engines" => Some(ScalarDependencyParts {
             name: raw,
             requirement: raw,
             requirement_start: value_start,

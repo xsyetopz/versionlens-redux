@@ -7,6 +7,7 @@ pub struct NativeDocumentInput {
     pub language_id: String,
     pub text: String,
     pub workspace_root: Option<String>,
+    pub version: Option<u32>,
 }
 
 #[napi(object)]
@@ -19,7 +20,11 @@ pub struct NativeApplyCommandInput {
 
 impl NativeDocumentInput {
     pub(crate) fn into_core(self) -> DocumentInput {
-        DocumentInput::new(self.uri, self.language_id, self.text, self.workspace_root)
+        let input = DocumentInput::new(self.uri, self.language_id, self.text, self.workspace_root);
+        match self.version {
+            Some(version) => input.with_version(u64::from(version)),
+            None => input,
+        }
     }
 }
 

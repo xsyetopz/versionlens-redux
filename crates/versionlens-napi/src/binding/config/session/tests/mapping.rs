@@ -64,6 +64,7 @@ fn mapped_session_config() -> SessionConfig {
             error: Some("E".to_owned()),
             no_match: Some("N".to_owned()),
             matched: Some("M".to_owned()),
+            downgradeable: Some("W".to_owned()),
             updateable: Some("U".to_owned()),
             updateable_vulnerable: Some("V".to_owned()),
         }),
@@ -143,6 +144,7 @@ fn assert_suggestion_indicators(config: &SessionConfig) {
     assert_eq!(config.suggestion_indicators.directory, "D");
     assert_eq!(config.suggestion_indicators.error, "E");
     assert_eq!(config.suggestion_indicators.matched, "M");
+    assert_eq!(config.suggestion_indicators.downgradeable, "W");
     assert_eq!(config.suggestion_indicators.build, "B");
     assert_eq!(config.suggestion_indicators.updateable_vulnerable, "V");
 }

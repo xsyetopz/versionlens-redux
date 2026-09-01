@@ -2,11 +2,12 @@ use std::collections::{HashMap, hash_map::RandomState};
 use std::sync::{Mutex, Weak};
 
 use versionlens_cache::{CacheKey, MemoryCache};
-use versionlens_model::{Ecosystem, ManifestKind, TextEdit};
+use versionlens_model::{DocumentInput, Ecosystem, ManifestKind, TextEdit};
 use versionlens_providers::VulnerabilityAdvisory;
 use versionlens_suggestions::Suggestion;
 
 use crate::config::SessionConfig;
+use crate::contract;
 use crate::contract::{
     AuthorizationRequestPayload, ResolveDocumentOutput, ResolveDocumentOutputParts,
     resolve_document_output,
@@ -98,5 +99,27 @@ pub(crate) fn resolve_output_parts(
         vulnerable_update_count,
         vulnerable_update_package: None,
         vulnerable_update_version: None,
+        edit_plan: None,
     }
+}
+
+pub(crate) fn resolve_output_parts_with_plan(
+    input: &DocumentInput,
+    edits: Vec<TextEdit>,
+    authorization_required_count: u32,
+    authorization_required_requests: Vec<AuthorizationRequestPayload>,
+    vulnerable_update_count: u32,
+) -> ResolveDocumentOutputParts {
+    let mut parts = resolve_output_parts(
+        edits.clone(),
+        authorization_required_count,
+        authorization_required_requests,
+        vulnerable_update_count,
+    );
+    parts.edit_plan = contract::document_edit_plan(input, &edits);
+    if parts.edit_plan.is_none() {
+        // A raw edit without its snapshot is unsafe; fail closed.
+        parts.edits.clear();
+    }
+    parts
 }

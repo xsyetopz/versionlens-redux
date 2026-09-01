@@ -2,8 +2,8 @@ use crate::prerelease;
 use semver::Version;
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::{Composer, Docker, Dotnet};
+use versionlens_model::{Dependency, DocumentInput};
 use versionlens_providers::{
     is_registry_dependency, is_unsupported_dotnet_requirement,
     release_versions_from_response_for_package,
@@ -24,6 +24,7 @@ use crate::non_registry::{deno_import_has_no_suggestions, known_non_registry_sug
 use crate::project::project_version_latest;
 use crate::registry::{RegistryContext, registry_response_matches};
 use crate::session::operation::OperationContext;
+use crate::workspace::WorkspaceGraph;
 
 use super::latest::{LatestLookup, LatestResolutionRequest};
 
@@ -31,6 +32,7 @@ type UpdateChoices = Vec<UpdateChoice>;
 
 pub(super) struct ResolveDependencyInput<'a> {
     pub(super) dependency: Dependency,
+    pub(super) document: &'a DocumentInput,
     pub(super) document_uri: Option<&'a str>,
     pub(super) responses: &'a [RegistryResponseInput],
     pub(super) project_bump: Option<ProjectVersionBump>,
@@ -53,6 +55,7 @@ impl VersionLensSession {
     ) -> Option<Suggestion> {
         let ResolveDependencyInput {
             dependency,
+            document,
             document_uri,
             responses,
             project_bump,
@@ -62,6 +65,12 @@ impl VersionLensSession {
 
         if let Some(latest) = project_version_latest(&dependency, project_bump) {
             return Some(resolve_dependency(dependency, Some(latest)));
+        }
+
+        // Proven local identities are authoritative; ambiguous/malformed
+        // workspace members deliberately fall through to existing behavior.
+        if let Some(local) = WorkspaceGraph::for_document(document).resolve(&dependency) {
+            return Some(resolve_dependency(dependency, Some(local.version)));
         }
 
         if deno_import_has_no_suggestions(&dependency) {
@@ -402,7 +411,8 @@ fn latest_matches_fixed_current(dependency: &Dependency, latest: &str) -> bool {
 }
 
 fn fixed_release_matches(release: &str, current: &Version) -> bool {
-    crate::parse_semver(release.trim()).is_ok_and(|release| release.eq(current))
+    crate::parse_semver(release.trim().trim_start_matches(['v', 'V']))
+        .is_ok_and(|release| release.eq(current))
 }
 
 #[cfg(test)]

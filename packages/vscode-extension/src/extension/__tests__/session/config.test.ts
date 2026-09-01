@@ -147,6 +147,7 @@ it("maps authentication, HTTP, and indicator configuration", async (): Promise<v
   expect(modules.indicators.suggestionIndicators()).toEqual({
     build: "B",
     directory: "D",
+    downgradeable: "W",
     error: "E",
     latest: "L",
     matched: "M",

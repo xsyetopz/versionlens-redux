@@ -3,6 +3,7 @@ import {
   type Disposable,
   EventEmitter,
   languages,
+  Range,
   type TextDocument,
 } from "#vscode-host";
 import { analyzeDocument } from "../diagnostics/analyze.ts";
@@ -20,6 +21,7 @@ interface CodeLensResolutionContext {
   resolutions: {
     pending: Set<string>;
     completed: Set<string>;
+    failed: Set<string>;
   };
 }
 
@@ -34,6 +36,7 @@ function registerCodeLensProvider(
   const resolutions = {
     pending: new Set<string>(),
     completed: new Set<string>(),
+    failed: new Set<string>(),
   };
   const refresh = new EventEmitter<void>();
   state.ui.codeLensRefresh = refresh;
@@ -47,7 +50,12 @@ function registerCodeLensProvider(
       const output = analyzeDocument(state, document, {
         rejectOnError: true,
       });
-      if (output) {
+      const failed = output
+        ? resolutions.failed.has(
+            failedResolutionKey(document, output.dependencySignature),
+          )
+        : false;
+      if (output && !failed) {
         scheduleCodeLensResolution(
           { state, owner, refresh, resolutions },
           document,
@@ -55,6 +63,15 @@ function registerCodeLensProvider(
         );
       }
       state.flags.codeLensReplace = true;
+      if (failed) {
+        return [new CodeLens(new Range(0, 0, 0, 0))].map((lens) => {
+          lens.command = {
+            command: "",
+            title: "[V] Unable to resolve dependencies",
+          };
+          return lens;
+        });
+      }
       return (output?.codeLenses ?? []).map(toCodeLens);
     },
   });
@@ -69,6 +86,7 @@ function registerCodeLensProvider(
       refresh.dispose();
       resolutions.pending.clear();
       resolutions.completed.clear();
+      resolutions.failed.clear();
       if (state.ui.codeLensProvider === owner) {
         state.ui.codeLensProvider = undefined;
         state.ui.codeLensRefresh = undefined;
@@ -77,7 +95,10 @@ function registerCodeLensProvider(
     },
   };
   state.ui.codeLensProvider = owner;
-  state.ui.resetCodeLensResolutions = (): void => resolutions.completed.clear();
+  state.ui.resetCodeLensResolutions = (): void => {
+    resolutions.completed.clear();
+    resolutions.failed.clear();
+  };
   return owner;
 }
 
@@ -87,11 +108,14 @@ function scheduleCodeLensResolution(
   dependencySignature: string,
 ): void {
   const { state, owner, refresh, resolutions } = context;
-  const key = `${document.uri.toString()}\0${dependencySignature}`;
+  const documentVersion = document.version;
+  const key = resolutionKey(document, dependencySignature);
+  const failedKey = failedResolutionKey(document, dependencySignature);
   if (
     dependencySignature === "" ||
     resolutions.pending.has(key) ||
-    resolutions.completed.has(key)
+    resolutions.completed.has(key) ||
+    resolutions.failed.has(failedKey)
   ) {
     return;
   }
@@ -112,13 +136,40 @@ function scheduleCodeLensResolution(
           return;
         }
         resolutions.completed.add(key);
-        refresh.fire();
       })
-      .catch((): undefined => undefined)
+      .catch((): void => {
+        if (
+          state.ui.codeLensProvider === owner &&
+          state.flags.showVersionLenses &&
+          document.version === documentVersion
+        ) {
+          resolutions.failed.add(failedKey);
+        }
+      })
       .finally((): void => {
         resolutions.pending.delete(key);
+        if (
+          state.ui.codeLensProvider === owner &&
+          state.flags.showVersionLenses
+        ) {
+          refresh.fire();
+        }
       });
   }, 0);
+}
+
+function resolutionKey(
+  document: TextDocument,
+  dependencySignature: string,
+): string {
+  return `${document.uri.toString()}\0${dependencySignature}`;
+}
+
+function failedResolutionKey(
+  document: TextDocument,
+  dependencySignature: string,
+): string {
+  return `${resolutionKey(document, dependencySignature)}\0${document.version}`;
 }
 
 function nativeCodeLensArguments(argument: unknown): string[] | undefined {

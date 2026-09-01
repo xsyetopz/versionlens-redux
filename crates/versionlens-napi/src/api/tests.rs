@@ -24,6 +24,7 @@ fn package_document() -> NativeDocumentInput {
         language_id: "json".to_owned(),
         text: package_file_fixture("package-document.json").to_owned(),
         workspace_root: None,
+        version: None,
     }
 }
 
