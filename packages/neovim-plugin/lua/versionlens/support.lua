@@ -155,7 +155,8 @@ function M.resolve_cmd(config)
     end
   end
 
-  local repository = vim.fs.joinpath(M.plugin_root(), "..", "..", "target", "debug", executable_name)
+  local repository =
+    vim.fs.joinpath(M.plugin_root(), "..", "..", "target", "debug", executable_name)
   if executable(repository) then
     return { repository }
   end
