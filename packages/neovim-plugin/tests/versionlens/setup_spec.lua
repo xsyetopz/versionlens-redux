@@ -1,10 +1,18 @@
 local versionlens = require("versionlens")
 
 describe("setup", function()
+  local bufnr
+
   before_each(function()
-    local bufnr = vim.api.nvim_create_buf(true, false)
+    bufnr = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_set_current_buf(bufnr)
-    vim.api.nvim_buf_set_name(bufnr, "/tmp/versionlens-test/README.md")
+    vim.api.nvim_buf_set_name(bufnr, ("/tmp/versionlens-test/%d/README.md"):format(bufnr))
+  end)
+
+  after_each(function()
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_buf_delete(bufnr, { force = true })
+    end
   end)
 
   it("is idempotent and registers the public commands once", function()
@@ -34,10 +42,10 @@ describe("setup", function()
 
   it("replaces previously configured keymaps", function()
     versionlens.setup({ autostart = false, keymaps = { refresh = "<leader>vr" } })
-    assert.is_not_empty(vim.fn.maparg("<leader>vr", "n"))
+    assert.are_not.equal("", vim.fn.maparg("<leader>vr", "n"))
 
     versionlens.setup({ autostart = false, keymaps = { restart = "<leader>vR" } })
-    assert.is_empty(vim.fn.maparg("<leader>vr", "n"))
-    assert.is_not_empty(vim.fn.maparg("<leader>vR", "n"))
+    assert.are.equal("", vim.fn.maparg("<leader>vr", "n"))
+    assert.are_not.equal("", vim.fn.maparg("<leader>vR", "n"))
   end)
 end)

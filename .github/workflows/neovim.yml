@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: Lint with Selene
-        uses: NTBBloodbath/selene-action@v1
+        uses: NTBBloodbath/selene-action@23ef05dd5c4d687f4d3c939f76a1c342baf454aa # v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --config packages/neovim-plugin/selene.toml packages/neovim-plugin/lua packages/neovim-plugin/plugin packages/neovim-plugin/tests
