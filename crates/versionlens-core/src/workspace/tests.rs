@@ -63,6 +63,7 @@ fn dependency(name: &str, requirement: &str) -> Dependency {
         },
         requirement_prefix: String::new(),
         requirement_suffix: String::new(),
+        canonical_reference: None,
     }
 }
 

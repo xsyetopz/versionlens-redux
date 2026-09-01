@@ -159,6 +159,7 @@ fn parse_pod_line(pod_line: PodLine<'_>) -> Option<Dependency> {
         ),
         requirement_prefix,
         requirement_suffix,
+        canonical_reference: None,
     })
 }
 

@@ -64,6 +64,7 @@ fn chart_dependency(text: &str, entry: &MarkedMappingNode) -> Option<Dependency>
         ),
         requirement_prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

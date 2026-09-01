@@ -1,11 +1,11 @@
 use semver::{Version, VersionReq};
 use versionlens_model::{Dependency, Ecosystem};
-use versionlens_suggestions::Suggestion;
 use versionlens_suggestions::SuggestionStatus::{
     Current as StatusCurrent, UpdateAvailable as StatusUpdateAvailable,
 };
+use versionlens_suggestions::{Suggestion, UpdateChoice};
 
-use super::update_edits;
+use super::{bulk_update_edits, update_edits};
 use crate::support::tests::range;
 use versionlens_model::Ecosystem::*;
 
@@ -23,6 +23,7 @@ fn replaces_requirement_range_with_latest_version() {
             requirement_range: range(0, 9, 0, 14),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("1.0.228".to_owned()),
         resolved: None,
@@ -49,6 +50,7 @@ fn inserts_missing_dotnet_version_attribute() {
             requirement_range: range(0, 46, 0, 46),
             requirement_prefix: "Version=\"".to_owned(),
             requirement_suffix: "\"".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("8.0.0".to_owned()),
         resolved: None,
@@ -133,6 +135,7 @@ fn inserts_missing_ruby_version_argument() {
             requirement_range: range(0, 14, 0, 14),
             requirement_prefix: ", '".to_owned(),
             requirement_suffix: "'".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("1.18.10".to_owned()),
         resolved: None,
@@ -159,6 +162,7 @@ fn inserts_missing_xmake_requirement_with_separator() {
             requirement_range: range(0, 21, 0, 21),
             requirement_prefix: " ".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("3.0.0".to_owned()),
         resolved: None,
@@ -199,6 +203,7 @@ fn preserves_go_incompatible_suffix() {
             requirement_range: range(0, 23, 0, 43),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "+incompatible".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("v27.0.0".to_owned()),
         resolved: None,
@@ -262,6 +267,7 @@ fn preserves_npm_alias_specifier_when_replacing_versions() {
             requirement_range: range(0, 24, 0, 41),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("6.0.0".to_owned()),
         resolved: None,
@@ -287,6 +293,7 @@ fn replaces_empty_ranges_with_latest_version() {
             requirement_range: range(0, 8, 0, 13),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("5.0.0".to_owned()),
         resolved: None,
@@ -312,6 +319,7 @@ fn strips_v_prefix_from_github_semver_tag_updates() {
             requirement_range: range(0, 12, 0, 42),
             requirement_prefix: "github:octokit/core.js#semver:".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("v2.5.0".to_owned()),
         resolved: None,
@@ -337,6 +345,7 @@ fn skips_current_dependencies() {
             requirement_range: range(0, 9, 0, 15),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         },
         latest: Some("1.0.228".to_owned()),
         resolved: None,
@@ -346,6 +355,54 @@ fn skips_current_dependencies() {
     }]);
 
     assert!(edits.is_empty());
+}
+
+#[test]
+fn uses_existing_replacement_behavior_without_a_concrete_choice_replacement() {
+    let edits = update_edits(&[update_suggestion(npm_dependency("^1.0.0"), "2.0.0")]);
+
+    assert_eq!(edits[0].new_text, "^2.0.0");
+}
+
+#[test]
+fn uses_a_concrete_replacement_only_for_the_matching_latest_version() {
+    let mut suggestion = update_suggestion(npm_dependency("^1.0.0"), "2.0.0");
+    suggestion.choices = vec![UpdateChoice {
+        label: "major".to_owned(),
+        version: "2.0.0".to_owned(),
+        replacement: Some("workspace:*".to_owned()),
+        command: "updateMajor".to_owned(),
+    }];
+
+    assert_eq!(update_edits(&[suggestion])[0].new_text, "workspace:*");
+}
+
+#[test]
+fn does_not_apply_a_concrete_replacement_for_another_version() {
+    let mut suggestion = update_suggestion(npm_dependency("^1.0.0"), "2.0.0");
+    suggestion.choices = vec![UpdateChoice {
+        label: "downgrade".to_owned(),
+        version: "1.5.0".to_owned(),
+        replacement: Some("workspace:*".to_owned()),
+        command: "update".to_owned(),
+    }];
+
+    assert_eq!(update_edits(&[suggestion])[0].new_text, "^2.0.0");
+}
+
+#[test]
+fn uses_the_concrete_replacement_for_a_selected_downgrade_in_both_update_modes() {
+    let mut suggestion = update_suggestion(npm_dependency("^2.0.0"), "1.5.0");
+    suggestion.choices = vec![UpdateChoice {
+        label: "downgrade".to_owned(),
+        version: "1.5.0".to_owned(),
+        replacement: Some("~1.5.0".to_owned()),
+        command: "update".to_owned(),
+    }];
+
+    let suggestions = [suggestion];
+    assert_eq!(update_edits(&suggestions)[0].new_text, "~1.5.0");
+    assert_eq!(bulk_update_edits(&suggestions)[0].new_text, "~1.5.0");
 }
 
 fn python_dependency(requirement: &str) -> Dependency {
@@ -379,6 +436,7 @@ fn dependency_shape(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -394,6 +452,7 @@ fn npm_dependency(requirement: &str) -> Dependency {
         requirement_range: range(0, 8, 0, 8 + u32::try_from(requirement.len()).unwrap()),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -423,6 +482,7 @@ fn github_ref_suggestion(requirement: &str, reference_kind: &str, prefix: &str) 
             requirement_range: range(0, 30, 0, 44),
             requirement_prefix: format!("{prefix}\""),
             requirement_suffix: "\"".to_owned(),
+            canonical_reference: None,
         },
         "a1b2c3d4e5f6",
     )

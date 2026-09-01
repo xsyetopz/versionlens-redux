@@ -63,6 +63,7 @@ fn parse_requires_line(text: &str, requires_start: usize, group: &str) -> Option
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix: range.prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     };
     if let Some(repo) = parsed.github_repo {
         dependency.hosted_name = Some(repo.to_owned());

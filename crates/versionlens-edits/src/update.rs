@@ -1,4 +1,4 @@
-use versionlens_model::TextEdit;
+use versionlens_model::{CanonicalReference, TextEdit};
 use versionlens_suggestions::SuggestionStatus::{
     InvalidRange as StatusInvalidRange, Satisfies as StatusSatisfies,
     UpdateAvailable as StatusUpdateAvailable,
@@ -11,12 +11,7 @@ pub fn update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
     suggestions
         .iter()
         .filter(|suggestion| update_edit_allowed(suggestion.status))
-        .filter_map(|suggestion| {
-            suggestion.latest.as_ref().map(|latest| TextEdit {
-                range: suggestion.dependency.requirement_range,
-                new_text: replacement_text(&suggestion.dependency, latest),
-            })
-        })
+        .filter_map(suggestion_update_edit)
         .collect()
 }
 
@@ -44,10 +39,27 @@ fn bulk_update_release_allowed(latest: Option<&str>) -> bool {
 }
 
 fn suggestion_update_edit(suggestion: &Suggestion) -> Option<TextEdit> {
-    suggestion.latest.as_ref().map(|latest| TextEdit {
+    let latest = suggestion.latest.as_deref()?;
+    Some(TextEdit {
         range: suggestion.dependency.requirement_range,
-        new_text: replacement_text(&suggestion.dependency, latest),
+        new_text: selected_replacement(suggestion, latest)?,
     })
+}
+
+fn selected_replacement(suggestion: &Suggestion, latest: &str) -> Option<String> {
+    if let Some(replacement) = suggestion
+        .choices
+        .iter()
+        .find(|choice| choice.version == latest)
+        .and_then(|choice| choice.replacement.as_deref())
+    {
+        return Some(replacement.to_owned());
+    }
+    (!matches!(
+        suggestion.dependency.canonical_reference,
+        Some(CanonicalReference::GitHubActionSha { .. })
+    ))
+    .then(|| replacement_text(&suggestion.dependency, latest))
 }
 
 #[cfg(test)]

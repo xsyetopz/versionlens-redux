@@ -43,6 +43,7 @@ fn build_path_dependency(
         requirement_range: offset_range(text, value_range.start, value_range.end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

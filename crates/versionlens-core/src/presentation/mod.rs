@@ -118,10 +118,10 @@ pub(crate) fn update_choice_code_lens_payload(
 
 fn displayed_choice_version(dependency: &Dependency, choice: &UpdateChoice) -> String {
     if dependency.ecosystem == GitHub
-        && dependency.requirement_prefix == "v"
-        && !choice.version.starts_with(['v', 'V'])
+        && !dependency.requirement_prefix.is_empty()
+        && !choice.version.starts_with(&dependency.requirement_prefix)
     {
-        return format!("v{}", choice.version);
+        return format!("{}{}", dependency.requirement_prefix, choice.version);
     }
     choice.version.clone()
 }

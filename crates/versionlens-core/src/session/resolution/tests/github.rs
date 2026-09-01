@@ -43,6 +43,37 @@ fn resolve_checkout_tag(body: &str) -> ResolveDocumentOutput {
     )
 }
 
+fn resolve_action_source(source: &str, body: &str) -> ResolveDocumentOutput {
+    standard_session().resolve_document_with_responses(
+        DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml".to_owned(),
+            "yaml".to_owned(),
+            source.to_owned(),
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "actions/checkout".to_owned(),
+            GitHub,
+            body.to_owned(),
+        )],
+    )
+}
+
+fn action_choices(
+    source: &str,
+    latest: &str,
+    body: &str,
+) -> Vec<versionlens_suggestions::UpdateChoice> {
+    let input = DocumentInput::new(
+        "file:///work/.github/workflows/ci.yml".to_owned(),
+        "yaml".to_owned(),
+        source.to_owned(),
+        None,
+    );
+    let dependency = parse_document(&input).into_iter().next().unwrap();
+    crate::fetch::response_update_choices(&dependency, latest, body, true, &[])
+}
+
 #[test]
 fn resolves_github_action_tag_references_with_incremental_choices() {
     let output = resolve_checkout_tag(&github_action_tags());
@@ -55,6 +86,96 @@ fn resolves_major_action_refs_when_registry_has_only_concrete_release_tags() {
     let output = resolve_checkout_tag(r#"[{"name":"v4.2.0"},{"name":"v4.1.0"},{"name":"v4.0.0"}]"#);
 
     assert_update(&output, "v4.2.0");
+}
+
+#[test]
+fn sha_pinned_action_at_latest_has_no_redundant_latest_choice() {
+    let sha = "3d3c42e5aac5ba805825da76410c181273ba90b1";
+    let source = format!("steps:\n  - uses: actions/checkout@{sha} # v7.0.1\n");
+    let output = resolve_action_source(
+        &source,
+        &format!(
+            r#"[{{"name":"v7.0.1","commit":{{"sha":"{sha}"}}}},{{"name":"v6.0.0","commit":{{"sha":"6666666666666666666666666666666666666666"}}}}]"#
+        ),
+    );
+
+    assert!(output.edits.is_empty());
+    assert_eq!(output.suggestions[0].status, "current");
+    let choices = action_choices(
+        &source,
+        "7.0.1",
+        &format!(
+            r#"[{{"name":"v7.0.1","commit":{{"sha":"{sha}"}}}},{{"name":"v6.0.0","commit":{{"sha":"6666666666666666666666666666666666666666"}}}}]"#
+        ),
+    );
+    assert!(
+        choices
+            .iter()
+            .all(|choice| !choice.label.starts_with("latest"))
+    );
+    assert!(
+        choices
+            .iter()
+            .any(|choice| choice.label == "downgrade" && choice.version == "6.0.0")
+    );
+}
+
+#[test]
+fn sha_pinned_action_updates_sha_and_annotation_atomically() {
+    let current = "3d3c42e5aac5ba805825da76410c181273ba90b1";
+    let target = "7777777777777777777777777777777777777777";
+    let source = format!("steps:\n  - uses: actions/checkout@{current} # v7.0.1\n");
+    let body = format!(
+        r#"[{{"name":"v7.1.0","commit":{{"sha":"{target}"}}}},{{"name":"v7.0.1","commit":{{"sha":"{current}"}}}},{{"name":"v6.0.0","commit":{{"sha":"6666666666666666666666666666666666666666"}}}}]"#
+    );
+    let output = resolve_action_source(&source, &body);
+
+    assert_eq!(output.suggestions[0].status, "updateAvailable");
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, format!("{target} # v7.1.0"));
+    let choices = action_choices(&source, "7.1.0", &body);
+    assert!(choices.iter().any(|choice| choice.version == "6.0.0"
+        && choice.replacement.as_deref()
+            == Some("6666666666666666666666666666666666666666 # v6.0.0")));
+}
+
+#[test]
+fn abbreviated_sha_pin_is_proven_by_the_full_tag_commit() {
+    let output = resolve_action_source(
+        "steps:\n  - uses: actions/checkout@3d3c42e # v7.0.1\n",
+        r#"[{"name":"v7.1.0","commit":{"sha":"7777777777777777777777777777777777777777"}},{"name":"v7.0.1","commit":{"sha":"3d3c42e5aac5ba805825da76410c181273ba90b1"}}]"#,
+    );
+
+    assert_eq!(
+        output.edits[0].new_text,
+        "7777777777777777777777777777777777777777 # v7.1.0"
+    );
+}
+
+#[test]
+fn mismatched_sha_and_annotation_are_not_treated_as_a_proven_current_ref() {
+    let output = resolve_action_source(
+        "steps:\n  - uses: actions/checkout@3d3c42e # v7.0.1\n",
+        r#"[{"name":"v7.1.0","commit":{"sha":"7777777777777777777777777777777777777777"}},{"name":"v7.0.1","commit":{"sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}]"#,
+    );
+
+    assert!(output.edits.is_empty());
+    assert!(
+        output
+            .suggestions
+            .iter()
+            .all(|suggestion| suggestion.status != "updateAvailable")
+    );
+}
+
+#[test]
+fn action_tags_update_only_within_their_path_qualified_tag_lineage() {
+    let output = resolve_action_source(
+        "steps:\n  - uses: actions/checkout@release/action-v2.3.0\n",
+        r#"[{"name":"v99.0.0"},{"name":"release/action-v2.4.0"},{"name":"release/action-v2.3.0"}]"#,
+    );
+
+    assert_eq!(output.edits[0].new_text, "release/action-v2.4.0");
 }
 
 #[test]
@@ -137,7 +258,7 @@ fn resolves_reusable_workflow_tags_using_repository_identity() {
     );
     assert_eq!(
         session.latest_from_responses(&dependencies[0], std::slice::from_ref(&response)),
-        Some("v1.3.0".to_owned())
+        Some("1.3.0".to_owned())
     );
 
     let output = session.resolve_document_with_responses(input, std::slice::from_ref(&response));

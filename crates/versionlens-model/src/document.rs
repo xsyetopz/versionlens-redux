@@ -12,6 +12,19 @@ pub enum VersionableKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum CanonicalReference {
+    GitHubActionTag {
+        tag: String,
+    },
+    GitHubActionSha {
+        commit: String,
+        tag: String,
+        separator: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentInput {
     pub uri: String,
@@ -81,6 +94,8 @@ pub struct Dependency {
     pub requirement_range: Range,
     pub requirement_prefix: String,
     pub requirement_suffix: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canonical_reference: Option<CanonicalReference>,
 }
 
 impl Dependency {

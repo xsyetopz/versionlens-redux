@@ -97,6 +97,7 @@ fn copied_update_choices(choices: &[UpdateChoice]) -> Vec<UpdateChoice> {
             label: choice.label.as_str().to_owned(),
             version: choice.version.as_str().to_owned(),
             command: choice.command.as_str().to_owned(),
+            replacement: choice.replacement.as_deref().map(str::to_owned),
         })
         .collect()
 }

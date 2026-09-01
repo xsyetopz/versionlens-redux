@@ -69,6 +69,7 @@ fn flake_input_dependency(text: &str, alias: &str, value: &QuotedValue<'_>) -> O
         requirement_range: offset_range(text, parsed.requirement_start, parsed.requirement_end),
         requirement_prefix: parsed.requirement_prefix,
         requirement_suffix: parsed.requirement_suffix,
+        canonical_reference: None,
     })
 }
 

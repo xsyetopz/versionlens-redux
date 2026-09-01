@@ -315,6 +315,7 @@ fn update_dependency_for_version(suggestion: &Suggestion, version: &str) -> Depe
         requirement_range: suggestion.dependency.requirement_range,
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

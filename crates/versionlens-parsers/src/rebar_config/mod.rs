@@ -245,6 +245,7 @@ fn parse_rebar_bare_dependency(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

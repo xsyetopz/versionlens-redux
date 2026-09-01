@@ -1,17 +1,17 @@
 use versionlens_model::Dependency;
 use versionlens_suggestions::Suggestion;
 
-use super::latest::latest_text;
+use super::latest::{latest_text, latest_title_text};
 
 pub(in crate::presentation::title) fn update_title_text(
-    _: &Dependency,
+    dependency: &Dependency,
     suggestion: &Suggestion,
 ) -> String {
-    title_with_version("latest", latest_text(suggestion))
+    title_with_version("latest", &latest_title_text(dependency, suggestion))
 }
 
 pub(in crate::presentation::title) fn current_title_text(
-    _: &Dependency,
+    dependency: &Dependency,
     suggestion: &Suggestion,
 ) -> String {
     let label = if latest_text(suggestion).contains('-') {
@@ -19,28 +19,31 @@ pub(in crate::presentation::title) fn current_title_text(
     } else {
         "latest"
     };
-    title_with_version(label, latest_text(suggestion))
+    title_with_version(label, &latest_title_text(dependency, suggestion))
 }
 
 pub(in crate::presentation::title) fn satisfies_latest_title_text(
-    _: &Dependency,
+    dependency: &Dependency,
     suggestion: &Suggestion,
 ) -> String {
-    title_with_version("satisfies latest", latest_text(suggestion))
+    title_with_version(
+        "satisfies latest",
+        &latest_title_text(dependency, suggestion),
+    )
 }
 
 pub(in crate::presentation::title) fn satisfies_title_text(
-    _: &Dependency,
+    dependency: &Dependency,
     suggestion: &Suggestion,
 ) -> String {
-    title_with_version("satisfies", latest_text(suggestion))
+    title_with_version("satisfies", &latest_title_text(dependency, suggestion))
 }
 
 pub(in crate::presentation::title) fn fixed_title_text(
-    _: &Dependency,
+    dependency: &Dependency,
     suggestion: &Suggestion,
 ) -> String {
-    title_with_version("fixed", latest_text(suggestion))
+    title_with_version("fixed", &latest_title_text(dependency, suggestion))
 }
 
 pub(in crate::presentation::title) fn directory_title_text(

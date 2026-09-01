@@ -18,6 +18,17 @@ struct FixedOverrideRequest<'a> {
     requirement_key: &'a str,
 }
 
+struct VersionedDependencyRequest<'a> {
+    text: &'a str,
+    call_start: usize,
+    close: usize,
+    name: &'a ArgumentValue,
+    version: &'a ArgumentValue,
+    group: &'a str,
+    hosted_url: Option<String>,
+    hosted_name: Option<String>,
+}
+
 pub(crate) fn parse_bazel_module_with_paths(
     text: &str,
     dependency_paths: &[&str],
@@ -127,18 +138,16 @@ fn bazel_dep_dependency(
     let version = args.get("version")?;
     let registry = args.get("registry");
     let repo_name = args.get("repo_name");
-    Some(Dependency {
-        name: name.value.as_str().to_owned(),
-        requirement: version.value.as_str().to_owned(),
-        ecosystem: Bazel,
-        group: "bazel_dep".to_owned(),
+    Some(versioned_dependency(VersionedDependencyRequest {
+        text,
+        call_start,
+        close,
+        name,
+        version,
+        group: "bazel_dep",
         hosted_url: registry.map(|value| value.value.as_str().to_owned()),
         hosted_name: repo_name.map(|value| value.value.as_str().to_owned()),
-        range: offset_range(text, call_start, close + 1),
-        requirement_range: offset_range(text, version.value_start, version.value_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
-    })
+    }))
 }
 
 fn version_override_dependency(
@@ -151,18 +160,36 @@ fn version_override_dependency(
     let name = args.get("module_name").or_else(|| args.get("name"))?;
     let version = args.get("version")?;
     let registry = args.get("registry");
-    Some(Dependency {
-        name: name.value.as_str().to_owned(),
-        requirement: version.value.as_str().to_owned(),
-        ecosystem: Bazel,
-        group: directive.to_owned(),
+    Some(versioned_dependency(VersionedDependencyRequest {
+        text,
+        call_start,
+        close,
+        name,
+        version,
+        group: directive,
         hosted_url: registry.map(|value| value.value.as_str().to_owned()),
         hosted_name: None,
-        range: offset_range(text, call_start, close + 1),
-        requirement_range: offset_range(text, version.value_start, version.value_end),
+    }))
+}
+
+fn versioned_dependency(request: VersionedDependencyRequest<'_>) -> Dependency {
+    Dependency {
+        name: request.name.value.as_str().to_owned(),
+        requirement: request.version.value.as_str().to_owned(),
+        ecosystem: Bazel,
+        group: request.group.to_owned(),
+        hosted_url: request.hosted_url,
+        hosted_name: request.hosted_name,
+        range: offset_range(request.text, request.call_start, request.close + 1),
+        requirement_range: offset_range(
+            request.text,
+            request.version.value_start,
+            request.version.value_end,
+        ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
-    })
+        canonical_reference: None,
+    }
 }
 
 fn fixed_override_dependency(
@@ -190,6 +217,7 @@ fn fixed_override_dependency(
         requirement_range: offset_range(text, requirement.value_start, requirement.value_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

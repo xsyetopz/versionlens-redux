@@ -44,6 +44,7 @@ pub(super) fn scalar_dependency_from_source(
         requirement_range: offset_range(text, value_range.start, value_range.end),
         requirement_prefix,
         requirement_suffix,
+        canonical_reference: None,
     })
 }
 

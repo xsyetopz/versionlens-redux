@@ -176,6 +176,7 @@ fn parse_plugin_line(text: &str, line: &str, line_offset: usize) -> ParsedGradle
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -220,6 +221,7 @@ fn parse_string_dependency_line(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -249,6 +251,7 @@ fn parse_map_dependency_line(text: &str, line: &str, line_offset: usize) -> Pars
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -285,6 +288,7 @@ fn parse_local_dependency_line(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

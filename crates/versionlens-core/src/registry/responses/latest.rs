@@ -3,7 +3,7 @@ use versionlens_providers::{LatestVersionRequest, latest_version_from_response_f
 
 use crate::RegistryResponseInput;
 use crate::VersionLensSession;
-use crate::fetch::github_current_ref_is_proven;
+use crate::fetch::{github_action_latest, github_current_ref_is_proven};
 use crate::registry::registry_response_matches;
 
 impl VersionLensSession {
@@ -26,13 +26,21 @@ impl VersionLensSession {
         dependency: &Dependency,
         response: &RegistryResponseInput,
     ) -> Option<String> {
-        latest_version_from_response_for_request(LatestVersionRequest {
-            ecosystem: response.ecosystem,
-            package: &response.package,
-            requirement: &dependency.requirement,
-            body: &response.body,
-            include_prereleases: self.includes_prereleases(dependency),
-            prerelease_tags: self.prerelease_tags(response.ecosystem),
+        github_action_latest(
+            dependency,
+            &response.body,
+            self.includes_prereleases(dependency),
+            self.prerelease_tags(response.ecosystem),
+        )
+        .or_else(|| {
+            latest_version_from_response_for_request(LatestVersionRequest {
+                ecosystem: response.ecosystem,
+                package: &response.package,
+                requirement: &dependency.requirement,
+                body: &response.body,
+                include_prereleases: self.includes_prereleases(dependency),
+                prerelease_tags: self.prerelease_tags(response.ecosystem),
+            })
         })
     }
 }

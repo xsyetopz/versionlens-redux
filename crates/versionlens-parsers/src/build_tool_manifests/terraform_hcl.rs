@@ -109,6 +109,7 @@ fn object_provider_dependency(
         requirement_range: offset_range(text, block_end, block_end),
         requirement_prefix: " version = \"".to_owned(),
         requirement_suffix: "\"".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -137,6 +138,7 @@ fn provider_dependency(input: TerraformProviderDependency<'_>) -> Dependency {
         requirement_range: offset_range(input.text, version_start, input.value_end),
         requirement_prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

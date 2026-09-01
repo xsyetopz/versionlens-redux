@@ -167,6 +167,7 @@ fn depends_entries(text: &str, start: usize, end: usize) -> Vec<Dependency> {
                 requirement_range: offset_range(text, name_end, name_end),
                 requirement_prefix: " (>= ".to_owned(),
                 requirement_suffix: ")".to_owned(),
+                canonical_reference: None,
             });
         }
         cursor = name_end;
@@ -193,6 +194,7 @@ fn dependency_list_entry(text: &str, open: usize, close: usize) -> Option<Depend
             requirement_range: offset_range(text, constraint.range_start, constraint.range_end),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         });
     }
     Some(Dependency {
@@ -206,6 +208,7 @@ fn dependency_list_entry(text: &str, open: usize, close: usize) -> Option<Depend
         requirement_range: offset_range(text, name_end, name_end),
         requirement_prefix: " (>= ".to_owned(),
         requirement_suffix: ")".to_owned(),
+        canonical_reference: None,
     })
 }
 

@@ -264,6 +264,7 @@ fn cpp_dependency(text: &str, source: CppDependencySource<'_>) -> Dependency {
         requirement_range: offset_range(text, source.requirement_span.0, source.requirement_span.1),
         requirement_prefix: String::new(),
         requirement_suffix: String::new(),
+        canonical_reference: None,
     }
 }
 

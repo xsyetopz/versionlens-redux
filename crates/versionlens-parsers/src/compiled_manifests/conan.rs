@@ -158,6 +158,7 @@ fn conan_reference_dependency(
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix: prefix,
         requirement_suffix: suffix,
+        canonical_reference: None,
     })
 }
 

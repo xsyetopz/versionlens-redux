@@ -23,6 +23,7 @@ pub(crate) fn parse_cabal(text: &str) -> HackageDependencies {
             requirement_range: offset_range(text, version.value_start, version.value_end),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         });
     }
 
@@ -93,6 +94,7 @@ fn stack_resolver_dependency(text: &str) -> ParsedHackageDependency {
         requirement_range: offset_range(text, resolver.value_start, resolver.value_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -118,6 +120,7 @@ fn stackage_resolver_dependency(
         requirement_range: offset_range(text, version_start, resolver.value_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -283,6 +286,7 @@ fn parse_cabal_dependency_entry(
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix,
         requirement_suffix,
+        canonical_reference: None,
     })
 }
 
@@ -392,6 +396,7 @@ fn fixed_stack_dependency(
         requirement_range: offset_range(text, value_start, value_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -421,6 +426,7 @@ fn parse_hackage_package_id(
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: value.get(suffix_start..).unwrap_or_default().to_owned(),
+        canonical_reference: None,
     })
 }
 

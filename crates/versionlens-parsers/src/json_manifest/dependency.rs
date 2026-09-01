@@ -91,6 +91,7 @@ pub(super) fn json_manifest_dependency(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     };
     apply_composer_requirement_suffix(&mut dependency);
     dependency

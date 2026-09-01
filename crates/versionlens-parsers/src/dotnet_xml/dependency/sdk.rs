@@ -64,5 +64,6 @@ fn project_sdk_dependency(text: &str, value_base: usize, part: ProjectSdkPart<'_
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix: split_at.map_or("/".to_owned(), |_| "".to_owned()),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }

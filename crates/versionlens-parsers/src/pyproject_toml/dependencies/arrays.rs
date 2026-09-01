@@ -47,6 +47,7 @@ pub(in crate::pyproject_toml) fn collect_requirement_array(
                 "".to_owned()
             },
             requirement_suffix: requirement_suffix.to_owned(),
+            canonical_reference: None,
         });
     }
 }

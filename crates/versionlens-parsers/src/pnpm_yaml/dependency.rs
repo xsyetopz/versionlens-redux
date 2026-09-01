@@ -38,6 +38,7 @@ pub(super) fn dependency(
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

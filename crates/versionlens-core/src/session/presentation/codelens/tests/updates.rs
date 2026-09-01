@@ -140,7 +140,7 @@ fn github_current_release_omits_noop_latest_and_offers_downgrades() {
             resolved.suggestions[0].status.as_str(),
             resolved.suggestions[0].latest.as_deref()
         ),
-        ("current", Some("v7.0.1"))
+        ("current", Some("7.0.1"))
     );
 
     assert_eq!(

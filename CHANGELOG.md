@@ -22,12 +22,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Made open workspace documents authoritative over stale on-disk manifests during local package discovery and coordinated edits.
 - Kept all Rust crates and VS Code, Zed, Neovim, and JetBrains packages aligned on version 0.4.0.
 - Made JetBrains release archives Marketplace-selectable by OS and architecture, added plugin icons and verifier metadata, and hardened native language-server extraction.
+- Resolved GitHub Actions tags through their canonical semantic version while preserving repository-specific prefixes such as `v`, `action-v`, and path-qualified tag namespaces.
 
 ### Fixed
 
 - Removed redundant latest-version actions when a dependency or accepted range already resolves to the true latest release.
 - Treated exact GitHub Action tags with `v` or `V` prefixes as current when they match the latest release, while preserving the prefix in displayed and applied version changes.
 - Kept selected lower versions actionable through the existing safe edit path instead of rejecting valid downgrades.
+- Tracked full and abbreviated GitHub Actions commit pins when an adjacent version comment identifies the exact repository tag, updating the commit SHA and comment together without replacing the immutable pin with a mutable tag.
+- Rejected mismatched, ambiguous, malformed, bare-SHA, branch, and local Action references unless their identity and edit semantics are proven.
+- Preserved established safe behavior for indirect references, including npm and Ruby Git refs, Maven properties, Gradle catalogs, workspace references, and immutable Docker digest pins.
 - Completed the workspace and edit-plan boundary tests and architecture ownership required for the 0.4.0 release gates.
 
 ## [0.3.0] - 2026-08-28

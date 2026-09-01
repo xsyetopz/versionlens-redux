@@ -32,6 +32,7 @@ impl VersionLensSession {
                     label: "latest".to_owned(),
                     version: "latest".to_owned(),
                     command: "update".to_owned(),
+                    replacement: None,
                 });
                 Err(crate::boxed(suggestion))
             }

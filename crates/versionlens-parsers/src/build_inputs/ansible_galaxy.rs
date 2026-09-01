@@ -96,6 +96,7 @@ fn scalar_entry(text: &str, group: &str, value: &MarkedScalarNode) -> Option<Dep
         requirement_range: offset_range(text, name_range.start, name_range.end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -157,6 +158,7 @@ fn mapping_entry(text: &str, group: &str, entry: &MarkedMappingNode) -> Option<D
         requirement_range,
         requirement_prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

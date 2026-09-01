@@ -37,18 +37,7 @@ fn invalid_registry_url_creates_contextual_error_suggestion() {
 
 #[test]
 fn cran_update_choices_exclude_versions_from_other_packages() {
-    let dependency = Dependency {
-        name: "dplyr".to_owned(),
-        requirement: "1.0.0".to_owned(),
-        ecosystem: Ecosystem::Cran,
-        group: "Imports".to_owned(),
-        hosted_url: None,
-        hosted_name: None,
-        range: empty_range(),
-        requirement_range: empty_range(),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
-    };
+    let dependency = update_choice_dependency("dplyr", Ecosystem::Cran, "Imports");
     let body = "Package: dplyr\nVersion: 1.0.0\n\nPackage: dplyr\nVersion: 1.1.4\n\nPackage: unrelated\nVersion: 2.0.0\n";
 
     let choices = response_update_choices(&dependency, "1.1.4", body, false, &[]);
@@ -64,18 +53,7 @@ fn cran_update_choices_exclude_versions_from_other_packages() {
 
 #[test]
 fn composer_update_choices_exclude_versions_from_other_packages() {
-    let dependency = Dependency {
-        name: "acme/target".to_owned(),
-        requirement: "1.0.0".to_owned(),
-        ecosystem: Composer,
-        group: "require".to_owned(),
-        hosted_url: None,
-        hosted_name: None,
-        range: empty_range(),
-        requirement_range: empty_range(),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
-    };
+    let dependency = update_choice_dependency("acme/target", Composer, "require");
     let body = r#"{
       "packages": {
         "acme/target": [{"version": "1.0.0"}, {"version": "1.1.0"}],
@@ -92,6 +70,22 @@ fn composer_update_choices_exclude_versions_from_other_packages() {
             .collect::<Vec<_>>(),
         ["1.1.0"]
     );
+}
+
+fn update_choice_dependency(name: &str, ecosystem: Ecosystem, group: &str) -> Dependency {
+    Dependency {
+        name: name.to_owned(),
+        requirement: "1.0.0".to_owned(),
+        ecosystem,
+        group: group.to_owned(),
+        hosted_url: None,
+        hosted_name: None,
+        range: empty_range(),
+        requirement_range: empty_range(),
+        requirement_prefix: "".to_owned(),
+        requirement_suffix: "".to_owned(),
+        canonical_reference: None,
+    }
 }
 
 fn empty_range() -> Range {

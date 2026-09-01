@@ -134,6 +134,7 @@ fn swift_dependency(
         requirement_range: offset_range(text, value.start, value.end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

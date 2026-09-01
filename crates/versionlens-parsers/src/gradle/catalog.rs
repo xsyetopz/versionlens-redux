@@ -158,6 +158,7 @@ fn gradle_dependency(input: GradleDependencyInput<'_>) -> Dependency {
         requirement_range,
         requirement_prefix: input.requirement_prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

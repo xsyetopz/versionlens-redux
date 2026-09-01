@@ -193,6 +193,7 @@ fn clojure_dependency(
         requirement_range: offset_range(text, requirement_span.0, requirement_span.1),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

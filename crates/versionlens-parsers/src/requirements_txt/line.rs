@@ -39,6 +39,7 @@ pub(super) fn parse_requirement_line(line_index: usize, line: &str) -> Option<De
         requirement_range: line_range(line_index, line, requirement_start, requirement_end),
         requirement_prefix: requirement_prefix.to_owned(),
         requirement_suffix: if parenthesized { ")" } else { "" }.to_owned(),
+        canonical_reference: None,
     })
 }
 

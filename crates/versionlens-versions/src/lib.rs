@@ -21,6 +21,26 @@ pub use range::{
 };
 pub use support::{compare_numeric_segments, compare_numeric_text, numeric_segments};
 
+/// Split a version-bearing tag into its preserved textual prefix and its
+/// comparable version.
+///
+/// This keeps repository-specific tag namespaces such as `release/v1.2.3` or
+/// `action-v4` separate from the semantic version used for ordering and update
+/// choices.
+pub fn version_tag_parts(value: &str) -> Option<(&str, &str)> {
+    let value = value.trim();
+    for (index, character) in value.char_indices() {
+        if !character.is_ascii_digit() {
+            continue;
+        }
+        let candidate = &value[index..];
+        if normalized_version(candidate).is_some() {
+            return Some((&value[..index], candidate));
+        }
+    }
+    None
+}
+
 pub fn composer_requirement_is_parseable(requirement: &str) -> bool {
     let requirement = requirement.trim();
     if requirement.is_empty() || normalized_version(requirement).is_some() {
@@ -38,3 +58,6 @@ pub fn composer_requirement_is_parseable(requirement: &str) -> bool {
         .is_ok()
 }
 pub(crate) use support::{parse_semver, parse_semver_req, semver_version};
+
+#[cfg(test)]
+mod tag_tests;

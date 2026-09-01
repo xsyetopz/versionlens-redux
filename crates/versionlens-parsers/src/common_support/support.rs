@@ -42,6 +42,7 @@ pub(crate) fn sourced_dependency(case: SourcedDependency<'_>) -> versionlens_mod
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -67,6 +68,7 @@ pub(crate) fn dependency(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

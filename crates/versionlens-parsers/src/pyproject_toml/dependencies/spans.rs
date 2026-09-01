@@ -40,5 +40,6 @@ pub(in crate::pyproject_toml) fn dependency_from_span(
             "".to_owned()
         },
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }

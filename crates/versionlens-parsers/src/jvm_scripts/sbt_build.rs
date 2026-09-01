@@ -180,6 +180,7 @@ fn sbt_dependency_from_strings(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

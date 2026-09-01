@@ -90,6 +90,7 @@ fn default_dependency(
         ),
         requirement_prefix: format!(", {}: {quote}", source.inserted_attr),
         requirement_suffix: quote.to_string(),
+        canonical_reference: None,
     })
 }
 
@@ -139,6 +140,7 @@ fn gem_github_value_dependency(
         ),
         requirement_prefix: replacement.prefix,
         requirement_suffix: replacement.suffix,
+        canonical_reference: None,
     })
 }
 
@@ -253,6 +255,7 @@ pub(in crate::gemfile) fn gem_github_tag_dependency(
         ),
         requirement_prefix: format!("tag: {quote}"),
         requirement_suffix: quote.to_string(),
+        canonical_reference: None,
     })
 }
 

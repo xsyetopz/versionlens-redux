@@ -23,6 +23,7 @@ pub(crate) fn parse_julia_project(text: &str) -> Vec<Dependency> {
             requirement_range: offset_range(text, version.value_start, version.value_end),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         });
     }
 
@@ -59,6 +60,7 @@ pub(crate) fn parse_julia_project(text: &str) -> Vec<Dependency> {
                 requirement_range: offset_range(text, entry.value_end, entry.value_end),
                 requirement_prefix: " # compat ".to_owned(),
                 requirement_suffix: "".to_owned(),
+                canonical_reference: None,
             });
         }
     }
@@ -123,6 +125,7 @@ pub(crate) fn parse_julia_manifest(text: &str) -> Vec<Dependency> {
                 requirement_range: offset_range(text, source.value_start, source.value_end),
                 requirement_prefix: "".to_owned(),
                 requirement_suffix: "".to_owned(),
+                canonical_reference: None,
             });
         } else if let Some(version) = version {
             dependencies.push(Dependency {
@@ -136,6 +139,7 @@ pub(crate) fn parse_julia_manifest(text: &str) -> Vec<Dependency> {
                 requirement_range: offset_range(text, version.value_start, version.value_end),
                 requirement_prefix: "".to_owned(),
                 requirement_suffix: "".to_owned(),
+                canonical_reference: None,
             });
         }
     }
@@ -175,6 +179,7 @@ fn string_entry_dependency(text: &str, group: &str, entry: &StringEntry) -> Depe
         requirement_range: offset_range(text, entry.value_start, entry.value_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -190,6 +195,7 @@ fn source_dependency(text: &str, group: &str, package: &str, source: &SourceEntr
         requirement_range: offset_range(text, source.value_start, source.value_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

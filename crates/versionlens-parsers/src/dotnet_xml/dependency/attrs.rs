@@ -51,6 +51,7 @@ pub(super) fn dependency_from_attrs(
         requirement_range: offset_range(context.text, version_start, version_start + version.len),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -93,5 +94,6 @@ pub(in crate::dotnet_xml) fn missing_dependency(
         ),
         requirement_prefix: format!("{separator}Version=\""),
         requirement_suffix: "\"".to_owned(),
+        canonical_reference: None,
     })
 }

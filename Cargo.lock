@@ -845,6 +845,7 @@ dependencies = [
  "toml_edit",
  "versionlens-model",
  "versionlens-test-support",
+ "versionlens-versions",
 ]
 
 [[package]]

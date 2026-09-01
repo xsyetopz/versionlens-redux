@@ -37,7 +37,7 @@ VersionLens Redux scans dependency files across these ecosystems:
 | .NET and JVM | NuGet, Paket, Maven, Gradle/Kotlin DSL-related dependency files where parser support exists |
 | C and C++ | Conan, CMake `FetchContent` / `ExternalProject` / CPM calls, Xmake `add_requires`, Meson wraps, Bazel workspace dependencies, vcpkg |
 | Containers and infrastructure | Dockerfiles, Compose files, OCI image references, Terraform/OpenTofu, Helm, Kustomize, Nix flakes, Ansible Galaxy, Bazel/Bzlmod |
-| CI/CD and repository automation | GitHub Actions workflows and composite actions with versioned `uses:` references |
+| CI/CD and repository automation | GitHub Actions workflows, reusable workflows, and composite actions with version tags or SHA pins carrying adjacent version annotations |
 | Scripting and application ecosystems | Composer, CPAN, PyPI, RubyGems, Pub, LuaRocks, Julia, CRAN, CocoaPods, opam, Hackage, Stack, Cabal, Hex |
 
 TOML support requires a VS Code TOML language extension such as Even Better TOML.
@@ -66,7 +66,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 | CRAN | DESCRIPTION, renv.lock | `versionlens.cran.files`, `versionlens.cran.apiUrl`, `versionlens.cran.dependencyProperties` | CRAN PACKAGES metadata from CRAN or configured CRAN-like repositories |
 | Conan | conanfile.txt, conanfile.py | `versionlens.conan.files`, `versionlens.conan.apiUrl`, `versionlens.conan.dependencyProperties` | Conan v2 registry search API from ConanCenter or configured Conan-compatible remotes |
 | C/C++ build files | CMakeLists.txt, *.cmake, xmake.lua, subprojects/*.wrap, WORKSPACE, WORKSPACE.bazel | `versionlens.cpp.files`, `versionlens.cpp.apiUrl`, `versionlens.cpp.dependencyProperties` | GitHub tags for GitHub-backed CMake, Meson wrap, and Bazel dependencies; Xmake package recipes from xmake-repo for Xmake dependencies |
-| GitHub Actions | `.github/workflows/*.{yml,yaml}`, `.github/actions/**/action.{yml,yaml}` | `versionlens.github.files`, `versionlens.github.apiUrl`, `versionlens.github.dependencyProperties` | GitHub repository tags; branch, commit-SHA, local, and ambiguous refs are ignored |
+| GitHub Actions | `.github/workflows/*.{yml,yaml}`, `.github/actions/**/action.{yml,yaml}` | `versionlens.github.files`, `versionlens.github.apiUrl`, `versionlens.github.dependencyProperties` | GitHub repository tags, including prefixed/path-qualified tags; full or abbreviated SHA pins are supported when an adjacent version comment matches the pinned tag, while bare SHA, branch, local, mismatched, and ambiguous refs are ignored |
 | vcpkg | vcpkg.json | `versionlens.vcpkg.files`, `versionlens.vcpkg.apiUrl`, `versionlens.vcpkg.dependencyProperties` | vcpkg registry version database from the configured registry repository |
 | Swift | Package.swift | `versionlens.swift.files`, `versionlens.swift.apiUrl`, `versionlens.swift.dependencyProperties` | Swift package registry API or GitHub tags for GitHub URL dependencies |
 | Zig | build.zig.zon | `versionlens.zig.files`, `versionlens.zig.apiUrl`, `versionlens.zig.dependencyProperties` | Zig package URLs with GitHub tag lookup for GitHub-hosted archives |

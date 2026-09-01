@@ -193,6 +193,7 @@ impl VersionLensSession {
         match lookup.latest {
             Some(latest)
                 if fixed_requirement_matches_response(&dependency, responses)
+                    && dependency.canonical_reference.is_none()
                     && !latest_matches_fixed_current(&dependency, latest.as_str())
                     && !is_build_update(latest.as_str(), &dependency.requirement) =>
             {
@@ -321,6 +322,7 @@ fn dotnet_invalid_requirement_choices(latest: Option<String>) -> UpdateChoices {
                 label: "latest".to_owned(),
                 version,
                 command: "update".to_owned(),
+                replacement: None,
             }]
         })
         .unwrap_or_default()
@@ -361,6 +363,9 @@ fn fixed_requirement_missing_from_responses(
     dependency: &Dependency,
     responses: &[RegistryResponseInput],
 ) -> bool {
+    if dependency.canonical_reference.is_some() {
+        return false;
+    }
     let Some((current, releases)) = fixed_response_releases(dependency, responses) else {
         return false;
     };

@@ -98,6 +98,7 @@ pub(crate) fn parse_gleam_toml(text: &str) -> Vec<Dependency> {
                 ),
                 requirement_prefix: "".to_owned(),
                 requirement_suffix: "".to_owned(),
+                canonical_reference: None,
             },
         );
     }
@@ -204,6 +205,7 @@ fn gleam_dependency(text: &str, case: GleamDependencyCase<'_>) -> Dependency {
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

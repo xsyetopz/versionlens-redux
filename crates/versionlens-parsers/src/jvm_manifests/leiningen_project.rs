@@ -101,6 +101,7 @@ fn project_version_dependency(text: &str, tokens: &Tokens<'_>) -> Option<Depende
         requirement_range: offset_range(text, version.content_start, version.content_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -225,6 +226,7 @@ fn dependency_entry(
         requirement_range: offset_range(text, version.content_start, version.content_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

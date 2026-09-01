@@ -64,6 +64,7 @@ fn parse_paket_dependency_line(line_index: usize, line: &str) -> Option<Dependen
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -87,6 +88,7 @@ fn parse_paket_reference_line(line_index: usize, line: &str) -> Option<Dependenc
         requirement_range: line_range(line_index, line, name_end, name_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

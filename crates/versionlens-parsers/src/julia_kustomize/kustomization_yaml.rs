@@ -149,6 +149,7 @@ fn build_image_dependency(text: &str, parts: ImageDependencyParts<'_>) -> Depend
         ),
         requirement_prefix: parts.requirement_prefix.to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -166,6 +167,7 @@ fn tagged_dependency(text: &str, image: TaggedImageDependency<'_>) -> Kustomizat
         requirement_range: offset_range(text, tag_range.start, tag_range.end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 
@@ -188,5 +190,6 @@ fn digest_dependency(
         requirement_range: offset_range(text, digest_range.start, digest_range.end),
         requirement_prefix: "digest: ".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }

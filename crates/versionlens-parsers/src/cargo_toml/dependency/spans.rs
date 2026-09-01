@@ -37,5 +37,6 @@ pub(super) fn cargo_dependency_from_span(
         requirement_range,
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }

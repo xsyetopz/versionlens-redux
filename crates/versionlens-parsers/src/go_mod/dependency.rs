@@ -59,6 +59,7 @@ pub(super) fn parse_go_mod_dependency(
             .ends_with(INCOMPATIBLE)
             .then(|| INCOMPATIBLE.to_owned())
             .unwrap_or_default(),
+        canonical_reference: None,
     })
 }
 

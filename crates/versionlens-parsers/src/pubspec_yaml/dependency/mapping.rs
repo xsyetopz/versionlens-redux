@@ -67,6 +67,7 @@ fn hosted_dependency_without_version(
         requirement_range: offset_range(text, insert_at, insert_at),
         requirement_prefix: format!("\n{}version: ", child_indent(text, key)?),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

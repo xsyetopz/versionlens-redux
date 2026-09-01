@@ -49,6 +49,7 @@ fn skips_dotnet_version_insertion_ranges() {
         Dependency {
             requirement_prefix: " Version=\"".to_owned(),
             requirement_suffix: "\"".to_owned(),
+            canonical_reference: None,
             ..dependency_with(
                 Dotnet,
                 "PackageReference",
@@ -59,6 +60,7 @@ fn skips_dotnet_version_insertion_ranges() {
         Dependency {
             requirement_prefix: " Version=\"".to_owned(),
             requirement_suffix: "\"".to_owned(),
+            canonical_reference: None,
             ..dependency_with(
                 Dotnet,
                 "PackageReference",
@@ -280,6 +282,7 @@ fn dependency_with(ecosystem: Ecosystem, group: &str, name: &str, range: Range) 
         requirement_range: range,
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 

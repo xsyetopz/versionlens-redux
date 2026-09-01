@@ -35,6 +35,7 @@ pub(super) fn standard_gem_dependency(
         ),
         requirement_prefix,
         requirement_suffix,
+        canonical_reference: None,
     }
 }
 

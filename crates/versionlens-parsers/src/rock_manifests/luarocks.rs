@@ -134,5 +134,6 @@ fn parse_dependency_string(
         requirement_range: offset_range(text, requirement_absolute_start, requirement_absolute_end),
         requirement_prefix: range.prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }

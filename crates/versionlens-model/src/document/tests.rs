@@ -23,6 +23,7 @@ fn dependency(ecosystem: Ecosystem, group: &str, name: &str, requirement: &str) 
         requirement_range: range,
         requirement_prefix: String::new(),
         requirement_suffix: String::new(),
+        canonical_reference: None,
     }
 }
 

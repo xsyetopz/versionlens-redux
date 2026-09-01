@@ -7,7 +7,7 @@ mod position;
 mod range;
 
 pub use document::{
-    Dependency, DocumentInput, VersionableKind, is_npm_dist_tag_requirement,
+    CanonicalReference, Dependency, DocumentInput, VersionableKind, is_npm_dist_tag_requirement,
     registry_alias_requirement,
 };
 pub use ecosystem::{

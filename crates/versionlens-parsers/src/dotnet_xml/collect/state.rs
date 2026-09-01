@@ -151,6 +151,7 @@ impl<'a> DotnetXmlCollector<'a> {
             requirement_range: offset_range(text, value_start, value_start + value.len()),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         })
     }
 
@@ -244,6 +245,7 @@ fn packages_config_dependency(context: &DotnetEventContext<'_>) -> DotnetPackage
         requirement_range: offset_range(context.text, version_start, version_start + version.len),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

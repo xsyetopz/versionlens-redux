@@ -40,5 +40,6 @@ pub(super) fn package_dependency(
         requirement_range: text_range(context.text, version),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }

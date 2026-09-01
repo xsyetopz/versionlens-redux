@@ -139,6 +139,7 @@ fn parse_dependency_call(call: CpanDependencyCall<'_>) -> Option<Dependency> {
         ),
         requirement_prefix: range.prefix,
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

@@ -25,5 +25,6 @@ pub(in crate::dotnet_xml) fn project_version_dependency(
         requirement_range: offset_range(text, value_start, value_start + value.len()),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }

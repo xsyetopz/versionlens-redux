@@ -15,5 +15,6 @@ pub(super) fn project_version_dependency(text: &str, node: &XmlNode) -> Dependen
         requirement_range: text_range(text, node),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }

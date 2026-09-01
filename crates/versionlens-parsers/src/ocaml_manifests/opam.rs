@@ -42,6 +42,7 @@ pub(crate) fn version_dependency(
         requirement_range,
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -154,6 +155,7 @@ fn parse_opam_list(text: &str, group: &str) -> Vec<Dependency> {
             requirement_range: offset_range(text, requirement_start, requirement_end),
             requirement_prefix,
             requirement_suffix,
+            canonical_reference: None,
         });
         cursor = entry_end;
     }

@@ -103,6 +103,7 @@ fn dependency_from_property(
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

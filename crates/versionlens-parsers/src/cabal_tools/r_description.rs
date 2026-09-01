@@ -40,6 +40,7 @@ pub(crate) fn parse_r_description(text: &str) -> RDependencies {
             ),
             requirement_prefix: "".to_owned(),
             requirement_suffix: "".to_owned(),
+            canonical_reference: None,
         });
     }
 
@@ -166,6 +167,7 @@ fn description_dependency_entry(text: &str, field: &Field, entry: &str) -> Optio
         } else {
             "".to_owned()
         },
+        canonical_reference: None,
     })
 }
 
@@ -204,6 +206,7 @@ fn renv_package_dependency(text: &str, key: &str, package: &Value) -> Option<Dep
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     })
 }
 

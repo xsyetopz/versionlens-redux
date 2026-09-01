@@ -234,6 +234,7 @@ fn inherited_block_dependency(
         ),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }
 
@@ -302,6 +303,7 @@ fn parse_gemspec_line(line_index: usize, line: &str) -> Option<Dependency> {
         ),
         requirement_prefix,
         requirement_suffix,
+        canonical_reference: None,
     })
 }
 

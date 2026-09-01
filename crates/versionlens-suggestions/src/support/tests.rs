@@ -23,5 +23,6 @@ pub(crate) fn test_dependency(name: &str, requirement: &str) -> versionlens_mode
         requirement_range: empty_range(),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
+        canonical_reference: None,
     }
 }

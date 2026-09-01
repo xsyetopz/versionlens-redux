@@ -350,6 +350,7 @@ fn prerelease_update_choices(
         .map(|group| UpdateChoice {
             label: group.label,
             version: group.raw,
+            replacement: None,
             command: "update".to_owned(),
         })
         .collect::<Vec<_>>();
@@ -469,6 +470,7 @@ pub fn push_unique_choice(
     choices.push(UpdateChoice {
         label: label.to_owned(),
         version: version.to_owned(),
+        replacement: None,
         command: command.to_owned(),
     });
 }
