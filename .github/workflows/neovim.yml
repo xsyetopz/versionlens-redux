@@ -20,11 +20,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Lint with Selene
+      - name: Lint plugin with Selene
         uses: NTBBloodbath/selene-action@23ef05dd5c4d687f4d3c939f76a1c342baf454aa # v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --config packages/neovim-plugin/selene.toml packages/neovim-plugin/lua packages/neovim-plugin/plugin packages/neovim-plugin/tests
+          args: --config packages/neovim-plugin/selene.toml packages/neovim-plugin/lua packages/neovim-plugin/plugin
+
+      - name: Lint tests with Selene
+        uses: NTBBloodbath/selene-action@23ef05dd5c4d687f4d3c939f76a1c342baf454aa # v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --config packages/neovim-plugin/selene-tests.toml packages/neovim-plugin/tests
 
       - name: Check formatting with StyLua
         uses: JohnnyMorganz/stylua-action@v5

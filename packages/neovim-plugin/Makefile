@@ -5,7 +5,8 @@ PLENARY_DIR ?= $(abspath ../../.deps/plenary.nvim)
 
 lint:
 	stylua --check lua plugin tests
-	selene lua plugin tests
+	selene --config selene.toml lua plugin
+	selene --config selene-tests.toml tests
 
 test:
 	PLENARY_DIR="$(PLENARY_DIR)" $(NVIM) --headless --noplugin -u tests/minimal_init.lua \
