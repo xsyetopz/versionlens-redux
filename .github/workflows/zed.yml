@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
 
@@ -94,31 +94,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
 
-      - name: Setup Bun and Rust target
-        uses: ./.github/actions/setup-target
+      - name: Build and package Zed extension
+        uses: ./.github/actions/package-lsp-editor
         with:
-          target: ${{ matrix.rust_target }}
-
-      - name: Cache Cargo registry and target
-        uses: ./.github/actions/cache-cargo-target
-        with:
+          arch: ${{ matrix.arch }}
+          package-script: scripts/package/zed.mjs
+          platform: ${{ matrix.platform }}
+          rust-target: ${{ matrix.rust_target }}
           scope: zed
-
-      - name: Build native language server
-        shell: bash
-        env:
-          RUST_TARGET: ${{ matrix.rust_target }}
-        run: cargo build -p versionlens-lsp --release --locked --target "$RUST_TARGET"
-
-      - name: Package Zed extension
-        shell: bash
-        env:
-          EDITOR_ARCH: ${{ matrix.arch }}
-          EDITOR_PLATFORM: ${{ matrix.platform }}
-          RUST_TARGET: ${{ matrix.rust_target }}
-        run: bun scripts/package/zed.mjs "$EDITOR_PLATFORM" "$EDITOR_ARCH" "$RUST_TARGET"
 
       - name: Upload Zed artifact
         uses: actions/upload-artifact@v7.0.1

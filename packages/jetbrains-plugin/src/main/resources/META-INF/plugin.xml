@@ -1,7 +1,12 @@
 <idea-plugin>
   <id>com.versionlens.jetbrains</id>
   <name>VersionLens Redux</name>
-  <vendor>VersionLens contributors</vendor>
+  <vendor url="https://github.com/xsyetopz/versionlens-redux">VersionLens contributors</vendor>
+  <description><![CDATA[
+    Dependency hints, diagnostics, and code lenses for supported project files through the shared VersionLens language server.
+  ]]></description>
+  <idea-version since-build="261" />
+  <!-- native-variant-dependencies -->
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lsp</depends>

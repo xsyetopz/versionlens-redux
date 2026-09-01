@@ -160,6 +160,8 @@ try {
     { env: gradleEnvironment },
   );
   run(["bun", "scripts/package/zed.mjs"], { env: gradleEnvironment });
+  run(["bun", "scripts/package/neovim.mjs"], { env: gradleEnvironment });
+  run(["bun", "scripts/check/neovim.mjs"], { env: gradleEnvironment });
   run(
     [
       "./packages/jetbrains-plugin/gradlew",

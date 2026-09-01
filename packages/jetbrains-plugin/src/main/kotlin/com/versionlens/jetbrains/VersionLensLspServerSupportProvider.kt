@@ -6,6 +6,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspIntegrationProvider
 import com.intellij.platform.lsp.api.ProjectWideLspClientDescriptor
+import java.io.IOException
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -23,7 +25,7 @@ internal class VersionLensLspServerSupportProvider : LspIntegrationProvider {
     }
 }
 
-private class VersionLensLspServerDescriptor(
+internal class VersionLensLspServerDescriptor(
     private val currentProject: Project,
 ) : ProjectWideLspClientDescriptor(currentProject, SERVER_NAME) {
     override fun isSupportedFile(file: VirtualFile): Boolean = supports(file)
@@ -41,6 +43,7 @@ private class VersionLensLspServerDescriptor(
             return environmentPath
         }
 
+        installedPluginServerPath()?.let { return it }
         bundledServerPath()?.let { return it }
 
         val basePath = currentProject.basePath
@@ -54,30 +57,81 @@ private class VersionLensLspServerDescriptor(
         return SERVER_BINARY
     }
 
+    private fun installedPluginServerPath(): String? {
+        val codeSource = VersionLensLspServerSupportProvider::class.java.protectionDomain
+            .codeSource?.location ?: return null
+        return try {
+            val location = Path.of(codeSource.toURI())
+            val pluginDirectory = pluginDirectoryForCodeSource(location) ?: return null
+            val binary = pluginDirectory.resolve("bin").resolve(SERVER_BINARY)
+            if (!Files.isRegularFile(binary)) {
+                null
+            } else if (isWindows || Files.isExecutable(binary)) {
+                binary.toString()
+            } else {
+                Files.newInputStream(binary).use(::materializeServer)
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     companion object {
         private const val SERVER_NAME = "VersionLens Redux"
+        private val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
         private val SERVER_BINARY =
-            if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+            if (isWindows) {
                 "versionlens-lsp.exe"
             } else {
                 "versionlens-lsp"
             }
 
-        @Synchronized
+        internal fun pluginDirectoryForCodeSource(location: Path): Path? {
+            val container = if (Files.isDirectory(location)) location else location.parent
+            return if (container?.fileName?.toString() == "lib") container.parent else container
+        }
+
         private fun bundledServerPath(): String? {
             val resource = VersionLensLspServerSupportProvider::class.java
                 .getResourceAsStream("/bin/$SERVER_BINARY") ?: return null
-            val directory = Path.of(PathManager.getSystemPath(), "versionlens-redux", "bin")
-            Files.createDirectories(directory)
-            val binary = directory.resolve(SERVER_BINARY)
-            resource.use {
-                Files.copy(it, binary, StandardCopyOption.REPLACE_EXISTING)
-            }
-            if (!binary.toFile().setExecutable(true)) {
-                return null
-            }
-            return binary.toString()
+            return resource.use(::materializeServer)
         }
+
+        @Synchronized
+        private fun materializeServer(resource: InputStream): String? {
+            val directory = Path.of(PathManager.getSystemPath(), "versionlens-redux", "bin")
+            val binary = directory.resolve(SERVER_BINARY)
+            return try {
+                Files.createDirectories(directory)
+                val temporary = Files.createTempFile(directory, "$SERVER_BINARY.", ".tmp")
+                try {
+                    Files.copy(resource, temporary, StandardCopyOption.REPLACE_EXISTING)
+                    if (!isWindows && !temporary.toFile().setExecutable(true)) {
+                        return null
+                    }
+                    try {
+                        Files.move(
+                            temporary,
+                            binary,
+                            StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.ATOMIC_MOVE,
+                        )
+                    } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+                        Files.move(temporary, binary, StandardCopyOption.REPLACE_EXISTING)
+                    }
+                } finally {
+                    Files.deleteIfExists(temporary)
+                }
+                if (!Files.isRegularFile(binary) || (!isWindows && !Files.isExecutable(binary))) {
+                    null
+                } else {
+                    binary.toString()
+                }
+            } catch (_: IOException) {
+                null
+            }
+        }
+
         private val supportedFileNames = setOf(
             "WORKSPACE",
             "MODULE.bazel",
@@ -148,16 +202,19 @@ private class VersionLensLspServerDescriptor(
             "cabal",
         )
 
-        fun supports(file: VirtualFile): Boolean {
-            val name = file.name
+        internal fun supportsFileName(name: String, extension: String?): Boolean {
             if (name in supportedFileNames) {
                 return true
             }
             val lowerName = name.lowercase(Locale.ROOT)
-            if (lowerName.startsWith("dockerfile")) {
+            if (lowerName == "dockerfile" || lowerName.startsWith("dockerfile.")) {
                 return true
             }
-            return file.extension?.lowercase(Locale.ROOT) in supportedExtensions
+            return extension?.lowercase(Locale.ROOT) in supportedExtensions
+        }
+
+        fun supports(file: VirtualFile): Boolean {
+            return supportsFileName(file.name, file.extension)
         }
     }
 }

@@ -20,12 +20,19 @@ const zedArtifact = join(
   "dist",
   `versionlens-redux-zed-extension-${platform}-${arch}.tar.gz`,
 );
+const neovimArtifact = join(
+  "dist",
+  `versionlens-redux-neovim-plugin-${platform}-${arch}.tar.gz`,
+);
+const jetbrainsPlatform =
+  platform === "darwin" ? "mac" : platform === "win32" ? "windows" : platform;
+const jetbrainsArchitecture = arch === "x64" ? "x86_64" : arch;
 const jetbrainsArtifact = join(
   "packages",
   "jetbrains-plugin",
   "build",
   "distributions",
-  `versionlens-jetbrains-plugin-${version}.zip`,
+  `versionlens-jetbrains-plugin-${version}-${jetbrainsPlatform}-${jetbrainsArchitecture}.zip`,
 );
 
 function run(command) {
@@ -80,6 +87,19 @@ requireMatchingBinary(
   zedArtifact,
 );
 
+const neovimBinary = `bin/${platform}-${arch}/${executableName}`;
+const neovimEntries = new TextDecoder().decode(
+  run(["tar", "-tzf", neovimArtifact]),
+);
+requireEntry(neovimEntries, neovimBinary, neovimArtifact);
+requireEntry(neovimEntries, "lua/versionlens/init.lua", neovimArtifact);
+requireEntry(neovimEntries, "doc/versionlens.txt", neovimArtifact);
+requireMatchingBinary(
+  run(["tar", "-xOzf", neovimArtifact, neovimBinary]),
+  join("target", "release", executableName),
+  neovimArtifact,
+);
+
 const temporaryDirectory = mkdtempSync(
   join(tmpdir(), "versionlens-jetbrains-"),
 );
@@ -87,26 +107,39 @@ try {
   const outerEntries = new TextDecoder().decode(
     run(["unzip", "-Z1", jetbrainsArtifact]),
   );
+  const pluginRoot = "versionlens-jetbrains-plugin";
   const pluginJar = outerEntries
     .split(linePattern)
     .find((entry) =>
-      entry.endsWith(`/lib/versionlens-jetbrains-plugin-${version}.jar`),
+      entry.match(/\/lib\/versionlens-jetbrains-plugin-[^/]+\.jar$/u),
     );
   if (!pluginJar) {
     throw new Error(`${jetbrainsArtifact} does not contain the plugin JAR`);
   }
 
-  const jarPath = join(temporaryDirectory, "plugin.jar");
-  writeFileSync(jarPath, run(["unzip", "-p", jetbrainsArtifact, pluginJar]));
-  const jarEntries = new TextDecoder().decode(run(["unzip", "-Z1", jarPath]));
-  requireEntry(jarEntries, `bin/${executableName}`, jetbrainsArtifact);
+  const binaryEntry = `${pluginRoot}/bin/${executableName}`;
+  requireEntry(outerEntries, binaryEntry, jetbrainsArtifact);
   requireMatchingBinary(
-    run(["unzip", "-p", jarPath, `bin/${executableName}`]),
+    run(["unzip", "-p", jetbrainsArtifact, binaryEntry]),
     join("target", "release", executableName),
     jetbrainsArtifact,
   );
+
+  const jarPath = join(temporaryDirectory, "plugin.jar");
+  writeFileSync(jarPath, run(["unzip", "-p", jetbrainsArtifact, pluginJar]));
+  const descriptor = new TextDecoder().decode(
+    run(["unzip", "-p", jarPath, "META-INF/plugin.xml"]),
+  );
+  for (const module of [
+    `com.intellij.modules.os.${jetbrainsPlatform}`,
+    `com.intellij.modules.arch.${jetbrainsArchitecture}`,
+  ]) {
+    if (!descriptor.includes(`<depends>${module}</depends>`)) {
+      throw new Error(`${jetbrainsArtifact} does not declare ${module}`);
+    }
+  }
 } finally {
   rmSync(temporaryDirectory, { force: true, recursive: true });
 }
 
-console.log("Verified bundled runtimes in all three editor packages.");
+console.log("Verified bundled runtimes in all four editor packages.");

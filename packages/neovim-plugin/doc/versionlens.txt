@@ -1,0 +1,104 @@
+*versionlens.txt*   VersionLens Redux for Neovim
+
+==============================================================================
+CONTENTS                                                    *versionlens-contents*
+
+  1. Introduction ........................................ |versionlens-intro|
+  2. Installation ......................................... |versionlens-install|
+  3. Setup ................................................ |versionlens-setup|
+  4. Commands ............................................. |versionlens-commands|
+  5. Configuration ........................................ |versionlens-config|
+  6. Health ............................................... |versionlens-health|
+
+==============================================================================
+INTRODUCTION                                                   *versionlens-intro*
+
+VersionLens Redux displays dependency diagnostics and code lenses from the
+shared Rust `versionlens-lsp` server in supported manifest files.
+
+Requirements:
+
+- Neovim 0.10 or newer.
+- `versionlens-lsp` bundled with a release archive, installed on $PATH,
+selected through $VERSIONLENS_LSP, or supplied with `cmd`.
+
+==============================================================================
+INSTALLATION                                                 *versionlens-install*
+
+Download the release archive for the current platform and architecture, then
+extract it under a Neovim package directory such as:
+
+  $XDG_DATA_HOME/nvim/site/pack/versionlens/start/versionlens-redux
+
+The archive contains this plugin plus its matching language-server binary.
+For monorepo development, add packages/neovim-plugin to 'runtimepath'.
+
+==============================================================================
+SETUP                                                           *versionlens-setup*
+
+The plugin starts automatically with defaults. Plugin managers may call:
+
+>lua
+    require("versionlens").setup({})
+<
+
+Calling setup multiple times is safe. Set `g:versionlens_disable_auto_setup`
+to 1 before loading the plugin when setup must be entirely manager-controlled.
+
+==============================================================================
+COMMANDS                                                     *versionlens-commands*
+
+:VersionLensStart                                           *:VersionLensStart*
+    Start or attach VersionLens Redux to the current buffer.
+
+:VersionLensStop                                             *:VersionLensStop*
+    Stop VersionLens Redux clients attached to the current buffer.
+
+:VersionLensRestart                                       *:VersionLensRestart*
+    Restart VersionLens Redux for the current buffer.
+
+:VersionLensRefresh                                       *:VersionLensRefresh*
+    Refresh visible VersionLens code lenses.
+
+:VersionLensInfo                                             *:VersionLensInfo*
+    Show the selected language-server executable.
+
+==============================================================================
+CONFIGURATION                                                   *versionlens-config*
+
+>lua
+    require("versionlens").setup({
+      autostart = true,
+      cmd = nil,
+      codelens = {
+        enabled = true,
+        events = { "BufEnter", "InsertLeave" },
+      },
+      keymaps = {
+        refresh = nil,
+        restart = nil,
+      },
+      notify = true,
+      on_attach = nil,
+      root_dir = nil,
+      root_markers = {
+        ".git",
+        "Cargo.toml",
+        "package.json",
+        "pnpm-workspace.yaml",
+        "pyproject.toml",
+        "go.mod",
+      },
+    })
+<
+
+`cmd` accepts an executable string or argv-style list. Resolution order when
+it is nil: $VERSIONLENS_LSP, bundled platform binary, repository debug binary,
+then `versionlens-lsp` on $PATH.
+
+==============================================================================
+HEALTH                                                         *versionlens-health*
+
+Run `:checkhealth versionlens` to verify Neovim and language-server discovery.
+
+vim:tw=78:ts=8:noet:ft=help:norl:

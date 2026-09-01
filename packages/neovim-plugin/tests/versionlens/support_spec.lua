@@ -1,0 +1,20 @@
+local support = require("versionlens.support")
+
+describe("manifest support", function()
+  it("recognizes exact manifest names and Dockerfile variants", function()
+    assert.is_true(support.supports("/workspace/package.json"))
+    assert.is_true(support.supports("/workspace/Dockerfile.dev"))
+    assert.is_true(support.supports("C:\\workspace\\Cargo.toml"))
+  end)
+
+  it("recognizes supported extensions case-insensitively", function()
+    assert.is_true(support.supports("/workspace/Directory.Build.PROPS"))
+    assert.is_true(support.supports("/workspace/dependencies.TOML"))
+  end)
+
+  it("rejects unrelated files", function()
+    assert.is_false(support.supports("/workspace/README.md"))
+    assert.is_false(support.supports("/workspace/Dockerfilex"))
+    assert.is_false(support.supports(""))
+  end)
+end)

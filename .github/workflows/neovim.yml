@@ -1,0 +1,109 @@
+name: Neovim CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Neovim lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Lint with Selene
+        uses: NTBBloodbath/selene-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --config packages/neovim-plugin/selene.toml packages/neovim-plugin/lua packages/neovim-plugin/plugin packages/neovim-plugin/tests
+
+      - name: Check formatting with StyLua
+        uses: JohnnyMorganz/stylua-action@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --config-path packages/neovim-plugin/.stylua.toml --check packages/neovim-plugin/lua packages/neovim-plugin/plugin packages/neovim-plugin/tests
+
+  test:
+    name: Neovim test (${{ matrix.neovim }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim:
+          - stable
+          - nightly
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Checkout plenary.nvim
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: nvim-lua/plenary.nvim
+          path: .deps/plenary.nvim
+
+      - name: Setup Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.neovim }}
+
+      - name: Run Plenary tests
+        run: make -C packages/neovim-plugin test
+
+  targets:
+    name: Neovim package targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+
+    steps:
+      - name: Define native targets
+        id: targets
+        shell: bash
+        run: echo 'matrix={"include":[{"editor_target":"linux-x64","rust_target":"x86_64-unknown-linux-gnu","platform":"linux","arch":"x64","runner":"ubuntu-latest"},{"editor_target":"linux-arm64","rust_target":"aarch64-unknown-linux-gnu","platform":"linux","arch":"arm64","runner":"ubuntu-24.04-arm"},{"editor_target":"darwin-x64","rust_target":"x86_64-apple-darwin","platform":"darwin","arch":"x64","runner":"macos-15-intel"},{"editor_target":"darwin-arm64","rust_target":"aarch64-apple-darwin","platform":"darwin","arch":"arm64","runner":"macos-15"},{"editor_target":"win32-x64","rust_target":"x86_64-pc-windows-msvc","platform":"win32","arch":"x64","runner":"windows-latest"},{"editor_target":"win32-arm64","rust_target":"aarch64-pc-windows-msvc","platform":"win32","arch":"arm64","runner":"windows-11-arm"}]}' >> "$GITHUB_OUTPUT"
+
+  package:
+    name: Neovim package (${{ matrix.editor_target }})
+    needs:
+      - lint
+      - test
+      - targets
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Build and package Neovim plugin
+        uses: ./.github/actions/package-lsp-editor
+        with:
+          arch: ${{ matrix.arch }}
+          package-script: scripts/package/neovim.mjs
+          platform: ${{ matrix.platform }}
+          rust-target: ${{ matrix.rust_target }}
+          scope: neovim
+
+      - name: Upload Neovim artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: versionlens-redux-neovim-plugin-${{ matrix.editor_target }}
+          path: dist/versionlens-redux-neovim-plugin-${{ matrix.editor_target }}.tar.gz
+          if-no-files-found: error

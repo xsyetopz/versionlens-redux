@@ -1,0 +1,47 @@
+name: Package LSP editor adapter
+description: Build the native language server and package one editor target.
+
+inputs:
+  arch:
+    description: Editor architecture name.
+    required: true
+  package-script:
+    description: Repository-relative Bun packaging script.
+    required: true
+  platform:
+    description: Editor platform name.
+    required: true
+  rust-target:
+    description: Rust target triple for the native language server.
+    required: true
+  scope:
+    description: Cargo cache scope.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun and Rust target
+      uses: ./.github/actions/setup-target
+      with:
+        target: ${{ inputs.rust-target }}
+
+    - name: Cache Cargo registry and target
+      uses: ./.github/actions/cache-cargo-target
+      with:
+        scope: ${{ inputs.scope }}
+
+    - name: Build native language server
+      shell: bash
+      env:
+        RUST_TARGET: ${{ inputs.rust-target }}
+      run: cargo build -p versionlens-lsp --release --locked --target "$RUST_TARGET"
+
+    - name: Package editor adapter
+      shell: bash
+      env:
+        EDITOR_ARCH: ${{ inputs.arch }}
+        EDITOR_PLATFORM: ${{ inputs.platform }}
+        PACKAGE_SCRIPT: ${{ inputs.package-script }}
+        RUST_TARGET: ${{ inputs.rust-target }}
+      run: bun "$PACKAGE_SCRIPT" "$EDITOR_PLATFORM" "$EDITOR_ARCH" "$RUST_TARGET"

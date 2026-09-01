@@ -15,6 +15,9 @@ const BUN_LOCK_REPLACEMENT_PATTERN =
 const ZED_CARGO_REPLACEMENT_PATTERN =
   /(?<prefix>name = "versionlens-zed-extension"\nversion = ")[^"]+(?<suffix>")/u;
 const VERSION_LINE_PATTERN = /^version = "[^"]+"$/mu;
+const NEOVIM_VERSION_PATTERN = /return "(?<version>[^"]+)"/u;
+const NEOVIM_VERSION_REPLACEMENT_PATTERN =
+  /(?<prefix>return ")[^"]+(?<suffix>")/u;
 
 const manifests = [
   [
@@ -36,6 +39,10 @@ const manifests = [
   [
     "packages/jetbrains-plugin/build.gradle.kts",
     /^version = "(?<version>[^"]+)"$/mu,
+  ],
+  [
+    "packages/neovim-plugin/lua/versionlens/version.lua",
+    NEOVIM_VERSION_PATTERN,
   ],
 ];
 
@@ -166,6 +173,11 @@ function applyPackageManifestUpdates(applyUpdate, replaceVersion, nextVersion) {
     "packages/jetbrains-plugin/build.gradle.kts",
     VERSION_LINE_PATTERN,
     `version = "${nextVersion}"`,
+  );
+  applyUpdate(
+    "packages/neovim-plugin/lua/versionlens/version.lua",
+    NEOVIM_VERSION_REPLACEMENT_PATTERN,
+    replaceVersion,
   );
 }
 
