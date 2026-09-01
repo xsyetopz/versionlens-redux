@@ -6,6 +6,42 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-01
+
+### Added
+
+- Added workspace-aware local package resolution for npm, Bun, pnpm, Yarn, and Cargo projects while keeping ambiguous or external packages on their existing registry paths.
+- Added validated multi-document workspace edit plans that preserve open-document text and reject stale, duplicate, or overlapping edits before applying coordinated package-version changes.
+- Added version lenses for additional versionable metadata, including package runtime engines, Cargo Rust toolchains, Kotlin Gradle plugins, and surfaced workspace or catalog references.
+- Added actionable downgrade lenses for every known older stable release, with a configurable downward indicator and existing prerelease visibility rules.
+- Added a production-ready Neovim plugin with automatic LSP startup, code-lens refresh, health checks, Plenary tests, platform-specific release archives, and stable/nightly CI coverage.
+
+### Changed
+
+- Made the shared Rust model the source of truth for dependency, project-version, runtime-constraint, workspace-reference, and ecosystem-handle classification across native and editor boundaries.
+- Made open workspace documents authoritative over stale on-disk manifests during local package discovery and coordinated edits.
+- Kept all Rust crates and VS Code, Zed, Neovim, and JetBrains packages aligned on version 0.4.0.
+- Made JetBrains release archives Marketplace-selectable by OS and architecture, added plugin icons and verifier metadata, and hardened native language-server extraction.
+
+### Fixed
+
+- Removed redundant latest-version actions when a dependency or accepted range already resolves to the true latest release.
+- Treated exact GitHub Action tags with `v` or `V` prefixes as current when they match the latest release, while preserving the prefix in displayed and applied version changes.
+- Kept selected lower versions actionable through the existing safe edit path instead of rejecting valid downgrades.
+- Completed the workspace and edit-plan boundary tests and architecture ownership required for the 0.4.0 release gates.
+
+## [0.3.0] - 2026-08-28
+
+### Added
+
+- Added GitHub Actions workflow and reusable-workflow version detection through repository tag lookups.
+- Added repository-owned capability and architecture audits for supported parsers, providers, native boundaries, and editor packages.
+
+### Changed
+
+- Split parser, provider, edit, suggestion, core-session, native, and editor responsibilities into explicit shared contracts and independently checked boundaries.
+- Centralized release version management, packaging helpers, toolchain setup, fixtures, and editor package validation.
+
 ## [0.2.0] - 2026-07-19
 
 ### Added
@@ -64,8 +100,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added Rust-backed dependency analysis across the supported manifest ecosystems, including C/C++ and JVM build files.
 - Preserved attribution to the original VersionLens authors.
 
-[Unreleased]: https://github.com/xsyetopz/vscode-versionlens/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/xsyetopz/vscode-versionlens/compare/v0.1.2...v0.2.0
-[0.1.2]: https://github.com/xsyetopz/vscode-versionlens/compare/0.1.1...v0.1.2
-[0.1.1]: https://github.com/xsyetopz/vscode-versionlens/compare/0.1.0...0.1.1
-[0.1.0]: https://github.com/xsyetopz/vscode-versionlens/releases/tag/0.1.0
+[Unreleased]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.1.2...v0.2.0
+[0.1.2]: https://github.com/xsyetopz/versionlens-redux/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/xsyetopz/versionlens-redux/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/xsyetopz/versionlens-redux/releases/tag/v0.1.0

@@ -1,9 +1,10 @@
 # VersionLens Redux
 
-VersionLens Redux shows dependency version information in editor manifests using a Rust core shared by VS Code, Zed, and JetBrains adapters.
+VersionLens Redux shows dependency version information in editor manifests using a Rust core shared by VS Code, Zed, Neovim, and JetBrains adapters.
 
 [![VS Code CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml)
 [![Zed CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/zed.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/zed.yml)
+[![Neovim CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/neovim.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/neovim.yml)
 [![JetBrains CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/jetbrains.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/jetbrains.yml)
 [![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
@@ -18,6 +19,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 | `crates/` | Rust workspace crates for parsing, provider selection, version semantics, suggestions, text edits, HTTP, N-API, and LSP. |
 | `packages/vscode-extension/` | VS Code extension package, manifest, TypeScript adapter, native module packaging, and marketplace README. |
 | `packages/zed-extension/` | Zed extension that starts the shared `versionlens-lsp` server. |
+| `packages/neovim-plugin/` | Neovim plugin that starts the shared `versionlens-lsp` server. |
 | `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
 | `assets/versionlens/` | Shared icons, logo, and README media reused by editor packages. |
 | `scripts/` | Repository checks, build scripts, parity checks, and packaging guards. |
@@ -29,6 +31,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 | --- | --- | --- |
 | VS Code | [`packages/vscode-extension/README.md`](packages/vscode-extension/README.md) | TypeScript adapter + `versionlens-napi` native module |
 | Zed | [`packages/zed-extension/README.md`](packages/zed-extension/README.md) | Shared `versionlens-lsp` binary |
+| Neovim | [`packages/neovim-plugin/README.md`](packages/neovim-plugin/README.md) | Lua adapter + shared `versionlens-lsp` binary |
 | JetBrains | [`packages/jetbrains-plugin/README.md`](packages/jetbrains-plugin/README.md) | Shared `versionlens-lsp` binary through the IntelliJ Platform LSP API |
 
 ## Requirements
@@ -53,7 +56,7 @@ cargo build -p versionlens-lsp # build the shared LSP server
 bun run typecheck             # TypeScript checks
 cargo test --workspace        # Rust tests
 bun run package               # build a local VSIX
-bun run package:editors       # build VS Code, Zed, and JetBrains packages with bundled runtimes
+bun run package:editors       # build all editor packages with bundled runtimes
 bun run check                 # full repository validation
 ```
 
