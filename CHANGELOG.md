@@ -20,6 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Made Marketplace secret setup resumable and preflighted, preserving existing secrets by default, validating all selected values before updates, and expanding home-relative signing file paths.
 - Limited dependency downgrade lenses to the nearest older stable release so version history does not overwhelm each dependency line.
 - Resolved both annotated-tag object SHAs and peeled commit SHAs for immutable GitHub Action pins, including Azure Login releases.
 

@@ -1,8 +1,132 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
+
+import { expandUserPath, readSecretFile } from "./configure-marketplaces.mjs";
 
 const { expect, it } = Bun.jest(import.meta.path);
+
+function fakeGitHubCli(directory) {
+  const binaryDirectory = join(directory, "bin");
+  const windows = process.platform === "win32";
+  const binary = join(binaryDirectory, windows ? "gh.cmd" : "gh");
+  mkdirSync(binaryDirectory, { recursive: true });
+  const source = windows
+    ? `@echo off
+echo %*>>"%GH_LOG%"
+if "%1"=="--version" echo gh version test
+if "%1"=="secret" if "%2"=="list" echo %GH_EXISTING%
+if "%1"=="secret" if "%2"=="set" more > nul
+exit /b 0
+`
+    : `#!/bin/sh
+printf '%s\\n' "$*" >> "$GH_LOG"
+if [ "$1" = "--version" ]; then
+  echo "gh version test"
+elif [ "$1" = "secret" ] && [ "$2" = "list" ]; then
+  printf '%s\\n' "$GH_EXISTING"
+elif [ "$1" = "secret" ] && [ "$2" = "set" ]; then
+  cat >/dev/null
+fi
+`;
+  writeFileSync(binary, source);
+  if (!windows) {
+    chmodSync(binary, 0o755);
+  }
+  return binaryDirectory;
+}
+
+function configureWithFakeGitHub(directory, input, existing = "") {
+  const log = join(directory, "gh.log");
+  const binaryDirectory = fakeGitHubCli(directory);
+  const result = Bun.spawnSync(
+    [
+      "bun",
+      "scripts/release/configure-marketplaces.mjs",
+      "--repo",
+      "xsyetopz/versionlens-redux",
+      "--only",
+      "jetbrains",
+    ],
+    {
+      env: {
+        ...Bun.env,
+        GH_EXISTING: existing,
+        GH_LOG: log,
+        PATH: `${binaryDirectory}${delimiter}${Bun.env.PATH ?? ""}`,
+      },
+      stdin: new TextEncoder().encode(input),
+    },
+  );
+  return { log: readFileSync(log, "utf8"), result };
+}
+
+it("expands home-relative secret file paths before reading them", () => {
+  const home = mkdtempSync(join(tmpdir(), "versionlens-marketplace-home-"));
+  try {
+    const directory = join(home, ".config", "jetbrains-signing");
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(join(directory, "chain.crt"), "certificate-chain");
+    const path = expandUserPath("~/.config/jetbrains-signing/chain.crt", home);
+    const secret = readSecretFile(
+      "~/.config/jetbrains-signing/chain.crt",
+      home,
+    );
+    expect(path).toBe(join(directory, "chain.crt"));
+    expect(secret.path).toBe(path);
+    expect(secret.contents.toString()).toBe("certificate-chain");
+  } finally {
+    rmSync(home, { force: true, recursive: true });
+  }
+});
+
+it("validates every selected value before writing any secret", () => {
+  const directory = mkdtempSync(
+    join(tmpdir(), "versionlens-marketplace-preflight-"),
+  );
+  try {
+    const { log, result } = configureWithFakeGitHub(
+      directory,
+      "token-value\n/definitely/missing/chain.crt\n",
+    );
+    expect(result.exitCode).toBe(1);
+    expect(log).toContain("secret list");
+    expect(log).not.toContain("secret set");
+  } finally {
+    rmSync(directory, { force: true, recursive: true });
+  }
+});
+
+it("keeps existing secrets by default when resuming configuration", () => {
+  const directory = mkdtempSync(
+    join(tmpdir(), "versionlens-marketplace-resume-"),
+  );
+  try {
+    const chain = join(directory, "chain.crt");
+    const key = join(directory, "private-key.pem");
+    writeFileSync(chain, "certificate-chain");
+    writeFileSync(key, "private-key");
+    const { log, result } = configureWithFakeGitHub(
+      directory,
+      `\n${chain}\n${key}\npassword\n`,
+      "JETBRAINS_MARKETPLACE_TOKEN",
+    );
+    expect(result.exitCode).toBe(0);
+    expect(log).not.toContain("secret set JETBRAINS_MARKETPLACE_TOKEN");
+    expect(log).toContain("secret set JB_CERTIFICATE_CHAIN");
+    expect(log).toContain("secret set JB_PRIVATE_KEY");
+    expect(log).toContain("secret set JB_PRIVATE_KEY_PASSWORD");
+  } finally {
+    rmSync(directory, { force: true, recursive: true });
+  }
+});
 
 it("lists every required marketplace secret without making hosted changes", () => {
   const result = Bun.spawnSync([
@@ -28,6 +152,40 @@ it("lists every required marketplace secret without making hosted changes", () =
   ]) {
     expect(output).toContain(`marketplaces: ${name}`);
   }
+});
+
+it("allows unavailable marketplaces to be skipped", () => {
+  const result = Bun.spawnSync([
+    "bun",
+    "scripts/release/configure-marketplaces.mjs",
+    "--dry-run",
+    "--repo",
+    "xsyetopz/versionlens-redux",
+    "--only",
+    "zed",
+  ]);
+  expect(result.exitCode).toBe(0);
+  const output = result.stdout.toString();
+  expect(output).toContain("Selected marketplaces: zed");
+  expect(output).toContain("marketplaces: ZED_EXTENSIONS_FORK");
+  expect(output).toContain("marketplaces: ZED_EXTENSIONS_TOKEN");
+  expect(output).not.toContain("AZURE_CLIENT_ID");
+  expect(output).not.toContain("JETBRAINS_MARKETPLACE_TOKEN");
+  expect(output).not.toContain("LUAROCKS_API_KEY");
+});
+
+it("rejects unknown marketplace selections", () => {
+  const result = Bun.spawnSync([
+    "bun",
+    "scripts/release/configure-marketplaces.mjs",
+    "--dry-run",
+    "--repo",
+    "xsyetopz/versionlens-redux",
+    "--only",
+    "unknown",
+  ]);
+  expect(result.exitCode).toBe(1);
+  expect(result.stderr.toString()).toContain("unknown marketplace unknown");
 });
 
 it("adds and updates the VersionLens Zed registry entry", () => {

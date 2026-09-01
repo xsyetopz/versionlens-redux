@@ -23,6 +23,14 @@ bun run marketplaces:configure
 
 The command creates or reuses the `marketplaces` GitHub environment, prompts for every required value, and sends values directly to GitHub CLI. It does not create a local `.env` file or print secret values.
 
+The command first asks which destinations are ready. Answer `no` to skip any provider whose account, identity, token, or signing material is not available yet; rerun the command later to configure that destination without replacing unrelated secrets. For a non-interactive selection, pass a comma-separated list such as:
+
+```bash
+bun run marketplaces:configure -- --only vscode,zed
+```
+
+Configuration is resumable and preflighted. Existing environment secret names are detected and kept by default, `~` is expanded in certificate and key paths, and every selected value and file is collected and validated before any secret is updated. If input validation fails or the command is interrupted during collection, previously configured GitHub secrets remain unchanged. If a GitHub update itself fails, rerun the command: successfully written secret names are detected and skipped by default.
+
 It configures:
 
 | Destination | GitHub environment secrets |
