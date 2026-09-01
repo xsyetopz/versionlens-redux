@@ -751,11 +751,11 @@ checksum = "b8c0a043c9540bae7c578c88f91dda8bd82e59ae27c21baca69c8b191aaf5a6e"
 
 [[package]]
 name = "versionlens-cache"
-version = "0.4.0"
+version = "0.4.1"
 
 [[package]]
 name = "versionlens-core"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "semver",
@@ -776,7 +776,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-edits"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "semver",
  "serde_json",
@@ -789,7 +789,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-http"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-lsp"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "lsp-server",
@@ -813,14 +813,14 @@ dependencies = [
 
 [[package]]
 name = "versionlens-model"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "versionlens-napi"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "napi",
  "napi-build",
@@ -834,7 +834,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-parsers"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "jsonc-parser",
@@ -850,7 +850,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-providers"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "quick-xml",
  "semver",
@@ -862,7 +862,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-suggestions"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "semver",
  "serde",
@@ -872,18 +872,18 @@ dependencies = [
 
 [[package]]
 name = "versionlens-test-support"
-version = "0.4.0"
+version = "0.4.1"
 
 [[package]]
 name = "versionlens-versions"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "semver",
 ]
 
 [[package]]
 name = "versionlens-vscode-model"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "serde",
  "versionlens-model",

@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-01
+
+### Added
+
+- Added approval-gated Marketplace publishing for VS Code, JetBrains IDEs, Zed, and Neovim through GitHub Actions, plus an interactive command that stores every required publishing value as a GitHub environment secret.
+- Added LuaRocks packaging for the Neovim plugin and automated Zed registry pull-request creation for new and updated releases.
+
+### Changed
+
+- Kept all Rust crates and VS Code, Zed, Neovim, and JetBrains packages aligned on version 0.4.1.
+- Made the Zed registry extension download the matching language-server archive from its exact GitHub release and licensed the Zed extension code under the registry-supported MIT license while leaving the rest of the repository under ISC.
+
+### Fixed
+
+- Limited dependency downgrade lenses to the nearest older stable release so version history does not overwhelm each dependency line.
+- Resolved both annotated-tag object SHAs and peeled commit SHAs for immutable GitHub Action pins, including Azure Login releases.
+
 ## [0.4.0] - 2026-09-01
 
 ### Added
