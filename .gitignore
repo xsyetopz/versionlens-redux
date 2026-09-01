@@ -1,5 +1,6 @@
 target/
 node_modules/
+.gradle/
 dist/
 *.node
 *.vsix
@@ -17,4 +18,3 @@ __pycache__/
 # env files
 *.env
 !*.env.example
-

@@ -36,19 +36,19 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/vscode-extension/tsconfig.json",
     "vscode:prepublish": "bun run native:build:release && bun run build",
     "native:build:release": "cargo build -p versionlens-napi --release --locked && bun scripts/package/native.mjs --release",
-    "check:duplication": "jscpd --threshold 0 --reporters console --no-tips .",
+    "check:duplication": "jscpd --threshold 0 --reporters console --no-tips --ignore '.agents/**' .",
     "check:architecture-capabilities": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/providers.py capabilities --root . --format json",
     "test:architecture": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts python3 -m unittest discover -s scripts/architecture_audit/tests -q",
     "check:architecture": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/audit_architecture.py . --format json"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.4",
+    "@biomejs/biome": "^2.5.11",
     "@types/bun": "^1.4.0",
     "@types/node": "26.4.0",
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^3.9.2",
     "typescript": "^7.0.2",
-    "jscpd": "^5.0.16"
+    "jscpd": "^5.1.1"
   },
   "trustedDependencies": [
     "@biomejs/biome",

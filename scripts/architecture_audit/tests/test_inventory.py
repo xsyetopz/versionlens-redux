@@ -21,13 +21,19 @@ class AuditCliInventoryTests(AuditFixture, unittest.TestCase):
             case_root = Path(case_dir)
             run = self.init_git_case(case_root)
             (case_root / "src").mkdir()
-            (case_root / "src/head.ts").write_text("export const head = 1;\n", encoding="utf-8")
+            (case_root / "src/head.ts").write_text(
+                "export const head = 1;\n", encoding="utf-8"
+            )
             run("add", "src/head.ts")
             run("commit", "-qm", "baseline")
             (case_root / "src/head.ts").unlink()
-            (case_root / "src/staged.ts").write_text("export const staged = 1;\n", encoding="utf-8")
+            (case_root / "src/staged.ts").write_text(
+                "export const staged = 1;\n", encoding="utf-8"
+            )
             run("add", "src/staged.ts")
-            (case_root / "src/untracked.ts").write_text("export const untracked = 1;\n", encoding="utf-8")
+            (case_root / "src/untracked.ts").write_text(
+                "export const untracked = 1;\n", encoding="utf-8"
+            )
             paths = {
                 path.relative_to(case_root.absolute()).as_posix()
                 for path in iter_audited_files(case_root)
@@ -85,6 +91,22 @@ class AuditCliInventoryTests(AuditFixture, unittest.TestCase):
                 for path in iter_audited_files(case_root)
             }
             self.assertIn("node_modules/owned/tracked.ts", paths)
+
+    def test_agent_skill_sources_are_tooling_not_product_architecture(self) -> None:
+        with tempfile.TemporaryDirectory() as case_dir:
+            case_root = Path(case_dir)
+            run = self.init_git_case(case_root)
+            skill = case_root / ".agents/skills/example/SampleService.kt"
+            skill.parent.mkdir(parents=True)
+            skill.write_text("class SampleService\n", encoding="utf-8")
+            run("add", ".")
+            run("commit", "-qm", "baseline")
+
+            paths = {
+                path.relative_to(case_root.absolute()).as_posix()
+                for path in iter_audited_files(case_root)
+            }
+            self.assertNotIn(".agents/skills/example/SampleService.kt", paths)
 
     def test_tracked_broken_symlink_remains_inventoried(self) -> None:
         with tempfile.TemporaryDirectory() as case_dir:

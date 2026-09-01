@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import fnmatch
 import os
+import fnmatch
 import re
 import subprocess
 from collections.abc import Iterable, Sequence
@@ -45,6 +45,7 @@ OUTPUT_DIRECTORIES = {
     "tmp",
     ".tmp",
 }
+TOOLING_DIRECTORIES = frozenset({".agents"})
 
 
 class GitInventoryError(RuntimeError):
@@ -110,6 +111,8 @@ def _is_nested_repository(path: Path, root: Path) -> bool:
 
 
 def _is_architecture_candidate(path: Path) -> bool:
+    if any(part.lower() in TOOLING_DIRECTORIES for part in path.parts):
+        return False
     name = path.name
     extensionless_script = False
     if not path.suffix:
@@ -520,7 +523,17 @@ TRANSIENT_METADATA_DIRECTORIES = frozenset(
         "test-results",
     }
 )
-PRESERVED_DIRECTORIES = frozenset({".codegraph", ".git", "node_modules", "target"})
+PRESERVED_DIRECTORIES = frozenset(
+    {".agents", ".codegraph", ".git", "node_modules", "target"}
+)
+# Explicitly reviewed user/tool-owned trees. They are intentionally preserved
+# and must not be generalized into a blanket transient-directory exemption.
+PRESERVED_TRANSIENT_PATHS = frozenset(
+    {
+        "packages/jetbrains-plugin/.gradle",
+        "tests/fixtures/session/commands/sort/.gradle",
+    }
+)
 
 
 def transient_findings(root: Path) -> list[Finding]:
@@ -538,6 +551,8 @@ def transient_findings(root: Path) -> list[Finding]:
                 continue
             path = base / name
             if name in TRANSIENT_METADATA_DIRECTORIES:
+                if path.relative_to(root).as_posix() in PRESERVED_TRANSIENT_PATHS:
+                    continue
                 findings.append(
                     Finding(
                         "error",
