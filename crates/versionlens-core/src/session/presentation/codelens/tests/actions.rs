@@ -73,26 +73,18 @@ fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
 
     assert_eq!(
         titles,
-        [
-            "L latest 3.0.0",
-            "D downgrade 1.0.0",
-            "D downgrade 2.0.0",
-            "D downgrade 2.1.0",
-            "B change build"
-        ]
+        ["L latest 3.0.0", "D downgrade 2.1.0", "B change build"]
     );
     assert_eq!(
         commands,
         [
             "",
             "versionlens.suggestion.onUpdateDependency",
-            "versionlens.suggestion.onUpdateDependency",
-            "versionlens.suggestion.onUpdateDependency",
             "versionlens.suggestion.onChooseBuild"
         ]
     );
     assert_eq!(
-        &output.code_lenses[4].arguments[1..],
+        &output.code_lenses[2].arguments[1..],
         ["left-pad", "3.0.0", "3.0.0", "3.0.0+b1", "3.0.0+b2"]
     );
 }
@@ -109,26 +101,18 @@ fn build_code_lens_keeps_latest_status_when_current_build_differs_from_latest_bu
 
     assert_eq!(
         titles,
-        [
-            "L latest 3.0.0+b1",
-            "D downgrade 1.0.0",
-            "D downgrade 2.0.0",
-            "D downgrade 2.1.0",
-            "B change build"
-        ]
+        ["L latest 3.0.0+b1", "D downgrade 2.1.0", "B change build"]
     );
     assert_eq!(
         commands,
         [
             "",
             "versionlens.suggestion.onUpdateDependency",
-            "versionlens.suggestion.onUpdateDependency",
-            "versionlens.suggestion.onUpdateDependency",
             "versionlens.suggestion.onChooseBuild"
         ]
     );
     assert_eq!(
-        &output.code_lenses[4].arguments[1..],
+        &output.code_lenses[2].arguments[1..],
         ["left-pad", "3.0.0+b1", "3.0.0", "3.0.0+b1", "3.0.0+b2"]
     );
 }

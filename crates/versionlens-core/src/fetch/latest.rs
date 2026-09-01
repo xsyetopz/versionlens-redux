@@ -5,8 +5,8 @@ use semver::Version;
 use serde_json::Value;
 use versionlens_model::{CanonicalReference, Dependency};
 use versionlens_providers::{
-    RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
-    release_versions_from_response_for_package,
+    RegistryEndpoint, build_versions_from_response, github_tag_ref_url,
+    release_versions_from_response_for_endpoint, release_versions_from_response_for_package,
 };
 use versionlens_suggestions::{
     UpdateChoice, push_unique_choice, release_update_choices_with_prereleases,
@@ -138,11 +138,10 @@ fn github_action_reference_is_proven(reference: &CanonicalReference, body: &str)
     match reference {
         CanonicalReference::GitHubActionSha { commit, tag, .. } => tags.into_iter().any(|entry| {
             entry.raw == *tag
-                && entry.commit.as_deref().is_some_and(|resolved| {
-                    resolved
-                        .get(..commit.len())
-                        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(commit))
-                })
+                && entry
+                    .commit
+                    .as_deref()
+                    .is_some_and(|resolved| sha_prefix_matches(commit, resolved))
         }),
         CanonicalReference::GitHubActionTag { tag } => {
             let Some((prefix, version)) = version_tag_parts(tag) else {
@@ -167,6 +166,35 @@ fn github_action_reference_is_proven(reference: &CanonicalReference, body: &str)
             })
         }
     }
+}
+
+fn github_action_reference_is_proven_by_exact_ref(
+    reference: &CanonicalReference,
+    body: &str,
+) -> bool {
+    let CanonicalReference::GitHubActionSha { commit, tag, .. } = reference else {
+        return false;
+    };
+    let Ok(value) = from_str::<Value>(body) else {
+        return false;
+    };
+    let expected_ref = format!("refs/tags/{tag}");
+    let object = value.get("object");
+    value.get("ref").and_then(Value::as_str) == Some(expected_ref.as_str())
+        && object
+            .and_then(|object| object.get("type"))
+            .and_then(Value::as_str)
+            == Some("tag")
+        && object
+            .and_then(|object| object.get("sha"))
+            .and_then(Value::as_str)
+            .is_some_and(|resolved| sha_prefix_matches(commit, resolved))
+}
+
+fn sha_prefix_matches(expected: &str, resolved: &str) -> bool {
+    resolved
+        .get(..expected.len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(expected))
 }
 
 type UpdateChoices = Vec<UpdateChoice>;
@@ -228,7 +256,12 @@ impl VersionLensSession {
             });
         };
 
-        let latest = github_current_ref_is_proven(dependency, &body)
+        let current_ref_is_proven = if github_current_ref_is_proven(dependency, &body) {
+            true
+        } else {
+            self.fetch_exact_github_action_ref_is_proven(dependency, endpoint, context, operation)?
+        };
+        let latest = current_ref_is_proven
             .then(|| {
                 github_action_latest(
                     dependency,
@@ -261,6 +294,37 @@ impl VersionLensSession {
             ),
             choices,
         })
+    }
+
+    fn fetch_exact_github_action_ref_is_proven(
+        &self,
+        dependency: &Dependency,
+        endpoint: &RegistryEndpoint,
+        context: &RegistryContext,
+        operation: &OperationContext,
+    ) -> Result<bool, FetchError> {
+        let Some(reference @ CanonicalReference::GitHubActionSha { tag, .. }) =
+            dependency.canonical_reference.as_ref()
+        else {
+            return Ok(false);
+        };
+        let Some(url) = github_tag_ref_url(&endpoint.url, tag) else {
+            return Ok(false);
+        };
+        let body = match self.get_text_or_status_with_context(
+            &url,
+            dependency.ecosystem,
+            context,
+            operation,
+        ) {
+            Ok(Some(body)) => body,
+            Ok(None) => return Ok(false),
+            Err(FetchError::RegistryStatus(status)) if status == "not found" => return Ok(false),
+            Err(error) => return Err(error),
+        };
+        Ok(github_action_reference_is_proven_by_exact_ref(
+            reference, &body,
+        ))
     }
 }
 

@@ -142,20 +142,13 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
         titles,
         [
             "🟢 latest 3.0.0",
-            "↓  downgrade 1.0.0",
-            "↓  downgrade 2.0.0",
             "↓  downgrade 2.1.0",
             "↑  next 4.0.0-next"
         ]
     );
     assert_eq!(
         arguments,
-        [
-            vec!["update", "1.0.0"],
-            vec!["update", "2.0.0"],
-            vec!["update", "2.1.0"],
-            vec!["update", "4.0.0-next"]
-        ]
+        [vec!["update", "2.1.0"], vec!["update", "4.0.0-next"]]
     );
 }
 

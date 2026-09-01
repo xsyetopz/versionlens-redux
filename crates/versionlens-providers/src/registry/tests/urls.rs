@@ -1,3 +1,27 @@
+use crate::github_tag_ref_url;
+
+#[test]
+fn github_tag_ref_urls_preserve_namespaces_and_encode_path_segments() {
+    assert_eq!(
+        github_tag_ref_url(
+            "https://api.github.com/repos/actions/checkout/tags",
+            "release/action-v2.3.0"
+        )
+        .as_deref(),
+        Some("https://api.github.com/repos/actions/checkout/git/ref/tags/release/action-v2.3.0")
+    );
+    assert_eq!(
+        github_tag_ref_url(
+            "https://github.example.test/api/repos/owner/action/tags",
+            "release candidate/v2"
+        )
+        .as_deref(),
+        Some(
+            "https://github.example.test/api/repos/owner/action/git/ref/tags/release%20candidate/v2"
+        )
+    );
+}
+
 #[test]
 #[expect(
     clippy::too_many_lines,

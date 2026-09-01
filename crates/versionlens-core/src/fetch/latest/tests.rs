@@ -1,8 +1,9 @@
+use versionlens_model::CanonicalReference;
 use versionlens_model::DocumentInput;
 use versionlens_model::{Dependency, Ecosystem};
 use versionlens_model::{Position, Range};
 
-use super::response_update_choices;
+use super::{github_action_reference_is_proven_by_exact_ref, response_update_choices};
 use crate::{ProviderSettings, RegistryUrlConfig};
 use versionlens_model::Ecosystem::*;
 
@@ -70,6 +71,52 @@ fn composer_update_choices_exclude_versions_from_other_packages() {
             .collect::<Vec<_>>(),
         ["1.1.0"]
     );
+}
+
+#[test]
+fn annotated_github_tag_object_sha_proves_the_exact_action_ref() {
+    let reference = CanonicalReference::GitHubActionSha {
+        commit: "8216e11d8cd9b42fe925c852af8e76311ff067ac".to_owned(),
+        tag: "v2".to_owned(),
+        separator: " # ".to_owned(),
+    };
+    let body = r#"{
+      "ref": "refs/tags/v2",
+      "object": {
+        "type": "tag",
+        "sha": "8216e11d8cd9b42fe925c852af8e76311ff067ac"
+      }
+    }"#;
+
+    assert!(github_action_reference_is_proven_by_exact_ref(
+        &reference, body
+    ));
+}
+
+#[test]
+fn exact_github_ref_must_match_both_annotation_and_sha() {
+    let reference = CanonicalReference::GitHubActionSha {
+        commit: "8216e11".to_owned(),
+        tag: "v2".to_owned(),
+        separator: " # ".to_owned(),
+    };
+
+    assert!(!github_action_reference_is_proven_by_exact_ref(
+        &reference,
+        r#"{"ref":"refs/tags/v3","object":{"type":"tag","sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac"}}"#
+    ));
+    assert!(!github_action_reference_is_proven_by_exact_ref(
+        &reference,
+        r#"{"ref":"refs/tags/v2","object":{"type":"tag","sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#
+    ));
+    assert!(!github_action_reference_is_proven_by_exact_ref(
+        &reference,
+        r#"{"ref":"refs/tags/v2","object":{"type":"commit","sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac"}}"#
+    ));
+    assert!(!github_action_reference_is_proven_by_exact_ref(
+        &reference,
+        r#"{"ref":"refs/tags/v2","object":{"sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac"}}"#
+    ));
 }
 
 fn update_choice_dependency(name: &str, ecosystem: Ecosystem, group: &str) -> Dependency {

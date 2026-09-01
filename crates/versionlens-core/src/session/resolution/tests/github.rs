@@ -1,4 +1,49 @@
 use super::*;
+use std::io::{Read, Write};
+use std::thread::{JoinHandle, sleep, spawn};
+use std::time::{Duration, Instant};
+
+fn github_api_server(responses: Vec<(u16, &'static str)>) -> (String, JoinHandle<Vec<String>>) {
+    let listener = crate::support::tests::tcp_listener_bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let base_url = format!("http://{}/repos/", listener.local_addr().unwrap());
+    let server = spawn(move || {
+        let deadline = Instant::now() + Duration::from_secs(3);
+        let mut paths = vec![];
+        for (status, body) in responses {
+            let mut accepted = None;
+            while Instant::now() < deadline {
+                if let Ok(connection) = listener.accept() {
+                    accepted = Some(connection);
+                    break;
+                }
+                sleep(Duration::from_millis(5));
+            }
+            let Some((mut stream, _)) = accepted else {
+                break;
+            };
+            let mut request = [0_u8; 2048];
+            let length = stream.read(&mut request).unwrap();
+            let request = String::from_utf8_lossy(&request[..length]);
+            let path = request
+                .lines()
+                .next()
+                .and_then(|line| line.split_whitespace().nth(1))
+                .unwrap()
+                .to_owned();
+            let reason = if status == 200 { "OK" } else { "Not Found" };
+            let response = format!(
+                "HTTP/1.1 {status} {reason}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+            paths.push(path);
+        }
+        paths
+    });
+    (base_url, server)
+}
 
 fn resolve_github_fixture(
     fixture: &str,
@@ -118,6 +163,114 @@ fn sha_pinned_action_at_latest_has_no_redundant_latest_choice() {
             .iter()
             .any(|choice| choice.label == "downgrade" && choice.version == "6.0.0")
     );
+}
+
+#[test]
+fn concrete_azure_login_release_pin_resolves_as_current() {
+    let sha = "7ddb5af1ef8758cf1353cf3b42f940aee27ba21c";
+    let source = format!("steps:\n  - uses: azure/login@{sha} # v3.0.2\n");
+    let output = standard_session().resolve_document_with_responses(
+        DocumentInput::new(
+            "file:///work/.github/workflows/publish.yml".to_owned(),
+            "yaml".to_owned(),
+            source,
+            None,
+        ),
+        &[RegistryResponseInput::new(
+            "azure/login".to_owned(),
+            GitHub,
+            format!(
+                r#"[{{"name":"v3.0.2","commit":{{"sha":"{sha}"}}}},{{"name":"v3.0.1","commit":{{"sha":"f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca"}}}}]"#
+            ),
+        )],
+    );
+
+    assert!(output.edits.is_empty());
+    assert_eq!(output.suggestions[0].status, "current");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("3.0.2"));
+}
+
+#[test]
+fn annotated_azure_login_tag_object_pin_is_resolved_through_the_exact_ref() {
+    let (base_url, server) = github_api_server(vec![
+        (
+            200,
+            r#"[{"name":"v2","commit":{"sha":"7184910d9eb2b1c5e48f7073824a90609bb9b6d6"}}]"#,
+        ),
+        (
+            200,
+            r#"{"ref":"refs/tags/v2","object":{"type":"tag","sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac"}}"#,
+        ),
+    ]);
+
+    let session = crate::support::tests::session_with_provider_settings(
+        ProviderSettings {
+            registry_urls: vec![RegistryUrlConfig {
+                ecosystem: GitHub,
+                url: base_url,
+            }],
+            ..crate::default()
+        },
+        false,
+    );
+    let output = session.resolve_document(DocumentInput::new(
+        "file:///work/.github/workflows/publish.yml".to_owned(),
+        "yaml".to_owned(),
+        "steps:\n  - uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2\n".to_owned(),
+        None,
+    ));
+    let paths = server.join().unwrap();
+
+    assert_eq!(
+        paths,
+        [
+            "/repos/azure/login/tags",
+            "/repos/azure/login/git/ref/tags/v2"
+        ]
+    );
+    assert!(output.edits.is_empty());
+    assert_eq!(output.suggestions[0].status, "current");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("2"));
+}
+
+#[test]
+fn missing_exact_github_ref_keeps_a_sha_annotation_unproven_without_an_error() {
+    let (base_url, server) = github_api_server(vec![
+        (
+            200,
+            r#"[{"name":"v2","commit":{"sha":"7184910d9eb2b1c5e48f7073824a90609bb9b6d6"}}]"#,
+        ),
+        (404, r#"{"message":"Not Found"}"#),
+    ]);
+    let session = crate::support::tests::session_with_provider_settings(
+        ProviderSettings {
+            registry_urls: vec![RegistryUrlConfig {
+                ecosystem: GitHub,
+                url: base_url,
+            }],
+            ..crate::default()
+        },
+        false,
+    );
+
+    let output = session.resolve_document(DocumentInput::new(
+        "file:///work/.github/workflows/publish.yml".to_owned(),
+        "yaml".to_owned(),
+        "steps:\n  - uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # missing-v2\n"
+            .to_owned(),
+        None,
+    ));
+    let paths = server.join().unwrap();
+
+    assert_eq!(
+        paths,
+        [
+            "/repos/azure/login/tags",
+            "/repos/azure/login/git/ref/tags/missing-v2"
+        ]
+    );
+    assert!(output.edits.is_empty());
+    assert!(output.suggestions.iter().all(|item| item.status != "error"));
 }
 
 #[test]

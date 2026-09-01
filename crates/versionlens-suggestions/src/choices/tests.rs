@@ -154,10 +154,6 @@ fn release_update_choices_offer_bump_targets_for_ranges() {
     assert_eq!(
         labels,
         [
-            ("downgrade", "2.1.2", "update"),
-            ("downgrade", "3.0.0", "update"),
-            ("downgrade", "3.1.0", "update"),
-            ("downgrade", "4.0.0", "update"),
             ("downgrade", "4.0.1", "update"),
             ("bump", "4.1.10", "update"),
             ("version", "5.1.1", "update"),
@@ -195,18 +191,12 @@ fn release_update_choices_offer_intermediate_major_targets_for_ranges() {
 }
 
 #[test]
-fn release_update_choices_offer_every_older_stable_release_as_a_downgrade() {
+fn release_update_choices_offer_only_the_nearest_older_stable_release() {
     let releases = releases(&["1.0.0", "1.5.0", "2.0.0"]);
 
     let choices = release_update_choices("2.0.0", "2.0.0", &releases);
 
-    assert_eq!(
-        labels(&choices),
-        [
-            ("downgrade", "1.0.0", "update"),
-            ("downgrade", "1.5.0", "update")
-        ]
-    );
+    assert_eq!(labels(&choices), [("downgrade", "1.5.0", "update")]);
 }
 
 #[test]
@@ -215,13 +205,7 @@ fn release_update_choices_normalize_v_prefixes_and_never_offer_latest_as_a_noop(
 
     let choices = release_update_choices("v7.0.1", "v7.0.1", &releases);
 
-    assert_eq!(
-        labels(&choices),
-        [
-            ("downgrade", "v6.0.0", "update"),
-            ("downgrade", "v7.0.0", "update")
-        ]
-    );
+    assert_eq!(labels(&choices), [("downgrade", "v7.0.0", "update")]);
 }
 
 #[test]

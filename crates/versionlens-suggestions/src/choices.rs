@@ -55,7 +55,7 @@ fn stable_update_choices(requirement: &str, latest: &str, versions: &[String]) -
         return if versions.is_empty() { choices } else { vec![] };
     }
 
-    push_downgrade_choices(&mut choices, &current, &stable_versions, None);
+    push_downgrade_choice(&mut choices, &current, &stable_versions, None);
 
     if let Some(version) = next_major(&current, versions, &stable_versions) {
         push_unique_choice(&mut choices, "major", &version, "updateMajor");
@@ -102,7 +102,7 @@ fn range_update_choices(
     if let Some(version) = latest_satisfying_range(requirement, stable_versions) {
         if let Some(current) = parse_release_semver(&version) {
             let unchanged = minimum_version(requirement);
-            push_downgrade_choices(&mut choices, &current, stable_versions, unchanged.as_ref());
+            push_downgrade_choice(&mut choices, &current, stable_versions, unchanged.as_ref());
             if let Some(version) = next_range_major(&current, stable_versions) {
                 push_unique_choice(&mut choices, "major", &version, "updateMajor");
             }
@@ -170,18 +170,22 @@ fn range_target_update_is_useful(requirement: &str, target: &str) -> bool {
     release_precedence(&minimum) != release_precedence(&target)
 }
 
-fn push_downgrade_choices(
+fn push_downgrade_choice(
     choices: &mut UpdateChoices,
     current: &Version,
     stable_versions: &[(&str, Version)],
     unchanged: Option<&Version>,
 ) {
-    for (release, _version) in stable_versions.iter().filter(|(_, version)| {
-        release_precedence(version) < release_precedence(current)
-            && unchanged.is_none_or(|unchanged| {
-                release_precedence(version) != release_precedence(unchanged)
-            })
-    }) {
+    if let Some((release, _version)) = stable_versions
+        .iter()
+        .filter(|(_, version)| {
+            release_precedence(version) < release_precedence(current)
+                && unchanged.is_none_or(|unchanged| {
+                    release_precedence(version) != release_precedence(unchanged)
+                })
+        })
+        .max_by(|(_, left), (_, right)| left.cmp(right))
+    {
         push_unique_choice(choices, "downgrade", release, "update");
     }
 }

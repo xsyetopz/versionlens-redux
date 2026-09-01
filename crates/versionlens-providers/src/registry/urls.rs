@@ -42,6 +42,24 @@ pub use docker::{
 pub use dotnet::dotnet_package_url_from_service_index;
 pub use package::{ansible_role_registry_url_with_base, python_package_json_url_template};
 
+/// Build the exact Git ref endpoint corresponding to a GitHub tags endpoint.
+///
+/// The repository tags API peels annotated tags to their target commit. The
+/// exact ref endpoint retains the tag-object SHA, allowing callers to prove
+/// immutable pins that use either representation.
+pub fn github_tag_ref_url(tags_url: &str, tag: &str) -> Option<String> {
+    let base = tags_url.strip_suffix("/tags")?;
+    if tag.is_empty() {
+        return None;
+    }
+    let encoded_tag = tag
+        .split('/')
+        .map(encoding::encode_component)
+        .collect::<Vec<_>>()
+        .join("/");
+    Some(format!("{base}/git/ref/tags/{encoded_tag}"))
+}
+
 pub(super) fn trim_end_slash(value: &str) -> &str {
     value.trim_end_matches('/')
 }

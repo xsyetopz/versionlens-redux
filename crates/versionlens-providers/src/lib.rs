@@ -7,10 +7,10 @@ mod vulnerability;
 pub use registry::{
     RegistryEndpoint, RegistryResponseKind, ansible_role_registry_url_with_base,
     docker_hub_body_has_next_page, docker_hub_tags_page_url, dotnet_package_url_from_service_index,
-    is_composer_platform_dependency, is_registry_dependency, is_registry_requirement,
-    is_unsupported_dotnet_requirement, merge_docker_hub_response_pages, provider_id,
-    python_package_json_url_template, registry_endpoint, registry_endpoint_with_base, registry_url,
-    registry_url_with_base,
+    github_tag_ref_url, is_composer_platform_dependency, is_registry_dependency,
+    is_registry_requirement, is_unsupported_dotnet_requirement, merge_docker_hub_response_pages,
+    provider_id, python_package_json_url_template, registry_endpoint, registry_endpoint_with_base,
+    registry_url, registry_url_with_base,
 };
 pub use response::{
     LatestVersionRequest, RegistryErrorStatus, build_versions_from_response, docker_tag_exists,

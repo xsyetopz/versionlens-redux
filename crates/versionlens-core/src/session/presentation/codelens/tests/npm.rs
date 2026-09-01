@@ -30,18 +30,13 @@ fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
         titles,
         [
             "N no match",
-            "D downgrade 0.0.5",
             "D downgrade 0.0.6",
             "U latest prerelease 4.0.0-next"
         ]
     );
     assert_eq!(
         arguments,
-        [
-            vec!["update", "0.0.5"],
-            vec!["update", "0.0.6"],
-            vec!["update", "4.0.0-next"]
-        ]
+        [vec!["update", "0.0.6"], vec!["update", "4.0.0-next"]]
     );
 }
 

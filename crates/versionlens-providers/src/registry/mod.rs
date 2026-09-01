@@ -13,7 +13,7 @@ pub use endpoint::{
 };
 pub use urls::{
     ansible_role_registry_url_with_base, docker_hub_body_has_next_page, docker_hub_tags_page_url,
-    dotnet_package_url_from_service_index, merge_docker_hub_response_pages,
+    dotnet_package_url_from_service_index, github_tag_ref_url, merge_docker_hub_response_pages,
     python_package_json_url_template, registry_url, registry_url_with_base,
 };
 
