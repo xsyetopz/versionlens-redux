@@ -1,6 +1,8 @@
-use std::path::Path;
 use zed::settings::LspSettings;
-use zed_extension_api::{self as zed, LanguageServerId, Result, Worktree};
+use zed_extension_api::{
+    self as zed, Architecture, DownloadedFileType, LanguageServerId,
+    LanguageServerInstallationStatus, Os, Result, Worktree,
+};
 
 struct VersionLensExtension;
 
@@ -14,23 +16,48 @@ impl VersionLensExtension {
         }
     }
 
-    fn bundled_binary() -> Option<String> {
-        Self::existing_binary(Path::new("bin").join(Self::server_binary()))
+    fn release_target() -> Result<&'static str> {
+        match zed::current_platform() {
+            (Os::Linux, Architecture::X86) => Ok("linux-x64"),
+            (Os::Linux, Architecture::Aarch64) => Ok("linux-arm64"),
+            (Os::Mac, Architecture::X86) => Ok("darwin-x64"),
+            (Os::Mac, Architecture::Aarch64) => Ok("darwin-arm64"),
+            (Os::Windows, Architecture::X86) => Ok("win32-x64"),
+            (Os::Windows, Architecture::Aarch64) => Ok("win32-arm64"),
+            platform => Err(format!("unsupported Zed platform: {platform:?}")),
+        }
     }
 
-    fn repo_binary(worktree: &Worktree) -> Option<String> {
-        let root = worktree.root_path();
-        let binary = Path::new(&root)
-            .join("target/debug")
-            .join(Self::server_binary());
-        Self::existing_binary(binary)
-    }
+    fn release_binary(language_server_id: &LanguageServerId) -> Result<String> {
+        let version = env!("CARGO_PKG_VERSION");
+        let target = Self::release_target()?;
+        let install_directory = format!("versionlens-lsp-{version}-{target}");
+        let binary = format!("{install_directory}/bin/{}", Self::server_binary());
+        if std::fs::metadata(&binary).is_ok_and(|metadata| metadata.is_file()) {
+            return Ok(binary);
+        }
 
-    fn existing_binary(binary: impl AsRef<Path>) -> Option<String> {
-        let binary = binary.as_ref();
-        std::fs::metadata(&binary)
-            .is_ok_and(|metadata| metadata.is_file())
-            .then(|| binary.to_string_lossy().to_string())
+        zed::set_language_server_installation_status(
+            language_server_id,
+            &LanguageServerInstallationStatus::Downloading,
+        );
+        let tag = format!("v{version}");
+        let release = zed::github_release_by_tag_name("xsyetopz/versionlens-redux", &tag)?;
+        let asset_name = format!("versionlens-redux-zed-extension-{target}.tar.gz");
+        let asset = release
+            .assets
+            .iter()
+            .find(|asset| asset.name == asset_name)
+            .ok_or_else(|| format!("release {tag} does not contain {asset_name}"))?;
+        zed::download_file(
+            &asset.download_url,
+            &install_directory,
+            DownloadedFileType::GzipTar,
+        )?;
+        if zed::current_platform().0 != Os::Windows {
+            zed::make_file_executable(&binary)?;
+        }
+        Ok(binary)
     }
 
     fn server_path(language_server_id: &LanguageServerId, worktree: &Worktree) -> Result<String> {
@@ -38,19 +65,10 @@ impl VersionLensExtension {
         if let Some(binary) = settings.binary.and_then(|binary| binary.path) {
             return Ok(binary);
         }
-        if let Some(path) = Self::bundled_binary() {
-            return Ok(path);
-        }
         if let Some(path) = worktree.which(Self::server_binary()) {
             return Ok(path);
         }
-        if let Some(path) = Self::repo_binary(worktree) {
-            return Ok(path);
-        }
-        Err(format!(
-            "could not find '{}'. Build it with `cargo build -p versionlens-lsp` or set lsp.versionlens.binary.path in Zed settings.",
-            Self::server_binary()
-        ))
+        Self::release_binary(language_server_id)
     }
 }
 

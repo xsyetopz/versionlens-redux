@@ -8,6 +8,7 @@
   "scripts": {
     "build": "bun scripts/package/extension.mjs",
     "version:bump": "bun scripts/release/version.mjs",
+    "marketplaces:configure": "bun scripts/release/configure-marketplaces.mjs",
     "biome:check": "biome check --write --unsafe --max-diagnostics 16384",
     "biome:format": "biome format --write --max-diagnostics 16384",
     "biome:lint": "biome lint --write --max-diagnostics 16384",

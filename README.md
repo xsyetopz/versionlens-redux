@@ -57,10 +57,13 @@ bun run typecheck             # TypeScript checks
 cargo test --workspace        # Rust tests
 bun run package               # build a local VSIX
 bun run package:editors       # build all editor packages with bundled runtimes
+bun run marketplaces:configure # securely configure publishing secrets in GitHub
 bun run check                 # full repository validation
 ```
 
 `bun run check` covers Rust, TypeScript, package parity, workspace layout, adapter boundaries, VSIX freshness, source layout, and native tests. Use targeted scripts while iterating, then run the full check before committing broad changes.
+
+The release and Marketplace publication procedure is documented in [`docs/releasing.md`](docs/releasing.md). Publication is a separate, manually dispatched, approval-gated workflow and never runs for pull requests.
 
 ## Crates
 

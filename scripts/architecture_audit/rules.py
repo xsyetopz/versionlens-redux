@@ -344,6 +344,7 @@ RESERVED_FILES = {
     ".pyrightignore",
     ".rubocopignore",
     ".ruffignore",
+    ".stylua.toml",
     ".stylelintignore",
     ".swiftlintignore",
     ".tslintignore",
@@ -366,9 +367,13 @@ RESERVED_FILES = {
     "packages.lock.json",
     "podfile",
     "pyproject.toml",
+    "selene-tests.toml",
+    "selene.toml",
     "settings.gradle",
     "settings.xml",
     "skill.md",
+    "vim-test.yml",
+    "vim.yml",
 }
 RESERVED_PATTERNS = (
     "tsconfig*.json",

@@ -4,7 +4,7 @@ The Zed extension starts the shared `versionlens-lsp` server so Zed can show Ver
 
 ## Package
 
-- Extension id: `versionlens`
+- Extension id: `versionlens-lsp`
 - Display name: `VersionLens Redux`
 - Manifest: [`extension.toml`](extension.toml)
 - Runtime server: `crates/versionlens-lsp`
@@ -17,14 +17,13 @@ From the repository root:
 cargo build -p versionlens-lsp
 ```
 
-Direct-distribution packages are platform-specific and embed the matching release server binary. CI produces Linux x64/ARM64, macOS x64/ARM64, and Windows x64/ARM64 archives. The extension code resolves the server in this order:
+Direct-distribution packages are platform-specific and embed the matching release server binary. CI produces Linux x64/ARM64, macOS x64/ARM64, and Windows x64/ARM64 archives. The registry extension resolves the server in this order:
 
 1. `lsp.versionlens.binary.path` in Zed settings.
-2. Bundled `bin/versionlens-lsp`.
-3. `versionlens-lsp` on `PATH`.
-4. Repository-local debug binary at `target/debug/versionlens-lsp`.
+2. `versionlens-lsp` on `PATH`.
+3. The matching archive from the GitHub release whose tag equals the extension version.
 
-The Zed package carries the native language server selected by its platform and architecture arguments.
+The direct archive carries the native server selected by its platform and architecture arguments. The registry package itself does not bundle the server; Zed grants it narrowly scoped permission to download only VersionLens Redux GitHub release assets.
 
 ## Zed verification
 
@@ -36,7 +35,7 @@ cargo build --manifest-path packages/zed-extension/Cargo.toml --release --locked
 
 The repository-wide integration gate is `bun run check`.
 
-License information is maintained in [`../../LICENSE`](../../LICENSE).
+The Zed extension code uses the registry-supported [MIT license](LICENSE). The language server and the rest of the repository remain under [ISC](../../LICENSE).
 
 ## Attribution
 

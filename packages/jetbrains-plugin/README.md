@@ -42,7 +42,7 @@ The Gradle build embeds the platform-specific native LSP launcher selected by `v
 
 IntelliJ Platform 2026.1 (`sinceBuild` `261`) selects native compatibility through explicit
 OS/architecture module dependencies. Each native build is a separate Marketplace-selectable
-plugin variant; publishing is intentionally not performed by this project. The archive keeps
+plugin variant. The archive keeps
 `bin/<executable>` beside `lib/`, rather than embedding the server in the plugin JAR.
 
 The six supported target triples are:
@@ -81,9 +81,7 @@ x86_64-pc-windows-msvc    -> ...-windows-x86_64.zip
 aarch64-pc-windows-msvc   -> ...-windows-arm64.zip
 ```
 
-Marketplace signing and upload are configured but never run automatically. Supply
-`JB_CERTIFICATE_CHAIN`, `JB_PRIVATE_KEY`, and `JB_PRIVATE_KEY_PASSWORD` to sign a variant,
-or `JETBRAINS_MARKETPLACE_TOKEN` to publish one explicitly from its matching native runner.
+The manually dispatched Marketplace workflow builds, signs, and uploads every variant from its matching native runner. Run `bun run marketplaces:configure` once to store `JB_CERTIFICATE_CHAIN`, `JB_PRIVATE_KEY`, `JB_PRIVATE_KEY_PASSWORD`, and `JETBRAINS_MARKETPLACE_TOKEN` in the approval-gated GitHub environment. JetBrains requires the first plugin version to be uploaded manually before later versions can use automated publishing.
 
 ## Development checks
 

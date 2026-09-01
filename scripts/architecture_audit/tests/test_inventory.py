@@ -11,11 +11,31 @@ from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
 from architecture_audit.audit import audit_report
-from architecture_audit.discovery import GitInventoryError, iter_audited_files
+from architecture_audit.discovery import (
+    GitInventoryError,
+    artifact_class,
+    is_source_bearing,
+    iter_audited_files,
+)
 from architecture_audit.tests.test_support import AuditFixture
 
 
 class AuditCliInventoryTests(AuditFixture, unittest.TestCase):
+    def test_neovim_tool_configs_are_framework_metadata(self) -> None:
+        package = self.root / "packages/neovim-plugin"
+        package.mkdir(parents=True)
+        for name in (
+            ".stylua.toml",
+            "selene-tests.toml",
+            "selene.toml",
+            "vim-test.yml",
+            "vim.yml",
+        ):
+            path = package / name
+            path.write_text("configured = true\n", encoding="utf-8")
+            self.assertEqual(artifact_class(path, self.root), "framework")
+            self.assertFalse(is_source_bearing(path, self.root))
+
     def test_candidate_tree_overlays_head_with_staged_and_untracked_files(self) -> None:
         with tempfile.TemporaryDirectory() as case_dir:
             case_root = Path(case_dir)

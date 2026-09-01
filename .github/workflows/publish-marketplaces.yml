@@ -1,0 +1,270 @@
+name: Publish marketplaces
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Released SemVer version to publish
+        required: true
+        type: string
+      vscode:
+        description: Publish the platform VSIX set
+        default: true
+        type: boolean
+      jetbrains:
+        description: Publish all six native JetBrains variants
+        default: true
+        type: boolean
+      zed:
+        description: Open or update the Zed registry pull request
+        default: true
+        type: boolean
+      neovim:
+        description: Publish the Neovim plugin to LuaRocks
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplaces-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate released source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - &checkout_release
+        name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: v${{ inputs.version }}
+
+      - &setup_bun
+        name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Require synchronized version and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun scripts/release/version.mjs "$VERSION" --check
+          gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null
+
+  vscode:
+    name: VS Code Marketplace
+    if: inputs.vscode
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: marketplaces
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - *checkout_release
+
+      - &setup_node
+        name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24.20.0"
+
+      - *setup_bun
+
+      - name: Install locked publishing tool
+        run: bun install --frozen-lockfile
+
+      - name: Download released VSIX packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p release-assets
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'versionlens-redux-*.vsix' --dir release-assets
+          test "$(find release-assets -type f -name '*.vsix' | wc -l | tr -d ' ')" = 9
+
+      - name: Sign in to Microsoft Entra
+        uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c # v3.0.2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Publish released VSIX packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r package; do
+            bunx vsce publish --azure-credential --packagePath "$package"
+          done < <(find release-assets -type f -name '*.vsix' -print | sort)
+
+  jetbrains:
+    name: JetBrains Marketplace (${{ matrix.editor_target }})
+    if: inputs.jetbrains
+    needs: validate
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - editor_target: win32-arm64
+            rust_target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+          - editor_target: win32-x64
+            rust_target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - editor_target: darwin-arm64
+            rust_target: aarch64-apple-darwin
+            runner: macos-15
+          - editor_target: darwin-x64
+            rust_target: x86_64-apple-darwin
+            runner: macos-15-intel
+          - editor_target: linux-arm64
+            rust_target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - editor_target: linux-x64
+            rust_target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    environment: marketplaces
+    env:
+      GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
+      JB_CERTIFICATE_CHAIN: ${{ secrets.JB_CERTIFICATE_CHAIN }}
+      JB_PRIVATE_KEY: ${{ secrets.JB_PRIVATE_KEY }}
+      JB_PRIVATE_KEY_PASSWORD: ${{ secrets.JB_PRIVATE_KEY_PASSWORD }}
+      JETBRAINS_MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+
+    steps:
+      - *checkout_release
+
+      - name: Setup Rust target
+        uses: ./.github/actions/setup-rust
+        with:
+          target: ${{ matrix.rust_target }}
+
+      - name: Setup Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@67621b124fd2e251c5e8a0e6e3b91318f2287669 # v6.3.0
+
+      - name: Build, sign, and publish native variant
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin publishPlugin --no-daemon --stacktrace -PversionlensRustTarget="$RUST_TARGET"
+
+  zed:
+    name: Zed extension registry PR
+    if: inputs.zed
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: marketplaces
+
+    steps:
+      - *checkout_release
+
+      - *setup_node
+
+      - *setup_bun
+
+      - name: Open or update registry pull request
+        env:
+          GH_TOKEN: ${{ secrets.ZED_EXTENSIONS_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          ZED_EXTENSIONS_FORK: ${{ secrets.ZED_EXTENSIONS_FORK }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$ZED_EXTENSIONS_FORK" =~ ^[^/]+/extensions$ ]]; then
+            echo "ZED_EXTENSIONS_FORK must look like owner/extensions" >&2
+            exit 1
+          fi
+
+          owner=${ZED_EXTENSIONS_FORK%%/*}
+          branch="versionlens-lsp-v$VERSION"
+          gh repo clone "$ZED_EXTENSIONS_FORK" zed-registry
+          git -C zed-registry remote add upstream https://github.com/zed-industries/extensions.git
+          git -C zed-registry fetch upstream main
+          git -C zed-registry checkout -B "$branch" upstream/main
+
+          if git -C zed-registry ls-files --error-unmatch extensions/versionlens-lsp >/dev/null 2>&1; then
+            git -C zed-registry submodule update --init extensions/versionlens-lsp
+          else
+            git -C zed-registry submodule add \
+              "https://github.com/$GITHUB_REPOSITORY.git" \
+              extensions/versionlens-lsp
+          fi
+          git -C zed-registry/extensions/versionlens-lsp fetch origin "refs/tags/v$VERSION"
+          git -C zed-registry/extensions/versionlens-lsp checkout --detach FETCH_HEAD
+
+          bun scripts/release/zed-registry.mjs \
+            zed-registry/extensions.toml "$VERSION"
+          corepack enable
+          corepack pnpm --dir zed-registry install --frozen-lockfile
+          corepack pnpm --dir zed-registry sort-extensions
+
+          git -C zed-registry config user.name github-actions
+          git -C zed-registry config user.email github-actions@github.com
+          git -C zed-registry add .gitmodules extensions.toml extensions/versionlens-lsp
+          if git -C zed-registry diff --cached --quiet; then
+            echo "Registry branch already points to v$VERSION."
+          else
+            git -C zed-registry commit -m "Update versionlens-lsp to v$VERSION"
+          fi
+          git -C zed-registry push origin "HEAD:refs/heads/$branch" --force-with-lease
+
+          if [[ -z "$(gh pr list --repo zed-industries/extensions --head "$owner:$branch" --json number --jq '.[0].number')" ]]; then
+            gh pr create \
+              --repo zed-industries/extensions \
+              --base main \
+              --head "$owner:$branch" \
+              --title "Update versionlens-lsp to v$VERSION" \
+              --body "Updates VersionLens Redux to v$VERSION."
+          fi
+
+  neovim:
+    name: LuaRocks
+    if: inputs.neovim
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: marketplaces
+
+    steps:
+      - *checkout_release
+
+      - *setup_bun
+
+      - name: Install LuaRocks
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes lua5.4 luarocks
+
+      - name: Render and validate rockspec
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          bun scripts/release/luarocks.mjs "$VERSION"
+          luarocks lint "dist/versionlens-redux-$VERSION-1.rockspec"
+
+      - name: Publish Neovim plugin to LuaRocks
+        env:
+          LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
+          VERSION: ${{ inputs.version }}
+        run: luarocks upload --api-key="$LUAROCKS_API_KEY" "dist/versionlens-redux-$VERSION-1.rockspec"

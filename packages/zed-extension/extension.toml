@@ -1,10 +1,15 @@
 authors = ["VersionLens contributors"]
 description = "VersionLens Redux dependency hints, diagnostics, and code lenses through the shared VersionLens language server."
-id = "versionlens"
+id = "versionlens-lsp"
 name = "VersionLens Redux"
 repository = "https://github.com/xsyetopz/versionlens-redux"
 schema_version = 1
 version = "0.4.0"
+
+[[capabilities]]
+kind = "download_file"
+host = "github.com"
+path = ["xsyetopz", "versionlens-redux", "releases", "download", "**"]
 
 [language_servers.versionlens]
 language = "JSON"
