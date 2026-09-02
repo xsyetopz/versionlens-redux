@@ -272,3 +272,34 @@ it("uses tenant-only Azure authentication for VS Code publishing", () => {
   expect(vscodeJob).toContain("allow-no-subscriptions: true");
   expect(vscodeJob).not.toContain("subscription-id:");
 });
+
+it("resolves the Marketplace identity before publishing VSIX packages", () => {
+  const workflow = readFileSync(
+    ".github/workflows/publish-marketplaces.yml",
+    "utf8",
+  );
+  const vscodeStart = workflow.indexOf("\n  vscode:");
+  const jetbrainsStart = workflow.indexOf("\n  jetbrains:", vscodeStart);
+  const vscodeJob = workflow.slice(vscodeStart, jetbrainsStart);
+  const login = vscodeJob.indexOf("name: Sign in to Microsoft Entra");
+  const resolveIdentity = vscodeJob.indexOf(
+    "name: Resolve Visual Studio Marketplace identity",
+  );
+  const profileRequest = vscodeJob.indexOf(
+    "https://app.vssps.visualstudio.com/_apis/profile/profiles/me",
+    resolveIdentity,
+  );
+  const marketplaceResource = vscodeJob.indexOf(
+    "499b84ac-1321-427f-aa17-267ca6975798",
+    resolveIdentity,
+  );
+  const failClosed = vscodeJob.indexOf("exit 1", resolveIdentity);
+  const publish = vscodeJob.indexOf("name: Publish released VSIX packages");
+
+  expect(login).toBeGreaterThan(-1);
+  expect(resolveIdentity).toBeGreaterThan(login);
+  expect(profileRequest).toBeGreaterThan(resolveIdentity);
+  expect(marketplaceResource).toBeGreaterThan(profileRequest);
+  expect(failClosed).toBeGreaterThan(marketplaceResource);
+  expect(publish).toBeGreaterThan(failClosed);
+});
