@@ -127,6 +127,13 @@ try {
 
   const jarPath = join(temporaryDirectory, "plugin.jar");
   writeFileSync(jarPath, run(["unzip", "-p", jetbrainsArtifact, pluginJar]));
+  const jarEntries = new TextDecoder().decode(run(["unzip", "-Z1", jarPath]));
+  requireEntry(jarEntries, "META-INF/pluginIcon.svg", jetbrainsArtifact);
+  requireMatchingBinary(
+    run(["unzip", "-p", jarPath, "META-INF/pluginIcon.svg"]),
+    "assets/versionlens/logo-redux.svg",
+    jetbrainsArtifact,
+  );
   const descriptor = new TextDecoder().decode(
     run(["unzip", "-p", jarPath, "META-INF/plugin.xml"]),
   );

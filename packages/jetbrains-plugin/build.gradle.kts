@@ -141,6 +141,10 @@ intellijPlatform {
 
 tasks.processResources {
     doLast {
+        val pluginIcon = layout.buildDirectory.file("resources/main/META-INF/pluginIcon.svg").get().asFile
+        pluginIcon.parentFile.mkdirs()
+        repositoryRoot.file("assets/versionlens/logo-redux.svg").asFile.copyTo(pluginIcon, overwrite = true)
+
         val descriptor = layout.buildDirectory.file("resources/main/META-INF/plugin.xml").get().asFile
         val marker = "<!-- native-variant-dependencies -->"
         val contents = descriptor.readText()
