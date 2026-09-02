@@ -303,3 +303,24 @@ it("resolves the Marketplace identity before publishing VSIX packages", () => {
   expect(failClosed).toBeGreaterThan(marketplaceResource);
   expect(publish).toBeGreaterThan(failClosed);
 });
+
+it("makes VS Code Marketplace publishing resumable and retries transient failures", () => {
+  const workflow = readFileSync(
+    ".github/workflows/publish-marketplaces.yml",
+    "utf8",
+  );
+  const vscodeStart = workflow.indexOf("\n  vscode:");
+  const jetbrainsStart = workflow.indexOf("\n  jetbrains:", vscodeStart);
+  const vscodeJob = workflow.slice(vscodeStart, jetbrainsStart);
+  const publish = vscodeJob.indexOf("name: Publish released VSIX packages");
+  const skipDuplicate = vscodeJob.indexOf("--skip-duplicate", publish);
+  const retryLoop = vscodeJob.indexOf("for attempt in 1 2 3", publish);
+  const retryDelay = vscodeJob.indexOf('sleep "$delay"', retryLoop);
+  const failClosed = vscodeJob.indexOf("exit 1", retryLoop);
+
+  expect(publish).toBeGreaterThan(-1);
+  expect(retryLoop).toBeGreaterThan(publish);
+  expect(skipDuplicate).toBeGreaterThan(retryLoop);
+  expect(failClosed).toBeGreaterThan(skipDuplicate);
+  expect(retryDelay).toBeGreaterThan(failClosed);
+});

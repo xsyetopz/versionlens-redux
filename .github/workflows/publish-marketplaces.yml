@@ -123,7 +123,21 @@ jobs:
         run: |
           set -euo pipefail
           while IFS= read -r package; do
-            bunx vsce publish --azure-credential --packagePath "$package"
+            for attempt in 1 2 3; do
+              if bunx vsce publish \
+                --azure-credential \
+                --skip-duplicate \
+                --packagePath "$package"; then
+                break
+              fi
+              if [[ "$attempt" = 3 ]]; then
+                echo "Failed to publish $package after $attempt attempts." >&2
+                exit 1
+              fi
+              delay=$((attempt * 15))
+              echo "Publish attempt $attempt failed for $package; retrying in ${delay}s." >&2
+              sleep "$delay"
+            done
           done < <(find release-assets -type f -name '*.vsix' -print | sort)
 
   jetbrains:
