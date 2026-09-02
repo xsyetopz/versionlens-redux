@@ -22,7 +22,7 @@ interface WorkspaceOperationsMock {
   findFiles: () => never[];
   getConfiguration: () => ConfigurationMock;
   getWorkspaceFolder: () => undefined;
-  openTextDocument: () => undefined;
+  openTextDocument: (uri: unknown) => unknown;
 }
 
 interface WorkspaceMock {
@@ -32,6 +32,8 @@ interface WorkspaceMock {
 
 interface WorkspaceMockContext {
   appliedEdits: unknown[];
+  openedDocuments: unknown[];
+  openedDocumentText: Map<string, string>;
   state: { applyEditBlocker: Promise<boolean> | undefined };
   updatedConfig: { key: string; target: boolean; value: unknown }[];
   workspaceConfig: Record<string, unknown>;
@@ -40,7 +42,14 @@ interface WorkspaceMockContext {
 function createWorkspaceOperationsMock(
   context: WorkspaceMockContext,
 ): WorkspaceOperationsMock {
-  const { appliedEdits, state, updatedConfig, workspaceConfig } = context;
+  const {
+    appliedEdits,
+    openedDocuments,
+    openedDocumentText,
+    state,
+    updatedConfig,
+    workspaceConfig,
+  } = context;
   return {
     applyEdit: (edit: { edits: unknown[] }): true | Promise<boolean> => {
       appliedEdits.push(...edit.edits);
@@ -71,7 +80,16 @@ function createWorkspaceOperationsMock(
       },
     }),
     getWorkspaceFolder: (): undefined => undefined,
-    openTextDocument: (): undefined => undefined,
+    openTextDocument: (uri: unknown): unknown => {
+      openedDocuments.push(uri);
+      const resource = uri as { toString: () => string };
+      const text = openedDocumentText.get(resource.toString()) ?? "";
+      return {
+        getText: (): string => text,
+        languageId: "json",
+        uri: resource,
+      };
+    },
   };
 }
 

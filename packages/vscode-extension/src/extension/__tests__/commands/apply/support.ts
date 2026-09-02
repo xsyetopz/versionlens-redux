@@ -64,6 +64,8 @@ const createdNativeSessions: unknown[] = [];
 const inputValues: string[] = [];
 const inputPrompts: unknown[] = [];
 const outputLines: string[] = [];
+const openedDocuments: unknown[] = [];
+const openedDocumentText = new Map<string, string>();
 const quickPickValues: unknown[] = [];
 const registeredCommands: Record<
   string,
@@ -111,6 +113,8 @@ function windowMock(): WindowMock {
 function vscodeMock(): MockModule {
   const workspace = createWorkspaceMock({
     appliedEdits,
+    openedDocuments,
+    openedDocumentText,
     state: applyTestState,
     updatedConfig,
     workspaceConfig,
@@ -132,9 +136,17 @@ function vscodeMock(): MockModule {
     [
       "Uri",
       {
-        file: (path: string): { path: string; scheme: string } => ({
-          path,
-          scheme: "file",
+        file: (
+          path: string,
+        ): { path: string; scheme: string; toString: () => string } => {
+          const value = path.startsWith("/")
+            ? `file://${path}`
+            : `file:///${path}`;
+          return { path, scheme: "file", toString: (): string => value };
+        },
+        parse: (value: string): { scheme: string; toString: () => string } => ({
+          scheme: value.slice(0, value.indexOf(":")),
+          toString: (): string => value,
         }),
       },
     ],
@@ -239,6 +251,7 @@ function reset(): void {
     inputValues,
     inputPrompts,
     outputLines,
+    openedDocuments,
     quickPickValues,
     storedSecrets,
     updatedConfig,
@@ -250,6 +263,7 @@ function reset(): void {
   clearRecord(workspaceValues);
   clearRecord(secretValues);
   clearRecord(registeredCommands);
+  openedDocumentText.clear();
 }
 
 export type { ApplyResult };
@@ -262,6 +276,8 @@ export {
   createdSessionConfigs,
   inputPrompts,
   inputValues,
+  openedDocuments,
+  openedDocumentText,
   outputLines,
   quickPickValues,
   registeredCommand,

@@ -6,6 +6,8 @@ import {
   appliedEdits,
   applyResult,
   applyTestState,
+  openedDocuments,
+  openedDocumentText,
   registeredCommand,
   reset,
 } from "./support.ts";
@@ -14,6 +16,15 @@ const sortStartCharacter = 17;
 const sortEndCharacter = 41;
 const updateStartCharacter = 30;
 const updateEndCharacter = 35;
+
+function textHash(text: string): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(text)) {
+    hash ^= BigInt(byte);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return hash.toString(16).padStart(16, "0");
+}
 
 it("sort command bypasses CodeLens replacement gate like upstream", async (): Promise<void> => {
   const { registerCommands } = await import("../../../commands/register.ts");
@@ -68,6 +79,61 @@ it("single update leaves CodeLens replacement disabled after applying like upstr
   expect(appliedEdits).toHaveLength(1);
   expect(state.flags.codeLensReplace).toBe(false);
 });
+
+for (const plannedUri of [
+  "file:/Users/example/project/package.json",
+  "vscode-remote://ssh-remote+host/workspace/package.json",
+  "/Users/example/project/package.json",
+  "C:\\workspace\\package.json",
+] as const) {
+  it(`workspace updates open ${plannedUri} as a URI resource`, async (): Promise<void> => {
+    const { registerCommands } = await import("../../../commands/register.ts");
+    reset();
+    const document = documentStub("left-pad");
+    const targetText = document.getText();
+    const expectedResource =
+      !/^[a-z]:[\\/]/iu.test(plannedUri) &&
+      /^[a-z][a-z\d+.-]*:/iu.test(plannedUri)
+        ? plannedUri
+        : plannedUri.startsWith("/")
+          ? `file://${plannedUri}`
+          : `file:///${plannedUri}`;
+    openedDocumentText.set(expectedResource, targetText);
+    const state = commandState({
+      applyCommand: () => ({
+        ...applyResult(),
+        editPlan: {
+          documents: [
+            {
+              document: {
+                textHash: textHash(targetText),
+                uri: plannedUri,
+              },
+              edits: applyResult().edits,
+            },
+          ],
+        },
+      }),
+    });
+
+    applyTestState.activeTextEditor = { document };
+    registerCommands(state as never);
+    await registeredCommand("versionlens.suggestion.onUpdateDependency")(
+      "left-pad",
+    );
+
+    expect(openedDocuments).toHaveLength(2);
+    expect(
+      openedDocuments.every((resource) => typeof resource !== "string"),
+    ).toBe(true);
+    expect(
+      openedDocuments.map((resource) =>
+        (resource as { toString: () => string }).toString(),
+      ),
+    ).toEqual([expectedResource, expectedResource]);
+    expect(appliedEdits).toHaveLength(1);
+  });
+}
 
 for (const testCase of [
   {

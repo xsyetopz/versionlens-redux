@@ -1,6 +1,7 @@
 import {
   type Disposable,
   type TextDocument,
+  Uri,
   commands as vscodeCommands,
   WorkspaceEdit,
   window,
@@ -35,6 +36,8 @@ import { updateContexts } from "./contexts.ts";
 
 type AsyncBoolean = Promise<boolean>;
 type NativeRange = NativeTextEdit["range"];
+
+const WINDOWS_ABSOLUTE_PATH = /^[a-z]:[\\/]/iu;
 
 function registerApplyCommands(
   state: ExtensionState,
@@ -153,7 +156,9 @@ async function applyTextEdits(
       const target =
         plannedDocument.document.uri === document.uri.toString()
           ? document
-          : await workspace.openTextDocument(plannedDocument.document.uri);
+          : await workspace.openTextDocument(
+              documentResource(plannedDocument.document.uri),
+            );
       for (const edit of plannedDocument.edits) {
         workspaceEdit.replace(target.uri, toRange(edit.range), edit.newText);
       }
@@ -188,7 +193,7 @@ async function validateEditPlan(
     if (uris.has(plannedDocument.document.uri)) return false;
     uris.add(plannedDocument.document.uri);
     const target = await workspace.openTextDocument(
-      plannedDocument.document.uri,
+      documentResource(plannedDocument.document.uri),
     );
     if (
       (plannedDocument.document.version !== undefined &&
@@ -200,6 +205,16 @@ async function validateEditPlan(
       return false;
   }
   return true;
+}
+
+function documentResource(value: string): Uri {
+  if (WINDOWS_ABSOLUTE_PATH.test(value) || value.startsWith("\\\\")) {
+    return Uri.file(value);
+  }
+  if (/^[a-z][a-z\d+.-]*:/iu.test(value)) {
+    return Uri.parse(value);
+  }
+  return Uri.file(value);
 }
 
 function hasOverlappingEdits(edits: NativeTextEdit[]): boolean {

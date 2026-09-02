@@ -8,7 +8,7 @@
     "#vscode-host": "./src/extension/platform/host.ts"
   },
   "preview": false,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "main": "./dist/extension.js",
   "repository": {
     "type": "git",
