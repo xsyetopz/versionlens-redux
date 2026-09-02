@@ -254,7 +254,7 @@ jobs:
       - name: Install LuaRocks
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends --yes lua5.4 luarocks
+          sudo apt-get install --no-install-recommends --yes lua5.4 lua-dkjson luarocks
 
       - name: Render and validate rockspec
         env:
@@ -267,4 +267,11 @@ jobs:
         env:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
           VERSION: ${{ inputs.version }}
-        run: luarocks upload --api-key="$LUAROCKS_API_KEY" "dist/versionlens-redux-$VERSION-1.rockspec"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$LUAROCKS_API_KEY" ]]; then
+            echo "LUAROCKS_API_KEY is not configured in the marketplaces environment." >&2
+            exit 1
+          fi
+          luarocks upload --api-key="$LUAROCKS_API_KEY" "dist/versionlens-redux-$VERSION-1.rockspec"

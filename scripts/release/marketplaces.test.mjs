@@ -237,3 +237,23 @@ it("renders a versioned LuaRocks specification", () => {
     rmSync(directory, { force: true, recursive: true });
   }
 });
+
+it("provisions and validates LuaRocks upload requirements", () => {
+  const workflow = readFileSync(
+    ".github/workflows/publish-marketplaces.yml",
+    "utf8",
+  );
+  const neovimJob = workflow.slice(workflow.indexOf("\n  neovim:"));
+  const install = neovimJob.indexOf(
+    "sudo apt-get install --no-install-recommends --yes lua5.4 lua-dkjson luarocks",
+  );
+  const guard = neovimJob.indexOf('if [[ -z "$LUAROCKS_API_KEY" ]]');
+  const failClosed = neovimJob.indexOf("exit 1", guard);
+  const upload = neovimJob.indexOf("luarocks upload", guard);
+
+  expect(neovimJob).not.toBe(workflow);
+  expect(install).toBeGreaterThan(-1);
+  expect(guard).toBeGreaterThan(install);
+  expect(failClosed).toBeGreaterThan(guard);
+  expect(upload).toBeGreaterThan(failClosed);
+});
