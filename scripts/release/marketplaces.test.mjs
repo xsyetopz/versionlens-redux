@@ -141,7 +141,6 @@ it("lists every required marketplace secret without making hosted changes", () =
   for (const name of [
     "AZURE_CLIENT_ID",
     "AZURE_TENANT_ID",
-    "AZURE_SUBSCRIPTION_ID",
     "JETBRAINS_MARKETPLACE_TOKEN",
     "JB_CERTIFICATE_CHAIN",
     "JB_PRIVATE_KEY",
@@ -152,6 +151,7 @@ it("lists every required marketplace secret without making hosted changes", () =
   ]) {
     expect(output).toContain(`marketplaces: ${name}`);
   }
+  expect(output).not.toContain("AZURE_SUBSCRIPTION_ID");
 });
 
 it("allows unavailable marketplaces to be skipped", () => {
@@ -256,4 +256,19 @@ it("provisions and validates LuaRocks upload requirements", () => {
   expect(guard).toBeGreaterThan(install);
   expect(failClosed).toBeGreaterThan(guard);
   expect(upload).toBeGreaterThan(failClosed);
+});
+
+it("uses tenant-only Azure authentication for VS Code publishing", () => {
+  const workflow = readFileSync(
+    ".github/workflows/publish-marketplaces.yml",
+    "utf8",
+  );
+  const vscodeStart = workflow.indexOf("\n  vscode:");
+  const jetbrainsStart = workflow.indexOf("\n  jetbrains:", vscodeStart);
+  const vscodeJob = workflow.slice(vscodeStart, jetbrainsStart);
+
+  expect(vscodeStart).toBeGreaterThan(-1);
+  expect(jetbrainsStart).toBeGreaterThan(vscodeStart);
+  expect(vscodeJob).toContain("allow-no-subscriptions: true");
+  expect(vscodeJob).not.toContain("subscription-id:");
 });

@@ -327,7 +327,6 @@ async function configure() {
         "Azure managed identity or app client ID",
       );
       await visibleSecret("AZURE_TENANT_ID", "Azure tenant ID");
-      await visibleSecret("AZURE_SUBSCRIPTION_ID", "Azure subscription ID");
     }
 
     if (selected.has("jetbrains")) {
