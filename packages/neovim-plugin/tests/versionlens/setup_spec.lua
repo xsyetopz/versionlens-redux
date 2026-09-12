@@ -2,6 +2,9 @@ local versionlens = require("versionlens")
 
 describe("setup", function()
   local bufnr
+  local original_start = vim.lsp.start
+  local original_client = vim.lsp.get_client_by_id
+  local original_refresh = versionlens.refresh
 
   before_each(function()
     bufnr = vim.api.nvim_create_buf(true, false)
@@ -10,9 +13,35 @@ describe("setup", function()
   end)
 
   after_each(function()
+    vim.lsp.start = original_start
+    vim.lsp.get_client_by_id = original_client
+    versionlens.refresh = original_refresh
     if vim.api.nvim_buf_is_valid(bufnr) then
       vim.api.nvim_buf_delete(bufnr, { force = true })
     end
+  end)
+
+  it("advertises versioned edits and refreshes only attached live buffers", function()
+    vim.api.nvim_buf_set_name(bufnr, ("/tmp/versionlens-test/%d/package.json"):format(bufnr))
+    versionlens.setup({ autostart = false, cmd = { "versionlens-lsp" } })
+    local captured
+    vim.lsp.start = function(configuration)
+      captured = configuration
+      return 42
+    end
+    assert.are.equal(42, versionlens.start(bufnr))
+    assert.is_true(captured.capabilities.workspace.workspaceEdit.documentChanges)
+    assert.is_true(captured.capabilities.workspace.codeLens.refreshSupport)
+    local refreshed = {}
+    versionlens.refresh = function(buffer)
+      table.insert(refreshed, buffer)
+    end
+    vim.lsp.get_client_by_id = function(id)
+      assert.are.equal(42, id)
+      return { attached_buffers = { [bufnr] = true, [999999] = true } }
+    end
+    assert.are.equal(vim.NIL, captured.handlers["workspace/codeLens/refresh"](nil, nil, { client_id = 42 }))
+    assert.are.same({ bufnr }, refreshed)
   end)
 
   it("is idempotent and registers the public commands once", function()

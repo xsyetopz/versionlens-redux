@@ -46,7 +46,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 
 | Provider | Files | Main settings | Registry/source |
 | --- | --- | --- | --- |
-| Cargo | Cargo.toml | `versionlens.cargo.files`, `versionlens.cargo.apiUrl`, `versionlens.cargo.dependencyProperties` | crates.io index/API or configured Cargo registry |
+| Cargo | Cargo.toml, rust-toolchain, rust-toolchain.toml | `versionlens.cargo.files`, `versionlens.cargo.apiUrl`, `versionlens.cargo.dependencyProperties` | crates.io index/API or configured Cargo registry |
 | Composer | composer.json | `versionlens.composer.files`, `versionlens.composer.apiUrl`, `versionlens.composer.dependencyProperties` | Packagist or configured Composer repository |
 | Deno | deno.json, deno.jsonc, import_map.json, jsr.json, jsr.jsonc | `versionlens.deno.files`, `versionlens.deno.dependencyProperties` | Deno import maps, JSR API, npm registry for npm: specifiers |
 | Docker | dockerfile, Dockerfile, compose.yaml, compose.yml, docker-compose.yaml, docker-compose.yml | `versionlens.docker.files` | OCI/Docker registry tags |
@@ -55,7 +55,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 | Go | go.mod, go.work | `versionlens.golang.files`, `versionlens.golang.apiUrl` | Go module proxy |
 | Hex | mix.exs, rebar.config, gleam.toml | `versionlens.hex.files`, `versionlens.hex.apiUrl`, `versionlens.hex.dependencyProperties` | Hex package API or configured Hex-compatible registry |
 | Maven | pom.xml, build.gradle, build.gradle.kts, settings.gradle, settings.gradle.kts, gradle/libs.versions.toml, build.sbt, deps.edn, project.clj | `versionlens.maven.files`, `versionlens.maven.apiUrl`, `versionlens.maven.dependencyProperties` | Maven Central, Gradle Plugin Portal, configured Maven repositories, and Clojars |
-| npm | package.json, package.json5, package.yaml, package.yml | `versionlens.npm.files`, `versionlens.npm.dependencyProperties` | npm registry or configured npm-compatible registry |
+| npm | package.json, package.json5, package.yaml, package.yml, .nvmrc, .node-version, .bun-version | `versionlens.npm.files`, `versionlens.npm.dependencyProperties` | npm registry or configured npm-compatible registry |
 | pnpm | pnpm-workspace.yaml, pnpm-workspace.yml, .yarnrc.yaml, .yarnrc.yml | `versionlens.pnpm.files`, `versionlens.pnpm.dependencyProperties` | npm registry through pnpm/Yarn workspace configuration |
 | Pub | pubspec.yaml, pubspec.yml, pubspec_overrides.yaml | `versionlens.pub.files`, `versionlens.pub.apiUrl`, `versionlens.pub.dependencyProperties` | pub.dev API or hosted Pub source |
 | Python | Pipfile, pyproject.toml | `versionlens.pypi.files`, `versionlens.pypi.apiUrl`, `versionlens.pypi.dependencyProperties` | PyPI JSON API or configured Python package index/source |
@@ -74,7 +74,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 | LuaRocks | .rockspec | `versionlens.luarocks.files`, `versionlens.luarocks.apiUrl`, `versionlens.luarocks.dependencyProperties` | LuaRocks manifest repository |
 | CPAN | cpanfile | `versionlens.cpan.files`, `versionlens.cpan.apiUrl`, `versionlens.cpan.dependencyProperties` | MetaCPAN download_url API |
 | Haxelib | haxelib.json | `versionlens.haxelib.files`, `versionlens.haxelib.apiUrl`, `versionlens.haxelib.dependencyProperties` | Haxelib project versions page |
-| Terraform | *.tf, *.tofu | `versionlens.terraform.files`, `versionlens.terraform.apiUrl`, `versionlens.terraform.dependencyProperties` | Terraform Registry protocol |
+| Terraform | *.tf,*.tofu | `versionlens.terraform.files`, `versionlens.terraform.apiUrl`, `versionlens.terraform.dependencyProperties` | Terraform Registry protocol |
 | Helm | Chart.yaml | `versionlens.helm.files`, `versionlens.helm.apiUrl`, `versionlens.helm.dependencyProperties` | Helm chart repository index.yaml and OCI tags |
 | Ansible | requirements.yml, requirements.yaml | `versionlens.ansible.files`, `versionlens.ansible.apiUrl`, `versionlens.ansible.dependencyProperties` | Ansible Galaxy API for collections and roles; git/source requirements are fixed |
 | Bazel | MODULE.bazel | `versionlens.bazel.files`, `versionlens.bazel.apiUrl`, `versionlens.bazel.dependencyProperties` | Bazel Central Registry metadata.json or configured Bazel registry |

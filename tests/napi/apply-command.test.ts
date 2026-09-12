@@ -16,7 +16,7 @@ interface NativeOutput {
 
 interface NativeSession {
   analyzeDocument: (input: object) => NativeOutput;
-  applyCommand: (input: object) => NativeOutput;
+  applyCommand: (input: object) => Promise<NativeOutput>;
   clearCache: () => void;
   disposeSession: () => void;
   resolveDocument: (input: object) => Promise<NativeOutput>;
@@ -42,10 +42,10 @@ function createSession(options: object = {}): NativeSession {
   });
 }
 
-it("applyCommand sorts requirements dependencies", (): void => {
+it("applyCommand sorts requirements dependencies", async (): Promise<void> => {
   const session = createSession();
 
-  const output = session.applyCommand({
+  const output = await session.applyCommand({
     command: "sort",
     document: {
       languageId: "pip-requirements",
@@ -59,10 +59,10 @@ it("applyCommand sorts requirements dependencies", (): void => {
   expect(output.edits[1]?.newText).toBe("zeta==1");
 });
 
-it("applyCommand updates project version", (): void => {
+it("applyCommand updates project version", async (): Promise<void> => {
   const session = createSession();
 
-  const output = session.applyCommand({
+  const output = await session.applyCommand({
     command: "updateMajor",
     dependencyName: "1.2.3",
     document: {
@@ -123,7 +123,8 @@ it("disposeSession releases the native Rust session", async (): Promise<void> =>
   expect(analyzed.status.visible).toBe(false);
   expect((await session.resolveDocument(input)).edits).toHaveLength(0);
   expect(
-    session.applyCommand({ command: "updateMajor", document: input }).edits,
+    (await session.applyCommand({ command: "updateMajor", document: input }))
+      .edits,
   ).toHaveLength(0);
 });
 

@@ -14,18 +14,32 @@ CORE_SUGGESTION_PATH = Path("crates/versionlens-core/src/suggestion.rs")
 BUNDLED_EXTENSION_PATH = Path("packages/vscode-extension/dist/extension.js")
 
 ALLOWED_FUNCTIONS = {
+    "check_workspace",
+    "take_workspace_events",
+    "workspace_checking_generation",
+    "set_workspace_documents",
+    "invalidate_workspace",
     "analyze_document",
+    "document_is_fresh",
     "apply_command",
     "clear_cache",
     "create_session",
+    "create_session_with_storage",
     "dispose_session",
     "resolve_document",
 }
 ALLOWED_TYPE_METHODS = {
+    "checkWorkspace",
+    "takeWorkspaceEvents",
+    "workspaceCheckingGeneration",
+    "setWorkspaceDocuments",
+    "invalidateWorkspace",
     "analyzeDocument",
+    "documentIsFresh",
     "applyCommand",
     "clearCache",
     "createSession",
+    "createSessionWithStorage",
     "disposeSession",
     "resolveDocument",
 }
@@ -35,7 +49,7 @@ PLAIN_NAPI_ITEM_PATTERN = re.compile(
     r"#\[napi\]\s*(?:impl\s+([A-Za-z_][A-Za-z0-9_]*)|pub\s+(fn|struct)\s+([A-Za-z_][A-Za-z0-9_]*))"
 )
 NATIVE_TYPE_METHOD_PATTERN = re.compile(
-    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*\([\s\S]*?\)\s*=>\s*([^;]+);$",
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*)?\([\s\S]*?\)\s*(?:=>|:)\s*([^;]+);$",
     re.MULTILINE,
 )
 RESTRICTED_NAPI_DEPENDENCY_PATTERN = re.compile(

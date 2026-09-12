@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.versionlens"
-version = "0.4.2"
+version = "0.4.3"
 
 repositories {
     mavenCentral()
@@ -109,9 +109,9 @@ intellijPlatform {
         name = "VersionLens Redux"
         version = variantVersion
         description = "VersionLens Redux dependency hints, diagnostics, and code lenses through the shared VersionLens language server."
-        changeNotes = "Added target-specific native packages, safer language-server discovery, file-support tests, signing configuration, and Marketplace verification metadata for VersionLens Redux 0.4.0."
+        changeNotes = "Added whole-workspace checking, persistent caches, runtime version checks, and functional language-server updates. Requires IDE build 261.26222.65 or newer."
         ideaVersion {
-            sinceBuild = "261"
+            sinceBuild = "261.26222.65"
             untilBuild = provider { null }
         }
         vendor {
@@ -122,7 +122,9 @@ intellijPlatform {
 
 
     pluginVerification {
+        freeArgs = listOf("-ignore-os-arch")
         ides {
+            create("IU", "2026.1.4")
             recommended()
         }
     }

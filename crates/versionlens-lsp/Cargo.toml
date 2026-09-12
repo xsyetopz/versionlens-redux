@@ -14,6 +14,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+crossbeam-channel.workspace = true
 anyhow.workspace = true
 lsp-server.workspace = true
 lsp-types.workspace = true
@@ -22,3 +23,6 @@ serde_json.workspace = true
 versionlens-core.workspace = true
 versionlens-model.workspace = true
 versionlens-vscode-model.workspace = true
+
+[dev-dependencies]
+versionlens-test-support.workspace = true

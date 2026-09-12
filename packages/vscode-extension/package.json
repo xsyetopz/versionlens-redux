@@ -8,7 +8,7 @@
     "#vscode-host": "./src/extension/platform/host.ts"
   },
   "preview": false,
-  "version": "0.4.2",
+  "version": "0.4.3",
   "main": "./dist/extension.js",
   "repository": {
     "type": "git",
@@ -292,7 +292,7 @@
         },
         "versionlens.cargo.files": {
           "type": "string",
-          "default": "**/Cargo.toml",
+          "default": "**/{Cargo.toml,rust-toolchain,rust-toolchain.toml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.composer.files": {
@@ -332,7 +332,7 @@
         },
         "versionlens.npm.files": {
           "type": "string",
-          "default": "**/{package.json,package.json5,package.yaml,package.yml}",
+          "default": "**/{package.json,package.json5,package.yaml,package.yml,.nvmrc,.node-version,.bun-version}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.pnpm.files": {
@@ -2221,7 +2221,16 @@
         "versionlens.github.dependencyProperties": {
           "type": "array",
           "default": [
-            "uses"
+            "uses",
+            "with.node-version",
+            "with.bun-version",
+            "with.go-version",
+            "with.deno-version",
+            "with.python-version",
+            "with.java-version",
+            "with.dotnet-version",
+            "with.ruby-version",
+            "with.toolchain"
           ],
           "items": {
             "type": "string"

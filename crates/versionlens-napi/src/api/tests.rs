@@ -36,7 +36,7 @@ fn dispose_session_releases_inner_session() {
     assert_eq!(output.active_provider_name, Some("npm".to_owned()));
 
     session.dispose_session();
-    session.clear_cache();
+    assert!(session.clear_cache().is_ok());
 
     let output = session.analyze_document(package_document());
     assert!(!output.is_supported_manifest);

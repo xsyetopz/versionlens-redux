@@ -4,7 +4,7 @@ id = "versionlens-lsp"
 name = "VersionLens Redux"
 repository = "https://github.com/xsyetopz/versionlens-redux"
 schema_version = 1
-version = "0.4.2"
+version = "0.4.3"
 
 [[capabilities]]
 kind = "download_file"
@@ -31,6 +31,7 @@ languages = [
   "Kotlin",
   "Lua",
   "Nix",
+  "Plain Text",
   "Python",
   "Ruby",
   "Rust",
@@ -64,6 +65,7 @@ name = "VersionLens Redux Language Server"
 "Kotlin" = "kotlin"
 "Lua" = "lua"
 "Nix" = "nix"
+"Plain Text" = "plaintext"
 "Python" = "python"
 "Ruby" = "ruby"
 "Rust" = "rust"

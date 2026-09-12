@@ -32,6 +32,15 @@ function documentInput(document: TextDocument): NativeDocumentInput {
   };
 }
 
+function documentTextHash(text: string): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(text)) {
+    hash ^= BigInt(byte);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return hash.toString(16).padStart(16, "0");
+}
+
 function toRange(range: NativeRange): Range {
   return new Range(
     range.start.line,
@@ -97,4 +106,10 @@ function selectorKey(selector: DocumentFilter): string {
   return `${selector.scheme}\0${selector.language}\0${String(selector.pattern)}`;
 }
 
-export { documentInput, documentSelectors, fileDocument, toRange };
+export {
+  documentInput,
+  documentSelectors,
+  documentTextHash,
+  fileDocument,
+  toRange,
+};

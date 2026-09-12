@@ -1,15 +1,19 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 use lsp_types::{
-    CodeLens, CodeLensOptions, Command, Diagnostic, DiagnosticSeverity, ExecuteCommandOptions,
-    NumberOrString, Position, PublishDiagnosticsParams, Range, ServerCapabilities,
+    CodeLens, CodeLensOptions, Diagnostic, ExecuteCommandOptions, ServerCapabilities,
     TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
     WorkspaceFolder,
 };
 use serde::{Deserialize, Serialize};
-use versionlens_core::{SessionConfigInput, VersionLensSession, version_lens_session};
-use versionlens_model::{DocumentInput, Range as ModelRange};
-use versionlens_vscode_model::{CodeLensPayload, DiagnosticPayload};
+use versionlens_core::{
+    SessionConfigInput, VersionLensSession, WorkspaceCheckingOptions, WorkspaceDiscoveryOptions,
+    WorkspaceProviderExclusion, version_lens_session,
+};
+use versionlens_model::{DocumentInput, Ecosystem};
+
+pub(crate) const UPDATE_DEPENDENCY_COMMAND: &str = "versionlens.suggestion.onUpdateDependency";
 
 pub(crate) const DISPLAY_CODE_LENS_COMMAND: &str = "versionlens.displayCodeLens";
 
@@ -26,18 +30,28 @@ pub struct VersionLensTextDocument {
 struct WorkspaceRoot {
     uri: Uri,
     path: Option<String>,
+    input_root: Option<String>,
 }
 
 impl WorkspaceRoot {
     fn new(uri: Uri) -> Self {
-        let path = (uri.scheme().is_some_and(|scheme| scheme.as_str() == "file")).then(|| {
-            uri.path()
-                .as_estr()
-                .decode()
-                .into_string_lossy()
-                .into_owned()
+        let normalized = normalized_file_path(uri.as_str()).map(|path| {
+            if path.is_file() {
+                path.parent()
+                    .map_or_else(|| path.clone(), Path::to_path_buf)
+            } else {
+                path
+            }
         });
-        Self { uri, path }
+        let input_root = normalized
+            .as_deref()
+            .and_then(versionlens_core::workspace_file_uri);
+        let path = normalized.and_then(|path| path.into_os_string().into_string().ok());
+        Self {
+            uri,
+            path,
+            input_root,
+        }
     }
 
     fn contains(&self, document_uri: &Uri) -> bool {
@@ -48,6 +62,12 @@ impl WorkspaceRoot {
         {
             return false;
         }
+        if let (Some(root), Some(document)) = (
+            self.path.as_deref(),
+            normalized_file_path(document_uri.as_str()),
+        ) {
+            return document.starts_with(root);
+        }
         let root = self.uri.path().as_str().trim_end_matches('/');
         let document = document_uri.path().as_str();
         document == root
@@ -57,12 +77,57 @@ impl WorkspaceRoot {
     }
 }
 
+fn normalized_file_path(uri: &str) -> Option<std::path::PathBuf> {
+    let path = versionlens_core::workspace_path(uri)?;
+    Some(path.canonicalize().unwrap_or_else(|_| {
+        path.parent()
+            .and_then(|parent| parent.canonicalize().ok())
+            .zip(path.file_name())
+            .map_or_else(|| path.clone(), |(parent, name)| parent.join(name))
+    }))
+}
+
 #[derive(Debug)]
 pub struct VersionLensLspState {
-    session: VersionLensSession,
+    pub(crate) session: VersionLensSession,
+    configuration: versionlens_core::SessionConfig,
     documents: HashMap<String, VersionLensTextDocument>,
+    revisions: HashMap<String, DocumentRevision>,
+    generation: u64,
     root_uri: Option<WorkspaceRoot>,
     workspace_folders: Vec<WorkspaceRoot>,
+    exclusions: Vec<String>,
+    pub(crate) client: ClientSupport,
+    modes: StateModes,
+}
+
+#[derive(Debug, Default)]
+struct StateModes {
+    persistent: bool,
+    controller_managed: bool,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct ClientSupport {
+    pub(crate) workspace_edits: bool,
+    pub(crate) code_lens_refresh: bool,
+    pub(crate) watched_files_dynamic: bool,
+}
+
+#[derive(Debug, Clone)]
+struct DocumentRevision {
+    generation: u64,
+    version: Option<i32>,
+    path: Option<std::path::PathBuf>,
+    core_uri: String,
+}
+
+#[derive(Clone)]
+pub(crate) struct DocumentWork {
+    pub(crate) uri: String,
+    pub(crate) input: DocumentInput,
+    pub(crate) generation: u64,
+    pub(crate) version: Option<i32>,
 }
 
 pub(crate) struct ResolvedDocument {
@@ -70,7 +135,37 @@ pub(crate) struct ResolvedDocument {
     pub(crate) diagnostics: Vec<Diagnostic>,
 }
 
+pub(crate) struct CheckedDocument {
+    pub(crate) uri: String,
+    pub(crate) version: Option<i32>,
+    pub(crate) generation: u64,
+    pub(crate) input: DocumentInput,
+    pub(crate) open: bool,
+}
+
 impl VersionLensLspState {
+    pub(crate) fn with_config(mut self, config: versionlens_core::SessionConfig) -> Self {
+        self.session = version_lens_session(config.clone());
+        self.configuration = config;
+        self
+    }
+
+    pub(crate) fn with_client(mut self, capabilities: lsp_types::ClientCapabilities) -> Self {
+        if let Some(workspace) = capabilities.workspace {
+            self.client.workspace_edits = workspace.apply_edit == Some(true)
+                && workspace
+                    .workspace_edit
+                    .is_some_and(|edit| edit.document_changes == Some(true));
+            self.client.code_lens_refresh = workspace
+                .code_lens
+                .is_some_and(|lens| lens.refresh_support == Some(true));
+            self.client.watched_files_dynamic = workspace
+                .did_change_watched_files
+                .is_some_and(|files| files.dynamic_registration == Some(true));
+        }
+        self
+    }
+
     pub fn standard() -> Self {
         Self::with_workspace(None, Vec::new())
     }
@@ -79,15 +174,32 @@ impl VersionLensLspState {
         root_uri: Option<Uri>,
         workspace_folders: Vec<WorkspaceFolder>,
     ) -> Self {
+        let configuration: versionlens_core::SessionConfig = SessionConfigInput::default().into();
         Self {
-            session: version_lens_session(SessionConfigInput::default().into()),
+            session: version_lens_session(configuration.clone()),
+            configuration,
             documents: HashMap::new(),
+            revisions: HashMap::new(),
+            generation: 0,
+            client: ClientSupport::default(),
+            modes: StateModes::default(),
             root_uri: root_uri.map(WorkspaceRoot::new),
             workspace_folders: workspace_folders
                 .into_iter()
                 .map(|folder| WorkspaceRoot::new(folder.uri))
                 .collect(),
+            exclusions: configuration::default_workspace_exclusions(),
         }
+    }
+
+    pub(crate) fn with_application_cache(mut self) -> std::io::Result<Self> {
+        self.session = self.session.with_application_cache()?;
+        self.modes.persistent = true;
+        Ok(self)
+    }
+
+    pub(crate) fn use_workspace_controller(&mut self) {
+        self.modes.controller_managed = true;
     }
 
     pub fn server_capabilities() -> ServerCapabilities {
@@ -103,75 +215,48 @@ impl VersionLensLspState {
                 resolve_provider: Some(false),
             }),
             execute_command_provider: Some(ExecuteCommandOptions {
-                commands: vec![DISPLAY_CODE_LENS_COMMAND.to_owned()],
+                commands: vec![
+                    DISPLAY_CODE_LENS_COMMAND.to_owned(),
+                    UPDATE_DEPENDENCY_COMMAND.to_owned(),
+                ],
                 ..ExecuteCommandOptions::default()
+            }),
+            workspace: Some(lsp_types::WorkspaceServerCapabilities {
+                workspace_folders: Some(lsp_types::WorkspaceFoldersServerCapabilities {
+                    supported: Some(true),
+                    change_notifications: Some(lsp_types::OneOf::Left(true)),
+                }),
+                ..lsp_types::WorkspaceServerCapabilities::default()
             }),
             ..ServerCapabilities::default()
         }
     }
 
-    pub fn open_document(&mut self, mut document: VersionLensTextDocument) -> Vec<Diagnostic> {
-        if document.workspace_root.is_none() {
-            document.workspace_root = self.workspace_root(&document.uri);
-        }
-        let diagnostics = self.analyze_document(&document).diagnostics;
-        self.documents.insert(document.uri.clone(), document);
-        diagnostics.into_iter().map(into_lsp_diagnostic).collect()
-    }
-
-    pub fn change_document(&mut self, uri: &str, text: String) -> Vec<Diagnostic> {
-        let Some(existing) = self.documents.get(uri) else {
-            return Vec::new();
+    pub(crate) fn workspace_checking_options(&self) -> WorkspaceCheckingOptions {
+        let roots = if self.workspace_folders.is_empty() {
+            self.root_uri
+                .iter()
+                .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
+                .collect()
+        } else {
+            self.workspace_folders
+                .iter()
+                .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
+                .collect()
         };
-        let document = VersionLensTextDocument {
-            uri: existing.uri.clone(),
-            language_id: existing.language_id.clone(),
-            text,
-            workspace_root: existing.workspace_root.clone(),
-        };
-        self.open_document(document)
-    }
-
-    pub fn close_document(&mut self, uri: &str) {
-        self.documents.remove(uri);
-    }
-
-    pub fn code_lenses(&self, uri: &str) -> Vec<CodeLens> {
-        self.resolve_document(uri)
-            .map_or_else(Vec::new, |resolved| resolved.code_lenses)
-    }
-
-    pub fn publish_diagnostics(uri: Uri, diagnostics: Vec<Diagnostic>) -> PublishDiagnosticsParams {
-        PublishDiagnosticsParams {
-            uri,
-            diagnostics,
-            version: None,
-        }
-    }
-
-    pub(crate) fn resolve_document(&self, uri: &str) -> Option<ResolvedDocument> {
-        let document = self.documents.get(uri)?;
-        self.session.resolve_document(document_input(document));
-        let analysis = self.analyze_document(document);
-        Some(ResolvedDocument {
-            code_lenses: analysis
-                .code_lenses
-                .into_iter()
-                .map(into_lsp_code_lens)
-                .collect(),
-            diagnostics: analysis
-                .diagnostics
-                .into_iter()
-                .map(into_lsp_diagnostic)
-                .collect(),
-        })
-    }
-
-    fn analyze_document(
-        &self,
-        document: &VersionLensTextDocument,
-    ) -> versionlens_core::AnalyzeDocumentOutput {
-        self.session.analyze_document(document_input(document))
+        let mut discovery = WorkspaceDiscoveryOptions::new(roots);
+        discovery.exclusions = self.exclusions.clone();
+        discovery.provider_exclusions = vec![WorkspaceProviderExclusion {
+            ecosystem: Ecosystem::Dotnet,
+            patterns: vec!["**/obj/**".to_owned()],
+        }];
+        let mut uris = self.document_uris();
+        uris.sort();
+        discovery.overlays = uris
+            .into_iter()
+            .filter_map(|uri| self.document_work(&uri).map(|work| work.input))
+            .collect();
+        WorkspaceCheckingOptions::new(discovery)
     }
 
     fn workspace_root(&self, document_uri: &str) -> Option<String> {
@@ -185,64 +270,16 @@ impl VersionLensLspState {
                     .as_ref()
                     .filter(|root| root.contains(&document_uri))
             })
-            .and_then(|root| root.path.clone())
+            .and_then(|root| root.input_root.clone())
     }
 }
 
-fn document_input(document: &VersionLensTextDocument) -> DocumentInput {
-    DocumentInput::new(
-        document.uri.clone(),
-        document.language_id.clone(),
-        document.text.clone(),
-        document.workspace_root.clone(),
-    )
-}
-
-pub fn into_lsp_range(range: ModelRange) -> Range {
-    Range {
-        start: Position::new(range.start.line, range.start.character),
-        end: Position::new(range.end.line, range.end.character),
-    }
-}
-
-fn into_lsp_code_lens(payload: CodeLensPayload) -> CodeLens {
-    CodeLens {
-        range: into_lsp_range(payload.range),
-        command: Some(Command {
-            title: payload.title,
-            command: DISPLAY_CODE_LENS_COMMAND.to_owned(),
-            arguments: None,
-        }),
-        data: None,
-    }
-}
-
-fn into_lsp_diagnostic(payload: DiagnosticPayload) -> Diagnostic {
-    Diagnostic {
-        range: into_lsp_range(payload.range),
-        severity: diagnostic_severity(payload.severity),
-        code: payload.code.map(NumberOrString::String),
-        code_description: payload
-            .code_description_url
-            .and_then(|href| href.parse::<Uri>().ok())
-            .map(|href| lsp_types::CodeDescription { href }),
-        source: payload.source,
-        message: payload.message,
-        related_information: None,
-        tags: None,
-        data: None,
-    }
-}
-
-fn diagnostic_severity(severity: u8) -> Option<DiagnosticSeverity> {
-    match severity {
-        0 => Some(DiagnosticSeverity::ERROR),
-        1 => Some(DiagnosticSeverity::WARNING),
-        2 => Some(DiagnosticSeverity::INFORMATION),
-        3 => Some(DiagnosticSeverity::HINT),
-        _ => None,
-    }
-}
+mod configuration;
+pub(crate) use configuration::{session_configuration, workspace_exclusions};
+mod documents;
+mod edits;
+mod presentation;
+pub use presentation::into_lsp_range;
 
 #[cfg(test)]
 mod tests;

@@ -40,7 +40,7 @@ The Gradle build embeds the platform-specific native LSP launcher selected by `v
 
 ## Native variant archives
 
-IntelliJ Platform 2026.1 (`sinceBuild` `261`) selects native compatibility through explicit
+IntelliJ Platform 2026.1.4 (`sinceBuild` `261.26222.65`) selects native compatibility through explicit
 OS/architecture module dependencies. Each native build is a separate Marketplace-selectable
 plugin variant. The archive keeps
 `bin/<executable>` beside `lib/`, rather than embedding the server in the plugin JAR.
@@ -59,7 +59,7 @@ from the host when the property is omitted:
 packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin \
   buildPlugin --no-daemon
 # packages/jetbrains-plugin/build/distributions/
-#   versionlens-jetbrains-plugin-0.4.0-mac-arm64.zip
+#   versionlens-jetbrains-plugin-0.4.3-mac-arm64.zip
 ```
 
 On the corresponding native runner, provide the Rust target triple explicitly:
@@ -69,7 +69,7 @@ packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin \
   -PversionlensRustTarget=x86_64-unknown-linux-gnu buildPlugin --no-daemon
 ```
 
-The output is `build/distributions/versionlens-jetbrains-plugin-0.4.0-<os>-<arch>.zip`.
+The output is `build/distributions/versionlens-jetbrains-plugin-0.4.3-<os>-<arch>.zip`.
 Run `buildPlugin` once per target to produce all six archives:
 
 ```text

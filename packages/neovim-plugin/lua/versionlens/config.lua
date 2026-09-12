@@ -16,11 +16,16 @@ M.defaults = {
   root_dir = nil,
   root_markers = {
     ".git",
+    ".nvmrc",
+    ".node-version",
+    ".bun-version",
     "Cargo.toml",
     "package.json",
     "pnpm-workspace.yaml",
     "pyproject.toml",
     "go.mod",
+    "rust-toolchain",
+    "rust-toolchain.toml",
   },
 }
 

@@ -2,6 +2,7 @@ mod config;
 mod input;
 mod output;
 mod position;
+mod workspace;
 
 use versionlens_core::{
     AnalyzeDocumentOutput as CoreAnalyzeDocumentOutput,
@@ -11,6 +12,9 @@ use versionlens_core::{
 pub(crate) use config::NativeSessionConfig;
 pub(crate) use input::{NativeApplyCommandInput, NativeDocumentInput};
 pub(crate) use output::{NativeAnalyzeDocumentOutput, NativeResolveDocumentOutput};
+pub(crate) use workspace::{
+    NativeWorkspaceCheckEvent, NativeWorkspaceCheckingInput, NativeWorkspaceGeneration,
+};
 
 pub(crate) fn empty_resolve_document_output() -> NativeResolveDocumentOutput {
     NativeResolveDocumentOutput {

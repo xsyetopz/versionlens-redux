@@ -27,6 +27,18 @@ The direct archive carries the native server selected by its platform and archit
 
 ## Zed verification
 
+Enable version checks and update commands in Zed's Code Actions menu:
+
+```json
+{
+  "code_lens": "menu"
+}
+```
+
+Place the cursor on a dependency and run **Editor: Code Actions** to select an available version.
+
+Zed also supports `"code_lens": "on"` for inline display. In Zed 1.18.1, an inline lens can retain its previous command after an edit; VersionLens rejects that stale command. Use the Code Actions menu to apply the current update.
+
 ```bash
 cargo check --manifest-path packages/zed-extension/Cargo.toml --locked
 cargo test --manifest-path packages/zed-extension/Cargo.toml --locked

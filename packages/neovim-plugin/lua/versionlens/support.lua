@@ -1,6 +1,9 @@
 local M = {}
 
 local supported_file_names = {
+  [".bun-version"] = true,
+  [".node-version"] = true,
+  [".nvmrc"] = true,
   ["BUILD"] = true,
   ["BUILD.bazel"] = true,
   ["CMakeLists.txt"] = true,
@@ -41,6 +44,8 @@ local supported_file_names = {
   ["pyproject.toml"] = true,
   ["rebar.config"] = true,
   ["requirements.txt"] = true,
+  ["rust-toolchain"] = true,
+  ["rust-toolchain.toml"] = true,
   ["stack.yaml"] = true,
   ["vcpkg.json"] = true,
   ["xmake.lua"] = true,

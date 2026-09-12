@@ -9,6 +9,11 @@ class VersionLensFileSupportTest {
     @Test
     fun recognizesSupportedNamesAndExtensionsCaseInsensitively() {
         assertTrue(VersionLensLspServerDescriptor.supportsFileName("package.json", "json"))
+        assertTrue(VersionLensLspServerDescriptor.supportsFileName(".nvmrc", null))
+        assertTrue(VersionLensLspServerDescriptor.supportsFileName(".node-version", null))
+        assertTrue(VersionLensLspServerDescriptor.supportsFileName(".bun-version", null))
+        assertTrue(VersionLensLspServerDescriptor.supportsFileName("rust-toolchain", null))
+        assertTrue(VersionLensLspServerDescriptor.supportsFileName("rust-toolchain.toml", "toml"))
         assertTrue(VersionLensLspServerDescriptor.supportsFileName("Dockerfile.dev", "dev"))
         assertTrue(VersionLensLspServerDescriptor.supportsFileName("build.gradle.kts", "KTS"))
     }

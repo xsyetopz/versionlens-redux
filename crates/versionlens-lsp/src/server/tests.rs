@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request};
 use lsp_types::{CodeLens, PublishDiagnosticsParams, ServerCapabilities};
 use serde_json::{Value, json};
@@ -12,7 +12,7 @@ use crate::state::DISPLAY_CODE_LENS_COMMAND;
 #[test]
 fn raw_loop_rejects_bad_requests_and_survives_bad_notifications() -> Result<()> {
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server));
+    let server_thread = thread::spawn(move || run_connection(&server, false));
 
     send_request(&client, 1, "initialize", Value::String("bad".to_owned()))?;
     assert_error(receive(&client)?, ErrorCode::InvalidParams)?;
@@ -92,6 +92,108 @@ fn raw_loop_rejects_bad_requests_and_survives_bad_notifications() -> Result<()> 
     Ok(())
 }
 
+#[test]
+fn dynamically_registers_workspace_file_watching_when_supported() -> Result<()> {
+    let (server, client) = Connection::memory();
+    let server_thread = thread::spawn(move || run_connection(&server, false));
+    initialize_workspace(
+        &client,
+        json!({
+            "capabilities": {
+                "workspace": {
+                    "didChangeWatchedFiles": {"dynamicRegistration": true}
+                }
+            }
+        }),
+    )?;
+    let Message::Request(registration) = receive(&client)? else {
+        bail!("expected dynamic file watcher registration");
+    };
+    assert_eq!(registration.method, "client/registerCapability");
+    assert_eq!(
+        registration.params["registrations"][0]["method"],
+        "workspace/didChangeWatchedFiles"
+    );
+    assert_eq!(
+        registration.params["registrations"][0]["registerOptions"]["watchers"][0]["globPattern"],
+        "**/*"
+    );
+    client
+        .sender
+        .send(Message::Response(lsp_server::Response::new_ok(
+            registration.id,
+            Value::Null,
+        )))?;
+    shutdown_client(&client, 2, server_thread)
+}
+
+#[test]
+fn publishes_unversioned_results_for_unopened_workspace_documents() -> Result<()> {
+    let root = versionlens_test_support::temporary_directory("versionlens-lsp-unopened")?;
+    let workflow_directory = root.join(".github/workflows");
+    std::fs::create_dir_all(&workflow_directory)?;
+    let workflow = workflow_directory.join("ci.yml");
+    std::fs::write(&workflow, "jobs: {check: {steps: [{uses: './missing'}]}}\n")?;
+    let root_uri = versionlens_core::workspace_file_uri(&root).context("missing root URI")?;
+    let workflow_uri = versionlens_core::workspace_file_uri(&workflow.canonicalize()?)
+        .context("missing workflow URI")?;
+    let (client, server_thread) = start_workspace_server(json!({
+        "rootUri": root_uri,
+        "capabilities": {},
+        "initializationOptions": {"showVulnerabilities": false}
+    }))?;
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let message = client
+            .receiver
+            .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))?;
+        let Message::Notification(notification) = message else {
+            continue;
+        };
+        if notification.method != "textDocument/publishDiagnostics" {
+            continue;
+        }
+        let params = serde_json::from_value::<PublishDiagnosticsParams>(notification.params)?;
+        if params.uri.as_str() == workflow_uri {
+            assert!(params.diagnostics.is_empty());
+            assert_eq!(params.version, None);
+            break;
+        }
+    }
+    shutdown_client(&client, 2, server_thread)?;
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn clears_discovery_diagnostic_after_automatic_retry_recovers() -> Result<()> {
+    let root = versionlens_test_support::temporary_directory("versionlens-lsp-retry")?;
+    std::fs::remove_dir_all(&root)?;
+    let root_uri = versionlens_core::workspace_file_uri(&root).context("missing root URI")?;
+    let (client, server_thread) =
+        start_workspace_server(json!({"rootUri": root_uri, "capabilities": {}}))?;
+
+    assert_diagnostics(
+        client.receiver.recv_timeout(Duration::from_secs(10))?,
+        &root_uri,
+        false,
+    )?;
+    assert!(matches!(
+        client.receiver.recv_timeout(Duration::from_millis(500)),
+        Err(crossbeam_channel::RecvTimeoutError::Timeout)
+    ));
+    std::fs::create_dir_all(&root)?;
+    assert_diagnostics(
+        client.receiver.recv_timeout(Duration::from_secs(10))?,
+        &root_uri,
+        true,
+    )?;
+
+    shutdown_client(&client, 2, server_thread)?;
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
 fn initialize_client(client: &Connection) -> Result<()> {
     send_request(
         client,
@@ -104,7 +206,7 @@ fn initialize_client(client: &Connection) -> Result<()> {
                 "uri": "file:///workspace/project",
                 "name": "project"
             }],
-            "capabilities": {}
+            "capabilities": {"workspace":{"applyEdit":true,"workspaceEdit":{"documentChanges":true}}}
         }),
     )?;
     let initialize_result = ok_result(receive(client)?)?;
@@ -114,8 +216,28 @@ fn initialize_client(client: &Connection) -> Result<()> {
     let execute_commands = capabilities
         .execute_command_provider
         .ok_or_else(|| anyhow::anyhow!("expected execute command capabilities"))?;
-    assert_eq!(execute_commands.commands, [DISPLAY_CODE_LENS_COMMAND]);
+    assert_eq!(
+        execute_commands.commands,
+        [
+            DISPLAY_CODE_LENS_COMMAND,
+            crate::state::UPDATE_DEPENDENCY_COMMAND
+        ]
+    );
     send_notification(client, "initialized", json!({}))
+}
+
+fn initialize_workspace(client: &Connection, params: Value) -> Result<Value> {
+    send_request(client, 1, "initialize", params)?;
+    let result = ok_result(receive(client)?)?;
+    send_notification(client, "initialized", json!({}))?;
+    Ok(result)
+}
+
+fn start_workspace_server(params: Value) -> Result<(Connection, thread::JoinHandle<Result<()>>)> {
+    let (server, client) = Connection::memory();
+    let server_thread = thread::spawn(move || run_connection(&server, false));
+    initialize_workspace(&client, params)?;
+    Ok((client, server_thread))
 }
 
 fn assert_visible_code_lenses(client: &Connection, uri: &str) -> Result<()> {
@@ -126,7 +248,7 @@ fn assert_visible_code_lenses(client: &Connection, uri: &str) -> Result<()> {
         json!({"textDocument": {"uri": uri}}),
     )?;
     let lenses = serde_json::from_value::<Vec<CodeLens>>(ok_result(receive(client)?)?)?;
-    crate::test_support::assert_display_code_lenses(&lenses);
+    crate::test_support::assert_update_code_lenses(&lenses);
     assert_diagnostics(receive(client)?, uri, true)?;
 
     send_request(
@@ -155,6 +277,50 @@ fn send_request(connection: &Connection, id: i32, method: &str, params: Value) -
     Ok(())
 }
 
+fn open_json_document(client: &Connection, uri: &str, version: i32, text: &str) -> Result<()> {
+    send_notification(
+        client,
+        "textDocument/didOpen",
+        json!({"textDocument": {
+            "uri": uri, "languageId": "json", "version": version, "text": text,
+        }}),
+    )
+}
+
+fn checked_command(
+    client: &Connection,
+    id: i32,
+    uri: &str,
+    version: &str,
+) -> Result<lsp_types::Command> {
+    send_request(
+        client,
+        id,
+        "textDocument/codeLens",
+        json!({"textDocument":{"uri":uri}}),
+    )?;
+    let lenses = serde_json::from_value::<Vec<CodeLens>>(ok_result(receive(client)?)?)?;
+    assert_diagnostics(receive(client)?, uri, true)?;
+    lenses
+        .into_iter()
+        .filter_map(|lens| lens.command)
+        .find(|command| command.title.contains(version))
+        .ok_or_else(|| anyhow::anyhow!("missing checked version {version}"))
+}
+
+fn shutdown_client(
+    client: &Connection,
+    id: i32,
+    server: thread::JoinHandle<Result<()>>,
+) -> Result<()> {
+    send_request(client, id, "shutdown", Value::Null)?;
+    ok_result(receive(client)?)?;
+    send_notification(client, "exit", Value::Null)?;
+    server
+        .join()
+        .map_err(|_| anyhow::anyhow!("server panicked"))?
+}
+
 fn send_notification(connection: &Connection, method: &str, params: Value) -> Result<()> {
     connection.sender.send(Message::Notification(Notification {
         method: method.to_owned(),
@@ -164,7 +330,26 @@ fn send_notification(connection: &Connection, method: &str, params: Value) -> Re
 }
 
 fn receive(connection: &Connection) -> Result<Message> {
-    Ok(connection.receiver.recv_timeout(Duration::from_secs(10))?)
+    loop {
+        let message = connection.receiver.recv_timeout(Duration::from_secs(10))?;
+        if matches!(
+            &message,
+            Message::Notification(notification) if notification.method == "window/logMessage"
+        ) || matches!(
+            &message,
+            Message::Notification(notification)
+                if notification.method == "textDocument/publishDiagnostics"
+                    && notification.params["diagnostics"].as_array().is_some_and(|diagnostics| {
+                        !diagnostics.is_empty()
+                            && diagnostics.iter().all(|diagnostic| {
+                                diagnostic["source"] == "VersionLens workspace discovery"
+                            })
+                    })
+        ) {
+            continue;
+        }
+        return Ok(message);
+    }
 }
 
 fn ok_result(message: Message) -> Result<Value> {
@@ -197,3 +382,7 @@ fn assert_diagnostics(message: Message, expected_uri: &str, empty: bool) -> Resu
     assert_eq!(params.diagnostics.is_empty(), empty);
     Ok(())
 }
+
+mod updates;
+
+mod refresh;

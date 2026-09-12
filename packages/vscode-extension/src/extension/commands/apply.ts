@@ -17,7 +17,7 @@ import {
   setProviderError,
 } from "../diagnostics/provider.ts";
 import { refreshDiagnostics } from "../diagnostics/refresh.ts";
-import { documentInput, toRange } from "../documents.ts";
+import { documentInput, documentTextHash, toRange } from "../documents.ts";
 import type {
   NativeApplyCommand,
   NativeApplyCommandInput,
@@ -69,11 +69,12 @@ async function applyRustEdits(
     return;
   }
 
-  let output = applyCommand(state, editor.document, {
+  const applied = applyCommand(state, editor.document, {
     command,
     dependencyName,
     selectedVersion: options.selectedVersion,
   });
+  let output = applied instanceof Promise ? await applied : applied;
   if (!output) {
     return;
   }
@@ -198,7 +199,8 @@ async function validateEditPlan(
     if (
       (plannedDocument.document.version !== undefined &&
         target.version !== plannedDocument.document.version) ||
-      textHash(target.getText()) !== plannedDocument.document.textHash ||
+      documentTextHash(target.getText()) !==
+        plannedDocument.document.textHash ||
       !areEditRangesValid(target.getText(), plannedDocument.edits) ||
       hasOverlappingEdits(plannedDocument.edits)
     )
@@ -238,15 +240,6 @@ function rangesOverlap(left: NativeRange, right: NativeRange): boolean {
   const before = (a: typeof left.start, b: typeof left.start): boolean =>
     a.line < b.line || (a.line === b.line && a.character < b.character);
   return before(left.start, right.end) && before(right.start, left.end);
-}
-
-function textHash(text: string): string {
-  let hash = 0xcbf29ce484222325n;
-  for (const byte of new TextEncoder().encode(text)) {
-    hash ^= BigInt(byte);
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-  }
-  return hash.toString(16).padStart(16, "0");
 }
 
 function areEditRangesValid(text: string, edits: NativeTextEdit[]): boolean {
@@ -347,11 +340,13 @@ function applyCommand(
   state: ExtensionState,
   document: TextDocument,
   selection: ApplySelection,
-): ResolveDocumentOutput | undefined {
+):
+  | ResolveDocumentOutput
+  | Promise<ResolveDocumentOutput | undefined>
+  | undefined {
   clearProviderError(state);
   increaseProviderBusy(state);
   const { command, dependencyName, selectedVersion } = selection;
-  let output: ResolveDocumentOutput | undefined;
   try {
     const input: NativeApplyCommandInput = {
       document: documentInput(document),
@@ -365,14 +360,30 @@ function applyCommand(
     if (selectedVersion) {
       input.selectedVersion = selectedVersion;
     }
-    output = sessionForResource(state, document.uri)?.applyCommand(input);
+    const nativeApply = sessionForResource(state, document.uri)?.applyCommand as
+      | ((
+          input: NativeApplyCommandInput,
+        ) => ResolveDocumentOutput | Promise<ResolveDocumentOutput>)
+      | undefined;
+    const output = nativeApply?.(input);
+    if (output instanceof Promise) {
+      return output
+        .catch((error: unknown): undefined => {
+          logProviderError(state, error);
+          setProviderError(state);
+        })
+        .finally((): void => {
+          decreaseProviderBusy(state);
+        });
+    }
+    decreaseProviderBusy(state);
+    return output;
   } catch (error) {
     logProviderError(state, error);
     setProviderError(state);
-  } finally {
     decreaseProviderBusy(state);
+    return;
   }
-  return output;
 }
 
 function vulnerableUpdateMessage(output: ResolveDocumentOutput): string {

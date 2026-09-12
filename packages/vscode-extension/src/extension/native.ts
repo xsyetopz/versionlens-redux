@@ -92,6 +92,30 @@ export interface NativeDocumentInput {
   version?: number;
 }
 
+export interface NativeWorkspaceCheckingInput {
+  documents: NativeDocumentInput[];
+  exclusions: string[];
+  providerExclusions?: NativeWorkspaceProviderExclusion[];
+  roots: string[];
+}
+
+export interface NativeWorkspaceProviderExclusion {
+  ecosystem: string;
+  patterns: string[];
+}
+
+export interface NativeWorkspaceGeneration {
+  generation: string;
+}
+
+export interface NativeWorkspaceCheckEvent {
+  document?: NativeDocumentInput;
+  generation: string;
+  kind: string;
+  message?: string;
+  uri?: string;
+}
+
 export type NativeApplyCommand =
   | "sort"
   | "update"
@@ -225,18 +249,60 @@ export interface NativePosition {
   line: number;
 }
 
-export interface NativeSession {
+interface DocumentSession {
   analyzeDocument: (input: NativeDocumentInput) => AnalyzeDocumentOutput;
-  applyCommand: (input: NativeApplyCommandInput) => ResolveDocumentOutput;
-  clearCache: () => void;
-  disposeSession: () => void;
+  applyCommand: (
+    input: NativeApplyCommandInput,
+  ) => Promise<ResolveDocumentOutput>;
+  documentIsFresh: (input: NativeDocumentInput) => boolean;
   resolveDocument: (
     input: NativeDocumentInput,
+    background?: boolean,
   ) => Promise<ResolveDocumentOutput>;
+}
+
+interface WorkspaceSession {
+  checkWorkspace: (
+    input: NativeWorkspaceCheckingInput,
+  ) => NativeWorkspaceGeneration;
+  invalidateWorkspace: () => void;
+  setWorkspaceDocuments: (documents: NativeDocumentInput[]) => boolean;
+  takeWorkspaceEvents: () => NativeWorkspaceCheckEvent[];
+  workspaceCheckingGeneration: () => NativeWorkspaceGeneration | null;
+}
+
+interface SessionLifecycle {
+  clearCache: () => void;
+  disposeSession: () => void;
+}
+
+export declare class NativeSession
+  implements DocumentSession, WorkspaceSession, SessionLifecycle
+{
+  analyzeDocument(input: NativeDocumentInput): AnalyzeDocumentOutput;
+  applyCommand(input: NativeApplyCommandInput): Promise<ResolveDocumentOutput>;
+  checkWorkspace(
+    input: NativeWorkspaceCheckingInput,
+  ): NativeWorkspaceGeneration;
+  clearCache(): void;
+  documentIsFresh(input: NativeDocumentInput): boolean;
+  disposeSession(): void;
+  invalidateWorkspace(): void;
+  resolveDocument(
+    input: NativeDocumentInput,
+    background?: boolean,
+  ): Promise<ResolveDocumentOutput>;
+  setWorkspaceDocuments(documents: NativeDocumentInput[]): boolean;
+  takeWorkspaceEvents(): NativeWorkspaceCheckEvent[];
+  workspaceCheckingGeneration(): NativeWorkspaceGeneration | null;
 }
 
 export interface NativeModule {
   createSession: (config: NativeSessionConfig) => NativeSession;
+  createSessionWithStorage: (
+    config: NativeSessionConfig,
+    directory: string,
+  ) => Promise<NativeSession>;
 }
 
 export function loadNative(extensionPath: string): NativeModule {

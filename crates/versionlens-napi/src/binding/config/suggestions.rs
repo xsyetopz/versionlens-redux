@@ -16,7 +16,6 @@ impl NativeSuggestionIndicators {
             error: self.error,
             no_match: self.no_match,
             matched: self.matched,
-            downgradeable: self.downgradeable,
             updateable: self.updateable,
             updateable_vulnerable: self.updateable_vulnerable,
             build: self.build,

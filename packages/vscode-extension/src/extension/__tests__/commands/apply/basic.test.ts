@@ -17,14 +17,10 @@ const sortEndCharacter = 41;
 const updateStartCharacter = 30;
 const updateEndCharacter = 35;
 
-function textHash(text: string): string {
-  let hash = 0xcbf29ce484222325n;
-  for (const byte of new TextEncoder().encode(text)) {
-    hash ^= BigInt(byte);
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-  }
-  return hash.toString(16).padStart(16, "0");
-}
+it("matches the Rust UTF-8 document hash contract", async (): Promise<void> => {
+  const { documentTextHash } = await import("../../../documents.ts");
+  expect(documentTextHash("VersionLens 🦀\n")).toBe("f8340b4960fa854c");
+});
 
 it("sort command bypasses CodeLens replacement gate like upstream", async (): Promise<void> => {
   const { registerCommands } = await import("../../../commands/register.ts");
@@ -88,6 +84,7 @@ for (const plannedUri of [
 ] as const) {
   it(`workspace updates open ${plannedUri} as a URI resource`, async (): Promise<void> => {
     const { registerCommands } = await import("../../../commands/register.ts");
+    const { documentTextHash } = await import("../../../documents.ts");
     reset();
     const document = documentStub("left-pad");
     const targetText = document.getText();
@@ -106,7 +103,7 @@ for (const plannedUri of [
           documents: [
             {
               document: {
-                textHash: textHash(targetText),
+                textHash: documentTextHash(targetText),
                 uri: plannedUri,
               },
               edits: applyResult().edits,

@@ -18,11 +18,11 @@ impl VersionLensExtension {
 
     fn release_target() -> Result<&'static str> {
         match zed::current_platform() {
-            (Os::Linux, Architecture::X86) => Ok("linux-x64"),
+            (Os::Linux, Architecture::X8664) => Ok("linux-x64"),
             (Os::Linux, Architecture::Aarch64) => Ok("linux-arm64"),
-            (Os::Mac, Architecture::X86) => Ok("darwin-x64"),
+            (Os::Mac, Architecture::X8664) => Ok("darwin-x64"),
             (Os::Mac, Architecture::Aarch64) => Ok("darwin-arm64"),
-            (Os::Windows, Architecture::X86) => Ok("win32-x64"),
+            (Os::Windows, Architecture::X8664) => Ok("win32-x64"),
             (Os::Windows, Architecture::Aarch64) => Ok("win32-arm64"),
             platform => Err(format!("unsupported Zed platform: {platform:?}")),
         }

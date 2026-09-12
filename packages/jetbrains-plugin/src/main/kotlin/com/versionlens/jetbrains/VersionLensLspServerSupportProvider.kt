@@ -133,6 +133,11 @@ internal class VersionLensLspServerDescriptor(
         }
 
         private val supportedFileNames = setOf(
+            ".nvmrc",
+            ".node-version",
+            ".bun-version",
+            "rust-toolchain",
+            "rust-toolchain.toml",
             "WORKSPACE",
             "MODULE.bazel",
             "BUILD.bazel",

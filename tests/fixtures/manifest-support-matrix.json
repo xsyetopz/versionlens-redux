@@ -7,11 +7,15 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.cargo.files",
-          "defaultGlob": "**/Cargo.toml",
-          "fileForms": ["Cargo.toml"],
-          "languages": ["toml"],
-          "manifestKinds": ["CargoToml"],
-          "parsers": ["parse_cargo_toml_with_paths"]
+          "defaultGlob": "**/{Cargo.toml,rust-toolchain,rust-toolchain.toml}",
+          "fileForms": ["Cargo.toml", "rust-toolchain", "rust-toolchain.toml"],
+          "languages": ["toml", "plaintext"],
+          "manifestKinds": ["CargoToml", "RustToolchain", "RustToolchainToml"],
+          "parsers": [
+            "parse_cargo_toml_with_paths",
+            "parse_rust_toolchain",
+            "parse_rust_toolchain_toml"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -295,22 +299,31 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.npm.files",
-          "defaultGlob": "**/{package.json,package.json5,package.yaml,package.yml}",
+          "defaultGlob": "**/{package.json,package.json5,package.yaml,package.yml,.nvmrc,.node-version,.bun-version}",
           "fileForms": [
             "package.json",
             "package.json5",
             "package.yaml",
-            "package.yml"
+            "package.yml",
+            ".nvmrc",
+            ".node-version",
+            ".bun-version"
           ],
-          "languages": ["json", "jsonc", "json5", "yaml"],
+          "languages": ["json", "jsonc", "json5", "yaml", "plaintext"],
           "manifestKinds": [
             "NpmPackageJson",
             "NpmPackageJson5",
-            "NpmPackageYaml"
+            "NpmPackageYaml",
+            "Nvmrc",
+            "NodeVersion",
+            "BunVersion"
           ],
           "parsers": [
             "parse_package_json_with_paths",
-            "parse_package_yaml_with_paths"
+            "parse_package_yaml_with_paths",
+            "parse_nvmrc",
+            "parse_node_version",
+            "parse_bun_version"
           ]
         }
       ],
@@ -627,7 +640,7 @@
     {
       "ecosystem": "github-actions",
       "provider": "github",
-      "registry": "GitHub repository tags; branch, commit-SHA, local, and ambiguous refs are ignored",
+      "registry": "GitHub repository tags and SHA-pinned releases; action-specific runtime release sources",
       "manifests": [
         {
           "defaultSettingKey": "versionlens.github.files",
@@ -643,7 +656,18 @@
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.github.dependencyProperties",
-        "default": ["uses"]
+        "default": [
+          "uses",
+          "with.node-version",
+          "with.bun-version",
+          "with.go-version",
+          "with.deno-version",
+          "with.python-version",
+          "with.java-version",
+          "with.dotnet-version",
+          "with.ruby-version",
+          "with.toolchain"
+        ]
       }
     },
     {
