@@ -24,15 +24,15 @@ function M.refresh(bufnr)
 end
 
 local function refresh_client_lenses(_error, _result, context)
-	local client = vim.lsp.get_client_by_id(context.client_id)
-	if client then
-		for bufnr in pairs(client.attached_buffers) do
-			if vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
-				M.refresh(bufnr)
-			end
-		end
-	end
-	return vim.NIL
+  local client = vim.lsp.get_client_by_id(context.client_id)
+  if client then
+    for bufnr in pairs(client.attached_buffers) do
+      if vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
+        M.refresh(bufnr)
+      end
+    end
+  end
+  return vim.NIL
 end
 
 function M.start(bufnr)
@@ -50,15 +50,15 @@ function M.start(bufnr)
     return nil
   end
 
-	local user_on_attach = M.config.on_attach
-	local capabilities = vim.lsp.protocol.make_client_capabilities()
-	capabilities.workspace.workspaceEdit.documentChanges = true
-	capabilities.workspace.codeLens = { refreshSupport = true }
-	return vim.lsp.start({
-		name = client_name,
-		cmd = cmd,
-		capabilities = capabilities,
-		handlers = { ["workspace/codeLens/refresh"] = refresh_client_lenses },
+  local user_on_attach = M.config.on_attach
+  local capabilities = vim.lsp.protocol.make_client_capabilities()
+  capabilities.workspace.workspaceEdit.documentChanges = true
+  capabilities.workspace.codeLens = { refreshSupport = true }
+  return vim.lsp.start({
+    name = client_name,
+    cmd = cmd,
+    capabilities = capabilities,
+    handlers = { ["workspace/codeLens/refresh"] = refresh_client_lenses },
     root_dir = support.root_dir(bufnr, M.config),
     on_attach = function(client, attached_bufnr)
       M.refresh(attached_bufnr)

@@ -40,7 +40,10 @@ describe("setup", function()
       assert.are.equal(42, id)
       return { attached_buffers = { [bufnr] = true, [999999] = true } }
     end
-    assert.are.equal(vim.NIL, captured.handlers["workspace/codeLens/refresh"](nil, nil, { client_id = 42 }))
+    assert.are.equal(
+      vim.NIL,
+      captured.handlers["workspace/codeLens/refresh"](nil, nil, { client_id = 42 })
+    )
     assert.are.same({ bufnr }, refreshed)
   end)
 
