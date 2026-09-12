@@ -1,6 +1,6 @@
 use std::ops::Range as ByteRange;
 
-use toml_edit::{DocumentMut, InlineTable, Key, Value as TomlValue};
+use toml_edit::{Document, InlineTable, Key, Value as TomlValue};
 
 use crate::positions::{offset_range, string_content_bounds};
 use versionlens_model::Dependency;
@@ -16,9 +16,10 @@ type InlineVersionRequirement<'a> = Option<(
 type GradleDependencyReader =
     for<'a> fn(&'a str, &'a Key, &'a str, &'a TomlValue) -> Option<GradleDependencyInput<'a>>;
 type GradleVersionCatalogDependencies = Vec<Dependency>;
+type GradleCatalogDocument<'a> = Document<&'a str>;
 
 pub(crate) fn parse_gradle_version_catalog_toml(text: &str) -> Vec<Dependency> {
-    let Ok(document) = text.parse::<DocumentMut>() else {
+    let Ok(document) = Document::parse(text) else {
         return vec![];
     };
 
@@ -43,7 +44,7 @@ pub(crate) fn parse_gradle_version_catalog_toml(text: &str) -> Vec<Dependency> {
 
 fn collect_versions(
     text: &str,
-    document: &DocumentMut,
+    document: &GradleCatalogDocument<'_>,
     dependencies: &mut GradleVersionCatalogDependencies,
 ) {
     let Some(table) = document.get("versions").and_then(|value| value.as_table()) else {
@@ -76,7 +77,7 @@ fn collect_versions(
 
 fn collect_alias_table(
     text: &str,
-    document: &DocumentMut,
+    document: &GradleCatalogDocument<'_>,
     dependencies: &mut GradleVersionCatalogDependencies,
     table_name: &str,
     dependency: GradleDependencyReader,

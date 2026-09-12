@@ -60,40 +60,6 @@ fn selected_version_without_update_command_is_ignored() {
 }
 
 #[test]
-fn selected_older_github_release_applies_as_a_downgrade() {
-    let session = standard_session();
-    let output = session.apply_command_with_selected_version(ApplyCommandRequest {
-        input: DocumentInput::new(
-            "file:///work/.github/workflows/ci.yml".to_owned(),
-            "yaml".to_owned(),
-            "steps:\n  - uses: actions/checkout@v7.0.1\n".to_owned(),
-            None,
-        ),
-        command: Some("update"),
-        dependency_name: Some("actions/checkout"),
-        selected_version: Some("6.0.0"),
-        responses: &[RegistryResponseInput::new(
-            "actions/checkout".to_owned(),
-            GitHub,
-            r#"[{"name":"v7.0.1"},{"name":"v7.0.0"},{"name":"v6.0.0"}]"#.to_owned(),
-        )],
-    });
-
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "v6.0.0");
-}
-
-#[test]
-fn selected_older_sha_pinned_action_keeps_an_immutable_commit_pin() {
-    let current = "7777777777777777777777777777777777777777";
-    let older = "6666666666666666666666666666666666666666";
-    let output = apply_sha_action_selection(current, "6.0.0", older);
-
-    assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, format!("{older} # v6.0.0"));
-}
-
-#[test]
 fn unproven_selected_version_cannot_replace_a_sha_pin_with_a_mutable_tag() {
     let current = "7777777777777777777777777777777777777777";
     let output = apply_sha_action_selection(

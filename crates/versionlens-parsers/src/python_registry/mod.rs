@@ -3,7 +3,7 @@ use toml_edit::{Array as TomlArray, Item, Value as TomlValue};
 type UvRegistryUrls = Vec<String>;
 type UvRegistryItem<'a> = Option<&'a Item>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PoetrySource {
     pub name: String,
     pub url: String,

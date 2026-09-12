@@ -16,7 +16,7 @@ pub(crate) fn operator_requirement_range(
             let start = trimmed_start + operator.len() + spaces;
             return RequirementRange {
                 prefix: requirement[..start].to_owned(),
-                start,
+                start: 0,
                 end: requirement.trim_end().len(),
             };
         }

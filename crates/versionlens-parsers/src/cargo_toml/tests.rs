@@ -1,6 +1,6 @@
 use crate::document::test_support::{extract_range, parse_fixture};
 use crate::{DocumentInput, parse_document, parse_document_with_dependency_paths};
-use versionlens_model::Ecosystem::Cargo;
+use versionlens_model::{Ecosystem::Cargo, VersionableKind};
 
 #[test]
 fn parses_cargo_toml_dependency_tables() {
@@ -169,6 +169,43 @@ fn parses_cargo_workspace_inherited_dependencies() {
         extract_range(text, dependencies[2].requirement_range),
         "true"
     );
+}
+
+#[test]
+fn parses_workspace_package_version_and_member_inheritance() {
+    let root = "[workspace.package]\nversion = \"1.2.3\"\n";
+    let dependencies = parse_fixture(root, "file:///work/Cargo.toml", "toml");
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].group, "package");
+    assert_eq!(dependencies[0].name, "version");
+    assert_eq!(dependencies[0].requirement, "1.2.3");
+    assert_eq!(
+        dependencies[0].versionable_kind(),
+        VersionableKind::ProjectVersion
+    );
+    assert_eq!(
+        extract_range(root, dependencies[0].requirement_range),
+        "1.2.3"
+    );
+
+    for member in [
+        "[package]\nname = \"member\"\nversion.workspace = true\n",
+        "[package]\nname = \"member\"\nversion = { workspace = true }\n",
+    ] {
+        let dependencies = parse_fixture(member, "file:///work/member/Cargo.toml", "toml");
+        assert_eq!(dependencies.len(), 1);
+        assert_eq!(dependencies[0].group, "package");
+        assert_eq!(dependencies[0].name, "version");
+        assert_eq!(dependencies[0].requirement, "workspace:true");
+        assert_eq!(
+            dependencies[0].versionable_kind(),
+            VersionableKind::WorkspaceReference
+        );
+        assert_eq!(
+            extract_range(member, dependencies[0].requirement_range),
+            "true"
+        );
+    }
 }
 
 #[test]

@@ -7,17 +7,18 @@ use crate::Ecosystem::{
     Opam as OpamEcosystem, Pub, Python, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
 };
 use crate::ManifestKind::{
-    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, Cabal, CabalProject, CargoToml,
-    ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt, Cpanfile,
-    DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson, DotnetXml,
-    DubJson, DubSdl, DuneProject, Gemfile, GitHubActions, GleamToml, GoMod, GradleBuild,
+    AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, BunVersion, Cabal, CabalProject,
+    CargoToml, ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt,
+    Cpanfile, DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson,
+    DotnetXml, DubJson, DubSdl, DuneProject, Gemfile, GitHubActions, GleamToml, GoMod, GradleBuild,
     GradleSettings, GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson,
     JuliaManifestToml, JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec,
-    MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake, NpmPackageJson, NpmPackageJson5,
-    NpmPackageYaml, Opam, PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml,
-    PubspecYaml, PythonPipfile, PythonPyprojectToml, PythonRequirementsTxt, RDescription,
-    RebarConfig, RenvLock, RubyGemspec, SbtBuild, StackYaml, SwiftPackage, TerraformTf,
-    UnityProjectManifestJson, VcpkgJson, XmakeLua, ZigBuildZon,
+    MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake, NodeVersion, NpmPackageJson, NpmPackageJson5,
+    NpmPackageYaml, Nvmrc, Opam, PaketDependencies, PaketReferences, PnpmYaml,
+    PubspecOverridesYaml, PubspecYaml, PythonPipfile, PythonPyprojectToml, PythonRequirementsTxt,
+    RDescription, RebarConfig, RenvLock, RubyGemspec, RustToolchain, RustToolchainToml, SbtBuild,
+    StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
+    ZigBuildZon,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,6 +92,11 @@ pub enum ManifestKind {
     VersionLensMultiRegistries,
     Unknown,
     GitHubActions,
+    Nvmrc,
+    NodeVersion,
+    BunVersion,
+    RustToolchain,
+    RustToolchainToml,
 }
 
 pub(crate) const MANIFEST_ECOSYSTEMS: &[(ManifestKind, Ecosystem)] = &[
@@ -160,6 +166,11 @@ pub(crate) const MANIFEST_ECOSYSTEMS: &[(ManifestKind, Ecosystem)] = &[
     (PubspecOverridesYaml, Pub),
     (PubspecYaml, Pub),
     (GitHubActions, GitHub),
+    (Nvmrc, Npm),
+    (NodeVersion, Npm),
+    (BunVersion, Npm),
+    (RustToolchain, Cargo),
+    (RustToolchainToml, Cargo),
 ];
 
 pub fn ecosystem_for_manifest(kind: ManifestKind) -> Option<Ecosystem> {
@@ -170,7 +181,7 @@ pub fn ecosystem_for_manifest(kind: ManifestKind) -> Option<Ecosystem> {
 
 pub fn provider_name_for_manifest(kind: ManifestKind) -> Option<&'static str> {
     match kind {
-        CargoToml => Some("cargo"),
+        CargoToml | RustToolchain | RustToolchainToml => Some("cargo"),
         ComposerJson => Some("composer"),
         DenoJson | DenoImportMapJson | JsrJson => Some("deno"),
         DotnetProjectJson | DotnetXml | PaketDependencies | PaketReferences => Some("dotnet"),
@@ -207,7 +218,9 @@ pub fn provider_name_for_manifest(kind: ManifestKind) -> Option<&'static str> {
         NixFlake => Some("nix"),
         UnityProjectManifestJson => Some("unity"),
         CocoaPodsPodfile => Some("cocoapods"),
-        NpmPackageJson | NpmPackageJson5 | NpmPackageYaml => Some("npm"),
+        NpmPackageJson | NpmPackageJson5 | NpmPackageYaml | Nvmrc | NodeVersion | BunVersion => {
+            Some("npm")
+        }
         PnpmYaml => Some("pnpm"),
         PubspecOverridesYaml | PubspecYaml => Some("pub"),
         PythonPipfile | PythonPyprojectToml | PythonRequirementsTxt => Some("pypi"),

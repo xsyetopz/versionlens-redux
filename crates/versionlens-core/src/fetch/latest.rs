@@ -1,23 +1,21 @@
-use serde_json::from_str;
-use std::cmp::Ordering::Greater as OrderingGreater;
-
 use semver::Version;
-use serde_json::Value;
-use versionlens_model::{CanonicalReference, Dependency};
+use versionlens_model::Dependency;
 use versionlens_providers::{
-    RegistryEndpoint, build_versions_from_response, github_tag_ref_url,
-    release_versions_from_response_for_endpoint, release_versions_from_response_for_package,
+    RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
+    release_versions_from_response_for_package,
 };
-use versionlens_suggestions::{
-    UpdateChoice, push_unique_choice, release_update_choices_with_prereleases,
-};
+use versionlens_suggestions::{UpdateChoice, release_update_choices_with_prereleases};
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::registry::RegistryContext;
 use crate::session::operation::OperationContext;
-use versionlens_model::Ecosystem::{Docker, GitHub, Npm};
-use versionlens_versions::{latest_version_with_prerelease_tags, version_tag_parts};
+use versionlens_model::Ecosystem::{Docker, Npm};
+mod docker;
+mod github;
+use docker::docker_update_choices;
+use github::{attach_github_action_replacements, github_action_versions};
+pub(crate) use github::{github_action_latest, github_current_ref_is_proven};
 
 mod body;
 mod local_dotnet;
@@ -27,174 +25,6 @@ pub(crate) struct LatestFetch {
     pub(crate) latest: Option<String>,
     pub(crate) builds: Vec<String>,
     pub(crate) choices: Vec<UpdateChoice>,
-}
-
-pub(crate) fn github_current_ref_is_proven(dependency: &Dependency, body: &str) -> bool {
-    if dependency.ecosystem != GitHub {
-        return true;
-    }
-
-    if let Some(reference) = dependency.canonical_reference.as_ref() {
-        return github_action_reference_is_proven(reference, body);
-    }
-
-    let requirement = dependency.requirement.trim();
-    if requirement.is_empty()
-        || requirement.bytes().any(|byte| {
-            matches!(
-                byte,
-                b' ' | b'^' | b'~' | b'<' | b'>' | b'=' | b'*' | b'|' | b','
-            )
-        })
-    {
-        return false;
-    }
-    let requirement = requirement.trim_start_matches(['v', 'V']);
-    let requested = requirement.split('.').collect::<Vec<_>>();
-    let package = dependency
-        .hosted_name
-        .as_deref()
-        .unwrap_or(&dependency.name);
-    release_versions_from_response_for_package(GitHub, package, body)
-        .iter()
-        .any(|release| {
-            if release == requirement {
-                return true;
-            }
-            if requested.len() > 2 || requested.iter().any(|part| part.is_empty()) {
-                return false;
-            }
-            let release_parts = release.split('.').collect::<Vec<_>>();
-            requested
-                .iter()
-                .enumerate()
-                .all(|(index, part)| release_parts.get(index) == Some(part))
-        })
-}
-
-pub(crate) fn github_action_latest(
-    dependency: &Dependency,
-    body: &str,
-    include_prereleases: bool,
-    prerelease_tags: &[String],
-) -> Option<String> {
-    let reference = dependency.canonical_reference.as_ref()?;
-    let current_tag = github_action_tag(reference);
-    let (prefix, _) = version_tag_parts(current_tag)?;
-    let tags = github_tags(body)
-        .into_iter()
-        .filter(|tag| tag.prefix == prefix)
-        .collect::<Vec<_>>();
-    latest_version_with_prerelease_tags(
-        tags.iter().map(|tag| tag.version.as_str()),
-        include_prereleases,
-        prerelease_tags,
-    )
-}
-
-#[derive(Debug)]
-struct GithubTag {
-    raw: String,
-    prefix: String,
-    version: String,
-    commit: Option<String>,
-}
-
-fn github_tags(body: &str) -> Vec<GithubTag> {
-    let Ok(Value::Array(entries)) = from_str::<Value>(body) else {
-        return vec![];
-    };
-    entries
-        .into_iter()
-        .filter_map(|entry| {
-            let raw = entry
-                .as_str()
-                .or_else(|| entry.get("name").and_then(Value::as_str))?;
-            let (prefix, version) = version_tag_parts(raw)?;
-            let commit = entry
-                .get("commit")
-                .and_then(|commit| commit.get("sha"))
-                .and_then(Value::as_str)
-                .map(str::to_owned);
-            Some(GithubTag {
-                raw: raw.to_owned(),
-                prefix: prefix.to_owned(),
-                version: version.to_owned(),
-                commit,
-            })
-        })
-        .collect()
-}
-
-fn github_action_tag(reference: &CanonicalReference) -> &str {
-    match reference {
-        CanonicalReference::GitHubActionTag { tag }
-        | CanonicalReference::GitHubActionSha { tag, .. } => tag,
-    }
-}
-
-fn github_action_reference_is_proven(reference: &CanonicalReference, body: &str) -> bool {
-    let tags = github_tags(body);
-    match reference {
-        CanonicalReference::GitHubActionSha { commit, tag, .. } => tags.into_iter().any(|entry| {
-            entry.raw == *tag
-                && entry
-                    .commit
-                    .as_deref()
-                    .is_some_and(|resolved| sha_prefix_matches(commit, resolved))
-        }),
-        CanonicalReference::GitHubActionTag { tag } => {
-            let Some((prefix, version)) = version_tag_parts(tag) else {
-                return false;
-            };
-            let requested = version.split('.').collect::<Vec<_>>();
-            tags.into_iter().any(|entry| {
-                if entry.prefix != prefix {
-                    return false;
-                }
-                if entry.raw == *tag {
-                    return true;
-                }
-                if requested.len() > 2 || requested.iter().any(|part| part.is_empty()) {
-                    return false;
-                }
-                let release = entry.version.split('.').collect::<Vec<_>>();
-                requested
-                    .iter()
-                    .enumerate()
-                    .all(|(index, part)| release.get(index) == Some(part))
-            })
-        }
-    }
-}
-
-fn github_action_reference_is_proven_by_exact_ref(
-    reference: &CanonicalReference,
-    body: &str,
-) -> bool {
-    let CanonicalReference::GitHubActionSha { commit, tag, .. } = reference else {
-        return false;
-    };
-    let Ok(value) = from_str::<Value>(body) else {
-        return false;
-    };
-    let expected_ref = format!("refs/tags/{tag}");
-    let object = value.get("object");
-    value.get("ref").and_then(Value::as_str) == Some(expected_ref.as_str())
-        && object
-            .and_then(|object| object.get("type"))
-            .and_then(Value::as_str)
-            == Some("tag")
-        && object
-            .and_then(|object| object.get("sha"))
-            .and_then(Value::as_str)
-            .is_some_and(|resolved| sha_prefix_matches(commit, resolved))
-}
-
-fn sha_prefix_matches(expected: &str, resolved: &str) -> bool {
-    resolved
-        .get(..expected.len())
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(expected))
 }
 
 type UpdateChoices = Vec<UpdateChoice>;
@@ -295,37 +125,6 @@ impl VersionLensSession {
             choices,
         })
     }
-
-    fn fetch_exact_github_action_ref_is_proven(
-        &self,
-        dependency: &Dependency,
-        endpoint: &RegistryEndpoint,
-        context: &RegistryContext,
-        operation: &OperationContext,
-    ) -> Result<bool, FetchError> {
-        let Some(reference @ CanonicalReference::GitHubActionSha { tag, .. }) =
-            dependency.canonical_reference.as_ref()
-        else {
-            return Ok(false);
-        };
-        let Some(url) = github_tag_ref_url(&endpoint.url, tag) else {
-            return Ok(false);
-        };
-        let body = match self.get_text_or_status_with_context(
-            &url,
-            dependency.ecosystem,
-            context,
-            operation,
-        ) {
-            Ok(Some(body)) => body,
-            Ok(None) => return Ok(false),
-            Err(FetchError::RegistryStatus(status)) if status == "not found" => return Ok(false),
-            Err(error) => return Err(error),
-        };
-        Ok(github_action_reference_is_proven_by_exact_ref(
-            reference, &body,
-        ))
-    }
 }
 
 pub(crate) fn response_update_choices(
@@ -354,6 +153,12 @@ fn response_update_choices_with_endpoint(request: ResponseUpdateRequest<'_>) -> 
         include_prereleases,
         prerelease_tags,
     } = request;
+    if matches!(
+        dependency.canonical_reference.as_ref(),
+        Some(versionlens_model::CanonicalReference::GitHubActionRef { .. })
+    ) {
+        return vec![];
+    }
     if dependency.ecosystem == Docker {
         return docker_update_choices(&dependency.requirement, latest, body);
     }
@@ -361,67 +166,37 @@ fn response_update_choices_with_endpoint(request: ResponseUpdateRequest<'_>) -> 
     let versions = github_action_versions(dependency, body).unwrap_or_else(|| {
         update_choice_versions_from_response(dependency, endpoint, body, latest)
     });
+    let current_tag = dependency
+        .canonical_reference
+        .as_ref()
+        .filter(|reference| {
+            matches!(
+                reference,
+                versionlens_model::CanonicalReference::GitHubActionCommit { .. }
+            )
+        })
+        .and_then(|reference| github::github_action_tag(reference, body));
+    let requirement = current_tag
+        .as_deref()
+        .and_then(versionlens_versions::version_tag_parts)
+        .map_or(dependency.requirement.as_str(), |(_, version)| version);
     let mut choices = release_update_choices_with_prereleases(
-        &dependency.requirement,
+        requirement,
         latest,
         &versions,
         include_prereleases,
         prerelease_tags,
     );
+    if current_tag.is_some() && !choices.iter().any(|choice| choice.version == latest) {
+        choices.push(UpdateChoice {
+            label: "latest".to_owned(),
+            version: latest.to_owned(),
+            command: "update".to_owned(),
+            replacement: None,
+        });
+    }
     attach_github_action_replacements(dependency, body, &mut choices);
     choices
-}
-
-fn github_action_versions(dependency: &Dependency, body: &str) -> Option<Vec<String>> {
-    let reference = dependency.canonical_reference.as_ref()?;
-    let (prefix, _) = version_tag_parts(github_action_tag(reference))?;
-    Some(
-        github_tags(body)
-            .into_iter()
-            .filter(|tag| tag.prefix == prefix)
-            .map(|tag| tag.version)
-            .collect(),
-    )
-}
-
-fn attach_github_action_replacements(
-    dependency: &Dependency,
-    body: &str,
-    choices: &mut Vec<UpdateChoice>,
-) {
-    let Some(CanonicalReference::GitHubActionSha { separator, .. }) =
-        dependency.canonical_reference.as_ref()
-    else {
-        return;
-    };
-    let Some((prefix, _)) = dependency
-        .canonical_reference
-        .as_ref()
-        .and_then(|reference| version_tag_parts(github_action_tag(reference)))
-    else {
-        choices.clear();
-        return;
-    };
-    let tags = github_tags(body);
-    choices.retain_mut(|choice| {
-        let mut matches = tags.iter().filter(|tag| {
-            tag.prefix == prefix
-                && version_tag_parts(&choice.version)
-                    .is_some_and(|(_, version)| version == tag.version)
-                && tag.commit.is_some()
-        });
-        let Some(tag) = matches.next() else {
-            return false;
-        };
-        if matches.next().is_some() {
-            return false;
-        }
-        let Some(commit) = tag.commit.as_deref() else {
-            return false;
-        };
-        choice.replacement = Some(format!("{commit}{separator}{}", tag.raw));
-        true
-    });
 }
 
 fn update_choice_versions_from_response(
@@ -474,203 +249,6 @@ fn stable_semver(version: &str) -> Option<Version> {
 
 fn semver_precedence_lte(version: &Version, latest: &Version) -> bool {
     (version.major, version.minor, version.patch) <= (latest.major, latest.minor, latest.patch)
-}
-
-fn docker_update_choices(requirement: &str, latest: &str, body: &str) -> UpdateChoices {
-    if latest.is_empty() || latest == requirement {
-        return vec![];
-    }
-
-    let Some(current) = docker_tag_shape(requirement) else {
-        return vec![UpdateChoice {
-            label: "latest".to_owned(),
-            version: latest.to_owned(),
-            command: "update".to_owned(),
-            replacement: None,
-        }];
-    };
-    let updates = docker_matching_tag_shape_updates(&current, body);
-    let latest_version = updates.last().map_or_else(
-        || latest.to_owned(),
-        |candidate| candidate.tag.as_str().to_owned(),
-    );
-    let mut choices = vec![];
-    push_unique_choice(&mut choices, "latest", &latest_version, "update");
-
-    if let Some(version) = docker_next_major_update(&current.numbers, &updates) {
-        push_unique_choice(&mut choices, "major", version, "updateMajor");
-    }
-    if let Some(version) = docker_next_minor_update(&current.numbers, &updates) {
-        push_unique_choice(&mut choices, "minor", version, "updateMinor");
-    }
-    if let Some(version) = docker_next_patch_update(&current.numbers, &updates) {
-        push_unique_choice(&mut choices, "patch", version, "updatePatch");
-    }
-
-    choices
-}
-
-struct DockerTagShape {
-    numbers: Vec<u64>,
-    suffix: Option<String>,
-}
-
-struct DockerTagCandidate {
-    tag: String,
-    numbers: Vec<u64>,
-}
-
-fn docker_matching_tag_shape_updates(
-    current: &DockerTagShape,
-    body: &str,
-) -> Vec<DockerTagCandidate> {
-    let tags = docker_response_tag_names(body);
-    let mut updates = vec![];
-
-    for tag in tags {
-        let Some(candidate) = docker_tag_shape(&tag) else {
-            continue;
-        };
-        if candidate.suffix != current.suffix || candidate.numbers.len() != current.numbers.len() {
-            continue;
-        }
-        if versionlens_versions::compare_numeric_segments(&candidate.numbers, &current.numbers)
-            != OrderingGreater
-        {
-            continue;
-        }
-        updates.push(DockerTagCandidate {
-            tag,
-            numbers: candidate.numbers,
-        });
-    }
-
-    updates.sort_by(|left, right| {
-        versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
-    });
-    updates
-}
-
-fn docker_next_major_update<'a>(
-    current: &[u64],
-    updates: &'a [DockerTagCandidate],
-) -> Option<&'a str> {
-    updates
-        .iter()
-        .filter(|candidate| {
-            candidate.numbers.first() > current.first()
-                && docker_trailing_components_are_zero(&candidate.numbers, 1)
-        })
-        .min_by(|left, right| {
-            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
-        })
-        .map(|candidate| candidate.tag.as_str())
-}
-
-fn docker_next_minor_update<'a>(
-    current: &[u64],
-    updates: &'a [DockerTagCandidate],
-) -> Option<&'a str> {
-    let major = *current.first()?;
-    let minor = *current.get(1)?;
-    updates
-        .iter()
-        .filter(|candidate| {
-            candidate.numbers.first() == Some(&major)
-                && candidate.numbers.get(1).is_some_and(|value| *value > minor)
-                && docker_trailing_components_are_zero(&candidate.numbers, 2)
-        })
-        .min_by(|left, right| {
-            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
-        })
-        .map(|candidate| candidate.tag.as_str())
-}
-
-fn docker_next_patch_update<'a>(
-    current: &[u64],
-    updates: &'a [DockerTagCandidate],
-) -> Option<&'a str> {
-    let major = *current.first()?;
-    let minor = *current.get(1)?;
-    let patch = *current.get(2)?;
-    updates
-        .iter()
-        .filter(|candidate| {
-            candidate.numbers.first() == Some(&major)
-                && candidate.numbers.get(1) == Some(&minor)
-                && candidate.numbers.get(2).is_some_and(|value| *value > patch)
-                && docker_trailing_components_are_zero(&candidate.numbers, 3)
-        })
-        .min_by(|left, right| {
-            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
-        })
-        .map(|candidate| candidate.tag.as_str())
-}
-
-fn docker_trailing_components_are_zero(numbers: &[u64], start: usize) -> bool {
-    numbers.iter().skip(start).all(|value| *value == 0)
-}
-
-fn docker_tag_shape(tag: &str) -> Option<DockerTagShape> {
-    let (version, suffix) = tag
-        .split_once('-')
-        .map_or((tag, None), |(version, suffix)| {
-            (version, (!suffix.is_empty()).then_some(suffix))
-        });
-    let numbers = versionlens_versions::numeric_segments(version)?;
-    Some(DockerTagShape {
-        numbers,
-        suffix: suffix.map(|value| value.to_owned()),
-    })
-}
-
-fn docker_response_tag_names(body: &str) -> Vec<String> {
-    let Ok(value) = from_str::<Value>(body) else {
-        return vec![];
-    };
-    let mut tags = vec![];
-    tags.extend(docker_object_tag_names(
-        value.get("results").unwrap_or(&value),
-    ));
-    tags.extend(docker_registry_v2_tag_names(&value));
-    tags
-}
-
-fn docker_object_tag_names(value: &Value) -> Vec<String> {
-    value
-        .as_array()
-        .into_iter()
-        .flat_map(|tags| tags.iter())
-        .filter_map(docker_object_tag_name)
-        .map(|value| value.to_owned())
-        .collect()
-}
-
-fn docker_object_tag_name(entry: &Value) -> Option<&str> {
-    let status = entry.get("tag_status").and_then(|value| value.as_str());
-    if status.is_some_and(|status| status != "active") {
-        return None;
-    }
-    if status.is_some()
-        && entry
-            .get("digest")
-            .and_then(|value| value.as_str())
-            .is_none_or(str::is_empty)
-    {
-        return None;
-    }
-    entry.get("name")?.as_str()
-}
-
-fn docker_registry_v2_tag_names(value: &Value) -> Vec<String> {
-    value
-        .get("tags")
-        .and_then(|value| value.as_array())
-        .into_iter()
-        .flat_map(|tags| tags.iter())
-        .filter_map(|value| value.as_str())
-        .map(|value| value.to_owned())
-        .collect()
 }
 
 #[cfg(test)]

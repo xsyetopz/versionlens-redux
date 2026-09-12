@@ -39,6 +39,9 @@ fn bulk_update_release_allowed(latest: Option<&str>) -> bool {
 }
 
 fn suggestion_update_edit(suggestion: &Suggestion) -> Option<TextEdit> {
+    if suggestion.dependency.is_runtime_constraint() {
+        return None;
+    }
     let latest = suggestion.latest.as_deref()?;
     Some(TextEdit {
         range: suggestion.dependency.requirement_range,
@@ -57,7 +60,10 @@ fn selected_replacement(suggestion: &Suggestion, latest: &str) -> Option<String>
     }
     (!matches!(
         suggestion.dependency.canonical_reference,
-        Some(CanonicalReference::GitHubActionSha { .. })
+        Some(
+            CanonicalReference::GitHubActionSha { .. }
+                | CanonicalReference::GitHubActionCommit { .. }
+        )
     ))
     .then(|| replacement_text(&suggestion.dependency, latest))
 }

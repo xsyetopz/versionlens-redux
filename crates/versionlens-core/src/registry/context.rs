@@ -27,6 +27,7 @@ use versionlens_providers::registry_endpoint_with_base;
 use crate::RegistryUrlConfig;
 
 use super::RegistryEndpoints;
+use super::files::RegistryFileRead;
 
 mod dotnet;
 mod npm;
@@ -37,9 +38,10 @@ use npm::{
     npm_generic_proxy_for_request, npm_no_proxy_matches, npm_registry_entry_applies,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct RegistryContext {
     manifest_kind: Option<ManifestKind>,
+    failure: Option<String>,
     pub(crate) urls: Vec<RegistryUrlConfig>,
     composer: ComposerContext,
     npm: NpmContext,
@@ -50,77 +52,87 @@ pub(crate) struct RegistryContext {
     go: GoContext,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct ComposerContext {
     auth_entries: Vec<ComposerAuthEntry>,
     repositories: Vec<ComposerRepository>,
     packagist_disabled: bool,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct MavenContext {
     plugin_urls: Vec<RegistryUrlConfig>,
     auth_entries: Vec<MavenAuthEntry>,
     uses_mirror: bool,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct GoContext {
     proxy_disables_default: bool,
     no_proxy_patterns: Vec<String>,
 }
 
-pub(crate) fn registry_context_from_document_kind(
+pub(crate) fn registry_context_from_document_kind_with_files(
     input: &DocumentInput,
     kind: ManifestKind,
+    files: &impl RegistryFileRead,
 ) -> RegistryContext {
-    <RegistryContext>::from_document_kind(input, kind)
+    <RegistryContext>::from_document_kind_with_files(input, kind, files)
 }
 
 impl RegistryContext {
-    pub(crate) fn from_document_kind(input: &DocumentInput, kind: ManifestKind) -> Self {
+    fn from_document_kind_with_files(
+        input: &DocumentInput,
+        kind: ManifestKind,
+        files: &impl RegistryFileRead,
+    ) -> Self {
         let mut context = match kind {
-            CargoToml => Self::from_cargo_document(input),
-            ComposerJson => Self::from_composer_document(input),
+            CargoToml => Self::from_cargo_document(input, files),
+            ComposerJson => Self::from_composer_document(input, files),
             DotnetProjectJson | DotnetXml | PaketDependencies | PaketReferences => {
-                Self::from_dotnet_document(input)
+                Self::from_dotnet_document(input, files)
             }
             Gemfile | RubyGemspec => Self::from_ruby_document(input),
-            GoMod => Self::from_go_document(input),
+            GoMod => Self::from_go_document(input, files),
             MavenPomXml
             | GradleBuild
             | GradleSettings
             | GradleVersionCatalogToml
             | SbtBuild
             | ClojureDepsEdn
-            | LeiningenProjectClj => Self::from_maven_document(input, kind),
-            GleamToml | MixExs | RebarConfig => Self::from_hex_document(input, kind),
+            | LeiningenProjectClj => Self::from_maven_document(input, kind, files),
+            GleamToml | MixExs | RebarConfig => Self::from_hex_document(input, kind, files),
             DenoJson | DenoImportMapJson | JsrJson | NpmPackageJson | NpmPackageYaml | PnpmYaml => {
-                Self::from_npm_document(input)
+                Self::from_npm_document(input, files)
             }
             PythonPipfile | PythonPyprojectToml | PythonRequirementsTxt => {
-                Self::from_python_document(input)
+                Self::from_python_document(input, files)
             }
             _ => Self::default(),
         };
         context.manifest_kind = Some(kind);
+        context.failure = files.failure().map(|failure| failure.message().to_owned());
         context
+    }
+
+    pub(crate) fn failure_message(&self) -> Option<&str> {
+        self.failure.as_deref()
     }
 
     pub(crate) fn manifest_kind(&self) -> Option<ManifestKind> {
         self.manifest_kind
     }
 
-    fn from_composer_document(input: &DocumentInput) -> Self {
+    fn from_composer_document(input: &DocumentInput, files: &impl RegistryFileRead) -> Self {
         Self {
-            composer: composer_context(input),
+            composer: composer_context(input, files),
             ..Self::default()
         }
     }
 
-    fn from_cargo_document(input: &DocumentInput) -> Self {
+    fn from_cargo_document(input: &DocumentInput, files: &impl RegistryFileRead) -> Self {
         Self {
-            cargo_registries: cargo_config_texts(input)
+            cargo_registries: cargo_config_texts(input, files)
                 .iter()
                 .flat_map(|text| parse_cargo_config_registry_sources(text))
                 .collect(),
@@ -128,9 +140,9 @@ impl RegistryContext {
         }
     }
 
-    fn from_dotnet_document(input: &DocumentInput) -> Self {
+    fn from_dotnet_document(input: &DocumentInput, files: &impl RegistryFileRead) -> Self {
         Self {
-            dotnet: dotnet_context(input),
+            dotnet: dotnet_context(input, files),
             ..Self::default()
         }
     }
@@ -148,8 +160,8 @@ impl RegistryContext {
         }
     }
 
-    fn from_go_document(input: &DocumentInput) -> Self {
-        let env = env_entries(input);
+    fn from_go_document(input: &DocumentInput, files: &impl RegistryFileRead) -> Self {
+        let env = env_entries(input, files);
         Self {
             urls: parse_go_proxy_urls(&env)
                 .into_iter()
@@ -169,9 +181,13 @@ impl RegistryContext {
         }
     }
 
-    fn from_hex_document(input: &DocumentInput, kind: ManifestKind) -> Self {
+    fn from_hex_document(
+        input: &DocumentInput,
+        kind: ManifestKind,
+        files: &impl RegistryFileRead,
+    ) -> Self {
         Self {
-            urls: hex_registry_url_configs(input, kind)
+            urls: hex_registry_url_configs(input, kind, files)
                 .into_iter()
                 .map(|url| RegistryUrlConfig {
                     ecosystem: Hex,
@@ -182,9 +198,13 @@ impl RegistryContext {
         }
     }
 
-    fn from_maven_document(input: &DocumentInput, kind: ManifestKind) -> Self {
+    fn from_maven_document(
+        input: &DocumentInput,
+        kind: ManifestKind,
+        files: &impl RegistryFileRead,
+    ) -> Self {
         Self {
-            urls: parse_maven_registry_urls(input, kind)
+            urls: parse_maven_registry_urls(input, kind, files)
                 .into_iter()
                 .map(|url| RegistryUrlConfig {
                     ecosystem: Maven,
@@ -195,34 +215,12 @@ impl RegistryContext {
             npm: crate::default(),
             dotnet: crate::default(),
             maven: MavenContext {
-                plugin_urls: parse_gradle_plugin_registry_urls(input, kind),
-                auth_entries: maven_auth_entries(input),
-                uses_mirror: maven_uses_mirror(input),
+                plugin_urls: parse_gradle_plugin_registry_urls(input, kind, files),
+                auth_entries: maven_auth_entries(input, files),
+                uses_mirror: maven_uses_mirror(input, files),
             },
             ..Self::default()
         }
-    }
-
-    pub(crate) fn has_urls(&self) -> bool {
-        !self.urls.is_empty()
-            || !self.composer.auth_entries.is_empty()
-            || !self.composer.repositories.is_empty()
-            || !self.npm.registries.is_empty()
-            || !self.npm.auth_entries.is_empty()
-            || !self.npm.client_cert_entries.is_empty()
-            || self.npm.http.strict_ssl.is_some()
-            || self.npm.http.proxy.is_some()
-            || self.npm.http.no_proxy.is_some()
-            || self.npm.http.proxy_disabled
-            || self.npm.http.ca_file.is_some()
-            || self.npm.http.ca.is_some()
-            || self.npm.http.cert.is_some()
-            || self.npm.http.key.is_some()
-            || self.dotnet.has_urls()
-            || !self.maven.auth_entries.is_empty()
-            || self.maven.uses_mirror
-            || !self.cargo_registries.is_empty()
-            || !self.maven.plugin_urls.is_empty()
     }
 
     pub(crate) fn maven_uses_mirror(&self) -> bool {
@@ -459,10 +457,11 @@ impl RegistryContext {
             .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
     }
 
-    fn from_python_document(input: &DocumentInput) -> Self {
+    fn from_python_document(input: &DocumentInput, files: &impl RegistryFileRead) -> Self {
         Self {
             manifest_kind: None,
-            urls: python_registry_url_configs(input),
+            failure: None,
+            urls: python_registry_url_configs(input, files),
             composer: crate::default(),
             npm: crate::default(),
             dotnet: crate::default(),
@@ -473,11 +472,11 @@ impl RegistryContext {
         }
     }
 
-    fn from_npm_document(input: &DocumentInput) -> Self {
+    fn from_npm_document(input: &DocumentInput, files: &impl RegistryFileRead) -> Self {
         let process_env = process_env_entries();
-        let project_npmrc_path = selected_dot_file_path(input, ".npmrc");
-        let project_yarnrc_path = selected_project_yarnrc_path(input);
-        let project_bunfig_path = selected_project_bunfig_path(input);
+        let project_npmrc_path = selected_dot_file_path(input, ".npmrc", files);
+        let project_yarnrc_path = selected_project_yarnrc_path(input, files);
+        let project_bunfig_path = selected_project_bunfig_path(input, files);
         let env = npm_env_entries(
             input,
             project_npmrc_path
@@ -485,14 +484,24 @@ impl RegistryContext {
                 .or(project_yarnrc_path.as_ref())
                 .or(project_bunfig_path.as_ref()),
             &process_env,
+            files,
         );
-        let npmrc_texts = npmrc_texts(input, project_npmrc_path, &process_env);
-        let yarnrc_texts =
-            dot_texts_or_candidates(input, project_yarnrc_path, &[".yarnrc.yml", ".yarnrc.yaml"]);
-        let bunfig_texts =
-            dot_texts_or_candidates(input, project_bunfig_path, &["bunfig.toml", ".bunfig.toml"]);
+        let npmrc_texts = npmrc_texts(input, project_npmrc_path, &process_env, files);
+        let yarnrc_texts = dot_texts_or_candidates(
+            input,
+            project_yarnrc_path,
+            &[".yarnrc.yml", ".yarnrc.yaml"],
+            files,
+        );
+        let bunfig_texts = dot_texts_or_candidates(
+            input,
+            project_bunfig_path,
+            &["bunfig.toml", ".bunfig.toml"],
+            files,
+        );
         Self {
             manifest_kind: None,
+            failure: None,
             urls: vec![],
             composer: crate::default(),
             npm: npm_context(&npmrc_texts, &yarnrc_texts, &bunfig_texts, &env),

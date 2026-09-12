@@ -42,6 +42,7 @@ mod registry_manifests;
 mod requirement_range;
 mod requirements_txt;
 mod rock_manifests;
+mod runtime_manifests;
 mod source_scanning;
 #[cfg(test)]
 mod test_support;

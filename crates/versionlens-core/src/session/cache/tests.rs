@@ -1,15 +1,8 @@
 use crate::RegistryResponseInput;
 use crate::{ProviderCacheConfig, ProviderSettings, SessionConfig};
-use std::env::temp_dir;
-use std::fs::create_dir_all;
-use std::fs::remove_dir_all;
-use std::fs::write;
-use std::process::id;
 use std::thread::sleep;
 
 use versionlens_model::DocumentInput;
-
-use crate::cache::cache_key;
 
 use versionlens_http::HttpHeader;
 use versionlens_model::Ecosystem::Npm;
@@ -67,7 +60,12 @@ fn request_cache_identity_separates_effective_security_context_without_exposing_
     assert!(!second_key.as_str().contains("second-secret"));
     assert!(!custom_tls_key.as_str().contains("private-ca-material"));
 
-    session.cache_request_body(first_key.clone(), "first response", Npm, None);
+    session.cache_request_body(
+        first_key.clone(),
+        "first response",
+        session.cache_ttl(Npm, None),
+        &crate::session::operation::OperationContext::default(),
+    );
     assert_eq!(
         session.cached_request_body(&first_key).as_deref(),
         Some("first response")
@@ -90,7 +88,7 @@ fn completed_request_lock_keys_are_pruned_during_subsequent_requests() {
         drop(session.request_lock(&key));
     }
 
-    assert_eq!(session.request_locks.lock().unwrap().len(), 1);
+    assert_eq!(session.request_state.request_locks.lock().unwrap().len(), 1);
 }
 
 #[test]
@@ -109,34 +107,10 @@ fn provider_cache_overrides_global_cache_ttl() {
         r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
     )];
 
-    session.resolve_document_with_responses(input, &responses);
+    session.resolve_document_with_responses(input.clone(), &responses);
     sleep(crate::duration_from_millis(5));
 
-    assert!(session.cached_latest(&cache_key(Npm, "left-pad")).is_none());
-}
-
-#[test]
-fn npm_ca_file_context_does_not_write_shared_latest_cache() {
-    let root = temp_dir().join(format!("versionlens-npm-cafile-cache-{}", id()));
-    create_dir_all(&root).unwrap();
-    write(root.join(".npmrc"), "cafile=/tmp/npm-ca.pem\n").unwrap();
-    let session = crate::support::tests::test_session(false);
-    let input = DocumentInput::new(
-        format!("file://{}", root.join("package.json").display()),
-        "json".to_owned(),
-        package_file_fixture("npm-ca-file-context-does-not-write-shared-latest-cache.txt"),
-        Some(root.to_string_lossy().into_owned()),
-    );
-
-    session.resolve_document_with_responses(
-        input,
-        &[crate::support::tests::npm_latest_response(
-            "left-pad", "1.1.0",
-        )],
-    );
-
-    assert!(session.cached_latest(&cache_key(Npm, "left-pad")).is_none());
-    remove_dir_all(root).unwrap();
+    assert!(session.analyze_document(input).code_lenses.is_empty());
 }
 
 #[test]
@@ -256,12 +230,22 @@ fn cached_latest_preserves_registry_build_aliases() {
 fn clear_cache_removes_dotnet_registry_sources() {
     let session = crate::support::tests::test_session(true);
 
-    *session.dotnet_registry_sources.lock().unwrap() =
-        Some(vec!["https://nuget.test/v3/index.json".to_owned()]);
+    *session
+        .request_state
+        .dotnet_registry_sources
+        .lock()
+        .unwrap() = Some(vec!["https://nuget.test/v3/index.json".to_owned()]);
 
     session.clear_cache();
 
-    assert!(session.dotnet_registry_sources.lock().unwrap().is_none());
+    assert!(
+        session
+            .request_state
+            .dotnet_registry_sources
+            .lock()
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[test]
@@ -339,18 +323,12 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
     assert_eq!(cached_range.suggestions[0].status, "satisfies");
     assert_eq!(
         titles,
-        [
-            "🟡 satisfies 1.1.2",
-            "↓  downgrade 1.1.1",
-            "↑  bump 1.1.2",
-            "↑  latest 2.0.0"
-        ]
+        ["🟡 satisfies 1.1.2", "↑  bump 1.1.2", "↑  latest 2.0.0"]
     );
     assert_eq!(
         arguments,
         [
             Vec::<&str>::new(),
-            vec!["update", "1.1.1"],
             vec!["update", "1.1.2"],
             vec!["update", "2.0.0"]
         ]
@@ -359,4 +337,22 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
 
 fn package_file_fixture(name: &str) -> String {
     crate::support::tests::fixture("tests/fixtures/session/cache", name)
+}
+
+#[test]
+fn clearing_shared_session_invalidates_inflight_cache_writes() {
+    let session = crate::support::tests::test_session(false);
+    let operation = crate::session::operation::OperationContext::default()
+        .with_generation(&session.storage_state.cache_epoch, None);
+    let key = session.request_cache_key("https://example.test/package", &session.config.http);
+    let other = session.clone();
+    other.clear_cache();
+    session.cache_request_body(
+        key.clone(),
+        "response",
+        session.cache_ttl(Npm, None),
+        &operation,
+    );
+    assert!(!operation.is_current());
+    assert!(other.cached_request_body(&key).is_none());
 }

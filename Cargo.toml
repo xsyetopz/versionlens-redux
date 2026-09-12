@@ -24,14 +24,18 @@ repository = "https://github.com/xsyetopz/versionlens-redux.git"
 readme = "README.md"
 keywords = ["versionlens", "vscode", "dependencies"]
 categories = ["development-tools"]
-version = "0.4.2"
+version = "0.4.3"
 
 [workspace.dependencies]
+ignore = "0.4.33"
+ring = "0.17.14"
+sha2 = "0.11.0"
+crossbeam-channel = "0.5.17"
 base64 = "0.23.1"
 anyhow = "1.0.104"
-napi = "3.12.2"
-napi-build = "2.4.1"
-napi-derive = "3.6.3"
+napi = "3.12.4"
+napi-build = "2.4.2"
+napi-derive = "3.6.5"
 jsonc-parser = "0.33.1"
 lsp-server = "0.10.0"
 lsp-types = "0.97.0"
@@ -43,7 +47,7 @@ serde_json = "1.0.151"
 thiserror = "2.0.20"
 toml_edit = "0.25.12"
 unicode-normalization = "0.1.25"
-ureq = { version = "3.4.0", default-features = false, features = ["rustls"] }
+ureq = { version = "3.4.1", default-features = false, features = ["rustls"] }
 versionlens-cache = { path = "crates/versionlens-cache" }
 versionlens-core = { path = "crates/versionlens-core" }
 versionlens-edits = { path = "crates/versionlens-edits" }

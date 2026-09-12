@@ -12,8 +12,39 @@ use crate::HttpError::{Client as HttpClientError, Io as HttpIoError};
 use super::{
     ACCEPT_GITHUB_V3, ACCEPT_JSON,
     agent::tests::{uses_agent_cache, uses_same_agent_cache_key},
-    get_text, get_text_with_accept_and_retry_timeout, post_text, request_with_headers,
+    get_bytes_with_accept_and_retry, get_text, get_text_with_accept_and_retry_timeout, post_text,
+    request_with_headers,
 };
+
+#[test]
+fn byte_get_preserves_non_utf8_response_data() {
+    let expected = vec![0, 0xff, b'\n', 0x80, 1];
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let server = spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut buffer = [0_u8; 1024];
+        assert!(stream.read(&mut buffer).unwrap() > 0);
+        stream
+            .write_all(
+                b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n",
+            )
+            .unwrap();
+        stream.write_all(b"2\r\n\x00\xff\r\n").unwrap();
+        stream.write_all(b"3\r\n\n\x80\x01\r\n0\r\n\r\n").unwrap();
+    });
+
+    let bytes = get_bytes_with_accept_and_retry(
+        &url,
+        &crate::standard_http_config(),
+        Some("application/octet-stream"),
+        crate::disabled_retry_policy(),
+    )
+    .unwrap();
+    server.join().unwrap();
+
+    assert_eq!(bytes, expected);
+}
 
 #[test]
 fn request_timeout_is_capped_by_the_remaining_operation_budget() {

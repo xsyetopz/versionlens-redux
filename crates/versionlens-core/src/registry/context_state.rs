@@ -1,17 +1,22 @@
 use std::env::vars;
-use std::fs::read_to_string;
+
+use crate::workspace::workspace_path;
+
 type RegistryConfigPath = Option<PathBuf>;
 
-fn composer_context(input: &DocumentInput) -> ComposerContext {
+fn composer_context(input: &DocumentInput, files: &impl RegistryFileRead) -> ComposerContext {
     ComposerContext {
-        auth_entries: composer_auth_entries(input),
+        auth_entries: composer_auth_entries(input, files),
         repositories: parse_composer_repositories(&input.text),
         packagist_disabled: parse_composer_packagist_disabled(&input.text),
     }
 }
 
-fn composer_auth_entries(input: &DocumentInput) -> Vec<ComposerAuthEntry> {
-    dot_file_texts(input, &["auth.json"])
+fn composer_auth_entries(
+    input: &DocumentInput,
+    files: &impl RegistryFileRead,
+) -> Vec<ComposerAuthEntry> {
+    dot_file_texts(input, &["auth.json"], files)
         .iter()
         .flat_map(|text| parse_composer_auth_entries(text))
         .collect()
@@ -57,11 +62,11 @@ fn cargo_registry_source_url<'a>(
     None
 }
 
-fn cargo_config_texts(input: &DocumentInput) -> Vec<String> {
+fn cargo_config_texts(input: &DocumentInput, files: &impl RegistryFileRead) -> Vec<String> {
     [".cargo/config.toml", ".cargo/config"]
         .iter()
         .flat_map(|file_name| candidate_dot_file_paths(input, file_name))
-        .filter_map(|path| read_to_string(path).ok())
+        .filter_map(|path| files.read(&path))
         .collect()
 }
 
@@ -69,9 +74,12 @@ fn npmrc_texts(
     input: &DocumentInput,
     project_npmrc_path: RegistryConfigPath,
     process_env: &[(String, String)],
+    files: &impl RegistryFileRead,
 ) -> Vec<String> {
     let mut paths = project_npmrc_path.into_iter().collect::<Vec<_>>();
-    if let Some(path) = npm_env_userconfig_path(input, process_env)
+    let required_userconfig = npm_env_userconfig_path(input, process_env);
+    if let Some(path) = required_userconfig
+        .clone()
         .or_else(|| npm_default_userconfig_path(input, process_env))
     {
         push_unique_path(&mut paths, path);
@@ -79,24 +87,37 @@ fn npmrc_texts(
 
     paths
         .into_iter()
-        .filter_map(|path| read_to_string(path).ok())
+        .filter_map(|path| {
+            if required_userconfig.as_ref() == Some(&path) {
+                files.read_required(&path)
+            } else {
+                files.read(&path)
+            }
+        })
         .collect()
 }
 
-fn selected_project_yarnrc_path(input: &DocumentInput) -> RegistryConfigPath {
-    selected_dot_file_path(input, ".yarnrc.yml")
-        .or_else(|| selected_dot_file_path(input, ".yarnrc.yaml"))
+fn selected_project_yarnrc_path(
+    input: &DocumentInput,
+    files: &impl RegistryFileRead,
+) -> RegistryConfigPath {
+    selected_dot_file_path(input, ".yarnrc.yml", files)
+        .or_else(|| selected_dot_file_path(input, ".yarnrc.yaml", files))
 }
 
-fn selected_project_bunfig_path(input: &DocumentInput) -> RegistryConfigPath {
-    selected_dot_file_path(input, "bunfig.toml")
-        .or_else(|| selected_dot_file_path(input, ".bunfig.toml"))
+fn selected_project_bunfig_path(
+    input: &DocumentInput,
+    files: &impl RegistryFileRead,
+) -> RegistryConfigPath {
+    selected_dot_file_path(input, "bunfig.toml", files)
+        .or_else(|| selected_dot_file_path(input, ".bunfig.toml", files))
 }
 
 fn dot_texts_or_candidates(
     input: &DocumentInput,
     selected_path: RegistryConfigPath,
     file_names: &[&str],
+    files: &impl RegistryFileRead,
 ) -> Vec<String> {
     let mut paths = selected_path.into_iter().collect::<Vec<_>>();
     if paths.is_empty() {
@@ -106,7 +127,7 @@ fn dot_texts_or_candidates(
     }
     paths
         .into_iter()
-        .filter_map(|path| read_to_string(path).ok())
+        .filter_map(|path| files.read(&path))
         .collect()
 }
 
@@ -114,11 +135,12 @@ fn npm_env_entries(
     input: &DocumentInput,
     project_npmrc_path: Option<&PathBuf>,
     process_env: &[(String, String)],
+    files: &impl RegistryFileRead,
 ) -> Vec<(String, String)> {
     let mut env = process_env.to_vec();
     if project_npmrc_path.is_some()
-        && let Some(path) = selected_dot_file_path(input, ".env")
-        && let Ok(text) = read_to_string(path)
+        && let Some(path) = selected_dot_file_path(input, ".env", files)
+        && let Some(text) = files.read(&path)
     {
         env.extend(parse_env_entries(&text));
     }
@@ -141,7 +163,10 @@ fn npm_env_userconfig_path(input: &DocumentInput, env: &[(String, String)]) -> R
     }
 }
 
-fn npm_default_userconfig_path(input: &DocumentInput, env: &[(String, String)]) -> RegistryConfigPath {
+fn npm_default_userconfig_path(
+    input: &DocumentInput,
+    env: &[(String, String)],
+) -> RegistryConfigPath {
     let parent = document_parent_path(&input.uri)?;
     if parent.parent().is_none() {
         return None;
@@ -157,20 +182,24 @@ fn npm_default_userconfig_path(input: &DocumentInput, env: &[(String, String)]) 
         })
 }
 
-fn dot_file_texts(input: &DocumentInput, file_names: &[&str]) -> Vec<String> {
+fn dot_file_texts(
+    input: &DocumentInput,
+    file_names: &[&str],
+    files: &impl RegistryFileRead,
+) -> Vec<String> {
     file_names
         .iter()
         .flat_map(|file_name| candidate_dot_file_paths(input, file_name))
-        .filter_map(|path| read_to_string(path).ok())
+        .filter_map(|path| files.read(&path))
         .collect()
 }
 
-fn env_entries(input: &DocumentInput) -> Vec<(String, String)> {
+fn env_entries(input: &DocumentInput, files: &impl RegistryFileRead) -> Vec<(String, String)> {
     let mut env = process_env_entries();
     env.extend(
         candidate_dot_file_paths(input, ".env")
             .into_iter()
-            .filter_map(|path| read_to_string(path).ok())
+            .filter_map(|path| files.read(&path))
             .flat_map(|text| parse_env_entries(&text)),
     );
     env
@@ -180,10 +209,14 @@ fn process_env_entries() -> Vec<(String, String)> {
     vars().collect()
 }
 
-fn selected_dot_file_path(input: &DocumentInput, file_name: &str) -> RegistryConfigPath {
+fn selected_dot_file_path(
+    input: &DocumentInput,
+    file_name: &str,
+    files: &impl RegistryFileRead,
+) -> RegistryConfigPath {
     candidate_dot_file_paths(input, file_name)
         .into_iter()
-        .find(|path| path.is_file())
+        .find(|path| files.read(path).is_some())
 }
 
 fn candidate_dot_file_paths(input: &DocumentInput, file_name: &str) -> Vec<PathBuf> {
@@ -191,10 +224,7 @@ fn candidate_dot_file_paths(input: &DocumentInput, file_name: &str) -> Vec<PathB
     if let Some(path) = document_parent_path(&input.uri) {
         push_unique_path(&mut paths, path.join(file_name));
     }
-    if let Some(path) = input.workspace_root.as_deref().map(|value| {
-        let path: PathBuf = value.into();
-        path
-    }) {
+    if let Some(path) = input.workspace_root.as_deref().and_then(workspace_path) {
         push_unique_path(&mut paths, path.join(file_name));
     }
     paths
@@ -207,12 +237,7 @@ fn push_unique_path(paths: &mut Vec<PathBuf>, path: PathBuf) {
 }
 
 fn document_parent_path(uri: &str) -> RegistryConfigPath {
-    document_path(uri)?.parent().map(|path| path.to_path_buf())
-}
-
-fn document_path(uri: &str) -> RegistryConfigPath {
-    let path = uri.strip_prefix("file://")?;
-    Some(path.into())
+    workspace_path(uri)?.parent().map(|path| path.to_path_buf())
 }
 
 fn parse_env_entries(text: &str) -> Vec<(String, String)> {
@@ -281,8 +306,13 @@ fn auth_header(entry: Option<&str>) -> Vec<HttpHeader> {
 }
 
 fn best_composer_auth_entry<'a>(entries: &'a [ComposerAuthEntry], url: &str) -> Option<&'a str> {
-    best_matching_auth_entry(entries, url, |entry| &entry.registry, auth_registry_match_len)
-        .map(|entry| entry.header_value.as_str())
+    best_matching_auth_entry(
+        entries,
+        url,
+        |entry| &entry.registry,
+        auth_registry_match_len,
+    )
+    .map(|entry| entry.header_value.as_str())
 }
 
 fn best_maven_auth_entry<'a>(entries: &'a [MavenAuthEntry], url: &str) -> Option<&'a str> {

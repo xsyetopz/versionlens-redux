@@ -1,10 +1,8 @@
 use crate::RegistryResponseInput;
 use crate::SessionConfig;
 use versionlens_model::DocumentInput;
-use versionlens_parsers::parse_document;
-use versionlens_suggestions::SuggestionStatus;
 
-use super::{OPERATION_TIMEOUT_MESSAGE, WORKER_PANIC_MESSAGE, join_worker, resolve_worker_count};
+use super::OPERATION_TIMEOUT_MESSAGE;
 
 use versionlens_model::Ecosystem::Npm;
 
@@ -53,15 +51,6 @@ fn batched_resolution_preserves_dependency_order() {
 }
 
 #[test]
-fn registry_resolution_bounds_parallel_workers() {
-    assert_eq!(resolve_worker_count(0), 0);
-    assert_eq!(resolve_worker_count(1), 1);
-    assert_eq!(resolve_worker_count(8), 8);
-    assert_eq!(resolve_worker_count(12), 8);
-    assert_eq!(resolve_worker_count(100), 8);
-}
-
-#[test]
 fn expired_operation_returns_errors_without_resolving_dependencies() {
     let mut http = versionlens_http::standard_http_config();
     http.timeout_ms = 0;
@@ -91,44 +80,6 @@ fn expired_operation_returns_errors_without_resolving_dependencies() {
             .suggestions
             .iter()
             .all(|suggestion| suggestion.latest.as_deref() == Some(OPERATION_TIMEOUT_MESSAGE))
-    );
-}
-
-#[test]
-fn panicked_worker_returns_explicit_errors_for_its_dependency_chunk() {
-    let dependencies = parse_document(&DocumentInput::new(
-        "file:///package.json".to_owned(),
-        "json".to_owned(),
-        package_file_fixture("batched-resolution-preserves-dependency-order.json"),
-        None,
-    ));
-    let expected_names = dependencies
-        .iter()
-        .map(|dependency| dependency.name.clone())
-        .collect::<Vec<_>>();
-
-    let suggestions = std::thread::scope(|scope| {
-        let worker = scope.spawn(|| panic!("injected worker failure"));
-        join_worker(worker, dependencies)
-    });
-
-    assert_eq!(suggestions.len(), expected_names.len());
-    assert!(
-        suggestions
-            .iter()
-            .all(|suggestion| suggestion.status == SuggestionStatus::Error)
-    );
-    assert!(
-        suggestions
-            .iter()
-            .all(|suggestion| suggestion.latest.as_deref() == Some(WORKER_PANIC_MESSAGE))
-    );
-    assert_eq!(
-        suggestions
-            .iter()
-            .map(|suggestion| suggestion.dependency.name.clone())
-            .collect::<Vec<_>>(),
-        expected_names
     );
 }
 

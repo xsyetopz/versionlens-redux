@@ -1,4 +1,4 @@
-use crate::cargo_toml::paths::is_cargo_project_version;
+use crate::cargo_toml::paths::{CargoProjectVersionPath, cargo_project_version_path};
 use toml_edit::{Key, Value as TomlValue};
 
 use versionlens_model::Dependency;
@@ -12,17 +12,22 @@ pub(super) fn collect_cargo_project_version(
     value: &TomlValue,
     out: &mut Vec<Dependency>,
 ) -> bool {
-    if !is_cargo_project_version(keys, context.dependency_paths) {
+    let Some(path) = cargo_project_version_path(keys, context.dependency_paths) else {
         return false;
-    }
+    };
+    let (name_key, value_key) = match path {
+        CargoProjectVersionPath::Package => (keys[1], keys[1]),
+        CargoProjectVersionPath::PackageWorkspace => (keys[1], keys[2]),
+        CargoProjectVersionPath::WorkspacePackage => (keys[2], keys[2]),
+    };
 
     if let Some(dependency) = toml_dependency(CargoTomlDependencyInput {
         text: context.text,
         group: "package",
         name: "version",
         value,
-        name_key: keys[1],
-        value_key: keys[1],
+        name_key,
+        value_key,
     }) {
         out.push(dependency);
     }

@@ -1,7 +1,7 @@
 use super::auth_header;
 use super::document_parent_path;
 use super::{best_matching_auth_entry, full_url_or_origin_match_len};
-use std::fs::read_to_string;
+use crate::registry::files::RegistryFileRead;
 use std::path::{Path, PathBuf};
 
 use versionlens_http::HttpHeader;
@@ -11,7 +11,7 @@ use versionlens_parsers::{
     parse_paket_source_urls,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(super) struct DotnetContext {
     sources: Vec<DotnetNamedSource>,
     auth_entries: Vec<DotnetAuthEntry>,
@@ -20,7 +20,10 @@ pub(super) struct DotnetContext {
     source_inheritance_blocked: bool,
 }
 
-pub(super) fn dotnet_context(input: &DocumentInput) -> DotnetContext {
+pub(super) fn dotnet_context(
+    input: &DocumentInput,
+    files: &impl RegistryFileRead,
+) -> DotnetContext {
     let mut context: DotnetContext = crate::default();
     for url in parse_paket_source_urls(&input.text) {
         context.has_source_configuration = true;
@@ -32,7 +35,7 @@ pub(super) fn dotnet_context(input: &DocumentInput) -> DotnetContext {
             },
         );
     }
-    for config in dotnet_config_files(input) {
+    for config in dotnet_config_files(input, files) {
         if let Some(parsed) = parse_nuget_config(&config.text) {
             merge_dotnet_config(&mut context, &config.path, parsed);
         }
@@ -41,12 +44,6 @@ pub(super) fn dotnet_context(input: &DocumentInput) -> DotnetContext {
 }
 
 impl DotnetContext {
-    pub(super) fn has_urls(&self) -> bool {
-        !self.sources.is_empty()
-            || !self.auth_entries.is_empty()
-            || !self.source_mappings.is_empty()
-    }
-
     pub(super) fn has_registry_configuration(&self) -> bool {
         self.has_source_configuration || !self.source_mappings.is_empty()
     }
@@ -85,7 +82,10 @@ struct DotnetConfigFile {
     text: String,
 }
 
-fn dotnet_config_files(input: &DocumentInput) -> Vec<DotnetConfigFile> {
+fn dotnet_config_files(
+    input: &DocumentInput,
+    files: &impl RegistryFileRead,
+) -> Vec<DotnetConfigFile> {
     dotnet_config_dirs(input)
         .iter()
         .flat_map(|dir| {
@@ -94,8 +94,8 @@ fn dotnet_config_files(input: &DocumentInput) -> Vec<DotnetConfigFile> {
                 .map(|file_name| dir.join(file_name))
         })
         .filter_map(|path| {
-            read_to_string(&path)
-                .ok()
+            files
+                .read(&path)
                 .map(|text| DotnetConfigFile { path, text })
         })
         .collect()
@@ -105,12 +105,15 @@ fn dotnet_config_dirs(input: &DocumentInput) -> Vec<PathBuf> {
     let Some(mut current) = document_parent_path(&input.uri) else {
         return vec![];
     };
-    let workspace_root = input.workspace_root.as_deref().map(crate::path);
+    let workspace_root = input
+        .workspace_root
+        .as_deref()
+        .and_then(crate::workspace::workspace_path);
     let mut dirs = vec![];
 
     loop {
         push_unique_path(&mut dirs, current.as_path().into());
-        if workspace_root.is_some_and(|root| current == root) {
+        if workspace_root.as_ref().is_some_and(|root| current == *root) {
             break;
         }
         if !current.pop() {

@@ -5,7 +5,7 @@ use versionlens_suggestions::SuggestionStatus::{
 };
 use versionlens_suggestions::{Suggestion, UpdateChoice};
 
-use super::{bulk_update_edits, update_edits};
+use super::update_edits;
 use crate::support::tests::range;
 use versionlens_model::Ecosystem::*;
 
@@ -381,28 +381,13 @@ fn uses_a_concrete_replacement_only_for_the_matching_latest_version() {
 fn does_not_apply_a_concrete_replacement_for_another_version() {
     let mut suggestion = update_suggestion(npm_dependency("^1.0.0"), "2.0.0");
     suggestion.choices = vec![UpdateChoice {
-        label: "downgrade".to_owned(),
+        label: "minor".to_owned(),
         version: "1.5.0".to_owned(),
         replacement: Some("workspace:*".to_owned()),
         command: "update".to_owned(),
     }];
 
     assert_eq!(update_edits(&[suggestion])[0].new_text, "^2.0.0");
-}
-
-#[test]
-fn uses_the_concrete_replacement_for_a_selected_downgrade_in_both_update_modes() {
-    let mut suggestion = update_suggestion(npm_dependency("^2.0.0"), "1.5.0");
-    suggestion.choices = vec![UpdateChoice {
-        label: "downgrade".to_owned(),
-        version: "1.5.0".to_owned(),
-        replacement: Some("~1.5.0".to_owned()),
-        command: "update".to_owned(),
-    }];
-
-    let suggestions = [suggestion];
-    assert_eq!(update_edits(&suggestions)[0].new_text, "~1.5.0");
-    assert_eq!(bulk_update_edits(&suggestions)[0].new_text, "~1.5.0");
 }
 
 fn python_dependency(requirement: &str) -> Dependency {

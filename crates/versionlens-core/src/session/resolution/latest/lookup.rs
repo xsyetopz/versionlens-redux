@@ -24,8 +24,18 @@ impl VersionLensSession {
             context,
             operation,
         } = request;
+        if dependency.is_runtime_version() {
+            let fetched = self.fetch_runtime_latest(dependency, responses, context, operation)?;
+            return Ok(LatestLookup {
+                latest: fetched.latest,
+                builds: fetched.builds,
+                choices: fetched.choices,
+                fetch_error: None,
+                fixed_requirement_matched: false,
+            });
+        }
         if has_registry_response {
-            self.cache_registry_response_bodies(dependency, responses, context);
+            self.cache_registry_response_bodies(dependency, responses, context, operation);
             let latest = matching_dependency_response(responses, dependency)
                 .filter(|response| github_current_ref_is_proven(dependency, &response.body))
                 .and_then(|_| self.latest_from_responses(dependency, responses));
@@ -43,6 +53,7 @@ impl VersionLensSession {
                 builds,
                 choices,
                 fetch_error: None,
+                fixed_requirement_matched: false,
             })
         } else {
             let fetched = self.fetch_latest(dependency, context, operation)?;
@@ -51,6 +62,7 @@ impl VersionLensSession {
                 builds: fetched.builds,
                 choices: fetched.choices,
                 fetch_error: None,
+                fixed_requirement_matched: false,
             })
         }
     }
@@ -62,6 +74,7 @@ impl VersionLensSession {
         dependency: &Dependency,
         responses: &[RegistryResponseInput],
         context: &RegistryContext,
+        operation: &crate::session::operation::OperationContext,
     ) {
         let Some(response) = matching_dependency_response(responses, dependency) else {
             return;
@@ -74,8 +87,8 @@ impl VersionLensSession {
             self.cache_request_body(
                 cache_key,
                 &response.body,
-                dependency.ecosystem,
-                context.manifest_kind(),
+                self.cache_ttl(dependency.ecosystem, context.manifest_kind()),
+                operation,
             );
         }
     }

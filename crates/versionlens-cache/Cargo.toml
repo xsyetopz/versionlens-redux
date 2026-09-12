@@ -10,5 +10,13 @@ keywords.workspace = true
 categories.workspace = true
 version.workspace = true
 
+[dependencies]
+ring.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+versionlens-test-support.workspace = true
+
 [lints]
 workspace = true

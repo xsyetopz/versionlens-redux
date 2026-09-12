@@ -27,7 +27,6 @@ fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
             error: "".to_owned(),
             no_match: "".to_owned(),
             matched: "".to_owned(),
-            downgradeable: "".to_owned(),
             updateable: "".to_owned(),
             updateable_vulnerable: "".to_owned(),
             build: "".to_owned(),

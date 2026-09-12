@@ -15,7 +15,6 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
         titles,
         [
             "M satisfies 4.1.10",
-            "D downgrade 4.0.1",
             "U bump 4.1.10",
             "U version 5.1.1",
             "U version 5.2.0",
@@ -27,7 +26,6 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
         arguments,
         [
             Vec::<&str>::new(),
-            vec!["update", "4.0.1"],
             vec!["update", "4.1.10"],
             vec!["update", "5.1.1"],
             vec!["update", "5.2.0"],
@@ -63,11 +61,11 @@ fn code_lenses_omit_latest_update_choice_for_ranges_satisfying_latest() {
 
     assert_eq!(
         titles,
-        ["S satisfies latest 3.0.0", "D downgrade 2.1.0"]
+        ["S satisfies latest 3.0.0",]
     );
     assert_eq!(
         arguments,
-        [Vec::<&str>::new(), vec!["update", "2.1.0"]]
+        [Vec::<&str>::new()]
     );
 }
 
@@ -85,7 +83,6 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
         titles,
         [
             "M satisfies 2.1.0",
-            "D downgrade 1.0.0",
             "U bump 2.1.0",
             "U latest 3.0.0"
         ]
@@ -94,7 +91,6 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
         arguments,
         [
             Vec::<&str>::new(),
-            vec!["update", "1.0.0"],
             vec!["update", "2.1.0"],
             vec!["update", "3.0.0"]
         ]
@@ -102,7 +98,7 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
 }
 
 #[test]
-fn github_current_release_omits_noop_latest_and_offers_downgrades() {
+fn github_current_release_omits_noop_latest_and_older_choices() {
     let session = standard_session();
     let input = DocumentInput::new(
         "file:///work/.github/workflows/ci.yml".to_owned(),
@@ -129,11 +125,11 @@ fn github_current_release_omits_noop_latest_and_offers_downgrades() {
 
     assert_eq!(
         lens_titles(&output),
-        ["L latest v7.0.1", "D downgrade v7.0.0"]
+        ["L latest v7.0.1",]
     );
     assert_eq!(
         crate::support::tests::all_code_lens_arguments(&output),
-        [Vec::<&str>::new(), vec!["update", "7.0.0"]]
+        [Vec::<&str>::new()]
     );
 }
 

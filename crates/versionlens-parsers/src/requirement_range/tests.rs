@@ -5,7 +5,7 @@ fn operator_requirement_range_keeps_prefix_and_trims_value_bounds() {
     let range = operator_requirement_range("  >=  1.2.3  ", &[">=", ">"]);
 
     assert_eq!(range.prefix, "  >=  ");
-    assert_eq!(range.start, 6);
+    assert_eq!(range.start, 0);
     assert_eq!(range.end, 11);
 }
 

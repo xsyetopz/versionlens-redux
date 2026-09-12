@@ -10,9 +10,12 @@ use crate::retry::RetryPolicy;
 
 use agent::agent;
 pub(crate) use headers::request_with_headers;
-use send::{RequestDeadline, send_with_retries};
+use send::{
+    HttpResponse, RequestDeadline, read_response_bytes, read_response_text, send_with_retries,
+};
 
 pub type HttpResult = Result<String, HttpError>;
+pub type HttpBytesResult = Result<Vec<u8>, HttpError>;
 
 pub const ACCEPT_GITHUB_V3: &str = "application/vnd.github.v3+json";
 pub const ACCEPT_JSON: &str = "application/json";
@@ -31,7 +34,7 @@ pub fn get_text_with_accept_and_retry(
     accept: Option<&str>,
     retry_policy: RetryPolicy,
 ) -> HttpResult {
-    get_text_with_accept_and_retry_inner(url, config, accept, retry_policy, None)
+    get_with_accept_and_retry_inner(url, config, accept, retry_policy, None, read_response_text)
 }
 
 pub fn get_text_with_accept_and_retry_timeout(
@@ -41,19 +44,53 @@ pub fn get_text_with_accept_and_retry_timeout(
     retry_policy: RetryPolicy,
     timeout: Duration,
 ) -> HttpResult {
-    get_text_with_accept_and_retry_inner(url, config, accept, retry_policy, Some(timeout))
+    get_with_accept_and_retry_inner(
+        url,
+        config,
+        accept,
+        retry_policy,
+        Some(timeout),
+        read_response_text,
+    )
 }
 
-fn get_text_with_accept_and_retry_inner(
+pub fn get_bytes_with_accept_and_retry(
+    url: &str,
+    config: &HttpConfig,
+    accept: Option<&str>,
+    retry_policy: RetryPolicy,
+) -> HttpBytesResult {
+    get_with_accept_and_retry_inner(url, config, accept, retry_policy, None, read_response_bytes)
+}
+
+pub fn get_bytes_with_accept_and_retry_timeout(
+    url: &str,
+    config: &HttpConfig,
+    accept: Option<&str>,
+    retry_policy: RetryPolicy,
+    timeout: Duration,
+) -> HttpBytesResult {
+    get_with_accept_and_retry_inner(
+        url,
+        config,
+        accept,
+        retry_policy,
+        Some(timeout),
+        read_response_bytes,
+    )
+}
+
+fn get_with_accept_and_retry_inner<T>(
     url: &str,
     config: &HttpConfig,
     accept: Option<&str>,
     retry_policy: RetryPolicy,
     timeout: Option<Duration>,
-) -> HttpResult {
+    read_response: impl FnMut(HttpResponse) -> Result<T, HttpError>,
+) -> Result<T, HttpError> {
     let deadline = RequestDeadline::after(timeout);
     let agent = agent(config)?;
-    send_with_retries("GET", retry_policy, deadline, |remaining| {
+    send_with_retries("GET", retry_policy, deadline, read_response, |remaining| {
         let request = request_with_headers(agent.get(url), url, &config.auth_headers, accept);
         request_with_timeout(request, config, remaining).call()
     })
@@ -85,6 +122,7 @@ fn post_text_inner(
         "POST",
         crate::disabled_retry_policy(),
         deadline,
+        read_response_text,
         |remaining| {
             let request = request_with_headers(
                 agent.post(url),

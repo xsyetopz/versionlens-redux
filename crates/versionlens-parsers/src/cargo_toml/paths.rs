@@ -26,11 +26,40 @@ pub(super) fn selected_dependency_paths<'a>(dependency_paths: &'a [&'a str]) -> 
     }
 }
 
-pub(super) fn is_cargo_project_version(keys: &[&Key], dependency_paths: &[&str]) -> bool {
-    keys.len() == 2
-        && keys[0].get() == "package"
-        && keys[1].get() == "version"
-        && dependency_paths.contains(&"package")
+#[derive(Clone, Copy)]
+pub(super) enum CargoProjectVersionPath {
+    Package,
+    PackageWorkspace,
+    WorkspacePackage,
+}
+
+pub(super) fn cargo_project_version_path(
+    keys: &[&Key],
+    dependency_paths: &[&str],
+) -> Option<CargoProjectVersionPath> {
+    if !dependency_paths.contains(&"package") {
+        return None;
+    }
+    match keys {
+        [package, version] if package.get() == "package" && version.get() == "version" => {
+            Some(CargoProjectVersionPath::Package)
+        }
+        [package, version, workspace]
+            if package.get() == "package"
+                && version.get() == "version"
+                && workspace.get() == "workspace" =>
+        {
+            Some(CargoProjectVersionPath::PackageWorkspace)
+        }
+        [workspace, package, version]
+            if workspace.get() == "workspace"
+                && package.get() == "package"
+                && version.get() == "version" =>
+        {
+            Some(CargoProjectVersionPath::WorkspacePackage)
+        }
+        _ => None,
+    }
 }
 
 pub(super) fn match_cargo_dependency_table<'a>(

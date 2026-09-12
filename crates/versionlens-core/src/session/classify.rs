@@ -26,8 +26,14 @@ fn configured_file_pattern_kind(
     patterns: &[FilePatternConfig],
     input: &DocumentInput,
 ) -> Option<ManifestKind> {
-    let path = file_path_from_uri(&input.uri)?;
-    let relative_path = workspace_relative_path(path, input.workspace_root.as_deref());
+    let path = crate::workspace_path(&input.uri)?;
+    let path = path.to_str()?;
+    let root = input
+        .workspace_root
+        .as_deref()
+        .and_then(crate::workspace_path);
+    let relative_path =
+        workspace_relative_path(path, root.as_deref().and_then(std::path::Path::to_str));
     patterns
         .iter()
         .find(|config| {
@@ -36,10 +42,6 @@ fn configured_file_pattern_kind(
                     .is_some_and(|candidate| configured_pattern_matches(&config.pattern, candidate))
         })
         .map(|config| configured_manifest_kind(config.manifest_kind, path))
-}
-
-fn file_path_from_uri(uri: &str) -> Option<&str> {
-    uri.strip_prefix("file://")
 }
 
 fn workspace_relative_path<'a>(path: &'a str, workspace_root: Option<&str>) -> Option<&'a str> {

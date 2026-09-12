@@ -2,6 +2,11 @@ use versionlens_model::ManifestKind;
 
 pub(super) const JSON_TOML_XML_CASES: &[(&str, &str, ManifestKind)] = &[
     (
+        "file:///work/rust-toolchain.toml",
+        "toml",
+        ManifestKind::RustToolchainToml,
+    ),
+    (
         "file:///work/package.json",
         "jsonc",
         ManifestKind::NpmPackageJson,
@@ -131,6 +136,22 @@ pub(super) const JSON_TOML_XML_CASES: &[(&str, &str, ManifestKind)] = &[
     ("file:///work/pom.xml", "xml", ManifestKind::MavenPomXml),
 ];
 pub(super) const YAML_PLAINTEXT_OTHER_CASES: &[(&str, &str, ManifestKind)] = &[
+    ("file:///work/.nvmrc", "plaintext", ManifestKind::Nvmrc),
+    (
+        "file:///work/.node-version",
+        "plaintext",
+        ManifestKind::NodeVersion,
+    ),
+    (
+        "file:///work/.bun-version",
+        "plaintext",
+        ManifestKind::BunVersion,
+    ),
+    (
+        "file:///work/rust-toolchain",
+        "plaintext",
+        ManifestKind::RustToolchain,
+    ),
     (
         "file:///work/Dockerfile",
         "dockerfile",

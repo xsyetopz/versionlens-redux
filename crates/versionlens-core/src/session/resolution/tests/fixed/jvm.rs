@@ -183,19 +183,17 @@ fn clojure_deps_edn_maven_dependencies_use_maven_lookup() {
 }
 
 #[test]
-fn leiningen_project_clj_dependencies_use_maven_lookup() {
+fn leiningen_project_version_is_local_and_dependencies_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/project.clj",
         "clojure",
         "leiningen-project-clj-dependencies-use-maven-lookup.clj",
-        &[
-            RegistryResponseInput::new("demo".to_owned(), Maven, r#"<metadata><versioning><versions><version>0.1.0-SNAPSHOT</version></versions></versioning></metadata>"#.to_owned()),
-            RegistryResponseInput::new("org.clojure:clojure".to_owned(), Maven, r#"<metadata><versioning><versions><version>1.11.3</version><version>1.12.0</version></versions></versioning></metadata>"#.to_owned()),
-        ],
+        &[RegistryResponseInput::new("org.clojure:clojure".to_owned(), Maven, r#"<metadata><versioning><versions><version>1.11.3</version><version>1.12.0</version></versions></versioning></metadata>"#.to_owned())],
     );
 
     assert_eq!(output.suggestions.len(), 2);
-    assert_eq!(output.suggestions[0].status, "current");
+    assert_suggestion(&output, 0, "updateAvailable", Some("0.1.0"));
     assert_suggestion(&output, 1, "fixed", Some("1.11.3"));
-    assert_no_edits(&output);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "0.1.0");
 }

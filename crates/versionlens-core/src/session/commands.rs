@@ -13,11 +13,12 @@ use versionlens_suggestions::SuggestionStatus::{
 use super::documents::DependencySuggestionsRequest;
 use super::operation::OperationContext;
 use crate::VersionLensSession;
+use crate::cache::vulnerability_cache_key;
 use crate::command::{filter_update_command, project_version_bump};
 use crate::contract::{RegistryResponseInput, ResolveDocumentOutput};
 use crate::project::is_project_version_dependency;
+use crate::selection;
 use crate::status::to_u32;
-use crate::workspace::WorkspaceGraph;
 
 pub struct ApplyCommandRequest<'a> {
     pub input: DocumentInput,
@@ -58,9 +59,7 @@ impl VersionLensSession {
         if !recognized_apply_command(command) {
             return empty_resolve_output();
         }
-        let operation = OperationContext::with_timeout(crate::duration_from_millis(
-            self.config.http.timeout_ms,
-        ));
+        let operation = self.operation_context();
         if command == Some("sort") {
             let dependencies = self.dependencies(&input);
             let edits = sort_dependency_edits(&input.text, &dependencies);
@@ -121,25 +120,54 @@ impl VersionLensSession {
         );
         parts.vulnerable_update_package = vulnerable_update_package;
         parts.vulnerable_update_version = vulnerable_update_version;
-        let graph = WorkspaceGraph::for_document(&plan_input);
-        let proven_internal = dependency_name
-            .and_then(|name| {
-                suggestions
-                    .iter()
-                    .find(|suggestion| suggestion.dependency.name == name)
-            })
-            .is_some_and(|suggestion| graph.resolve(&suggestion.dependency).is_some());
-        if proven_internal {
-            if let (Some(name), Some(version)) = (dependency_name, selected_version) {
-                if let Ok(Some(plan)) =
-                    graph.coordinated_plan(&plan_input, &parts.edits, name, version)
-                {
-                    parts.edit_plan = Some(plan);
-                    parts.edits.clear();
-                }
-            }
+        let graph = self.workspace_graph(&plan_input);
+        let selected_dependency = dependency_name.and_then(|selector| {
+            suggestions
+                .iter()
+                .find(|suggestion| selection::matches_dependency(&suggestion.dependency, selector))
+                .map(|suggestion| &suggestion.dependency)
+        });
+        if !parts.edits.is_empty()
+            && let Some(dependency) = selected_dependency
+            && graph.resolve(dependency).is_some()
+            && let Some(version) = selected_version
+            && let Ok(Some(plan)) =
+                graph.coordinated_plan(&plan_input, &parts.edits, &dependency.name, version)
+        {
+            parts.edit_plan = Some(plan);
+            parts.edits.clear();
+        }
+        if !operation.can_publish() {
+            return super::cancelled_resolution(suggestions);
         }
         super::finish_resolve_output(suggestions, parts)
+    }
+
+    pub(super) fn cached_update_vulnerabilities_deadline(
+        &self,
+        suggestion: &Suggestion,
+        mut deadline: Instant,
+    ) -> Instant {
+        if !self.config.show_vulnerabilities {
+            return deadline;
+        }
+        let now = Instant::now();
+        let mut cache = self.vulnerability_cache();
+        let mut include = |dependency: &Dependency| {
+            deadline = deadline.min(
+                cache
+                    .expires_at(&vulnerability_cache_key(dependency))
+                    .unwrap_or(now),
+            );
+        };
+        include(&suggestion.dependency);
+        if let Some(target) = target_update_dependency(suggestion) {
+            include(&target);
+        }
+        for choice in &suggestion.choices {
+            include(&update_dependency_for_version(suggestion, &choice.version));
+        }
+        deadline
     }
 
     pub(crate) fn vulnerable_update_count(
@@ -268,6 +296,47 @@ fn empty_resolve_output() -> ResolveDocumentOutput {
 
 fn force_selected_version(suggestions: &mut [Suggestion], version: &str) {
     for suggestion in suggestions {
+        if suggestion.dependency.is_runtime_constraint() {
+            continue;
+        }
+        if suggestion.dependency.is_runtime_version()
+            && !suggestion
+                .choices
+                .iter()
+                .any(|choice| choice.version == version)
+        {
+            *suggestion = versionlens_suggestions::error(
+                suggestion.dependency.clone(),
+                "selected runtime version has not been verified".to_owned(),
+            );
+            continue;
+        }
+        let requirement =
+            versionlens_model::registry_alias_requirement(&suggestion.dependency.requirement)
+                .unwrap_or(&suggestion.dependency.requirement);
+        let dialect = if suggestion.dependency.ecosystem == versionlens_model::Ecosystem::Python {
+            versionlens_versions::VersionDialect::Pep440
+        } else {
+            versionlens_versions::VersionDialect::Semver
+        };
+        if versionlens_versions::normalized_version_for_dialect(version, dialect).is_some()
+            && versionlens_versions::requirement_is_parseable_for_dialect(
+                requirement,
+                version,
+                dialect,
+            )
+            && !versionlens_versions::is_update_available_for_dialect(version, requirement, dialect)
+            && !versionlens_versions::requirement_satisfies_latest_for_dialect(
+                requirement,
+                version,
+                dialect,
+            )
+        {
+            suggestion.latest = None;
+            suggestion.status = StatusError;
+            suggestion.choices.clear();
+            continue;
+        }
         if suggestion.status == StatusFixed
             && suggestion.choices.is_empty()
             && suggestion.builds.is_empty()
@@ -321,3 +390,4 @@ fn update_dependency_for_version(suggestion: &Suggestion, version: &str) -> Depe
 
 #[cfg(test)]
 mod tests;
+use std::time::Instant;

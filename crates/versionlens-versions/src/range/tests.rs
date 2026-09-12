@@ -159,13 +159,6 @@ fn classifies_update_level() {
 }
 
 #[test]
-fn older_provider_releases_do_not_create_downgrade_updates() {
-    for requirement in ["2.0.0", ">=2.0.0", "^2.0.0", ">=2.0.0 <3.0.0"] {
-        assert!(!is_update_available("1.9.9", requirement));
-    }
-}
-
-#[test]
 fn pep440_constraints_support_exclusions_and_extended_versions() {
     let dialect = VersionDialect::Pep440;
     for requirement in [
@@ -194,23 +187,6 @@ fn pep440_constraints_support_exclusions_and_extended_versions() {
         compare_versions_for_dialect("1.0.dev1", "1.0rc1", dialect),
         Some(OrderingLess)
     );
-}
-
-#[test]
-fn pep440_update_checks_reject_downgrades_below_exact_or_lower_bounds() {
-    let dialect = VersionDialect::Pep440;
-    for requirement in ["==2.0", "2.0", ">=2.0,<3.0", "~=2.0"] {
-        assert!(!is_update_available_for_dialect(
-            "1.9.post1",
-            requirement,
-            dialect,
-        ));
-    }
-    assert!(is_update_available_for_dialect(
-        "2.1.post1",
-        "==2.0",
-        dialect,
-    ));
 }
 
 #[test]

@@ -1,0 +1,11 @@
+name: CI
+jobs:
+  build:
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.0.0' # keep Node policy
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.0" # keep Bun policy
+      - uses: dtolnay/rust-toolchain@1.90.0 # keep Rust policy

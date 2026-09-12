@@ -2,6 +2,21 @@
 pub struct CacheKey(String);
 
 impl CacheKey {
+    pub fn content(bytes: &[u8]) -> Self {
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        let digest = ring::digest::digest(&ring::digest::SHA256, bytes);
+        let mut encoded = String::with_capacity(digest.as_ref().len() * 2);
+        for byte in digest.as_ref() {
+            encoded.push(char::from(HEX[usize::from(byte >> 4)]));
+            encoded.push(char::from(HEX[usize::from(byte & 15)]));
+        }
+        Self(encoded)
+    }
+
+    pub(crate) fn heap_bytes(&self) -> usize {
+        self.0.capacity()
+    }
+
     pub fn provider_package(provider: &str, package: &str) -> Self {
         Self(format!("{provider}:{package}"))
     }

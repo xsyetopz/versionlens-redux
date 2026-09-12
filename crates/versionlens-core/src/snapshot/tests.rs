@@ -3,42 +3,35 @@ use versionlens_parsers::parse_document;
 
 use super::dependency_signature;
 
-#[test]
-fn dependency_signature_ignores_workspace_and_catalog_specs() {
-    let left = parse_document(&DocumentInput::new(
+fn signature(text: &str) -> String {
+    dependency_signature(&parse_document(&DocumentInput::new(
         "file:///package.json".to_owned(),
         "json".to_owned(),
-        package_file_fixture("signature-ignores-workspace-and-catalog-specs.json"),
+        text.to_owned(),
         None,
-    ));
-    let right = parse_document(&DocumentInput::new(
-        "file:///package.json".to_owned(),
-        "json".to_owned(),
-        package_file_fixture("signature-ignores-workspace-and-catalog-range-change.json"),
-        None,
-    ));
-
-    assert_eq!(dependency_signature(&left), dependency_signature(&right));
+    )))
 }
 
 #[test]
-fn dependency_signature_ignores_npm_package_manager_changes() {
-    let left = parse_document(&DocumentInput::new(
-        "file:///package.json".to_owned(),
-        "json".to_owned(),
-        package_file_fixture("signature-ignores-npm-package-manager-changes.json"),
-        None,
-    ));
-    let right = parse_document(&DocumentInput::new(
-        "file:///package.json".to_owned(),
-        "json".to_owned(),
-        package_file_fixture("signature-ignores-npm-package-manager-version-change.json"),
-        None,
-    ));
-
-    assert_eq!(dependency_signature(&left), dependency_signature(&right));
+fn dependency_signature_tracks_package_manager_versions() {
+    assert_ne!(
+        signature(r#"{"packageManager":"pnpm@9.0.0"}"#),
+        signature(r#"{"packageManager":"pnpm@10.0.0"}"#),
+    );
 }
 
-fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/core-scenarios/snapshot/tests", name)
+#[test]
+fn dependency_signature_tracks_workspace_requirements() {
+    assert_ne!(
+        signature(r#"{"dependencies":{"member":"workspace:*"}}"#),
+        signature(r#"{"dependencies":{"member":"workspace:^"}}"#),
+    );
+}
+
+#[test]
+fn dependency_signature_is_independent_of_property_order() {
+    assert_eq!(
+        signature(r#"{"dependencies":{"one":"1.0.0","two":"2.0.0"}}"#),
+        signature(r#"{"dependencies":{"two":"2.0.0","one":"1.0.0"}}"#),
+    );
 }

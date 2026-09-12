@@ -30,6 +30,14 @@ fn dependency(ecosystem: Ecosystem, group: &str, name: &str, requirement: &str) 
 #[test]
 fn version_category_preserves_exact_project_predicates() {
     assert_eq!(
+        dependency(Ecosystem::Maven, "version", "demo", "0.1.0").versionable_kind(),
+        VersionableKind::ProjectVersion
+    );
+    assert_eq!(
+        dependency(Ecosystem::Maven, "dependencies", "demo", "0.1.0").versionable_kind(),
+        VersionableKind::Dependency
+    );
+    assert_eq!(
         dependency(Ecosystem::Deno, "version", "plain", "1.0.0").versionable_kind(),
         VersionableKind::Dependency
     );
@@ -44,5 +52,31 @@ fn version_category_preserves_exact_project_predicates() {
     assert_eq!(
         dependency(Ecosystem::Pub, "version", "version", "1.0.0").versionable_kind(),
         VersionableKind::ProjectVersion
+    );
+}
+
+#[test]
+fn local_package_protocols_are_workspace_references() {
+    for requirement in [
+        "file:../foo",
+        "link:../foo",
+        "portal:../foo",
+        "workspace:*",
+        "catalog:shared",
+    ] {
+        assert_eq!(
+            dependency(Ecosystem::Npm, "dependencies", "foo", requirement).versionable_kind(),
+            VersionableKind::WorkspaceReference,
+        );
+    }
+    assert_eq!(
+        dependency(
+            Ecosystem::Npm,
+            "dependencies",
+            "foo",
+            "https://example.test/foo.tgz"
+        )
+        .versionable_kind(),
+        VersionableKind::Dependency,
     );
 }

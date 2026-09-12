@@ -89,42 +89,6 @@ fn parses_kotlin_dsl_plugin_declarations() {
 }
 
 #[test]
-fn parses_versioned_github_actions_and_ignores_unsafe_refs() {
-    let dependencies = parse_document(&DocumentInput::new(
-        "file:///work/.github/workflows/ci.yml".to_owned(),
-        "yaml".to_owned(),
-        package_file_fixture("parses-github-actions-version-refs.yaml").to_owned(),
-        None,
-    ));
-
-    assert_eq!(dependencies.len(), 3);
-    assert!(
-        dependencies
-            .iter()
-            .all(|dependency| dependency.ecosystem == GitHub)
-    );
-    assert_eq!(dependencies[0].name, "actions/checkout");
-    assert_eq!(dependencies[0].requirement, "4");
-    assert_eq!(
-        dependencies[0].hosted_name.as_deref(),
-        Some("actions/checkout")
-    );
-    assert_eq!(dependencies[1].requirement, "4.1.0");
-    assert_eq!(
-        dependencies[1].hosted_name.as_deref(),
-        Some("actions/setup-node")
-    );
-    assert_eq!(
-        dependencies[2].name,
-        "acme/automation/.github/workflows/release.yml"
-    );
-    assert_eq!(dependencies[2].requirement, "1.2.0");
-    assert_eq!(
-        dependencies[2].hosted_name.as_deref(),
-        Some("acme/automation")
-    );
-}
-#[test]
 fn parses_unity_project_manifest_dependencies() {
     let text = package_file_fixture("parses-unity-project-manifest-dependencies.txt");
 
@@ -294,7 +258,7 @@ fn parses_gradle_version_catalog_dependencies() {
 
     let dependencies = parse_fixture(text, "file:///work/gradle/libs.versions.toml", "toml");
 
-    assert_eq!(dependencies.len(), 6);
+    assert_eq!(dependencies.len(), 7);
     crate::support::tests::assert_dependency(
         &dependencies,
         crate::support::tests::DependencyExpectation::new(0, Maven, "versions", "groovy", "3.0.5"),
@@ -308,19 +272,41 @@ fn parses_gradle_version_catalog_dependencies() {
     assert_eq!(dependencies[2].hosted_url, Some("version.ref".to_owned()));
     assert_eq!(dependencies[3].name, "org.apache.commons:commons-lang3");
     assert_eq!(dependencies[3].requirement, "3.17.0");
-    assert_eq!(dependencies[4].group, "plugins");
+    assert_eq!(dependencies[4].group, "libraries");
+    assert_eq!(dependencies[4].name, "junit:junit");
+    assert_eq!(dependencies[4].requirement, "4.13.2");
     assert_eq!(
-        dependencies[4].name,
-        "com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin"
+        extract_range(text, dependencies[4].requirement_range),
+        "4.13.2"
     );
-    assert_eq!(dependencies[4].requirement, "0.45.0");
     assert_eq!(dependencies[5].group, "plugins");
     assert_eq!(
         dependencies[5].name,
+        "com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin"
+    );
+    assert_eq!(dependencies[5].requirement, "0.45.0");
+    assert_eq!(dependencies[6].group, "plugins");
+    assert_eq!(
+        dependencies[6].name,
         "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin"
     );
-    assert_eq!(dependencies[5].requirement, "kotlin");
-    assert_eq!(dependencies[5].hosted_url, Some("version.ref".to_owned()));
+    assert_eq!(dependencies[6].requirement, "kotlin");
+    assert_eq!(dependencies[6].hosted_url, Some("version.ref".to_owned()));
+}
+
+#[test]
+fn parses_gradle_catalog_inline_version_with_exact_requirement_range() {
+    let text = "[libraries]\nfoo = { module = \"example.test:foo\", version = \"1.0.0\" }\n";
+
+    let dependencies = parse_fixture(text, "file:///work/gradle/libs.versions.toml", "toml");
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].name, "example.test:foo");
+    assert_eq!(dependencies[0].requirement, "1.0.0");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "1.0.0"
+    );
 }
 
 #[test]
@@ -607,6 +593,7 @@ fn parses_gradle_plugin_maven_repositories_separately() {
 }
 
 include!("tests/cpp.rs");
+include!("tests/github_actions.rs");
 include!("tests/jvm.rs");
 include!("tests/native_infra.rs");
 

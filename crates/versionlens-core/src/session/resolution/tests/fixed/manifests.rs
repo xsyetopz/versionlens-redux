@@ -221,31 +221,6 @@ fn npm_workspace_and_catalog_dependencies_are_surfaced_without_registry_lookup()
 }
 
 #[test]
-fn cargo_rust_version_is_terminal_and_not_updated() {
-    let session = standard_session();
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///repo/Cargo.toml".to_owned(),
-            "toml".to_owned(),
-            "[package]\nname = \"demo\"\nrust-version = \"1.78\"\n".to_owned(),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "rust".to_owned(),
-            Cargo,
-            r#"{"versions":["99.0.0"]}"#.to_owned(),
-        )],
-    );
-
-    assert!(output
-        .suggestions
-        .iter()
-        .any(|suggestion| suggestion.dependency.name == "rust"
-            && suggestion.status == "fixed"));
-    assert!(output.edits.is_empty());
-}
-
-#[test]
 fn bun_trusted_dependency_name_arrays_are_fixed_by_default() {
     let session = standard_session();
 

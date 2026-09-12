@@ -44,9 +44,18 @@ pub use contract::{
 };
 pub use dependency::dependency_payload;
 pub use dotnet_sources::dotnet_registry_source_urls;
-pub use session::{ApplyCommandRequest, VersionLensSession, version_lens_session};
+pub use session::{
+    ApplyCommandRequest, SessionTask, TaskCancellation, VersionLensSession, WorkspaceCheckEvent,
+    WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions, WorkspaceDiscovery,
+    WorkspaceDiscoveryCancellation, WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind,
+    WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions,
+    WorkspaceProviderExclusion, version_lens_session, workspace_exclusion_matches,
+    workspace_exclusion_path,
+};
 pub(crate) use support::{
     anyhow_error, arc, boxed, default, duration_from_millis, memory_cache, mutex, parse_semver,
     parse_semver_req, path, recover_poison, string_from_utf8,
 };
 pub use versionlens_suggestions::{Suggestion, SuggestionStatus};
+
+pub use workspace::{workspace_file_uri, workspace_path};

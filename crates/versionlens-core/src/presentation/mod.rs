@@ -127,15 +127,12 @@ fn displayed_choice_version(dependency: &Dependency, choice: &UpdateChoice) -> S
 }
 
 fn choice_indicator<'a>(
-    choice: &UpdateChoice,
+    _choice: &UpdateChoice,
     indicators: &'a SuggestionIndicators,
     has_vulnerabilities: bool,
 ) -> &'a str {
     if has_vulnerabilities {
         return update_indicator(indicators, true);
-    }
-    if choice.label == "downgrade" {
-        return &indicators.downgradeable;
     }
     update_indicator(indicators, false)
 }

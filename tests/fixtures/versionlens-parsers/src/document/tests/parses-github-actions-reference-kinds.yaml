@@ -1,0 +1,11 @@
+name: references
+on: workflow_dispatch
+
+jobs:
+  shared:
+    uses: ./.github/workflows/shared.yml
+  build:
+    steps:
+      - uses: acme/action@main
+      - uses: ./actions/build
+      - uses: ${{ matrix.action }}

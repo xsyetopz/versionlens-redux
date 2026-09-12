@@ -50,3 +50,42 @@ fn operations_without_deadlines_expose_no_remaining_duration() {
     assert!(!operation.is_expired());
     assert_eq!(operation.remaining_duration(), None);
 }
+
+#[test]
+fn execution_budget_preserves_generation_and_authorization_collection() {
+    let epoch = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let operation = super::OperationContext::with_timeout(std::time::Duration::from_secs(1))
+        .with_generation(&epoch, None);
+    let execution = operation.for_execution();
+    execution.record_authorization_request(
+        "https://registry.test".to_owned(),
+        "https://registry.test/package".to_owned(),
+    );
+    assert_eq!(operation.take_authorization_requests().len(), 1);
+    epoch.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+    assert!(!execution.is_current());
+    assert!(execution.is_expired());
+}
+
+#[test]
+fn cancelling_one_task_preserves_other_operations() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let operation = OperationContext::default().with_cancellation(Some(Arc::clone(&cancelled)));
+    let execution = operation.for_execution();
+    let independent = OperationContext::default();
+    cancelled.store(true, Ordering::Release);
+    assert!(!execution.can_publish());
+    assert_eq!(execution.remaining_duration(), Some(Duration::ZERO));
+    assert!(independent.can_publish());
+}
+
+#[test]
+fn queued_operations_keep_the_submission_generation() {
+    let epoch = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(2));
+    let operation = OperationContext::default().with_generation(&epoch, Some(1));
+    assert!(!operation.for_execution().is_current());
+}

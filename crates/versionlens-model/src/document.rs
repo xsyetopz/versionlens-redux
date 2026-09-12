@@ -22,6 +22,22 @@ pub enum CanonicalReference {
         tag: String,
         separator: String,
     },
+    GitHubActionCommit {
+        commit: String,
+    },
+    GitHubActionRef {
+        reference: String,
+    },
+    GitHubActionLocal {
+        path: String,
+        reusable_workflow: bool,
+    },
+    GitHubActionExpression {
+        expression: String,
+    },
+    GitHubActionInvalid {
+        reference: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -99,8 +115,37 @@ pub struct Dependency {
 }
 
 impl Dependency {
+    pub fn is_runtime_version(&self) -> bool {
+        matches!(
+            self.group.as_str(),
+            "engines" | "rust-version" | "packageManager" | "devEngines.packageManager"
+        ) || matches!(
+            self.hosted_url.as_deref(),
+            Some("toolchain" | "runtime-expression")
+        )
+    }
+
+    pub fn is_runtime_constraint(&self) -> bool {
+        matches!(self.group.as_str(), "engines" | "rust-version")
+            || self.is_runtime_version()
+                && (self.requirement.contains(['<', '>', '^', '~', '*', '|'])
+                    || self
+                        .requirement
+                        .split('.')
+                        .any(|part| matches!(part, "x" | "X")))
+    }
+
     pub fn versionable_kind(&self) -> VersionableKind {
-        if self.ecosystem == Ecosystem::GitHub {
+        if self.is_runtime_constraint() {
+            return VersionableKind::RuntimeConstraint;
+        }
+        if self.ecosystem == Ecosystem::GitHub
+            || self.group.starts_with("with.")
+                && matches!(
+                    self.hosted_url.as_deref(),
+                    Some("toolchain" | "runtime-expression")
+                )
+        {
             return VersionableKind::EcosystemHandle;
         }
         if matches!(
@@ -111,6 +156,9 @@ impl Dependency {
         }
         if self.requirement.starts_with("workspace:")
             || self.requirement.starts_with("catalog:")
+            || self.requirement.starts_with("file:")
+            || self.requirement.starts_with("link:")
+            || self.requirement.starts_with("portal:")
             || matches!(
                 self.hosted_url.as_deref(),
                 Some("local" | "path" | "workspace")
@@ -121,16 +169,16 @@ impl Dependency {
         if self.is_project_version() {
             return VersionableKind::ProjectVersion;
         }
-        if matches!(self.group.as_str(), "engines" | "rust-version") {
-            return VersionableKind::RuntimeConstraint;
-        }
         VersionableKind::Dependency
     }
 
     fn is_project_version(&self) -> bool {
         match self.ecosystem {
             Ecosystem::Cargo => self.group == "package" && self.name == "version",
-            Ecosystem::Maven => self.group == "project.version" && self.name == "version",
+            Ecosystem::Maven => {
+                self.group == "project.version" && self.name == "version"
+                    || self.group == "version" && !self.name.is_empty()
+            }
             Ecosystem::Dotnet => {
                 self.group == "PropertyGroup"
                     && matches!(self.name.as_str(), "Version" | "AssemblyVersion")

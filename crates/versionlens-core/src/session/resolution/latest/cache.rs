@@ -1,10 +1,7 @@
-use versionlens_model::Dependency;
-use versionlens_suggestions::UpdateChoice;
+use versionlens_suggestions::{UpdateChoice, deduplicate_update_choices};
 
 use crate::VersionLensSession;
-use crate::cache::latest_cache_key;
-use crate::prerelease::{dependency_allows_prereleases, npm_requirement_may_be_dist_tag};
-use crate::registry::RegistryContext;
+use crate::cache::suggestion_cache_key;
 
 use super::{LatestLookup, LatestResolutionRequest};
 use crate::session::cache::CachedLatest;
@@ -16,52 +13,62 @@ impl VersionLensSession {
     ) -> LatestLookup {
         let LatestResolutionRequest {
             dependency,
+            responses,
             has_registry_response,
             context,
-            ..
+            operation,
         } = request;
-        let key = latest_cache_key(dependency);
-        if !has_registry_response && let Some(cached) = self.cache().get(&key) {
-            return cached_latest_lookup(cached);
+        let key = suggestion_cache_key(dependency, &self.cache_scope(context));
+        let persistent_key = self.persistent_latest_key(dependency, context);
+        if !has_registry_response
+            && let Some(cached) = self.cache().get(&key)
+            && let Some(lookup) = cached_latest_lookup(dependency, cached)
+        {
+            return lookup;
+        }
+
+        if !has_registry_response
+            && let Some(persistent_key) = persistent_key.as_deref()
+            && let Some((cached, ttl)) = self.load_persistent_latest(persistent_key)
+            && let Some(lookup) = cached_latest_lookup(dependency, &cached)
+        {
+            let mut cache = self.cache();
+            if operation.is_current() {
+                cache.insert_with_ttl(key, cached, ttl);
+            }
+            drop(cache);
+            return lookup;
         }
 
         match self.lookup_latest(request) {
-            Ok(lookup) => {
-                if let Some(latest) = &lookup.latest {
-                    self.cache().insert_with_ttl(
-                        key,
-                        CachedLatest {
-                            latest: latest.to_owned(),
-                            builds: copied_strings(&lookup.builds),
-                            choices: copied_update_choices(&lookup.choices),
-                        },
-                        self.cache_ttl(dependency.ecosystem, context.manifest_kind()),
+            Ok(mut lookup) => {
+                deduplicate_update_choices(&mut lookup.choices);
+                lookup.fixed_requirement_matched =
+                    super::super::dependency::fixed_requirement_matches_response(
+                        dependency, responses,
                     );
+                if let Some(latest) = &lookup.latest {
+                    let mut cache = self.cache();
+                    if !operation.is_current() {
+                        return lookup;
+                    }
+                    let cached = CachedLatest {
+                        latest: latest.to_owned(),
+                        builds: copied_strings(&lookup.builds),
+                        choices: copied_update_choices(&lookup.choices),
+                        fixed_requirement_matched: Some(lookup.fixed_requirement_matched),
+                    };
+                    let ttl = self.cache_ttl(dependency.ecosystem, context.manifest_kind());
+                    cache.insert_with_ttl(key, cached.clone(), ttl);
+                    drop(cache);
+                    if let Some(persistent_key) = persistent_key {
+                        self.store_persistent_latest(persistent_key, &cached, ttl, operation);
+                    }
                 }
                 lookup
             }
             Err(fetch_error) => failed_latest_lookup(fetch_error),
         }
-    }
-
-    pub(in crate::session::resolution::latest) fn resolve_uncached_latest(
-        &self,
-        request: LatestResolutionRequest<'_>,
-    ) -> LatestLookup {
-        match self.lookup_latest(request) {
-            Ok(lookup) => lookup,
-            Err(fetch_error) => failed_latest_lookup(fetch_error),
-        }
-    }
-
-    pub(in crate::session::resolution::latest) fn uses_shared_latest_cache(
-        &self,
-        dependency: &Dependency,
-        context: &RegistryContext,
-    ) -> bool {
-        !context.has_urls()
-            && !npm_requirement_may_be_dist_tag(dependency)
-            && (self.config.show_prereleases || !dependency_allows_prereleases(dependency))
     }
 }
 
@@ -71,16 +78,29 @@ fn failed_latest_lookup(fetch_error: crate::error::FetchError) -> LatestLookup {
         builds: vec![],
         choices: vec![],
         fetch_error: Some(fetch_error),
+        fixed_requirement_matched: false,
     }
 }
 
-fn cached_latest_lookup(cached: &CachedLatest) -> LatestLookup {
-    LatestLookup {
+fn cached_latest_lookup(
+    dependency: &versionlens_model::Dependency,
+    cached: &CachedLatest,
+) -> Option<LatestLookup> {
+    if cached.fixed_requirement_matched.is_none()
+        && super::super::dependency::fixed_requirement_requires_response_proof(dependency)
+    {
+        return None;
+    }
+
+    let mut choices = copied_update_choices(&cached.choices);
+    deduplicate_update_choices(&mut choices);
+    Some(LatestLookup {
         latest: Some(cached.latest.as_str().to_owned()),
         builds: copied_strings(&cached.builds),
-        choices: copied_update_choices(&cached.choices),
+        choices,
         fetch_error: None,
-    }
+        fixed_requirement_matched: cached.fixed_requirement_matched.unwrap_or(false),
+    })
 }
 
 fn copied_strings(values: &[String]) -> Vec<String> {

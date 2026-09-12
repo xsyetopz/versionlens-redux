@@ -1,9 +1,25 @@
 //! Test-only repository fixture access shared by workspace crates.
 
+use std::env::temp_dir;
 use std::fmt;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+use std::process::id;
+
+pub fn temporary_directory(prefix: &str) -> io::Result<PathBuf> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    loop {
+        let serial = NEXT.fetch_add(1, Ordering::Relaxed);
+        let path = temp_dir().join(format!("{prefix}-{}-{serial}", id()));
+        match fs::create_dir(&path) {
+            Ok(()) => return Ok(path),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct FixtureError {

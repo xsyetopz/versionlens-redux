@@ -20,7 +20,11 @@ use versionlens_model::Ecosystem::Docker;
 type CodeLensPayloads = Vec<CodeLensPayload>;
 
 impl VersionLensSession {
-    pub(crate) fn code_lenses_for_dependency(&self, dependency: &Dependency) -> CodeLensPayloads {
+    pub(crate) fn code_lenses_for_dependency(
+        &self,
+        dependency: &Dependency,
+        scope: &str,
+    ) -> CodeLensPayloads {
         let project_version_suggestions = project_version_code_lens_suggestions(dependency);
         if !project_version_suggestions.is_empty() {
             return ordered_code_lenses(
@@ -37,9 +41,17 @@ impl VersionLensSession {
             );
         }
 
-        let Some(suggestion) = self.cached_suggestion(dependency) else {
+        let Some(suggestion) = self.cached_suggestion(dependency, scope) else {
             return vec![];
         };
+
+        if dependency.is_runtime_constraint() {
+            return vec![runtime_constraint_lens(
+                dependency,
+                &suggestion,
+                &self.config.suggestion_indicators,
+            )];
+        }
 
         let has_vulnerabilities = self.target_update_has_cached_vulnerabilities(Some(&suggestion));
         let title = code_lens_title(
@@ -112,6 +124,28 @@ impl VersionLensSession {
             title,
         ));
         ordered_code_lenses(lenses)
+    }
+}
+
+fn runtime_constraint_lens(
+    dependency: &Dependency,
+    suggestion: &Suggestion,
+    indicators: &SuggestionIndicators,
+) -> CodeLensPayload {
+    let title = if suggestion.status == versionlens_suggestions::SuggestionStatus::SatisfiesLatest {
+        format!(
+            "checked {}; compatible {}",
+            dependency.requirement,
+            suggestion.latest.as_deref().unwrap_or("unknown")
+        )
+    } else {
+        code_lens_title(dependency, Some(suggestion), indicators, false)
+    };
+    CodeLensPayload {
+        range: dependency.range,
+        title,
+        command: String::new(),
+        arguments: vec![],
     }
 }
 

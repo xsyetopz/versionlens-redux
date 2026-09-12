@@ -1,0 +1,52 @@
+[
+  {
+    "name": "dependency",
+    "path": "dependency/package.json",
+    "text": "{\"dependencies\":{\"foo\":\"1.0.0\"}}\n",
+    "package": "foo",
+    "kind": "Dependency",
+    "status": "updateAvailable",
+    "edit": "2.0.0"
+  },
+  {
+    "name": "runtime constraint",
+    "path": "constraint/package.json",
+    "text": "{\"engines\":{\"node\":\">=20\"}}\n",
+    "package": "node",
+    "kind": "RuntimeConstraint",
+    "status": "satisfiesLatest"
+  },
+  {
+    "name": "project version",
+    "path": "project/package.json",
+    "text": "{\"name\":\"demo\",\"version\":\"1.0.0\"}\n",
+    "package": "1.0.0",
+    "kind": "ProjectVersion",
+    "status": "updateAvailable",
+    "edit": "1.0.1"
+  },
+  {
+    "name": "workspace reference",
+    "path": "workspace/package.json",
+    "text": "{\"dependencies\":{\"foo\":\"workspace:*\"}}\n",
+    "package": "foo",
+    "kind": "WorkspaceReference",
+    "status": "fixed"
+  },
+  {
+    "name": "local reference",
+    "path": "local/package.json",
+    "text": "{\"dependencies\":{\"foo\":\"file:../foo\"}}\n",
+    "package": "foo",
+    "kind": "WorkspaceReference",
+    "status": "directory"
+  },
+  {
+    "name": "floating handle",
+    "path": "floating/package.json",
+    "text": "{\"packageManager\":\"npm@latest\"}\n",
+    "package": "npm",
+    "kind": "EcosystemHandle",
+    "status": "current"
+  }
+]

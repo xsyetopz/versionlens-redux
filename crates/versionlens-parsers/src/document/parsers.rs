@@ -39,6 +39,10 @@ use crate::pyproject_toml::{parse_pipfile_with_paths, parse_pyproject_toml_with_
 use crate::r_description::{parse_r_description, parse_renv_lock};
 use crate::rebar_config::parse_rebar_config;
 use crate::requirements_txt::parse_requirements_txt;
+use crate::runtime_manifests::{
+    parse_bun_version, parse_node_version, parse_nvmrc, parse_rust_toolchain,
+    parse_rust_toolchain_toml,
+};
 use crate::sbt_build::parse_sbt_build;
 use crate::swift_package::parse_swift_package;
 use crate::terraform_hcl::parse_terraform_hcl;
@@ -67,6 +71,17 @@ impl ManifestParser {
 }
 
 const MANIFEST_PARSERS: &[(ManifestKind, ManifestParser)] = &[
+    (ManifestKind::Nvmrc, ParserDirect(parse_nvmrc)),
+    (ManifestKind::NodeVersion, ParserDirect(parse_node_version)),
+    (ManifestKind::BunVersion, ParserDirect(parse_bun_version)),
+    (
+        ManifestKind::RustToolchain,
+        ParserDirect(parse_rust_toolchain),
+    ),
+    (
+        ManifestKind::RustToolchainToml,
+        ParserDirect(parse_rust_toolchain_toml),
+    ),
     (
         ManifestKind::CargoToml,
         ParserWithPaths(parse_cargo_toml_with_paths),

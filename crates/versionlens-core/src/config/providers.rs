@@ -161,7 +161,16 @@ fn manifest_kind_matches(candidate: ManifestKind, kind: ManifestKind) -> bool {
         || (candidate == ManifestKind::NpmPackageJson
             && matches!(
                 kind,
-                ManifestKind::NpmPackageJson5 | ManifestKind::NpmPackageYaml
+                ManifestKind::NpmPackageJson5
+                    | ManifestKind::NpmPackageYaml
+                    | ManifestKind::Nvmrc
+                    | ManifestKind::NodeVersion
+                    | ManifestKind::BunVersion
+            ))
+        || (candidate == ManifestKind::CargoToml
+            && matches!(
+                kind,
+                ManifestKind::RustToolchain | ManifestKind::RustToolchainToml
             ))
         || (candidate == ManifestKind::DenoJson
             && matches!(

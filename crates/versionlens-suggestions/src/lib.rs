@@ -5,7 +5,8 @@ mod suggestion;
 mod support;
 
 pub use choices::{
-    push_unique_choice, release_update_choices, release_update_choices_with_prereleases,
+    deduplicate_update_choices, push_unique_choice, release_update_choices,
+    release_update_choices_with_prereleases, semantic_update_target,
 };
 pub use constructors::{
     directory, directory_not_found, error, fixed, invalid, no_match, no_match_with_message,

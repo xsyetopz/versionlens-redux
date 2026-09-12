@@ -1,5 +1,6 @@
 use crate::selection::matches_dependency;
 use std::collections::HashSet;
+use std::time::{Duration, Instant};
 use versionlens_edits::can_sort_dependencies;
 use versionlens_edits::update_edits;
 
@@ -7,17 +8,18 @@ use versionlens_model::ManifestKind::VersionLensMultiRegistries;
 use versionlens_model::{
     DocumentInput, ManifestKind, ecosystem_for_manifest, provider_name_for_manifest,
 };
-use versionlens_suggestions::Suggestion;
+use versionlens_suggestions::{Suggestion, SuggestionStatus};
 use versionlens_versions::ProjectVersionBump;
 use versionlens_vscode_model::DiagnosticPayload;
 
 use super::operation::OperationContext;
 use super::resolution::ResolutionRequest;
 use crate::VersionLensSession;
+use crate::cache::suggestion_cache_key;
 use crate::command::install_task_config_key_for_manifest;
 use crate::contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
 use crate::dependency::into_dependency_payloads;
-use crate::registry;
+use crate::project::is_project_version_dependency;
 use crate::schema::schema_output;
 use crate::snapshot::dependency_signature;
 use crate::status::{status_payload, to_u32};
@@ -30,6 +32,45 @@ pub(super) struct DependencySuggestionsRequest<'a> {
 }
 
 impl VersionLensSession {
+    pub fn document_is_supported(&self, input: &DocumentInput) -> bool {
+        self.manifest_enabled(self.classify_document(input))
+    }
+
+    pub fn document_is_fresh(&self, input: &DocumentInput) -> bool {
+        self.document_check_delay(input)
+            .is_none_or(|delay| !delay.is_zero())
+    }
+
+    /// Returns zero when checking is due, a delay until the earliest cached
+    /// outcome expires, or `None` when the document needs no upstream check.
+    pub fn document_check_delay(&self, input: &DocumentInput) -> Option<Duration> {
+        self.synchronize_persistent_cache();
+        let kind = self.classify_document(input);
+        let context = self.registry_context(input, kind);
+        let scope = self.document_cache_scope(&context, input);
+        let dependencies = self.dependencies(input);
+        let mut cache = self.suggestion_cache();
+        let mut next = None;
+        for dependency in &dependencies {
+            if is_project_version_dependency(dependency) {
+                continue;
+            }
+            let key = suggestion_cache_key(dependency, &scope);
+            let Some((suggestion, deadline)) = cache.get_with_expiry(&key) else {
+                return Some(Duration::ZERO);
+            };
+            let failed = suggestion.status == SuggestionStatus::Error;
+            let deadline = if failed {
+                deadline
+            } else {
+                self.cached_update_vulnerabilities_deadline(suggestion, deadline)
+            };
+            next = Some(next.map_or(deadline, |previous: Instant| previous.min(deadline)));
+        }
+        drop(cache);
+        next.map(|deadline| deadline.saturating_duration_since(Instant::now()))
+    }
+
     pub fn analyze_document(&self, input: DocumentInput) -> AnalyzeDocumentOutput {
         self.analyze_document_with_responses(input, &[])
     }
@@ -39,6 +80,7 @@ impl VersionLensSession {
         input: DocumentInput,
         responses: &[RegistryResponseInput],
     ) -> AnalyzeDocumentOutput {
+        self.synchronize_persistent_cache();
         let manifest_kind = self.classify_document(&input);
         let is_supported_manifest = self.manifest_enabled(manifest_kind);
         let active_provider_name = is_supported_manifest
@@ -50,13 +92,15 @@ impl VersionLensSession {
         }
 
         let dependencies = self.dependencies(&input);
+        let context = self.registry_context(&input, manifest_kind);
+        let scope = self.document_cache_scope(&context, &input);
         let suggestions = dependencies
             .iter()
-            .map(|dependency| self.cached_suggestion(dependency))
+            .map(|dependency| self.cached_suggestion(dependency, &scope))
             .collect::<Vec<_>>();
         let code_lenses = dependencies
             .iter()
-            .flat_map(|dependency| self.code_lenses_for_dependency(dependency))
+            .flat_map(|dependency| self.code_lenses_for_dependency(dependency, &scope))
             .collect();
         let mut diagnostic_ranges: HashSet<(u32, u32, u32, u32)> = crate::default();
         let diagnostics: Vec<DiagnosticPayload> = dependencies
@@ -115,9 +159,7 @@ impl VersionLensSession {
         input: DocumentInput,
         responses: &[RegistryResponseInput],
     ) -> ResolveDocumentOutput {
-        let operation = OperationContext::with_timeout(crate::duration_from_millis(
-            self.config.http.timeout_ms,
-        ));
+        let operation = self.operation_context();
         let manifest_kind = self.classify_document(&input);
         let plan_input = input.clone();
         let suggestions = self.resolve_suggestions(input, responses, None, &operation);
@@ -135,6 +177,9 @@ impl VersionLensSession {
             authorization_required_requests,
             vulnerable_update_count,
         );
+        if !operation.can_publish() {
+            return super::cancelled_resolution(suggestions);
+        }
         super::finish_resolve_output(suggestions, parts)
     }
 
@@ -146,7 +191,7 @@ impl VersionLensSession {
         operation: &OperationContext,
     ) -> Vec<Suggestion> {
         let manifest_kind = self.classify_document(&input);
-        let context = registry::registry_context_from_document_kind(&input, manifest_kind);
+        let context = self.registry_context(&input, manifest_kind);
         let suggestions = self.resolve_dependencies(ResolutionRequest {
             input: &input,
             dependencies: self.dependencies(&input),
@@ -157,7 +202,12 @@ impl VersionLensSession {
             operation,
         });
         if project_bump.is_none() {
-            self.cache_resolved_suggestions(&suggestions, context.manifest_kind());
+            self.cache_resolved_suggestions(
+                &suggestions,
+                context.manifest_kind(),
+                operation,
+                &self.document_cache_scope(&context, &input),
+            );
         }
         suggestions
     }
@@ -174,7 +224,7 @@ impl VersionLensSession {
             operation,
         } = request;
         let manifest_kind = self.classify_document(&input);
-        let context = registry::registry_context_from_document_kind(&input, manifest_kind);
+        let context = self.registry_context(&input, manifest_kind);
         let dependencies = self
             .dependencies(&input)
             .into_iter()

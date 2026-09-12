@@ -309,7 +309,7 @@ fn analyze_document_uses_cached_latest_for_diagnostics() {
     );
     assert_eq!(
         output.dependency_signature,
-        concat!("npm\0left-pad\0dependencies\0", "1.0.0")
+        r#"["npm","left-pad","dependencies","1.0.0",null,null,null]"#
     );
 
     config.show_suggestion_stats = true;
@@ -469,4 +469,113 @@ fn registry_response() -> RegistryResponseInput {
         Npm,
         r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
     )
+}
+
+#[test]
+fn document_freshness_tracks_version_and_advisory_expiry() {
+    let session = standard_session(false);
+    let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
+    let responses = [RegistryResponseInput::new(
+        "example",
+        Npm,
+        r#"{"dist-tags":{"latest":"2.0.0"}}"#,
+    )];
+    assert!(!session.document_is_fresh(&input));
+    session.resolve_document_with_responses(input.clone(), &responses);
+    assert!(session.document_is_fresh(&input));
+    session.vulnerability_cache().clear();
+    assert!(!session.document_is_fresh(&input));
+    session.resolve_document_with_responses(input.clone(), &responses);
+    assert!(session.document_is_fresh(&input));
+    let dependency = session.dependencies(&input).remove(0);
+    let context = session.registry_context(&input, session.classify_document(&input));
+    let scope = session.document_cache_scope(&context, &input);
+    let cached = session
+        .cached_resolved_suggestion(&dependency, &scope)
+        .unwrap();
+    session.suggestion_cache().insert_with_ttl(
+        crate::cache::suggestion_cache_key(&dependency, &scope),
+        cached,
+        std::time::Duration::ZERO,
+    );
+    assert!(!session.document_is_fresh(&input));
+}
+
+#[test]
+fn freshness_does_not_transfer_to_a_changed_requirement_or_another_document() {
+    let session = standard_session(false);
+    let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
+    session.resolve_document_with_responses(
+        input.clone(),
+        &[RegistryResponseInput::new(
+            "example",
+            Npm,
+            r#"{"dist-tags":{"latest":"2.0.0"}}"#,
+        )],
+    );
+    assert!(session.document_is_fresh(&input));
+    let mut changed = input.clone();
+    changed.text = changed.text.replace("1.0.0", "1.1.0");
+    assert!(!session.document_is_fresh(&changed));
+    changed = input.clone();
+    changed.uri = "file:///another/package.json".to_owned();
+    assert!(!session.document_is_fresh(&changed));
+    session.clear_cache();
+    assert!(!session.document_is_fresh(&input));
+}
+
+#[test]
+fn document_check_deadline_uses_the_earliest_advisory_expiry() {
+    use std::time::Duration;
+    let session = standard_session(false);
+    let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
+    assert_eq!(session.document_check_delay(&input), Some(Duration::ZERO));
+    session.resolve_document_with_responses(
+        input.clone(),
+        &[RegistryResponseInput::new(
+            "example",
+            Npm,
+            r#"{"dist-tags":{"latest":"2.0.0"}}"#,
+        )],
+    );
+    let delay = session.document_check_delay(&input).unwrap();
+    assert!(delay > Duration::from_secs(30));
+    assert!(delay <= Duration::from_secs(300));
+    let dependency = session.dependencies(&input).remove(0);
+    session.vulnerability_cache().insert_with_ttl(
+        crate::cache::vulnerability_cache_key(&dependency),
+        crate::vulnerability::VulnerabilityCheck::Checked(vec![]),
+        Duration::from_secs(7),
+    );
+    let delay = session.document_check_delay(&input).unwrap();
+    assert!(!delay.is_zero());
+    assert!(delay <= Duration::from_secs(7));
+    session.vulnerability_cache().clear();
+    assert_eq!(session.document_check_delay(&input), Some(Duration::ZERO));
+}
+
+#[test]
+fn failed_checks_wait_for_retry_and_empty_documents_need_no_timer() {
+    use std::time::Duration;
+    let session = standard_session(false);
+    let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
+    let output = session.resolve_document_with_responses(
+        input.clone(),
+        &[RegistryResponseInput::new(
+            "example",
+            Npm,
+            r#"{"status":"E404"}"#,
+        )],
+    );
+    assert_eq!(output.suggestions[0].status, "error");
+    session.vulnerability_cache().clear();
+    let delay = session.document_check_delay(&input).unwrap();
+    assert!(!delay.is_zero());
+    assert!(delay <= Duration::from_secs(30));
+    assert_eq!(
+        session.document_check_delay(&package_json_input("{}")),
+        None
+    );
+    session.clear_cache();
+    assert_eq!(session.document_check_delay(&input), Some(Duration::ZERO));
 }

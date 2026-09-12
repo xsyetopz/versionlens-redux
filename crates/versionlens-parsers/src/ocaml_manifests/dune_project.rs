@@ -192,8 +192,8 @@ fn dependency_list_entry(text: &str, open: usize, close: usize) -> Option<Depend
             hosted_name: None,
             range: offset_range(text, open, close + 1),
             requirement_range: offset_range(text, constraint.range_start, constraint.range_end),
-            requirement_prefix: "".to_owned(),
-            requirement_suffix: "".to_owned(),
+            requirement_prefix: constraint.prefix,
+            requirement_suffix: constraint.suffix,
             canonical_reference: None,
         });
     }
@@ -214,6 +214,8 @@ fn dependency_list_entry(text: &str, open: usize, close: usize) -> Option<Depend
 
 struct DuneConstraint {
     requirement: String,
+    prefix: String,
+    suffix: String,
     range_start: usize,
     range_end: usize,
 }
@@ -232,8 +234,12 @@ fn first_dune_version_constraint(text: &str, start: usize, end: usize) -> Option
             let version_start = support::skip_ascii_whitespace_until(text, after_operator, close);
             let version_end = symbol_end(text, version_start, close);
             let version = text.get(version_start..version_end)?;
+            let quoted = version.starts_with('"') && version.ends_with('"');
+            let quote = if quoted { "\"" } else { "" };
             return Some(DuneConstraint {
-                requirement: format!("{operator} {version}"),
+                requirement: format!("{operator} {}", version.trim_matches('"')),
+                prefix: format!("{}{quote}", &text[op_start..version_start]),
+                suffix: quote.to_owned(),
                 range_start: op_start,
                 range_end: version_end,
             });

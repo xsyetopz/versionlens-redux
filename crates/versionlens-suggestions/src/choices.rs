@@ -2,6 +2,7 @@ use semver::Version;
 use std::cmp::Ordering::{
     Equal as OrderingEqual, Greater as OrderingGreater, Less as OrderingLess,
 };
+use std::collections::BTreeSet;
 use versionlens_versions::requirement_satisfies_latest;
 
 use crate::suggestion::UpdateChoice;
@@ -33,6 +34,7 @@ pub fn release_update_choices_with_prereleases(
             prerelease_tags,
         ));
     }
+    deduplicate_update_choices(&mut choices);
     choices
 }
 
@@ -47,15 +49,16 @@ fn stable_update_choices(requirement: &str, latest: &str, versions: &[String]) -
     };
 
     let mut choices = vec![];
-    if !current_matches_latest(&current, latest) {
+    if !current_matches_latest(&current, latest)
+        && parse_release_semver(latest)
+            .is_none_or(|latest| release_precedence(&latest) > release_precedence(&current))
+    {
         push_unique_choice(&mut choices, latest_choice_label(latest), latest, "update");
     }
 
     if stable_versions.is_empty() {
         return if versions.is_empty() { choices } else { vec![] };
     }
-
-    push_downgrade_choice(&mut choices, &current, &stable_versions, None);
 
     if let Some(version) = next_major(&current, versions, &stable_versions) {
         push_unique_choice(&mut choices, "major", &version, "updateMajor");
@@ -101,8 +104,6 @@ fn range_update_choices(
 
     if let Some(version) = latest_satisfying_range(requirement, stable_versions) {
         if let Some(current) = parse_release_semver(&version) {
-            let unchanged = minimum_version(requirement);
-            push_downgrade_choice(&mut choices, &current, stable_versions, unchanged.as_ref());
             if let Some(version) = next_range_major(&current, stable_versions) {
                 push_unique_choice(&mut choices, "major", &version, "updateMajor");
             }
@@ -168,26 +169,6 @@ fn range_target_update_is_useful(requirement: &str, target: &str) -> bool {
     };
 
     release_precedence(&minimum) != release_precedence(&target)
-}
-
-fn push_downgrade_choice(
-    choices: &mut UpdateChoices,
-    current: &Version,
-    stable_versions: &[(&str, Version)],
-    unchanged: Option<&Version>,
-) {
-    if let Some((release, _version)) = stable_versions
-        .iter()
-        .filter(|(_, version)| {
-            release_precedence(version) < release_precedence(current)
-                && unchanged.is_none_or(|unchanged| {
-                    release_precedence(version) != release_precedence(unchanged)
-                })
-        })
-        .max_by(|(_, left), (_, right)| left.cmp(right))
-    {
-        push_unique_choice(choices, "downgrade", release, "update");
-    }
 }
 
 fn release_precedence(version: &Version) -> (u64, u64, u64, &semver::Prerelease) {
@@ -467,7 +448,11 @@ pub fn push_unique_choice(
     version: &str,
     command: &str,
 ) {
-    if choices.iter().any(|choice| choice.version == version) {
+    let target = semantic_update_target(version);
+    if choices
+        .iter()
+        .any(|choice| semantic_update_target(&choice.version) == target)
+    {
         return;
     }
 
@@ -477,6 +462,32 @@ pub fn push_unique_choice(
         replacement: None,
         command: command.to_owned(),
     });
+}
+
+pub fn semantic_update_target(value: &str) -> String {
+    let value = value.trim();
+    versionlens_versions::normalized_version(value).unwrap_or_else(|| value.to_owned())
+}
+
+pub fn deduplicate_update_choices(choices: &mut Vec<UpdateChoice>) {
+    let mut targets = BTreeSet::new();
+    let mut unique = Vec::with_capacity(choices.len());
+    for choice in choices.drain(..) {
+        let target = semantic_update_target(&choice.version);
+        if targets.insert(target.clone()) {
+            unique.push(choice);
+            continue;
+        }
+        if let Some(existing) = unique
+            .iter_mut()
+            .find(|existing| semantic_update_target(&existing.version) == target)
+            && existing.label.starts_with("latest")
+            && !choice.label.starts_with("latest")
+        {
+            *existing = choice;
+        }
+    }
+    *choices = unique;
 }
 
 fn sort_choices_incrementally(choices: &mut UpdateChoices) {

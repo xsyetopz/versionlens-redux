@@ -1,7 +1,7 @@
 use std::fs::read_to_string;
 use std::io::ErrorKind::NotFound as IoNotFound;
 use versionlens_model::Dependency;
-use versionlens_model::Ecosystem::{Docker, Dotnet, Maven};
+use versionlens_model::Ecosystem::{Docker, Dotnet, GitHub, Maven};
 use versionlens_providers::{
     docker_hub_body_has_next_page, docker_hub_tags_page_url, dotnet_package_url_from_service_index,
     merge_docker_hub_response_pages,
@@ -26,6 +26,10 @@ impl VersionLensSession {
         context: &RegistryContext,
         operation: &OperationContext,
     ) -> RegistryBodyResult {
+        if dependency.ecosystem == GitHub && url.ends_with("/tags") {
+            return self.fetch_github_tags_body(dependency, url, context, operation);
+        }
+
         if dependency.ecosystem == Docker && docker_hub_tags_page_url(url, 1).is_some() {
             return self.fetch_docker_hub_body(dependency, url, context, operation);
         }
@@ -43,6 +47,41 @@ impl VersionLensSession {
         }
 
         self.get_text_or_status_with_context(url, dependency.ecosystem, context, operation)
+    }
+
+    pub(in crate::fetch) fn fetch_github_tags_body(
+        &self,
+        dependency: &Dependency,
+        url: &str,
+        context: &RegistryContext,
+        operation: &OperationContext,
+    ) -> RegistryBodyResult {
+        let mut tags = Vec::<serde_json::Value>::new();
+        let mut page = 1_u64;
+        loop {
+            let page_url = if page == 1 {
+                url.to_owned()
+            } else {
+                format!("{url}?per_page=30&page={page}")
+            };
+            let Some(body) = self.get_text_or_status_with_context(
+                &page_url,
+                dependency.ecosystem,
+                context,
+                operation,
+            )?
+            else {
+                return Ok(None);
+            };
+            let entries = serde_json::from_str::<Vec<serde_json::Value>>(&body)
+                .map_err(|error| FetchError::from(crate::anyhow_error(error)))?;
+            let has_next = entries.len() == 30;
+            tags.extend(entries);
+            if !has_next {
+                return Ok(Some(serde_json::Value::Array(tags).to_string()));
+            }
+            page += 1;
+        }
     }
 
     fn fetch_dotnet_package_body(

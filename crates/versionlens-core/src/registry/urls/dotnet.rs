@@ -5,6 +5,7 @@ impl VersionLensSession {
     pub(in crate::registry::urls) fn dotnet_registry_urls(&self) -> Vec<String> {
         {
             let mut source_cache = self
+                .request_state
                 .dotnet_registry_sources
                 .lock()
                 .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));

@@ -6,6 +6,7 @@ use versionlens_parsers::parse_document_as_manifest_with_dependency_paths;
 
 use crate::DependencyPropertyConfig;
 use crate::VersionLensSession;
+use versionlens_cache::CacheKey;
 
 impl VersionLensSession {
     pub(crate) fn dependencies(&self, input: &DocumentInput) -> Vec<Dependency> {
@@ -17,11 +18,35 @@ impl VersionLensSession {
         }
 
         let dependency_paths = self.dependency_paths_for_manifest(kind);
-
-        parse_document_as_manifest_with_dependency_paths(input, kind, &dependency_paths)
-            .into_iter()
-            .filter(|dependency| self.dependency_property_enabled(dependency, kind))
-            .collect()
+        let key = serde_json::to_vec(&(
+            &input.uri,
+            &input.language_id,
+            &input.text,
+            &input.workspace_root,
+            kind,
+            &self.config.providers.dependency_properties,
+        ))
+        .ok()
+        .map(|identity| CacheKey::content(&identity));
+        let mut cache = self
+            .result_state
+            .parsed_dependencies
+            .lock()
+            .unwrap_or_else(crate::recover_poison);
+        if let Some(key) = &key
+            && let Some(dependencies) = cache.get(key)
+        {
+            return dependencies.clone();
+        }
+        let dependencies: Vec<_> =
+            parse_document_as_manifest_with_dependency_paths(input, kind, &dependency_paths)
+                .into_iter()
+                .filter(|dependency| self.dependency_property_enabled(dependency, kind))
+                .collect();
+        if let Some(key) = key {
+            cache.insert(key, dependencies.clone());
+        }
+        dependencies
     }
 
     fn dependency_paths_for_manifest(&self, kind: ManifestKind) -> Vec<&str> {

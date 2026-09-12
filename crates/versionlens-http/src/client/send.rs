@@ -10,7 +10,7 @@ mod tests;
 use crate::error::HttpError;
 use crate::retry::RetryPolicy;
 
-use response::{HttpResponse, read_response_text};
+pub(super) use response::{HttpResponse, read_response_bytes, read_response_text};
 use retry::retry_or_fail;
 
 #[derive(Clone, Copy)]
@@ -40,40 +40,52 @@ impl RequestDeadline {
     }
 }
 
-pub(super) fn send_with_retries(
+pub(super) fn send_with_retries<T>(
     method: &str,
     retry_policy: RetryPolicy,
     deadline: RequestDeadline,
+    mut read_response: impl FnMut(HttpResponse) -> Result<T, HttpError>,
     mut send: impl FnMut(Option<Duration>) -> Result<HttpResponse, UreqError>,
-) -> Result<String, HttpError> {
+) -> Result<T, HttpError> {
     let mut attempt = 0;
 
     loop {
-        if let Some(text) = send_attempt(&mut send, attempt, method, retry_policy, deadline)? {
-            return Ok(text);
+        if let Some(response) = send_attempt(
+            &mut send,
+            &mut read_response,
+            attempt,
+            method,
+            retry_policy,
+            deadline,
+        )? {
+            return Ok(response);
         }
         attempt += 1;
     }
 }
 
-fn send_attempt(
+fn send_attempt<T>(
     send: &mut impl FnMut(Option<Duration>) -> Result<HttpResponse, UreqError>,
+    read_response: &mut impl FnMut(HttpResponse) -> Result<T, HttpError>,
     attempt: u32,
     method: &str,
     retry_policy: RetryPolicy,
     deadline: RequestDeadline,
-) -> Result<Option<String>, HttpError> {
+) -> Result<Option<T>, HttpError> {
     let remaining = deadline.remaining()?;
     match send(remaining) {
-        Ok(response) => match read_response_text(response) {
-            Ok(text) => {
+        Ok(response) => match read_response(response) {
+            Ok(response) => {
                 deadline.ensure_remaining()?;
-                Ok(Some(text))
+                Ok(Some(response))
             }
             Err(_) if deadline.ensure_remaining().is_err() => Err(HttpError::DeadlineExceeded),
             Err(error) => Err(error),
         },
         Err(_) if deadline.ensure_remaining().is_err() => Err(HttpError::DeadlineExceeded),
-        Err(error) => retry_or_fail(error, attempt, method, retry_policy, deadline),
+        Err(error) => {
+            retry_or_fail(error, attempt, method, retry_policy, deadline)?;
+            Ok(None)
+        }
     }
 }

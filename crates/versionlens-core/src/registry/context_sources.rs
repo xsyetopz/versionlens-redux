@@ -102,26 +102,30 @@ fn go_proxy_disables_default_registry(env: &[(String, String)]) -> bool {
     })
 }
 
-fn python_registry_url_configs(input: &DocumentInput) -> RegistryUrlConfigs {
+fn python_registry_url_configs(
+    input: &DocumentInput,
+    files: &impl RegistryFileRead,
+) -> RegistryUrlConfigs {
     let mut urls = parse_python_registry_urls(&input.text);
     urls.extend(parse_pipfile_source_urls(&input.text));
     urls.extend(
-        dot_file_texts(input, &["pip.conf"])
+        dot_file_texts(input, &["pip.conf"], files)
             .iter()
             .flat_map(|text| parse_pip_conf_registry_urls(text)),
     );
     urls.extend(
-        dot_file_texts(input, &["uv.toml"])
+        dot_file_texts(input, &["uv.toml"], files)
             .iter()
             .flat_map(|text| parse_uv_registry_urls(text)),
     );
-    urls.extend(parse_pip_env_registry_urls(&env_entries(input)));
+    urls.extend(parse_pip_env_registry_urls(&env_entries(input, files)));
 
     let mut configs = vec![];
     for url in urls {
-        if configs.iter().any(|config: &RegistryUrlConfig| {
-            config.url == url && config.ecosystem == Python
-        }) {
+        if configs
+            .iter()
+            .any(|config: &RegistryUrlConfig| config.url == url && config.ecosystem == Python)
+        {
             continue;
         }
         configs.push(RegistryUrlConfig {
@@ -156,8 +160,12 @@ fn parse_quoted_config_urls(text: &str, marker: &str, separator: Option<char>) -
         .collect()
 }
 
-fn hex_registry_url_configs(input: &DocumentInput, kind: ManifestKind) -> Vec<String> {
-    if let Some(url) = env_config_value(&env_entries(input), "HEX_API_URL")
+fn hex_registry_url_configs(
+    input: &DocumentInput,
+    kind: ManifestKind,
+    files: &impl RegistryFileRead,
+) -> Vec<String> {
+    if let Some(url) = env_config_value(&env_entries(input, files), "HEX_API_URL")
         .map(|value| value.trim())
         .filter(|url| !url.is_empty())
     {
@@ -165,7 +173,7 @@ fn hex_registry_url_configs(input: &DocumentInput, kind: ManifestKind) -> Vec<St
     }
 
     if kind == RebarConfig {
-        if let Some(url) = env_config_value(&env_entries(input), "HEX_CDN")
+        if let Some(url) = env_config_value(&env_entries(input, files), "HEX_CDN")
             .map(|value| value.trim())
             .filter(|url| !url.is_empty())
         {
@@ -181,21 +189,25 @@ fn hex_registry_url_configs(input: &DocumentInput, kind: ManifestKind) -> Vec<St
     parse_quoted_config_urls(&input.text, "api_url:", None)
 }
 
-fn maven_auth_entries(input: &DocumentInput) -> Vec<MavenAuthEntry> {
-    dot_file_texts(input, &["settings.xml"])
+fn maven_auth_entries(input: &DocumentInput, files: &impl RegistryFileRead) -> Vec<MavenAuthEntry> {
+    dot_file_texts(input, &["settings.xml"], files)
         .iter()
         .flat_map(|text| parse_maven_settings_auth_entries(text))
         .collect()
 }
 
-fn maven_uses_mirror(input: &DocumentInput) -> bool {
-    dot_file_texts(input, &["settings.xml"])
+fn maven_uses_mirror(input: &DocumentInput, files: &impl RegistryFileRead) -> bool {
+    dot_file_texts(input, &["settings.xml"], files)
         .iter()
         .any(|text| !parse_maven_settings_mirror_urls(text).is_empty())
 }
 
-fn parse_maven_registry_urls(input: &DocumentInput, kind: ManifestKind) -> Vec<String> {
-    let settings_texts = dot_file_texts(input, &["settings.xml"]);
+fn parse_maven_registry_urls(
+    input: &DocumentInput,
+    kind: ManifestKind,
+    files: &impl RegistryFileRead,
+) -> Vec<String> {
+    let settings_texts = dot_file_texts(input, &["settings.xml"], files);
     let mirrors = settings_texts
         .iter()
         .flat_map(|text| parse_maven_settings_mirrors(text))
@@ -206,9 +218,9 @@ fn parse_maven_registry_urls(input: &DocumentInput, kind: ManifestKind) -> Vec<S
     }
 
     let document_repositories = match kind {
-        GradleBuild
-        | GradleSettings
-        | GradleVersionCatalogToml => parse_gradle_registry_repositories(input, kind),
+        GradleBuild | GradleSettings | GradleVersionCatalogToml => {
+            parse_gradle_registry_repositories(input, kind, files)
+        }
         SbtBuild => parse_sbt_maven_repositories(&input.text),
         ClojureDepsEdn => parse_clojure_maven_repositories(&input.text),
         LeiningenProjectClj => parse_leiningen_maven_repositories(&input.text),
@@ -226,9 +238,10 @@ fn parse_maven_registry_urls(input: &DocumentInput, kind: ManifestKind) -> Vec<S
 fn parse_gradle_registry_repositories(
     input: &DocumentInput,
     kind: ManifestKind,
+    files: &impl RegistryFileRead,
 ) -> Vec<MavenNamedRepository> {
     if kind == GradleVersionCatalogToml {
-        return dot_file_texts(input, &["settings.gradle", "settings.gradle.kts"])
+        return dot_file_texts(input, &["settings.gradle", "settings.gradle.kts"], files)
             .iter()
             .flat_map(|text| parse_gradle_dependency_maven_repositories(text))
             .collect();
@@ -240,7 +253,8 @@ fn parse_gradle_registry_repositories(
         parse_gradle_maven_repositories(&input.text)
     };
     if kind == GradleBuild {
-        let settings_texts = dot_file_texts(input, &["settings.gradle", "settings.gradle.kts"]);
+        let settings_texts =
+            dot_file_texts(input, &["settings.gradle", "settings.gradle.kts"], files);
         let settings_repositories = settings_texts
             .iter()
             .flat_map(|text| parse_gradle_dependency_maven_repositories(text))
@@ -256,23 +270,19 @@ fn parse_gradle_registry_repositories(
 fn parse_gradle_plugin_registry_urls(
     input: &DocumentInput,
     kind: ManifestKind,
+    files: &impl RegistryFileRead,
 ) -> RegistryUrlConfigs {
     if !matches!(
         kind,
-        GradleBuild
-            | GradleSettings
-            | GradleVersionCatalogToml
+        GradleBuild | GradleSettings | GradleVersionCatalogToml
     ) {
         return vec![];
     }
 
     let mut repositories = parse_gradle_plugin_maven_repositories(&input.text);
-    if matches!(
-        kind,
-        GradleBuild | GradleVersionCatalogToml
-    ) {
+    if matches!(kind, GradleBuild | GradleVersionCatalogToml) {
         repositories.extend(
-            dot_file_texts(input, &["settings.gradle", "settings.gradle.kts"])
+            dot_file_texts(input, &["settings.gradle", "settings.gradle.kts"], files)
                 .iter()
                 .flat_map(|text| parse_gradle_plugin_maven_repositories(text)),
         );

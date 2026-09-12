@@ -21,10 +21,25 @@ pub(crate) struct ResolutionRequest<'a> {
 mod dependency;
 mod latest;
 mod parallel;
+mod runtime;
 
 impl VersionLensSession {
     pub(crate) fn resolve_dependencies(&self, request: ResolutionRequest<'_>) -> Vec<Suggestion> {
-        resolve_dependencies(self, request)
+        let responses = request.responses;
+        let operation = request.operation;
+        let manifest_kind = request.context.manifest_kind();
+        let suggestions = resolve_dependencies(self, request);
+        if self.config.show_vulnerabilities {
+            for suggestion in &suggestions {
+                self.cache_vulnerabilities(
+                    &suggestion.dependency,
+                    responses,
+                    manifest_kind,
+                    operation,
+                );
+            }
+        }
+        suggestions
     }
 }
 

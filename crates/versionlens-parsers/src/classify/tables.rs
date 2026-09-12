@@ -12,8 +12,16 @@ use versionlens_model::ManifestKind::{
     RDescription, RebarConfig, RenvLock, SbtBuild, StackYaml, SwiftPackage, VcpkgJson, XmakeLua,
     ZigBuildZon,
 };
+use versionlens_model::ManifestKind::{
+    BunVersion, NodeVersion, Nvmrc, RustToolchain, RustToolchainToml,
+};
 
 pub(super) const EARLY_FILE_MANIFESTS: &[(&str, ManifestKind)] = &[
+    (".nvmrc", Nvmrc),
+    (".node-version", NodeVersion),
+    (".bun-version", BunVersion),
+    ("rust-toolchain", RustToolchain),
+    ("rust-toolchain.toml", RustToolchainToml),
     ("Cargo.toml", CargoToml),
     ("composer.json", ComposerJson),
     ("deno.json", DenoJson),

@@ -60,23 +60,38 @@ impl VersionLensSession {
                 if operation.is_expired() {
                     return Err(FetchError::OperationTimeout);
                 }
-                self.cache_request_body(cache_key, &body, ecosystem, context.manifest_kind());
+                self.cache_request_body(
+                    cache_key,
+                    &body,
+                    self.cache_ttl(ecosystem, context.manifest_kind()),
+                    operation,
+                );
                 Ok(Some(body))
             }
-            Err(HttpError::DeadlineExceeded) => Err(FetchError::OperationTimeout),
-            Err(error) => match error.status_code().and_then(http_status_message_from_code) {
-                Some(message) => {
-                    if error.status_code() == Some(401) {
-                        let auth_url = self.authorization_url_for_request(url);
-                        operation.record_authorization_request(auth_url, url.to_owned());
-                    }
-                    Err(FetchRegistryStatus(message.to_owned()))
-                }
-                None => Err(crate::anyhow_error(error)
-                    .context(format!("failed to fetch registry URL {url}"))
-                    .into()),
-            },
+            Err(error) => Err(self.fetch_error_from_http(error, url, "registry", operation)),
         }
+    }
+
+    pub(in crate::fetch) fn fetch_error_from_http(
+        &self,
+        error: HttpError,
+        url: &str,
+        source: &str,
+        operation: &OperationContext,
+    ) -> FetchError {
+        if matches!(error, HttpError::DeadlineExceeded) {
+            return FetchError::OperationTimeout;
+        }
+        if let Some(message) = error.status_code().and_then(http_status_message_from_code) {
+            if error.status_code() == Some(401) {
+                let auth_url = self.authorization_url_for_request(url);
+                operation.record_authorization_request(auth_url, url.to_owned());
+            }
+            return FetchRegistryStatus(message.to_owned());
+        }
+        crate::anyhow_error(error)
+            .context(format!("failed to fetch {source} URL {url}"))
+            .into()
     }
 }
 

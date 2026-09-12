@@ -29,6 +29,7 @@ mod hex;
 mod maven;
 mod npm;
 mod project;
+mod runtime;
 
 fn lens_titles(output: &crate::AnalyzeDocumentOutput) -> Vec<&str> {
     output

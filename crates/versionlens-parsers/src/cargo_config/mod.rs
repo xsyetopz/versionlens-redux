@@ -1,6 +1,6 @@
 use toml_edit::{Item, Value as TomlValue};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CargoRegistrySource {
     pub name: String,
     pub url: String,

@@ -52,9 +52,17 @@ fn parses_leiningen_project_clj_dependencies() {
     assert_eq!(dependencies[0].group, "version");
     assert_eq!(dependencies[0].name, "demo");
     assert_eq!(dependencies[0].requirement, "0.1.0-SNAPSHOT");
+    assert_eq!(
+        dependencies[0].versionable_kind(),
+        VersionableKind::ProjectVersion
+    );
     assert_eq!(dependencies[1].group, "dependencies");
     assert_eq!(dependencies[1].name, "org.clojure:clojure");
     assert_eq!(dependencies[1].requirement, "1.11.3");
+    assert_eq!(
+        dependencies[1].versionable_kind(),
+        VersionableKind::Dependency
+    );
     assert_eq!(dependencies[2].name, "net.3scale:3scale-api");
     assert_eq!(dependencies[2].requirement, "3.0.2");
     assert_eq!(dependencies[3].name, "cheshire:cheshire");
@@ -198,7 +206,11 @@ fn parses_conanfile_txt_requirements() {
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Conan);
     crate::support::tests::assert_dependency_metadata(
-        &dependencies, 0, "requires", "zlib", "1.3.1",
+        &dependencies,
+        0,
+        "requires",
+        "zlib",
+        "1.3.1",
     );
     assert_eq!(dependencies[1].name, "poco");
     assert_eq!(dependencies[1].requirement, ">1.0 <1.9");
@@ -219,9 +231,7 @@ fn parses_conanfile_py_requirement_attributes() {
 
     assert_eq!(dependencies.len(), 4);
     assert_eq!(dependencies[0].ecosystem, Conan);
-    crate::support::tests::assert_dependency_metadata(
-        &dependencies, 0, "requires", "hello", "1.0",
-    );
+    crate::support::tests::assert_dependency_metadata(&dependencies, 0, "requires", "hello", "1.0");
     assert_eq!(dependencies[1].name, "otherlib");
     assert_eq!(dependencies[1].requirement, "2.1");
     assert_eq!(dependencies[1].requirement_suffix, "@otheruser/testing");
@@ -259,7 +269,8 @@ fn parses_vcpkg_json_dependencies_features_and_overrides() {
 
 #[test]
 fn parses_swift_package_dependencies_and_unsupported_sources() {
-    let text = package_file_fixture("parses-swift-package-dependencies-and-unsupported-sources.txt");
+    let text =
+        package_file_fixture("parses-swift-package-dependencies-and-unsupported-sources.txt");
 
     let dependencies = parse_fixture(text, "file:///work/Package.swift", "swift");
 
@@ -331,7 +342,7 @@ fn parses_nimble_requires_dependencies() {
     assert_eq!(dependencies[1].requirement, ">= 0.4.1");
     assert_eq!(
         extract_range(text, dependencies[1].requirement_range),
-        "0.4.1"
+        ">= 0.4.1"
     );
     assert_eq!(dependencies[2].name, "pkg");
     assert_eq!(dependencies[2].hosted_name, Some("user/pkg".to_owned()));
@@ -356,7 +367,7 @@ fn parses_luarocks_rockspec_dependencies() {
     assert_eq!(dependencies[0].requirement, ">= 5.1, < 5.5");
     assert_eq!(
         extract_range(text, dependencies[0].requirement_range),
-        "5.1, < 5.5"
+        ">= 5.1, < 5.5"
     );
     assert_eq!(dependencies[1].name, "luasocket");
     assert_eq!(dependencies[1].requirement, "== 3.1.0");

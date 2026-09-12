@@ -2,8 +2,9 @@ use crate::prerelease;
 use semver::Version;
 use serde_json::Value;
 use serde_json::from_str;
+use std::path::Path;
+use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::{Composer, Docker, Dotnet};
-use versionlens_model::{Dependency, DocumentInput};
 use versionlens_providers::{
     is_registry_dependency, is_unsupported_dotnet_requirement,
     release_versions_from_response_for_package,
@@ -14,6 +15,7 @@ use versionlens_suggestions::SuggestionStatus::{
 };
 use versionlens_suggestions::{
     Suggestion, UpdateChoice, error, fixed, invalid, no_match, resolve_dependency,
+    semantic_update_target,
 };
 use versionlens_versions::{ProjectVersionBump, is_build_update, is_dotnet_requirement_parseable};
 
@@ -24,15 +26,20 @@ use crate::non_registry::{deno_import_has_no_suggestions, known_non_registry_sug
 use crate::project::project_version_latest;
 use crate::registry::{RegistryContext, registry_response_matches};
 use crate::session::operation::OperationContext;
-use crate::workspace::WorkspaceGraph;
+use crate::workspace::{WorkspaceDocuments, WorkspaceGraph};
 
 use super::latest::{LatestLookup, LatestResolutionRequest};
+use github_actions::github_action_reference_suggestion;
+
+mod github_actions;
 
 type UpdateChoices = Vec<UpdateChoice>;
 
 pub(super) struct ResolveDependencyInput<'a> {
     pub(super) dependency: Dependency,
-    pub(super) document: &'a DocumentInput,
+    pub(super) workspace: &'a WorkspaceGraph,
+    pub(super) workspace_documents: &'a WorkspaceDocuments,
+    pub(super) workspace_root: Option<&'a Path>,
     pub(super) document_uri: Option<&'a str>,
     pub(super) responses: &'a [RegistryResponseInput],
     pub(super) project_bump: Option<ProjectVersionBump>,
@@ -55,7 +62,9 @@ impl VersionLensSession {
     ) -> Option<Suggestion> {
         let ResolveDependencyInput {
             dependency,
-            document,
+            workspace,
+            workspace_documents,
+            workspace_root,
             document_uri,
             responses,
             project_bump,
@@ -63,13 +72,34 @@ impl VersionLensSession {
             operation,
         } = input;
 
+        if let Some(suggestion) = github_action_reference_suggestion(
+            dependency.clone(),
+            workspace_root,
+            workspace_documents,
+        ) {
+            return Some(suggestion);
+        }
+
         if let Some(latest) = project_version_latest(&dependency, project_bump) {
             return Some(resolve_dependency(dependency, Some(latest)));
         }
 
+        if dependency.is_runtime_version() {
+            if let Some(message) = context.failure_message() {
+                return Some(error(dependency, message.to_owned()));
+            }
+            return Some(self.runtime_suggestion(LatestResolutionRequest {
+                dependency: &dependency,
+                responses,
+                has_registry_response: Self::has_registry_response(&dependency, responses),
+                context,
+                operation,
+            }));
+        }
+
         // Proven local identities are authoritative; ambiguous/malformed
         // workspace members deliberately fall through to existing behavior.
-        if let Some(local) = WorkspaceGraph::for_document(document).resolve(&dependency) {
+        if let Some(local) = workspace.resolve(&dependency) {
             return Some(resolve_dependency(dependency, Some(local.version)));
         }
 
@@ -88,6 +118,9 @@ impl VersionLensSession {
         ) {
             return Some(resolve_dependency(dependency, None));
         }
+        if let Some(message) = context.failure_message() {
+            return Some(error(dependency, message.to_owned()));
+        }
         if invalid_composer_registry_requirement(&dependency) {
             return Some(invalid(dependency, "invalid version".to_owned()));
         }
@@ -105,10 +138,6 @@ impl VersionLensSession {
         context: &RegistryContext,
         operation: &OperationContext,
     ) -> Option<Suggestion> {
-        if self.config.show_vulnerabilities {
-            self.cache_vulnerabilities(&dependency, responses, context.manifest_kind(), operation);
-        }
-
         if is_unsupported_dotnet_registry_dependency(&dependency) {
             return None;
         }
@@ -192,7 +221,7 @@ impl VersionLensSession {
 
         match lookup.latest {
             Some(latest)
-                if fixed_requirement_matches_response(&dependency, responses)
+                if lookup.fixed_requirement_matched
                     && dependency.canonical_reference.is_none()
                     && !latest_matches_fixed_current(&dependency, latest.as_str())
                     && !is_build_update(latest.as_str(), &dependency.requirement) =>
@@ -207,6 +236,20 @@ impl VersionLensSession {
                 resolve_dependency(dependency, Some(latest)),
                 lookup.builds,
                 lookup.choices,
+            ),
+            None if matches!(
+                dependency.canonical_reference,
+                Some(versionlens_model::CanonicalReference::GitHubActionCommit { .. })
+            ) =>
+            {
+                error(
+                    dependency,
+                    "GitHub commit does not identify a unique published release family".to_owned(),
+                )
+            }
+            None if dependency.canonical_reference.is_some() => error(
+                dependency,
+                "GitHub action reference does not match a verified published release".to_owned(),
             ),
             None if has_registry_response => no_match(dependency),
             None => resolve_dependency(dependency, None),
@@ -227,8 +270,30 @@ impl VersionLensSession {
 fn with_lookup_choices(
     mut suggestion: Suggestion,
     builds: Vec<String>,
-    choices: UpdateChoices,
+    mut choices: UpdateChoices,
 ) -> Suggestion {
+    if let Some(versionlens_model::CanonicalReference::GitHubActionCommit { commit }) =
+        suggestion.dependency.canonical_reference.as_ref()
+    {
+        let replacement = choices
+            .iter()
+            .find(|choice| Some(&choice.version) == suggestion.latest.as_ref())
+            .and_then(|choice| choice.replacement.as_deref());
+        let Some(replacement) = replacement else {
+            return error(
+                suggestion.dependency,
+                "GitHub commit has no unambiguous release update".to_owned(),
+            );
+        };
+        suggestion.status = if replacement
+            .get(..commit.len())
+            .is_some_and(|prefix| prefix.eq_ignore_ascii_case(commit))
+        {
+            StatusCurrent
+        } else {
+            StatusUpdateAvailable
+        };
+    }
     if suggestion.status == StatusBuildAvailable && !builds.is_empty() {
         suggestion.status = StatusCurrent;
         suggestion.latest = Some(suggestion.dependency.requirement.trim().to_owned());
@@ -246,6 +311,12 @@ fn with_lookup_choices(
     }
     if docker_explicit_latest_alias_is_current(&suggestion, &builds) {
         suggestion.latest = Some("latest".to_owned());
+    }
+    if suggestion.status == versionlens_suggestions::SuggestionStatus::SatisfiesLatest
+        && let Some(latest) = suggestion.latest.as_deref()
+    {
+        let latest = semantic_update_target(latest);
+        choices.retain(|choice| semantic_update_target(&choice.version) != latest);
     }
     suggestion.builds = builds;
     suggestion.choices = choices;
@@ -375,7 +446,7 @@ fn fixed_requirement_missing_from_responses(
             .any(|release| fixed_release_matches(release, &current))
 }
 
-fn fixed_requirement_matches_response(
+pub(super) fn fixed_requirement_matches_response(
     dependency: &Dependency,
     responses: &[RegistryResponseInput],
 ) -> bool {
@@ -386,6 +457,10 @@ fn fixed_requirement_matches_response(
     releases
         .iter()
         .any(|release| fixed_release_matches(release, &current))
+}
+
+pub(super) fn fixed_requirement_requires_response_proof(dependency: &Dependency) -> bool {
+    dependency.canonical_reference.is_none() && fixed_current(dependency).is_some()
 }
 
 fn fixed_response_releases(

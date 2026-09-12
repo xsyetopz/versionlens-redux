@@ -13,7 +13,7 @@ pub(super) fn retry_or_fail(
     method: &str,
     policy: RetryPolicy,
     deadline: RequestDeadline,
-) -> Result<Option<String>, HttpError> {
+) -> Result<(), HttpError> {
     if let Some(delay) = retry_delay(&error, attempt, method, policy) {
         if deadline
             .remaining()?
@@ -22,7 +22,7 @@ pub(super) fn retry_or_fail(
             return Err(HttpError::DeadlineExceeded);
         }
         sleep(delay);
-        Ok(None)
+        Ok(())
     } else {
         Err(error.into())
     }

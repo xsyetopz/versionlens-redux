@@ -3,7 +3,9 @@ use std::io::{Read, Write};
 use std::thread::{JoinHandle, sleep, spawn};
 use std::time::{Duration, Instant};
 
-fn github_api_server(responses: Vec<(u16, &'static str)>) -> (String, JoinHandle<Vec<String>>) {
+pub(super) fn github_api_server<T: AsRef<str> + Send + 'static>(
+    responses: Vec<(u16, T)>,
+) -> (String, JoinHandle<Vec<String>>) {
     let listener = crate::support::tests::tcp_listener_bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let base_url = format!("http://{}/repos/", listener.local_addr().unwrap());
@@ -11,6 +13,7 @@ fn github_api_server(responses: Vec<(u16, &'static str)>) -> (String, JoinHandle
         let deadline = Instant::now() + Duration::from_secs(3);
         let mut paths = vec![];
         for (status, body) in responses {
+            let body = body.as_ref();
             let mut accepted = None;
             while Instant::now() < deadline {
                 if let Ok(connection) = listener.accept() {
@@ -22,6 +25,10 @@ fn github_api_server(responses: Vec<(u16, &'static str)>) -> (String, JoinHandle
             let Some((mut stream, _)) = accepted else {
                 break;
             };
+            stream.set_nonblocking(false).unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(3)))
+                .unwrap();
             let mut request = [0_u8; 2048];
             let length = stream.read(&mut request).unwrap();
             let request = String::from_utf8_lossy(&request[..length]);
@@ -158,11 +165,7 @@ fn sha_pinned_action_at_latest_has_no_redundant_latest_choice() {
             .iter()
             .all(|choice| !choice.label.starts_with("latest"))
     );
-    assert!(
-        choices
-            .iter()
-            .any(|choice| choice.label == "downgrade" && choice.version == "6.0.0")
-    );
+    assert!(choices.iter().all(|choice| choice.version != "6.0.0"));
 }
 
 #[test]
@@ -191,7 +194,7 @@ fn concrete_azure_login_release_pin_resolves_as_current() {
 }
 
 #[test]
-fn annotated_azure_login_tag_object_pin_is_resolved_through_the_exact_ref() {
+fn annotated_azure_login_tag_object_is_not_reported_as_a_verified_commit_pin() {
     let (base_url, server) = github_api_server(vec![
         (
             200,
@@ -201,18 +204,13 @@ fn annotated_azure_login_tag_object_pin_is_resolved_through_the_exact_ref() {
             200,
             r#"{"ref":"refs/tags/v2","object":{"type":"tag","sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac"}}"#,
         ),
+        (
+            200,
+            r#"{"sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac","object":{"type":"commit","sha":"7184910d9eb2b1c5e48f7073824a90609bb9b6d6"}}"#,
+        ),
     ]);
 
-    let session = crate::support::tests::session_with_provider_settings(
-        ProviderSettings {
-            registry_urls: vec![RegistryUrlConfig {
-                ecosystem: GitHub,
-                url: base_url,
-            }],
-            ..crate::default()
-        },
-        false,
-    );
+    let session = github_session(base_url);
     let output = session.resolve_document(DocumentInput::new(
         "file:///work/.github/workflows/publish.yml".to_owned(),
         "yaml".to_owned(),
@@ -225,16 +223,16 @@ fn annotated_azure_login_tag_object_pin_is_resolved_through_the_exact_ref() {
         paths,
         [
             "/repos/azure/login/tags",
-            "/repos/azure/login/git/ref/tags/v2"
+            "/repos/azure/login/git/ref/tags/v2",
+            "/repos/azure/login/git/tags/8216e11d8cd9b42fe925c852af8e76311ff067ac"
         ]
     );
     assert!(output.edits.is_empty());
-    assert_eq!(output.suggestions[0].status, "current");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("2"));
+    assert_eq!(output.suggestions[0].status, "error");
 }
 
 #[test]
-fn missing_exact_github_ref_keeps_a_sha_annotation_unproven_without_an_error() {
+fn missing_exact_github_ref_reports_an_unverified_action_reference() {
     let (base_url, server) = github_api_server(vec![
         (
             200,
@@ -242,16 +240,7 @@ fn missing_exact_github_ref_keeps_a_sha_annotation_unproven_without_an_error() {
         ),
         (404, r#"{"message":"Not Found"}"#),
     ]);
-    let session = crate::support::tests::session_with_provider_settings(
-        ProviderSettings {
-            registry_urls: vec![RegistryUrlConfig {
-                ecosystem: GitHub,
-                url: base_url,
-            }],
-            ..crate::default()
-        },
-        false,
-    );
+    let session = github_session(base_url);
 
     let output = session.resolve_document(DocumentInput::new(
         "file:///work/.github/workflows/publish.yml".to_owned(),
@@ -270,7 +259,11 @@ fn missing_exact_github_ref_keeps_a_sha_annotation_unproven_without_an_error() {
         ]
     );
     assert!(output.edits.is_empty());
-    assert!(output.suggestions.iter().all(|item| item.status != "error"));
+    assert_eq!(output.suggestions[0].status, "error");
+    assert_eq!(
+        output.suggestions[0].latest.as_deref(),
+        Some("GitHub action reference does not match a verified published release")
+    );
 }
 
 #[test]
@@ -287,9 +280,7 @@ fn sha_pinned_action_updates_sha_and_annotation_atomically() {
     assert_eq!(output.edits.len(), 1);
     assert_eq!(output.edits[0].new_text, format!("{target} # v7.1.0"));
     let choices = action_choices(&source, "7.1.0", &body);
-    assert!(choices.iter().any(|choice| choice.version == "6.0.0"
-        && choice.replacement.as_deref()
-            == Some("6666666666666666666666666666666666666666 # v6.0.0")));
+    assert!(choices.iter().all(|choice| choice.version != "6.0.0"));
 }
 
 #[test]
@@ -631,3 +622,18 @@ fn assert_commit_ref_update(output: &crate::contract::ResolveDocumentOutput) {
     assert_eq!(output.edits[0].new_text, r#", ref: "abcdef1""#);
 }
 use super::assert_update;
+
+mod checking;
+
+fn github_session(base_url: String) -> VersionLensSession {
+    crate::support::tests::session_with_provider_settings(
+        ProviderSettings {
+            registry_urls: vec![RegistryUrlConfig {
+                ecosystem: GitHub,
+                url: base_url,
+            }],
+            ..crate::default()
+        },
+        false,
+    )
+}

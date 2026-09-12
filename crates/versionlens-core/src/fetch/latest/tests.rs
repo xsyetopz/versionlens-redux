@@ -3,7 +3,8 @@ use versionlens_model::DocumentInput;
 use versionlens_model::{Dependency, Ecosystem};
 use versionlens_model::{Position, Range};
 
-use super::{github_action_reference_is_proven_by_exact_ref, response_update_choices};
+use super::github::github_action_reference_is_proven_by_exact_ref;
+use super::response_update_choices;
 use crate::{ProviderSettings, RegistryUrlConfig};
 use versionlens_model::Ecosystem::*;
 
@@ -74,7 +75,7 @@ fn composer_update_choices_exclude_versions_from_other_packages() {
 }
 
 #[test]
-fn annotated_github_tag_object_sha_proves_the_exact_action_ref() {
+fn annotated_github_tag_objects_require_commit_dereferencing() {
     let reference = CanonicalReference::GitHubActionSha {
         commit: "8216e11d8cd9b42fe925c852af8e76311ff067ac".to_owned(),
         tag: "v2".to_owned(),
@@ -88,7 +89,7 @@ fn annotated_github_tag_object_sha_proves_the_exact_action_ref() {
       }
     }"#;
 
-    assert!(github_action_reference_is_proven_by_exact_ref(
+    assert!(!github_action_reference_is_proven_by_exact_ref(
         &reference, body
     ));
 }
@@ -109,7 +110,7 @@ fn exact_github_ref_must_match_both_annotation_and_sha() {
         &reference,
         r#"{"ref":"refs/tags/v2","object":{"type":"tag","sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#
     ));
-    assert!(!github_action_reference_is_proven_by_exact_ref(
+    assert!(github_action_reference_is_proven_by_exact_ref(
         &reference,
         r#"{"ref":"refs/tags/v2","object":{"type":"commit","sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac"}}"#
     ));
@@ -117,6 +118,35 @@ fn exact_github_ref_must_match_both_annotation_and_sha() {
         &reference,
         r#"{"ref":"refs/tags/v2","object":{"sha":"8216e11d8cd9b42fe925c852af8e76311ff067ac"}}"#
     ));
+    for sha in ["8216e11", "8216e11not-a-commit-object-sha0000000000000"] {
+        let body = serde_json::json!({"ref":"refs/tags/v2","object":{"type":"commit","sha":sha}})
+            .to_string();
+        assert!(!github_action_reference_is_proven_by_exact_ref(
+            &reference, &body
+        ));
+    }
+}
+
+#[test]
+fn action_commit_families_require_complete_commits_and_ignore_hex_case() {
+    let reference = CanonicalReference::GitHubActionCommit {
+        commit: "abcdef0".to_owned(),
+    };
+    for (sha, expected) in [
+        ("abcdef0", None),
+        ("abcdef000000000000000000000000000000000x", None),
+        ("ABCDEF0000000000000000000000000000000000", Some("v1.1.0")),
+    ] {
+        let body = serde_json::json!([
+            {"name":"v1.0.0","commit":{"sha":sha.to_ascii_lowercase()}},
+            {"name":"v1.1.0","commit":{"sha":sha}}
+        ])
+        .to_string();
+        assert_eq!(
+            super::github::github_action_tag(&reference, &body).as_deref(),
+            expected
+        );
+    }
 }
 
 fn update_choice_dependency(name: &str, ecosystem: Ecosystem, group: &str) -> Dependency {

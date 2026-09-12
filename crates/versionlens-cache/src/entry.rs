@@ -25,6 +25,10 @@ impl<T> CacheEntry<T> {
     pub(crate) fn value(&self) -> &T {
         &self.value
     }
+
+    pub(crate) fn expires_at(&self) -> Instant {
+        self.expires_at
+    }
 }
 
 pub(crate) fn cache_entry<T>(value: T, ttl: Duration) -> CacheEntry<T> {

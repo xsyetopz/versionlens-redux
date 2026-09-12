@@ -8,7 +8,7 @@ use versionlens_parsers::{
     parse_yarnrc_npm_registry_entries_with_env,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(super) struct NpmContext {
     pub(super) registries: Vec<NpmRegistryEntry>,
     pub(super) auth_entries: Vec<NpmAuthEntry>,

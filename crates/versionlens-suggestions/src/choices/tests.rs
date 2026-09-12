@@ -54,6 +54,23 @@ fn release_update_choices_avoid_duplicate_latest_targets() {
 }
 
 #[test]
+fn release_update_choices_deduplicate_equivalent_renderings_but_keep_builds_distinct() {
+    let mut choices = vec![];
+
+    super::push_unique_choice(&mut choices, "latest", "v1.2.3", "update");
+    super::push_unique_choice(&mut choices, "minor", "1.2.3", "updateMinor");
+    super::push_unique_choice(&mut choices, "build", "1.2.3+linux", "update");
+
+    assert_eq!(
+        labels(&choices),
+        [
+            ("latest", "v1.2.3", "update"),
+            ("build", "1.2.3+linux", "update")
+        ]
+    );
+}
+
+#[test]
 fn release_update_choices_offer_latest_for_stale_fixed_versions_without_history() {
     assert_latest_choice("1.0.0", "1.2.0");
 }
@@ -154,7 +171,6 @@ fn release_update_choices_offer_bump_targets_for_ranges() {
     assert_eq!(
         labels,
         [
-            ("downgrade", "4.0.1", "update"),
             ("bump", "4.1.10", "update"),
             ("version", "5.1.1", "update"),
             ("version", "5.2.0", "update"),
@@ -191,21 +207,12 @@ fn release_update_choices_offer_intermediate_major_targets_for_ranges() {
 }
 
 #[test]
-fn release_update_choices_offer_only_the_nearest_older_stable_release() {
-    let releases = releases(&["1.0.0", "1.5.0", "2.0.0"]);
-
-    let choices = release_update_choices("2.0.0", "2.0.0", &releases);
-
-    assert_eq!(labels(&choices), [("downgrade", "1.5.0", "update")]);
-}
-
-#[test]
 fn release_update_choices_normalize_v_prefixes_and_never_offer_latest_as_a_noop() {
     let releases = releases(&["v6.0.0", "v7.0.0", "v7.0.1"]);
 
     let choices = release_update_choices("v7.0.1", "v7.0.1", &releases);
 
-    assert_eq!(labels(&choices), [("downgrade", "v7.0.0", "update")]);
+    assert!(choices.is_empty());
 }
 
 #[test]

@@ -13,7 +13,7 @@ fn parses_cpanfile_dependencies() {
     assert_eq!(dependencies[1].requirement, ">= 2.00, < 2.80");
     assert_eq!(
         extract_range(text, dependencies[1].requirement_range),
-        "2.00, < 2.80"
+        ">= 2.00, < 2.80"
     );
     assert_eq!(dependencies[2].group, "recommends");
     assert_eq!(dependencies[3].group, "conflicts");

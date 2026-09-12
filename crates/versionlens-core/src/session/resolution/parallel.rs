@@ -1,139 +1,70 @@
-use std::thread::{ScopedJoinHandle, scope};
-use versionlens_model::Dependency;
-use versionlens_suggestions::Suggestion;
-use versionlens_suggestions::error;
+use std::panic;
+use std::sync::{Arc, mpsc};
+use versionlens_suggestions::{Suggestion, error};
 
 use super::ResolutionRequest;
 use super::dependency::ResolveDependencyInput;
-use crate::VersionLensSession;
-use crate::concurrency::dependency_chunks;
+use crate::{VersionLensSession, concurrency, workspace};
 
-type ResolvedSuggestions = Vec<Suggestion>;
 const WORKER_PANIC_MESSAGE: &str = "dependency resolution worker panicked";
 const OPERATION_TIMEOUT_MESSAGE: &str = "dependency resolution timed out";
 
 pub(super) fn resolve_dependencies(
     session: &VersionLensSession,
     request: ResolutionRequest<'_>,
-) -> ResolvedSuggestions {
-    let worker_count = resolve_worker_count(request.dependencies.len());
-
-    if worker_count <= 1 {
-        return resolve_sequential(session, request);
-    }
-
-    resolve_parallel(session, request, worker_count)
-}
-
-fn resolve_worker_count(dependency_count: usize) -> usize {
-    dependency_count.min(8)
-}
-
-fn resolve_sequential(
-    session: &VersionLensSession,
-    request: ResolutionRequest<'_>,
-) -> ResolvedSuggestions {
-    let ResolutionRequest {
-        input,
-        dependencies,
-        document_uri,
-        responses,
-        project_bump,
-        context,
-        operation,
-    } = request;
-
-    dependencies
-        .into_iter()
-        .filter_map(|dependency| {
-            resolve_dependency(
-                session,
-                ResolveDependencyInput {
+) -> Vec<Suggestion> {
+    let workspace = Arc::new(session.workspace_graph(request.input));
+    let workspace_documents = session.workspace_documents();
+    let workspace_root = Arc::new(
+        workspace::document_path(request.input)
+            .and_then(|_| workspace::workspace_root(request.input)),
+    );
+    let context = Arc::new(request.context.clone());
+    let session = Arc::new(session.clone());
+    let responses = Arc::new(request.responses.to_vec());
+    let document_uri = Arc::new(request.document_uri.to_owned());
+    let (sender, receiver) = mpsc::channel();
+    let count = request.dependencies.len();
+    let mut results = vec![None; count];
+    for (index, dependency) in request.dependencies.into_iter().enumerate() {
+        let workspace = Arc::clone(&workspace);
+        let workspace_documents = Arc::clone(&workspace_documents);
+        let workspace_root = Arc::clone(&workspace_root);
+        let context = Arc::clone(&context);
+        let session = Arc::clone(&session);
+        let responses = Arc::clone(&responses);
+        let document_uri = Arc::clone(&document_uri);
+        let operation = request.operation.clone();
+        let project_bump = request.project_bump;
+        let sender = sender.clone();
+        concurrency::schedule(session.storage_state.task_priority, move || {
+            let operation = operation.for_execution();
+            let failure = dependency.clone();
+            let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+                if operation.is_expired() {
+                    return Some(error(dependency, OPERATION_TIMEOUT_MESSAGE.to_owned()));
+                }
+                session.resolve_dependency_with_responses(ResolveDependencyInput {
                     dependency,
-                    document: input,
-                    document_uri: Some(document_uri),
-                    responses,
+                    workspace: &workspace,
+                    workspace_documents: &workspace_documents,
+                    workspace_root: workspace_root.as_deref(),
+                    document_uri: Some(&document_uri),
+                    responses: &responses,
                     project_bump,
-                    context,
-                    operation,
-                },
-            )
-        })
-        .collect()
-}
-
-fn resolve_parallel(
-    session: &VersionLensSession,
-    request: ResolutionRequest<'_>,
-    worker_count: usize,
-) -> ResolvedSuggestions {
-    let ResolutionRequest {
-        input,
-        dependencies,
-        document_uri,
-        responses,
-        project_bump,
-        context,
-        operation,
-    } = request;
-    let chunks = dependency_chunks(dependencies, worker_count);
-    scope(|scope| {
-        let mut handles = vec![];
-        for chunk in chunks {
-            let fallback_dependencies = chunk.clone();
-            let handle = scope.spawn(move || {
-                chunk
-                    .into_iter()
-                    .filter_map(|dependency| {
-                        resolve_dependency(
-                            session,
-                            ResolveDependencyInput {
-                                dependency,
-                                document: input,
-                                document_uri: Some(document_uri),
-                                responses,
-                                project_bump,
-                                context,
-                                operation,
-                            },
-                        )
-                    })
-                    .collect::<Vec<_>>()
-            });
-            handles.push((handle, fallback_dependencies));
-        }
-
-        handles
-            .into_iter()
-            .flat_map(|(handle, fallback_dependencies)| join_worker(handle, fallback_dependencies))
-            .collect()
-    })
-}
-
-fn resolve_dependency(
-    session: &VersionLensSession,
-    input: ResolveDependencyInput<'_>,
-) -> Option<Suggestion> {
-    if input.operation.is_expired() {
-        return Some(error(
-            input.dependency,
-            OPERATION_TIMEOUT_MESSAGE.to_owned(),
-        ));
+                    context: &context,
+                    operation: &operation,
+                })
+            }))
+            .unwrap_or_else(|_| Some(error(failure, WORKER_PANIC_MESSAGE.to_owned())));
+            let _ = sender.send((index, result));
+        });
     }
-
-    session.resolve_dependency_with_responses(input)
-}
-
-fn join_worker(
-    handle: ScopedJoinHandle<'_, ResolvedSuggestions>,
-    fallback_dependencies: Vec<Dependency>,
-) -> ResolvedSuggestions {
-    handle.join().unwrap_or_else(|_| {
-        fallback_dependencies
-            .into_iter()
-            .map(|dependency| error(dependency, WORKER_PANIC_MESSAGE.to_owned()))
-            .collect()
-    })
+    drop(sender);
+    for (index, result) in receiver {
+        results[index] = result;
+    }
+    results.into_iter().flatten().collect()
 }
 
 #[cfg(test)]

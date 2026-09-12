@@ -1,0 +1,3 @@
+# Project runtime
+  lts/* # follow the active LTS line
+mirror=reserved
