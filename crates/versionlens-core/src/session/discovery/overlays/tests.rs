@@ -1,8 +1,8 @@
 use versionlens_model::DocumentInput;
 
 use crate::{
-    SessionConfigInput, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryOptions,
-    version_lens_session,
+    SessionConfigInput, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize,
+    WorkspaceDiscoveryOptions, version_lens_session,
 };
 
 fn options() -> WorkspaceDiscoveryOptions {
@@ -57,13 +57,17 @@ fn standalone_discovery_applies_provider_enablement_and_size_limits() {
     );
     let mut oversized = options();
     oversized.limits.max_file_size = 1;
+    let expected_size = u64::try_from(oversized.overlays[0].text.len()).unwrap();
     let failure = session
         .discover_workspace_documents(oversized)
         .next()
         .unwrap()
         .unwrap_err();
-    assert!(matches!(
+    assert_eq!(
         failure.kind,
-        WorkspaceDiscoveryFailureKind::FileTooLarge { limit: 1, .. }
-    ));
+        WorkspaceDiscoveryFailureKind::FileTooLarge(Box::new(WorkspaceDiscoveryFileSize {
+            size: expected_size,
+            limit: 1,
+        }))
+    );
 }

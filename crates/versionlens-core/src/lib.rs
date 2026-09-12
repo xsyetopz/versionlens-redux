@@ -48,9 +48,9 @@ pub use session::{
     ApplyCommandRequest, SessionTask, TaskCancellation, VersionLensSession, WorkspaceCheckEvent,
     WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions, WorkspaceDiscovery,
     WorkspaceDiscoveryCancellation, WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind,
-    WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions,
-    WorkspaceProviderExclusion, version_lens_session, workspace_exclusion_matches,
-    workspace_exclusion_path,
+    WorkspaceDiscoveryFileSize, WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits,
+    WorkspaceDiscoveryOptions, WorkspaceProviderExclusion, version_lens_session,
+    workspace_exclusion_matches, workspace_exclusion_path,
 };
 pub(crate) use support::{
     anyhow_error, arc, boxed, default, duration_from_millis, memory_cache, mutex, parse_semver,

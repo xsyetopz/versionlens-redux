@@ -35,9 +35,10 @@ impl fmt::Display for WorkspaceDiscoveryFailure {
             }
             Kind::EscapesWorkspace => formatter.write_str("path resolves outside the workspace"),
             Kind::InvalidUtf8 => formatter.write_str("file is not valid UTF-8"),
-            Kind::FileTooLarge { size, limit } => write!(
+            Kind::FileTooLarge(file_size) => write!(
                 formatter,
-                "file has {size} bytes; checking allows at most {limit} bytes"
+                "file has {} bytes; checking allows at most {} bytes",
+                file_size.size, file_size.limit
             ),
             Kind::DepthLimitExceeded { limit } => write!(
                 formatter,

@@ -33,6 +33,12 @@ pub enum WorkspaceDiscoveryIoOperation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceDiscoveryFileSize {
+    pub size: u64,
+    pub limit: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorkspaceDiscoveryFailureKind {
     Io {
         operation: WorkspaceDiscoveryIoOperation,
@@ -43,10 +49,7 @@ pub enum WorkspaceDiscoveryFailureKind {
     OutsideWorkspace,
     EscapesWorkspace,
     InvalidUtf8,
-    FileTooLarge {
-        size: u64,
-        limit: u64,
-    },
+    FileTooLarge(Box<WorkspaceDiscoveryFileSize>),
     DepthLimitExceeded {
         limit: usize,
     },
@@ -85,6 +88,16 @@ impl WorkspaceDiscoveryFailure {
             path: Some(path),
             kind,
         }
+    }
+
+    pub(super) fn file_too_large(path: PathBuf, size: u64, limit: u64) -> Self {
+        Self::at(
+            path,
+            WorkspaceDiscoveryFailureKind::FileTooLarge(Box::new(WorkspaceDiscoveryFileSize {
+                size,
+                limit,
+            })),
+        )
     }
 }
 
@@ -531,12 +544,10 @@ impl WorkspaceDiscovery {
             return None;
         }
         if entry.metadata.len() > self.limits.max_file_size {
-            return Some(Err(WorkspaceDiscoveryFailure::at(
+            return Some(Err(WorkspaceDiscoveryFailure::file_too_large(
                 entry.path,
-                WorkspaceDiscoveryFailureKind::FileTooLarge {
-                    size: entry.metadata.len(),
-                    limit: self.limits.max_file_size,
-                },
+                entry.metadata.len(),
+                self.limits.max_file_size,
             )));
         }
         let text = match read_bounded_utf8(&entry.path, self.limits.max_file_size) {
@@ -549,12 +560,10 @@ impl WorkspaceDiscovery {
                 )));
             }
             Err(ReadFailure::TooLarge(size)) => {
-                return Some(Err(WorkspaceDiscoveryFailure::at(
+                return Some(Err(WorkspaceDiscoveryFailure::file_too_large(
                     entry.path,
-                    WorkspaceDiscoveryFailureKind::FileTooLarge {
-                        size,
-                        limit: self.limits.max_file_size,
-                    },
+                    size,
+                    self.limits.max_file_size,
                 )));
             }
             Err(ReadFailure::InvalidUtf8) => {

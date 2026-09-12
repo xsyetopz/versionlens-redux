@@ -5,8 +5,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use versionlens_model::{DocumentInput, Ecosystem, ManifestKind};
 
 use super::{
-    WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits,
-    WorkspaceDiscoveryOptions,
+    WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize, WorkspaceDiscoveryIoOperation,
+    WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions,
 };
 use crate::{EnabledProviderConfig, FilePatternConfig, ProviderSettings, VersionLensSession};
 
@@ -333,7 +333,9 @@ fn invalid_utf8_and_oversize_failures_do_not_hide_later_documents() {
     assert!(results.iter().any(|result| matches!(
         result,
         Err(failure)
-            if matches!(failure.kind, WorkspaceDiscoveryFailureKind::FileTooLarge { limit: 16, .. })
+            if failure.kind == WorkspaceDiscoveryFailureKind::FileTooLarge(Box::new(
+                WorkspaceDiscoveryFileSize { size: 64, limit: 16 }
+            ))
     )));
 }
 

@@ -41,9 +41,9 @@ pub use checking::{
 pub use commands::ApplyCommandRequest;
 pub use discovery::{
     WorkspaceDiscovery, WorkspaceDiscoveryCancellation, WorkspaceDiscoveryFailure,
-    WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits,
-    WorkspaceDiscoveryOptions, WorkspaceProviderExclusion, workspace_exclusion_matches,
-    workspace_exclusion_path,
+    WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize, WorkspaceDiscoveryIoOperation,
+    WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions, WorkspaceProviderExclusion,
+    workspace_exclusion_matches, workspace_exclusion_path,
 };
 pub use tasks::{SessionTask, TaskCancellation};
 
