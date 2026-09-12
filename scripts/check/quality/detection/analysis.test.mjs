@@ -19,6 +19,10 @@ import {
   registerQualityShapeCase6,
   registerQualityShapeCase7,
   registerQualityShapeCase8,
+  registerQualityShapeCase9,
+  registerQualityShapeCase10,
+  registerQualityShapeCase11,
+  registerQualityShapeCase12,
 } from "./analysis/usage.test.mjs";
 
 const { describe, expect, it } = Bun.jest(import.meta.path);
@@ -43,6 +47,10 @@ describe("check-code-quality", () => {
     registerQualityShapeCase6,
     registerQualityShapeCase7,
     registerQualityShapeCase8,
+    registerQualityShapeCase9,
+    registerQualityShapeCase10,
+    registerQualityShapeCase11,
+    registerQualityShapeCase12,
   ]) {
     registerCase({ it, expect });
   }

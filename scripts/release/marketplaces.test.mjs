@@ -12,6 +12,7 @@ import { delimiter, join } from "node:path";
 import { expandUserPath, readSecretFile } from "./configure-marketplaces.mjs";
 
 const { expect, it } = Bun.jest(import.meta.path);
+const repository = "xsyetopz/versionlens-redux";
 
 function fakeGitHubCli(directory) {
   const binaryDirectory = join(directory, "bin");
@@ -46,26 +47,44 @@ fi
 function configureWithFakeGitHub(directory, input, existing = "") {
   const log = join(directory, "gh.log");
   const binaryDirectory = fakeGitHubCli(directory);
-  const result = Bun.spawnSync(
+  const result = configureMarketplaces(["--only", "jetbrains"], {
+    env: {
+      ...Bun.env,
+      GH_EXISTING: existing,
+      GH_LOG: log,
+      PATH: `${binaryDirectory}${delimiter}${Bun.env.PATH ?? ""}`,
+    },
+    stdin: new TextEncoder().encode(input),
+  });
+  return { log: readFileSync(log, "utf8"), result };
+}
+
+function configureMarketplaces(commandArguments = [], options = {}) {
+  return Bun.spawnSync(
     [
       "bun",
       "scripts/release/configure-marketplaces.mjs",
       "--repo",
-      "xsyetopz/versionlens-redux",
-      "--only",
-      "jetbrains",
+      repository,
+      ...commandArguments,
     ],
-    {
-      env: {
-        ...Bun.env,
-        GH_EXISTING: existing,
-        GH_LOG: log,
-        PATH: `${binaryDirectory}${delimiter}${Bun.env.PATH ?? ""}`,
-      },
-      stdin: new TextEncoder().encode(input),
-    },
+    options,
   );
-  return { log: readFileSync(log, "utf8"), result };
+}
+
+function marketplaceWorkflowJob(name, nextName) {
+  const workflow = readFileSync(
+    ".github/workflows/publish-marketplaces.yml",
+    "utf8",
+  );
+  const start = workflow.indexOf(`\n  ${name}:`);
+  expect(start).toBeGreaterThan(-1);
+  if (nextName === undefined) {
+    return workflow.slice(start);
+  }
+  const end = workflow.indexOf(`\n  ${nextName}:`, start);
+  expect(end).toBeGreaterThan(start);
+  return workflow.slice(start, end);
 }
 
 it("expands home-relative secret file paths before reading them", () => {
@@ -129,13 +148,7 @@ it("keeps existing secrets by default when resuming configuration", () => {
 });
 
 it("lists every required marketplace secret without making hosted changes", () => {
-  const result = Bun.spawnSync([
-    "bun",
-    "scripts/release/configure-marketplaces.mjs",
-    "--dry-run",
-    "--repo",
-    "xsyetopz/versionlens-redux",
-  ]);
+  const result = configureMarketplaces(["--dry-run"]);
   expect(result.exitCode).toBe(0);
   const output = result.stdout.toString();
   for (const name of [
@@ -155,15 +168,7 @@ it("lists every required marketplace secret without making hosted changes", () =
 });
 
 it("allows unavailable marketplaces to be skipped", () => {
-  const result = Bun.spawnSync([
-    "bun",
-    "scripts/release/configure-marketplaces.mjs",
-    "--dry-run",
-    "--repo",
-    "xsyetopz/versionlens-redux",
-    "--only",
-    "zed",
-  ]);
+  const result = configureMarketplaces(["--dry-run", "--only", "zed"]);
   expect(result.exitCode).toBe(0);
   const output = result.stdout.toString();
   expect(output).toContain("Selected marketplaces: zed");
@@ -175,15 +180,7 @@ it("allows unavailable marketplaces to be skipped", () => {
 });
 
 it("rejects unknown marketplace selections", () => {
-  const result = Bun.spawnSync([
-    "bun",
-    "scripts/release/configure-marketplaces.mjs",
-    "--dry-run",
-    "--repo",
-    "xsyetopz/versionlens-redux",
-    "--only",
-    "unknown",
-  ]);
+  const result = configureMarketplaces(["--dry-run", "--only", "unknown"]);
   expect(result.exitCode).toBe(1);
   expect(result.stderr.toString()).toContain("unknown marketplace unknown");
 });
@@ -239,11 +236,7 @@ it("renders a versioned LuaRocks specification", () => {
 });
 
 it("provisions and validates LuaRocks upload requirements", () => {
-  const workflow = readFileSync(
-    ".github/workflows/publish-marketplaces.yml",
-    "utf8",
-  );
-  const neovimJob = workflow.slice(workflow.indexOf("\n  neovim:"));
+  const neovimJob = marketplaceWorkflowJob("neovim");
   const install = neovimJob.indexOf(
     "sudo apt-get install --no-install-recommends --yes lua5.4 lua-dkjson luarocks",
   );
@@ -251,7 +244,6 @@ it("provisions and validates LuaRocks upload requirements", () => {
   const failClosed = neovimJob.indexOf("exit 1", guard);
   const upload = neovimJob.indexOf("luarocks upload", guard);
 
-  expect(neovimJob).not.toBe(workflow);
   expect(install).toBeGreaterThan(-1);
   expect(guard).toBeGreaterThan(install);
   expect(failClosed).toBeGreaterThan(guard);
@@ -259,28 +251,14 @@ it("provisions and validates LuaRocks upload requirements", () => {
 });
 
 it("uses tenant-only Azure authentication for VS Code publishing", () => {
-  const workflow = readFileSync(
-    ".github/workflows/publish-marketplaces.yml",
-    "utf8",
-  );
-  const vscodeStart = workflow.indexOf("\n  vscode:");
-  const jetbrainsStart = workflow.indexOf("\n  jetbrains:", vscodeStart);
-  const vscodeJob = workflow.slice(vscodeStart, jetbrainsStart);
+  const vscodeJob = marketplaceWorkflowJob("vscode", "jetbrains");
 
-  expect(vscodeStart).toBeGreaterThan(-1);
-  expect(jetbrainsStart).toBeGreaterThan(vscodeStart);
   expect(vscodeJob).toContain("allow-no-subscriptions: true");
   expect(vscodeJob).not.toContain("subscription-id:");
 });
 
 it("resolves the Marketplace identity before publishing VSIX packages", () => {
-  const workflow = readFileSync(
-    ".github/workflows/publish-marketplaces.yml",
-    "utf8",
-  );
-  const vscodeStart = workflow.indexOf("\n  vscode:");
-  const jetbrainsStart = workflow.indexOf("\n  jetbrains:", vscodeStart);
-  const vscodeJob = workflow.slice(vscodeStart, jetbrainsStart);
+  const vscodeJob = marketplaceWorkflowJob("vscode", "jetbrains");
   const login = vscodeJob.indexOf("name: Sign in to Microsoft Entra");
   const resolveIdentity = vscodeJob.indexOf(
     "name: Resolve Visual Studio Marketplace identity",
@@ -305,13 +283,7 @@ it("resolves the Marketplace identity before publishing VSIX packages", () => {
 });
 
 it("makes VS Code Marketplace publishing resumable and retries transient failures", () => {
-  const workflow = readFileSync(
-    ".github/workflows/publish-marketplaces.yml",
-    "utf8",
-  );
-  const vscodeStart = workflow.indexOf("\n  vscode:");
-  const jetbrainsStart = workflow.indexOf("\n  jetbrains:", vscodeStart);
-  const vscodeJob = workflow.slice(vscodeStart, jetbrainsStart);
+  const vscodeJob = marketplaceWorkflowJob("vscode", "jetbrains");
   const publish = vscodeJob.indexOf("name: Publish released VSIX packages");
   const skipDuplicate = vscodeJob.indexOf("--skip-duplicate", publish);
   const retryLoop = vscodeJob.indexOf("for attempt in 1 2 3", publish);

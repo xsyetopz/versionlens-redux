@@ -255,3 +255,206 @@ pub(crate) use crate::support::default;
     expect(result.overqualifiedPaths).toEqual([]);
   });
 }
+
+export function registerQualityShapeCase9({ it, expect }) {
+  it("tracks Rust bindings without treating receivers, patterns, or traits as parameters", () => {
+    const result = analyzeSources([
+      {
+        path: "crates/example/src/parameters.rs",
+        language: "rust",
+        source: `
+trait Reader {
+    fn read(&self, path: &Path) -> Option<String>;
+}
+
+impl ReaderState {
+    fn acquire(&'static self, bytes: usize) {
+        consume(bytes);
+    }
+
+    fn configure(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    fn resolve(&mut self, (root_index, depth, entry): (usize, usize, Entry)) {
+        consume(root_index, depth, entry);
+    }
+}
+
+fn check(value: usize, unused: usize) {
+    let metadata = r#"{"kind":"literal"}"#;
+    consume(metadata);
+    consume(value);
+}
+`,
+      },
+    ]);
+
+    expect(result.unusedParameters).toEqual([
+      expect.objectContaining({
+        functionName: "check",
+        parameterName: "unused",
+      }),
+    ]);
+  });
+}
+
+export function registerQualityShapeCase10({ it, expect }) {
+  it("finds TypeScript bodies after multiline return types and arrow parameters", () => {
+    const result = analyzeSources([
+      {
+        path: "packages/example/src/parameters.ts",
+        language: "typescript",
+        source: `
+function uri(value: string): {
+  path: string;
+  toString: () => string;
+} {
+  return { path: value, toString: (): string => value };
+}
+
+async function initialize(
+  registry: Registry,
+  documents: Document[],
+): Promise<{ registry: Registry; documents: Document[] }> {
+  return { registry, documents };
+}
+
+const withRegistry = (
+  fetch: () => Promise<Response>,
+  exercise: (
+    createSession: () => Promise<Session>,
+    stopRegistry: () => Promise<void>,
+  ) => Promise<void>,
+): Promise<void> => {
+  return exercise(fetch, async (): Promise<void> => undefined);
+};
+
+async function runTask(label: string, tasks: Tasks): Promise<Task[]> {
+  const namedTasks = (await tasks.fetchTasks()).filter(
+    (item): boolean => item.name === label,
+  );
+  return namedTasks;
+}
+
+function rangesOverlap(left: Position, right: Position): boolean {
+  const before = (a: Position, b: Position): boolean =>
+    a.line < b.line || (a.line === b.line && a.character < b.character);
+  return before(left, right);
+}
+
+const checkArrow = (value: string, unusedArrow: string): string => {
+  return value;
+};
+
+function check(value: string, unused: string): string {
+  return value;
+}
+`,
+      },
+    ]);
+
+    expect(result.unusedParameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          functionName: "checkArrow",
+          parameterName: "unusedArrow",
+        }),
+        expect.objectContaining({
+          functionName: "check",
+          parameterName: "unused",
+        }),
+      ]),
+    );
+    expect(result.unusedParameters).toHaveLength(2);
+  });
+}
+
+export function registerQualityShapeCase11({ it, expect }) {
+  it("ignores one-argument Rust Result aliases in common-wrapper mode", () => {
+    const result = analyzeSources(
+      [
+        {
+          path: "crates/example/src/storage.rs",
+          language: "rust",
+          source: `
+use std::io::Result;
+
+fn read_one() -> Result<Snapshot> {
+    load_one()
+}
+
+fn read_two() -> Result<Snapshot> {
+    load_two()
+}
+
+fn read_optional() -> Result<Option<u64>> {
+    load_optional()
+}
+
+fn read_optional_again() -> Result<Option<u64>> {
+    load_optional_again()
+}
+`,
+        },
+      ],
+      { ignoreCommonComplexTypes: true },
+    );
+
+    expect(result.repeatedComplexTypes).not.toContainEqual(
+      expect.objectContaining({ typeText: "Result<Snapshot>" }),
+    );
+    expect(result.repeatedComplexTypes).not.toContainEqual(
+      expect.objectContaining({ typeText: "Result<Option<u64>>" }),
+    );
+  });
+}
+
+export function registerQualityShapeCase12({ it, expect }) {
+  it("treats Rust trait implementation methods as public API contracts", () => {
+    const result = analyzeSources(
+      [
+        {
+          path: "crates/example/src/tasks.rs",
+          language: "rust",
+          source: `
+impl Task for FirstTask {
+    type Output = FirstOutput;
+
+    fn compute(&mut self) -> NapiResult<Self::Output> {
+        run_first()
+    }
+}
+
+impl Task for SecondTask {
+    type Output = SecondOutput;
+
+    fn compute(&mut self) -> NapiResult<Self::Output> {
+        run_second()
+    }
+}
+
+impl PrivateWorker {
+    fn first(&self) -> NapiResult<PrivateOutput> {
+        run_private_first()
+    }
+
+    fn second(&self) -> NapiResult<PrivateOutput> {
+        run_private_second()
+    }
+}
+`,
+        },
+      ],
+      { ignorePublicApiTypes: true },
+    );
+
+    expect(result.repeatedComplexTypes).toEqual([
+      expect.objectContaining({
+        count: 2,
+        typeText: "NapiResult<PrivateOutput>",
+      }),
+    ]);
+  });
+}

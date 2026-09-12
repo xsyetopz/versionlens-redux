@@ -11,7 +11,7 @@ const COMMON_COMPLEX_TYPE_PATTERN =
 const SIMPLE_OPTION_TYPE_PATTERN =
   /^Option<&?(?:lifetime |'static )?(?:str|Self|[A-Za-z_][\w:.$]*(?:<lifetime>)?)>$/u;
 const SIMPLE_RESULT_TYPE_PATTERN =
-  /^Result<[A-Za-z_][\w:.$]*(?:<lifetime>)?,[A-Za-z_][\w:.$]*(?:<lifetime>)?>$/u;
+  /^(?:io::)?Result<[A-Za-z_][\w:.$]*(?:<(?:lifetime|[A-Za-z_][\w:.$]*)>)?(?:,[A-Za-z_][\w:.$]*(?:<lifetime>)?)?>$/u;
 const TYPE_ALIAS_PATTERN =
   /(?:^|\n)\s*(?:(?:export|pub(?:\([^)]*\))?)\s+)?type\s+(?<name>[A-Za-z_][\w]*)\s*(?:<[^=]+>)?\s*=/gu;
 const TYPE_REFERENCE_PREFIX_PATTERN = /^&(?:mut\s+)?/u;
