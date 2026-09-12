@@ -4,7 +4,35 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.3] - 2026-09-12
+
+### Added
+
+- Added whole-workspace background checking, including unopened files, unsaved configuration overlays, provider exclusions, automatic expiry checks, and retries after temporary discovery failures.
+- Added persistent caches isolated by source, canonical reference, requirement, policy, and authentication context, with bounded storage, atomic writes, corruption recovery, and coordinated invalidation.
+- Added upstream version checks for Node.js, Bun, Rust toolchains, and package managers while preserving runtime constraint minimums during automatic checking.
+
+### Changed
+
+- Moved workspace scheduling and freshness into Rust, sharing bounded workers and workspace snapshots across checks.
+- Required JetBrains IDE build 261.26222.65 or newer, corresponding to the 2026.1.4 minimum.
+
+### Fixed
+
+- Avoided suppressing runtime updates for compatible selectors while keeping exact current pins to one commandless lens.
+- Accepted numeric one- through four-component Temurin Java releases while rejecting nonnumeric GA names.
+- Parsed GitHub Actions structurally, including flow mappings, reusable workflows, Docker actions, commit pins, local references, and supported runtime inputs, without reading script bodies as dependencies.
+- Preserved GitHub tag families and immutable pins, paginated tag lookups, and verified annotated tags through their commit targets.
+- Made native update commands asynchronous and bounded; implemented LSP update commands, validated workspace edits, background refresh, cancellation, and clean shutdown.
+- Kept vulnerability-service errors distinct from successful checks with no advisories.
+- Corrected workspace URI handling, Zed x86-64 downloads, and operator and quote preservation in Nim, LuaRocks, CPAN, and Dune edits.
+- Resolved Cargo workspace-inherited package versions from their root declaration and expanded pnpm workspace pattern matching, with explicit failures for unsupported negative patterns.
+- Revalidated local action manifests after restart and handled Windows canonical drive and UNC paths in workspace URIs.
+
+### Removed
+
+- Removed downgrade choices, indicators, settings, presentation branches, and their dedicated tests and resources. Update commands reject older selected versions.
+- Removed the package-only cache fallback, adapter completion bookkeeping, and disk-only registry context path after migrating their consumers.
 
 ## [0.4.1] - 2026-09-01
 
@@ -122,7 +150,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added Rust-backed dependency analysis across the supported manifest ecosystems, including C/C++ and JVM build files.
 - Preserved attribution to the original VersionLens authors.
 
-[Unreleased]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.0...HEAD
+[0.4.3]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.2...v0.4.3
+[0.4.1]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.1.2...v0.2.0
