@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl VersionLensSession {
-    pub(super) fn fetch_runtime_body(
+    pub(super) async fn fetch_runtime_body(
         &self,
         dependency: &Dependency,
         source: &RuntimeSource,
@@ -48,11 +48,13 @@ impl VersionLensSession {
             }
             let result = if matches!(source, RuntimeSource::GitHubTags { .. }) {
                 self.fetch_github_tags_body(&remote, &url, context, operation)
+                    .await
             } else {
                 self.get_text_or_status_with_context(&url, remote.ecosystem, context, operation)
+                    .await
             };
             match result {
-                Ok(Some(body)) => return Ok(body),
+                Ok(Some(body)) => return Ok(body.to_string()),
                 Ok(None) => {}
                 Err(error) => {
                     failure.get_or_insert(error);
@@ -63,7 +65,7 @@ impl VersionLensSession {
             .unwrap_or_else(|| super::runtime_error("runtime release source returned no result")))
     }
 
-    pub(super) fn fetch_runtime_artifact(
+    pub(super) async fn fetch_runtime_artifact(
         &self,
         dependency: &Dependency,
         url: &str,
@@ -80,19 +82,25 @@ impl VersionLensSession {
             versionlens_http::disabled_retry_policy()
         };
         let response = match operation.remaining_duration() {
-            Some(remaining) => versionlens_http::get_bytes_with_accept_and_retry_timeout(
-                url,
-                &http_config,
-                None,
-                retry_policy,
-                remaining,
-            ),
-            None => versionlens_http::get_bytes_with_accept_and_retry(
-                url,
-                &http_config,
-                None,
-                retry_policy,
-            ),
+            Some(remaining) => {
+                versionlens_http::get_bytes_with_accept_and_retry_timeout(
+                    url,
+                    &http_config,
+                    None,
+                    retry_policy,
+                    remaining,
+                )
+                .await
+            }
+            None => {
+                versionlens_http::get_bytes_with_accept_and_retry(
+                    url,
+                    &http_config,
+                    None,
+                    retry_policy,
+                )
+                .await
+            }
         };
         match response {
             Ok(body) => {

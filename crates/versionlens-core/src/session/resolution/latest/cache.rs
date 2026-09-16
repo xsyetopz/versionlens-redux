@@ -7,7 +7,7 @@ use super::{LatestLookup, LatestResolutionRequest};
 use crate::session::cache::CachedLatest;
 
 impl VersionLensSession {
-    pub(in crate::session::resolution::latest) fn resolve_cacheable_latest(
+    pub(in crate::session::resolution::latest) async fn resolve_cacheable_latest(
         &self,
         request: LatestResolutionRequest<'_>,
     ) -> LatestLookup {
@@ -19,6 +19,21 @@ impl VersionLensSession {
             operation,
         } = request;
         let key = suggestion_cache_key(dependency, &self.cache_scope(context));
+        let _singleflight = if has_registry_response {
+            None
+        } else {
+            let lock = self.request_lock(&key);
+            let guard = match operation.remaining_duration() {
+                Some(remaining) => match tokio::time::timeout(remaining, lock.lock_owned()).await {
+                    Ok(guard) => guard,
+                    Err(_) => {
+                        return failed_latest_lookup(crate::error::FetchError::OperationTimeout);
+                    }
+                },
+                None => lock.lock_owned().await,
+            };
+            Some(guard)
+        };
         let persistent_key = self.persistent_latest_key(dependency, context);
         if !has_registry_response
             && let Some(cached) = self.cache().get(&key)
@@ -40,7 +55,7 @@ impl VersionLensSession {
             return lookup;
         }
 
-        match self.lookup_latest(request) {
+        match self.lookup_latest(request).await {
             Ok(mut lookup) => {
                 deduplicate_update_choices(&mut lookup.choices);
                 lookup.fixed_requirement_matched =
@@ -61,7 +76,7 @@ impl VersionLensSession {
                     let ttl = self.cache_ttl(dependency.ecosystem, context.manifest_kind());
                     cache.insert_with_ttl(key, cached.clone(), ttl);
                     drop(cache);
-                    if let Some(persistent_key) = persistent_key {
+                    if !has_registry_response && let Some(persistent_key) = persistent_key {
                         self.store_persistent_latest(persistent_key, &cached, ttl, operation);
                     }
                 }

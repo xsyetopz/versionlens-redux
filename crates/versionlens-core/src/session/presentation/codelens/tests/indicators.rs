@@ -1,11 +1,11 @@
-#[test]
-fn code_lens_title_uses_configured_indicators() {
+#[tokio::test]
+async fn code_lens_title_uses_configured_indicators() {
     let session = standard_session();
     let output = analyze_npm_fixture_with_response(
         &session,
         "left-pad-1.0.0.json",
         r#"{"dist-tags":{"latest":"1.1.0"}}"#,
-    );
+    ).await;
 
     let titles = lens_titles(&output);
     let commands = lens_commands(&output);
@@ -14,8 +14,8 @@ fn code_lens_title_uses_configured_indicators() {
     assert_eq!(commands, ["", "versionlens.suggestion.onUpdateDependency"]);
 }
 
-#[test]
-fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
+#[tokio::test]
+async fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
     let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
@@ -45,7 +45,7 @@ fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
         &session,
         "left-pad-1.0.0.json",
         r#"{"dist-tags":{"latest":"1.1.0"}}"#,
-    );
+    ).await;
 
     assert_eq!(
         output
@@ -61,8 +61,8 @@ fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
     );
 }
 
-#[test]
-fn code_lenses_offer_release_update_choices_for_fixed_versions() {
+#[tokio::test]
+async fn code_lenses_offer_release_update_choices_for_fixed_versions() {
     let session = standard_session();
     let input = package_document("left-pad-1.0.0.json");
 
@@ -73,7 +73,7 @@ fn code_lenses_offer_release_update_choices_for_fixed_versions() {
             "2.1.0",
             &["1.0.0", "1.0.1", "1.1.0", "2.0.0", "2.1.0"],
         )],
-    );
+    ).await;
 
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::code_lens_arguments(&output);
@@ -97,8 +97,8 @@ fn code_lenses_offer_release_update_choices_for_fixed_versions() {
     );
 }
 
-#[test]
-fn code_lens_ranges_encode_suggestion_order() {
+#[tokio::test]
+async fn code_lens_ranges_encode_suggestion_order() {
     let session = session_with_indicators(test_indicators(), false);
     let input = package_document("left-pad-1.0.0.json");
 
@@ -109,7 +109,7 @@ fn code_lens_ranges_encode_suggestion_order() {
             "2.1.0",
             &["1.0.0", "1.0.1", "1.1.0", "2.1.0"],
         )],
-    );
+    ).await;
     let dependency_start = output.dependencies[0].range.start.character;
     let starts = output
         .code_lenses
@@ -128,8 +128,8 @@ fn code_lens_ranges_encode_suggestion_order() {
     assert!(zero_width);
 }
 
-#[test]
-fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
+#[tokio::test]
+async fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
     let session = session_with_indicators(test_indicators(), false);
     let input = package_document("dev-dependencies.json");
 
@@ -144,7 +144,7 @@ fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
             npm_response("@vscode/vsce", "3.9.2"),
             npm_response("typescript", "6.0.3"),
         ],
-    );
+    ).await;
     let lenses = output
         .code_lenses
         .iter()

@@ -2,14 +2,12 @@ mod client;
 mod config;
 mod error;
 mod retry;
-#[cfg(test)]
 mod support;
-
 pub use client::{
-    ACCEPT_GITHUB_V3, ACCEPT_JSON, HttpBytesResult, HttpResult, get_bytes_with_accept_and_retry,
-    get_bytes_with_accept_and_retry_timeout, get_text, get_text_with_accept,
-    get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout, post_text,
-    post_text_with_timeout,
+    ACCEPT_GITHUB_V3, ACCEPT_JSON, ACCEPT_NPM_INSTALL_V1, HttpBytesResult, HttpResult,
+    get_bytes_with_accept_and_retry, get_bytes_with_accept_and_retry_timeout, get_text,
+    get_text_with_accept, get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout,
+    post_text, post_text_with_timeout,
 };
 pub use config::{
     HttpConfig, HttpConfigInput, HttpHeader, HttpHeaderInput, http_config_from_input,

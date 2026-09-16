@@ -6,10 +6,12 @@ use crossbeam_channel::{Receiver, Sender, unbounded};
 use lsp_server::{Connection, ErrorCode, Message, Request, RequestId, Response};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use versionlens_core::{ResolveDocumentOutput, SessionTask, TaskCancellation};
+use tokio::runtime::Runtime;
+use tokio::task::AbortHandle;
+use versionlens_core::{ResolveDocumentOutput, SessionTask};
 
 use super::{publish_diagnostics, respond, respond_error};
-use crate::state::{DocumentWork, VersionLensLspState};
+use crate::state::{DocumentWork, ResolvedDocument, VersionLensLspState};
 
 pub(super) struct Completion {
     id: RequestId,
@@ -23,16 +25,23 @@ enum RequestKind {
 
 struct Pending {
     work: DocumentWork,
-    cancellation: TaskCancellation,
+    cancellation: AbortHandle,
     kind: RequestKind,
 }
 
 pub(super) struct WorkQueue {
     pending: HashMap<RequestId, Pending>,
+    completed: HashMap<String, CompletedDocument>,
     sender: Sender<Completion>,
     pub(super) receiver: Receiver<Completion>,
     applications: HashMap<RequestId, PendingApplication>,
     next_id: u64,
+    runtime: Runtime,
+}
+
+struct CompletedDocument {
+    generation: u64,
+    resolved: ResolvedDocument,
 }
 
 struct PendingApplication {
@@ -56,15 +65,17 @@ struct UpdateArguments {
 }
 
 impl WorkQueue {
-    pub(super) fn new() -> Self {
+    pub(super) fn new() -> Result<Self> {
         let (sender, receiver) = unbounded();
-        Self {
+        Ok(Self {
             pending: HashMap::new(),
+            completed: HashMap::new(),
             sender,
             receiver,
             applications: HashMap::new(),
             next_id: 0,
-        }
+            runtime: Runtime::new().context("failed to create LSP async runtime")?,
+        })
     }
 
     pub(super) fn lenses(
@@ -77,21 +88,27 @@ impl WorkQueue {
         let Some(work) = state.document_work(uri) else {
             return respond(connection, id, json!([]));
         };
+        if let Some(completed) = self
+            .completed
+            .get(uri)
+            .filter(|completed| completed.generation == work.generation)
+        {
+            return respond_with_document(connection, id, &work, &completed.resolved);
+        }
         if state.session.document_is_fresh(&work.input) {
             let resolved = state.analyzed_document(uri);
-            respond(
-                connection,
-                id,
-                serde_json::to_value(
-                    resolved
-                        .as_ref()
-                        .map_or(&[][..], |resolved| resolved.code_lenses.as_slice()),
-                )?,
-            )?;
             if let Some(resolved) = resolved {
-                publish_diagnostics(connection, uri.parse()?, resolved.diagnostics, work.version)?;
+                let result = respond_with_document(connection, id, &work, &resolved);
+                self.completed.insert(
+                    uri.to_owned(),
+                    CompletedDocument {
+                        generation: work.generation,
+                        resolved,
+                    },
+                );
+                return result;
             }
-            return Ok(());
+            return respond(connection, id, json!([]));
         }
         let task = SessionTask::Resolve(work.input.clone());
         self.submit(
@@ -193,27 +210,23 @@ impl WorkQueue {
         }
         let sender = self.sender.clone();
         let completion_id = id.clone();
-        match state.session.submit_task(task, move |output| {
+        let session = state.session.clone();
+        let handle = self.runtime.spawn(async move {
+            let output = session.run_task(task).await;
             let _ = sender.send(Completion {
                 id: completion_id,
                 output,
             });
-        }) {
-            Ok(cancellation) => {
-                self.pending.insert(
-                    id,
-                    Pending {
-                        work,
-                        cancellation,
-                        kind,
-                    },
-                );
-                Ok(())
-            }
-            Err(message) => {
-                respond_error(connection, id, ErrorCode::RequestFailed, message.to_owned())
-            }
-        }
+        });
+        self.pending.insert(
+            id,
+            Pending {
+                work,
+                cancellation: handle.abort_handle(),
+                kind,
+            },
+        );
+        Ok(())
     }
 
     pub(super) fn complete(
@@ -242,24 +255,19 @@ impl WorkQueue {
         match pending.kind {
             RequestKind::Lenses => {
                 let resolved = state.analyzed_document(&pending.work.uri);
-                respond(
-                    connection,
-                    completion.id,
-                    serde_json::to_value(
-                        resolved
-                            .as_ref()
-                            .map_or(&[][..], |value| value.code_lenses.as_slice()),
-                    )?,
-                )?;
                 if let Some(resolved) = resolved {
-                    publish_diagnostics(
-                        connection,
-                        pending.work.uri.parse()?,
-                        resolved.diagnostics,
-                        pending.work.version,
-                    )?;
+                    let result =
+                        respond_with_document(connection, completion.id, &pending.work, &resolved);
+                    self.completed.insert(
+                        pending.work.uri,
+                        CompletedDocument {
+                            generation: pending.work.generation,
+                            resolved,
+                        },
+                    );
+                    return result;
                 }
-                Ok(())
+                respond(connection, completion.id, json!([]))
             }
             RequestKind::Update => self.apply(state, connection, completion.id, output),
         }
@@ -339,7 +347,7 @@ impl WorkQueue {
 
     pub(super) fn cancel(&mut self, connection: &Connection, id: &RequestId) -> Result<()> {
         if let Some(pending) = self.pending.remove(id) {
-            pending.cancellation.cancel();
+            pending.cancellation.abort();
             respond_error(
                 connection,
                 id.clone(),
@@ -409,6 +417,11 @@ impl WorkQueue {
         state: &VersionLensLspState,
         connection: &Connection,
     ) -> Result<()> {
+        self.completed.retain(|uri, completed| {
+            state
+                .document_work(uri)
+                .is_some_and(|work| work.generation == completed.generation)
+        });
         let ids = self
             .pending
             .iter()
@@ -419,7 +432,7 @@ impl WorkQueue {
             let Some(pending) = self.pending.remove(&id) else {
                 continue;
             };
-            pending.cancellation.cancel();
+            pending.cancellation.abort();
             respond_error(
                 connection,
                 id,
@@ -429,6 +442,25 @@ impl WorkQueue {
         }
         Ok(())
     }
+}
+
+fn respond_with_document(
+    connection: &Connection,
+    id: RequestId,
+    work: &DocumentWork,
+    resolved: &ResolvedDocument,
+) -> Result<()> {
+    respond(
+        connection,
+        id,
+        serde_json::to_value(resolved.code_lenses.as_slice())?,
+    )?;
+    publish_diagnostics(
+        connection,
+        work.uri.parse()?,
+        resolved.diagnostics.clone(),
+        work.version,
+    )
 }
 
 #[cfg(test)]

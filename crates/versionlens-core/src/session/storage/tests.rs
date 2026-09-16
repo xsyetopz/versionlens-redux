@@ -55,19 +55,21 @@ fn input() -> DocumentInput {
     )
 }
 
-fn populate(session: &VersionLensSession) {
-    populate_input(session, input());
+async fn populate(session: &VersionLensSession) {
+    populate_input(session, input()).await;
 }
 
-fn populate_input(session: &VersionLensSession, input: DocumentInput) {
-    let output = session.resolve_document_with_responses(
-        input,
-        &[RegistryResponseInput::new(
-            "example".to_owned(),
-            Npm,
-            r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
-        )],
-    );
+async fn populate_input(session: &VersionLensSession, input: DocumentInput) {
+    let output = session
+        .resolve_document_with_responses(
+            input,
+            &[RegistryResponseInput::new(
+                "example".to_owned(),
+                Npm,
+                r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned(),
+            )],
+        )
+        .await;
     assert_eq!(output.edits[0].new_text, "2.0.0");
 }
 
@@ -82,12 +84,12 @@ fn failed_suggestion(dependency: versionlens_model::Dependency) -> Suggestion {
     }
 }
 
-#[test]
-fn session_restart_reuses_checked_versions_without_a_registry_connection() {
+#[tokio::test]
+async fn session_restart_reuses_checked_versions_without_a_registry_connection() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
-    populate(&session(&directory, "credential-a"));
+    populate(&session(&directory, "credential-a")).await;
     let restarted = session(&directory, "credential-a");
-    let output = restarted.resolve_document(input());
+    let output = restarted.resolve_document(input()).await;
     assert_eq!(output.edits.len(), 1);
     assert_eq!(output.edits[0].new_text, "2.0.0");
     let disk = std::fs::read_to_string(directory.join("cache.json")).unwrap();
@@ -96,8 +98,8 @@ fn session_restart_reuses_checked_versions_without_a_registry_connection() {
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn session_restart_preserves_dotnet_fixed_response_semantics() {
+#[tokio::test]
+async fn session_restart_preserves_dotnet_fixed_response_semantics() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
     let input = DocumentInput::new(
         "file:///coverage/app.csproj",
@@ -105,19 +107,21 @@ fn session_restart_preserves_dotnet_fixed_response_semantics() {
         "<Project><ItemGroup><PackageReference Include=\"Foo\" Version=\"1.0.0\" /></ItemGroup></Project>\n",
         None,
     );
-    let first = session(&directory, "credential-a").resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "Foo",
-            Dotnet,
-            r#"{"versions":["1.0.0","2.0.0"]}"#,
-        )],
-    );
+    let first = session(&directory, "credential-a")
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "Foo",
+                Dotnet,
+                r#"{"versions":["1.0.0","2.0.0"]}"#,
+            )],
+        )
+        .await;
     assert_eq!(first.suggestions[0].status, "fixed");
     assert_eq!(first.suggestions[0].latest.as_deref(), Some("1.0.0"));
 
     let restarted = session(&directory, "credential-a");
-    let cached = restarted.resolve_document(input.clone());
+    let cached = restarted.resolve_document(input.clone()).await;
     assert_eq!(cached.suggestions[0].status, first.suggestions[0].status);
     assert_eq!(cached.suggestions[0].latest, first.suggestions[0].latest);
     assert!(cached.edits.is_empty());
@@ -130,13 +134,15 @@ fn session_restart_preserves_dotnet_fixed_response_semantics() {
             .any(|lens| { lens.arguments.iter().any(|argument| argument == "2.0.0") })
     );
 
-    let update = restarted.apply_command_with_selected_version(ApplyCommandRequest {
-        input: input.clone(),
-        command: Some("update"),
-        dependency_name: Some("Foo"),
-        selected_version: Some("2.0.0"),
-        responses: &[],
-    });
+    let update = restarted
+        .apply_command_with_selected_version(ApplyCommandRequest {
+            input: input.clone(),
+            command: Some("update"),
+            dependency_name: Some("Foo"),
+            selected_version: Some("2.0.0"),
+            responses: &[],
+        })
+        .await;
     assert_eq!(update.edits.len(), 1);
     assert_eq!(update.edits[0].new_text, "2.0.0");
     let requirement_start = u32::try_from(input.text.find("1.0.0").unwrap()).unwrap();
@@ -146,8 +152,8 @@ fn session_restart_preserves_dotnet_fixed_response_semantics() {
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn fixed_pin_revalidates_cached_latest_record_without_proof_field() {
+#[tokio::test]
+async fn fixed_pin_revalidates_cached_latest_record_without_proof_field() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
     let input = DocumentInput::new(
         "file:///coverage/app.csproj",
@@ -184,13 +190,13 @@ fn fixed_pin_revalidates_cached_latest_record_without_proof_field() {
         .unwrap();
     drop(first);
 
-    let revalidated = dotnet_session(&directory).resolve_document(input);
+    let revalidated = dotnet_session(&directory).resolve_document(input).await;
     assert_eq!(revalidated.suggestions[0].status, "error");
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn restart_restores_semantic_freshness_with_current_document_ranges() {
+#[tokio::test]
+async fn restart_restores_semantic_freshness_with_current_document_ranges() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
     let initial = DocumentInput::new(
         "file:///workspace/package.json5",
@@ -198,7 +204,7 @@ fn restart_restores_semantic_freshness_with_current_document_ranges() {
         "{'dependencies':{'example':'1.0.0'}}",
         None,
     );
-    populate_input(&session(&directory, "credential-a"), initial);
+    populate_input(&session(&directory, "credential-a"), initial).await;
 
     let moved = DocumentInput::new(
         "file:///workspace/package.json5",
@@ -224,11 +230,11 @@ fn restart_restores_semantic_freshness_with_current_document_ranges() {
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn failed_outcomes_survive_restart_only_until_their_retry_deadline() {
+#[tokio::test]
+async fn failed_outcomes_survive_restart_only_until_their_retry_deadline() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
     let first = session(&directory, "credential-a");
-    let failed = first.resolve_document(input());
+    let failed = first.resolve_document(input()).await;
     assert_eq!(failed.suggestions[0].status, "error");
 
     let restarted = session(&directory, "credential-a");
@@ -286,8 +292,8 @@ fn local_vulnerability_status_is_available_after_restart_without_disk_records() 
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn restarted_session_rechecks_changed_local_action_manifests() {
+#[tokio::test]
+async fn restarted_session_rechecks_changed_local_action_manifests() {
     let directory =
         versionlens_test_support::temporary_directory("versionlens-local-action").unwrap();
     let root = directory.join("workspace");
@@ -301,13 +307,15 @@ fn restarted_session_rechecks_changed_local_action_manifests() {
         Some(root.to_string_lossy().into_owned()),
     );
     let storage = directory.join("cache");
-    let first = session(&storage, "credential-a").resolve_document(input.clone());
+    let first = session(&storage, "credential-a")
+        .resolve_document(input.clone())
+        .await;
     assert_eq!(first.suggestions[0].status, "fixed");
 
     std::fs::write(&action, "runs: {}\n").unwrap();
     let restarted = session(&storage, "credential-a");
     assert!(!restarted.document_is_fresh(&input));
-    let output = restarted.resolve_document(input);
+    let output = restarted.resolve_document(input).await;
     assert_eq!(output.suggestions[0].status, "error");
     std::fs::remove_dir_all(directory).unwrap();
 }
@@ -475,37 +483,37 @@ fn clear_epoch_rejects_a_late_semantic_outcome_write() {
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn authentication_partitions_require_independent_checks() {
+#[tokio::test]
+async fn authentication_partitions_require_independent_checks() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
-    populate(&session(&directory, "credential-a"));
+    populate(&session(&directory, "credential-a")).await;
     let other = session(&directory, "credential-b");
-    assert_check_failed(&other);
+    assert_check_failed(&other).await;
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn clearing_persistent_results_requires_a_new_successful_check() {
+#[tokio::test]
+async fn clearing_persistent_results_requires_a_new_successful_check() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
     let first = session(&directory, "credential-a");
-    populate(&first);
+    populate(&first).await;
     first.clear_cache();
     let restarted = session(&directory, "credential-a");
-    assert_check_failed(&restarted);
+    assert_check_failed(&restarted).await;
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-#[test]
-fn a_clear_from_another_session_invalidates_memory_results() {
+#[tokio::test]
+async fn a_clear_from_another_session_invalidates_memory_results() {
     let directory = versionlens_test_support::temporary_directory("versionlens-storage").unwrap();
     let first = session(&directory, "credential-a");
-    populate(&first);
+    populate(&first).await;
     assert!(!first.analyze_document(input()).code_lenses.is_empty());
     session(&directory, "credential-a")
         .try_clear_cache()
         .unwrap();
     assert!(first.analyze_document(input()).code_lenses.is_empty());
-    assert_check_failed(&first);
+    assert_check_failed(&first).await;
     std::fs::remove_dir_all(directory).unwrap();
 }
 
@@ -522,8 +530,8 @@ fn a_disk_generation_change_invalidates_pending_publication() {
     std::fs::remove_dir_all(directory).unwrap();
 }
 
-fn assert_check_failed(session: &VersionLensSession) {
-    let output = session.resolve_document(input());
+async fn assert_check_failed(session: &VersionLensSession) {
+    let output = session.resolve_document(input()).await;
     assert!(output.edits.is_empty());
     assert_eq!(output.suggestions[0].status, "error");
 }

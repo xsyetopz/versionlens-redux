@@ -1,5 +1,3 @@
-use super::*;
-
 use crate::registry::RegistryContext;
 use crate::{
     AnalyzeDocumentOutput, ProviderSettings, SessionConfig, SessionConfigInput, VersionLensSession,
@@ -10,6 +8,7 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::PathBuf;
 use std::process::id;
+use std::sync::Arc as StdArc;
 use std::thread::spawn;
 use std::time::SystemTime;
 use std::{env::temp_dir, fs::create_dir_all};
@@ -62,12 +61,14 @@ pub(crate) fn session_with_provider_settings(
     crate::version_lens_session(session_config(providers, show_vulnerabilities))
 }
 
-pub(crate) fn analyze_with_responses(
+pub(crate) async fn analyze_with_responses(
     session: &VersionLensSession,
     input: &DocumentInput,
     responses: &[contract::RegistryResponseInput],
 ) -> AnalyzeDocumentOutput {
-    session.resolve_document_with_responses(input.clone(), responses);
+    session
+        .resolve_document_with_responses(input.clone(), responses)
+        .await;
     session.analyze_document(input.clone())
 }
 
@@ -148,28 +149,33 @@ pub(crate) struct FixtureResolutionCase<'a> {
     pub(crate) response: &'a str,
 }
 
-pub(crate) fn resolve_fixture_with_response(
+pub(crate) async fn resolve_fixture_with_response(
     case: FixtureResolutionCase<'_>,
 ) -> contract::ResolveDocumentOutput {
-    case.session.resolve_document_with_responses(
-        DocumentInput::new(
-            case.uri.to_owned(),
-            case.language_id.to_owned(),
-            fixture(
-                "tests/fixtures/session/resolution/tests/fixed",
-                case.fixture_name,
+    case.session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                case.uri.to_owned(),
+                case.language_id.to_owned(),
+                fixture(
+                    "tests/fixtures/session/resolution/tests/fixed",
+                    case.fixture_name,
+                ),
+                None,
             ),
-            None,
-        ),
-        &[contract::RegistryResponseInput::new(
-            case.package.to_owned(),
-            case.ecosystem,
-            case.response.to_owned(),
-        )],
-    )
+            &[contract::RegistryResponseInput::new(
+                case.package.to_owned(),
+                case.ecosystem,
+                case.response.to_owned(),
+            )],
+        )
+        .await
 }
 
-pub(crate) fn with_unauthorized_server<T>(request: impl FnOnce(String) -> T) -> T {
+pub(crate) async fn with_unauthorized_server<T, F>(request: impl FnOnce(String) -> F) -> T
+where
+    F: std::future::Future<Output = T>,
+{
     let listener = tcp_listener_bind("127.0.0.1:0").expect("bind test server");
     let base_url = format!("http://{}", listener.local_addr().expect("server address"));
     let server = spawn(move || {
@@ -182,7 +188,7 @@ pub(crate) fn with_unauthorized_server<T>(request: impl FnOnce(String) -> T) -> 
             )
             .expect("write response");
     });
-    let result = request(base_url);
+    let result = request(base_url).await;
     server.join().expect("server thread");
     result
 }

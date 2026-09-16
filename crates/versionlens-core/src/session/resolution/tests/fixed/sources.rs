@@ -1,20 +1,20 @@
-#[test]
-fn ruby_path_block_dependencies_resolve_as_directories() {
+#[tokio::test]
+async fn ruby_path_block_dependencies_resolve_as_directories() {
     assert_ruby_path_dependency_fixture(
         "ruby-path-block-dependencies-resolve-as-directories.txt",
         "local_one",
         "ruby-path-block-directory",
-    );
+    ).await;
 }
 
-#[test]
-fn git_dependencies_are_fixed() {
+#[tokio::test]
+async fn git_dependencies_are_fixed() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///Cargo.toml".to_owned(), "toml".to_owned(), package_file_fixture("git-dependencies-are-fixed.toml"), None),
         &[RegistryResponseInput::new("remote".to_owned(), Cargo, r#"{"crate":{"max_version":"9.9.9"}}"#.to_owned())],
-    );
+    ).await;
 
     crate::support::tests::assert_fixed_git_repository(&output);
 }
@@ -101,8 +101,8 @@ fn cargo_crates_io_source_replacement_uses_workspace_cargo_config_url() {
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn cargo_workspace_inherited_dependencies_do_not_create_registry_updates() {
+#[tokio::test]
+async fn cargo_workspace_inherited_dependencies_do_not_create_registry_updates() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
@@ -114,7 +114,7 @@ fn cargo_workspace_inherited_dependencies_do_not_create_registry_updates() {
             RegistryResponseInput::new("cc".to_owned(), Cargo, r#"{"versions":[{"num":"9.9.9"}]}"#.to_owned()),
             RegistryResponseInput::new("rand".to_owned(), Cargo, r#"{"versions":[{"num":"9.9.9"}]}"#.to_owned()),
         ],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 3);
     assert!(

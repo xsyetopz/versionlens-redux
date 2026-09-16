@@ -4,21 +4,23 @@ use super::{apply_edits, test_session};
 use crate::RegistryResponseInput;
 use crate::workspace::tests::support::TestWorkspace;
 
-#[test]
-fn nimble_equality_edit_replaces_the_complete_constraint() {
+#[tokio::test]
+async fn nimble_equality_edit_replaces_the_complete_constraint() {
     let session = test_session();
     let text = "requires \"foo == 1.0.0\"\n";
     let input = DocumentInput::new("file:///coverage/demo.nimble", "nim", text, None);
     let response = RegistryResponseInput::new("foo", Ecosystem::Nim, r#"[{"name":"2.0.0"}]"#);
-    let output = session.resolve_document_with_responses(input, &[response]);
+    let output = session
+        .resolve_document_with_responses(input, &[response])
+        .await;
     assert_eq!(
         apply_edits(text, &output.edits),
         "requires \"foo == 2.0.0\"\n"
     );
 }
 
-#[test]
-fn luarocks_equality_edit_replaces_the_complete_constraint() {
+#[tokio::test]
+async fn luarocks_equality_edit_replaces_the_complete_constraint() {
     let session = test_session();
     let text = "package = \"demo\"\nversion = \"1.0.0-1\"\ndependencies = { \"foo == 1.0.0\" }\n";
     let input = DocumentInput::new("file:///coverage/demo.rockspec", "lua", text, None);
@@ -27,13 +29,15 @@ fn luarocks_equality_edit_replaces_the_complete_constraint() {
         Ecosystem::LuaRocks,
         r#"repository = { ["foo"] = { ["1.0.0-1"] = {}, ["2.0.0-1"] = {} } }"#,
     );
-    let output = session.apply_command_with_selected_version(super::super::ApplyCommandRequest {
-        input,
-        command: Some("update"),
-        dependency_name: Some("foo"),
-        selected_version: Some("2.0.0-1"),
-        responses: &[response],
-    });
+    let output = session
+        .apply_command_with_selected_version(super::super::ApplyCommandRequest {
+            input,
+            command: Some("update"),
+            dependency_name: Some("foo"),
+            selected_version: Some("2.0.0-1"),
+            responses: &[response],
+        })
+        .await;
     assert_eq!(output.edits.len(), 1);
     assert_eq!(
         apply_edits(text, &output.edits),
@@ -41,8 +45,8 @@ fn luarocks_equality_edit_replaces_the_complete_constraint() {
     );
 }
 
-#[test]
-fn dune_equality_edits_preserve_operator_and_quotes() {
+#[tokio::test]
+async fn dune_equality_edits_preserve_operator_and_quotes() {
     let cases = [
         (
             "(lang dune 3.17)\n(package (name demo) (depends (foo (= 1.0.0))))\n",
@@ -61,14 +65,16 @@ fn dune_equality_edits_preserve_operator_and_quotes() {
             Ecosystem::Opam,
             "<h2>foo version</h2><p>2.0.0 (latest)</p>",
         );
-        let output = session.resolve_document_with_responses(input, &[response]);
+        let output = session
+            .resolve_document_with_responses(input, &[response])
+            .await;
         assert_eq!(output.edits.len(), 1);
         assert_eq!(apply_edits(text, &output.edits), expected);
     }
 }
 
-#[test]
-fn gradle_catalog_inline_version_edit_replaces_the_value() {
+#[tokio::test]
+async fn gradle_catalog_inline_version_edit_replaces_the_value() {
     let session = test_session();
     let text = "[libraries]\nfoo = { module = \"example.test:foo\", version = \"1.0.0\" }\n";
     let input = DocumentInput::new(
@@ -82,13 +88,15 @@ fn gradle_catalog_inline_version_edit_replaces_the_value() {
         Ecosystem::Maven,
         "<metadata><versioning><versions><version>1.0.0</version><version>2.0.0</version></versions></versioning></metadata>",
     );
-    let output = session.apply_command_with_selected_version(super::super::ApplyCommandRequest {
-        input,
-        command: Some("update"),
-        dependency_name: Some("example.test:foo"),
-        selected_version: Some("2.0.0"),
-        responses: &[response],
-    });
+    let output = session
+        .apply_command_with_selected_version(super::super::ApplyCommandRequest {
+            input,
+            command: Some("update"),
+            dependency_name: Some("example.test:foo"),
+            selected_version: Some("2.0.0"),
+            responses: &[response],
+        })
+        .await;
     assert_eq!(output.edits.len(), 1);
     assert_eq!(
         apply_edits(text, &output.edits),
@@ -96,8 +104,8 @@ fn gradle_catalog_inline_version_edit_replaces_the_value() {
     );
 }
 
-#[test]
-fn leiningen_project_version_is_local() {
+#[tokio::test]
+async fn leiningen_project_version_is_local() {
     let session = test_session();
     let text = "(defproject demo \"0.1.0\" :dependencies [[example.test/foo \"1.0.0\"]])\n";
     let input = DocumentInput::new("file:///coverage/project.clj", "clojure", text, None);
@@ -108,7 +116,7 @@ fn leiningen_project_version_is_local() {
         .expect("Leiningen project version must parse");
     assert_eq!(project.versionable_kind(), VersionableKind::ProjectVersion);
 
-    let output = session.resolve_document(input);
+    let output = session.resolve_document(input).await;
     let suggestion = output
         .suggestions
         .iter()
@@ -118,8 +126,8 @@ fn leiningen_project_version_is_local() {
     assert_eq!(suggestion.latest.as_deref(), Some("0.1.1"));
 }
 
-#[test]
-fn cargo_inherited_version_edits_only_the_workspace_root() {
+#[tokio::test]
+async fn cargo_inherited_version_edits_only_the_workspace_root() {
     let workspace = TestWorkspace::new("cargo-inheritance");
     let root_text =
         "[workspace]\nmembers = [\"member\"]\n[workspace.package]\nversion = \"1.0.0\"\n";
@@ -143,7 +151,7 @@ fn cargo_inherited_version_edits_only_the_workspace_root() {
         root_dependency.versionable_kind(),
         VersionableKind::ProjectVersion
     );
-    let root_output = session.resolve_document(root);
+    let root_output = session.resolve_document(root).await;
     let root_suggestion = root_output
         .suggestions
         .iter()
@@ -163,7 +171,7 @@ fn cargo_inherited_version_edits_only_the_workspace_root() {
         member_dependency.versionable_kind(),
         VersionableKind::WorkspaceReference
     );
-    let member_output = session.resolve_document(member);
+    let member_output = session.resolve_document(member).await;
     assert!(member_output.edits.is_empty());
     let suggestion = member_output
         .suggestions

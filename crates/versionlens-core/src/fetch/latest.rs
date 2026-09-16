@@ -39,7 +39,7 @@ struct ResponseUpdateRequest<'a> {
 }
 
 impl VersionLensSession {
-    pub(crate) fn fetch_latest(
+    pub(crate) async fn fetch_latest(
         &self,
         dependency: &Dependency,
         context: &RegistryContext,
@@ -51,7 +51,10 @@ impl VersionLensSession {
             if operation.is_expired() {
                 return Err(FetchError::OperationTimeout);
             }
-            match self.fetch_latest_from_endpoint(dependency, &endpoint, context, operation) {
+            match self
+                .fetch_latest_from_endpoint(dependency, &endpoint, context, operation)
+                .await
+            {
                 Ok(fetch) if fetch.latest.is_some() => return Ok(fetch),
                 Ok(_) => {}
                 Err(error) => {
@@ -70,14 +73,16 @@ impl VersionLensSession {
         }
     }
 
-    fn fetch_latest_from_endpoint(
+    async fn fetch_latest_from_endpoint(
         &self,
         dependency: &Dependency,
         endpoint: &RegistryEndpoint,
         context: &RegistryContext,
         operation: &OperationContext,
     ) -> Result<LatestFetch, FetchError> {
-        let Some(body) = self.fetch_registry_body(dependency, &endpoint.url, context, operation)?
+        let Some(body) = self
+            .fetch_registry_body(dependency, &endpoint.url, context, operation)
+            .await?
         else {
             return Ok(LatestFetch {
                 latest: None,
@@ -89,7 +94,8 @@ impl VersionLensSession {
         let current_ref_is_proven = if github_current_ref_is_proven(dependency, &body) {
             true
         } else {
-            self.fetch_exact_github_action_ref_is_proven(dependency, endpoint, context, operation)?
+            self.fetch_exact_github_action_ref_is_proven(dependency, endpoint, context, operation)
+                .await?
         };
         let latest = current_ref_is_proven
             .then(|| {

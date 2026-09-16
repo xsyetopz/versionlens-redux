@@ -296,7 +296,7 @@ pub(super) fn attach_github_action_replacements(
 }
 
 impl VersionLensSession {
-    pub(super) fn fetch_exact_github_action_ref_is_proven(
+    pub(super) async fn fetch_exact_github_action_ref_is_proven(
         &self,
         dependency: &Dependency,
         endpoint: &RegistryEndpoint,
@@ -307,15 +307,17 @@ impl VersionLensSession {
             return Ok(false);
         };
         if let CanonicalReference::GitHubActionRef { reference } = reference {
-            return self.fetch_floating_github_action_ref(
-                endpoint,
-                GithubFetchContext {
-                    dependency,
-                    registry: context,
-                    operation,
-                },
-                reference,
-            );
+            return self
+                .fetch_floating_github_action_ref(
+                    endpoint,
+                    GithubFetchContext {
+                        dependency,
+                        registry: context,
+                        operation,
+                    },
+                    reference,
+                )
+                .await;
         }
         let CanonicalReference::GitHubActionSha { tag, .. } = reference else {
             return Ok(false);
@@ -323,12 +325,10 @@ impl VersionLensSession {
         let Some(url) = github_tag_ref_url(&endpoint.url, tag) else {
             return Ok(false);
         };
-        let body = match self.get_text_or_status_with_context(
-            &url,
-            dependency.ecosystem,
-            context,
-            operation,
-        ) {
+        let body = match self
+            .get_text_or_status_with_context(&url, dependency.ecosystem, context, operation)
+            .await
+        {
             Ok(Some(body)) => body,
             Ok(None) => return Ok(false),
             Err(FetchError::RegistryStatus(status)) if status == "not found" => return Ok(false),
@@ -369,12 +369,9 @@ impl VersionLensSession {
                 ));
             }
             let url = format!("{base}/git/tags/{sha}");
-            let Some(body) = self.get_text_or_status_with_context(
-                &url,
-                dependency.ecosystem,
-                context,
-                operation,
-            )?
+            let Some(body) = self
+                .get_text_or_status_with_context(&url, dependency.ecosystem, context, operation)
+                .await?
             else {
                 return Err(invalid_tag_response());
             };
@@ -393,7 +390,7 @@ impl VersionLensSession {
         ))
     }
 
-    fn fetch_floating_github_action_ref(
+    async fn fetch_floating_github_action_ref(
         &self,
         endpoint: &RegistryEndpoint,
         fetch: GithubFetchContext<'_>,
@@ -403,44 +400,53 @@ impl VersionLensSession {
             return Err(unavailable_reference(reference));
         };
         let expected_tag = format!("refs/tags/{reference}");
-        match self.fetch_github_ref(
-            &fetch,
-            GithubRefTarget {
-                url: &tag_url,
-                expected_ref: &expected_tag,
-                tag: true,
-            },
-        )? {
+        match self
+            .fetch_github_ref(
+                &fetch,
+                GithubRefTarget {
+                    url: &tag_url,
+                    expected_ref: &expected_tag,
+                    tag: true,
+                },
+            )
+            .await?
+        {
             GithubRefStatus::Proven => return Ok(true),
             GithubRefStatus::Missing => {}
         }
 
         let head_url = tag_url.replacen("/git/ref/tags/", "/git/ref/heads/", 1);
         let expected_head = format!("refs/heads/{reference}");
-        match self.fetch_github_ref(
-            &fetch,
-            GithubRefTarget {
-                url: &head_url,
-                expected_ref: &expected_head,
-                tag: false,
-            },
-        )? {
+        match self
+            .fetch_github_ref(
+                &fetch,
+                GithubRefTarget {
+                    url: &head_url,
+                    expected_ref: &expected_head,
+                    tag: false,
+                },
+            )
+            .await?
+        {
             GithubRefStatus::Proven => Ok(true),
             GithubRefStatus::Missing => Err(unavailable_reference(reference)),
         }
     }
 
-    fn fetch_github_ref(
+    async fn fetch_github_ref(
         &self,
         fetch: &GithubFetchContext<'_>,
         target: GithubRefTarget<'_>,
     ) -> Result<GithubRefStatus, FetchError> {
-        let body = match self.get_text_or_status_with_context(
-            target.url,
-            fetch.dependency.ecosystem,
-            fetch.registry,
-            fetch.operation,
-        ) {
+        let body = match self
+            .get_text_or_status_with_context(
+                target.url,
+                fetch.dependency.ecosystem,
+                fetch.registry,
+                fetch.operation,
+            )
+            .await
+        {
             Ok(Some(body)) => body,
             Ok(None) => return Ok(GithubRefStatus::Missing),
             Err(FetchError::RegistryStatus(status)) if status == "not found" => {

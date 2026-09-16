@@ -1,7 +1,7 @@
 use super::super::trim_end_slash;
 
 pub(in crate::registry::urls) fn cran_registry_url(_: &str) -> String {
-    "https://cran.r-project.org/src/contrib/PACKAGES".to_owned()
+    "https://cloud.r-project.org/src/contrib/PACKAGES.gz".to_owned()
 }
 
 pub(in crate::registry::urls) fn cran_registry_url_with_base(base_url: &str, _: &str) -> String {

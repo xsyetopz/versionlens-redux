@@ -150,11 +150,11 @@ impl VersionLensSession {
         }
     }
 
-    pub fn resolve_document(&self, input: DocumentInput) -> ResolveDocumentOutput {
-        self.resolve_document_with_responses(input, &[])
+    pub async fn resolve_document(&self, input: DocumentInput) -> ResolveDocumentOutput {
+        self.resolve_document_with_responses(input, &[]).await
     }
 
-    pub fn resolve_document_with_responses(
+    pub async fn resolve_document_with_responses(
         &self,
         input: DocumentInput,
         responses: &[RegistryResponseInput],
@@ -162,11 +162,14 @@ impl VersionLensSession {
         let operation = self.operation_context();
         let manifest_kind = self.classify_document(&input);
         let plan_input = input.clone();
-        let suggestions = self.resolve_suggestions(input, responses, None, &operation);
+        let suggestions = self
+            .resolve_suggestions(input, responses, None, &operation)
+            .await;
         let edits = update_edits(&suggestions);
         let authorization_required_count = Self::authorization_required_count(&suggestions);
-        let vulnerable_update_count =
-            self.vulnerable_update_count(&suggestions, responses, Some(manifest_kind), &operation);
+        let vulnerable_update_count = self
+            .vulnerable_update_count(&suggestions, responses, Some(manifest_kind), &operation)
+            .await;
         let authorization_required_requests = operation.take_authorization_requests();
         let authorization_required_count =
             authorization_required_count.max(to_u32(authorization_required_requests.len()));
@@ -183,7 +186,7 @@ impl VersionLensSession {
         super::finish_resolve_output(suggestions, parts)
     }
 
-    pub(crate) fn resolve_suggestions(
+    pub(crate) async fn resolve_suggestions(
         &self,
         input: DocumentInput,
         responses: &[RegistryResponseInput],
@@ -192,15 +195,17 @@ impl VersionLensSession {
     ) -> Vec<Suggestion> {
         let manifest_kind = self.classify_document(&input);
         let context = self.registry_context(&input, manifest_kind);
-        let suggestions = self.resolve_dependencies(ResolutionRequest {
-            input: &input,
-            dependencies: self.dependencies(&input),
-            document_uri: &input.uri,
-            responses,
-            project_bump,
-            context: &context,
-            operation,
-        });
+        let suggestions = self
+            .resolve_dependencies(ResolutionRequest {
+                input: &input,
+                dependencies: self.dependencies(&input),
+                document_uri: &input.uri,
+                responses,
+                project_bump,
+                context: &context,
+                operation,
+            })
+            .await;
         if project_bump.is_none() {
             self.cache_resolved_suggestions(
                 &suggestions,
@@ -212,7 +217,7 @@ impl VersionLensSession {
         suggestions
     }
 
-    pub(super) fn resolve_dependency_suggestions(
+    pub(super) async fn resolve_dependency_suggestions(
         &self,
         request: DependencySuggestionsRequest<'_>,
     ) -> Vec<Suggestion> {
@@ -239,6 +244,7 @@ impl VersionLensSession {
             context: &context,
             operation,
         })
+        .await
     }
 }
 

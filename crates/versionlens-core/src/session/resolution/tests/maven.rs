@@ -1,7 +1,7 @@
 use super::*;
 
-#[test]
-fn maven_registry_urls_preserve_configured_fallback_order() {
+#[tokio::test]
+async fn maven_registry_urls_preserve_configured_fallback_order() {
     let session = crate::support::tests::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![
@@ -42,7 +42,7 @@ fn maven_registry_urls_preserve_configured_fallback_order() {
             RegistryResponseInput::new("org.example:demo".to_owned(), Maven, "<metadata><versioning><versions><version>1.1.0</version></versions></versioning></metadata>"
                     .to_owned()),
         ],
-    );
+    ).await;
 
     assert_update(&output, "1.1.0");
 }
@@ -269,8 +269,8 @@ fn maven_documents_use_only_active_workspace_settings_profile_repositories() {
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn maven_local_repository_metadata_resolves_before_remote_registries() {
+#[tokio::test]
+async fn maven_local_repository_metadata_resolves_before_remote_registries() {
     let root = temp_dir().join(format!("versionlens-maven-local-{}", id()));
     let local_repo = root.join(".m2").join("repository");
     let metadata_dir = local_repo.join("org").join("example").join("demo");
@@ -294,7 +294,7 @@ fn maven_local_repository_metadata_resolves_before_remote_registries() {
         &root,
         "maven-local-repository-metadata-resolves-before-remote-registries.txt",
     );
-    let output = session.resolve_document(input);
+    let output = session.resolve_document(input).await;
 
     crate::support::tests::assert_suggestion(&output, 0, "updateAvailable", Some("1.1.0"));
     assert_eq!(output.edits[0].new_text, "1.1.0");

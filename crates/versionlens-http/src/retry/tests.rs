@@ -5,16 +5,6 @@ fn retry_backoff_ms(attempt: u32) -> u64 {
     100 * 2_u64.pow(attempt)
 }
 
-use std::io::ErrorKind::{
-    AddrInUse as IoAddrInUse, ConnectionRefused as IoConnectionRefused,
-    ConnectionReset as IoConnectionReset, TimedOut as IoTimedOut,
-};
-use ureq::Error::{
-    ConnectionFailed as UreqConnectionFailed, HostNotFound as UreqHostNotFound, Io as UreqIo,
-    Timeout as UreqTimeoutError,
-};
-use ureq::Timeout::Global as UreqTimeoutGlobal;
-
 #[test]
 fn request_light_parity_does_not_retry_transient_failures() {
     assert!(!should_retry_error());
@@ -54,35 +44,4 @@ fn disabled_retry_policy_preserves_request_light_no_retry_behavior() {
     assert!(!policy.should_retry_status("GET", 408));
     assert!(!policy.should_retry_status("GET", 429));
     assert!(!policy.should_retry_status("GET", 500));
-}
-
-#[test]
-fn npm_registry_fetch_retry_policy_retries_transient_network_errors() {
-    let policy = crate::npm_registry_fetch_retry_policy();
-
-    assert!(policy.should_retry_error(
-        "GET",
-        &UreqIo(crate::support::tests::io_error_from_kind(IoConnectionReset))
-    ));
-    assert!(policy.should_retry_error(
-        "GET",
-        &UreqIo(crate::support::tests::io_error_from_kind(
-            IoConnectionRefused
-        ))
-    ));
-    assert!(policy.should_retry_error(
-        "GET",
-        &UreqIo(crate::support::tests::io_error_from_kind(IoAddrInUse))
-    ));
-    assert!(policy.should_retry_error(
-        "GET",
-        &UreqIo(crate::support::tests::io_error_from_kind(IoTimedOut))
-    ));
-    assert!(policy.should_retry_error("GET", &UreqConnectionFailed));
-    assert!(policy.should_retry_error("GET", &UreqTimeoutError(UreqTimeoutGlobal)));
-    assert!(!policy.should_retry_error("GET", &UreqHostNotFound));
-    assert!(!policy.should_retry_error(
-        "POST",
-        &UreqIo(crate::support::tests::io_error_from_kind(IoConnectionReset))
-    ));
 }

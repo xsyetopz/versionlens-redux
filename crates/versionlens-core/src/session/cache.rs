@@ -1,6 +1,6 @@
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::sync::atomic::Ordering;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, MutexGuard};
 use std::time::Duration;
 
 use versionlens_cache::{CacheKey, MemoryCache};
@@ -94,20 +94,18 @@ impl VersionLensSession {
             .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
     }
 
-    pub(crate) fn request_body_cache(&self) -> MutexGuard<'_, MemoryCache<String>> {
+    pub(crate) fn request_body_cache(&self) -> MutexGuard<'_, MemoryCache<Arc<str>>> {
         self.request_state
             .request_body_cache
             .lock()
             .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
     }
 
-    pub(crate) fn cached_request_body(&self, key: &CacheKey) -> Option<String> {
-        self.request_body_cache()
-            .get(key)
-            .map(|body| body.as_str().to_owned())
+    pub(crate) fn cached_request_body(&self, key: &CacheKey) -> Option<Arc<str>> {
+        self.request_body_cache().get(key).cloned()
     }
 
-    pub(crate) fn request_lock(&self, key: &CacheKey) -> Arc<Mutex<()>> {
+    pub(crate) fn request_lock(&self, key: &CacheKey) -> Arc<tokio::sync::Mutex<()>> {
         let mut locks = self
             .request_state
             .request_locks
@@ -118,7 +116,7 @@ impl VersionLensSession {
             return lock;
         }
 
-        let lock = crate::arc(crate::mutex(()));
+        let lock = Arc::new(tokio::sync::Mutex::new(()));
         locks.insert(key.clone(), Arc::downgrade(&lock));
         lock
     }
@@ -126,7 +124,7 @@ impl VersionLensSession {
     pub(crate) fn cache_request_body(
         &self,
         key: CacheKey,
-        body: &str,
+        body: impl Into<Arc<str>>,
         ttl: Duration,
         operation: &OperationContext,
     ) {
@@ -134,7 +132,7 @@ impl VersionLensSession {
         if !operation.is_current() {
             return;
         }
-        cache.insert_with_ttl(key, body.to_owned(), ttl);
+        cache.insert_with_ttl(key, body.into(), ttl);
     }
 
     pub(crate) fn request_cache_key(&self, url: &str, config: &HttpConfig) -> CacheKey {

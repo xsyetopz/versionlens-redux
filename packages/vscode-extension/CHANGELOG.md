@@ -1,3 +1,7 @@
+# 0.4.4
+
+- Made cold dependency checks substantially faster across providers with concurrent reusable HTTP connections, shared bodies, coalesced work, a compressed CRAN catalog, shared LuaRocks catalog requests, and smaller official npm responses while preserving complete release-history semantics.
+
 # 0.1.0
 
 ## VersionLens Redux

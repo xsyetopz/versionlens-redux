@@ -35,11 +35,16 @@ fn npm_versions_response(latest: &str, versions: &[&str]) -> RegistryResponseInp
     )
 }
 
-fn build_code_lens_output(fixture: &str, latest: &str, versions: &[&str]) -> AnalyzeDocumentOutput {
+async fn build_code_lens_output(
+    fixture: &str,
+    latest: &str,
+    versions: &[&str],
+) -> AnalyzeDocumentOutput {
     let session = standard_session();
     let input = package_document(fixture);
     session
-        .resolve_document_with_responses(input.clone(), &[npm_versions_response(latest, versions)]);
+        .resolve_document_with_responses(input.clone(), &[npm_versions_response(latest, versions)])
+        .await;
     session.analyze_document(input)
 }
 
@@ -129,7 +134,7 @@ fn package_document(fixture: &str) -> DocumentInput {
     )
 }
 
-fn analyze_npm_fixture_with_response(
+async fn analyze_npm_fixture_with_response(
     session: &crate::VersionLensSession,
     fixture: &str,
     response: &str,
@@ -144,6 +149,7 @@ fn analyze_npm_fixture_with_response(
             response.to_owned(),
         )],
     )
+    .await
 }
 
 fn lens_titles(output: &AnalyzeDocumentOutput) -> Vec<&str> {

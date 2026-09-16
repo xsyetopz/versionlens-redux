@@ -62,11 +62,6 @@ impl VersionLensLspState {
     }
 
     pub fn code_lenses(&self, uri: &str) -> Vec<CodeLens> {
-        if let Some(work) = self.document_work(uri)
-            && !self.session.document_is_fresh(&work.input)
-        {
-            self.session.resolve_document(work.input);
-        }
         self.analyzed_document(uri)
             .map_or_else(Vec::new, |resolved| resolved.code_lenses)
     }

@@ -3,7 +3,7 @@ use versionlens_model::Ecosystem::{
     Composer, Cran, Docker, Dotnet, GitHub, Hex, Maven, Npm, Python, Ruby,
 };
 use versionlens_versions::compare_versions;
-mod cargo;
+pub(crate) mod cargo;
 mod composer;
 mod conan;
 mod cpan;

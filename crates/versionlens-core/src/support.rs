@@ -3,7 +3,6 @@ use semver::{Error as SemverError, Version as SemverVersion, VersionReq as Semve
 use std::error::Error as StdError;
 use std::path::Path as StdPath;
 use std::string::FromUtf8Error as StringFromUtf8Error;
-use std::sync::Arc as StdArc;
 use std::sync::{Mutex as StdMutex, PoisonError as SyncPoisonError};
 use std::time::Duration as StdDuration;
 use versionlens_cache::MemoryCache;
@@ -34,10 +33,6 @@ pub(crate) fn mutex<T>(value: T) -> StdMutex<T> {
 
 pub(crate) fn boxed<T>(value: T) -> Box<T> {
     <Box<_>>::new(value)
-}
-
-pub(crate) fn arc<T>(value: T) -> StdArc<T> {
-    StdArc::new(value)
 }
 
 pub(crate) fn memory_cache<T>(ttl: StdDuration) -> MemoryCache<T> {

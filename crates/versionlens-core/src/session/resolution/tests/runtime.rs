@@ -14,7 +14,7 @@ struct CiRuntimeCase<'a> {
     body: &'a str,
 }
 
-fn resolve_ci_runtime(
+async fn resolve_ci_runtime(
     case: CiRuntimeCase<'_>,
 ) -> (VersionLensSession, DocumentInput, ResolveDocumentOutput) {
     let CiRuntimeCase {
@@ -39,7 +39,9 @@ fn resolve_ci_runtime(
         RegistryResponseInput::new(name, ecosystem, body),
     ];
     let session = session_without_vulnerabilities();
-    let output = session.resolve_document_with_responses(input.clone(), &responses);
+    let output = session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     (session, input, output)
 }
 
@@ -54,8 +56,8 @@ fn runtime_suggestion<'a>(
         .unwrap_or_else(|| panic!("missing resolved {name}: {output:?}"))
 }
 
-#[test]
-fn escaped_runtime_versions_use_the_full_encoded_edit_range() {
+#[tokio::test]
+async fn escaped_runtime_versions_use_the_full_encoded_edit_range() {
     for (source, name, ecosystem, body, encoded, replacement) in [
         (
             r#"steps: [{uses: "dtolnay/rust-toolchain\u00401.\u0038\u0030.0"}]"#,
@@ -74,18 +76,20 @@ fn escaped_runtime_versions_use_the_full_encoded_edit_range() {
             "22.0.0",
         ),
     ] {
-        let output = session_without_vulnerabilities().resolve_document_with_responses(
-            DocumentInput::new(
-                "file:///work/.github/workflows/ci.yml",
-                "yaml",
-                source,
-                None,
-            ),
-            &[
-                RegistryResponseInput::new(name, ecosystem, body),
-                RegistryResponseInput::new("actions/setup-node", GitHub, r#"[{"name":"v4"}]"#),
-            ],
-        );
+        let output = session_without_vulnerabilities()
+            .resolve_document_with_responses(
+                DocumentInput::new(
+                    "file:///work/.github/workflows/ci.yml",
+                    "yaml",
+                    source,
+                    None,
+                ),
+                &[
+                    RegistryResponseInput::new(name, ecosystem, body),
+                    RegistryResponseInput::new("actions/setup-node", GitHub, r#"[{"name":"v4"}]"#),
+                ],
+            )
+            .await;
         assert_eq!(output.edits.len(), 1, "{output:?}");
         let edit = &output.edits[0];
         assert_eq!(
@@ -96,8 +100,8 @@ fn escaped_runtime_versions_use_the_full_encoded_edit_range() {
     }
 }
 
-#[test]
-fn ci_tool_versions_are_checked_and_edited_at_their_literal_ranges() {
+#[tokio::test]
+async fn ci_tool_versions_are_checked_and_edited_at_their_literal_ranges() {
     let session = session_without_vulnerabilities();
     let text = "jobs: {build: {steps: [{name: '🦀', uses: actions/setup-node@v4, with: {node-version: '20.0.0'}}, {uses: oven-sh/setup-bun@v2, with: {bun-version: \"1.0.0\"}}, {uses: dtolnay/rust-toolchain@1.80.0}]}} # keep\n";
     let input = DocumentInput::new("file:///work/.github/workflows/ci.yml", "yaml", text, None);
@@ -116,7 +120,9 @@ fn ci_tool_versions_are_checked_and_edited_at_their_literal_ranges() {
         ),
         RegistryResponseInput::new("rust", Cargo, r#"[{"name":"1.80.0"},{"name":"1.90.0"}]"#),
     ];
-    let first = session.resolve_document_with_responses(input.clone(), &responses);
+    let first = session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     assert_eq!(
         first
             .edits
@@ -138,12 +144,14 @@ fn ci_tool_versions_are_checked_and_edited_at_their_literal_ranges() {
     assert!(session.document_is_fresh(&input));
     let mut release = input;
     release.uri = "file:///work/.github/workflows/release.yml".to_owned();
-    let second = session.resolve_document_with_responses(release, &responses);
+    let second = session
+        .resolve_document_with_responses(release, &responses)
+        .await;
     assert_eq!(first.edits, second.edits);
 }
 
-#[test]
-fn current_bun_pin_has_one_status_lens_and_no_update() {
+#[tokio::test]
+async fn current_bun_pin_has_one_status_lens_and_no_update() {
     let (session, input, output) = resolve_ci_runtime(CiRuntimeCase {
         action: "oven-sh/setup-bun",
         field: "bun-version",
@@ -152,7 +160,8 @@ fn current_bun_pin_has_one_status_lens_and_no_update() {
         ecosystem: Npm,
         requirement: "1.4.2",
         body: r#"[{"name":"bun-v1.4.2"}]"#,
-    });
+    })
+    .await;
     let bun = runtime_suggestion(&output, "bun");
     assert_eq!(bun.status, "current");
     assert!(output.edits.is_empty());
@@ -174,8 +183,8 @@ fn current_bun_pin_has_one_status_lens_and_no_update() {
     );
 }
 
-#[test]
-fn compatible_bun_selector_is_not_suppressed_as_an_exact_pin() {
+#[tokio::test]
+async fn compatible_bun_selector_is_not_suppressed_as_an_exact_pin() {
     let (session, input, output) = resolve_ci_runtime(CiRuntimeCase {
         action: "oven-sh/setup-bun",
         field: "bun-version",
@@ -184,7 +193,8 @@ fn compatible_bun_selector_is_not_suppressed_as_an_exact_pin() {
         ecosystem: Npm,
         requirement: "1.4",
         body: r#"[{"name":"bun-v1.4.2"}]"#,
-    });
+    })
+    .await;
     let bun = runtime_suggestion(&output, "bun");
     assert_eq!(bun.status, "updateAvailable");
     assert_eq!(bun.latest.as_deref(), Some("1.4.2"));
@@ -199,8 +209,8 @@ fn compatible_bun_selector_is_not_suppressed_as_an_exact_pin() {
     assert!(runtime_lenses.iter().all(|lens| !lens.command.is_empty()));
 }
 
-#[test]
-fn exact_node_and_java_pins_have_current_commandless_runtime_lenses() {
+#[tokio::test]
+async fn exact_node_and_java_pins_have_current_commandless_runtime_lenses() {
     for (action, field, context, name, ecosystem, version, body) in [
         (
             "actions/setup-node",
@@ -229,7 +239,8 @@ fn exact_node_and_java_pins_have_current_commandless_runtime_lenses() {
             ecosystem,
             requirement: version,
             body,
-        });
+        })
+        .await;
         let runtime = runtime_suggestion(&output, name);
         assert_eq!(runtime.status, "current", "{name}: {runtime:?}");
         assert_eq!(runtime.latest.as_deref(), Some(version), "{name}");
@@ -244,8 +255,8 @@ fn exact_node_and_java_pins_have_current_commandless_runtime_lenses() {
     }
 }
 
-#[test]
-fn ci_runtime_pins_resolve_from_their_upstream_release_shapes_and_replay() {
+#[tokio::test]
+async fn ci_runtime_pins_resolve_from_their_upstream_release_shapes_and_replay() {
     for (action, field, context, name, ecosystem, current, latest, body) in [
         (
             "actions/setup-go",
@@ -316,17 +327,18 @@ fn ci_runtime_pins_resolve_from_their_upstream_release_shapes_and_replay() {
             ecosystem,
             requirement: current,
             body,
-        });
+        })
+        .await;
         assert_eq!(checked.edits.len(), 1, "{name}: {checked:?}");
         assert_eq!(checked.edits[0].new_text, latest, "{name}");
-        let replayed = session.resolve_document(input);
+        let replayed = session.resolve_document(input).await;
         assert_eq!(replayed.suggestions, checked.suggestions, "{name}");
         assert_eq!(replayed.edits, checked.edits, "{name}");
     }
 }
 
-#[test]
-fn checked_runtime_constraints_preserve_their_declared_minimums() {
+#[tokio::test]
+async fn checked_runtime_constraints_preserve_their_declared_minimums() {
     let session = session_without_vulnerabilities();
     for (uri, language, text, name, ecosystem, body) in [
         (
@@ -364,7 +376,9 @@ fn checked_runtime_constraints_preserve_their_declared_minimums() {
     ] {
         let input = DocumentInput::new(uri, language, text, None);
         let responses = [RegistryResponseInput::new(name, ecosystem, body)];
-        let output = session.resolve_document_with_responses(input.clone(), &responses);
+        let output = session
+            .resolve_document_with_responses(input.clone(), &responses)
+            .await;
         assert!(output.edits.is_empty());
         assert_eq!(output.suggestions[0].status, "satisfiesLatest");
         assert!(
@@ -374,19 +388,21 @@ fn checked_runtime_constraints_preserve_their_declared_minimums() {
                 .iter()
                 .all(|lens| lens.command.is_empty())
         );
-        let command = session.apply_command_with_selected_version(crate::ApplyCommandRequest {
-            input,
-            command: Some("update"),
-            dependency_name: Some(name),
-            selected_version: Some("99.0.0"),
-            responses: &responses,
-        });
+        let command = session
+            .apply_command_with_selected_version(crate::ApplyCommandRequest {
+                input,
+                command: Some("update"),
+                dependency_name: Some(name),
+                selected_version: Some("99.0.0"),
+                responses: &responses,
+            })
+            .await;
         assert!(command.edits.is_empty());
     }
 }
 
-#[test]
-fn runtime_only_documents_resolve_cache_and_edit_pins() {
+#[tokio::test]
+async fn runtime_only_documents_resolve_cache_and_edit_pins() {
     for (file, text, name, ecosystem, body, selected) in [
         (
             ".nvmrc",
@@ -437,7 +453,9 @@ fn runtime_only_documents_resolve_cache_and_edit_pins() {
         let session = crate::version_lens_session(config.clone());
         let input = DocumentInput::new(format!("file:///work/{file}"), "plaintext", text, None);
         let responses = [RegistryResponseInput::new(name, ecosystem, body)];
-        let checked = session.resolve_document_with_responses(input.clone(), &responses);
+        let checked = session
+            .resolve_document_with_responses(input.clone(), &responses)
+            .await;
         assert_eq!(checked.suggestions.len(), 1, "{file}: {checked:?}");
         assert_eq!(checked.suggestions[0].status, "updateAvailable", "{file}");
         assert_eq!(checked.edits.len(), 1, "{file}");
@@ -446,13 +464,15 @@ fn runtime_only_documents_resolve_cache_and_edit_pins() {
         let analysis = session.analyze_document(input.clone());
         assert!(analysis.is_supported_manifest);
         assert!(!analysis.code_lenses.is_empty());
-        let command = session.apply_command_with_selected_version(crate::ApplyCommandRequest {
-            input: input.clone(),
-            command: Some("update"),
-            dependency_name: Some(name),
-            selected_version: None,
-            responses: &responses,
-        });
+        let command = session
+            .apply_command_with_selected_version(crate::ApplyCommandRequest {
+                input: input.clone(),
+                command: Some("update"),
+                dependency_name: Some(name),
+                selected_version: None,
+                responses: &responses,
+            })
+            .await;
         assert_eq!(command.edits, checked.edits);
         config.enabled_providers =
             vec![crate::enabled_provider_config_from_name("composer").unwrap()];
@@ -462,13 +482,13 @@ fn runtime_only_documents_resolve_cache_and_edit_pins() {
     }
 }
 
-#[test]
-fn floating_rust_channels_are_verified_without_changing_the_channel() {
+#[tokio::test]
+async fn floating_rust_channels_are_verified_without_changing_the_channel() {
     let session = session_without_vulnerabilities();
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///work/.github/workflows/ci.yml", "yaml", "steps:\n  - uses: dtolnay/rust-toolchain@nightly\n", None),
         &[RegistryResponseInput::new("rust", Cargo, "date = \"2026-09-09\"\n[pkg.rust]\nversion = \"1.100.0-nightly (4aa1fbcf4 2026-09-08)\"\n")],
-    );
+    ).await;
     assert_eq!(output.suggestions[0].status, "current");
     assert_eq!(
         output.suggestions[0].latest.as_deref(),
@@ -477,8 +497,8 @@ fn floating_rust_channels_are_verified_without_changing_the_channel() {
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn unresolved_runtime_expressions_have_explicit_cached_failures() {
+#[tokio::test]
+async fn unresolved_runtime_expressions_have_explicit_cached_failures() {
     let session = session_without_vulnerabilities();
     let input = DocumentInput::new(
         "file:///work/.github/workflows/ci.yml",
@@ -486,14 +506,16 @@ fn unresolved_runtime_expressions_have_explicit_cached_failures() {
         "steps:\n  - uses: actions/setup-node@v4\n    with:\n      node-version: ${{ inputs.node }}\n",
         None,
     );
-    let output = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "actions/setup-node",
-            GitHub,
-            r#"[{"name":"v4"}]"#,
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "actions/setup-node",
+                GitHub,
+                r#"[{"name":"v4"}]"#,
+            )],
+        )
+        .await;
     let node = output
         .suggestions
         .iter()

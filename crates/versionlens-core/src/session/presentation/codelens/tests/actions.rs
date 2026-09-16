@@ -30,8 +30,8 @@ fn project_version_code_lenses_offer_prerelease_bumps() {
     assert_eq!(commands, ["updateRelease", "updatePrerelease"]);
 }
 
-#[test]
-fn build_code_lens_chooses_available_build_versions() {
+#[tokio::test]
+async fn build_code_lens_chooses_available_build_versions() {
     let output = build_code_lens_output(
         "left-pad-1.0.0-build.1.json",
         "1.0.0+build.2",
@@ -42,7 +42,8 @@ fn build_code_lens_chooses_available_build_versions() {
             "1.0.0+build.3",
             "1.1.0",
         ],
-    );
+    )
+    .await;
     let titles = lens_titles(&output);
     let commands = lens_commands(&output);
 
@@ -61,13 +62,14 @@ fn build_code_lens_chooses_available_build_versions() {
     );
 }
 
-#[test]
-fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
+#[tokio::test]
+async fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
     let output = build_code_lens_output(
         "left-pad-3.0.0.json",
         "3.0.0",
         &["1.0.0", "2.0.0", "2.1.0", "3.0.0", "3.0.0+b1", "3.0.0+b2"],
-    );
+    )
+    .await;
     let titles = lens_titles(&output);
     let commands = lens_commands(&output);
 
@@ -79,13 +81,14 @@ fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
     );
 }
 
-#[test]
-fn build_code_lens_keeps_latest_status_when_current_build_differs_from_latest_build() {
+#[tokio::test]
+async fn build_code_lens_keeps_latest_status_when_current_build_differs_from_latest_build() {
     let output = build_code_lens_output(
         "left-pad-3.0.0-b1.json",
         "3.0.0+b2",
         &["1.0.0", "2.0.0", "2.1.0", "3.0.0", "3.0.0+b1", "3.0.0+b2"],
-    );
+    )
+    .await;
     let titles = lens_titles(&output);
     let commands = lens_commands(&output);
 
@@ -97,8 +100,8 @@ fn build_code_lens_keeps_latest_status_when_current_build_differs_from_latest_bu
     );
 }
 
-#[test]
-fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
+#[tokio::test]
+async fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
     let session = standard_session();
     let input = package_document("left-pad-1.0.0-build.1.json");
 
@@ -109,7 +112,8 @@ fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
             "left-pad",
             "1.0.0+build.2",
         )],
-    );
+    )
+    .await;
 
     assert_eq!(output.code_lenses[0].title, "B change build");
     assert_eq!(
@@ -122,8 +126,8 @@ fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
     );
 }
 
-#[test]
-fn directory_code_lens_opens_local_dependency_path() {
+#[tokio::test]
+async fn directory_code_lens_opens_local_dependency_path() {
     let session = standard_session();
     let root = local_test_root("directory-codelens");
     let app = root.join("app");
@@ -137,7 +141,7 @@ fn directory_code_lens_opens_local_dependency_path() {
         None,
     );
 
-    session.resolve_document(input.clone());
+    session.resolve_document(input.clone()).await;
     let output = session.analyze_document(input);
 
     let local_path = local.to_string_lossy();
@@ -150,8 +154,8 @@ fn directory_code_lens_opens_local_dependency_path() {
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn npm_link_code_lens_opens_package_json_target_path() {
+#[tokio::test]
+async fn npm_link_code_lens_opens_package_json_target_path() {
     let session = standard_session();
     let root = local_test_root("npm-link-codelens");
     let app = root.join("app");
@@ -170,7 +174,7 @@ fn npm_link_code_lens_opens_package_json_target_path() {
         None,
     );
 
-    session.resolve_document(input.clone());
+    session.resolve_document(input.clone()).await;
     let output = session.analyze_document(input);
 
     let target_path = local.join("package.json");
@@ -187,8 +191,8 @@ fn npm_link_code_lens_opens_package_json_target_path() {
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn missing_directory_code_lens_is_disabled_not_found_status() {
+#[tokio::test]
+async fn missing_directory_code_lens_is_disabled_not_found_status() {
     let session = standard_session();
     let input = DocumentInput::new(
         "file:///repo/app/package.json".to_owned(),
@@ -197,7 +201,7 @@ fn missing_directory_code_lens_is_disabled_not_found_status() {
         None,
     );
 
-    session.resolve_document(input.clone());
+    session.resolve_document(input.clone()).await;
     let output = session.analyze_document(input);
 
     assert_eq!(output.code_lenses[0].title, "E not found ../local");

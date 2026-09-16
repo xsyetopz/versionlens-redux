@@ -2,8 +2,8 @@ use super::{DocumentInput, session_without_vulnerabilities, standard_session};
 use crate::RegistryResponseInput;
 use versionlens_model::Ecosystem::Npm;
 
-#[test]
-fn npm_latest_dist_tag_caps_stable_update_choices() {
+#[tokio::test]
+async fn npm_latest_dist_tag_caps_stable_update_choices() {
     let session = session_without_vulnerabilities();
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
@@ -12,21 +12,23 @@ fn npm_latest_dist_tag_caps_stable_update_choices() {
         None,
     );
 
-    let output = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "left-pad".to_owned(),
-            Npm,
-            r#"{
+    let output = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "left-pad".to_owned(),
+                Npm,
+                r#"{
               "dist-tags": { "latest": "7.0.0" },
               "versions": {
                 "7.0.0": {},
                 "8.0.0": {}
               }
             }"#
-            .to_owned(),
-        )],
-    );
+                .to_owned(),
+            )],
+        )
+        .await;
 
     let analysis = session.analyze_document(input);
     let titles = analysis
@@ -39,14 +41,14 @@ fn npm_latest_dist_tag_caps_stable_update_choices() {
     assert_eq!(titles, ["🟢 latest 7.0.0"]);
 }
 
-#[test]
-fn resolves_npm_dist_tag_requirements_against_dist_tags() {
+#[tokio::test]
+async fn resolves_npm_dist_tag_requirements_against_dist_tags() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("resolves-npm-dist-tag-requirements-against-dist-tags.json"), None),
         &[RegistryResponseInput::new("typescript".to_owned(), Npm, r#"{"dist-tags":{"latest":"6.0.3","next":"7.0.0-beta.1"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#.to_owned())],
-    );
+    ).await;
 
     assert_eq!(
         output.suggestions[0].latest.as_deref(),
@@ -56,23 +58,25 @@ fn resolves_npm_dist_tag_requirements_against_dist_tags() {
     assert_eq!(output.edits[0].new_text, "7.0.0-beta.1");
 }
 
-#[test]
-fn missing_npm_dist_tag_requirement_resolves_no_match() {
+#[tokio::test]
+async fn missing_npm_dist_tag_requirement_resolves_no_match() {
     let session = standard_session();
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///package.json".to_owned(),
-            "json".to_owned(),
-            package_file_fixture("missing-npm-dist-tag-requirement-resolves-no-match.json"),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "typescript".to_owned(),
-            Npm,
-            r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{}}}"#.to_owned(),
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///package.json".to_owned(),
+                "json".to_owned(),
+                package_file_fixture("missing-npm-dist-tag-requirement-resolves-no-match.json"),
+                None,
+            ),
+            &[RegistryResponseInput::new(
+                "typescript".to_owned(),
+                Npm,
+                r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{}}}"#.to_owned(),
+            )],
+        )
+        .await;
 
     assert_eq!(output.suggestions[0].status, "noMatch");
     assert!(output.edits.is_empty());

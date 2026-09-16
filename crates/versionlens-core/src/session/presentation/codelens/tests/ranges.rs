@@ -1,7 +1,7 @@
 use super::*;
 
-#[test]
-fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
+#[tokio::test]
+async fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
     let session = standard_session();
     let input = package_document("left-pad-tilde-1.1.json");
 
@@ -25,7 +25,8 @@ fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
             }"#
             .to_owned(),
         )],
-    );
+    )
+    .await;
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::all_code_lens_arguments(&output);
 

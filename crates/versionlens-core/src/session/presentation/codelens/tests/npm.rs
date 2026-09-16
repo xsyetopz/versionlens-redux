@@ -1,7 +1,7 @@
 use super::*;
 
-#[test]
-fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
+#[tokio::test]
+async fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
     let session = standard_session();
     let input = package_document("left-pad-4.0.0.json");
 
@@ -22,7 +22,8 @@ fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
             }"#
             .to_owned(),
         )],
-    );
+    )
+    .await;
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::code_lens_arguments(&output);
 
@@ -30,19 +31,21 @@ fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions() {
     assert!(arguments.is_empty());
 }
 
-#[test]
-fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
+#[tokio::test]
+async fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
     let session = standard_session();
     let input = package_document("left-pad-bad-tag.json");
 
-    let resolved = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "left-pad".to_owned(),
-            Npm,
-            r#"{"status":"EINVALIDTAGNAME"}"#.to_owned(),
-        )],
-    );
+    let resolved = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "left-pad".to_owned(),
+                Npm,
+                r#"{"status":"EINVALIDTAGNAME"}"#.to_owned(),
+            )],
+        )
+        .await;
     let output = session.analyze_document(input);
     let titles = lens_titles(&output);
     let commands = lens_commands(&output);
@@ -54,19 +57,21 @@ fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
     assert_eq!(arguments, [vec!["update", "latest"]]);
 }
 
-#[test]
-fn npm_unsupported_protocol_error_uses_not_supported_status() {
+#[tokio::test]
+async fn npm_unsupported_protocol_error_uses_not_supported_status() {
     let session = standard_session();
     let input = package_document("left-pad-1.0.0.json");
 
-    let resolved = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "left-pad".to_owned(),
-            Npm,
-            r#"{"status":"EUNSUPPORTEDPROTOCOL"}"#.to_owned(),
-        )],
-    );
+    let resolved = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "left-pad".to_owned(),
+                Npm,
+                r#"{"status":"EUNSUPPORTEDPROTOCOL"}"#.to_owned(),
+            )],
+        )
+        .await;
     let output = session.analyze_document(input);
     let titles = lens_titles(&output);
     let commands = lens_commands(&output);

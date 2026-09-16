@@ -225,8 +225,8 @@ fn python_documents_use_workspace_uv_toml_registry_urls() {
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn podfile_external_and_latest_dependencies_resolve_as_fixed_without_registry_updates() {
+#[tokio::test]
+async fn podfile_external_and_latest_dependencies_resolve_as_fixed_without_registry_updates() {
     let input = DocumentInput::new(
         "file:///repo/Podfile".to_owned(),
         "ruby".to_owned(),
@@ -235,7 +235,7 @@ fn podfile_external_and_latest_dependencies_resolve_as_fixed_without_registry_up
         ),
         None,
     );
-    let output = standard_session().resolve_document(input);
+    let output = standard_session().resolve_document(input).await;
 
     assert_eq!(output.suggestions.len(), 4);
     assert!(output.edits.is_empty());

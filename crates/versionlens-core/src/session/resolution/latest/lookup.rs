@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::GitHub;
 use versionlens_providers::build_versions_from_response;
@@ -13,7 +15,7 @@ use crate::registry::{RegistryContext, registry_response_matches};
 use super::{LatestLookup, LatestResolutionRequest};
 
 impl VersionLensSession {
-    pub(in crate::session::resolution::latest) fn lookup_latest(
+    pub(in crate::session::resolution::latest) async fn lookup_latest(
         &self,
         request: LatestResolutionRequest<'_>,
     ) -> Result<LatestLookup, FetchError> {
@@ -25,7 +27,9 @@ impl VersionLensSession {
             operation,
         } = request;
         if dependency.is_runtime_version() {
-            let fetched = self.fetch_runtime_latest(dependency, responses, context, operation)?;
+            let fetched = self
+                .fetch_runtime_latest(dependency, responses, context, operation)
+                .await?;
             return Ok(LatestLookup {
                 latest: fetched.latest,
                 builds: fetched.builds,
@@ -56,7 +60,7 @@ impl VersionLensSession {
                 fixed_requirement_matched: false,
             })
         } else {
-            let fetched = self.fetch_latest(dependency, context, operation)?;
+            let fetched = self.fetch_latest(dependency, context, operation).await?;
             Ok(LatestLookup {
                 latest: fetched.latest,
                 builds: fetched.builds,
@@ -86,7 +90,7 @@ impl VersionLensSession {
             let cache_key = self.request_cache_key(&endpoint.url, &http_config);
             self.cache_request_body(
                 cache_key,
-                &response.body,
+                Arc::from(response.body.as_str()),
                 self.cache_ttl(dependency.ecosystem, context.manifest_kind()),
                 operation,
             );

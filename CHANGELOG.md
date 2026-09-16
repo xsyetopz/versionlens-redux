@@ -4,6 +4,14 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-09-15
+
+### Fixed
+
+- Made cold dependency checks substantially faster across providers with concurrent reusable HTTP connections, shared response bodies, request and resolution coalescing, a compressed CRAN catalog, shared LuaRocks catalog requests, abbreviated official npm metadata, and complete crates.io release histories for fixed pins, yanked releases, build choices, and edits.
+- Restored VS Code dependency checks and updates by invoking asynchronous native commands with their session receiver.
+- Declared receiver requirements for every native session method to prevent detached calls across the TypeScript boundary.
+
 ## [0.4.3] - 2026-09-12
 
 ### Added
@@ -150,6 +158,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added Rust-backed dependency analysis across the supported manifest ecosystems, including C/C++ and JVM build files.
 - Preserved attribution to the original VersionLens authors.
 
+[0.4.4]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.2...v0.4.3
 [0.4.1]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.3.0...v0.4.0

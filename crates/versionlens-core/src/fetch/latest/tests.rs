@@ -8,8 +8,8 @@ use super::response_update_choices;
 use crate::{ProviderSettings, RegistryUrlConfig};
 use versionlens_model::Ecosystem::*;
 
-#[test]
-fn invalid_registry_url_creates_contextual_error_suggestion() {
+#[tokio::test]
+async fn invalid_registry_url_creates_contextual_error_suggestion() {
     let session = crate::support::tests::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![RegistryUrlConfig {
@@ -21,12 +21,14 @@ fn invalid_registry_url_creates_contextual_error_suggestion() {
         false,
     );
 
-    let output = session.resolve_document(DocumentInput::new(
-        "file:///package.json".to_owned(),
-        "json".to_owned(),
-        package_file_fixture("invalid-registry-url-creates-contextual-error-suggestion.json"),
-        None,
-    ));
+    let output = session
+        .resolve_document(DocumentInput::new(
+            "file:///package.json".to_owned(),
+            "json".to_owned(),
+            package_file_fixture("invalid-registry-url-creates-contextual-error-suggestion.json"),
+            None,
+        ))
+        .await;
 
     assert_eq!(output.suggestions[0].status, "error");
     assert!(

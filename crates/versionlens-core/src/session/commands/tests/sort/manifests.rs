@@ -1,8 +1,8 @@
-#[test]
-fn apply_command_sorts_requirements_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_requirements_dependencies() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///requirements.txt", "pip-requirements", "requirements-unsorted-with-comment.txt");
+    let output = sort_fixture(&session, "file:///requirements.txt", "pip-requirements", "requirements-unsorted-with-comment.txt").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -10,8 +10,8 @@ fn apply_command_sorts_requirements_dependencies() {
     assert_eq!(output.edits[1].new_text, "zeta==1");
 }
 
-#[test]
-fn apply_command_sorts_smoke_requirements_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_smoke_requirements_dependencies() {
     let session = standard_session();
 
     let text = package_file_fixture("requirements-smoke.txt");
@@ -20,7 +20,7 @@ fn apply_command_sorts_smoke_requirements_dependencies() {
         Some("sort"),
         None,
         &[],
-    );
+    ).await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(
@@ -29,23 +29,23 @@ fn apply_command_sorts_smoke_requirements_dependencies() {
     );
 }
 
-#[test]
-fn apply_command_sorts_pyproject_project_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_pyproject_project_dependencies() {
     assert_sorted_pyproject_fixture(
         "pyproject-project-unsorted.toml",
         "[project]\ndependencies = [\n  \"alpha==1\",\n  \"zeta==1\"\n]",
-    );
+    ).await;
 }
 
-#[test]
-fn apply_command_sorts_pyproject_poetry_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_pyproject_poetry_dependencies() {
     assert_sorted_pyproject_fixture(
         "pyproject-poetry-unsorted.toml",
         "[tool.poetry.dependencies]\nalpha = \"1\"\nzeta = \"1\"",
-    );
+    ).await;
 }
 
-fn assert_sorted_pyproject_fixture(fixture: &str, expected: &str) {
+async fn assert_sorted_pyproject_fixture(fixture: &str, expected: &str) {
     let text = package_file_fixture(fixture);
     let output = standard_session().apply_command(
         DocumentInput::new(
@@ -57,17 +57,17 @@ fn assert_sorted_pyproject_fixture(fixture: &str, expected: &str) {
         Some("sort"),
         None,
         &[],
-    );
+    ).await;
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
     assert_eq!(apply_line_edits(&text, &output.edits), expected);
 }
 
-#[test]
-fn apply_command_sorts_pub_dependencies_by_group() {
+#[tokio::test]
+async fn apply_command_sorts_pub_dependencies_by_group() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "groups-unsorted.yaml");
+    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "groups-unsorted.yaml").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 4);
@@ -77,11 +77,11 @@ fn apply_command_sorts_pub_dependencies_by_group() {
     assert_eq!(output.edits[3].new_text, "  z-dev: 1");
 }
 
-#[test]
-fn apply_command_sorts_pub_dependencies_with_blank_versions() {
+#[tokio::test]
+async fn apply_command_sorts_pub_dependencies_with_blank_versions() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "blank-version.yaml");
+    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "blank-version.yaml").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -89,11 +89,11 @@ fn apply_command_sorts_pub_dependencies_with_blank_versions() {
     assert_eq!(output.edits[1].new_text, "  flutter_bloc: 0.10.1");
 }
 
-#[test]
-fn apply_command_sorts_complex_pub_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_complex_pub_dependencies() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "complex.yaml");
+    let output = sort_fixture(&session, "file:///pubspec.yaml", "yaml", "complex.yaml").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -104,11 +104,11 @@ fn apply_command_sorts_complex_pub_dependencies() {
     );
 }
 
-#[test]
-fn apply_command_sorts_package_json_dependencies_by_group() {
+#[tokio::test]
+async fn apply_command_sorts_package_json_dependencies_by_group() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///package.json", "json", "groups-unsorted.json");
+    let output = sort_fixture(&session, "file:///package.json", "json", "groups-unsorted.json").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 4);
@@ -118,11 +118,11 @@ fn apply_command_sorts_package_json_dependencies_by_group() {
     assert_eq!(output.edits[3].new_text, "    \"z-dev\": \"1\"");
 }
 
-#[test]
-fn apply_command_sorts_package_json_dependencies_with_metadata_entries() {
+#[tokio::test]
+async fn apply_command_sorts_package_json_dependencies_with_metadata_entries() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///package.json", "json", "metadata-unsorted.json");
+    let output = sort_fixture(&session, "file:///package.json", "json", "metadata-unsorted.json").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -130,21 +130,21 @@ fn apply_command_sorts_package_json_dependencies_with_metadata_entries() {
     assert_eq!(output.edits[1].new_text, "    \"zeta\": \"1\"");
 }
 
-#[test]
-fn apply_command_does_not_sort_docker_compose_images() {
+#[tokio::test]
+async fn apply_command_does_not_sort_docker_compose_images() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///docker-compose.yaml", "yaml", "docker-compose-images.yaml");
+    let output = sort_fixture(&session, "file:///docker-compose.yaml", "yaml", "docker-compose-images.yaml").await;
 
     assert!(output.suggestions.is_empty());
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn apply_command_sorts_composer_require_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_composer_require_dependencies() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///composer.json", "json", "composer-require-unsorted.json");
+    let output = sort_fixture(&session, "file:///composer.json", "json", "composer-require-unsorted.json").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -158,8 +158,8 @@ fn apply_command_sorts_composer_require_dependencies() {
     );
 }
 
-#[test]
-fn apply_command_sorts_deno_scoped_imports_within_each_scope() {
+#[tokio::test]
+async fn apply_command_sorts_deno_scoped_imports_within_each_scope() {
     let session = session_with_dependency_properties(Deno, &["scopes"]);
 
     let output = sort_fixture(
@@ -167,7 +167,7 @@ fn apply_command_sorts_deno_scoped_imports_within_each_scope() {
         "file:///deno.json",
         "jsonc",
         "deno-scopes-unsorted.json",
-    );
+    ).await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 4);
@@ -189,11 +189,11 @@ fn apply_command_sorts_deno_scoped_imports_within_each_scope() {
     );
 }
 
-#[test]
-fn apply_command_sorts_pnpm_named_catalog_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_pnpm_named_catalog_dependencies() {
     let session = standard_session();
 
-    let output = sort_fixture(&session, "file:///pnpm-workspace.yaml", "yaml", "pnpm-workspace-named-catalog-unsorted.yaml");
+    let output = sort_fixture(&session, "file:///pnpm-workspace.yaml", "yaml", "pnpm-workspace-named-catalog-unsorted.yaml").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);
@@ -201,11 +201,11 @@ fn apply_command_sorts_pnpm_named_catalog_dependencies() {
     assert_eq!(output.edits[1].new_text, "    react-dom: ^19.2.7");
 }
 
-#[test]
-fn apply_command_sorts_package_json_named_workspace_catalog_dependencies() {
+#[tokio::test]
+async fn apply_command_sorts_package_json_named_workspace_catalog_dependencies() {
     let session = session_with_dependency_properties(Npm, &["workspaces.catalogs.*"]);
 
-    let output = sort_fixture(&session, "file:///package.json", "json", "workspace-catalog-unsorted.json");
+    let output = sort_fixture(&session, "file:///package.json", "json", "workspace-catalog-unsorted.json").await;
 
     assert!(output.suggestions.is_empty());
     assert_eq!(output.edits.len(), 2);

@@ -249,52 +249,36 @@ export interface NativePosition {
   line: number;
 }
 
-interface DocumentSession {
-  analyzeDocument: (input: NativeDocumentInput) => AnalyzeDocumentOutput;
-  applyCommand: (
-    input: NativeApplyCommandInput,
-  ) => Promise<ResolveDocumentOutput>;
-  documentIsFresh: (input: NativeDocumentInput) => boolean;
-  resolveDocument: (
+export declare class NativeSession {
+  analyzeDocument(
+    this: NativeSession,
     input: NativeDocumentInput,
-    background?: boolean,
-  ) => Promise<ResolveDocumentOutput>;
-}
-
-interface WorkspaceSession {
-  checkWorkspace: (
-    input: NativeWorkspaceCheckingInput,
-  ) => NativeWorkspaceGeneration;
-  invalidateWorkspace: () => void;
-  setWorkspaceDocuments: (documents: NativeDocumentInput[]) => boolean;
-  takeWorkspaceEvents: () => NativeWorkspaceCheckEvent[];
-  workspaceCheckingGeneration: () => NativeWorkspaceGeneration | null;
-}
-
-interface SessionLifecycle {
-  clearCache: () => void;
-  disposeSession: () => void;
-}
-
-export declare class NativeSession
-  implements DocumentSession, WorkspaceSession, SessionLifecycle
-{
-  analyzeDocument(input: NativeDocumentInput): AnalyzeDocumentOutput;
-  applyCommand(input: NativeApplyCommandInput): Promise<ResolveDocumentOutput>;
+  ): AnalyzeDocumentOutput;
+  applyCommand(
+    this: NativeSession,
+    input: NativeApplyCommandInput,
+  ): Promise<ResolveDocumentOutput>;
   checkWorkspace(
+    this: NativeSession,
     input: NativeWorkspaceCheckingInput,
   ): NativeWorkspaceGeneration;
-  clearCache(): void;
-  documentIsFresh(input: NativeDocumentInput): boolean;
-  disposeSession(): void;
-  invalidateWorkspace(): void;
+  clearCache(this: NativeSession): void;
+  documentIsFresh(this: NativeSession, input: NativeDocumentInput): boolean;
+  disposeSession(this: NativeSession): void;
+  invalidateWorkspace(this: NativeSession): void;
   resolveDocument(
+    this: NativeSession,
     input: NativeDocumentInput,
     background?: boolean,
   ): Promise<ResolveDocumentOutput>;
-  setWorkspaceDocuments(documents: NativeDocumentInput[]): boolean;
-  takeWorkspaceEvents(): NativeWorkspaceCheckEvent[];
-  workspaceCheckingGeneration(): NativeWorkspaceGeneration | null;
+  setWorkspaceDocuments(
+    this: NativeSession,
+    documents: NativeDocumentInput[],
+  ): boolean;
+  takeWorkspaceEvents(this: NativeSession): NativeWorkspaceCheckEvent[];
+  workspaceCheckingGeneration(
+    this: NativeSession,
+  ): NativeWorkspaceGeneration | null;
 }
 
 export interface NativeModule {

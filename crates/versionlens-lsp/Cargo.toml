@@ -20,6 +20,7 @@ lsp-server.workspace = true
 lsp-types.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+tokio.workspace = true
 versionlens-core.workspace = true
 versionlens-model.workspace = true
 versionlens-vscode-model.workspace = true

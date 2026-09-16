@@ -45,7 +45,7 @@ pub use discovery::{
     WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions, WorkspaceProviderExclusion,
     workspace_exclusion_matches, workspace_exclusion_path,
 };
-pub use tasks::{SessionTask, TaskCancellation};
+pub use tasks::SessionTask;
 
 #[derive(Debug, Clone)]
 pub struct VersionLensSession {
@@ -68,8 +68,8 @@ pub(crate) struct SessionStorage {
 
 #[derive(Debug, Clone)]
 pub(crate) struct SessionRequests {
-    pub(crate) request_body_cache: Arc<Mutex<MemoryCache<String>>>,
-    pub(crate) request_locks: Arc<Mutex<HashMap<CacheKey, Weak<Mutex<()>>>>>,
+    pub(crate) request_body_cache: Arc<Mutex<MemoryCache<Arc<str>>>>,
+    pub(crate) request_locks: Arc<Mutex<HashMap<CacheKey, Weak<tokio::sync::Mutex<()>>>>>,
     pub(crate) request_context_hashers: [RandomState; 2],
     pub(crate) dotnet_registry_sources: Arc<Mutex<Option<Vec<String>>>>,
 }
@@ -129,7 +129,7 @@ pub fn version_lens_session(config: SessionConfig) -> VersionLensSession {
         request_state: SessionRequests {
             request_body_cache: Arc::new(crate::mutex(
                 crate::memory_cache(cache_ttl)
-                    .with_byte_capacity(32 * 1024 * 1024, String::capacity),
+                    .with_byte_capacity(32 * 1024 * 1024, |body: &Arc<str>| body.len()),
             )),
             request_locks: Arc::new(crate::mutex(crate::default())),
             request_context_hashers: [<RandomState>::new(), <RandomState>::new()],

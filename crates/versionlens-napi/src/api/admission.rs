@@ -36,7 +36,7 @@ impl Admission {
                 .saturating_add(input.dependency_name.as_ref().map_or(0, String::capacity))
                 .saturating_add(input.selected_version.as_ref().map_or(0, String::capacity)),
         };
-        GATE.acquire(bytes.saturating_add(size_of::<super::ResolveDocumentTask>()))
+        GATE.acquire(bytes.saturating_add(size_of::<TaskInput>()))
     }
 }
 

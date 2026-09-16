@@ -18,23 +18,25 @@ fn package_file_fixture(name: &str) -> String {
     crate::support::tests::fixture("tests/fixtures/session/resolution/tests/fixed", name)
 }
 
-fn assert_ruby_path_dependency_fixture(fixture: &str, package: &str, root_name: &str) {
+async fn assert_ruby_path_dependency_fixture(fixture: &str, package: &str, root_name: &str) {
     let root = local_test_root(root_name);
     let app = root.join("app");
     create_dir_all(app.join("vendor/local")).unwrap();
-    let output = standard_session().resolve_document_with_responses(
-        DocumentInput::new(
-            file_uri(&app.join("Gemfile")),
-            "ruby".to_owned(),
-            package_file_fixture(fixture),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            package.to_owned(),
-            Ruby,
-            r#"[{"number":"9.9.9"}]"#.to_owned(),
-        )],
-    );
+    let output = standard_session()
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                file_uri(&app.join("Gemfile")),
+                "ruby".to_owned(),
+                package_file_fixture(fixture),
+                None,
+            ),
+            &[RegistryResponseInput::new(
+                package.to_owned(),
+                Ruby,
+                r#"[{"number":"9.9.9"}]"#.to_owned(),
+            )],
+        )
+        .await;
     assert_eq!(output.suggestions[0].status, "directory");
     assert_eq!(
         output.suggestions[0].latest.as_deref(),
@@ -46,15 +48,17 @@ fn assert_ruby_path_dependency_fixture(fixture: &str, package: &str, root_name: 
 
 macro_rules! resolve_fixture {
     ($uri:expr, $language:expr, $fixture:expr, $responses:expr $(,)?) => {{
-        standard_session().resolve_document_with_responses(
-            DocumentInput::new(
-                $uri.to_owned(),
-                $language.to_owned(),
-                package_file_fixture($fixture),
-                None,
-            ),
-            $responses,
-        )
+        standard_session()
+            .resolve_document_with_responses(
+                DocumentInput::new(
+                    $uri.to_owned(),
+                    $language.to_owned(),
+                    package_file_fixture($fixture),
+                    None,
+                ),
+                $responses,
+            )
+            .await
     }};
 }
 

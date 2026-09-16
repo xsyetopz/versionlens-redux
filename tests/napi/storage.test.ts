@@ -136,17 +136,20 @@ it("native checking bounds pending calls and recovers capacity after completion"
   const registry = heldRegistry();
   await withRegistry(registry.fetch, async (createSession): Promise<void> => {
     const session = await createSession();
-    const pending = Array.from({ length: 64 }, () =>
+    const pending = Array.from({ length: 65 }, () =>
       session.resolveDocument(document, true),
     );
-    try {
-      expect(() => session.resolveDocument(document)).toThrow(
-        "Native checking capacity reached",
-      );
-    } finally {
-      registry.release();
-      await Promise.all(pending);
-    }
+    const completion = Promise.allSettled(pending);
+    await registry.requested;
+    registry.release();
+    const settled = await completion;
+    const rejected = settled.filter(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    expect(rejected).toHaveLength(1);
+    expect(String(rejected[0]?.reason)).toContain(
+      "Native checking capacity reached",
+    );
     expect((await session.resolveDocument(document)).edits[0]?.newText).toBe(
       "2.0.0",
     );

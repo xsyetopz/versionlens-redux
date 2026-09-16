@@ -131,3 +131,95 @@ fn reads_latest_versions_from_json_registry_responses() {
         assert_latest(ecosystem, package, body, expected);
     }
 }
+
+#[test]
+fn reads_full_crates_io_response_without_deserializing_unneeded_fields() {
+    assert_latest(
+        Cargo,
+        "serde",
+        r#"{
+            "crate": {
+                "id": "serde",
+                "name": "serde",
+                "downloads": 900000000,
+                "max_version": "2.0.0-alpha.1",
+                "max_stable_version": "1.0.228",
+                "description": "serialization",
+                "repository": "https://github.com/serde-rs/serde"
+            },
+            "versions": [
+                {"id": 1, "crate": "serde", "num": "1.0.229", "downloads": 1, "yanked": true, "features": {}},
+                {"id": 2, "crate": "serde", "num": "1.0.228", "downloads": 1, "yanked": false, "features": {}}
+            ],
+            "keywords": [{"id": "serialization"}],
+            "categories": [{"id": "encoding"}]
+        }"#,
+        "1.0.228",
+    );
+}
+
+#[test]
+fn reads_abbreviated_npm_metadata_without_materializing_version_payloads() {
+    assert_latest(
+        Npm,
+        "react",
+        r#"{
+            "dist-tags":{"latest":"19.1.1"},
+            "versions":{
+                "18.3.1":{"dependencies":{"loose-envify":"^1.1.0"}},
+                "19.1.1":{"dist":{"tarball":"https://registry.example/react.tgz"}}
+            },
+            "readme":"a decoy \"dist-tags\" and \"versions\""
+        }"#,
+        "19.1.1",
+    );
+}
+
+#[test]
+fn rejects_malformed_cargo_responses() {
+    for body in [
+        "not json",
+        r#"{"versions":"1.0.0"}"#,
+        r#"{"versions":[{"num":1,"yanked":false}]}"#,
+    ] {
+        assert_eq!(latest_version_from_response(Cargo, "serde", body), None);
+    }
+}
+
+#[test]
+fn reads_only_a_valid_included_crates_io_default_version() {
+    assert_latest(
+        Cargo,
+        "serde",
+        r#"{"crate":{"default_version":"1.0.228","max_version":"0.0.0"},"versions":[{"num":"1.0.228","yanked":false}]}"#,
+        "1.0.228",
+    );
+    for body in [
+        r#"{"crate":{"default_version":"2.0.0-alpha.1","max_version":"0.0.0"},"versions":[{"num":"2.0.0-alpha.1","yanked":false}]}"#,
+        r#"{"crate":{"default_version":"1.0.228","max_version":"0.0.0"},"versions":[{"num":"1.0.228","yanked":true}]}"#,
+        r#"{"crate":{"default_version":null,"max_version":"0.0.0","yanked":true},"versions":[]}"#,
+        r#"{"crate":{"default_version":"1.0.228","max_version":"0.0.0"},"versions":[]}"#,
+    ] {
+        assert_eq!(latest_version_from_response(Cargo, "serde", body), None);
+    }
+}
+
+#[test]
+fn reads_cargo_prerelease_pages_and_metadata() {
+    let body = r#"{
+        "versions":[
+            {"num":"2.0.0-rc.1","yanked":true},
+            {"num":"2.0.0-beta.2","yanked":false},
+            {"num":"1.9.0","yanked":false}
+        ],
+        "meta":{"next_page":"?per_page=100&seek=next"}
+    }"#;
+    assert_eq!(
+        latest_version_with_tags(Cargo, "serde", body, &["beta".to_owned()]),
+        Some("2.0.0-beta.2".to_owned())
+    );
+    assert_eq!(
+        latest_version_with_tags(Cargo, "serde", body, &["rc".to_owned()]),
+        Some("1.9.0".to_owned())
+    );
+}

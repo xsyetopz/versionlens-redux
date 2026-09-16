@@ -16,7 +16,6 @@ use crate::binding::{
 mod admission;
 mod weights;
 mod workspace;
-use std::sync::mpsc;
 use workspace::WorkspaceClient;
 
 #[napi]
@@ -162,20 +161,21 @@ impl NativeSession {
     }
 
     #[napi]
-    pub fn resolve_document(
+    pub async fn resolve_document(
         &self,
         input: NativeDocumentInput,
         background: Option<bool>,
-    ) -> NapiResult<AsyncTask<ResolveDocumentTask>> {
-        self.resolution_task(TaskInput::Resolve(input, background.unwrap_or(false)))
+    ) -> napi::Result<NativeResolveDocumentOutput> {
+        self.resolve_input(TaskInput::Resolve(input, background.unwrap_or(false)))
+            .await
     }
 
     #[napi]
-    pub fn apply_command(
+    pub async fn apply_command(
         &self,
         input: NativeApplyCommandInput,
-    ) -> NapiResult<AsyncTask<ResolveDocumentTask>> {
-        self.resolution_task(TaskInput::Apply(input))
+    ) -> napi::Result<NativeResolveDocumentOutput> {
+        self.resolve_input(TaskInput::Apply(input)).await
     }
 
     #[napi]
@@ -208,15 +208,41 @@ impl NativeSession {
     fn workspace_guard(&self) -> std::sync::MutexGuard<'_, WorkspaceClient> {
         self.workspace.lock().unwrap_or_else(crate::recover_poison)
     }
-    fn resolution_task(&self, input: TaskInput) -> NapiResult<AsyncTask<ResolveDocumentTask>> {
-        let admission = admission::Admission::acquire(&input).map_err(napi::Error::from_reason)?;
-        Ok(crate::async_task(ResolveDocumentTask {
-            _admission: admission,
-            session: crate::clone_arc(&self.inner),
-            generation: Arc::clone(&self.generation),
-            expected_generation: self.generation.load(Ordering::Acquire),
-            input: Some(input),
-        }))
+    async fn resolve_input(&self, input: TaskInput) -> NapiResult<NativeResolveDocumentOutput> {
+        let _admission = admission::Admission::acquire(&input).map_err(napi::Error::from_reason)?;
+        let expected_generation = self.generation.load(Ordering::Acquire);
+        let Some(session) = self.session() else {
+            return Ok(crate::empty_resolve_document_output());
+        };
+        let task = match input {
+            TaskInput::Resolve(input, true) => SessionTask::Background(input.into_core()),
+            TaskInput::Resolve(input, false) => SessionTask::Resolve(input.into_core()),
+            TaskInput::Apply(input) => {
+                let (document, command, dependency, selected_version) = input.into_parts();
+                SessionTask::Command {
+                    document,
+                    command,
+                    dependency,
+                    selected_version,
+                }
+            }
+        };
+        let output = match session.run_task(task).await {
+            Ok(output) => output,
+            Err(_)
+                if self.generation.load(Ordering::Acquire) != expected_generation
+                    || self.session().is_none() =>
+            {
+                return Ok(crate::empty_resolve_document_output());
+            }
+            Err(message) => return Err(napi::Error::from_reason(message)),
+        };
+        if self.generation.load(Ordering::Acquire) != expected_generation
+            || self.session().is_none()
+        {
+            return Ok(crate::empty_resolve_document_output());
+        }
+        Ok(crate::resolve_document_output_from_core(output))
     }
 
     fn with_session<T>(&self, disposed: T, operation: impl FnOnce(&VersionLensSession) -> T) -> T {
@@ -240,83 +266,9 @@ impl NativeSession {
     }
 }
 
-pub struct ResolveDocumentTask {
-    _admission: admission::Admission,
-    session: Arc<RwLock<Option<Arc<VersionLensSession>>>>,
-    input: Option<TaskInput>,
-    generation: Arc<AtomicU64>,
-    expected_generation: u64,
-}
-
 enum TaskInput {
     Resolve(NativeDocumentInput, bool),
     Apply(NativeApplyCommandInput),
-}
-
-impl Task for ResolveDocumentTask {
-    type Output = NativeResolveDocumentOutput;
-    type JsValue = NativeResolveDocumentOutput;
-
-    fn compute(&mut self) -> NapiResult<Self::Output> {
-        let Some(input) = self.input.take() else {
-            return Ok(crate::empty_resolve_document_output());
-        };
-        let guard = self.session.read().unwrap_or_else(crate::recover_poison);
-        let Some(session) = guard.as_ref() else {
-            return Ok(crate::empty_resolve_document_output());
-        };
-        if self.generation.load(Ordering::Acquire) != self.expected_generation {
-            return Ok(crate::empty_resolve_document_output());
-        }
-        let task = match input {
-            TaskInput::Resolve(input, true) => SessionTask::Background(input.into_core()),
-            TaskInput::Resolve(input, false) => SessionTask::Resolve(input.into_core()),
-            TaskInput::Apply(input) => {
-                let (document, command, dependency, selected_version) = input.into_parts();
-                SessionTask::Command {
-                    document,
-                    command,
-                    dependency,
-                    selected_version,
-                }
-            }
-        };
-        let (sender, receiver) = mpsc::sync_channel(1);
-        let cancellation = session
-            .submit_task(task, move |output| {
-                let _ = sender.send(output);
-            })
-            .map_err(napi::Error::from_reason)?;
-        drop(guard);
-        let result = receiver
-            .recv()
-            .map_err(|error| napi::Error::from_reason(error.to_string()))?;
-        drop(cancellation);
-        if self.generation.load(Ordering::Acquire) != self.expected_generation
-            || self
-                .session
-                .read()
-                .unwrap_or_else(crate::recover_poison)
-                .is_none()
-        {
-            return Ok(crate::empty_resolve_document_output());
-        }
-        let output = result.map_err(napi::Error::from_reason)?;
-        Ok(crate::resolve_document_output_from_core(output))
-    }
-
-    fn resolve(&mut self, _: NapiEnv, output: Self::Output) -> NapiResult<Self::JsValue> {
-        if self
-            .session
-            .read()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
-            .is_none()
-            || self.generation.load(Ordering::Acquire) != self.expected_generation
-        {
-            return Ok(crate::empty_resolve_document_output());
-        }
-        Ok(output)
-    }
 }
 
 #[cfg(test)]

@@ -136,7 +136,7 @@ fn builds_registry_urls() {
     assert_eq!(provider_id(Cran), "cran");
     assert_eq!(
         registry_url(Cran, "dplyr"),
-        "https://cran.r-project.org/src/contrib/PACKAGES"
+        "https://cloud.r-project.org/src/contrib/PACKAGES.gz"
     );
     assert_eq!(provider_id(Conan), "conan");
     assert_eq!(

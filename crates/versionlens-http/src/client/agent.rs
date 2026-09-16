@@ -2,53 +2,56 @@ use std::collections::HashMap;
 use std::fs::read;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
-use ureq::Error as UreqError;
 
-use ureq::Agent;
-use ureq::tls::PemItem::Certificate as PemCertificate;
-use ureq::tls::{Certificate, ClientCert, PrivateKey, RootCerts, TlsConfig, parse_pem};
+use reqwest::tls::{Certificate, Identity};
+use reqwest::{Client, Proxy};
 
 use crate::config::HttpConfig;
 use crate::error::HttpError;
 
-type StaticCertificates = Vec<Certificate<'static>>;
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct AgentCacheKey {
+struct ClientCacheKey {
     timeout_ms: u64,
     strict_ssl: bool,
     proxy: Option<String>,
 }
 
-static AGENT_CACHE: OnceLock<Mutex<HashMap<AgentCacheKey, Agent>>> =
-    <OnceLock<Mutex<HashMap<AgentCacheKey, Agent>>>>::new();
+static CLIENT_CACHE: OnceLock<Mutex<HashMap<ClientCacheKey, Client>>> = OnceLock::new();
+static TLS_PROVIDER: OnceLock<()> = OnceLock::new();
 
-pub(super) fn agent(config: &HttpConfig) -> Result<Agent, HttpError> {
+pub(super) fn client(config: &HttpConfig) -> Result<Client, HttpError> {
+    install_tls_provider();
     if let Some(key) = cache_key(config) {
-        let cached_agent = agent_cache()
+        let cached = client_cache()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&key)
             .cloned();
-        if let Some(agent) = cached_agent {
-            return Ok(agent);
+        if let Some(client) = cached {
+            return Ok(client);
         }
 
-        let agent = build_agent(config)?;
-        let mut cache = agent_cache()
+        let client = build_client(config)?;
+        let mut cache = client_cache()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        return Ok(cache.entry(key).or_insert(agent).clone());
+        return Ok(cache.entry(key).or_insert(client).clone());
     }
 
-    build_agent(config)
+    build_client(config)
 }
 
-fn agent_cache() -> &'static Mutex<HashMap<AgentCacheKey, Agent>> {
-    AGENT_CACHE.get_or_init(|| Mutex::new(<HashMap<AgentCacheKey, Agent>>::new()))
+pub(super) fn install_tls_provider() {
+    TLS_PROVIDER.get_or_init(|| {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+    });
 }
 
-fn cache_key(config: &HttpConfig) -> Option<AgentCacheKey> {
+fn client_cache() -> &'static Mutex<HashMap<ClientCacheKey, Client>> {
+    CLIENT_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn cache_key(config: &HttpConfig) -> Option<ClientCacheKey> {
     if config.ca_file.is_some()
         || config.ca.is_some()
         || config.cert_file.is_some()
@@ -59,87 +62,51 @@ fn cache_key(config: &HttpConfig) -> Option<AgentCacheKey> {
         return None;
     }
 
-    Some(AgentCacheKey {
+    Some(ClientCacheKey {
         timeout_ms: config.timeout_ms,
         strict_ssl: config.strict_ssl,
-        proxy: config.proxy.as_ref().map(|value| value.to_owned()),
+        proxy: config.proxy.clone(),
     })
 }
 
-fn build_agent(config: &HttpConfig) -> Result<Agent, HttpError> {
-    let timeout_ms = config.timeout_ms;
-    let mut builder =
-        ureq::config::Config::builder().timeout_global(Some(Duration::from_millis(timeout_ms)));
+fn build_client(config: &HttpConfig) -> Result<Client, HttpError> {
+    let mut builder = Client::builder()
+        .tls_backend_rustls()
+        .timeout(Duration::from_millis(config.timeout_ms))
+        .tls_danger_accept_invalid_certs(!config.strict_ssl)
+        .tls_danger_accept_invalid_hostnames(!config.strict_ssl);
 
     builder = match &config.proxy {
-        Some(proxy) => builder.proxy(Some(ureq::Proxy::new(proxy)?)),
-        None => builder.proxy(None),
+        Some(proxy) => builder.proxy(Proxy::all(proxy)?),
+        None => builder.no_proxy(),
     };
 
-    builder = builder.tls_config(tls_config(config)?);
+    let ca = match (config.ca_file.as_deref(), config.ca.as_deref()) {
+        (Some(path), _) => Some(read(path)?),
+        (None, Some(ca)) => Some(ca.as_bytes().to_vec()),
+        (None, None) => None,
+    };
+    if let Some(ca) = ca {
+        builder = builder.tls_certs_only(Certificate::from_pem_bundle(&ca)?);
+    }
 
-    Ok(<Agent>::new_with_config(builder.build()))
+    let cert = material(config.cert_file.as_deref(), config.cert.as_deref())?;
+    let key = material(config.key_file.as_deref(), config.key.as_deref())?;
+    if let (Some(mut cert), Some(key)) = (cert, key) {
+        cert.extend_from_slice(&key);
+        builder = builder.identity(Identity::from_pem(&cert)?);
+    }
+
+    Ok(builder.build()?)
+}
+
+fn material(path: Option<&str>, inline: Option<&str>) -> Result<Option<Vec<u8>>, HttpError> {
+    match (path, inline) {
+        (Some(path), _) => Ok(Some(read(path)?)),
+        (None, Some(value)) => Ok(Some(value.as_bytes().to_vec())),
+        (None, None) => Ok(None),
+    }
 }
 
 #[cfg(test)]
 pub(super) mod tests;
-
-fn root_certs_from_certs(certs: &StaticCertificates) -> RootCerts {
-    <RootCerts>::new_with_certs(certs)
-}
-
-fn private_key_from_pem(bytes: &[u8]) -> Result<PrivateKey<'static>, UreqError> {
-    <PrivateKey<'_>>::from_pem(bytes)
-}
-
-fn tls_config(config: &HttpConfig) -> Result<TlsConfig, HttpError> {
-    let mut builder = <TlsConfig>::builder();
-    if !config.strict_ssl {
-        builder = builder.disable_verification(true);
-    }
-    if let Some(path) = config.ca_file.as_deref() {
-        builder = builder.root_certs(root_certs_from_certs(&ca_file_certs(path)?));
-    } else if let Some(ca) = config.ca.as_deref() {
-        builder = builder.root_certs(root_certs_from_certs(&pem_certs(ca.as_bytes())?));
-    }
-
-    let certs = match (config.cert_file.as_deref(), config.cert.as_deref()) {
-        (Some(cert_file), _) => Some(ca_file_certs(cert_file)?),
-        (None, Some(cert)) => Some(pem_certs(cert.as_bytes())?),
-        (None, None) => None,
-    };
-    let key = match (config.key_file.as_deref(), config.key.as_deref()) {
-        (Some(key_file), _) => Some(private_key_file(key_file)?),
-        (None, Some(key)) => Some(private_key_from_pem(key.as_bytes())?),
-        (None, None) => None,
-    };
-    if let (Some(certs), Some(key)) = (certs, key) {
-        builder = builder.client_cert(Some(<ClientCert>::new_with_certs(&certs, key)));
-    }
-
-    Ok(builder.build())
-}
-
-fn ca_file_certs(path: &str) -> Result<StaticCertificates, HttpError> {
-    let bytes = read(path)?;
-    pem_certs(&bytes)
-}
-
-fn pem_certs(bytes: &[u8]) -> Result<StaticCertificates, HttpError> {
-    let mut certs = vec![];
-    for item in parse_pem(bytes) {
-        if let PemCertificate(certificate) = item? {
-            certs.push(certificate);
-        }
-    }
-    if certs.is_empty() {
-        Err(ureq::Error::Tls("No pem encoded cert found").into())
-    } else {
-        Ok(certs)
-    }
-}
-
-fn private_key_file(path: &str) -> Result<PrivateKey<'static>, HttpError> {
-    let bytes = read(path)?;
-    Ok(private_key_from_pem(&bytes)?)
-}

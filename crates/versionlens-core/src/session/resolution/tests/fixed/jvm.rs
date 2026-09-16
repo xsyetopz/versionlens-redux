@@ -1,5 +1,5 @@
-#[test]
-fn gradle_version_catalog_references_are_fixed_without_registry_updates() {
+#[tokio::test]
+async fn gradle_version_catalog_references_are_fixed_without_registry_updates() {
     let output = resolve_fixture!(
         "file:///repo/gradle/libs.versions.toml",
         "toml",
@@ -13,8 +13,8 @@ fn gradle_version_catalog_references_are_fixed_without_registry_updates() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn gradle_version_catalog_direct_library_versions_use_maven_lookup() {
+#[tokio::test]
+async fn gradle_version_catalog_direct_library_versions_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/gradle/libs.versions.toml",
         "toml",
@@ -27,8 +27,8 @@ fn gradle_version_catalog_direct_library_versions_use_maven_lookup() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn sbt_scala_cross_dependencies_without_scala_version_are_fixed() {
+#[tokio::test]
+async fn sbt_scala_cross_dependencies_without_scala_version_are_fixed() {
     let output = resolve_fixture!(
         "file:///repo/build.sbt",
         "scala",
@@ -41,8 +41,8 @@ fn sbt_scala_cross_dependencies_without_scala_version_are_fixed() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn sbt_maven_dependencies_use_maven_lookup() {
+#[tokio::test]
+async fn sbt_maven_dependencies_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/build.sbt",
         "scala",
@@ -55,8 +55,8 @@ fn sbt_maven_dependencies_use_maven_lookup() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn sbt_url_artifact_dependencies_are_fixed_without_registry_updates() {
+#[tokio::test]
+async fn sbt_url_artifact_dependencies_are_fixed_without_registry_updates() {
     let output = resolve_fixture!(
         "file:///repo/build.sbt",
         "scala",
@@ -69,8 +69,8 @@ fn sbt_url_artifact_dependencies_are_fixed_without_registry_updates() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn gradle_build_dependencies_use_maven_lookup() {
+#[tokio::test]
+async fn gradle_build_dependencies_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/build.gradle.kts",
         "kotlin",
@@ -83,8 +83,8 @@ fn gradle_build_dependencies_use_maven_lookup() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn gradle_plugin_markers_use_maven_lookup() {
+#[tokio::test]
+async fn gradle_plugin_markers_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/settings.gradle",
         "groovy",
@@ -98,8 +98,8 @@ fn gradle_plugin_markers_use_maven_lookup() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn gradle_kotlin_shorthand_plugin_routes_to_maven_marker_and_updates() {
+#[tokio::test]
+async fn gradle_kotlin_shorthand_plugin_routes_to_maven_marker_and_updates() {
     let session = standard_session();
     let output = session.resolve_document_with_responses(
         DocumentInput::new(
@@ -113,7 +113,7 @@ fn gradle_kotlin_shorthand_plugin_routes_to_maven_marker_and_updates() {
             Maven,
             r#"{"versions":["2.0.0","2.1.0"]}"#.to_owned(),
         )],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_suggestion(&output, 0, "updateAvailable", Some("2.1.0"));
@@ -121,8 +121,8 @@ fn gradle_kotlin_shorthand_plugin_routes_to_maven_marker_and_updates() {
     assert_eq!(output.edits[0].new_text, "2.1.0");
 }
 
-#[test]
-fn gradle_project_and_file_dependencies_are_fixed() {
+#[tokio::test]
+async fn gradle_project_and_file_dependencies_are_fixed() {
     let output = resolve_fixture!(
         "file:///repo/build.gradle",
         "groovy",
@@ -136,8 +136,8 @@ fn gradle_project_and_file_dependencies_are_fixed() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn gradle_kotlin_named_argument_dependencies_use_maven_lookup() {
+#[tokio::test]
+async fn gradle_kotlin_named_argument_dependencies_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/build.gradle.kts",
         "kotlin",
@@ -150,8 +150,8 @@ fn gradle_kotlin_named_argument_dependencies_use_maven_lookup() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn clojure_deps_edn_git_and_local_dependencies_are_fixed() {
+#[tokio::test]
+async fn clojure_deps_edn_git_and_local_dependencies_are_fixed() {
     let output = resolve_fixture!(
         "file:///repo/deps.edn",
         "clojure",
@@ -168,8 +168,8 @@ fn clojure_deps_edn_git_and_local_dependencies_are_fixed() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn clojure_deps_edn_maven_dependencies_use_maven_lookup() {
+#[tokio::test]
+async fn clojure_deps_edn_maven_dependencies_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/deps.edn",
         "clojure",
@@ -182,8 +182,8 @@ fn clojure_deps_edn_maven_dependencies_use_maven_lookup() {
     assert_no_edits(&output);
 }
 
-#[test]
-fn leiningen_project_version_is_local_and_dependencies_use_maven_lookup() {
+#[tokio::test]
+async fn leiningen_project_version_is_local_and_dependencies_use_maven_lookup() {
     let output = resolve_fixture!(
         "file:///repo/project.clj",
         "clojure",

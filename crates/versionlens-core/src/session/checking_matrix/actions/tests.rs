@@ -4,8 +4,8 @@ use crate::session::checking_matrix::{WorkspaceDiscoveryOptions, apply_edits, te
 use crate::support::tests::fixture;
 use crate::workspace::tests::support::TestWorkspace;
 
-#[test]
-fn github_action_runtime_pins_complete_the_workspace_checking_pipeline() {
+#[tokio::test]
+async fn github_action_runtime_pins_complete_the_workspace_checking_pipeline() {
     let pinned = fixture(FIXTURE_ROOT, "runtime-pins.yml");
     let workspace = TestWorkspace::new("actions-matrix");
     workspace.write(".github/workflows/ci.yml", &pinned);
@@ -37,7 +37,9 @@ fn github_action_runtime_pins_complete_the_workspace_checking_pipeline() {
     }
 
     let responses = runtime_responses();
-    let resolved = session.resolve_document_with_responses(input.clone(), &responses);
+    let resolved = session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     for name in ["node", "bun", "rust"] {
         let suggestion = resolved
             .suggestions
@@ -66,8 +68,8 @@ fn github_action_runtime_pins_complete_the_workspace_checking_pipeline() {
     );
 }
 
-#[test]
-fn github_action_runtime_constraints_never_raise_the_declared_minimum() {
+#[tokio::test]
+async fn github_action_runtime_constraints_never_raise_the_declared_minimum() {
     let constrained = fixture(FIXTURE_ROOT, "runtime-constraints.yml");
     let workspace = TestWorkspace::new("actions-constraints");
     workspace.write(".github/workflows/constraints.yml", &constrained);
@@ -80,7 +82,9 @@ fn github_action_runtime_constraints_never_raise_the_declared_minimum() {
         .expect("the workflow must be discovered")
         .expect("the workflow must be readable");
     let responses = runtime_responses();
-    let resolved = session.resolve_document_with_responses(input.clone(), &responses);
+    let resolved = session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
 
     assert!(resolved.edits.is_empty(), "{resolved:?}");
     for (name, minimum) in [("node", ">=20"), ("bun", "^1.0"), ("rust", ">=1.80")] {
@@ -92,13 +96,15 @@ fn github_action_runtime_constraints_never_raise_the_declared_minimum() {
             })
             .unwrap_or_else(|| panic!("missing constrained {name}: {resolved:?}"));
         assert_eq!(suggestion.status, "satisfiesLatest", "{name}");
-        let forced = session.apply_command_with_selected_version(ApplyCommandRequest {
-            input: input.clone(),
-            command: Some("update"),
-            dependency_name: Some(name),
-            selected_version: Some("99.0.0"),
-            responses: &responses,
-        });
+        let forced = session
+            .apply_command_with_selected_version(ApplyCommandRequest {
+                input: input.clone(),
+                command: Some("update"),
+                dependency_name: Some(name),
+                selected_version: Some("99.0.0"),
+                responses: &responses,
+            })
+            .await;
         assert!(forced.edits.is_empty(), "{name}: {forced:?}");
     }
     assert!(session.document_is_fresh(&input));

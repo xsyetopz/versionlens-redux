@@ -1,18 +1,33 @@
-use std::panic;
-use std::sync::{Arc, mpsc};
+use std::{iter, sync::Arc};
+
 use versionlens_suggestions::{Suggestion, error};
 
 use super::ResolutionRequest;
 use super::dependency::ResolveDependencyInput;
-use crate::{VersionLensSession, concurrency, workspace};
+use crate::{VersionLensSession, workspace};
 
 const WORKER_PANIC_MESSAGE: &str = "dependency resolution worker panicked";
 const OPERATION_TIMEOUT_MESSAGE: &str = "dependency resolution timed out";
-
-pub(super) fn resolve_dependencies(
+pub(super) async fn resolve_dependencies(
     session: &VersionLensSession,
     request: ResolutionRequest<'_>,
 ) -> Vec<Suggestion> {
+    let cache_scope = session.document_cache_scope(request.context, request.input);
+    let use_cached_suggestions = request.responses.is_empty() && request.project_bump.is_none();
+    let mut dependencies = Vec::with_capacity(request.dependencies.len());
+    let mut suggestions = iter::repeat_with(|| None)
+        .take(request.dependencies.len())
+        .collect::<Vec<_>>();
+    for (index, dependency) in request.dependencies.into_iter().enumerate() {
+        if use_cached_suggestions
+            && let Some(cached) = session.cached_resolved_suggestion(&dependency, &cache_scope)
+        {
+            suggestions[index] = Some(cached);
+        } else {
+            dependencies.push((index, dependency));
+        }
+    }
+
     let workspace = Arc::new(session.workspace_graph(request.input));
     let workspace_documents = session.workspace_documents();
     let workspace_root = Arc::new(
@@ -23,10 +38,10 @@ pub(super) fn resolve_dependencies(
     let session = Arc::new(session.clone());
     let responses = Arc::new(request.responses.to_vec());
     let document_uri = Arc::new(request.document_uri.to_owned());
-    let (sender, receiver) = mpsc::channel();
-    let count = request.dependencies.len();
-    let mut results = vec![None; count];
-    for (index, dependency) in request.dependencies.into_iter().enumerate() {
+    let mut tasks = Vec::with_capacity(dependencies.len());
+
+    for (index, dependency) in dependencies {
+        let failure = dependency.clone();
         let workspace = Arc::clone(&workspace);
         let workspace_documents = Arc::clone(&workspace_documents);
         let workspace_root = Arc::clone(&workspace_root);
@@ -36,15 +51,12 @@ pub(super) fn resolve_dependencies(
         let document_uri = Arc::clone(&document_uri);
         let operation = request.operation.clone();
         let project_bump = request.project_bump;
-        let sender = sender.clone();
-        concurrency::schedule(session.storage_state.task_priority, move || {
-            let operation = operation.for_execution();
-            let failure = dependency.clone();
-            let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-                if operation.is_expired() {
-                    return Some(error(dependency, OPERATION_TIMEOUT_MESSAGE.to_owned()));
-                }
-                session.resolve_dependency_with_responses(ResolveDependencyInput {
+        let task = tokio::spawn(async move {
+            if operation.is_expired() {
+                return Some(error(dependency, OPERATION_TIMEOUT_MESSAGE.to_owned()));
+            }
+            session
+                .resolve_dependency_with_responses(ResolveDependencyInput {
                     dependency,
                     workspace: &workspace,
                     workspace_documents: &workspace_documents,
@@ -55,16 +67,18 @@ pub(super) fn resolve_dependencies(
                     context: &context,
                     operation: &operation,
                 })
-            }))
-            .unwrap_or_else(|_| Some(error(failure, WORKER_PANIC_MESSAGE.to_owned())));
-            let _ = sender.send((index, result));
+                .await
         });
+        tasks.push((index, task, failure));
     }
-    drop(sender);
-    for (index, result) in receiver {
-        results[index] = result;
+
+    for (index, task, failure) in tasks {
+        suggestions[index] = match task.await {
+            Ok(suggestion) => suggestion,
+            Err(_) => Some(error(failure, WORKER_PANIC_MESSAGE.to_owned())),
+        };
     }
-    results.into_iter().flatten().collect()
+    suggestions.into_iter().flatten().collect()
 }
 
 #[cfg(test)]

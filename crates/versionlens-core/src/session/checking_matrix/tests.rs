@@ -60,8 +60,8 @@ struct CategoryCase {
     edit: Option<String>,
 }
 
-#[test]
-fn supported_manifests_complete_the_checking_pipeline() {
+#[tokio::test]
+async fn supported_manifests_complete_the_checking_pipeline() {
     let cases = manifest_cases();
     assert_authoritative_case_coverage(&cases);
     assert_editor_selector_coverage(&cases);
@@ -94,12 +94,12 @@ fn supported_manifests_complete_the_checking_pipeline() {
         let case = by_path
             .get(relative.as_str())
             .unwrap_or_else(|| panic!("unexpected discovered manifest {relative}"));
-        assert_manifest_pipeline(&session, &input, case);
+        assert_manifest_pipeline(&session, &input, case).await;
     }
 }
 
-#[test]
-fn versionable_categories_remain_distinct_and_safe() {
+#[tokio::test]
+async fn versionable_categories_remain_distinct_and_safe() {
     let cases = category_cases();
     let actual_kinds = cases
         .iter()
@@ -141,7 +141,9 @@ fn versionable_categories_remain_distinct_and_safe() {
             "{}",
             case.name
         );
-        let output = session.resolve_document_with_responses(input.clone(), &responses);
+        let output = session
+            .resolve_document_with_responses(input.clone(), &responses)
+            .await;
         if let Some(status) = case.status.as_deref() {
             let suggestion = suggestion_for(&output, &case.package);
             assert_eq!(suggestion.status, status, "{}", case.name);
@@ -183,8 +185,8 @@ fn versionable_categories_remain_distinct_and_safe() {
     }
 }
 
-#[test]
-fn disabled_provider_is_excluded_from_discovery_and_analysis() {
+#[tokio::test]
+async fn disabled_provider_is_excluded_from_discovery_and_analysis() {
     let workspace = crate::workspace::tests::support::TestWorkspace::new("disabled-coverage");
     workspace.write("package.json", r#"{"dependencies":{"foo":"1.0.0"}}"#);
     workspace.write("Cargo.toml", "[dependencies]\nfoo = \"1.0.0\"\n");
@@ -212,11 +214,11 @@ fn disabled_provider_is_excluded_from_discovery_and_analysis() {
     let analyzed = session.analyze_document(npm.clone());
     assert!(!analyzed.is_supported_manifest);
     assert!(analyzed.dependencies.is_empty());
-    assert!(session.resolve_document(npm).suggestions.is_empty());
+    assert!(session.resolve_document(npm).await.suggestions.is_empty());
 }
 
-#[test]
-fn response_failure_is_rendered_and_never_edited() {
+#[tokio::test]
+async fn response_failure_is_rendered_and_never_edited() {
     let session = test_session();
     let input = DocumentInput::new(
         "file:///coverage/package.json",
@@ -225,7 +227,9 @@ fn response_failure_is_rendered_and_never_edited() {
         None,
     );
     let response = RegistryResponseInput::new("foo", Ecosystem::Npm, r#"{"status":"E404"}"#);
-    let output = session.resolve_document_with_responses(input.clone(), &[response]);
+    let output = session
+        .resolve_document_with_responses(input.clone(), &[response])
+        .await;
     assert_eq!(suggestion_for(&output, "foo").status, "error");
     assert!(output.edits.is_empty());
     assert!(session.document_is_fresh(&input));
@@ -234,8 +238,8 @@ fn response_failure_is_rendered_and_never_edited() {
     assert_eq!(rendered.code_lenses.len(), 1);
 }
 
-#[test]
-fn dotnet_fixed_status_survives_memory_cache() {
+#[tokio::test]
+async fn dotnet_fixed_status_survives_memory_cache() {
     let session = test_session();
     let input = DocumentInput::new(
         "file:///coverage/app.csproj",
@@ -248,8 +252,10 @@ fn dotnet_fixed_status_survives_memory_cache() {
         Ecosystem::Dotnet,
         r#"{"versions":["1.0.0","2.0.0"]}"#,
     );
-    let first = session.resolve_document_with_responses(input.clone(), &[response]);
-    let cached = session.resolve_document(input);
+    let first = session
+        .resolve_document_with_responses(input.clone(), &[response])
+        .await;
+    let cached = session.resolve_document(input).await;
     assert_eq!(suggestion_for(&first, "Foo").status, "fixed");
     assert_eq!(
         suggestion_for(&cached, "Foo").status,
@@ -261,8 +267,8 @@ fn dotnet_fixed_status_survives_memory_cache() {
     );
 }
 
-#[test]
-fn successful_result_survives_memory_clear_and_session_restart() {
+#[tokio::test]
+async fn successful_result_survives_memory_clear_and_session_restart() {
     let workspace = crate::workspace::tests::support::TestWorkspace::new("checking-cache");
     let directory = workspace.root.join("cache");
     let input = DocumentInput::new(
@@ -274,7 +280,9 @@ fn successful_result_survives_memory_clear_and_session_restart() {
     let first = test_session().with_persistent_cache(&directory).unwrap();
     assert!(!first.document_is_fresh(&input));
     let response = RegistryResponseInput::new("foo", Ecosystem::Npm, npm_response("foo"));
-    let checked = first.resolve_document_with_responses(input.clone(), &[response]);
+    let checked = first
+        .resolve_document_with_responses(input.clone(), &[response])
+        .await;
     assert_eq!(
         suggestion_for(&checked, "foo").latest.as_deref(),
         Some("2.0.0")
@@ -285,7 +293,7 @@ fn successful_result_survives_memory_clear_and_session_restart() {
 
     let restarted = test_session().with_persistent_cache(&directory).unwrap();
     assert!(restarted.document_is_fresh(&input));
-    let restored = restarted.resolve_document(input.clone());
+    let restored = restarted.resolve_document(input.clone()).await;
     assert_eq!(
         suggestion_for(&restored, "foo").latest.as_deref(),
         Some("2.0.0")
@@ -297,7 +305,7 @@ fn successful_result_survives_memory_clear_and_session_restart() {
     fs::remove_dir_all(directory).unwrap();
 }
 
-fn assert_manifest_pipeline(
+async fn assert_manifest_pipeline(
     session: &VersionLensSession,
     input: &DocumentInput,
     case: &ManifestCase,
@@ -311,8 +319,9 @@ fn assert_manifest_pipeline(
         dependency.ecosystem,
         response_body(case),
     );
-    let resolved =
-        session.resolve_document_with_responses(input.clone(), std::slice::from_ref(&response));
+    let resolved = session
+        .resolve_document_with_responses(input.clone(), std::slice::from_ref(&response))
+        .await;
     let suggestion = suggestion_for(&resolved, &case.dependency.package);
     assert_eq!(
         suggestion.status,
@@ -343,7 +352,7 @@ fn assert_manifest_pipeline(
         case.kind
     );
     if case.resolution.selected.is_none() {
-        let cached = session.resolve_document(input.clone());
+        let cached = session.resolve_document(input.clone()).await;
         let cached_suggestion = suggestion_for(&cached, &case.dependency.package);
         assert_eq!(
             cached_suggestion.status, suggestion.status,
@@ -363,7 +372,8 @@ fn assert_manifest_pipeline(
         dependency: &dependency,
         response: &response,
         resolved: &resolved,
-    });
+    })
+    .await;
     let rendered = session.analyze_document(input.clone());
     assert_semantic_target_uniqueness(&rendered, suggestion, &case.kind);
     assert!(
@@ -477,7 +487,7 @@ struct ManifestEditCheck<'a> {
     resolved: &'a crate::contract::ResolveDocumentOutput,
 }
 
-fn assert_manifest_edits(check: ManifestEditCheck<'_>) {
+async fn assert_manifest_edits(check: ManifestEditCheck<'_>) {
     let ManifestEditCheck {
         session,
         input,
@@ -486,15 +496,21 @@ fn assert_manifest_edits(check: ManifestEditCheck<'_>) {
         response,
         resolved,
     } = check;
-    let selected_output = case.resolution.selected.as_deref().map(|selected| {
-        session.apply_command_with_selected_version(super::ApplyCommandRequest {
-            input: input.clone(),
-            command: Some("update"),
-            dependency_name: Some(case.dependency.package.as_str()),
-            selected_version: Some(selected),
-            responses: std::slice::from_ref(response),
-        })
-    });
+    let selected_output = if let Some(selected) = case.resolution.selected.as_deref() {
+        Some(
+            session
+                .apply_command_with_selected_version(super::ApplyCommandRequest {
+                    input: input.clone(),
+                    command: Some("update"),
+                    dependency_name: Some(case.dependency.package.as_str()),
+                    selected_version: Some(selected),
+                    responses: std::slice::from_ref(response),
+                })
+                .await,
+        )
+    } else {
+        None
+    };
     let edits = selected_output
         .as_ref()
         .map_or(&resolved.edits, |output| &output.edits);

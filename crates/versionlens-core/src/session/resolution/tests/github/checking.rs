@@ -1,13 +1,17 @@
 use super::*;
 
-fn resolve_floating_action(responses: Vec<(u16, String)>) -> (ResolveDocumentOutput, Vec<String>) {
+async fn resolve_floating_action(
+    responses: Vec<(u16, String)>,
+) -> (ResolveDocumentOutput, Vec<String>) {
     let (base_url, server) = github_api_server(responses);
-    let output = github_session(base_url).resolve_document(DocumentInput::new(
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        package_file_fixture("floating-action-ref.yaml"),
-        None,
-    ));
+    let output = github_session(base_url)
+        .resolve_document(DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml",
+            "yaml",
+            package_file_fixture("floating-action-ref.yaml"),
+            None,
+        ))
+        .await;
     (output, server.join().unwrap())
 }
 
@@ -29,8 +33,8 @@ fn assert_local_reference_statuses(output: &ResolveDocumentOutput) {
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn floating_action_tags_take_precedence_and_preserve_the_reference() {
+#[tokio::test]
+async fn floating_action_tags_take_precedence_and_preserve_the_reference() {
     let sha = "a".repeat(40);
     let (output, paths) = resolve_floating_action(vec![
         (200, r#"[{"name":"v1.0.0"}]"#.to_owned()),
@@ -42,7 +46,8 @@ fn floating_action_tags_take_precedence_and_preserve_the_reference() {
             })
             .to_string(),
         ),
-    ]);
+    ])
+    .await;
     assert_eq!(
         paths,
         [
@@ -53,8 +58,8 @@ fn floating_action_tags_take_precedence_and_preserve_the_reference() {
     assert_current_floating_action(&output);
 }
 
-#[test]
-fn floating_action_branches_are_checked_after_an_absent_tag() {
+#[tokio::test]
+async fn floating_action_branches_are_checked_after_an_absent_tag() {
     let sha = "b".repeat(40);
     let (output, paths) = resolve_floating_action(vec![
         (200, r#"[{"name":"v1.0.0"}]"#.to_owned()),
@@ -67,7 +72,8 @@ fn floating_action_branches_are_checked_after_an_absent_tag() {
             })
             .to_string(),
         ),
-    ]);
+    ])
+    .await;
     assert_eq!(
         paths,
         [
@@ -79,8 +85,8 @@ fn floating_action_branches_are_checked_after_an_absent_tag() {
     assert_current_floating_action(&output);
 }
 
-#[test]
-fn floating_action_ref_failures_are_explicit() {
+#[tokio::test]
+async fn floating_action_ref_failures_are_explicit() {
     let cases = [
         (
             vec![
@@ -117,7 +123,7 @@ fn floating_action_ref_failures_are_explicit() {
         ),
     ];
     for (responses, message) in cases {
-        let (output, _) = resolve_floating_action(responses);
+        let (output, _) = resolve_floating_action(responses).await;
 
         assert_eq!(output.suggestions[0].status, "error");
         assert!(
@@ -131,8 +137,8 @@ fn floating_action_ref_failures_are_explicit() {
     }
 }
 
-#[test]
-fn local_action_references_use_the_declared_workspace_and_expressions_fail_explicitly() {
+#[tokio::test]
+async fn local_action_references_use_the_declared_workspace_and_expressions_fail_explicitly() {
     let root = temp_dir().join(format!("versionlens-github-local-{}", id()));
     create_dir_all(root.join(".github/workflows")).unwrap();
     create_dir_all(root.join("actions/build")).unwrap();
@@ -153,7 +159,9 @@ fn local_action_references_use_the_declared_workspace_and_expressions_fail_expli
         Some(root.to_string_lossy().into_owned()),
     );
 
-    let output = session_without_vulnerabilities().resolve_document(input);
+    let output = session_without_vulnerabilities()
+        .resolve_document(input)
+        .await;
 
     assert_local_reference_statuses(&output);
     assert_eq!(
@@ -177,8 +185,8 @@ fn local_action_references_use_the_declared_workspace_and_expressions_fail_expli
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn unsaved_local_targets_are_verified_from_one_workspace_snapshot_without_network() {
+#[tokio::test]
+async fn unsaved_local_targets_are_verified_from_one_workspace_snapshot_without_network() {
     let root = temp_dir().join(format!("versionlens-github-unsaved-{}", id()));
     create_dir_all(&root).unwrap();
     let workspace_root = root.to_string_lossy().into_owned();
@@ -210,15 +218,15 @@ fn unsaved_local_targets_are_verified_from_one_workspace_snapshot_without_networ
     let session = github_session(base_url);
     assert!(session.set_workspace_documents(vec![action, workflow]));
 
-    let output = session.resolve_document(input);
+    let output = session.resolve_document(input).await;
 
     assert_local_reference_statuses(&output);
     assert!(server.join().unwrap().is_empty());
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn edited_unsaved_workflow_invalidates_a_cached_local_result() {
+#[tokio::test]
+async fn edited_unsaved_workflow_invalidates_a_cached_local_result() {
     let root = temp_dir().join(format!("versionlens-github-edit-{}", id()));
     create_dir_all(root.join(".github/workflows")).unwrap();
     write(root.join(".github/workflows/release.yml"), "on: push\n").unwrap();
@@ -240,11 +248,11 @@ fn edited_unsaved_workflow_invalidates_a_cached_local_result() {
     );
     let session = session_without_vulnerabilities();
     assert!(session.set_workspace_documents(vec![target("on:\n  workflow_call:\n", 1,)]));
-    let valid = session.resolve_document(input.clone());
+    let valid = session.resolve_document(input.clone()).await;
     assert_eq!(valid.suggestions[0].status, "fixed");
 
     assert!(session.set_workspace_documents(vec![target("on: push\n", 2)]));
-    let invalid = session.resolve_document(input);
+    let invalid = session.resolve_document(input).await;
 
     assert_eq!(invalid.suggestions[0].status, "error");
     assert!(
@@ -256,14 +264,16 @@ fn edited_unsaved_workflow_invalidates_a_cached_local_result() {
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn local_action_references_report_unavailable_roots_and_ambiguous_metadata() {
-    let without_root = session_without_vulnerabilities().resolve_document(DocumentInput::new(
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        "steps:\n  - uses: ./actions/build\n",
-        None,
-    ));
+#[tokio::test]
+async fn local_action_references_report_unavailable_roots_and_ambiguous_metadata() {
+    let without_root = session_without_vulnerabilities()
+        .resolve_document(DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml",
+            "yaml",
+            "steps:\n  - uses: ./actions/build\n",
+            None,
+        ))
+        .await;
     assert_eq!(without_root.suggestions[0].status, "error");
     assert!(
         without_root.suggestions[0]
@@ -274,12 +284,14 @@ fn local_action_references_report_unavailable_roots_and_ambiguous_metadata() {
 
     let root = temp_dir().join(format!("versionlens-github-contained-{}", id()));
     create_dir_all(&root).unwrap();
-    let escaped = session_without_vulnerabilities().resolve_document(DocumentInput::new(
-        format!("file://{}/.github/workflows/ci.yml", root.display()),
-        "yaml",
-        "steps:\n  - uses: ./../outside\n",
-        Some(root.to_string_lossy().into_owned()),
-    ));
+    let escaped = session_without_vulnerabilities()
+        .resolve_document(DocumentInput::new(
+            format!("file://{}/.github/workflows/ci.yml", root.display()),
+            "yaml",
+            "steps:\n  - uses: ./../outside\n",
+            Some(root.to_string_lossy().into_owned()),
+        ))
+        .await;
     assert_eq!(escaped.suggestions[0].status, "error");
     assert_eq!(
         escaped.suggestions[0].latest.as_deref(),
@@ -291,12 +303,14 @@ fn local_action_references_report_unavailable_roots_and_ambiguous_metadata() {
     create_dir_all(root.join("actions/build")).unwrap();
     write(root.join("actions/build/action.yml"), "name: first\n").unwrap();
     write(root.join("actions/build/action.yaml"), "name: second\n").unwrap();
-    let output = session_without_vulnerabilities().resolve_document(DocumentInput::new(
-        format!("file://{}/.github/workflows/ci.yml", root.display()),
-        "yaml",
-        "steps:\n  - uses: ./actions/build\n",
-        Some(root.to_string_lossy().into_owned()),
-    ));
+    let output = session_without_vulnerabilities()
+        .resolve_document(DocumentInput::new(
+            format!("file://{}/.github/workflows/ci.yml", root.display()),
+            "yaml",
+            "steps:\n  - uses: ./actions/build\n",
+            Some(root.to_string_lossy().into_owned()),
+        ))
+        .await;
     assert_eq!(output.suggestions[0].status, "error");
     assert!(
         output.suggestions[0]
@@ -307,22 +321,24 @@ fn local_action_references_report_unavailable_roots_and_ambiguous_metadata() {
     remove_dir_all(root).unwrap();
 }
 
-#[test]
-fn escaped_workflow_references_preserve_surrounding_yaml_on_update() {
+#[tokio::test]
+async fn escaped_workflow_references_preserve_surrounding_yaml_on_update() {
     let source = r#"steps: [{uses: "acme\u002faction\u0040v\u0031.0.0", name: keep}] # retained"#;
-    let output = session_without_vulnerabilities().resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///work/.github/workflows/ci.yml",
-            "yaml",
-            source,
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "acme/action",
-            GitHub,
-            r#"[{"name":"v1.0.0"},{"name":"v2.0.0"}]"#,
-        )],
-    );
+    let output = session_without_vulnerabilities()
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///work/.github/workflows/ci.yml",
+                "yaml",
+                source,
+                None,
+            ),
+            &[RegistryResponseInput::new(
+                "acme/action",
+                GitHub,
+                r#"[{"name":"v1.0.0"},{"name":"v2.0.0"}]"#,
+            )],
+        )
+        .await;
     assert_eq!(output.edits.len(), 1, "{output:?}");
     let edit = &output.edits[0];
     let mut updated = source.to_owned();
@@ -336,8 +352,8 @@ fn escaped_workflow_references_preserve_surrounding_yaml_on_update() {
     );
 }
 
-#[test]
-fn cached_action_results_are_isolated_by_tag_family_and_commit() {
+#[tokio::test]
+async fn cached_action_results_are_isolated_by_tag_family_and_commit() {
     let session = session_without_vulnerabilities();
     let input = |reference: &str| {
         DocumentInput::new(
@@ -348,14 +364,16 @@ fn cached_action_results_are_isolated_by_tag_family_and_commit() {
         )
     };
     let first = input("v1.0.0");
-    session.resolve_document_with_responses(
-        first,
-        &[RegistryResponseInput::new(
-            "acme/action".to_owned(),
-            GitHub,
-            r#"[{"name":"v1.0.0"},{"name":"v2.0.0"}]"#.to_owned(),
-        )],
-    );
+    session
+        .resolve_document_with_responses(
+            first,
+            &[RegistryResponseInput::new(
+                "acme/action".to_owned(),
+                GitHub,
+                r#"[{"name":"v1.0.0"},{"name":"v2.0.0"}]"#.to_owned(),
+            )],
+        )
+        .await;
     for reference in [
         "release-v1.0.0",
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v1.0.0",
@@ -369,8 +387,8 @@ fn cached_action_results_are_isolated_by_tag_family_and_commit() {
     }
 }
 
-#[test]
-fn github_tag_resolution_reads_subsequent_pages() {
+#[tokio::test]
+async fn github_tag_resolution_reads_subsequent_pages() {
     let page = serde_json::Value::Array(
         (0..30)
             .map(|index| serde_json::json!({"name": format!("unrelated-v1.0.{index}")}))
@@ -382,12 +400,14 @@ fn github_tag_resolution_reads_subsequent_pages() {
         (200, r#"[{"name":"v1.0.0"},{"name":"v2.0.0"}]"#.to_owned()),
     ]);
     let session = github_session(base_url);
-    let output = session.resolve_document(DocumentInput::new(
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        "steps:\n  - uses: acme/action@v1.0.0\n",
-        None,
-    ));
+    let output = session
+        .resolve_document(DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml",
+            "yaml",
+            "steps:\n  - uses: acme/action@v1.0.0\n",
+            None,
+        ))
+        .await;
     assert_eq!(
         server.join().unwrap(),
         [
@@ -398,20 +418,22 @@ fn github_tag_resolution_reads_subsequent_pages() {
     assert_eq!(output.edits[0].new_text, "v2.0.0");
 }
 
-#[test]
-fn cached_action_suggestions_use_the_current_document_ranges() {
+#[tokio::test]
+async fn cached_action_suggestions_use_the_current_document_ranges() {
     let session = session_without_vulnerabilities();
     let document = |text: &str| {
         DocumentInput::new("file:///work/.github/workflows/ci.yml", "yaml", text, None)
     };
-    session.resolve_document_with_responses(
-        document("steps:\n  - uses: acme/action@v1.0.0\n"),
-        &[RegistryResponseInput::new(
-            "acme/action".to_owned(),
-            GitHub,
-            r#"[{"name":"v1.0.0"},{"name":"v2.0.0"}]"#.to_owned(),
-        )],
-    );
+    session
+        .resolve_document_with_responses(
+            document("steps:\n  - uses: acme/action@v1.0.0\n"),
+            &[RegistryResponseInput::new(
+                "acme/action".to_owned(),
+                GitHub,
+                r#"[{"name":"v1.0.0"},{"name":"v2.0.0"}]"#.to_owned(),
+            )],
+        )
+        .await;
     let moved = document("# moved\nsteps:\n  - uses: acme/action@v1.0.0\n");
     let dependency = parse_document(&moved).remove(0);
     let cached = session
@@ -429,8 +451,8 @@ fn cache_scope(session: &VersionLensSession, input: &DocumentInput) -> String {
     session.document_cache_scope(&context, input)
 }
 
-#[test]
-fn nested_annotated_tags_resolve_to_the_pinned_commit() {
+#[tokio::test]
+async fn nested_annotated_tags_resolve_to_the_pinned_commit() {
     let commit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     let outer = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let inner = "cccccccccccccccccccccccccccccccccccccccc";
@@ -446,12 +468,14 @@ fn nested_annotated_tags_resolve_to_the_pinned_commit() {
         ),
     ]);
     let (base_url, server) = github_api_server(responses);
-    let output = github_session(base_url).resolve_document(DocumentInput::new(
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        format!("steps:\n  - uses: acme/action@{commit} # v2\n"),
-        None,
-    ));
+    let output = github_session(base_url)
+        .resolve_document(DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml",
+            "yaml",
+            format!("steps:\n  - uses: acme/action@{commit} # v2\n"),
+            None,
+        ))
+        .await;
     assert_eq!(
         server.join().unwrap(),
         [
@@ -464,8 +488,8 @@ fn nested_annotated_tags_resolve_to_the_pinned_commit() {
     assert_eq!(output.suggestions[0].status, "current");
 }
 
-#[test]
-fn cyclic_annotated_tags_finish_with_a_specific_failure() {
+#[tokio::test]
+async fn cyclic_annotated_tags_finish_with_a_specific_failure() {
     let tag = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let mut responses = annotated_tag_start(tag);
     responses.push((
@@ -473,12 +497,14 @@ fn cyclic_annotated_tags_finish_with_a_specific_failure() {
         serde_json::json!({"sha":tag,"object":{"type":"tag","sha":tag}}).to_string(),
     ));
     let (base_url, server) = github_api_server(responses);
-    let output = github_session(base_url).resolve_document(DocumentInput::new(
-        "file:///work/.github/workflows/release.yml",
-        "yaml",
-        "steps:\n  - uses: acme/action@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v2\n",
-        None,
-    ));
+    let output = github_session(base_url)
+        .resolve_document(DocumentInput::new(
+            "file:///work/.github/workflows/release.yml",
+            "yaml",
+            "steps:\n  - uses: acme/action@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa # v2\n",
+            None,
+        ))
+        .await;
     assert_eq!(server.join().unwrap().len(), 3);
     assert!(output.edits.is_empty());
     assert_eq!(output.suggestions[0].status, "error");
@@ -491,8 +517,8 @@ fn cyclic_annotated_tags_finish_with_a_specific_failure() {
     );
 }
 
-#[test]
-fn commit_pins_resolve_release_families_and_keep_pin_format() {
+#[tokio::test]
+async fn commit_pins_resolve_release_families_and_keep_pin_format() {
     let current = "a".repeat(40);
     let latest = "b".repeat(40);
     let body = commit_tags(&current, &latest);
@@ -505,7 +531,9 @@ fn commit_pins_resolve_release_families_and_keep_pin_format() {
             format!("steps: [{{uses: 'acme/action@{pin}', name: keep}}] # preserved\n"),
             None,
         );
-        let output = session.resolve_document_with_responses(input, &responses);
+        let output = session
+            .resolve_document_with_responses(input, &responses)
+            .await;
         assert_eq!(output.suggestions.len(), 1, "{output:?}");
         assert_eq!(output.suggestions[0].status, expected_status, "{output:?}");
         if pin == &current {
@@ -521,8 +549,8 @@ fn commit_pins_resolve_release_families_and_keep_pin_format() {
     }
 }
 
-#[test]
-fn commit_pins_with_multiple_tag_families_have_a_checked_outcome() {
+#[tokio::test]
+async fn commit_pins_with_multiple_tag_families_have_a_checked_outcome() {
     let commit = "a".repeat(40);
     let body = serde_json::json!([
         {"name":"v1.0.0","commit":{"sha":commit}},
@@ -536,35 +564,39 @@ fn commit_pins_with_multiple_tag_families_have_a_checked_outcome() {
         format!("steps:\n  - uses: acme/action@{commit}\n"),
         None,
     );
-    let output = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new("acme/action", GitHub, &body)],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new("acme/action", GitHub, &body)],
+        )
+        .await;
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].status, "error");
     assert!(output.edits.is_empty());
     assert!(session.document_is_fresh(&input));
 }
 
-#[test]
-fn abbreviated_action_commit_is_checked_through_the_repository_endpoint() {
+#[tokio::test]
+async fn abbreviated_action_commit_is_checked_through_the_repository_endpoint() {
     let current = "a".repeat(40);
     let latest = "b".repeat(40);
     let body = commit_tags(&current, &latest);
     let (base_url, server) = github_api_server(vec![(200, body)]);
-    let output = github_session(base_url).resolve_document(DocumentInput::new(
-        "file:///work/.github/workflows/release.yml",
-        "yaml",
-        "steps:\n  - uses: acme/action@aaaaaaa # reviewed\n",
-        None,
-    ));
+    let output = github_session(base_url)
+        .resolve_document(DocumentInput::new(
+            "file:///work/.github/workflows/release.yml",
+            "yaml",
+            "steps:\n  - uses: acme/action@aaaaaaa # reviewed\n",
+            None,
+        ))
+        .await;
     assert_eq!(server.join().unwrap(), ["/repos/acme/action/tags"]);
     assert_eq!(output.edits.len(), 1, "{output:?}");
     assert_eq!(output.edits[0].new_text, latest);
 }
 
-#[test]
-fn action_commit_selections_require_a_verified_release_replacement() {
+#[tokio::test]
+async fn action_commit_selections_require_a_verified_release_replacement() {
     let current = "a".repeat(40);
     let body = serde_json::json!([
         {"name":"v1.0.0","commit":{"sha":"c".repeat(40)}},
@@ -580,15 +612,15 @@ fn action_commit_selections_require_a_verified_release_replacement() {
         None,
     );
     for version in ["1.0.0", "99.0.0"] {
-        let output = session_without_vulnerabilities().apply_command_with_selected_version(
-            crate::ApplyCommandRequest {
+        let output = session_without_vulnerabilities()
+            .apply_command_with_selected_version(crate::ApplyCommandRequest {
                 input: input.clone(),
                 command: Some("update"),
                 dependency_name: Some("acme/action"),
                 selected_version: Some(version),
                 responses: &responses,
-            },
-        );
+            })
+            .await;
         assert!(output.edits.is_empty(), "{output:?}");
     }
 }

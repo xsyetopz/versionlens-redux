@@ -17,6 +17,13 @@ const sortEndCharacter = 41;
 const updateStartCharacter = 30;
 const updateEndCharacter = 35;
 
+interface ReceiverSensitiveSession {
+  applyCommand: (
+    this: ReceiverSensitiveSession,
+    input: unknown,
+  ) => Promise<ReturnType<typeof applyResult>>;
+}
+
 it("matches the Rust UTF-8 document hash contract", async (): Promise<void> => {
   const { documentTextHash } = await import("../../../documents.ts");
   expect(documentTextHash("VersionLens 🦀\n")).toBe("f8340b4960fa854c");
@@ -74,6 +81,37 @@ it("single update leaves CodeLens replacement disabled after applying like upstr
 
   expect(appliedEdits).toHaveLength(1);
   expect(state.flags.codeLensReplace).toBe(false);
+});
+
+it("dependency and bulk updates preserve the native session receiver", async (): Promise<void> => {
+  const { registerCommands } = await import("../../../commands/register.ts");
+  reset();
+  const applyInputs: unknown[] = [];
+  const session: ReceiverSensitiveSession = {
+    async applyCommand(
+      this: ReceiverSensitiveSession,
+      input: unknown,
+    ): Promise<ReturnType<typeof applyResult>> {
+      expect(this).toBe(session);
+      applyInputs.push(input);
+      return applyResult();
+    },
+  };
+
+  const state = commandState(session);
+  applyTestState.activeTextEditor = { document: documentStub("left-pad") };
+  registerCommands(state as never);
+  await registeredCommand("versionlens.suggestion.onUpdateDependency")(
+    "left-pad",
+  );
+  state.flags.codeLensReplace = true;
+  await registeredCommand("versionlens.editor.onUpdateDependenciesLatest")();
+
+  expect(applyInputs).toMatchObject([
+    { dependencyName: "left-pad" },
+    { command: "update" },
+  ]);
+  expect(appliedEdits).toHaveLength(2);
 });
 
 for (const plannedUri of [
@@ -193,7 +231,7 @@ it("vulnerability confirmation rejects edits after the document changes", async 
   const pending = registeredCommand(
     "versionlens.suggestion.onUpdateDependency",
   )("left-pad");
-  await Promise.resolve();
+  await new Promise((resolve): NodeJS.Timeout => setTimeout(resolve, 0));
   text = text.replace("1.0.0", "1.0.1");
   version += 1;
   confirm?.("Update Anyway");

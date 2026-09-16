@@ -1,7 +1,7 @@
 use super::super::*;
 
-#[test]
-fn ci_runtime_channels_and_numeric_constraints_keep_the_declared_selector() {
+#[tokio::test]
+async fn ci_runtime_channels_and_numeric_constraints_keep_the_declared_selector() {
     for (action, field, context, name, ecosystem, requirement, latest, body, status) in [
         (
             "actions/setup-go",
@@ -73,18 +73,20 @@ fn ci_runtime_channels_and_numeric_constraints_keep_the_declared_selector() {
         let text = format!(
             "steps: [{{uses: {action}@v1, with: {{{context}{field}: '{requirement}'}}}}]\n"
         );
-        let output = session_without_vulnerabilities().resolve_document_with_responses(
-            DocumentInput::new(
-                "file:///work/.github/workflows/runtime.yml",
-                "yaml",
-                text,
-                None,
-            ),
-            &[
-                RegistryResponseInput::new(action, GitHub, r#"[{"name":"v1"}]"#),
-                RegistryResponseInput::new(name, ecosystem, body),
-            ],
-        );
+        let output = session_without_vulnerabilities()
+            .resolve_document_with_responses(
+                DocumentInput::new(
+                    "file:///work/.github/workflows/runtime.yml",
+                    "yaml",
+                    text,
+                    None,
+                ),
+                &[
+                    RegistryResponseInput::new(action, GitHub, r#"[{"name":"v1"}]"#),
+                    RegistryResponseInput::new(name, ecosystem, body),
+                ],
+            )
+            .await;
         let runtime = output
             .suggestions
             .iter()
@@ -96,8 +98,8 @@ fn ci_runtime_channels_and_numeric_constraints_keep_the_declared_selector() {
     }
 }
 
-#[test]
-fn unsupported_ci_runtime_variants_report_errors() {
+#[tokio::test]
+async fn unsupported_ci_runtime_variants_report_errors() {
     for (action, input, context, name, _ecosystem, requirement) in [
         (
             "actions/setup-python",
@@ -135,19 +137,21 @@ fn unsupported_ci_runtime_variants_report_errors() {
         let text = format!(
             "steps: [{{uses: {action}@v1, with: {{{context}{input}: '{requirement}'}}}}]\n"
         );
-        let output = session_without_vulnerabilities().resolve_document_with_responses(
-            DocumentInput::new(
-                "file:///work/.github/workflows/runtime.yml",
-                "yaml",
-                text,
-                None,
-            ),
-            &[RegistryResponseInput::new(
-                action,
-                GitHub,
-                r#"[{"name":"v1"}]"#,
-            )],
-        );
+        let output = session_without_vulnerabilities()
+            .resolve_document_with_responses(
+                DocumentInput::new(
+                    "file:///work/.github/workflows/runtime.yml",
+                    "yaml",
+                    text,
+                    None,
+                ),
+                &[RegistryResponseInput::new(
+                    action,
+                    GitHub,
+                    r#"[{"name":"v1"}]"#,
+                )],
+            )
+            .await;
         let runtime = output
             .suggestions
             .iter()

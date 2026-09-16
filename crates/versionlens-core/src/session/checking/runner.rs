@@ -9,7 +9,7 @@ use versionlens_model::DocumentInput;
 
 use super::{Shared, WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceCheckingOptions};
 use crate::{
-    ResolveDocumentOutput, SessionTask, TaskCancellation, VersionLensSession, WorkspaceDiscovery,
+    ResolveDocumentOutput, SessionTask, VersionLensSession, WorkspaceDiscovery,
     WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryOptions,
 };
 
@@ -19,7 +19,15 @@ const RETRY_DELAY: Duration = Duration::from_secs(1);
 struct Entry {
     input: DocumentInput,
     due: Option<Instant>,
-    task: Option<(u64, TaskCancellation)>,
+    task: Option<(u64, AbortOnDrop)>,
+}
+
+struct AbortOnDrop(tokio::task::AbortHandle);
+
+impl Drop for AbortOnDrop {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 struct Completion {
@@ -49,10 +57,16 @@ pub(super) struct Runner<F> {
     next_prune: Instant,
     sender: Sender<Completion>,
     receiver: Receiver<Completion>,
+    runtime: tokio::runtime::Runtime,
 }
 
 impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
-    pub(super) fn new(session: VersionLensSession, shared: Arc<Shared>, on_event: F) -> Self {
+    pub(super) fn new(
+        session: VersionLensSession,
+        shared: Arc<Shared>,
+        on_event: F,
+        runtime: tokio::runtime::Runtime,
+    ) -> Self {
         let (sender, receiver) = channel();
         Self {
             session,
@@ -74,6 +88,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             next_prune: Instant::now() + Duration::from_secs(30),
             sender,
             receiver,
+            runtime,
         }
     }
 
@@ -282,36 +297,24 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
         let shared = Arc::clone(&self.shared);
         let generation = self.generation;
         let completion_uri = uri.clone();
-        let submitted = self.session.submit_task(
-            SessionTask::Background(entry.input.clone()),
-            move |result| {
-                if !shared.closed.load(Ordering::Acquire)
-                    && shared.generation.load(Ordering::Acquire) == generation
-                {
-                    let _ = sender.send(Completion {
-                        generation,
-                        task_id,
-                        uri: completion_uri,
-                        result,
-                    });
-                    shared.ready.notify_one();
-                }
-            },
-        );
-        match submitted {
-            Ok(task) => {
-                entry.task = Some((task_id, task));
-                self.active += 1;
-            }
-            Err(message) => {
-                entry.due = Some(Instant::now() + RETRY_DELAY);
-                let input = Box::new(entry.input.clone());
-                self.emit(WorkspaceCheckResult::Document {
-                    input,
-                    result: Err(message.to_owned()),
+        let session = self.session.clone();
+        let input = entry.input.clone();
+        let task = self.runtime.spawn(async move {
+            let result = session.run_task(SessionTask::Background(input)).await;
+            if !shared.closed.load(Ordering::Acquire)
+                && shared.generation.load(Ordering::Acquire) == generation
+            {
+                let _ = sender.send(Completion {
+                    generation,
+                    task_id,
+                    uri: completion_uri,
+                    result,
                 });
+                shared.ready.notify_one();
             }
-        }
+        });
+        entry.task = Some((task_id, AbortOnDrop(task.abort_handle())));
+        self.active += 1;
     }
 
     fn complete(&mut self) {

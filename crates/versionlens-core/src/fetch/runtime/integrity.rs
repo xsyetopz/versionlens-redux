@@ -14,7 +14,7 @@ pub(super) struct RuntimeReplacementRequest<'a> {
 }
 
 impl VersionLensSession {
-    pub(super) fn runtime_replacement(
+    pub(super) async fn runtime_replacement(
         &self,
         request: RuntimeReplacementRequest<'_>,
     ) -> Result<Option<String>, FetchError> {
@@ -36,12 +36,14 @@ impl VersionLensSession {
                 )
                 .map_err(super::runtime_error);
         };
-        let current_artifact = self.fetch_runtime_artifact(
-            request.dependency,
-            &current_url,
-            request.context,
-            request.operation,
-        )?;
+        let current_artifact = self
+            .fetch_runtime_artifact(
+                request.dependency,
+                &current_url,
+                request.context,
+                request.operation,
+            )
+            .await?;
         request
             .source
             .verify_artifact_integrity(&request.dependency.requirement, &current_artifact)
@@ -54,7 +56,8 @@ impl VersionLensSession {
                 &selected_url,
                 request.context,
                 request.operation,
-            )?
+            )
+            .await?
         };
         request
             .source

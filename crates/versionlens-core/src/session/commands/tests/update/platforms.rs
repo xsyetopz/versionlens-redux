@@ -1,5 +1,5 @@
-#[test]
-fn apply_command_updates_selected_build_version() {
+#[tokio::test]
+async fn apply_command_updates_selected_build_version() {
     let session = standard_session();
 
     let output = session.apply_command_with_selected_version(ApplyCommandRequest {
@@ -16,13 +16,13 @@ fn apply_command_updates_selected_build_version() {
               }
             }"#
             .to_owned())],
-    });
+    }).await;
 
     assert_single_edit(&output, "1.0.0+build.3");
 }
 
-#[test]
-fn apply_command_updates_terraform_provider_version_without_replacing_operator() {
+#[tokio::test]
+async fn apply_command_updates_terraform_provider_version_without_replacing_operator() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -32,13 +32,13 @@ fn apply_command_updates_terraform_provider_version_without_replacing_operator()
         Some("update"),
         Some("hashicorp/aws"),
         &[RegistryResponseInput::new("hashicorp/aws".to_owned(), Terraform, r#"{"versions":[{"version":"6.0.0"},{"version":"6.1.0-beta.1"}]}"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "6.0.0");
 }
 
-#[test]
-fn apply_command_updates_helm_chart_dependency_version_without_replacing_operator() {
+#[tokio::test]
+async fn apply_command_updates_helm_chart_dependency_version_without_replacing_operator() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -46,13 +46,13 @@ fn apply_command_updates_helm_chart_dependency_version_without_replacing_operato
         Some("update"),
         Some("mysql"),
         &[RegistryResponseInput::new("mysql".to_owned(), Helm, "apiVersion: v1\nentries:\n  mysql:\n    - version: 4.0.0\n".to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "4.0.0");
 }
 
-#[test]
-fn apply_command_updates_ansible_collection_requirement_without_replacing_operator() {
+#[tokio::test]
+async fn apply_command_updates_ansible_collection_requirement_without_replacing_operator() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -60,13 +60,13 @@ fn apply_command_updates_ansible_collection_requirement_without_replacing_operat
         Some("update"),
         Some("community.general"),
         &[RegistryResponseInput::new("community.general".to_owned(), AnsibleGalaxy, r#"{"data":[{"version":"8.0.0"},{"version":"7.5.0"}]}"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "8.0.0");
 }
 
-#[test]
-fn apply_command_updates_bazel_module_dependency() {
+#[tokio::test]
+async fn apply_command_updates_bazel_module_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -74,13 +74,13 @@ fn apply_command_updates_bazel_module_dependency() {
         Some("update"),
         Some("rules_cc"),
         &[RegistryResponseInput::new("rules_cc".to_owned(), Bazel, r#"{"versions":["0.0.9","0.0.10"]}"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "0.0.10");
 }
 
-#[test]
-fn apply_command_updates_cocoapods_podfile_dependency_preserving_operator() {
+#[tokio::test]
+async fn apply_command_updates_cocoapods_podfile_dependency_preserving_operator() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -90,13 +90,13 @@ fn apply_command_updates_cocoapods_podfile_dependency_preserving_operator() {
         Some("update"),
         Some("AFNetworking"),
         &[RegistryResponseInput::new("AFNetworking".to_owned(), CocoaPods, r#"{"versions":[{"name":"5.0.0"},{"name":"4.0.1"}]}"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "~> 5.0.0");
 }
 
-#[test]
-fn apply_command_updates_unity_project_manifest_dependency() {
+#[tokio::test]
+async fn apply_command_updates_unity_project_manifest_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -107,13 +107,13 @@ fn apply_command_updates_unity_project_manifest_dependency() {
         Some("com.unity.timeline"),
         &[RegistryResponseInput::new("com.unity.timeline".to_owned(), Unity, r#"{"dist-tags":{"latest":"1.8.7"},"versions":{"1.8.6":{},"1.8.7":{}}}"#
                 .to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "1.8.7");
 }
 
-#[test]
-fn apply_command_updates_kustomization_image_new_tag() {
+#[tokio::test]
+async fn apply_command_updates_kustomization_image_new_tag() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -121,13 +121,13 @@ fn apply_command_updates_kustomization_image_new_tag() {
         Some("update"),
         Some("platform/nginx"),
         &[RegistryResponseInput::new("platform/nginx".to_owned(), Docker, r#"{"tags":["1.26.0","1.25.3"]}"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "1.26.0");
 }
 
-#[test]
-fn apply_command_updates_nix_flake_github_input_ref() {
+#[tokio::test]
+async fn apply_command_updates_nix_flake_github_input_ref() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -135,7 +135,7 @@ fn apply_command_updates_nix_flake_github_input_ref() {
         Some("update"),
         Some("NixOS/nixpkgs"),
         &[RegistryResponseInput::new("NixOS/nixpkgs".to_owned(), Nix, r#"[{"name":"nixos-24.05"},{"name":"nixos-23.11"}]"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "24.05");
 }

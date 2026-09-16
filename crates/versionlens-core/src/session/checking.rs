@@ -69,9 +69,12 @@ impl VersionLensSession {
         });
         let session = self.clone();
         let worker_shared = Arc::clone(&shared);
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()?;
         thread::Builder::new()
             .name("versionlens-workspace".to_owned())
-            .spawn(move || runner::Runner::new(session, worker_shared, on_event).run())?;
+            .spawn(move || runner::Runner::new(session, worker_shared, on_event, runtime).run())?;
         Ok(WorkspaceChecking {
             shared,
             session: self.clone(),

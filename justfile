@@ -30,6 +30,10 @@ http-test name:
 http-large-response:
     just http-test client::send::tests::reads_large_registry_response_bodies
 
+provider-cold-benchmark *args:
+    cargo build -p versionlens-lsp --release --locked
+    python3 scripts/bench/provider-cold.py {{args}}
+
 package:
     bun run package
 

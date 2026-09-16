@@ -56,7 +56,7 @@ struct LatestSuggestionRequest<'a> {
 }
 
 impl VersionLensSession {
-    pub(super) fn resolve_dependency_with_responses(
+    pub(super) async fn resolve_dependency_with_responses(
         &self,
         input: ResolveDependencyInput<'_>,
     ) -> Option<Suggestion> {
@@ -88,13 +88,16 @@ impl VersionLensSession {
             if let Some(message) = context.failure_message() {
                 return Some(error(dependency, message.to_owned()));
             }
-            return Some(self.runtime_suggestion(LatestResolutionRequest {
-                dependency: &dependency,
-                responses,
-                has_registry_response: Self::has_registry_response(&dependency, responses),
-                context,
-                operation,
-            }));
+            return Some(
+                self.runtime_suggestion(LatestResolutionRequest {
+                    dependency: &dependency,
+                    responses,
+                    has_registry_response: Self::has_registry_response(&dependency, responses),
+                    context,
+                    operation,
+                })
+                .await,
+            );
         }
 
         // Proven local identities are authoritative; ambiguous/malformed
@@ -129,9 +132,10 @@ impl VersionLensSession {
         }
 
         self.registry_dependency_suggestion(dependency, responses, context, operation)
+            .await
     }
 
-    fn registry_dependency_suggestion(
+    async fn registry_dependency_suggestion(
         &self,
         dependency: Dependency,
         responses: &[RegistryResponseInput],
@@ -148,26 +152,32 @@ impl VersionLensSession {
             Err(suggestion) => return Some(*suggestion),
         };
         if docker_response_missing_tag(&dependency, responses) {
-            return Some(self.docker_no_match_suggestion(LatestSuggestionRequest {
+            return Some(
+                self.docker_no_match_suggestion(LatestSuggestionRequest {
+                    dependency,
+                    responses,
+                    has_registry_response,
+                    context,
+                    operation,
+                })
+                .await,
+            );
+        }
+
+        Some(
+            self.latest_lookup_suggestion(LatestSuggestionRequest {
                 dependency,
                 responses,
                 has_registry_response,
                 context,
                 operation,
-            }));
-        }
-
-        Some(self.latest_lookup_suggestion(LatestSuggestionRequest {
-            dependency,
-            responses,
-            has_registry_response,
-            context,
-            operation,
-        }))
+            })
+            .await,
+        )
     }
 
-    fn docker_no_match_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
-        let lookup = self.resolve_latest_for_request(&request);
+    async fn docker_no_match_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
+        let lookup = self.resolve_latest_for_request(&request).await;
         let dependency = request.dependency;
         if let Some(message) = lookup.fetch_error {
             return error(dependency, message.to_string());
@@ -179,8 +189,8 @@ impl VersionLensSession {
         suggestion
     }
 
-    fn latest_lookup_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
-        let lookup = self.resolve_latest_for_request(&request);
+    async fn latest_lookup_suggestion(&self, request: LatestSuggestionRequest<'_>) -> Suggestion {
+        let lookup = self.resolve_latest_for_request(&request).await;
         let LatestSuggestionRequest {
             dependency,
             responses,
@@ -256,7 +266,10 @@ impl VersionLensSession {
         }
     }
 
-    fn resolve_latest_for_request(&self, request: &LatestSuggestionRequest<'_>) -> LatestLookup {
+    async fn resolve_latest_for_request(
+        &self,
+        request: &LatestSuggestionRequest<'_>,
+    ) -> LatestLookup {
         self.resolve_latest(LatestResolutionRequest {
             dependency: &request.dependency,
             responses: request.responses,
@@ -264,6 +277,7 @@ impl VersionLensSession {
             context: request.context,
             operation: request.operation,
         })
+        .await
     }
 }
 

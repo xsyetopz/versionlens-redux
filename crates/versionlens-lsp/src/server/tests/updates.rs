@@ -15,8 +15,14 @@ fn project_version_command_sends_a_versioned_edit_and_waits_for_the_editor() -> 
         "workspace/executeCommand",
         serde_json::to_value(&command)?,
     )?;
-    let Message::Request(request) = receive(&client)? else {
-        bail!("expected workspace edit");
+    let request = loop {
+        let message = receive(&client)?;
+        match message {
+            Message::Request(request) => break request,
+            Message::Notification(notification)
+                if notification.method == "textDocument/publishDiagnostics" => {}
+            message => bail!("expected workspace edit request, got {message:?}"),
+        }
     };
     assert_eq!(request.method, "workspace/applyEdit");
     let changes = &request.params["edit"]["documentChanges"];

@@ -130,6 +130,7 @@ pub(crate) struct DocumentWork {
     pub(crate) version: Option<i32>,
 }
 
+#[derive(Clone)]
 pub(crate) struct ResolvedDocument {
     pub(crate) code_lenses: Vec<CodeLens>,
     pub(crate) diagnostics: Vec<Diagnostic>,

@@ -28,7 +28,10 @@ pub(super) struct LatestResolutionRequest<'a> {
 }
 
 impl VersionLensSession {
-    pub(super) fn resolve_latest(&self, request: LatestResolutionRequest<'_>) -> LatestLookup {
-        self.resolve_cacheable_latest(request)
+    pub(super) async fn resolve_latest(
+        &self,
+        request: LatestResolutionRequest<'_>,
+    ) -> LatestLookup {
+        self.resolve_cacheable_latest(request).await
     }
 }

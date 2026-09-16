@@ -114,7 +114,7 @@ fn initialize(connection: &Connection, persistent: bool) -> Result<VersionLensLs
 }
 
 fn run_message_loop(connection: &Connection, state: &mut VersionLensLspState) -> Result<()> {
-    let mut work = WorkQueue::new();
+    let mut work = WorkQueue::new()?;
     state.use_workspace_controller();
     let mut checking = WorkspaceController::start(state)?;
     let deadlines = crossbeam_channel::tick(Duration::from_millis(200));

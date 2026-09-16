@@ -1,7 +1,7 @@
 use super::super::*;
 
-#[test]
-fn runtime_release_requests_use_configured_source_providers() {
+#[tokio::test]
+async fn runtime_release_requests_use_configured_source_providers() {
     for (uri, language, text, ecosystem, body, path, expected) in [
         (
             "file:///work/package.json",
@@ -30,7 +30,9 @@ fn runtime_release_requests_use_configured_source_providers() {
             },
             false,
         );
-        let output = session.resolve_document(DocumentInput::new(uri, language, text, None));
+        let output = session
+            .resolve_document(DocumentInput::new(uri, language, text, None))
+            .await;
         assert_eq!(server.join().unwrap(), [path]);
         assert_eq!(output.edits.len(), 1, "{output:?}");
         assert_eq!(output.edits[0].new_text, expected);

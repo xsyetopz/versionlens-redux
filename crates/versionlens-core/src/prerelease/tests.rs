@@ -11,8 +11,8 @@ fn assert_prerelease_update_arguments(output: &crate::AnalyzeDocumentOutput) {
     );
 }
 
-#[test]
-fn show_prereleases_allows_prerelease_updates() {
+#[tokio::test]
+async fn show_prereleases_allows_prerelease_updates() {
     let session = prerelease_session();
 
     let input = DocumentInput::new(
@@ -21,14 +21,16 @@ fn show_prereleases_allows_prerelease_updates() {
         package_file_fixture("prereleases-allows-prerelease-updates.Packages.props"),
         None,
     );
-    let output = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "Newtonsoft.Json".to_owned(),
-            Dotnet,
-            r#"{"versions":["13.0.3","14.0.0-beta.1"]}"#.to_owned(),
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "Newtonsoft.Json".to_owned(),
+                Dotnet,
+                r#"{"versions":["13.0.3","14.0.0-beta.1"]}"#.to_owned(),
+            )],
+        )
+        .await;
     let analysis = session.analyze_document(input);
     let update_arguments =
         crate::support::tests::code_lens_arguments_for_title(&analysis, "↑  beta 14.0.0-beta.1");
@@ -38,8 +40,8 @@ fn show_prereleases_allows_prerelease_updates() {
     assert_eq!(update_arguments, [vec!["update", "14.0.0-beta.1"]]);
 }
 
-#[test]
-fn show_prereleases_applies_to_composer_update_choices() {
+#[tokio::test]
+async fn show_prereleases_applies_to_composer_update_choices() {
     let session = prerelease_session();
 
     let input = DocumentInput::new(
@@ -49,12 +51,13 @@ fn show_prereleases_applies_to_composer_update_choices() {
         None,
     );
 
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "php-parallel-lint/php-parallel-lint".to_owned(),
-            Composer,
-            r#"{
+    session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "php-parallel-lint/php-parallel-lint".to_owned(),
+                Composer,
+                r#"{
               "packages": {
                 "php-parallel-lint/php-parallel-lint": [
                   { "version": "v3.1.3" },
@@ -62,9 +65,10 @@ fn show_prereleases_applies_to_composer_update_choices() {
                 ]
               }
             }"#
-            .to_owned(),
-        )],
-    );
+                .to_owned(),
+            )],
+        )
+        .await;
 
     let analysis = session.analyze_document(input);
 
@@ -76,8 +80,8 @@ fn show_prereleases_applies_to_composer_update_choices() {
     );
 }
 
-#[test]
-fn show_prereleases_applies_to_npm_versions() {
+#[tokio::test]
+async fn show_prereleases_applies_to_npm_versions() {
     let session = prerelease_session();
 
     let input = DocumentInput::new(
@@ -92,13 +96,15 @@ fn show_prereleases_applies_to_npm_versions() {
         r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{}}}"#.to_owned(),
     )];
 
-    session.resolve_document_with_responses(input.clone(), &responses);
+    session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     let output = session.analyze_document(input);
     assert_prerelease_update_arguments(&output);
 }
 
-#[test]
-fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
+#[tokio::test]
+async fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
     let session = prerelease_session();
 
     let input = DocumentInput::new(
@@ -126,7 +132,9 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
         .to_owned(),
     )];
 
-    let resolved = session.resolve_document_with_responses(input.clone(), &responses);
+    let resolved = session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     let output = session.analyze_document(input);
     let titles = output
         .code_lenses
@@ -142,8 +150,8 @@ fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_latest() {
     assert_eq!(arguments, [vec!["update", "4.0.0-next"]]);
 }
 
-#[test]
-fn prerelease_tag_filters_apply_to_responses() {
+#[tokio::test]
+async fn prerelease_tag_filters_apply_to_responses() {
     let session = crate::version_lens_session(SessionConfig {
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
@@ -170,49 +178,55 @@ fn prerelease_tag_filters_apply_to_responses() {
     let responses = [RegistryResponseInput::new("typescript".to_owned(), Npm, r#"{"dist-tags":{"latest":"6.0.3"},"versions":{"6.0.3":{},"7.0.0-beta.1":{},"8.0.0-rc.1":{}}}"#
             .to_owned())];
 
-    session.resolve_document_with_responses(input.clone(), &responses);
+    session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     let output = session.analyze_document(input);
     assert_prerelease_update_arguments(&output);
 }
 
-#[test]
-fn prerelease_ranges_can_resolve_prerelease_versions_when_hidden() {
+#[tokio::test]
+async fn prerelease_ranges_can_resolve_prerelease_versions_when_hidden() {
     let session = crate::support::tests::test_session(true);
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///package.json".to_owned(),
-            "json".to_owned(),
-            package_file_fixture("ranges-can-resolve-prerelease-versions-when-hidden.json"),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "typescript".to_owned(),
-            Npm,
-            r#"{"versions":{"2.0.0-beta.1":{}}}"#.to_owned(),
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///package.json".to_owned(),
+                "json".to_owned(),
+                package_file_fixture("ranges-can-resolve-prerelease-versions-when-hidden.json"),
+                None,
+            ),
+            &[RegistryResponseInput::new(
+                "typescript".to_owned(),
+                Npm,
+                r#"{"versions":{"2.0.0-beta.1":{}}}"#.to_owned(),
+            )],
+        )
+        .await;
 
     assert_eq!(output.edits[0].new_text, "^2.0.0-beta.1");
 }
 
-#[test]
-fn show_prereleases_applies_to_python_releases() {
+#[tokio::test]
+async fn show_prereleases_applies_to_python_releases() {
     let session = prerelease_session();
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///requirements.txt".to_owned(),
-            "pip-requirements".to_owned(),
-            package_file_fixture("prereleases-applies-to-python-releases.txt"),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "flask".to_owned(),
-            Python,
-            r#"{"info":{"version":"3.0.0"},"releases":{"3.0.0":[],"4.0.0rc1":[]}}"#.to_owned(),
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///requirements.txt".to_owned(),
+                "pip-requirements".to_owned(),
+                package_file_fixture("prereleases-applies-to-python-releases.txt"),
+                None,
+            ),
+            &[RegistryResponseInput::new(
+                "flask".to_owned(),
+                Python,
+                r#"{"info":{"version":"3.0.0"},"releases":{"3.0.0":[],"4.0.0rc1":[]}}"#.to_owned(),
+            )],
+        )
+        .await;
 
     assert_eq!(output.edits[0].new_text, "==4.0.0rc1");
 }

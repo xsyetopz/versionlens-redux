@@ -14,7 +14,7 @@ version.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-napi.workspace = true
+napi = { workspace = true, features = ["tokio_rt"] }
 napi-derive.workspace = true
 versionlens-core.workspace = true
 versionlens-http.workspace = true

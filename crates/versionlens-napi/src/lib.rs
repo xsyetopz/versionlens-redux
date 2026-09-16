@@ -7,4 +7,4 @@ pub(crate) use binding::{
     analyze_document_output_from_core, empty_resolve_document_output,
     resolve_document_output_from_core,
 };
-pub(crate) use support::{async_task, clone_arc, new_session_cell, recover_poison};
+pub(crate) use support::{async_task, new_session_cell, recover_poison};

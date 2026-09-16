@@ -11,8 +11,8 @@ fn assert_python_code_lenses(output: &crate::AnalyzeDocumentOutput, expected: &[
     );
 }
 
-#[test]
-fn pyproject_ranges_that_admit_latest_offer_updates_from_canonical_pypi_releases() {
+#[tokio::test]
+async fn pyproject_ranges_that_admit_latest_offer_updates_from_canonical_pypi_releases() {
     let session = standard_session();
     let input = DocumentInput::new(
         "file:///pyproject.toml".to_owned(),
@@ -36,17 +36,19 @@ test = ["httpcore>=0.27,<1"]
     }"#
     .to_owned();
 
-    let output = session.resolve_document_with_responses(
-        input.clone(),
-        &[
-            RegistryResponseInput::new("httpx".to_owned(), Python, body.clone()),
-            RegistryResponseInput {
-                package: "httpcore".to_owned(),
-                ecosystem: Python,
-                body,
-            },
-        ],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[
+                RegistryResponseInput::new("httpx".to_owned(), Python, body.clone()),
+                RegistryResponseInput {
+                    package: "httpcore".to_owned(),
+                    ecosystem: Python,
+                    body,
+                },
+            ],
+        )
+        .await;
 
     assert_eq!(
         output
@@ -67,8 +69,8 @@ test = ["httpcore>=0.27,<1"]
     );
 }
 
-#[test]
-fn requirements_ranges_offer_updates_from_canonical_pypi_releases() {
+#[tokio::test]
+async fn requirements_ranges_offer_updates_from_canonical_pypi_releases() {
     let session = standard_session();
     let input = DocumentInput::new(
         "file:///requirements.txt".to_owned(),
@@ -85,7 +87,7 @@ fn requirements_ranges_offer_updates_from_canonical_pypi_releases() {
             r#"{"info":{"version":"0.28.1"},"releases":{"0.27.0":[],"0.28.1":[{"yanked":false}]}}"#
                 .to_owned(),
         )],
-    );
+    ).await;
 
     assert_eq!(output.suggestions[0].status, "satisfiesLatest");
     let lenses = session.analyze_document(input);

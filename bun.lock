@@ -17,7 +17,7 @@
     },
     "packages/vscode-extension": {
       "name": "versionlens-redux",
-      "version": "0.4.3",
+      "version": "0.4.4",
     },
   },
   "trustedDependencies": [

@@ -2,7 +2,7 @@ use super::*;
 use crate::workspace::tests::support::TestWorkspace;
 
 fn new_snapshot() -> RegistryFileSnapshot {
-    RegistryFileSnapshot::new(crate::arc(crate::default()))
+    RegistryFileSnapshot::new(std::sync::Arc::new(crate::default()))
 }
 
 fn assert_reader_failure_is_scoped(
@@ -144,7 +144,7 @@ fn overlay_failure_is_reported_only_by_readers_that_touch_the_path() {
     let workspace = TestWorkspace::new("registry-reader-overlay-failure");
     let broken = workspace.root.join("broken");
     let healthy = workspace.root.join("healthy");
-    let documents = crate::arc(WorkspaceDocuments::from([
+    let documents = std::sync::Arc::new(WorkspaceDocuments::from([
         (
             broken.clone(),
             ("x".repeat(MAX_REGISTRY_FILE_BYTES + 1), Some(1)),

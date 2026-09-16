@@ -91,8 +91,8 @@ fn completed_request_lock_keys_are_pruned_during_subsequent_requests() {
     assert_eq!(session.request_state.request_locks.lock().unwrap().len(), 1);
 }
 
-#[test]
-fn provider_cache_overrides_global_cache_ttl() {
+#[tokio::test]
+async fn provider_cache_overrides_global_cache_ttl() {
     let session = session_with_manifest_cache(None);
 
     let input = DocumentInput::new(
@@ -107,7 +107,9 @@ fn provider_cache_overrides_global_cache_ttl() {
         r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned(),
     )];
 
-    session.resolve_document_with_responses(input.clone(), &responses);
+    session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     sleep(crate::duration_from_millis(5));
 
     assert!(session.analyze_document(input).code_lenses.is_empty());
@@ -127,8 +129,8 @@ fn manifest_scoped_provider_cache_does_not_override_package_json_npm() {
     );
 }
 
-#[test]
-fn manifest_scoped_provider_cache_controls_cached_suggestions() {
+#[tokio::test]
+async fn manifest_scoped_provider_cache_controls_cached_suggestions() {
     let session = session_with_manifest_cache(Some(PnpmYaml));
     let input = DocumentInput::new(
         "file:///pnpm-workspace.yaml".to_owned(),
@@ -143,7 +145,8 @@ fn manifest_scoped_provider_cache_controls_cached_suggestions() {
         &[crate::support::tests::npm_latest_response(
             "left-pad", "1.1.0",
         )],
-    );
+    )
+    .await;
     assert_eq!(
         session.analyze_document(input.clone()).code_lenses[1].title,
         "↑  latest 1.1.0"
@@ -154,8 +157,8 @@ fn manifest_scoped_provider_cache_controls_cached_suggestions() {
     assert!(session.analyze_document(input).code_lenses.is_empty());
 }
 
-#[test]
-fn registry_responses_override_cached_latest_version() {
+#[tokio::test]
+async fn registry_responses_override_cached_latest_version() {
     let session = crate::support::tests::test_session(false);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
@@ -164,24 +167,28 @@ fn registry_responses_override_cached_latest_version() {
         None,
     );
 
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[crate::support::tests::npm_latest_response(
-            "left-pad", "1.1.0",
-        )],
-    );
-    let refreshed = session.resolve_document_with_responses(
-        input,
-        &[crate::support::tests::npm_latest_response(
-            "left-pad", "1.2.0",
-        )],
-    );
+    session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[crate::support::tests::npm_latest_response(
+                "left-pad", "1.1.0",
+            )],
+        )
+        .await;
+    let refreshed = session
+        .resolve_document_with_responses(
+            input,
+            &[crate::support::tests::npm_latest_response(
+                "left-pad", "1.2.0",
+            )],
+        )
+        .await;
 
     assert_eq!(refreshed.edits[0].new_text, "1.2.0");
 }
 
-#[test]
-fn caches_latest_version_and_clear_cache_removes_it() {
+#[tokio::test]
+async fn caches_latest_version_and_clear_cache_removes_it() {
     let session = crate::support::tests::test_session(false);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
@@ -190,13 +197,17 @@ fn caches_latest_version_and_clear_cache_removes_it() {
         None,
     );
 
-    let first = session.resolve_document_with_responses(
-        input.clone(),
-        &[crate::support::tests::npm_latest_response(
-            "left-pad", "1.1.0",
-        )],
-    );
-    let cached = session.resolve_document_with_responses(input.clone(), &[]);
+    let first = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[crate::support::tests::npm_latest_response(
+                "left-pad", "1.1.0",
+            )],
+        )
+        .await;
+    let cached = session
+        .resolve_document_with_responses(input.clone(), &[])
+        .await;
 
     session.clear_cache();
     let cleared = session.analyze_document(input);
@@ -206,8 +217,8 @@ fn caches_latest_version_and_clear_cache_removes_it() {
     assert!(cleared.diagnostics.is_empty());
 }
 
-#[test]
-fn cached_latest_preserves_registry_build_aliases() {
+#[tokio::test]
+async fn cached_latest_preserves_registry_build_aliases() {
     let session = crate::support::tests::test_session(false);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
@@ -218,8 +229,10 @@ fn cached_latest_preserves_registry_build_aliases() {
     let response = RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.0.0+build.2"},"versions":{"1.0.0":{},"1.0.0+build.1":{},"1.0.0+build.2":{}}}"#
             .to_owned());
 
-    let first = session.resolve_document_with_responses(input.clone(), &[response]);
-    let cached = session.resolve_document_with_responses(input, &[]);
+    let first = session
+        .resolve_document_with_responses(input.clone(), &[response])
+        .await;
+    let cached = session.resolve_document_with_responses(input, &[]).await;
 
     assert_eq!(first.suggestions[0].status, "current");
     assert_eq!(cached.suggestions[0].status, "current");
@@ -248,8 +261,8 @@ fn clear_cache_removes_dotnet_registry_sources() {
     );
 }
 
-#[test]
-fn analyze_document_uses_cached_latest_for_code_lens_title() {
+#[tokio::test]
+async fn analyze_document_uses_cached_latest_for_code_lens_title() {
     let session = crate::support::tests::test_session(true);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
@@ -258,12 +271,14 @@ fn analyze_document_uses_cached_latest_for_code_lens_title() {
         None,
     );
 
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[crate::support::tests::npm_latest_response(
-            "left-pad", "1.1.0",
-        )],
-    );
+    session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[crate::support::tests::npm_latest_response(
+                "left-pad", "1.1.0",
+            )],
+        )
+        .await;
     let output = session.analyze_document(input);
 
     assert_eq!(output.code_lenses[0].title, "🟡 fixed 1.0.0");
@@ -277,8 +292,8 @@ fn analyze_document_uses_cached_latest_for_code_lens_title() {
     assert!(output.code_lenses[1].arguments[1].starts_with("left-pad"));
 }
 
-#[test]
-fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
+#[tokio::test]
+async fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
     let session = crate::support::tests::test_session(false);
     let fixed_input = DocumentInput::new(
         "file:///package.json".to_owned(),
@@ -293,12 +308,13 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
         None,
     );
 
-    session.resolve_document_with_responses(
-        fixed_input,
-        &[RegistryResponseInput::new(
-            "left-pad".to_owned(),
-            Npm,
-            r#"{
+    session
+        .resolve_document_with_responses(
+            fixed_input,
+            &[RegistryResponseInput::new(
+                "left-pad".to_owned(),
+                Npm,
+                r#"{
               "dist-tags": { "latest": "2.0.0" },
               "versions": {
                 "1.0.0": {},
@@ -307,11 +323,14 @@ fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
                 "2.0.0": {}
               }
             }"#
-            .to_owned(),
-        )],
-    );
+                .to_owned(),
+            )],
+        )
+        .await;
 
-    let cached_range = session.resolve_document_with_responses(range_input.clone(), &[]);
+    let cached_range = session
+        .resolve_document_with_responses(range_input.clone(), &[])
+        .await;
     let analysis = session.analyze_document(range_input);
     let titles = analysis
         .code_lenses

@@ -4,23 +4,25 @@ use crate::contract::ResolveDocumentOutput;
 use versionlens_model::Ecosystem::*;
 use versionlens_model::TextEdit;
 
-fn sort_fixture(
+async fn sort_fixture(
     session: &VersionLensSession,
     uri: &str,
     language: &str,
     fixture: &str,
 ) -> ResolveDocumentOutput {
-    session.apply_command(
-        DocumentInput::new(
-            uri.to_owned(),
-            language.to_owned(),
-            package_file_fixture(fixture),
+    session
+        .apply_command(
+            DocumentInput::new(
+                uri.to_owned(),
+                language.to_owned(),
+                package_file_fixture(fixture),
+                None,
+            ),
+            Some("sort"),
             None,
-        ),
-        Some("sort"),
-        None,
-        &[],
-    )
+            &[],
+        )
+        .await
 }
 
 fn assert_sort_output(output: &ResolveDocumentOutput, expected: &[&str]) {

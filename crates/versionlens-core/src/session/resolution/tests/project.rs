@@ -7,55 +7,61 @@ use std::process::id;
 use super::{DocumentInput, standard_session};
 use versionlens_model::Ecosystem::Composer;
 
-#[test]
-fn resolves_project_version_without_registry_response() {
+#[tokio::test]
+async fn resolves_project_version_without_registry_response() {
     let session = standard_session();
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///Cargo.toml".to_owned(),
-            "toml".to_owned(),
-            package_file_fixture("version-without-registry-response.toml"),
-            None,
-        ),
-        &[],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///Cargo.toml".to_owned(),
+                "toml".to_owned(),
+                package_file_fixture("version-without-registry-response.toml"),
+                None,
+            ),
+            &[],
+        )
+        .await;
 
     assert_update(&output, "1.2.4");
 }
 
-#[test]
-fn resolves_jsr_project_version_without_registry_response() {
+#[tokio::test]
+async fn resolves_jsr_project_version_without_registry_response() {
     let session = standard_session();
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///jsr.json".to_owned(),
-            "json".to_owned(),
-            package_file_fixture("jsr-project-version-without-registry-response.json"),
-            None,
-        ),
-        &[],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///jsr.json".to_owned(),
+                "json".to_owned(),
+                package_file_fixture("jsr-project-version-without-registry-response.json"),
+                None,
+            ),
+            &[],
+        )
+        .await;
 
     assert_eq!(output.suggestions[0].status, "updateAvailable");
     assert_eq!(output.suggestions[0].dependency.name, "@scope/pkg");
     assert_eq!(output.edits[0].new_text, "1.2.4");
 }
 
-#[test]
-fn resolves_gleam_project_version_without_registry_response() {
+#[tokio::test]
+async fn resolves_gleam_project_version_without_registry_response() {
     let session = standard_session();
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///gleam.toml".to_owned(),
-            "toml".to_owned(),
-            package_file_fixture("gleam-project-version-without-registry-response.toml"),
-            None,
-        ),
-        &[],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///gleam.toml".to_owned(),
+                "toml".to_owned(),
+                package_file_fixture("gleam-project-version-without-registry-response.toml"),
+                None,
+            ),
+            &[],
+        )
+        .await;
 
     assert_eq!(output.suggestions[0].status, "updateAvailable");
     assert_eq!(output.suggestions[0].dependency.name, "my_package");

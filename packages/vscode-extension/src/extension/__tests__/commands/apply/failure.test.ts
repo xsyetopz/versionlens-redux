@@ -79,17 +79,16 @@ it("resolve command ignores reentry while an edit is pending", async (): Promise
   const first = registeredCommand("versionlens.suggestion.onUpdateDependency")(
     "left-pad",
   );
-  await Promise.resolve();
+  await new Promise((resolve): NodeJS.Timeout => setTimeout(resolve, 0));
   const second = registeredCommand("versionlens.suggestion.onUpdateDependency")(
     "left-pad",
   );
-  await Promise.resolve();
+  await second;
 
   expect(applyInputs).toHaveLength(1);
 
   releaseApplyEdit?.();
   await first;
-  await second;
 });
 
 it("resolve command logs native failures without applying edits", async (): Promise<void> => {

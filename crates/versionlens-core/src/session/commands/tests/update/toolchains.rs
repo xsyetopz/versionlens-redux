@@ -1,5 +1,5 @@
-#[test]
-fn apply_command_does_not_update_swift_local_package_dependency() {
+#[tokio::test]
+async fn apply_command_does_not_update_swift_local_package_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -9,14 +9,14 @@ fn apply_command_does_not_update_swift_local_package_dependency() {
         Some("update"),
         Some("LocalPackage"),
         &[],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn apply_command_updates_zig_github_url_tag_dependency() {
+#[tokio::test]
+async fn apply_command_updates_zig_github_url_tag_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -26,13 +26,13 @@ fn apply_command_updates_zig_github_url_tag_dependency() {
         Some("update"),
         Some("known_folders"),
         &[RegistryResponseInput::new("ziglibs/known-folders".to_owned(), Zig, r#"[{"name":"0.8.0"},{"name":"0.7.0"}]"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "0.8.0");
 }
 
-#[test]
-fn apply_command_does_not_update_zig_path_dependency() {
+#[tokio::test]
+async fn apply_command_does_not_update_zig_path_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -40,14 +40,14 @@ fn apply_command_does_not_update_zig_path_dependency() {
         Some("update"),
         Some("local_dep"),
         &[],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn apply_command_updates_nimble_github_url_dependency() {
+#[tokio::test]
+async fn apply_command_updates_nimble_github_url_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -55,13 +55,13 @@ fn apply_command_updates_nimble_github_url_dependency() {
         Some("update"),
         Some("pkg"),
         &[RegistryResponseInput::new("user/pkg".to_owned(), Nim, r#"[{"name":"2.1.0"},{"name":"2.0.0"}]"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "== 2.1.0");
 }
 
-#[test]
-fn apply_command_does_not_update_nimble_head_dependency() {
+#[tokio::test]
+async fn apply_command_does_not_update_nimble_head_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -71,14 +71,14 @@ fn apply_command_does_not_update_nimble_head_dependency() {
         Some("update"),
         Some("foobar"),
         &[],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn apply_command_updates_luarocks_rockspec_dependency() {
+#[tokio::test]
+async fn apply_command_updates_luarocks_rockspec_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -94,13 +94,13 @@ fn apply_command_updates_luarocks_rockspec_dependency() {
    }
 }"#
             .to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "== 3.1.0-1");
 }
 
-#[test]
-fn apply_command_does_not_update_luarocks_lua_runtime_dependency() {
+#[tokio::test]
+async fn apply_command_does_not_update_luarocks_lua_runtime_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -110,14 +110,14 @@ fn apply_command_does_not_update_luarocks_lua_runtime_dependency() {
         Some("update"),
         Some("lua"),
         &[],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn apply_command_updates_cpanfile_dependency() {
+#[tokio::test]
+async fn apply_command_updates_cpanfile_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -125,13 +125,13 @@ fn apply_command_updates_cpanfile_dependency() {
         Some("update"),
         Some("Plack"),
         &[RegistryResponseInput::new("Plack".to_owned(), Cpan, r#"{"status":"latest","version":"2.0.0"}"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "2.0.0");
 }
 
-#[test]
-fn apply_command_updates_haxelib_json_dependency() {
+#[tokio::test]
+async fn apply_command_updates_haxelib_json_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -139,13 +139,13 @@ fn apply_command_updates_haxelib_json_dependency() {
         Some("update"),
         Some("tink_core"),
         &[RegistryResponseInput::new("tink_core".to_owned(), Haxelib, r#"<code>haxelib install tink_core 2.0.0</code><code>haxelib install tink_core 1.0.0</code>"#.to_owned())],
-    );
+    ).await;
 
     assert_single_edit(&output, "2.0.0");
 }
 
-#[test]
-fn apply_command_does_not_update_haxelib_latest_dependency() {
+#[tokio::test]
+async fn apply_command_does_not_update_haxelib_latest_dependency() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -155,7 +155,7 @@ fn apply_command_does_not_update_haxelib_latest_dependency() {
         Some("update"),
         Some("tink_macro"),
         &[RegistryResponseInput::new("tink_macro".to_owned(), Haxelib, r#"<code>haxelib install tink_macro 2.0.0</code>"#.to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert!(output.edits.is_empty());

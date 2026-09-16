@@ -4,8 +4,8 @@ fn assert_single_nonvulnerable_update(output: &crate::contract::ResolveDocumentO
     assert_eq!(output.vulnerable_update_count, 0);
 }
 
-#[test]
-fn apply_command_does_not_count_vulnerability_fixed_by_update() {
+#[tokio::test]
+async fn apply_command_does_not_count_vulnerability_fixed_by_update() {
     let output = apply_vulnerability_case(VulnerabilityCase {
         fixture: "command-does-not-count-vulnerability-fixed-by-update.json",
         target: None,
@@ -14,7 +14,7 @@ fn apply_command_does_not_count_vulnerability_fixed_by_update() {
         fixed: "1.1.0",
         summary: "prototype issue",
         include_secondary: true,
-    });
+    }).await;
 
     assert_eq!(output.suggestions.len(), 2);
     assert_eq!(output.edits.len(), 2);
@@ -22,8 +22,8 @@ fn apply_command_does_not_count_vulnerability_fixed_by_update() {
     assert_eq!(output.vulnerable_update_count, 0);
 }
 
-#[test]
-fn single_apply_command_counts_vulnerable_update_targets() {
+#[tokio::test]
+async fn single_apply_command_counts_vulnerable_update_targets() {
     let output = apply_vulnerability_case(VulnerabilityCase {
         fixture: "single-apply-command-counts-vulnerable-update-targets.json",
         target: Some("left-pad"),
@@ -32,7 +32,7 @@ fn single_apply_command_counts_vulnerable_update_targets() {
         fixed: "2.0.0",
         summary: "target issue",
         include_secondary: true,
-    });
+    }).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.edits.len(), 1);
@@ -45,8 +45,8 @@ fn single_apply_command_counts_vulnerable_update_targets() {
     assert_eq!(output.vulnerable_update_version.as_deref(), Some("1.1.0"));
 }
 
-#[test]
-fn bulk_apply_command_does_not_count_vulnerable_update_targets() {
+#[tokio::test]
+async fn bulk_apply_command_does_not_count_vulnerable_update_targets() {
     let output = apply_vulnerability_case(VulnerabilityCase {
         fixture: "bulk-apply-command-does-not-count-vulnerable-update-targets.json",
         target: None,
@@ -55,13 +55,13 @@ fn bulk_apply_command_does_not_count_vulnerable_update_targets() {
         fixed: "2.0.0",
         summary: "target issue",
         include_secondary: false,
-    });
+    }).await;
 
     assert_single_nonvulnerable_update(&output);
 }
 
-#[test]
-fn single_apply_command_does_not_count_vulnerable_targets_when_vulnerabilities_are_hidden() {
+#[tokio::test]
+async fn single_apply_command_does_not_count_vulnerable_targets_when_vulnerabilities_are_hidden() {
     let output = apply_vulnerability_case(VulnerabilityCase {
         fixture: "single-apply-command-does-not-count-vulnerable-targets-when-vulnerabilities-are-hidden.json",
         target: Some("left-pad"),
@@ -70,13 +70,13 @@ fn single_apply_command_does_not_count_vulnerable_targets_when_vulnerabilities_a
         fixed: "2.0.0",
         summary: "target issue",
         include_secondary: false,
-    });
+    }).await;
 
     assert_single_nonvulnerable_update(&output);
 }
 
-#[test]
-fn apply_command_counts_authorization_required_failures() {
+#[tokio::test]
+async fn apply_command_counts_authorization_required_failures() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -84,7 +84,7 @@ fn apply_command_counts_authorization_required_failures() {
         Some("update"),
         None,
         &[RegistryResponseInput::new("private-package".to_owned(), Npm, r#"{"status":401}"#.to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.edits.len(), 0);
@@ -92,8 +92,8 @@ fn apply_command_counts_authorization_required_failures() {
     assert_eq!(output.vulnerable_update_count, 0);
 }
 
-#[test]
-fn apply_command_does_not_count_forbidden_registry_failures_as_authorization_required() {
+#[tokio::test]
+async fn apply_command_does_not_count_forbidden_registry_failures_as_authorization_required() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -101,7 +101,7 @@ fn apply_command_does_not_count_forbidden_registry_failures_as_authorization_req
         Some("update"),
         None,
         &[RegistryResponseInput::new("private-package".to_owned(), Npm, r#"{"status":403}"#.to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.edits.len(), 0);
@@ -118,7 +118,7 @@ struct VulnerabilityCase<'a> {
     include_secondary: bool,
 }
 
-fn apply_vulnerability_case(case: VulnerabilityCase<'_>) -> ResolveDocumentOutput {
+async fn apply_vulnerability_case(case: VulnerabilityCase<'_>) -> ResolveDocumentOutput {
     let session = if case.show_vulnerabilities {
         standard_session()
     } else {
@@ -157,5 +157,5 @@ fn apply_vulnerability_case(case: VulnerabilityCase<'_>) -> ResolveDocumentOutpu
         Some("update"),
         case.target,
         &responses,
-    )
+    ).await
 }

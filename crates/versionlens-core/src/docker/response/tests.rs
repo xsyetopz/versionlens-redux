@@ -8,38 +8,40 @@ fn assert_node_same_digest(output: &crate::contract::ResolveDocumentOutput) {
     assert_eq!(output.suggestions[0].builds, node_same_digest_builds());
 }
 
-#[test]
-fn docker_registry_response_missing_requested_tag_creates_no_match() {
+#[tokio::test]
+async fn docker_registry_response_missing_requested_tag_creates_no_match() {
     let session = crate::support::tests::test_session(true);
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///Dockerfile".to_owned(),
-            "dockerfile".to_owned(),
-            package_file_fixture(
-                "docker-registry-response-missing-requested-tag-creates-no-matchDockerfile",
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///Dockerfile".to_owned(),
+                "dockerfile".to_owned(),
+                package_file_fixture(
+                    "docker-registry-response-missing-requested-tag-creates-no-matchDockerfile",
+                ),
+                None,
             ),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "node".to_owned(),
-            Docker,
-            r#"{"results":[{"name":"2.0.0","tag_status":"active","digest":"sha256-2"}]}"#
-                .to_owned(),
-        )],
-    );
+            &[RegistryResponseInput::new(
+                "node".to_owned(),
+                Docker,
+                r#"{"results":[{"name":"2.0.0","tag_status":"active","digest":"sha256-2"}]}"#
+                    .to_owned(),
+            )],
+        )
+        .await;
 
     assert_eq!(output.suggestions[0].status, "noMatch");
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn docker_same_digest_aliases_keep_current_status_and_create_build_suggestions() {
+#[tokio::test]
+async fn docker_same_digest_aliases_keep_current_status_and_create_build_suggestions() {
     let session = crate::support::tests::test_session(true);
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///Dockerfile".to_owned(), "dockerfile".to_owned(), package_file_fixture("docker-same-digest-aliases-keep-current-status-and-create-build-suggestionsDockerfile"), None),
         &[RegistryResponseInput::new("node".to_owned(), Docker, r#"{"results":[{"name":"latest","tag_status":"active","digest":"sha256-23"},{"name":"current-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"current","tag_status":"active","digest":"sha256-23"},{"name":"bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0","tag_status":"active","digest":"sha256-23"},{"name":"23.11-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11","tag_status":"active","digest":"sha256-23"},{"name":"23-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23","tag_status":"active","digest":"sha256-23"}]}"#
                 .to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions[0].status, "current");
     assert_eq!(
@@ -59,55 +61,63 @@ fn docker_same_digest_aliases_keep_current_status_and_create_build_suggestions()
     );
 }
 
-#[test]
-fn docker_untagged_image_uses_latest_alias_as_current() {
+#[tokio::test]
+async fn docker_untagged_image_uses_latest_alias_as_current() {
     let session = crate::support::tests::test_session(true);
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///Dockerfile".to_owned(),
-            "dockerfile".to_owned(),
-            package_file_fixture("docker-untagged-image-uses-latest-alias-as-currentDockerfile"),
-            None,
-        ),
-        &[node_same_digest_response()],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///Dockerfile".to_owned(),
+                "dockerfile".to_owned(),
+                package_file_fixture(
+                    "docker-untagged-image-uses-latest-alias-as-currentDockerfile",
+                ),
+                None,
+            ),
+            &[node_same_digest_response()],
+        )
+        .await;
 
     assert_node_same_digest(&output);
 }
 
-#[test]
-fn docker_untagged_image_with_non_version_latest_is_no_match() {
+#[tokio::test]
+async fn docker_untagged_image_with_non_version_latest_is_no_match() {
     let session = crate::support::tests::test_session(true);
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///Dockerfile".to_owned(),
-            "dockerfile".to_owned(),
-            package_file_fixture(
-                "docker-untagged-image-with-non-version-latest-is-no-matchDockerfile",
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///Dockerfile".to_owned(),
+                "dockerfile".to_owned(),
+                package_file_fixture(
+                    "docker-untagged-image-with-non-version-latest-is-no-matchDockerfile",
+                ),
+                None,
             ),
-            None,
-        ),
-        &[mssql_latest_response()],
-    );
+            &[mssql_latest_response()],
+        )
+        .await;
 
     crate::support::tests::assert_suggestion(&output, 0, "noMatch", None);
     assert!(output.suggestions[0].builds.is_empty());
 }
 
-#[test]
-fn docker_explicit_latest_non_version_alias_keeps_latest_as_current() {
+#[tokio::test]
+async fn docker_explicit_latest_non_version_alias_keeps_latest_as_current() {
     let session = crate::support::tests::test_session(true);
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///Dockerfile".to_owned(),
-            "dockerfile".to_owned(),
-            package_file_fixture(
-                "docker-explicit-latest-non-version-alias-keeps-latest-as-currentDockerfile",
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///Dockerfile".to_owned(),
+                "dockerfile".to_owned(),
+                package_file_fixture(
+                    "docker-explicit-latest-non-version-alias-keeps-latest-as-currentDockerfile",
+                ),
+                None,
             ),
-            None,
-        ),
-        &[mssql_latest_response()],
-    );
+            &[mssql_latest_response()],
+        )
+        .await;
 
     crate::support::tests::assert_suggestion(&output, 0, "current", Some("latest"));
     assert_eq!(
@@ -123,13 +133,13 @@ fn docker_explicit_latest_non_version_alias_keeps_latest_as_current() {
     );
 }
 
-#[test]
-fn docker_same_digest_short_alias_keeps_current_status_and_build_suggestions() {
+#[tokio::test]
+async fn docker_same_digest_short_alias_keeps_current_status_and_build_suggestions() {
     let session = crate::support::tests::test_session(true);
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///Dockerfile".to_owned(), "dockerfile".to_owned(), package_file_fixture("docker-same-digest-short-alias-keeps-current-status-and-build-suggestionsDockerfile"), None),
         &[node_same_digest_response()],
-    );
+    ).await;
 
     assert_node_same_digest(&output);
 }

@@ -1,22 +1,26 @@
 use super::*;
 
-#[test]
-fn go_mod_exclude_versions_are_fixed_without_registry_updates() {
+#[tokio::test]
+async fn go_mod_exclude_versions_are_fixed_without_registry_updates() {
     let session = standard_session();
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///go.mod".to_owned(),
-            "go.mod".to_owned(),
-            package_file_fixture("go-mod-exclude-versions-are-fixed-without-registry-updates.mod"),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "example.test/bad".to_owned(),
-            Go,
-            "v1.0.0\nv1.1.0\n".to_owned(),
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///go.mod".to_owned(),
+                "go.mod".to_owned(),
+                package_file_fixture(
+                    "go-mod-exclude-versions-are-fixed-without-registry-updates.mod",
+                ),
+                None,
+            ),
+            &[RegistryResponseInput::new(
+                "example.test/bad".to_owned(),
+                Go,
+                "v1.0.0\nv1.1.0\n".to_owned(),
+            )],
+        )
+        .await;
 
     crate::support::tests::assert_fixed_suggestion(&output, "excluded version");
 }

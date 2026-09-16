@@ -1,11 +1,11 @@
-#[test]
-fn composer_platform_dependencies_are_fixed() {
+#[tokio::test]
+async fn composer_platform_dependencies_are_fixed() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///repo/composer.json".to_owned(), "json".to_owned(), package_file_fixture("platform-dependencies-are-fixed.json"), None),
         &[RegistryResponseInput::new("phpunit/phpunit".to_owned(), Composer, r#"{"packages":{"phpunit/phpunit":[{"version":"10.5.0"}]}}"#.to_owned())],
-    );
+    ).await;
 
     crate::support::tests::assert_suggestion(&output, 0, "fixed", Some("^8.3"));
     assert_eq!(output.suggestions[1].status, "fixed");
@@ -13,15 +13,15 @@ fn composer_platform_dependencies_are_fixed() {
     assert_eq!(output.suggestions[2].latest.as_deref(), Some("10.5.0"));
 }
 
-#[test]
-fn composer_stability_flags_allow_prerelease_updates() {
+#[tokio::test]
+async fn composer_stability_flags_allow_prerelease_updates() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///repo/composer.json".to_owned(), "json".to_owned(), package_file_fixture("stability-flags-allow-prerelease-updates.json"), None),
         &[RegistryResponseInput::new("acme/pkg".to_owned(), Composer, r#"{"packages":{"acme/pkg":[{"version":"1.0.0"},{"version":"1.1.0-beta.1"}]}}"#
                 .to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(
@@ -32,8 +32,8 @@ fn composer_stability_flags_allow_prerelease_updates() {
     assert_eq!(output.edits[0].new_text, "^1.1.0-beta.1@beta");
 }
 
-#[test]
-fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
+#[tokio::test]
+async fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
     let session = standard_session();
     let input = DocumentInput::new("file:///repo/composer.json".to_owned(), "json".to_owned(), package_file_fixture(
             "release-resolves-fixed-with-release-update-choices.json",
@@ -55,7 +55,7 @@ fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
                 ]
               }
             }"#,
-    );
+    ).await;
 
     let (titles, arguments) = analyze_composer(&session, input);
 
@@ -79,14 +79,14 @@ fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
     );
 }
 
-#[test]
-fn missing_fixed_composer_registry_version_resolves_no_match_with_update_choices() {
+#[tokio::test]
+async fn missing_fixed_composer_registry_version_resolves_no_match_with_update_choices() {
     let session = standard_session();
     let input = DocumentInput::new("file:///repo/composer.json".to_owned(), "json".to_owned(), package_file_fixture(
             "missing-fixed-composer-registry-version-resolves-no-match-with-update-choices.json",
         ), None);
 
-    let output = resolve_missing_composer(&session, &input);
+    let output = resolve_missing_composer(&session, &input).await;
 
     let (titles, arguments) = analyze_composer(&session, input);
 
@@ -110,8 +110,8 @@ fn missing_fixed_composer_registry_version_resolves_no_match_with_update_choices
     );
 }
 
-#[test]
-fn invalid_composer_requirement_resolves_invalid_without_registry_lookup() {
+#[tokio::test]
+async fn invalid_composer_requirement_resolves_invalid_without_registry_lookup() {
     let session = standard_session();
 
     let output = session.resolve_document_with_responses(
@@ -120,7 +120,7 @@ fn invalid_composer_requirement_resolves_invalid_without_registry_lookup() {
             ), None),
         &[RegistryResponseInput::new("php-parallel-lint/php-parallel-lint".to_owned(), Composer, r#"{"packages":{"php-parallel-lint/php-parallel-lint":[{"version":"v9.9.9"}]}}"#
                 .to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions[0].status, "invalid");
     assert_eq!(
@@ -130,7 +130,7 @@ fn invalid_composer_requirement_resolves_invalid_without_registry_lookup() {
     assert!(output.edits.is_empty());
 }
 
-fn resolve_composer(
+async fn resolve_composer(
     session: &crate::VersionLensSession,
     input: &DocumentInput,
     body: &str,
@@ -142,10 +142,10 @@ fn resolve_composer(
             Composer,
             body.to_owned(),
         )],
-    )
+    ).await
 }
 
-fn resolve_missing_composer(
+async fn resolve_missing_composer(
     session: &crate::VersionLensSession,
     input: &DocumentInput,
 ) -> crate::contract::ResolveDocumentOutput {
@@ -161,7 +161,7 @@ fn resolve_missing_composer(
                 ]
               }
             }"#,
-    )
+    ).await
 }
 
 fn analyze_composer(

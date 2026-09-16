@@ -7,7 +7,6 @@ use crate::contract::AuthorizationRequestPayload;
 pub(crate) struct OperationContext {
     authorization_requests: Arc<Mutex<Vec<AuthorizationRequestPayload>>>,
     deadline: Option<Instant>,
-    timeout: Option<Duration>,
     pub(crate) attempted_at_ms: u64,
     pub(crate) persistent_epoch: Option<u64>,
     storage: Option<Arc<versionlens_cache::PersistentCache>>,
@@ -20,7 +19,6 @@ impl OperationContext {
         Self {
             authorization_requests: Arc::new(crate::mutex(vec![])),
             deadline: Instant::now().checked_add(timeout),
-            timeout: Some(timeout),
             attempted_at_ms: timestamp_ms(),
             generation: None,
             cancellation: None,
@@ -33,7 +31,6 @@ impl OperationContext {
         Self {
             authorization_requests: Arc::clone(&self.authorization_requests),
             deadline: Instant::now().checked_add(timeout),
-            timeout: Some(timeout),
             attempted_at_ms: timestamp_ms(),
             generation: self.generation.clone(),
             cancellation: self.cancellation.clone(),
@@ -90,13 +87,6 @@ impl OperationContext {
             })
     }
 
-    pub(crate) fn for_execution(&self) -> Self {
-        match self.timeout {
-            Some(timeout) => self.independent_timeout(timeout),
-            None => self.clone(),
-        }
-    }
-
     pub(crate) fn is_expired(&self) -> bool {
         !self.is_current()
             || self
@@ -143,7 +133,6 @@ impl Default for OperationContext {
         Self {
             authorization_requests: Arc::new(crate::mutex(vec![])),
             deadline: None,
-            timeout: None,
             attempted_at_ms: timestamp_ms(),
             generation: None,
             cancellation: None,

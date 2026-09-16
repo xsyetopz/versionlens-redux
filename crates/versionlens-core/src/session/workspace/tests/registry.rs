@@ -264,21 +264,23 @@ fn sparse_oversized_registry_file_fails_until_workspace_invalidation() {
     assert!(registry_url(&recovered, "demo").starts_with("https://recovered.test/"));
 }
 
-#[test]
-fn registry_failure_does_not_replace_an_unrelated_cached_context() {
+#[tokio::test]
+async fn registry_failure_does_not_replace_an_unrelated_cached_context() {
     let workspace = TestWorkspace::new("registry-failure-cache");
     workspace.write("healthy/.npmrc", "registry=https://cached.test/");
     let mut input = npm_input(&workspace, "healthy/package.json");
     input.uri = crate::workspace_file_uri(&workspace.root.join("healthy/package.json")).unwrap();
     let session = crate::support::tests::test_session(false);
-    let successful = session.resolve_document_with_responses(
-        input.clone(),
-        &[crate::RegistryResponseInput::new(
-            "demo".to_owned(),
-            Ecosystem::Npm,
-            r#"{"versions":{"1.0.0":{},"2.0.0":{}}}"#.to_owned(),
-        )],
-    );
+    let successful = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[crate::RegistryResponseInput::new(
+                "demo".to_owned(),
+                Ecosystem::Npm,
+                r#"{"versions":{"1.0.0":{},"2.0.0":{}}}"#.to_owned(),
+            )],
+        )
+        .await;
     assert_ne!(successful.suggestions[0].status, "error");
 
     let oversized = workspace.document("broken/.npmrc", &"x".repeat(1024 * 1024 + 1), 2);
@@ -291,7 +293,7 @@ fn registry_failure_does_not_replace_an_unrelated_cached_context() {
     let healthy = npm_context(&session, &input);
     assert!(healthy.failure_message().is_none());
     assert!(registry_url(&healthy, "demo").starts_with("https://cached.test/"));
-    let resolved = session.resolve_document(input);
+    let resolved = session.resolve_document(input).await;
     assert_ne!(resolved.suggestions[0].status, "error");
 }
 
@@ -309,8 +311,8 @@ fn three_hundred_member_registry_contexts_fit_in_one_snapshot() {
     }
 }
 
-#[test]
-fn local_dependency_stays_fresh_when_registry_configuration_fails() {
+#[tokio::test]
+async fn local_dependency_stays_fresh_when_registry_configuration_fails() {
     let (workspace, consumer) = local_member_workspace("local-registry-failure");
     let config = std::fs::File::create(workspace.root.join(".npmrc")).unwrap();
     config.set_len(1024 * 1024 + 1).unwrap();
@@ -327,7 +329,7 @@ fn local_dependency_stays_fresh_when_registry_configuration_fails() {
     );
     assert!(graph.resolve(&local_dependency).is_some());
 
-    let output = session.resolve_document(consumer.clone());
+    let output = session.resolve_document(consumer.clone()).await;
 
     let suggestion = output
         .suggestions

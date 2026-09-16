@@ -35,6 +35,7 @@ import type {
 import { updateContexts } from "./contexts.ts";
 
 type AsyncBoolean = Promise<boolean>;
+type AsyncResolution = Promise<ResolveDocumentOutput | undefined>;
 type NativeRange = NativeTextEdit["range"];
 
 const WINDOWS_ABSOLUTE_PATH = /^[a-z]:[\\/]/iu;
@@ -69,12 +70,11 @@ async function applyRustEdits(
     return;
   }
 
-  const applied = applyCommand(state, editor.document, {
+  let output = await applyCommand(state, editor.document, {
     command,
     dependencyName,
     selectedVersion: options.selectedVersion,
   });
-  let output = applied instanceof Promise ? await applied : applied;
   if (!output) {
     return;
   }
@@ -314,7 +314,7 @@ async function retryAfterAddingAuthentication(
   document: TextDocument,
   selection: ApplySelection,
   authRequest: Parameters<typeof addAuthHeader>[1],
-): Promise<ResolveDocumentOutput | undefined> {
+): AsyncResolution {
   if (!(await addAuthHeader(state, authRequest))) {
     return;
   }
@@ -336,14 +336,11 @@ async function reloadAuthBackedSession(
   return true;
 }
 
-function applyCommand(
+async function applyCommand(
   state: ExtensionState,
   document: TextDocument,
   selection: ApplySelection,
-):
-  | ResolveDocumentOutput
-  | Promise<ResolveDocumentOutput | undefined>
-  | undefined {
+): AsyncResolution {
   clearProviderError(state);
   increaseProviderBusy(state);
   const { command, dependencyName, selectedVersion } = selection;
@@ -360,29 +357,14 @@ function applyCommand(
     if (selectedVersion) {
       input.selectedVersion = selectedVersion;
     }
-    const nativeApply = sessionForResource(state, document.uri)?.applyCommand as
-      | ((
-          input: NativeApplyCommandInput,
-        ) => ResolveDocumentOutput | Promise<ResolveDocumentOutput>)
-      | undefined;
-    const output = nativeApply?.(input);
-    if (output instanceof Promise) {
-      return output
-        .catch((error: unknown): undefined => {
-          logProviderError(state, error);
-          setProviderError(state);
-        })
-        .finally((): void => {
-          decreaseProviderBusy(state);
-        });
-    }
-    decreaseProviderBusy(state);
-    return output;
+    const session = sessionForResource(state, document.uri);
+    return await session?.applyCommand(input);
   } catch (error) {
     logProviderError(state, error);
     setProviderError(state);
-    decreaseProviderBusy(state);
     return;
+  } finally {
+    decreaseProviderBusy(state);
   }
 }
 

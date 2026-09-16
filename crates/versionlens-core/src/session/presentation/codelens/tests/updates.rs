@@ -1,5 +1,5 @@
-#[test]
-fn code_lenses_offer_bump_update_choices_for_ranges() {
+#[tokio::test]
+async fn code_lenses_offer_bump_update_choices_for_ranges() {
     let output = build_code_lens_output(
         "left-pad-4.1.0-range.json",
         "5.4.5",
@@ -7,7 +7,7 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
             "2.1.2", "3.0.0", "3.1.0", "4.0.0", "4.0.1", "4.1.10", "5.1.1", "5.2.0",
             "5.3.3", "5.4.5",
         ],
-    );
+    ).await;
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::all_code_lens_arguments(&output);
 
@@ -35,13 +35,13 @@ fn code_lenses_offer_bump_update_choices_for_ranges() {
     );
 }
 
-#[test]
-fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
+#[tokio::test]
+async fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
     let output = build_code_lens_output(
         "left-pad-invalid-range.json",
         "5.0.0",
         &["1.0.0", "2.0.0", "5.0.0"],
-    );
+    ).await;
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::all_code_lens_arguments(&output);
 
@@ -49,33 +49,30 @@ fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
     assert_eq!(arguments, [Vec::<&str>::new(), vec!["update", "5.0.0"]]);
 }
 
-#[test]
-fn code_lenses_omit_latest_update_choice_for_ranges_satisfying_latest() {
+#[tokio::test]
+async fn code_lenses_omit_latest_update_choice_for_ranges_satisfying_latest() {
     let output = build_code_lens_output(
         "left-pad-gte-2.json",
         "3.0.0",
         &["1.0.0", "2.0.0", "2.1.0", "3.0.0"],
-    );
-    let titles = lens_titles(&output);
-    let arguments = crate::support::tests::all_code_lens_arguments(&output);
-
+    ).await;
     assert_eq!(
-        titles,
+        lens_titles(&output),
         ["S satisfies latest 3.0.0",]
     );
     assert_eq!(
-        arguments,
+        crate::support::tests::all_code_lens_arguments(&output),
         [Vec::<&str>::new()]
     );
 }
 
-#[test]
-fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
+#[tokio::test]
+async fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
     let output = build_code_lens_output(
         "left-pad-gte-2-lt-3.json",
         "3.0.0",
         &["1.0.0", "2.0.0", "2.1.0", "3.0.0"],
-    );
+    ).await;
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::all_code_lens_arguments(&output);
 
@@ -97,8 +94,8 @@ fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
     );
 }
 
-#[test]
-fn github_current_release_omits_noop_latest_and_older_choices() {
+#[tokio::test]
+async fn github_current_release_omits_noop_latest_and_older_choices() {
     let session = standard_session();
     let input = DocumentInput::new(
         "file:///work/.github/workflows/ci.yml".to_owned(),
@@ -112,7 +109,7 @@ fn github_current_release_omits_noop_latest_and_older_choices() {
         versionlens_model::Ecosystem::GitHub,
         r#"[{"name":"v7.0.1"},{"name":"v7.0.0"},{"name":"v6.0.0"}]"#.to_owned(),
     )];
-    let resolved = session.resolve_document_with_responses(input.clone(), &responses);
+    let resolved = session.resolve_document_with_responses(input.clone(), &responses).await;
     let output = session.analyze_document(input);
 
     assert_eq!(
@@ -133,8 +130,8 @@ fn github_current_release_omits_noop_latest_and_older_choices() {
     );
 }
 
-#[test]
-fn code_lenses_offer_prerelease_update_choices_by_tag() {
+#[tokio::test]
+async fn code_lenses_offer_prerelease_update_choices_by_tag() {
     let session = standard_session();
     let input = package_document("left-pad-prerelease-range.json");
 
@@ -151,7 +148,7 @@ fn code_lenses_offer_prerelease_update_choices_by_tag() {
               }
             }"#
             .to_owned())],
-    );
+    ).await;
     let titles = lens_titles(&output);
 
     assert_eq!(

@@ -1,29 +1,28 @@
-use std::sync::{Mutex, MutexGuard, TryLockError};
-use std::thread::sleep;
-use std::time::Duration;
+use std::sync::Arc;
 
 use versionlens_http::{
-    ACCEPT_GITHUB_V3, ACCEPT_JSON, HttpError, RetryPolicy, get_text_with_accept_and_retry,
-    get_text_with_accept_and_retry_timeout,
+    ACCEPT_GITHUB_V3, ACCEPT_JSON, ACCEPT_NPM_INSTALL_V1, HttpError, RetryPolicy,
+    get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout,
 };
 use versionlens_model::Ecosystem;
 use versionlens_model::Ecosystem::{Go, Maven, Npm, Python};
 use versionlens_providers::http_status_message_from_code;
 
 use crate::VersionLensSession;
+use crate::concurrency::acquire_registry_permits;
 use crate::error::FetchError;
 use crate::error::FetchError::RegistryStatus as FetchRegistryStatus;
 use crate::registry::RegistryContext;
 use crate::session::operation::OperationContext;
 
 impl VersionLensSession {
-    pub(in crate::fetch) fn get_text_or_status_with_context(
+    pub(in crate::fetch) async fn get_text_or_status_with_context(
         &self,
         url: &str,
         ecosystem: Ecosystem,
         context: &RegistryContext,
         operation: &OperationContext,
-    ) -> Result<Option<String>, FetchError> {
+    ) -> Result<Option<Arc<str>>, FetchError> {
         let http_config = self.effective_http_config(url, ecosystem, context);
         let cache_key = self.request_cache_key(url, &http_config);
         if let Some(body) = self.cached_request_body(&cache_key) {
@@ -34,25 +33,38 @@ impl VersionLensSession {
         }
 
         let request_lock = self.request_lock(&cache_key);
-        let _request_guard = lock_request_before_deadline(&request_lock, operation)?;
+        let _request_guard = match operation.remaining_duration() {
+            Some(remaining) => tokio::time::timeout(remaining, request_lock.lock())
+                .await
+                .map_err(|_| FetchError::OperationTimeout)?,
+            None => request_lock.lock().await,
+        };
         if let Some(body) = self.cached_request_body(&cache_key) {
             return Ok(Some(body));
         }
         if operation.is_expired() {
             return Err(FetchError::OperationTimeout);
         }
+        let Some((_request, _background)) =
+            acquire_registry_permits(self.storage_state.task_priority, operation).await
+        else {
+            return Err(FetchError::OperationTimeout);
+        };
 
         let accept = accept_header_for_request(ecosystem, url);
         let retry_policy = retry_policy_for_request(ecosystem, url);
         let response = match operation.remaining_duration() {
-            Some(remaining) => get_text_with_accept_and_retry_timeout(
-                url,
-                &http_config,
-                accept,
-                retry_policy,
-                remaining,
-            ),
-            None => get_text_with_accept_and_retry(url, &http_config, accept, retry_policy),
+            Some(remaining) => {
+                get_text_with_accept_and_retry_timeout(
+                    url,
+                    &http_config,
+                    accept,
+                    retry_policy,
+                    remaining,
+                )
+                .await
+            }
+            None => get_text_with_accept_and_retry(url, &http_config, accept, retry_policy).await,
         };
 
         match response {
@@ -60,9 +72,10 @@ impl VersionLensSession {
                 if operation.is_expired() {
                     return Err(FetchError::OperationTimeout);
                 }
+                let body = Arc::<str>::from(body);
                 self.cache_request_body(
                     cache_key,
-                    &body,
+                    Arc::clone(&body),
                     self.cache_ttl(ecosystem, context.manifest_kind()),
                     operation,
                 );
@@ -95,39 +108,12 @@ impl VersionLensSession {
     }
 }
 
-const REQUEST_LOCK_POLL_INTERVAL: Duration = Duration::from_millis(1);
-
-fn lock_request_before_deadline<'a>(
-    lock: &'a Mutex<()>,
-    operation: &OperationContext,
-) -> Result<MutexGuard<'a, ()>, FetchError> {
-    if operation.remaining_duration().is_none() {
-        return Ok(lock
-            .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned)));
-    }
-
-    loop {
-        let Some(remaining) = operation.remaining_duration() else {
-            unreachable!("the operation deadline cannot be removed while waiting for a lock");
-        };
-        if remaining.is_zero() {
-            return Err(FetchError::OperationTimeout);
-        }
-
-        match lock.try_lock() {
-            Ok(guard) => return Ok(guard),
-            Err(TryLockError::Poisoned(poisoned)) => {
-                return Ok(crate::recover_poison(poisoned));
-            }
-            Err(TryLockError::WouldBlock) => sleep(remaining.min(REQUEST_LOCK_POLL_INTERVAL)),
-        }
-    }
-}
-
 fn accept_header_for_request(ecosystem: Ecosystem, url: &str) -> Option<&'static str> {
     if starts_with_ignore_ascii_case(url, "https://api.github.com/repos/") {
         return Some(ACCEPT_GITHUB_V3);
+    }
+    if ecosystem == Npm && starts_with_ignore_ascii_case(url, "https://registry.npmjs.org/") {
+        return Some(ACCEPT_NPM_INSTALL_V1);
     }
     match ecosystem {
         Go | Maven | Npm | Python => None,

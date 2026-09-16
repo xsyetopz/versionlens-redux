@@ -1,3 +1,7 @@
+use std::collections::HashSet;
+use std::panic::resume_unwind;
+use std::sync::Arc;
+
 use versionlens_edits::bulk_update_edits;
 use versionlens_edits::sort_dependency_edits;
 use versionlens_edits::update_edits;
@@ -29,7 +33,7 @@ pub struct ApplyCommandRequest<'a> {
 }
 
 impl VersionLensSession {
-    pub fn apply_command(
+    pub async fn apply_command(
         &self,
         input: DocumentInput,
         command: Option<&str>,
@@ -43,9 +47,10 @@ impl VersionLensSession {
             selected_version: None,
             responses,
         })
+        .await
     }
 
-    pub fn apply_command_with_selected_version(
+    pub async fn apply_command_with_selected_version(
         &self,
         request: ApplyCommandRequest<'_>,
     ) -> ResolveDocumentOutput {
@@ -72,14 +77,20 @@ impl VersionLensSession {
         let manifest_kind = self.classify_document(&input);
         let project_bump = project_version_bump(command, dependency_name);
         let mut suggestions = match dependency_name {
-            Some(name) => self.resolve_dependency_suggestions(DependencySuggestionsRequest {
-                input,
-                selector: name,
-                responses,
-                project_bump,
-                operation: &operation,
-            }),
-            None => self.resolve_suggestions(input, responses, project_bump, &operation),
+            Some(name) => {
+                self.resolve_dependency_suggestions(DependencySuggestionsRequest {
+                    input,
+                    selector: name,
+                    responses,
+                    project_bump,
+                    operation: &operation,
+                })
+                .await
+            }
+            None => {
+                self.resolve_suggestions(input, responses, project_bump, &operation)
+                    .await
+            }
         };
         let bulk_dependency_update = bulk_dependency_update_command(command, dependency_name);
         if let Some(version) = selected_version {
@@ -105,6 +116,7 @@ impl VersionLensSession {
                     Some(manifest_kind),
                     &operation,
                 )
+                .await
             } else {
                 (0, None, None)
             };
@@ -170,7 +182,7 @@ impl VersionLensSession {
         deadline
     }
 
-    pub(crate) fn vulnerable_update_count(
+    pub(crate) async fn vulnerable_update_count(
         &self,
         suggestions: &[Suggestion],
         responses: &[RegistryResponseInput],
@@ -178,23 +190,53 @@ impl VersionLensSession {
         operation: &OperationContext,
     ) -> u32 {
         self.vulnerable_update_summary(suggestions, responses, manifest_kind, operation)
+            .await
             .0
     }
 
-    fn vulnerable_update_summary(
+    async fn vulnerable_update_summary(
         &self,
         suggestions: &[Suggestion],
         responses: &[RegistryResponseInput],
         manifest_kind: Option<ManifestKind>,
         operation: &OperationContext,
     ) -> (u32, Option<String>, Option<String>) {
+        if !self.config.show_vulnerabilities {
+            return (0, None, None);
+        }
+        let mut dependencies = Vec::new();
         for suggestion in suggestions {
-            self.cache_update_choice_vulnerabilities(
-                suggestion,
-                responses,
-                manifest_kind,
-                operation,
+            dependencies.push(suggestion.dependency.clone());
+            dependencies.extend(
+                suggestion.choices.iter().map(|choice| {
+                    update_dependency_for_version(suggestion, choice.version.as_str())
+                }),
             );
+            if let Some(target) = target_update_dependency(suggestion) {
+                dependencies.push(target);
+            }
+        }
+        let mut keys = HashSet::new();
+        dependencies.retain(|dependency| keys.insert(vulnerability_cache_key(dependency)));
+        let responses = Arc::new(responses.to_vec());
+        let mut tasks = tokio::task::JoinSet::new();
+        for dependency in dependencies {
+            let session = self.clone();
+            let responses = Arc::clone(&responses);
+            let operation = operation.clone();
+            tasks.spawn(async move {
+                session
+                    .cache_vulnerabilities(&dependency, &responses, manifest_kind, &operation)
+                    .await;
+            });
+        }
+        while let Some(result) = tasks.join_next().await {
+            if let Err(error) = result {
+                if error.is_panic() {
+                    resume_unwind(error.into_panic());
+                }
+                return (0, None, None);
+            }
         }
 
         let mut count = 0;
@@ -204,7 +246,6 @@ impl VersionLensSession {
             let Some(dependency) = target_update_dependency(suggestion) else {
                 continue;
             };
-            self.cache_vulnerabilities(&dependency, responses, manifest_kind, operation);
             if !self.has_cached_vulnerabilities(&dependency) {
                 continue;
             }
@@ -216,19 +257,6 @@ impl VersionLensSession {
         }
 
         (to_u32(count), package, version)
-    }
-
-    fn cache_update_choice_vulnerabilities(
-        &self,
-        suggestion: &Suggestion,
-        responses: &[RegistryResponseInput],
-        manifest_kind: Option<ManifestKind>,
-        operation: &OperationContext,
-    ) {
-        for choice in &suggestion.choices {
-            let dependency = update_dependency_for_version(suggestion, choice.version.as_str());
-            self.cache_vulnerabilities(&dependency, responses, manifest_kind, operation);
-        }
     }
 
     pub(crate) fn target_update_has_cached_vulnerabilities(

@@ -6,10 +6,6 @@ pub(crate) fn recover_poison<T>(poisoned: SyncPoisonError<T>) -> T {
     poisoned.into_inner()
 }
 
-pub(crate) fn clone_arc<T>(value: &StdArc<T>) -> StdArc<T> {
-    value.clone()
-}
-
 pub(crate) fn new_session_cell<T>(value: T) -> StdArc<StdRwLock<T>> {
     StdArc::new(StdRwLock::new(value))
 }

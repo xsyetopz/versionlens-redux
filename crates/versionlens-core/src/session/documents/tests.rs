@@ -240,23 +240,25 @@ fn analyze_document_serializes_dependencies_as_vscode_payloads() {
     assert_eq!(value["dependencies"][0]["ecosystem"], "golang");
 }
 
-#[test]
-fn resolve_document_serializes_suggestions_as_vscode_payloads() {
+#[tokio::test]
+async fn resolve_document_serializes_suggestions_as_vscode_payloads() {
     let session = standard_session(false);
 
-    let output = session.resolve_document_with_responses(
-        DocumentInput::new(
-            "file:///go.mod".to_owned(),
-            "go.mod".to_owned(),
-            package_file_fixture("go-single-require.mod"),
-            None,
-        ),
-        &[RegistryResponseInput::new(
-            "example.test/pkg".to_owned(),
-            Go,
-            "v1.1.0\n".to_owned(),
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            DocumentInput::new(
+                "file:///go.mod".to_owned(),
+                "go.mod".to_owned(),
+                package_file_fixture("go-single-require.mod"),
+                None,
+            ),
+            &[RegistryResponseInput::new(
+                "example.test/pkg".to_owned(),
+                Go,
+                "v1.1.0\n".to_owned(),
+            )],
+        )
+        .await;
     let value = to_value(output).unwrap();
 
     assert_eq!(
@@ -267,8 +269,8 @@ fn resolve_document_serializes_suggestions_as_vscode_payloads() {
     assert_eq!(value["suggestions"][0]["status"], "updateAvailable");
 }
 
-#[test]
-fn deno_non_jsr_npm_imports_produce_no_suggestions_like_upstream() {
+#[tokio::test]
+async fn deno_non_jsr_npm_imports_produce_no_suggestions_like_upstream() {
     let session = standard_session(false);
     let input = DocumentInput::new(
         "file:///deno.json".to_owned(),
@@ -277,7 +279,9 @@ fn deno_non_jsr_npm_imports_produce_no_suggestions_like_upstream() {
         None,
     );
 
-    let output = session.resolve_document_with_responses(input.clone(), &[]);
+    let output = session
+        .resolve_document_with_responses(input.clone(), &[])
+        .await;
     let analysis = session.analyze_document(input);
 
     assert_eq!(analysis.dependencies.len(), 1);
@@ -286,13 +290,15 @@ fn deno_non_jsr_npm_imports_produce_no_suggestions_like_upstream() {
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn analyze_document_uses_cached_latest_for_diagnostics() {
+#[tokio::test]
+async fn analyze_document_uses_cached_latest_for_diagnostics() {
     let mut config = standard_config(false);
     let session = crate::version_lens_session(config.clone());
     let input = package_json_input(package_file_fixture("single-line.json").as_str());
 
-    session.resolve_document_with_responses(input.clone(), &[registry_response()]);
+    session
+        .resolve_document_with_responses(input.clone(), &[registry_response()])
+        .await;
 
     let output = session.analyze_document(input.clone());
 
@@ -314,7 +320,9 @@ fn analyze_document_uses_cached_latest_for_diagnostics() {
 
     config.show_suggestion_stats = true;
     let session = crate::version_lens_session(config);
-    session.resolve_document_with_responses(input.clone(), &[registry_response()]);
+    session
+        .resolve_document_with_responses(input.clone(), &[registry_response()])
+        .await;
 
     assert_eq!(
         session.analyze_document(input).status.text,
@@ -322,8 +330,8 @@ fn analyze_document_uses_cached_latest_for_diagnostics() {
     );
 }
 
-#[test]
-fn analyze_document_reports_cached_errors_and_no_matches_in_status() {
+#[tokio::test]
+async fn analyze_document_reports_cached_errors_and_no_matches_in_status() {
     let session = standard_session(true);
     let input = package_json_input(package_file_fixture("missing-and-errored.json").as_str());
 
@@ -342,7 +350,8 @@ fn analyze_document_reports_cached_errors_and_no_matches_in_status() {
                 r#"{"status":"E404"}"#.to_owned(),
             ),
         ],
-    );
+    )
+    .await;
 
     assert_eq!(output.status.update_count, 0);
     assert_eq!(output.status.error_count, 1);
@@ -471,8 +480,8 @@ fn registry_response() -> RegistryResponseInput {
     )
 }
 
-#[test]
-fn document_freshness_tracks_version_and_advisory_expiry() {
+#[tokio::test]
+async fn document_freshness_tracks_version_and_advisory_expiry() {
     let session = standard_session(false);
     let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
     let responses = [RegistryResponseInput::new(
@@ -481,11 +490,15 @@ fn document_freshness_tracks_version_and_advisory_expiry() {
         r#"{"dist-tags":{"latest":"2.0.0"}}"#,
     )];
     assert!(!session.document_is_fresh(&input));
-    session.resolve_document_with_responses(input.clone(), &responses);
+    session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     assert!(session.document_is_fresh(&input));
     session.vulnerability_cache().clear();
     assert!(!session.document_is_fresh(&input));
-    session.resolve_document_with_responses(input.clone(), &responses);
+    session
+        .resolve_document_with_responses(input.clone(), &responses)
+        .await;
     assert!(session.document_is_fresh(&input));
     let dependency = session.dependencies(&input).remove(0);
     let context = session.registry_context(&input, session.classify_document(&input));
@@ -501,18 +514,20 @@ fn document_freshness_tracks_version_and_advisory_expiry() {
     assert!(!session.document_is_fresh(&input));
 }
 
-#[test]
-fn freshness_does_not_transfer_to_a_changed_requirement_or_another_document() {
+#[tokio::test]
+async fn freshness_does_not_transfer_to_a_changed_requirement_or_another_document() {
     let session = standard_session(false);
     let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "example",
-            Npm,
-            r#"{"dist-tags":{"latest":"2.0.0"}}"#,
-        )],
-    );
+    session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "example",
+                Npm,
+                r#"{"dist-tags":{"latest":"2.0.0"}}"#,
+            )],
+        )
+        .await;
     assert!(session.document_is_fresh(&input));
     let mut changed = input.clone();
     changed.text = changed.text.replace("1.0.0", "1.1.0");
@@ -524,20 +539,22 @@ fn freshness_does_not_transfer_to_a_changed_requirement_or_another_document() {
     assert!(!session.document_is_fresh(&input));
 }
 
-#[test]
-fn document_check_deadline_uses_the_earliest_advisory_expiry() {
+#[tokio::test]
+async fn document_check_deadline_uses_the_earliest_advisory_expiry() {
     use std::time::Duration;
     let session = standard_session(false);
     let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
     assert_eq!(session.document_check_delay(&input), Some(Duration::ZERO));
-    session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "example",
-            Npm,
-            r#"{"dist-tags":{"latest":"2.0.0"}}"#,
-        )],
-    );
+    session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "example",
+                Npm,
+                r#"{"dist-tags":{"latest":"2.0.0"}}"#,
+            )],
+        )
+        .await;
     let delay = session.document_check_delay(&input).unwrap();
     assert!(delay > Duration::from_secs(30));
     assert!(delay <= Duration::from_secs(300));
@@ -554,19 +571,21 @@ fn document_check_deadline_uses_the_earliest_advisory_expiry() {
     assert_eq!(session.document_check_delay(&input), Some(Duration::ZERO));
 }
 
-#[test]
-fn failed_checks_wait_for_retry_and_empty_documents_need_no_timer() {
+#[tokio::test]
+async fn failed_checks_wait_for_retry_and_empty_documents_need_no_timer() {
     use std::time::Duration;
     let session = standard_session(false);
     let input = package_json_input(r#"{"dependencies":{"example":"1.0.0"}}"#);
-    let output = session.resolve_document_with_responses(
-        input.clone(),
-        &[RegistryResponseInput::new(
-            "example",
-            Npm,
-            r#"{"status":"E404"}"#,
-        )],
-    );
+    let output = session
+        .resolve_document_with_responses(
+            input.clone(),
+            &[RegistryResponseInput::new(
+                "example",
+                Npm,
+                r#"{"status":"E404"}"#,
+            )],
+        )
+        .await;
     assert_eq!(output.suggestions[0].status, "error");
     session.vulnerability_cache().clear();
     let delay = session.document_check_delay(&input).unwrap();

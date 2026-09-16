@@ -18,7 +18,7 @@ mod integrity;
 mod tests;
 
 impl VersionLensSession {
-    pub(crate) fn fetch_runtime_latest(
+    pub(crate) async fn fetch_runtime_latest(
         &self,
         dependency: &Dependency,
         responses: &[RegistryResponseInput],
@@ -37,7 +37,8 @@ impl VersionLensSession {
         {
             response.body.clone()
         } else {
-            self.fetch_runtime_body(dependency, &source, context, operation)?
+            self.fetch_runtime_body(dependency, &source, context, operation)
+                .await?
         };
         let versions = source
             .versions(&body, &dependency.requirement)
@@ -90,14 +91,16 @@ impl VersionLensSession {
         };
         let latest = selected
             .ok_or_else(|| runtime_error("runtime release source contains no matching version"))?;
-        let replacement = self.runtime_replacement(integrity::RuntimeReplacementRequest {
-            dependency,
-            source: &source,
-            body: &body,
-            selected: &latest,
-            context,
-            operation,
-        })?;
+        let replacement = self
+            .runtime_replacement(integrity::RuntimeReplacementRequest {
+                dependency,
+                source: &source,
+                body: &body,
+                selected: &latest,
+                context,
+                operation,
+            })
+            .await?;
         let choices = if constraint || channel || runtime_exactly_equals(dependency, &latest) {
             vec![]
         } else {

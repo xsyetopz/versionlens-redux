@@ -31,8 +31,8 @@ fn batched_fixture_responses() -> Vec<RegistryResponseInput> {
     .collect()
 }
 
-#[test]
-fn batched_resolution_preserves_dependency_order() {
+#[tokio::test]
+async fn batched_resolution_preserves_dependency_order() {
     let session = crate::support::tests::test_session(false);
     let responses = batched_fixture_responses();
     let names = responses
@@ -40,7 +40,9 @@ fn batched_resolution_preserves_dependency_order() {
         .map(|response| response.package.as_str())
         .collect::<Vec<_>>();
 
-    let output = session.resolve_document_with_responses(batched_fixture_input(), &responses);
+    let output = session
+        .resolve_document_with_responses(batched_fixture_input(), &responses)
+        .await;
     let resolved_names = output
         .suggestions
         .iter()
@@ -50,8 +52,8 @@ fn batched_resolution_preserves_dependency_order() {
     assert_eq!(resolved_names, names);
 }
 
-#[test]
-fn expired_operation_returns_errors_without_resolving_dependencies() {
+#[tokio::test]
+async fn expired_operation_returns_errors_without_resolving_dependencies() {
     let mut http = versionlens_http::standard_http_config();
     http.timeout_ms = 0;
     let session = crate::version_lens_session(SessionConfig {
@@ -66,7 +68,9 @@ fn expired_operation_returns_errors_without_resolving_dependencies() {
     });
     let responses = batched_fixture_responses();
 
-    let output = session.resolve_document_with_responses(batched_fixture_input(), &responses);
+    let output = session
+        .resolve_document_with_responses(batched_fixture_input(), &responses)
+        .await;
 
     assert_eq!(output.suggestions.len(), responses.len());
     assert!(

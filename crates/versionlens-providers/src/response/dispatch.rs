@@ -1,5 +1,6 @@
 use self::json::latest_json_response;
 use self::text::latest_text_response;
+use crate::response::cargo::latest_cargo_response;
 use versionlens_model::Ecosystem;
 
 mod json;
@@ -48,6 +49,11 @@ pub fn latest_version_from_response_for_request(
     let parser_request = response_request_from_latest(&request);
 
     match request.ecosystem {
+        Ecosystem::Cargo => latest_cargo_response(
+            request.body,
+            request.include_prereleases,
+            request.prerelease_tags,
+        ),
         Ecosystem::Cran
         | Ecosystem::Go
         | Ecosystem::Julia
@@ -63,8 +69,7 @@ pub fn latest_version_from_response_for_request(
             .or_else(|| latest_json_response(request.ecosystem, request.body, &parser_request)),
         Ecosystem::Maven => latest_json_response(request.ecosystem, request.body, &parser_request)
             .or_else(|| latest_text_response(request.ecosystem, request.body, &parser_request)),
-        Ecosystem::Cargo
-        | Ecosystem::AnsibleGalaxy
+        Ecosystem::AnsibleGalaxy
         | Ecosystem::Bazel
         | Ecosystem::Nix
         | Ecosystem::Composer

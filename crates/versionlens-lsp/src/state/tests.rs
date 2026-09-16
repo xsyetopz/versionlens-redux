@@ -203,8 +203,8 @@ fn code_lenses_bind_updates_to_the_document_and_close_with_it() {
     assert!(!state.documents.contains_key(uri));
 }
 
-#[test]
-fn dependency_lenses_share_the_meaningful_source_range() {
+#[tokio::test]
+async fn dependency_lenses_share_the_meaningful_source_range() {
     let mut state = VersionLensLspState::standard();
     let uri = "file:///workspace/package.json";
     let text = r#"{"dependencies":{"example":"1.0.0"}}"#;
@@ -215,14 +215,17 @@ fn dependency_lenses_share_the_meaningful_source_range() {
         workspace_root: Some("/workspace".to_owned()),
     });
     let work = state.document_work(uri).unwrap();
-    state.session.resolve_document_with_responses(
-        work.input,
-        &[versionlens_core::RegistryResponseInput::new(
-            "example",
-            versionlens_model::Ecosystem::Npm,
-            r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"2.0.0":{}}}"#,
-        )],
-    );
+    state
+        .session
+        .resolve_document_with_responses(
+            work.input,
+            &[versionlens_core::RegistryResponseInput::new(
+                "example",
+                versionlens_model::Ecosystem::Npm,
+                r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"2.0.0":{}}}"#,
+            )],
+        )
+        .await;
 
     let lenses = state.code_lenses(uri);
 

@@ -1,12 +1,12 @@
-#[test]
-fn apply_command_uses_code_lens_selector_for_duplicate_names() {
+#[tokio::test]
+async fn apply_command_uses_code_lens_selector_for_duplicate_names() {
     let session = standard_session();
     let input = DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture(
             "command-uses-code-lens-selector-for-duplicate-names.json",
         ), None);
 
     let responses = [RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned())];
-    session.resolve_document_with_responses(input.clone(), &responses);
+    session.resolve_document_with_responses(input.clone(), &responses).await;
     let command_input = input.clone();
     let analyzed = session.analyze_document(input);
     let selector = analyzed
@@ -16,7 +16,7 @@ fn apply_command_uses_code_lens_selector_for_duplicate_names() {
         .and_then(|lens| lens.arguments.get(1))
         .expect("update code lens selector")
         .clone();
-    let output = session.apply_command(command_input, None, Some(&selector), &responses);
+    let output = session.apply_command(command_input, None, Some(&selector), &responses).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].dependency.group, "dependencies");
@@ -24,8 +24,8 @@ fn apply_command_uses_code_lens_selector_for_duplicate_names() {
     assert_eq!(output.edits[0].new_text, "1.1.0");
 }
 
-#[test]
-fn pyproject_ranges_resolving_latest_do_not_offer_noop_lower_bound_bumps() {
+#[tokio::test]
+async fn pyproject_ranges_resolving_latest_do_not_offer_noop_lower_bound_bumps() {
     let session = standard_session();
     let input = DocumentInput::new("file:///pyproject.toml".to_owned(), "toml".to_owned(), package_file_fixture(
             "pyproject-update-code-lenses-advance-lower-bounds-and-preserve-upper-caps.toml",
@@ -37,7 +37,7 @@ fn pyproject_ranges_resolving_latest_do_not_offer_noop_lower_bound_bumps() {
                 .to_owned()),
     ];
 
-    session.resolve_document_with_responses(input.clone(), &responses);
+    session.resolve_document_with_responses(input.clone(), &responses).await;
     let analyzed = session.analyze_document(input);
 
     assert_eq!(
@@ -53,8 +53,8 @@ fn pyproject_ranges_resolving_latest_do_not_offer_noop_lower_bound_bumps() {
     );
 }
 
-#[test]
-fn pyproject_selected_pep440_updates_preserve_or_repair_extended_bounds() {
+#[tokio::test]
+async fn pyproject_selected_pep440_updates_preserve_or_repair_extended_bounds() {
     for (package, requirement, provider_latest, selected, expected) in [
         (
             "epoch-package",
@@ -97,7 +97,7 @@ fn pyproject_selected_pep440_updates_preserve_or_repair_extended_bounds() {
             dependency_name: Some(package),
             selected_version: Some(selected),
             responses: &responses,
-        });
+        }).await;
 
         assert_eq!(output.suggestions.len(), 1, "{package}");
         assert_eq!(
@@ -109,8 +109,8 @@ fn pyproject_selected_pep440_updates_preserve_or_repair_extended_bounds() {
     }
 }
 
-#[test]
-fn apply_command_updates_only_requested_level() {
+#[tokio::test]
+async fn apply_command_updates_only_requested_level() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -122,7 +122,7 @@ fn apply_command_updates_only_requested_level() {
             RegistryResponseInput::new("minor".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned()),
             RegistryResponseInput::new("patch".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.0.1"}}"#.to_owned()),
         ],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].dependency.name, "minor");
@@ -130,25 +130,25 @@ fn apply_command_updates_only_requested_level() {
     assert_eq!(output.edits[0].new_text, "1.1.0");
 }
 
-#[test]
-fn apply_command_updates_ranged_dependency_to_requested_minor_choice() {
+#[tokio::test]
+async fn apply_command_updates_ranged_dependency_to_requested_minor_choice() {
     assert_ranged_choice(
         "command-updates-ranged-dependency-to-requested-minor-choice.json",
         "updateMinor",
         "~1.1.0",
-    );
+    ).await;
 }
 
-#[test]
-fn apply_command_updates_ranged_dependency_to_requested_patch_choice() {
+#[tokio::test]
+async fn apply_command_updates_ranged_dependency_to_requested_patch_choice() {
     assert_ranged_choice(
         "command-updates-ranged-dependency-to-requested-patch-choice.json",
         "updatePatch",
         "1.0.1",
-    );
+    ).await;
 }
 
-fn assert_ranged_choice(fixture: &str, command: &str, expected: &str) {
+async fn assert_ranged_choice(fixture: &str, command: &str, expected: &str) {
     let output = standard_session().apply_command(
         DocumentInput::new(
             "file:///package.json".to_owned(),
@@ -163,12 +163,12 @@ fn assert_ranged_choice(fixture: &str, command: &str, expected: &str) {
             Npm,
             r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"1.0.1":{},"1.1.0":{},"2.0.0":{}}}"#.to_owned(),
         )],
-    );
+    ).await;
     super::assert_single_named_edit(&output, "left-pad", expected);
 }
 
-#[test]
-fn apply_command_level_filter_does_not_bump_project_version() {
+#[tokio::test]
+async fn apply_command_level_filter_does_not_bump_project_version() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -178,7 +178,7 @@ fn apply_command_level_filter_does_not_bump_project_version() {
         Some("updateMajor"),
         None,
         &[RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"2.0.0"}}"#.to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].dependency.name, "left-pad");
@@ -186,8 +186,8 @@ fn apply_command_level_filter_does_not_bump_project_version() {
     assert_eq!(output.edits[0].new_text, "2.0.0");
 }
 
-#[test]
-fn apply_command_bulk_update_skips_project_version_edits() {
+#[tokio::test]
+async fn apply_command_bulk_update_skips_project_version_edits() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -197,14 +197,14 @@ fn apply_command_bulk_update_skips_project_version_edits() {
         Some("update"),
         None,
         &[],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert!(output.edits.is_empty());
 }
 
-#[test]
-fn bulk_update_skips_prerelease_only_invalid_range_updates() {
+#[tokio::test]
+async fn bulk_update_skips_prerelease_only_invalid_range_updates() {
     let session = standard_session();
 
     let output = session.apply_command(
@@ -220,7 +220,7 @@ fn bulk_update_skips_prerelease_only_invalid_range_updates() {
               }
             }"#
             .to_owned())],
-    );
+    ).await;
 
     assert_eq!(output.suggestions.len(), 1);
     assert_eq!(output.suggestions[0].status, "invalidRange");

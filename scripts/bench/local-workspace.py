@@ -8,28 +8,7 @@ import tempfile
 import threading
 import time
 
-
-def send(process, message):
-    body = json.dumps(message).encode()
-    process.stdin.write(f"Content-Length: {len(body)}\r\n\r\n".encode() + body)
-    process.stdin.flush()
-
-
-def receive(process, request_id):
-    while True:
-        length = None
-        while line := process.stdout.readline():
-            if line == b"\r\n":
-                break
-            if line.lower().startswith(b"content-length:"):
-                length = int(line.split(b":", 1)[1])
-        if length is None:
-            raise RuntimeError("LSP closed stdout before responding")
-        message = json.loads(process.stdout.read(length))
-        if message.get("id") == request_id:
-            if "error" in message:
-                raise RuntimeError(message["error"])
-            return message["result"]
+from lsp_protocol import receive, send
 
 
 def main():

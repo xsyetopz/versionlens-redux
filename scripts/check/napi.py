@@ -46,7 +46,7 @@ ALLOWED_TYPE_METHODS = {
 ALLOWED_STRUCTS = {"NativeSession"}
 
 PLAIN_NAPI_ITEM_PATTERN = re.compile(
-    r"#\[napi\]\s*(?:impl\s+([A-Za-z_][A-Za-z0-9_]*)|pub\s+(fn|struct)\s+([A-Za-z_][A-Za-z0-9_]*))"
+    r"#\[napi\]\s*(?:impl\s+([A-Za-z_][A-Za-z0-9_]*)|pub\s+(?:async\s+)?(fn|struct)\s+([A-Za-z_][A-Za-z0-9_]*))"
 )
 NATIVE_TYPE_METHOD_PATTERN = re.compile(
     r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*)?\([\s\S]*?\)\s*(?:=>|:)\s*([^;]+);$",

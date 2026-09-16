@@ -4,13 +4,12 @@ use versionlens_model::Ecosystem;
 
 use super::ResponseRequest;
 use versionlens_model::Ecosystem::{
-    AnsibleGalaxy, Bazel, Cargo, CocoaPods, Composer, Conan, Cpan, Cpp, Deno, Docker, Dotnet, Dub,
-    GitHub, Hackage, Hex, Maven, Nim, Nix, Npm, Pub, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
+    AnsibleGalaxy, Bazel, CocoaPods, Composer, Conan, Cpan, Cpp, Deno, Docker, Dotnet, Dub, GitHub,
+    Hackage, Hex, Maven, Nim, Nix, Npm, Pub, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
 };
 
 mod ansible;
 mod bazel;
-mod cargo;
 mod cocoapods;
 mod composer;
 mod conan;
@@ -34,9 +33,9 @@ mod zig;
 
 use crate::response::cpp::latest_cpp_json_version;
 use crate::response::github::latest_github_tag;
+use crate::response::npm::latest_npm_response;
 use ansible::latest_ansible_json_response;
 use bazel::latest_bazel_json_response;
-use cargo::latest_cargo_json_response;
 use cocoapods::latest_cocoapods_json_response;
 use composer::latest_composer_json_response;
 use conan::latest_conan_json_response;
@@ -63,6 +62,14 @@ pub(super) fn latest_json_response(
     body: &str,
     request: &ResponseRequest<'_>,
 ) -> Option<String> {
+    if ecosystem == Npm {
+        return latest_npm_response(
+            body,
+            request.requirement,
+            request.include_prereleases,
+            request.prerelease_tags,
+        );
+    }
     let value = from_str::<Value>(body).ok()?;
     if ecosystem == GitHub {
         return latest_github_tag(&value, request.include_prereleases, request.prerelease_tags);
@@ -76,7 +83,6 @@ pub(super) fn latest_json_response(
 type JsonResponseParser = for<'a> fn(&Value, &ResponseRequest<'a>) -> Option<String>;
 
 const JSON_RESPONSE_PARSERS: &[(Ecosystem, JsonResponseParser)] = &[
-    (Cargo, latest_cargo_json_response),
     (AnsibleGalaxy, latest_ansible_json_response),
     (Bazel, latest_bazel_json_response),
     (Composer, latest_composer_json_response),

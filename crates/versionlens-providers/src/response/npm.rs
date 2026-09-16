@@ -1,5 +1,8 @@
+use serde::Deserialize;
+use serde::de::IgnoredAny;
 use serde_json::Value;
 use serde_json::from_str;
+use std::collections::HashMap;
 use versionlens_versions::{build_variants, latest_version_with_prerelease_tags};
 
 use super::github::{latest_github_commit, latest_github_tag};
@@ -33,6 +36,53 @@ pub(crate) fn latest_npm_version(
 
     latest_object_key(value, "versions", false, prerelease_tags)
         .or_else(|| latest_version_strings(value, include_prereleases, prerelease_tags))
+}
+
+pub(crate) fn latest_npm_response(
+    body: &str,
+    requirement: &str,
+    include_prereleases: bool,
+    prerelease_tags: &[String],
+) -> Option<String> {
+    if body.trim_start().starts_with('[') {
+        return latest_npm_version(
+            &from_str(body).ok()?,
+            requirement,
+            include_prereleases,
+            prerelease_tags,
+        );
+    }
+    let Ok(metadata) = from_str::<NpmMetadata>(body) else {
+        return latest_npm_version(
+            &from_str(body).ok()?,
+            requirement,
+            include_prereleases,
+            prerelease_tags,
+        );
+    };
+    let requirement = requirement.trim();
+    if !requirement.is_empty()
+        && let Some(version) = metadata.dist_tags.get(requirement)
+    {
+        return Some(version.to_owned());
+    }
+    if let Some(version) = metadata.dist_tags.get("latest") {
+        return Some(version.to_owned());
+    }
+
+    latest_version_with_prerelease_tags(
+        metadata.versions.keys().map(String::as_str),
+        include_prereleases,
+        prerelease_tags,
+    )
+}
+
+#[derive(Deserialize)]
+struct NpmMetadata {
+    #[serde(default, rename = "dist-tags")]
+    dist_tags: HashMap<String, String>,
+    #[serde(default)]
+    versions: HashMap<String, Option<IgnoredAny>>,
 }
 
 fn npm_dist_tag_version(value: &Value, requirement: &str) -> Option<String> {
@@ -70,6 +120,15 @@ fn latest_object_key(
 }
 
 pub fn npm_build_versions(body: &str, requirement: &str) -> Vec<String> {
+    if let Some(versions) = ordered_version_object_keys(body)
+        && !versions.is_empty()
+    {
+        return sorted_npm_versions(build_variants(
+            requirement,
+            versions.iter().map(String::as_str),
+        ));
+    }
+
     let Some(versions) = npm_versions(body) else {
         return vec![];
     };

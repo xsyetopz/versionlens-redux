@@ -5,13 +5,16 @@ use super::latest::LatestResolutionRequest;
 use crate::VersionLensSession;
 
 impl VersionLensSession {
-    pub(super) fn runtime_suggestion(&self, request: LatestResolutionRequest<'_>) -> Suggestion {
+    pub(super) async fn runtime_suggestion(
+        &self,
+        request: LatestResolutionRequest<'_>,
+    ) -> Suggestion {
         let dependency = request.dependency.clone();
         let source = match RuntimeSource::for_dependency(&dependency) {
             Ok(source) => source,
             Err(message) => return error(dependency, message),
         };
-        let lookup = self.resolve_latest(request);
+        let lookup = self.resolve_latest(request).await;
         if let Some(error_message) = lookup.fetch_error {
             return error(dependency, error_message.to_string());
         }
