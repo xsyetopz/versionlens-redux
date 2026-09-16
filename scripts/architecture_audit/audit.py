@@ -110,7 +110,7 @@ def audit_report(
         if visible_inventory is not None
         else set()
     )
-    findings = transient_findings(root)
+    findings = transient_findings(root, visible_inventory)
     if inventory_failure is not None:
         findings.append(inventory_failure)
     findings.extend(git_suppression_findings(root))

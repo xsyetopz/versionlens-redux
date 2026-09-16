@@ -30,6 +30,16 @@ class TransientMetadataTests(AuditFixture, unittest.TestCase):
         codes = self.codes(self.findings())
         self.assertIn("transient-metadata-directory", codes)
 
+    def test_gitignored_transient_directories_are_excluded_from_the_audit(self) -> None:
+        run = self.init_git_case(self.root, "__pycache__/\n")
+        run("add", ".gitignore")
+        run("commit", "-qm", "baseline")
+        metadata = self.write("scripts/__pycache__/module.pyc", content="cache\n")
+        self.assertNotIn("transient-metadata-directory", self.codes(self.findings()))
+
+        run("add", "-f", str(metadata.relative_to(self.root)))
+        self.assertIn("transient-metadata-directory", self.codes(self.findings()))
+
     def test_codegraph_is_preserved_as_repository_intelligence(self) -> None:
         self.write(".codegraph/metadata", content="owned\n")
         self.assertNotIn("transient-metadata-directory", self.codes(self.findings()))

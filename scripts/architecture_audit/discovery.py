@@ -536,8 +536,39 @@ PRESERVED_TRANSIENT_PATHS = frozenset(
 )
 
 
-def transient_findings(root: Path) -> list[Finding]:
-    """Find transient metadata directories, including ignored non-source trees."""
+def transient_findings(
+    root: Path, inventory: Sequence[Path] | None = None
+) -> list[Finding]:
+    """Find visible transient metadata directories.
+
+    Git-backed audits derive directories from the tracked/non-ignored inventory,
+    so ignored untracked caches do not affect acceptance. Filesystem-only audits
+    retain the complete walk because no ignore index is available.
+    """
+
+    root = root.absolute()
+    if inventory is not None:
+        directories = {
+            parent
+            for path in inventory
+            for parent in path.parents
+            if parent != root and root in parent.parents
+        }
+        return [
+            Finding(
+                "error",
+                "transient-metadata-directory",
+                path,
+                "transient cache/report metadata directory must not remain in the repository",
+                "inventory",
+            )
+            for path in sorted(directories, key=str)
+            if path.name in TRANSIENT_METADATA_DIRECTORIES
+            and path.relative_to(root).as_posix() not in PRESERVED_TRANSIENT_PATHS
+            and not set(path.relative_to(root).parts[:-1]) & PRESERVED_DIRECTORIES
+            and not set(path.relative_to(root).parts[:-1])
+            & TRANSIENT_METADATA_DIRECTORIES
+        ]
 
     findings: list[Finding] = []
     for current, directories, _files in os.walk(root):
