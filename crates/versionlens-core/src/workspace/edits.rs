@@ -8,32 +8,38 @@ pub(super) fn package_edits(
     update_project: bool,
 ) -> Vec<TextEdit> {
     let input = DocumentInput::new("package.json", "json", text, None);
-    versionlens_parsers::parse_document_as_manifest_with_dependency_paths::<&str>(
-        &input,
-        ManifestKind::NpmPackageJson,
-        &[],
-    )
+    let project_versions = if update_project {
+        versionlens_parsers::parse_project_versions_as_manifest(
+            &input,
+            ManifestKind::NpmPackageJson,
+        )
+    } else {
+        Vec::new()
+    };
+    let project_edits = project_versions.into_iter().map(|version| TextEdit {
+        range: version.requirement_range,
+        new_text: selected.to_owned(),
+    });
+    let dependency_edits = versionlens_parsers::parse_document_as_manifest_with_dependency_paths::<
+        &str,
+    >(&input, ManifestKind::NpmPackageJson, &[])
     .into_iter()
     .filter_map(|dependency| {
-        let new_text = if dependency.group == "version" && update_project {
-            selected.to_owned()
-        } else {
-            if dependency.name != name
-                || dependency.is_runtime_version()
-                || dependency.requirement.starts_with("workspace:")
-                || dependency.requirement.starts_with("catalog:")
-                || dependency.hosted_url.is_some()
-            {
-                return None;
-            }
-            replace_version(&dependency.requirement, previous, selected)?
-        };
+        if dependency.name != name
+            || dependency.is_runtime_version()
+            || dependency.requirement.starts_with("workspace:")
+            || dependency.requirement.starts_with("catalog:")
+            || dependency.hosted_url.is_some()
+        {
+            return None;
+        }
+        let new_text = replace_version(&dependency.requirement, previous, selected)?;
         Some(TextEdit {
             range: dependency.requirement_range,
             new_text,
         })
-    })
-    .collect()
+    });
+    project_edits.chain(dependency_edits).collect()
 }
 
 fn replace_version(requirement: &str, previous: &str, selected: &str) -> Option<String> {

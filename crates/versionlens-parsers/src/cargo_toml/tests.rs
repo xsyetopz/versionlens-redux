@@ -1,50 +1,44 @@
 use crate::document::test_support::{extract_range, parse_fixture};
 use crate::{DocumentInput, parse_document, parse_document_with_dependency_paths};
-use versionlens_model::{Ecosystem::Cargo, VersionableKind};
+use versionlens_model::Ecosystem::Cargo;
 
 #[test]
 fn parses_cargo_toml_dependency_tables() {
     let text = package_file_fixture("cargo-toml-dependency-tables.txt");
     let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
 
-    assert_eq!(dependencies.len(), 9);
-    crate::support::tests::assert_dependency_with_range(
-        text,
-        &dependencies,
-        crate::support::tests::DependencyExpectation::new(0, Cargo, "package", "version", "1.2.3"),
-        "1.2.3",
-    );
+    assert_eq!(dependencies.len(), 8);
     crate::support::tests::assert_dependency(
         &dependencies,
-        crate::support::tests::DependencyExpectation::new(1, Cargo, "dependencies", "serde", "1.0"),
+        crate::support::tests::DependencyExpectation::new(0, Cargo, "dependencies", "serde", "1.0"),
     );
     assert_eq!(
-        extract_range(text, dependencies[1].requirement_range),
+        extract_range(text, dependencies[0].requirement_range),
         "1.0"
     );
-    assert_eq!(dependencies[2].requirement, "../local");
+    assert_eq!(dependencies[1].requirement, "../local");
     assert_eq!(
-        extract_range(text, dependencies[2].requirement_range),
+        extract_range(text, dependencies[1].requirement_range),
         "../local"
     );
-    assert_eq!(dependencies[2].hosted_url.as_deref(), Some("path"));
-    assert_eq!(dependencies[3].requirement, "https://example.test/repo.git");
-    assert_eq!(dependencies[4].group, "dev-dependencies");
-    assert_eq!(dependencies[4].name, "trybuild");
-    assert_eq!(dependencies[5].group, "dev-dependencies.pretty_assertions");
-    assert_eq!(dependencies[5].name, "pretty_assertions");
-    assert_eq!(dependencies[5].requirement, "1.4");
-    assert_eq!(dependencies[6].group, "workspace.dependencies");
-    assert_eq!(dependencies[6].name, "libc");
-    assert_eq!(dependencies[7].group, "target.cfg(unix).dependencies");
-    assert_eq!(dependencies[7].name, "nix");
-    assert_eq!(dependencies[7].requirement, "0.29");
+    assert_eq!(dependencies[1].hosted_url.as_deref(), Some("path"));
+    assert_eq!(dependencies[2].requirement, "https://example.test/repo.git");
+    assert_eq!(dependencies[3].group, "dev-dependencies");
+    assert_eq!(dependencies[3].name, "trybuild");
+    assert_eq!(dependencies[4].group, "dev-dependencies.pretty_assertions");
+    assert_eq!(dependencies[4].name, "pretty_assertions");
+    assert_eq!(dependencies[4].requirement, "1.4");
+    assert_eq!(dependencies[5].group, "workspace.dependencies");
+    assert_eq!(dependencies[5].name, "libc");
+    assert_eq!(dependencies[6].group, "target.cfg(unix).dependencies");
+    assert_eq!(dependencies[6].name, "nix");
+    assert_eq!(dependencies[6].requirement, "0.29");
     assert_eq!(
-        dependencies[8].group,
+        dependencies[7].group,
         "target.x86_64-pc-windows-msvc.dev-dependencies"
     );
-    assert_eq!(dependencies[8].name, "win-test");
-    assert_eq!(dependencies[8].requirement, "0.1");
+    assert_eq!(dependencies[7].name, "win-test");
+    assert_eq!(dependencies[7].requirement, "0.1");
 }
 
 #[test]
@@ -172,39 +166,15 @@ fn parses_cargo_workspace_inherited_dependencies() {
 }
 
 #[test]
-fn parses_workspace_package_version_and_member_inheritance() {
-    let root = "[workspace.package]\nversion = \"1.2.3\"\n";
-    let dependencies = parse_fixture(root, "file:///work/Cargo.toml", "toml");
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].group, "package");
-    assert_eq!(dependencies[0].name, "version");
-    assert_eq!(dependencies[0].requirement, "1.2.3");
-    assert_eq!(
-        dependencies[0].versionable_kind(),
-        VersionableKind::ProjectVersion
-    );
-    assert_eq!(
-        extract_range(root, dependencies[0].requirement_range),
-        "1.2.3"
-    );
-
-    for member in [
+fn project_version_fields_are_not_dependencies() {
+    for text in [
+        "[package]\nname = \"demo\"\nversion = \"1.2.3\"\n",
+        "[workspace.package]\nversion = \"1.2.3\"\n",
         "[package]\nname = \"member\"\nversion.workspace = true\n",
         "[package]\nname = \"member\"\nversion = { workspace = true }\n",
     ] {
-        let dependencies = parse_fixture(member, "file:///work/member/Cargo.toml", "toml");
-        assert_eq!(dependencies.len(), 1);
-        assert_eq!(dependencies[0].group, "package");
-        assert_eq!(dependencies[0].name, "version");
-        assert_eq!(dependencies[0].requirement, "workspace:true");
-        assert_eq!(
-            dependencies[0].versionable_kind(),
-            VersionableKind::WorkspaceReference
-        );
-        assert_eq!(
-            extract_range(member, dependencies[0].requirement_range),
-            "true"
-        );
+        let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
+        assert_eq!(dependencies, vec![], "{text}");
     }
 }
 
@@ -254,27 +224,26 @@ fn parses_smoke_cargo_smoke_shapes() {
     let text = package_file_fixture("smoke-cargo-smoke-shapes.toml");
     let dependencies = parse_fixture(text, "file:///work/Cargo.toml", "toml");
 
-    assert_eq!(dependencies.len(), 12);
-    assert_eq!(dependencies[0].name, "version");
-    assert_eq!(dependencies[1].name, "backtrace");
-    assert_eq!(dependencies[1].requirement, "0.3.76");
-    assert_eq!(dependencies[2].name, "futures");
-    assert_eq!(dependencies[2].requirement, "0.3.32");
-    assert_eq!(dependencies[7].name, "test");
-    assert_eq!(dependencies[7].requirement, "../..");
-    assert_eq!(dependencies[8].name, "smallvec");
+    assert_eq!(dependencies.len(), 11);
+    assert_eq!(dependencies[0].name, "backtrace");
+    assert_eq!(dependencies[0].requirement, "0.3.76");
+    assert_eq!(dependencies[1].name, "futures");
+    assert_eq!(dependencies[1].requirement, "0.3.32");
+    assert_eq!(dependencies[6].name, "test");
+    assert_eq!(dependencies[6].requirement, "../..");
+    assert_eq!(dependencies[7].name, "smallvec");
     assert_eq!(
-        dependencies[8].requirement,
+        dependencies[7].requirement,
         "https://github.com/servo/rust-smallvec.git"
     );
-    assert_eq!(dependencies[9].group, "dev-dependencies");
-    assert_eq!(dependencies[9].name, "libc");
-    assert_eq!(dependencies[9].requirement, "workspace:true");
-    assert_eq!(dependencies[10].group, "dev-dependencies.trybuild");
-    assert_eq!(dependencies[10].name, "trybuild");
-    assert_eq!(dependencies[11].group, "workspace.dependencies");
-    assert_eq!(dependencies[11].name, "libc");
-    assert_eq!(dependencies[11].requirement, "0.2.186");
+    assert_eq!(dependencies[8].group, "dev-dependencies");
+    assert_eq!(dependencies[8].name, "libc");
+    assert_eq!(dependencies[8].requirement, "workspace:true");
+    assert_eq!(dependencies[9].group, "dev-dependencies.trybuild");
+    assert_eq!(dependencies[9].name, "trybuild");
+    assert_eq!(dependencies[10].group, "workspace.dependencies");
+    assert_eq!(dependencies[10].name, "libc");
+    assert_eq!(dependencies[10].requirement, "0.2.186");
 }
 
 fn package_file_fixture(name: &str) -> &'static str {

@@ -2,6 +2,7 @@
 
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 
+pub(crate) mod path_query;
 mod patterns;
 mod table;
 

@@ -2,7 +2,10 @@ use self::parsers::parse_manifest_kind;
 use crate::classify::classify_document;
 use versionlens_model::{Dependency, DocumentInput, ManifestKind};
 
+pub use project_versions::{parse_project_versions, parse_project_versions_as_manifest};
+
 mod parsers;
+mod project_versions;
 #[cfg(test)]
 pub(crate) mod test_support;
 

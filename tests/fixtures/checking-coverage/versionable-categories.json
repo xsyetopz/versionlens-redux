@@ -18,9 +18,9 @@
   },
   {
     "name": "project version",
-    "path": "project/package.json",
-    "text": "{\"name\":\"demo\",\"version\":\"1.0.0\"}\n",
-    "package": "1.0.0",
+    "path": "project/jsr.json",
+    "text": "{\"name\":\"@demo/pkg\",\"version\":\"1.0.0\"}\n",
+    "package": "@demo/pkg",
     "kind": "ProjectVersion",
     "status": "updateAvailable",
     "edit": "1.0.1"

@@ -78,7 +78,8 @@ pub use composer_repositories::{
 };
 pub use document::{
     parse_document, parse_document_as_manifest_with_dependency_paths,
-    parse_document_with_dependency_paths,
+    parse_document_with_dependency_paths, parse_project_versions,
+    parse_project_versions_as_manifest,
 };
 pub use dotnet_sources::{
     DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig, DotnetSource, DotnetSourceMapping,

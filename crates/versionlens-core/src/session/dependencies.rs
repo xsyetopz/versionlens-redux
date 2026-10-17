@@ -48,6 +48,21 @@ impl VersionLensSession {
         dependencies
     }
 
+    /// Dependencies plus the project version fields that only the
+    /// project-version commands edit, such as the npm and Cargo `version`.
+    pub(crate) fn command_dependencies(&self, input: &DocumentInput) -> Vec<Dependency> {
+        let mut dependencies = self.dependencies(input);
+        let kind = self.classify_document(input);
+        if ecosystem_for_manifest(kind)
+            .is_none_or(|ecosystem| self.provider_enabled_for_manifest(kind, ecosystem))
+        {
+            dependencies.extend(versionlens_parsers::parse_project_versions_as_manifest(
+                input, kind,
+            ));
+        }
+        dependencies
+    }
+
     fn dependency_paths_for_manifest(&self, kind: ManifestKind) -> Vec<&str> {
         let Some(ecosystem) = ecosystem_for_manifest(kind) else {
             return vec![];

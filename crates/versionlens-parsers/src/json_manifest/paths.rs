@@ -1,5 +1,4 @@
 pub(super) const NPM_DEPENDENCY_PATHS: &[&str] = &[
-    "version",
     "packageManager",
     "devEngines.packageManager",
     "engines",

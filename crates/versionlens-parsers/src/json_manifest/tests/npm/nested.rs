@@ -8,27 +8,25 @@ fn parses_package_json_nested_wildcard_and_scalars() {
     let dependencies =
         crate::support::tests::parse_test_document(text, "file:///work/package.json", "jsonc");
 
-    assert_eq!(dependencies.len(), 9);
-    assert_eq!(dependencies[0].group, "version");
-    assert_eq!(dependencies[0].name, "1.2.3");
-    assert_eq!(dependencies[1].group, "packageManager");
-    assert_eq!(dependencies[1].name, "pnpm");
-    assert_eq!(dependencies[1].requirement, "9.1.2");
+    assert_eq!(dependencies.len(), 8);
+    assert_eq!(dependencies[0].group, "packageManager");
+    assert_eq!(dependencies[0].name, "pnpm");
+    assert_eq!(dependencies[0].requirement, "9.1.2");
     assert_eq!(
-        extract_range(text, dependencies[1].requirement_range),
+        extract_range(text, dependencies[0].requirement_range),
         "9.1.2"
     );
-    assert_eq!(dependencies[2].name, "react");
-    assert_eq!(dependencies[3].name, "@scope/pkg");
-    assert_eq!(dependencies[4].group, "overrides");
-    assert_eq!(dependencies[4].name, "child");
-    assert_eq!(dependencies[5].group, "jspm.dependencies");
-    assert_eq!(dependencies[6].group, "pnpm.overrides");
-    assert_eq!(dependencies[6].name, "leaf");
-    assert_eq!(dependencies[7].group, "workspaces.catalog");
-    assert_eq!(dependencies[7].name, "react-dom");
-    assert_eq!(dependencies[8].group, "workspaces.catalogs.testing");
-    assert_eq!(dependencies[8].name, "jest");
+    assert_eq!(dependencies[1].name, "react");
+    assert_eq!(dependencies[2].name, "@scope/pkg");
+    assert_eq!(dependencies[3].group, "overrides");
+    assert_eq!(dependencies[3].name, "child");
+    assert_eq!(dependencies[4].group, "jspm.dependencies");
+    assert_eq!(dependencies[5].group, "pnpm.overrides");
+    assert_eq!(dependencies[5].name, "leaf");
+    assert_eq!(dependencies[6].group, "workspaces.catalog");
+    assert_eq!(dependencies[6].name, "react-dom");
+    assert_eq!(dependencies[7].group, "workspaces.catalogs.testing");
+    assert_eq!(dependencies[7].name, "jest");
 }
 
 #[test]
@@ -97,9 +95,36 @@ fn parses_configured_smoke_npm_custom_dependency_paths() {
     );
 }
 
+#[test]
+fn ignores_array_elements_under_terminal_wildcard_path() {
+    let text = r#"{"overrides":[{"name":"foo","version":"1.0.0"}]}"#;
+    let dependencies = parse_document_with_dependency_paths(
+        &DocumentInput::new(
+            "file:///work/package.json".to_owned(),
+            "json".to_owned(),
+            text.to_owned(),
+            None,
+        ),
+        &["overrides.*".to_owned()],
+    );
+
+    assert!(dependencies.is_empty());
+}
+
 fn package_file_fixture(name: &str) -> &'static str {
     crate::support::tests::fixture(
         "tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_nested",
         name,
     )
+}
+
+#[test]
+fn package_json_version_is_not_a_dependency() {
+    let dependencies = crate::support::tests::parse_test_document(
+        r#"{"name":"demo","version":"0.4.4"}"#,
+        "file:///work/package.json",
+        "json",
+    );
+
+    assert_eq!(dependencies, vec![]);
 }

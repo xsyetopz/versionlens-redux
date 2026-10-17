@@ -5,9 +5,19 @@ use std::fs::remove_dir_all;
 use std::fs::write;
 
 #[test]
-fn project_version_code_lenses_offer_stable_bumps() {
+fn package_version_gets_no_project_version_code_lenses() {
     let session = standard_session();
     let input = package_document("version-1.2.3.json");
+
+    let output = session.analyze_document(input);
+
+    assert!(output.code_lenses.is_empty());
+}
+
+#[test]
+fn project_version_code_lenses_offer_stable_bumps() {
+    let session = standard_session();
+    let input = jsr_version_document("1.2.3");
 
     let output = session.analyze_document(input);
     let titles = lens_titles(&output);
@@ -20,7 +30,7 @@ fn project_version_code_lenses_offer_stable_bumps() {
 #[test]
 fn project_version_code_lenses_offer_prerelease_bumps() {
     let session = standard_session();
-    let input = package_document("version-1.2.3-beta.4.json");
+    let input = jsr_version_document("1.2.3-beta.4");
 
     let output = session.analyze_document(input);
     let titles = lens_titles(&output);
@@ -28,6 +38,15 @@ fn project_version_code_lenses_offer_prerelease_bumps() {
 
     assert_eq!(titles, ["U release 1.2.3", "U prerelease 1.2.3-beta.5"]);
     assert_eq!(commands, ["updateRelease", "updatePrerelease"]);
+}
+
+fn jsr_version_document(version: &str) -> DocumentInput {
+    DocumentInput::new(
+        "file:///jsr.json".to_owned(),
+        "json".to_owned(),
+        format!(r#"{{"name":"@scope/pkg","version":"{version}"}}"#),
+        None,
+    )
 }
 
 #[tokio::test]
