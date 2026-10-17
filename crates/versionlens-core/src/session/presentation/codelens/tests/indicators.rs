@@ -56,7 +56,7 @@ async fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lense
         ["🟡 fixed 1.0.0", "↑  latest 1.1.0"]
     );
     assert_eq!(
-        output.code_lenses[1].command,
+        output.code_lenses[1].command(),
         "versionlens.suggestion.onUpdateDependency"
     );
 }
@@ -152,7 +152,7 @@ async fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
             (
                 lens.range.start.line,
                 lens.title.as_str(),
-                lens.command.as_str(),
+                lens.command(),
             )
         })
         .collect::<Vec<_>>();

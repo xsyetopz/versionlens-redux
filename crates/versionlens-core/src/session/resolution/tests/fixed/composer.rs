@@ -173,9 +173,6 @@ fn analyze_composer(
         crate::session::resolution::tests::lens_titles_and_arguments(&analysis);
     (
         titles.into_iter().map(str::to_owned).collect(),
-        arguments
-            .into_iter()
-            .map(|items| items.into_iter().map(str::to_owned).collect())
-            .collect(),
+        arguments,
     )
 }

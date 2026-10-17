@@ -4,6 +4,8 @@ use versionlens_versions::{
     ProjectVersionBump, is_prerelease_project_version, next_project_version,
 };
 
+use crate::view::UpdateMode;
+
 mod predicate;
 
 pub(crate) use predicate::is_project_version_dependency;
@@ -11,7 +13,7 @@ pub(crate) use predicate::is_project_version_dependency;
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct ProjectVersionCodeLensSuggestion {
     pub label: &'static str,
-    pub command: &'static str,
+    pub command: UpdateMode,
     pub latest: String,
 }
 
@@ -19,24 +21,24 @@ pub(crate) struct ProjectVersionCodeLensSuggestion {
 struct ProjectVersionCodeLensEntry {
     bump: ProjectVersionBump,
     label: &'static str,
-    command: &'static str,
+    command: UpdateMode,
 }
 
 const STABLE_PROJECT_VERSION_CODE_LENSES: &[ProjectVersionCodeLensEntry] = &[
     ProjectVersionCodeLensEntry {
         bump: Major,
         label: "major",
-        command: "updateMajor",
+        command: UpdateMode::UpdateMajor,
     },
     ProjectVersionCodeLensEntry {
         bump: Minor,
         label: "minor",
-        command: "updateMinor",
+        command: UpdateMode::UpdateMinor,
     },
     ProjectVersionCodeLensEntry {
         bump: Patch,
         label: "patch",
-        command: "updatePatch",
+        command: UpdateMode::UpdatePatch,
     },
 ];
 
@@ -44,12 +46,12 @@ const PRERELEASE_PROJECT_VERSION_CODE_LENSES: &[ProjectVersionCodeLensEntry] = &
     ProjectVersionCodeLensEntry {
         bump: Release,
         label: "release",
-        command: "updateRelease",
+        command: UpdateMode::UpdateRelease,
     },
     ProjectVersionCodeLensEntry {
         bump: Prerelease,
         label: "prerelease",
-        command: "updatePrerelease",
+        command: UpdateMode::UpdatePrerelease,
     },
 ];
 

@@ -21,6 +21,8 @@ mod snapshot;
 mod status;
 mod suggestion;
 mod support;
+mod update;
+mod view;
 mod vulnerability;
 mod workspace;
 
@@ -42,7 +44,7 @@ pub use contract::{
     AnalyzeDocumentOutput, AuthorizationRequestPayload, RegistryResponseInput,
     ResolveDocumentOutput,
 };
-pub use dependency::dependency_payload;
+pub use dependency::dependency_view;
 pub use dotnet_sources::dotnet_registry_source_urls;
 pub use session::{
     ApplyCommandRequest, SessionTask, VersionLensSession, WorkspaceCheckEvent,
@@ -56,6 +58,11 @@ pub(crate) use support::{
     anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, parse_semver,
     parse_semver_req, path, recover_poison, string_from_utf8,
 };
+pub use update::{Bump, BumpKind, Plan, PlanStatus};
 pub use versionlens_suggestions::{Suggestion, SuggestionStatus};
+pub use view::{
+    Action, DependencyView, DiagnosticView, LensKind, LensView, Severity, StatusView,
+    SuggestionView, UpdateMode,
+};
 
 pub use workspace::{workspace_file_uri, workspace_path};

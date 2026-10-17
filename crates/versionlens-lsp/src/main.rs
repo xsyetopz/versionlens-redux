@@ -6,7 +6,6 @@ use serde_json as _;
 use tokio as _;
 use versionlens_core as _;
 use versionlens_model as _;
-use versionlens_vscode_model as _;
 
 #[cfg(test)]
 #[path = "main/tests.rs"]

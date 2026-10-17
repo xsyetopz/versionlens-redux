@@ -48,7 +48,7 @@ async fn resolve_ci_runtime(
 fn runtime_suggestion<'a>(
     output: &'a ResolveDocumentOutput,
     name: &str,
-) -> &'a versionlens_vscode_model::SuggestionPayload {
+) -> &'a crate::SuggestionView {
     output
         .suggestions
         .iter()
@@ -178,7 +178,7 @@ async fn current_bun_pin_has_one_status_lens_and_no_update() {
         lenses
             .iter()
             .filter(|lens| lens.title.ends_with("latest 1.4.2"))
-            .all(|lens| lens.command.is_empty()),
+            .all(|lens| lens.command().is_empty()),
         "{lenses:?}"
     );
 }
@@ -206,7 +206,7 @@ async fn compatible_bun_selector_is_not_suppressed_as_an_exact_pin() {
         .filter(|lens| lens.title.ends_with("latest 1.4.2"))
         .collect::<Vec<_>>();
     assert_eq!(runtime_lenses.len(), 1, "{lenses:?}");
-    assert!(runtime_lenses.iter().all(|lens| !lens.command.is_empty()));
+    assert!(runtime_lenses.iter().all(|lens| !lens.command().is_empty()));
 }
 
 #[tokio::test]
@@ -251,7 +251,7 @@ async fn exact_node_and_java_pins_have_current_commandless_runtime_lenses() {
             .filter(|lens| lens.title.ends_with(&format!("latest {version}")))
             .collect::<Vec<_>>();
         assert_eq!(runtime_lenses.len(), 1, "{name}: {lenses:?}");
-        assert!(runtime_lenses[0].command.is_empty(), "{name}: {lenses:?}");
+        assert!(runtime_lenses[0].command().is_empty(), "{name}: {lenses:?}");
     }
 }
 
@@ -386,7 +386,7 @@ async fn checked_runtime_constraints_preserve_their_declared_minimums() {
                 .analyze_document(input.clone())
                 .code_lenses
                 .iter()
-                .all(|lens| lens.command.is_empty())
+                .all(|lens| lens.command().is_empty())
         );
         let command = session
             .apply_command_with_selected_version(crate::ApplyCommandRequest {

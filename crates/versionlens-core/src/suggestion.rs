@@ -1,22 +1,22 @@
 use versionlens_suggestions::Suggestion;
-use versionlens_vscode_model::SuggestionPayload;
 
-use crate::dependency::dependency_payload;
+use crate::dependency::dependency_view;
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
     StatusFixed, StatusInvalid, StatusInvalidRange, StatusNoMatch, StatusNotSupported,
     StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved, StatusUpdateAvailable,
     SuggestionStatus,
 };
+use crate::view::SuggestionView;
 
-pub(crate) fn into_suggestion_payloads(suggestions: Vec<Suggestion>) -> Vec<SuggestionPayload> {
-    suggestions.into_iter().map(suggestion_payload).collect()
+pub(crate) fn into_suggestion_views(suggestions: Vec<Suggestion>) -> Vec<SuggestionView> {
+    suggestions.into_iter().map(suggestion_view).collect()
 }
 
-fn suggestion_payload(suggestion: Suggestion) -> SuggestionPayload {
+fn suggestion_view(suggestion: Suggestion) -> SuggestionView {
     let status = suggestion_status_name(suggestion.status).to_owned();
-    SuggestionPayload {
-        dependency: dependency_payload(suggestion.dependency),
+    SuggestionView {
+        dependency: dependency_view(suggestion.dependency),
         latest: suggestion.latest,
         status,
         builds: suggestion.builds,

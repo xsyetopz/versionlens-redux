@@ -1,12 +1,12 @@
 use versionlens_model::DocumentInput;
 
 use crate::AnalyzeDocumentOutput;
-use crate::status::status_payload;
+use crate::status::status_view;
 
 pub(crate) fn schema_output(input: &DocumentInput) -> AnalyzeDocumentOutput {
     let _ = input;
     let diagnostics = vec![];
-    let status = status_payload(0, &diagnostics, &[], false);
+    let status = status_view(0, &diagnostics, &[], false);
 
     AnalyzeDocumentOutput {
         can_sort_dependencies: false,

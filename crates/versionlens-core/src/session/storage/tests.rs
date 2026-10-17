@@ -131,7 +131,7 @@ async fn session_restart_preserves_dotnet_fixed_response_semantics() {
         analysis
             .code_lenses
             .iter()
-            .any(|lens| { lens.arguments.iter().any(|argument| argument == "2.0.0") })
+            .any(|lens| { lens.arguments().iter().any(|argument| argument == "2.0.0") })
     );
 
     let update = restarted

@@ -1,5 +1,5 @@
 use napi_derive::napi;
-use versionlens_vscode_model::StatusPayload;
+use versionlens_core::StatusView;
 
 #[napi(object)]
 pub struct NativeStatusPayload {
@@ -26,7 +26,7 @@ impl NativeStatusPayload {
             tooltip: "".to_owned(),
         }
     }
-    pub(super) fn from_core(payload: StatusPayload) -> Self {
+    pub(super) fn from_core(payload: StatusView) -> Self {
         Self {
             dependency_count: payload.dependency_count,
             update_count: payload.update_count,
@@ -46,8 +46,8 @@ impl Default for NativeStatusPayload {
     }
 }
 
-impl From<StatusPayload> for NativeStatusPayload {
-    fn from(value: StatusPayload) -> Self {
+impl From<StatusView> for NativeStatusPayload {
+    fn from(value: StatusView) -> Self {
         Self::from_core(value)
     }
 }

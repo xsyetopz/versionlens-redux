@@ -12,10 +12,9 @@ async fn apply_command_uses_code_lens_selector_for_duplicate_names() {
     let selector = analyzed
         .code_lenses
         .iter()
-        .find(|lens| lens.command == "versionlens.suggestion.onUpdateDependency")
-        .and_then(|lens| lens.arguments.get(1))
-        .expect("update code lens selector")
-        .clone();
+        .find(|lens| lens.command() == "versionlens.suggestion.onUpdateDependency")
+        .and_then(|lens| lens.arguments().get(1).cloned())
+        .expect("update code lens selector");
     let output = session.apply_command(command_input, None, Some(&selector), &responses).await;
 
     assert_eq!(output.suggestions.len(), 1);
@@ -44,7 +43,7 @@ async fn pyproject_ranges_resolving_latest_do_not_offer_noop_lower_bound_bumps()
         analyzed
             .code_lenses
             .iter()
-            .map(|lens| (lens.title.as_str(), lens.command.as_str()))
+            .map(|lens| (lens.title.as_str(), lens.command()))
             .collect::<Vec<_>>(),
         [
             ("🟢 satisfies latest 0.28.1", ""),

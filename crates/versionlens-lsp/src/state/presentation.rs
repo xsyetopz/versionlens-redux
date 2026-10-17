@@ -1,8 +1,8 @@
 use lsp_types::{
     CodeLens, Command, Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range, Uri,
 };
+use versionlens_core::{Action, DependencyView, DiagnosticView, LensView, Severity, UpdateMode};
 use versionlens_model::{Position as ModelPosition, Range as ModelRange};
-use versionlens_vscode_model::{CodeLensPayload, DependencyPayload, DiagnosticPayload};
 
 use super::{DISPLAY_CODE_LENS_COMMAND, UPDATE_DEPENDENCY_COMMAND};
 
@@ -14,56 +14,59 @@ pub fn into_lsp_range(range: ModelRange) -> Range {
 }
 
 pub(super) fn into_lsp_code_lenses(
-    mut payload: CodeLensPayload,
-    dependencies: &[DependencyPayload],
+    lens: LensView,
+    dependencies: &[DependencyView],
     uri: &str,
     generation: u64,
 ) -> Vec<CodeLens> {
-    if let Some(dependency) = dependencies
+    let range = dependencies
         .iter()
-        .find(|dependency| range_contains(dependency.range, payload.range.start))
-    {
-        payload.range = dependency_source_range(dependency);
-    }
-    if payload.command == "versionlens.suggestion.onChooseBuild" {
-        return payload
-            .arguments
-            .iter()
-            .skip(3)
+        .find(|dependency| range_contains(dependency.range, lens.range.start))
+        .map_or(lens.range, dependency_source_range);
+    match lens.action {
+        Some(Action::ChooseBuild {
+            selector,
+            name,
+            builds,
+            ..
+        }) => builds
+            .into_iter()
             .map(|version| {
                 command_lens(
-                    payload.range,
-                    format!("{} {version}", payload.title),
+                    range,
+                    format!("{} {version}", lens.title),
                     uri,
                     generation,
                     vec![
-                        payload.arguments[1].clone(),
-                        payload.arguments[0].clone(),
-                        "update".to_owned(),
-                        version.clone(),
+                        name.clone(),
+                        selector.clone(),
+                        UpdateMode::Update.as_str().to_owned(),
+                        version,
                     ],
                 )
             })
-            .collect();
+            .collect(),
+        Some(Action::UpdateDependency {
+            name,
+            selector,
+            mode,
+            version,
+        }) => {
+            let mut arguments = vec![name, selector];
+            arguments.extend(mode.map(|mode| mode.as_str().to_owned()));
+            arguments.extend(version);
+            vec![command_lens(range, lens.title, uri, generation, arguments)]
+        }
+        Some(Action::OpenFile { .. }) | None => vec![CodeLens {
+            range: into_lsp_range(range),
+            command: Some(Command {
+                title: lens.title,
+                command: DISPLAY_CODE_LENS_COMMAND.to_owned(),
+                arguments: None,
+            }),
+            data: None,
+        }],
     }
-    if payload.command == UPDATE_DEPENDENCY_COMMAND {
-        return vec![command_lens(
-            payload.range,
-            payload.title,
-            uri,
-            generation,
-            payload.arguments,
-        )];
-    }
-    vec![CodeLens {
-        range: into_lsp_range(payload.range),
-        command: Some(Command {
-            title: payload.title,
-            command: DISPLAY_CODE_LENS_COMMAND.to_owned(),
-            arguments: None,
-        }),
-        data: None,
-    }]
 }
 
 fn range_contains(range: ModelRange, position: ModelPosition) -> bool {
@@ -71,7 +74,7 @@ fn range_contains(range: ModelRange, position: ModelPosition) -> bool {
         && position_key(position) <= position_key(range.end)
 }
 
-fn dependency_source_range(dependency: &DependencyPayload) -> ModelRange {
+fn dependency_source_range(dependency: &DependencyView) -> ModelRange {
     ModelRange {
         start: if position_key(dependency.requirement_range.start)
             < position_key(dependency.range.start)
@@ -113,10 +116,10 @@ fn command_lens(
     }
 }
 
-pub(super) fn into_lsp_diagnostic(payload: DiagnosticPayload) -> Diagnostic {
+pub(super) fn into_lsp_diagnostic(payload: DiagnosticView) -> Diagnostic {
     Diagnostic {
         range: into_lsp_range(payload.range),
-        severity: diagnostic_severity(payload.severity),
+        severity: Some(diagnostic_severity(payload.severity)),
         code: payload.code.map(NumberOrString::String),
         code_description: payload
             .code_description_url
@@ -130,12 +133,11 @@ pub(super) fn into_lsp_diagnostic(payload: DiagnosticPayload) -> Diagnostic {
     }
 }
 
-fn diagnostic_severity(severity: u8) -> Option<DiagnosticSeverity> {
+const fn diagnostic_severity(severity: Severity) -> DiagnosticSeverity {
     match severity {
-        0 => Some(DiagnosticSeverity::ERROR),
-        1 => Some(DiagnosticSeverity::WARNING),
-        2 => Some(DiagnosticSeverity::INFORMATION),
-        3 => Some(DiagnosticSeverity::HINT),
-        _ => None,
+        Severity::Error => DiagnosticSeverity::ERROR,
+        Severity::Warning => DiagnosticSeverity::WARNING,
+        Severity::Information => DiagnosticSeverity::INFORMATION,
+        Severity::Hint => DiagnosticSeverity::HINT,
     }
 }

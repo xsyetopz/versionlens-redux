@@ -1,5 +1,5 @@
 use napi_derive::napi;
-use versionlens_vscode_model::DependencyPayload;
+use versionlens_core::DependencyView;
 
 use crate::binding::position::{NativeRange, native_range_from_core};
 
@@ -16,7 +16,7 @@ pub struct NativeDependency {
 }
 
 impl NativeDependency {
-    pub(super) fn from_core(dependency: DependencyPayload) -> Self {
+    pub(super) fn from_core(dependency: DependencyView) -> Self {
         Self {
             name: dependency.name,
             requirement: dependency.requirement,
@@ -30,8 +30,8 @@ impl NativeDependency {
     }
 }
 
-impl From<DependencyPayload> for NativeDependency {
-    fn from(value: DependencyPayload) -> Self {
+impl From<DependencyView> for NativeDependency {
+    fn from(value: DependencyView) -> Self {
         Self::from_core(value)
     }
 }

@@ -200,7 +200,7 @@ async fn package_manager_integrity_pins_are_verified_and_preserved() {
             .analyze_document(current_input)
             .code_lenses
             .iter()
-            .all(|lens| lens.command.is_empty())
+            .all(|lens| lens.command().is_empty())
     );
     for pin in [format!("sha512.{target_digest}"), "sha224.1234".to_owned()] {
         let input = DocumentInput::new(
