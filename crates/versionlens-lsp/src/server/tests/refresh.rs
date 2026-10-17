@@ -21,12 +21,10 @@ fn opening_a_manifest_checks_versions_and_requests_a_refresh() -> Result<()> {
     });
     let (server, client) = Connection::memory();
     let server_thread = thread::spawn(move || run_connection(&server, false));
-    initialize_workspace(
+    initialize_configured(
         &client,
-        json!({
-            "capabilities":{"workspace":{"codeLens":{"refreshSupport":true},"applyEdit":true,"workspaceEdit":{"documentChanges":true}}},
-            "initializationOptions":{"showVulnerabilities":false,"http":{"proxy":null,"timeoutMs":1000},"providers":{"registryUrls":[{"ecosystem":"npm","url":format!("http://{address}")}]}}
-        }),
+        json!({"capabilities":{"workspace":{"codeLens":{"refreshSupport":true},"applyEdit":true,"workspaceEdit":{"documentChanges":true}}}}),
+        json!({"suggestions":{"showVulnerabilities":false},"npm":{"apiUrl":format!("http://{address}")}}),
     )?;
     let uri = "file:///workspace/package.json";
     open_json_document(

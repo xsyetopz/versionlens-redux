@@ -1,11 +1,9 @@
 use std::io;
 use std::path::Path;
 
-use serde::Deserialize;
 use serde_json::Value;
 use versionlens_core::{
-    SessionConfig, SessionConfigInput, file_pattern_config_from_name, version_lens_session,
-    workspace_exclusion_matches, workspace_exclusion_path,
+    SessionConfig, version_lens_session, workspace_exclusion_matches, workspace_exclusion_path,
 };
 
 use super::VersionLensLspState;
@@ -18,6 +16,7 @@ const GENERATED_DIRECTORY_EXCLUSIONS: &[&str] = &[
     "**/build/**",
     "**/dist/**",
     "**/node_modules/**",
+    "**/obj/**",
     "**/target/**",
     "**/vendor/**",
 ];
@@ -29,13 +28,11 @@ pub(super) fn default_workspace_exclusions() -> Vec<String> {
         .collect()
 }
 
-pub(crate) fn workspace_exclusions(settings: &Value) -> Vec<String> {
+/// The default exclusions plus the enabled patterns of the editor's
+/// `files.exclude` section.
+pub(crate) fn workspace_exclusions(files_exclude: &Value) -> Vec<String> {
     let mut exclusions = default_workspace_exclusions();
-    let Some(configured) = settings
-        .get("files")
-        .and_then(|files| files.get("exclude"))
-        .and_then(Value::as_object)
-    else {
+    let Some(configured) = files_exclude.as_object() else {
         return exclusions;
     };
     for (pattern, enabled) in configured {
@@ -69,81 +66,8 @@ fn expand_braces(pattern: &str, output: &mut Vec<String>) {
     }
 }
 
-pub(crate) fn session_configuration(value: Value) -> Result<SessionConfig, String> {
-    if !value.is_object() && !value.is_null() {
-        return Err("expected a settings object".to_owned());
-    }
-    let mut value = value;
-    let cache_duration_minutes = take_setting::<f64>(&mut value, "cacheDurationMinutes")?;
-    let cache_ttl_seconds = take_setting::<u32>(&mut value, "cacheTtlSeconds")?;
-    let enabled_providers = value
-        .as_object_mut()
-        .and_then(|settings| settings.remove("enabledProviders"))
-        .map(serde_json::from_value::<Vec<String>>)
-        .transpose()
-        .map_err(|error| error.to_string())?;
-    let file_patterns = value
-        .get_mut("providers")
-        .and_then(Value::as_object_mut)
-        .and_then(|providers| providers.remove("filePatterns"))
-        .map(serde_json::from_value::<Vec<FilePatternInput>>)
-        .transpose()
-        .map_err(|error| error.to_string())?;
-    let defaults: SessionConfig = SessionConfigInput {
-        cache_duration_minutes,
-        cache_ttl_seconds,
-        enabled_providers,
-        ..SessionConfigInput::default()
-    }
-    .into();
-    let mut configuration = serde_json::to_value(defaults).map_err(|error| error.to_string())?;
-    if !value.is_null() {
-        merge(&mut configuration, value);
-    }
-    let mut configuration = serde_json::from_value::<SessionConfig>(configuration)
-        .map_err(|error| error.to_string())?;
-    if let Some(file_patterns) = file_patterns {
-        configuration.providers.file_patterns = file_patterns
-            .into_iter()
-            .filter_map(|pattern| {
-                file_pattern_config_from_name(&pattern.ecosystem, pattern.pattern)
-            })
-            .collect();
-    }
-    Ok(configuration)
-}
-
-fn take_setting<T>(value: &mut Value, key: &str) -> Result<Option<T>, String>
-where
-    T: for<'de> Deserialize<'de>,
-{
-    value
-        .as_object_mut()
-        .and_then(|settings| settings.remove(key))
-        .map(serde_json::from_value)
-        .transpose()
-        .map_err(|error| error.to_string())
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct FilePatternInput {
-    ecosystem: String,
-    pattern: String,
-}
-
-fn merge(target: &mut Value, source: Value) {
-    match (target, source) {
-        (Value::Object(target), Value::Object(source)) => {
-            for (key, value) in source {
-                merge(target.entry(key).or_insert(Value::Null), value);
-            }
-        }
-        (target, source) => *target = source,
-    }
-}
-
 impl VersionLensLspState {
+    #[cfg(test)]
     pub(crate) fn with_workspace_exclusions(mut self, exclusions: Vec<String>) -> Self {
         self.exclusions = exclusions;
         self
@@ -156,6 +80,21 @@ impl VersionLensLspState {
         self.exclusions = exclusions;
         self.invalidate_workspace();
         true
+    }
+
+    /// The `workspace/configuration` params for the settings sections the
+    /// server reads, scoped to the first workspace folder.
+    pub(crate) fn configuration_params(&self) -> Value {
+        let scope = self
+            .workspace_folders
+            .first()
+            .or(self.root_uri.as_ref())
+            .map(|root| root.uri.to_string());
+        let item = |section: &str| match &scope {
+            Some(scope) => serde_json::json!({"scopeUri": scope, "section": section}),
+            None => serde_json::json!({"section": section}),
+        };
+        serde_json::json!({"items": [item("versionlens"), item("files.exclude")]})
     }
 
     pub(crate) fn configuration_is(&self, config: &SessionConfig) -> bool {

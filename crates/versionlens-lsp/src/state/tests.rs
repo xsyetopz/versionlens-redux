@@ -274,17 +274,11 @@ fn configuration_changes_invalidate_document_work_and_preserve_versions() -> Res
     state.open_document(document(uri, None));
     state.set_document_version(uri, 9);
     let work = state.document_work(uri).ok_or("missing document")?;
-    let config = super::session_configuration(
-        serde_json::json!({"showVulnerabilities":false,"http":{"timeoutMs":250}}),
-    )?;
+    let config = versionlens_core::Settings::from_value(
+        serde_json::json!({"suggestions":{"showVulnerabilities":false}}),
+    )?
+    .session_config();
     assert!(!config.show_vulnerabilities);
-    assert_eq!(config.http.timeout_ms, 250);
-    assert!(config.http.strict_ssl);
-    assert_eq!(
-        super::session_configuration(serde_json::json!({"cacheDurationMinutes": 2.0}))?
-            .cache_ttl_ms,
-        120_000
-    );
     state
         .replace_configuration(config)
         .map_err(|error| error.to_string())?;
@@ -295,9 +289,6 @@ fn configuration_changes_invalidate_document_work_and_preserve_versions() -> Res
     );
     assert!(!state.accepts_document_version(uri, 9));
     assert!(state.accepts_document_version(uri, 10));
-    assert!(
-        super::session_configuration(serde_json::json!({"http":{"timeoutMs":"invalid"}})).is_err()
-    );
     Ok(())
 }
 
@@ -365,7 +356,7 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     let root_uri = versionlens_core::workspace_file_uri(&root).ok_or("missing root URI")?;
     let state = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
         .with_workspace_exclusions(super::workspace_exclusions(&serde_json::json!({
-            "files": {"exclude": {"**/{generated,cache}/**": true}}
+            "**/{generated,cache}/**": true
         })));
     let included = root.join("src/package.json");
     let cargo = root.join("src/Cargo.toml");
@@ -382,30 +373,32 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     assert!(!state.watched_file_is_relevant(&file_uri(&generated)?));
     assert!(!state.watched_file_is_relevant(&file_uri(&cache)?));
     let options = state.workspace_checking_options();
-    assert_eq!(options.discovery.provider_exclusions.len(), 1);
-    assert_eq!(
-        options.discovery.provider_exclusions[0].ecosystem,
-        versionlens_model::Ecosystem::Dotnet
-    );
-    assert_eq!(
-        options.discovery.provider_exclusions[0].patterns,
-        ["**/obj/**"]
+    assert!(options.discovery.provider_exclusions.is_empty());
+    assert!(
+        options
+            .discovery
+            .exclusions
+            .contains(&"**/obj/**".to_owned())
     );
 
     let cargo_only = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
-        .with_config(super::session_configuration(serde_json::json!({
-            "enabledProviders": ["cargo"]
-        }))?);
+        .with_config(
+            versionlens_core::Settings::from_value(serde_json::json!({
+                "enabledProviders": ["cargo"]
+            }))?
+            .session_config(),
+        );
     assert!(cargo_only.watched_file_is_relevant(&file_uri(&cargo)?));
     assert!(!cargo_only.watched_file_is_relevant(&file_uri(&included)?));
 
     let configured_npm = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
-        .with_config(super::session_configuration(serde_json::json!({
-            "enabledProviders": ["npm"],
-            "providers": {
-                "filePatterns": [{"ecosystem": "npm", "pattern": "**/deps.custom"}]
-            }
-        }))?);
+        .with_config(
+            versionlens_core::Settings::from_value(serde_json::json!({
+                "enabledProviders": ["npm"],
+                "npm": {"files": "**/deps.custom"}
+            }))?
+            .session_config(),
+        );
     assert!(configured_npm.watched_file_is_relevant(&file_uri(&configured)?));
     Ok(())
 }

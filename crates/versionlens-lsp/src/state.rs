@@ -9,9 +9,9 @@ use lsp_types::{
 use serde::{Deserialize, Serialize};
 use versionlens_core::{
     SessionConfigInput, VersionLensSession, WorkspaceCheckingOptions, WorkspaceDiscoveryOptions,
-    WorkspaceProviderExclusion, version_lens_session,
+    version_lens_session,
 };
-use versionlens_model::{DocumentInput, Ecosystem};
+use versionlens_model::DocumentInput;
 
 pub(crate) const UPDATE_DEPENDENCY_COMMAND: &str = "versionlens.suggestion.onUpdateDependency";
 
@@ -112,6 +112,8 @@ pub(crate) struct ClientSupport {
     pub(crate) workspace_edits: bool,
     pub(crate) code_lens_refresh: bool,
     pub(crate) watched_files_dynamic: bool,
+    /// The client answers `workspace/configuration`.
+    pub(crate) configuration: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -145,6 +147,7 @@ pub(crate) struct CheckedDocument {
 }
 
 impl VersionLensLspState {
+    #[cfg(test)]
     pub(crate) fn with_config(mut self, config: versionlens_core::SessionConfig) -> Self {
         self.session = version_lens_session(config.clone());
         self.configuration = config;
@@ -163,6 +166,7 @@ impl VersionLensLspState {
             self.client.watched_files_dynamic = workspace
                 .did_change_watched_files
                 .is_some_and(|files| files.dynamic_registration == Some(true));
+            self.client.configuration = workspace.configuration == Some(true);
         }
         self
     }
@@ -247,10 +251,6 @@ impl VersionLensLspState {
         };
         let mut discovery = WorkspaceDiscoveryOptions::new(roots);
         discovery.exclusions = self.exclusions.clone();
-        discovery.provider_exclusions = vec![WorkspaceProviderExclusion {
-            ecosystem: Ecosystem::Dotnet,
-            patterns: vec!["**/obj/**".to_owned()],
-        }];
         let mut uris = self.document_uris();
         uris.sort();
         discovery.overlays = uris
@@ -276,7 +276,7 @@ impl VersionLensLspState {
 }
 
 mod configuration;
-pub(crate) use configuration::{session_configuration, workspace_exclusions};
+pub(crate) use configuration::workspace_exclusions;
 mod documents;
 pub(crate) use documents::resolved_document;
 mod edits;

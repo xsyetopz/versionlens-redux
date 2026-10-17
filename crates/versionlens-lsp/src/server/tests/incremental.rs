@@ -15,12 +15,10 @@ fn editing_a_manifest_resolves_only_changed_dependencies() -> Result<()> {
     let (address, requests) = counting_registry()?;
     let (server, client) = Connection::memory();
     let server_thread = thread::spawn(move || run_connection(&server, false));
-    initialize_workspace(
+    initialize_configured(
         &client,
-        json!({
-            "capabilities":{},
-            "initializationOptions":{"showVulnerabilities":false,"http":{"proxy":null,"timeoutMs":3000},"providers":{"registryUrls":[{"ecosystem":"npm","url":format!("http://{address}")}]}}
-        }),
+        json!({"capabilities":{}}),
+        json!({"suggestions":{"showVulnerabilities":false},"npm":{"apiUrl":format!("http://{address}")}}),
     )?;
     let uri = "file:///workspace/package.json";
     open_json_document(&client, uri, 1, &manifest("// first", "1.0.0"))?;

@@ -1,5 +1,6 @@
 mod providers;
 mod session;
+mod settings;
 mod suggestions;
 
 pub use providers::{
@@ -15,6 +16,7 @@ pub use providers::{
     registry_url_config_from_name,
 };
 pub use session::{SessionConfig, SessionConfigInput};
+pub use settings::Settings;
 pub use suggestions::{
     SuggestionIndicators, SuggestionIndicatorsInput, standard_suggestion_indicators,
 };

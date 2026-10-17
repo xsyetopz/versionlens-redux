@@ -37,14 +37,10 @@ fn npm_registry(
 fn start_without_code_lens(
     address: std::net::SocketAddr,
 ) -> Result<(Connection, thread::JoinHandle<Result<()>>)> {
-    start_workspace_server(json!({
-        "capabilities": {},
-        "initializationOptions": {
-            "showVulnerabilities": false,
-            "http": {"proxy": null, "timeoutMs": 1000},
-            "providers": {"registryUrls": [{"ecosystem": "npm", "url": format!("http://{address}")}]}
-        }
-    }))
+    start_configured_server(
+        json!({"capabilities": {}}),
+        json!({"suggestions": {"showVulnerabilities": false}, "npm": {"apiUrl": format!("http://{address}")}}),
+    )
 }
 
 enum Seen {
