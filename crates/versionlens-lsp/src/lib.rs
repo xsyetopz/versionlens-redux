@@ -1,3 +1,4 @@
+pub mod protocol;
 mod server;
 mod state;
 
