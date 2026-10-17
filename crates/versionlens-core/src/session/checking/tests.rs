@@ -357,3 +357,12 @@ fn document_updates_recheck_only_the_edited_document_without_rediscovery() {
     checking.stop();
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn retry_delays_double_from_one_second_up_to_five_minutes() {
+    let delays = (0..12)
+        .map(|failures| super::runner::retry_delay(failures).as_secs())
+        .collect::<Vec<_>>();
+    assert_eq!(delays, [1, 2, 4, 8, 16, 32, 64, 128, 256, 300, 300, 300]);
+    assert_eq!(super::runner::retry_delay(u32::MAX).as_secs(), 300);
+}

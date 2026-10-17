@@ -37,15 +37,12 @@ impl WorkspaceDiscovery {
                     WorkspaceDiscoveryFailureKind::InvalidOverlayUri,
                 )
             })?;
-        let path = if self.overlay_only {
-            path
-        } else {
-            let (root_index, path) = self.root_for_path(&path).ok_or_else(|| {
-                WorkspaceDiscoveryFailure::at(
-                    path.clone(),
-                    WorkspaceDiscoveryFailureKind::OutsideWorkspace,
-                )
-            })?;
+        // An open document outside every root is checked as it is, the
+        // same as when it is opened after discovery.
+        let root = (!self.overlay_only)
+            .then(|| self.root_for_path(&path))
+            .flatten();
+        let path = if let Some((root_index, path)) = root {
             let root = &self.roots[root_index];
             verify_overlay_containment(&path, &root.path)?;
             input.uri = crate::workspace_file_uri(&path).ok_or_else(|| {
@@ -55,6 +52,8 @@ impl WorkspaceDiscovery {
                 )
             })?;
             input.workspace_root = Some(root.uri.clone());
+            path
+        } else {
             path
         };
         if !self.traversal.seen_paths.insert(path.clone()) || !self.supported(&input, false) {

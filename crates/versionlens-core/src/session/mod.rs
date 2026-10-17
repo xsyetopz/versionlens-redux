@@ -45,7 +45,7 @@ pub use discovery::{
     WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions, WorkspaceProviderExclusion,
     workspace_exclusion_matches, workspace_exclusion_path,
 };
-pub use tasks::SessionTask;
+pub use tasks::{CHECKING_CANCELLED, SessionTask};
 
 #[derive(Debug, Clone)]
 pub struct VersionLensSession {

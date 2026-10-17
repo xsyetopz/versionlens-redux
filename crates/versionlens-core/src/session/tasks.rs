@@ -7,6 +7,10 @@ use super::{ApplyCommandRequest, VersionLensSession};
 use crate::ResolveDocumentOutput;
 use crate::concurrency::Priority;
 
+/// The error of a check stopped because its document or settings changed.
+/// A newer check follows it, so callers do not report it.
+pub const CHECKING_CANCELLED: &str = "checking cancelled";
+
 pub enum SessionTask {
     Resolve(DocumentInput),
     Background(DocumentInput),
@@ -41,7 +45,7 @@ impl VersionLensSession {
         };
         let _cancellation = OperationCancellation(cancellation);
         if !session.operation_context().is_current() {
-            return Err("checking cancelled".to_owned());
+            return Err(CHECKING_CANCELLED.to_owned());
         }
         let output = match task {
             SessionTask::Resolve(document) | SessionTask::Background(document) => {
@@ -67,7 +71,7 @@ impl VersionLensSession {
         if session.operation_context().is_current() {
             Ok(output)
         } else {
-            Err("checking cancelled".to_owned())
+            Err(CHECKING_CANCELLED.to_owned())
         }
     }
 }

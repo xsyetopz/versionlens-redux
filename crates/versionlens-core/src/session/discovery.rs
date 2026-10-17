@@ -47,7 +47,6 @@ pub enum WorkspaceDiscoveryFailureKind {
     },
     InvalidOverlayUri,
     InvalidFileUri,
-    OutsideWorkspace,
     EscapesWorkspace,
     InvalidUtf8,
     FileTooLarge(Box<WorkspaceDiscoveryFileSize>),

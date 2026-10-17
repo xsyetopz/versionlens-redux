@@ -46,7 +46,7 @@ pub use contract::{
 pub use dependency::dependency_view;
 pub use dotnet_sources::dotnet_registry_source_urls;
 pub use session::{
-    ApplyCommandRequest, SessionTask, VersionLensSession, WorkspaceCheckEvent,
+    ApplyCommandRequest, CHECKING_CANCELLED, SessionTask, VersionLensSession, WorkspaceCheckEvent,
     WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions, WorkspaceDiscovery,
     WorkspaceDiscoveryCancellation, WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind,
     WorkspaceDiscoveryFileSize, WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits,

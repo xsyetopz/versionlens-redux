@@ -9,17 +9,28 @@ use versionlens_model::DocumentInput;
 
 use super::{Shared, WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceCheckingOptions};
 use crate::{
-    ResolveDocumentOutput, SessionTask, VersionLensSession, WorkspaceDiscovery,
+    CHECKING_CANCELLED, ResolveDocumentOutput, SessionTask, VersionLensSession, WorkspaceDiscovery,
     WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryOptions,
 };
 
 const MAX_ACTIVE: usize = 8;
 const RETRY_DELAY: Duration = Duration::from_secs(1);
+const MAX_RETRY_DELAY: Duration = Duration::from_mins(5);
+
+/// The wait before the next check after `failures` failed checks in a row:
+/// 1 s, doubling up to 5 min, so a broken registry is not polled every second.
+pub(super) fn retry_delay(failures: u32) -> Duration {
+    RETRY_DELAY
+        .checked_mul(2_u32.saturating_pow(failures))
+        .map_or(MAX_RETRY_DELAY, |delay| delay.min(MAX_RETRY_DELAY))
+}
 
 struct Entry {
     input: DocumentInput,
     due: Option<Instant>,
     task: Option<(u64, AbortOnDrop)>,
+    /// Failed checks in a row, which set the retry backoff.
+    failures: u32,
 }
 
 struct AbortOnDrop(tokio::task::AbortHandle);
@@ -305,7 +316,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             return;
         }
         self.discovery_retry = None;
-        self.discovery_backoff = (self.discovery_backoff * 2).min(Duration::from_secs(30));
+        self.discovery_backoff = (self.discovery_backoff * 2).min(MAX_RETRY_DELAY);
         if let Some(options) = &self.discovery_options {
             let mut discovery = self.session.discover_workspace_documents(options.clone());
             discovery.skip_paths(&self.discovery_overlays);
@@ -333,6 +344,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
                 input,
                 due: Some(Instant::now()),
                 task: None,
+                failures: 0,
             },
         );
     }
@@ -412,10 +424,19 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             }
             entry.task = None;
             self.active = self.active.saturating_sub(1);
-            let delay = if completion.result.is_ok() {
-                self.session.document_check_delay(&entry.input)
-            } else {
-                Some(RETRY_DELAY)
+            let delay = match &completion.result {
+                Ok(_) => {
+                    entry.failures = 0;
+                    self.session.document_check_delay(&entry.input)
+                }
+                // A cancelled check says nothing about the registry, so it
+                // does not grow the backoff.
+                Err(error) if error == CHECKING_CANCELLED => Some(RETRY_DELAY),
+                Err(_) => {
+                    let delay = retry_delay(entry.failures);
+                    entry.failures = entry.failures.saturating_add(1);
+                    Some(delay)
+                }
             };
             entry.due = delay.map(|delay| Instant::now() + delay.max(RETRY_DELAY));
             let input = Box::new(entry.input.clone());
