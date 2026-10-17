@@ -31,10 +31,15 @@ pub(super) fn github_action_reference_suggestion(
             path,
             *reusable_workflow,
         )),
+        // A branch or non-version tag names no release to compare, so it is
+        // shown as a fixed ref without a registry request.
+        CanonicalReference::GitHubActionRef { reference } => {
+            let reference = reference.clone();
+            Some(fixed(dependency, reference))
+        }
         CanonicalReference::GitHubActionTag { .. }
         | CanonicalReference::GitHubActionSha { .. }
-        | CanonicalReference::GitHubActionCommit { .. }
-        | CanonicalReference::GitHubActionRef { .. } => None,
+        | CanonicalReference::GitHubActionCommit { .. } => None,
     }
 }
 

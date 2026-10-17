@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashSet;
 
 use crate::{
@@ -62,20 +63,33 @@ pub(crate) fn github_action_latest(
     prerelease_tags: &[String],
 ) -> Option<String> {
     let reference = dependency.canonical_reference.as_ref()?;
-    if let CanonicalReference::GitHubActionRef { reference } = reference {
-        return Some(reference.clone());
-    }
     let current_tag = github_action_tag(reference, body)?;
     let (prefix, _) = version_tag_parts(&current_tag)?;
     let tags = github_tags(body)
         .into_iter()
         .filter(|tag| tag.prefix == prefix)
         .collect::<Vec<_>>();
-    latest_version_with_prerelease_tags(
+    let latest = latest_version_with_prerelease_tags(
         tags.iter().map(|tag| tag.version.as_str()),
         include_prereleases,
         prerelease_tags,
-    )
+    )?;
+    most_specific_equal_tag(&tags, &latest).map(|tag| tag.version.clone())
+}
+
+/// Among the tags whose version equals `version` (`v9` and `v9.0.0`), the one
+/// with the most version segments.
+fn most_specific_equal_tag<'a, T: std::borrow::Borrow<GithubTag>>(
+    tags: &'a [T],
+    version: &str,
+) -> Option<&'a GithubTag> {
+    tags.iter()
+        .map(Borrow::borrow)
+        .filter(|tag| {
+            versionlens_model::compare_versions(&tag.version, version)
+                == Some(std::cmp::Ordering::Equal)
+        })
+        .max_by_key(|tag| tag.version.split('.').count())
 }
 
 #[derive(Debug)]
@@ -137,10 +151,7 @@ pub(super) fn github_action_tag(reference: &CanonicalReference, body: &str) -> O
                 matching.iter().map(|tag| tag.version.as_str()),
                 true,
             )?;
-            matching
-                .into_iter()
-                .find(|tag| tag.version == latest)
-                .map(|tag| tag.raw.clone())
+            most_specific_equal_tag(&matching, &latest).map(|tag| tag.raw.clone())
         }
         CanonicalReference::GitHubActionRef { .. }
         | CanonicalReference::GitHubActionLocal { .. }
@@ -306,19 +317,6 @@ impl VersionLensSession {
         let Some(reference) = dependency.canonical_reference.as_ref() else {
             return Ok(false);
         };
-        if let CanonicalReference::GitHubActionRef { reference } = reference {
-            return self
-                .fetch_floating_github_action_ref(
-                    endpoint,
-                    GithubFetchContext {
-                        dependency,
-                        registry: context,
-                        operation,
-                    },
-                    reference,
-                )
-                .await;
-        }
         let CanonicalReference::GitHubActionSha { tag, .. } = reference else {
             return Ok(false);
         };
@@ -389,137 +387,6 @@ impl VersionLensSession {
             "GitHub tag reference exceeds 32 objects".to_owned(),
         ))
     }
-
-    async fn fetch_floating_github_action_ref(
-        &self,
-        endpoint: &RegistryEndpoint,
-        fetch: GithubFetchContext<'_>,
-        reference: &str,
-    ) -> Result<bool, FetchError> {
-        let Some(tag_url) = github_tag_ref_url(&endpoint.url, reference) else {
-            return Err(unavailable_reference(reference));
-        };
-        let expected_tag = format!("refs/tags/{reference}");
-        match self
-            .fetch_github_ref(
-                &fetch,
-                GithubRefTarget {
-                    url: &tag_url,
-                    expected_ref: &expected_tag,
-                    tag: true,
-                },
-            )
-            .await?
-        {
-            GithubRefStatus::Proven => return Ok(true),
-            GithubRefStatus::Missing => {}
-        }
-
-        let head_url = tag_url.replacen("/git/ref/tags/", "/git/ref/heads/", 1);
-        let expected_head = format!("refs/heads/{reference}");
-        match self
-            .fetch_github_ref(
-                &fetch,
-                GithubRefTarget {
-                    url: &head_url,
-                    expected_ref: &expected_head,
-                    tag: false,
-                },
-            )
-            .await?
-        {
-            GithubRefStatus::Proven => Ok(true),
-            GithubRefStatus::Missing => Err(unavailable_reference(reference)),
-        }
-    }
-
-    async fn fetch_github_ref(
-        &self,
-        fetch: &GithubFetchContext<'_>,
-        target: GithubRefTarget<'_>,
-    ) -> Result<GithubRefStatus, FetchError> {
-        let body = match self
-            .get_text_or_status_with_context(
-                target.url,
-                fetch.dependency.ecosystem,
-                fetch.registry,
-                fetch.operation,
-            )
-            .await
-        {
-            Ok(Some(body)) => body,
-            Ok(None) => return Ok(GithubRefStatus::Missing),
-            Err(FetchError::RegistryStatus(status)) if status == "not found" => {
-                return Ok(GithubRefStatus::Missing);
-            }
-            Err(error) => return Err(error),
-        };
-        github_ref_status(&body, target.expected_ref, target.tag)
-    }
-}
-
-struct GithubFetchContext<'a> {
-    dependency: &'a Dependency,
-    registry: &'a RegistryContext,
-    operation: &'a OperationContext,
-}
-
-struct GithubRefTarget<'a> {
-    url: &'a str,
-    expected_ref: &'a str,
-    tag: bool,
-}
-
-enum GithubRefStatus {
-    Proven,
-    Missing,
-}
-
-fn github_ref_status(
-    body: &str,
-    expected_ref: &str,
-    tag: bool,
-) -> Result<GithubRefStatus, FetchError> {
-    let value: Value = from_str(body).map_err(|_| invalid_reference_response())?;
-    let value = match &value {
-        Value::Array(entries) if entries.len() > 1 => {
-            return Err(FetchError::RegistryStatus(
-                "ambiguous GitHub action reference".to_owned(),
-            ));
-        }
-        Value::Array(entries) if entries.is_empty() => return Ok(GithubRefStatus::Missing),
-        Value::Array(entries) => &entries[0],
-        value => value,
-    };
-    if value.get("ref").and_then(Value::as_str) != Some(expected_ref) {
-        return Err(invalid_reference_response());
-    }
-    let object = value.get("object").ok_or_else(invalid_reference_response)?;
-    let object_type = object
-        .get("type")
-        .and_then(Value::as_str)
-        .ok_or_else(invalid_reference_response)?;
-    if object_type != "commit" && !(tag && object_type == "tag") {
-        return Err(invalid_reference_response());
-    }
-    let sha = object
-        .get("sha")
-        .and_then(Value::as_str)
-        .ok_or_else(invalid_reference_response)?;
-    if sha.len() != 40 || !sha.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-        return Err(invalid_reference_response());
-    }
-    Ok(GithubRefStatus::Proven)
-}
-
-fn unavailable_reference(reference: &str) -> FetchError {
-    FetchError::RegistryStatus(format!(
-        "GitHub action reference `{reference}` is unavailable"
-    ))
-}
-
-fn invalid_reference_response() -> FetchError {
-    FetchError::RegistryStatus("invalid GitHub action reference response".to_owned())
 }
 
 fn invalid_tag_response() -> FetchError {
