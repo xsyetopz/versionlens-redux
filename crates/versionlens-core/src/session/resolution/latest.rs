@@ -13,6 +13,7 @@ mod lookup;
 pub(super) struct LatestLookup {
     pub(super) latest: Option<String>,
     pub(super) builds: Vec<String>,
+    pub(super) versions: Vec<String>,
     pub(super) choices: Vec<UpdateChoice>,
     pub(super) fetch_error: Option<FetchError>,
     pub(super) fixed_requirement_matched: bool,
@@ -35,3 +36,6 @@ impl VersionLensSession {
         self.resolve_cacheable_latest(request).await
     }
 }
+
+#[cfg(test)]
+mod tests;
