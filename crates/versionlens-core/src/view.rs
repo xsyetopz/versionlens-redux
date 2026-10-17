@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use versionlens_model::Range;
+use versionlens_model::{Range, TextEdit};
 
 /// A code lens the engine wants shown. Editors map it to their own lens type.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -96,6 +96,17 @@ impl UpdateMode {
     pub(crate) fn parse(value: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|mode| mode.as_str() == value)
     }
+}
+
+/// A quick fix that bumps one requirement to an offered version.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BumpActionView {
+    pub title: String,
+    pub edit: TextEdit,
+    /// Whether the bump is to the latest release.
+    pub preferred: bool,
+    /// The update diagnostic of the requirement, when it has one.
+    pub diagnostic: Option<DiagnosticView>,
 }
 
 /// The code of the diagnostic on a requirement that does not allow the

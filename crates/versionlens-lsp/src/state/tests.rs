@@ -437,3 +437,41 @@ fn folders_that_differ_only_in_exclusions_get_their_own_sessions() -> Result<(),
     assert!(second.session.set_workspace_documents(documents));
     Ok(())
 }
+
+#[test]
+fn code_actions_use_plain_changes_for_clients_without_document_changes() {
+    let range = versionlens_model::Range {
+        start: versionlens_model::Position {
+            line: 0,
+            character: 1,
+        },
+        end: versionlens_model::Position {
+            line: 0,
+            character: 2,
+        },
+    };
+    let action = versionlens_core::BumpActionView {
+        title: "Bump to ^2.0.0".to_owned(),
+        edit: versionlens_model::TextEdit {
+            range,
+            new_text: "^2.0.0".to_owned(),
+        },
+        preferred: true,
+        diagnostic: None,
+    };
+    let uri = "file:///workspace/package.json"
+        .parse::<lsp_types::Uri>()
+        .unwrap();
+
+    let actions = super::into_lsp_code_actions(vec![action], &uri, Some(3), false);
+
+    let value = serde_json::to_value(&actions).unwrap();
+    assert_eq!(
+        value[0]["edit"],
+        serde_json::json!({"changes": {"file:///workspace/package.json": [{
+            "range": {"start": {"line": 0, "character": 1}, "end": {"line": 0, "character": 2}},
+            "newText": "^2.0.0"
+        }]}})
+    );
+    assert_eq!(value[0].get("diagnostics"), None);
+}

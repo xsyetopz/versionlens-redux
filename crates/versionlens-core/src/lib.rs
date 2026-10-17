@@ -62,8 +62,8 @@ pub(crate) use versionlens_model::parse_semver;
 pub use versionlens_update::{Bump, BumpKind, Plan, PlanStatus};
 pub use versionlens_update::{Suggestion, SuggestionStatus};
 pub use view::{
-    Action, DependencyView, DiagnosticView, LensKind, LensView, Severity, StatusView,
-    SuggestionView, UPDATE_AVAILABLE, UpdateMode,
+    Action, BumpActionView, DependencyView, DiagnosticView, LensKind, LensView, Severity,
+    StatusView, SuggestionView, UPDATE_AVAILABLE, UpdateMode,
 };
 
 pub use workspace::{workspace_file_uri, workspace_path};
