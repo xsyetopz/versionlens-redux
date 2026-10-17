@@ -278,6 +278,7 @@ impl VersionLensLspState {
 mod configuration;
 pub(crate) use configuration::{session_configuration, workspace_exclusions};
 mod documents;
+pub(crate) use documents::resolved_document;
 mod edits;
 mod presentation;
 pub use presentation::into_lsp_range;

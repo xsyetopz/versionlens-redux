@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::LazyLock;
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
@@ -7,6 +8,12 @@ use crate::{SessionConfigInput, WorkspaceDiscoveryOptions, version_lens_session}
 
 fn options(root: &Path) -> WorkspaceCheckingOptions {
     WorkspaceCheckingOptions::new(WorkspaceDiscoveryOptions::new(vec![root.to_path_buf()]))
+}
+
+fn runtime() -> tokio::runtime::Handle {
+    static RUNTIME: LazyLock<tokio::runtime::Runtime> =
+        LazyLock::new(|| tokio::runtime::Runtime::new().expect("test runtime"));
+    RUNTIME.handle().clone()
 }
 
 fn next_document(
@@ -44,7 +51,7 @@ fn unopened_files_retry_after_expiry_without_adapter_requests() {
     let session = version_lens_session(config);
     let (sender, receiver) = channel();
     let checking = session
-        .start_workspace_checking(options(&root), move |event| {
+        .start_workspace_checking(options(&root), runtime(), move |event| {
             let _ = sender.send(event);
         })
         .unwrap();
@@ -83,7 +90,7 @@ fn replacement_uses_the_new_unsaved_snapshot_and_generation() {
     let (sender, receiver) = channel();
     let (release, blocked) = channel();
     let checking = session
-        .start_workspace_checking(options(&root), move |event| {
+        .start_workspace_checking(options(&root), runtime(), move |event| {
             let hold = event.generation == 1
                 && matches!(event.result, WorkspaceCheckResult::Document { .. });
             let _ = sender.send(event);
@@ -134,7 +141,7 @@ fn snapshot_budget_produces_a_specific_result_and_settles() {
     input.max_snapshot_bytes = 0;
     let (sender, receiver) = channel();
     let checking = session
-        .start_workspace_checking(input, move |event| {
+        .start_workspace_checking(input, runtime(), move |event| {
             let _ = sender.send(event);
         })
         .unwrap();
@@ -168,7 +175,7 @@ fn cache_invalidation_triggers_checking_and_stop_releases_the_listener() {
     let (sender, receiver) = channel();
     let operation = session.operation_context();
     let checking = session
-        .start_workspace_checking(options(&root), move |event| {
+        .start_workspace_checking(options(&root), runtime(), move |event| {
             let _ = sender.send(event);
         })
         .unwrap();
@@ -213,7 +220,7 @@ fn discovery_failures_recover_without_an_adapter_request() {
         );
         let (sender, receiver) = channel();
         let checking = session
-            .start_workspace_checking(options(&root), move |event| {
+            .start_workspace_checking(options(&root), runtime(), move |event| {
                 let _ = sender.send(event);
             })
             .unwrap();
@@ -260,7 +267,7 @@ fn discovery_retries_preserve_failed_overlay_precedence() {
     );
     let (sender, receiver) = channel();
     let checking = session
-        .start_workspace_checking(request, move |event| {
+        .start_workspace_checking(request, runtime(), move |event| {
             let _ = sender.send(event);
         })
         .unwrap();

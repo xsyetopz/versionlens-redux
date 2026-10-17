@@ -117,8 +117,12 @@ impl WorkspaceClient {
         } else {
             self.events = Arc::new(EventQueue::default());
             let events = Arc::clone(&self.events);
+            let runtime = napi::bindgen_prelude::within_runtime_if_available(
+                napi::tokio::runtime::Handle::try_current,
+            )
+            .map_err(|error| error.to_string())?;
             let handle = session
-                .start_workspace_checking(options, move |event| events.push(event))
+                .start_workspace_checking(options, runtime, move |event| events.push(event))
                 .map_err(|error| error.to_string())?;
             let generation = handle.generation();
             self.handle = Some(handle);

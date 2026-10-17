@@ -55,9 +55,12 @@ pub struct WorkspaceChecking {
 }
 
 impl VersionLensSession {
+    /// Resolution tasks run on `runtime`, which the caller owns and keeps alive
+    /// for as long as checking runs.
     pub fn start_workspace_checking(
         &self,
         options: WorkspaceCheckingOptions,
+        runtime: tokio::runtime::Handle,
         on_event: impl Fn(WorkspaceCheckEvent) + Send + 'static,
     ) -> std::io::Result<WorkspaceChecking> {
         establish_snapshot(self, &options, true);
@@ -69,9 +72,6 @@ impl VersionLensSession {
         });
         let session = self.clone();
         let worker_shared = Arc::clone(&shared);
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()?;
         thread::Builder::new()
             .name("versionlens-workspace".to_owned())
             .spawn(move || runner::Runner::new(session, worker_shared, on_event, runtime).run())?;

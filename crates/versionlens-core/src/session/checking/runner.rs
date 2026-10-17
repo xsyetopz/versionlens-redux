@@ -57,7 +57,7 @@ pub(super) struct Runner<F> {
     next_prune: Instant,
     sender: Sender<Completion>,
     receiver: Receiver<Completion>,
-    runtime: tokio::runtime::Runtime,
+    runtime: tokio::runtime::Handle,
 }
 
 impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
@@ -65,7 +65,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
         session: VersionLensSession,
         shared: Arc<Shared>,
         on_event: F,
-        runtime: tokio::runtime::Runtime,
+        runtime: tokio::runtime::Handle,
     ) -> Self {
         let (sender, receiver) = channel();
         Self {
@@ -299,8 +299,16 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
         let completion_uri = uri.clone();
         let session = self.session.clone();
         let input = entry.input.clone();
-        let task = self.runtime.spawn(async move {
-            let result = session.run_task(SessionTask::Background(input)).await;
+        let run = self
+            .runtime
+            .spawn(async move { session.run_task(SessionTask::Background(input)).await });
+        let abort = run.abort_handle();
+        self.runtime.spawn(async move {
+            let result = match run.await {
+                Ok(result) => result,
+                Err(error) if error.is_panic() => Err("workspace check task panicked".to_owned()),
+                Err(_) => return,
+            };
             if !shared.closed.load(Ordering::Acquire)
                 && shared.generation.load(Ordering::Acquire) == generation
             {
@@ -313,7 +321,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
                 shared.ready.notify_one();
             }
         });
-        entry.task = Some((task_id, AbortOnDrop(task.abort_handle())));
+        entry.task = Some((task_id, AbortOnDrop(abort)));
         self.active += 1;
     }
 
