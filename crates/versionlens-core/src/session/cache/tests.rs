@@ -4,7 +4,7 @@ use std::thread::sleep;
 
 use versionlens_model::DocumentInput;
 
-use versionlens_http::HttpHeader;
+use versionlens_fetch::HttpHeader;
 use versionlens_model::Ecosystem::Npm;
 use versionlens_model::ManifestKind::{NpmPackageJson, PnpmYaml};
 
@@ -27,14 +27,14 @@ fn session_with_manifest_cache(
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     })
 }
 
 #[test]
 fn request_cache_identity_separates_effective_security_context_without_exposing_secrets() {
     let session = crate::support::tests::test_session(false);
-    let mut first = versionlens_http::standard_http_config();
+    let mut first = versionlens_fetch::standard_http_config();
     first.auth_headers.push(HttpHeader {
         name: "authorization".to_owned(),
         value: "Bearer first-secret".to_owned(),
@@ -79,7 +79,7 @@ fn request_cache_identity_separates_effective_security_context_without_exposing_
 #[test]
 fn completed_request_lock_keys_are_pruned_during_subsequent_requests() {
     let session = crate::support::tests::test_session(false);
-    let http = versionlens_http::standard_http_config();
+    let http = versionlens_fetch::standard_http_config();
 
     for index in 0..100 {
         let key = session.request_cache_key(

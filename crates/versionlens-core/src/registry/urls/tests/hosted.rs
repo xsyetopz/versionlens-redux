@@ -15,7 +15,7 @@ fn hosted_dependencies_use_hosted_registry_url() {
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     });
     let input = registry_input("file:///pubspec.yaml", "yaml", "hosted-dependencies-use-hosted-registry-url.yaml");
     let dependencies = session.dependencies(&input);
@@ -102,6 +102,6 @@ fn github_actions_session(providers: ProviderSettings) -> crate::VersionLensSess
         show_vulnerabilities: false,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     })
 }

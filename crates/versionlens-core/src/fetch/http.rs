@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use versionlens_http::{
+use versionlens_fetch::{
     ACCEPT_GITHUB_V3, ACCEPT_JSON, ACCEPT_NPM_INSTALL_V1, HttpError, RetryPolicy,
     get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout,
 };
@@ -130,9 +130,9 @@ fn accept_header_for_request(ecosystem: Ecosystem, url: &str) -> Option<&'static
 fn retry_policy_for_request(ecosystem: Ecosystem, url: &str) -> RetryPolicy {
     match ecosystem {
         Npm if !starts_with_ignore_ascii_case(url, "https://api.github.com/repos/") => {
-            versionlens_http::npm_registry_fetch_retry_policy()
+            versionlens_fetch::npm_registry_fetch_retry_policy()
         }
-        _ => versionlens_http::disabled_retry_policy(),
+        _ => versionlens_fetch::disabled_retry_policy(),
     }
 }
 

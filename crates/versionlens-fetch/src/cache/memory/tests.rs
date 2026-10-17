@@ -1,7 +1,7 @@
 #[test]
 fn returns_cached_value_before_ttl() {
-    let mut cache = crate::MemoryCache::new(Duration::from_secs(60));
-    let key = crate::provider_package_cache_key("npm", "typescript");
+    let mut cache = crate::cache::MemoryCache::new(Duration::from_secs(60));
+    let key = crate::cache::provider_package_cache_key("npm", "typescript");
 
     cache.insert(key.clone(), "6.0.3".to_owned());
 
@@ -11,8 +11,8 @@ fn returns_cached_value_before_ttl() {
 
 #[test]
 fn expired_values_are_not_returned() {
-    let mut cache = crate::MemoryCache::new(Duration::from_secs(60));
-    let key = crate::provider_package_cache_key("cargo", "serde");
+    let mut cache = crate::cache::MemoryCache::new(Duration::from_secs(60));
+    let key = crate::cache::provider_package_cache_key("cargo", "serde");
 
     cache.insert_with_ttl(key.clone(), "1.0.228".to_owned(), std::time::Duration::ZERO);
 
@@ -22,8 +22,8 @@ fn expired_values_are_not_returned() {
 
 #[test]
 fn clear_removes_cached_values() {
-    let mut cache = crate::MemoryCache::new(Duration::from_secs(60));
-    let key = crate::provider_package_cache_key("cargo", "serde");
+    let mut cache = crate::cache::MemoryCache::new(Duration::from_secs(60));
+    let key = crate::cache::provider_package_cache_key("cargo", "serde");
 
     cache.insert(key.clone(), "1.0.228".to_owned());
     cache.clear();
@@ -34,9 +34,9 @@ use std::time::Duration;
 
 #[test]
 fn capacity_retains_recently_accessed_values() {
-    let mut cache = crate::MemoryCache::new(Duration::from_secs(60)).with_capacity(2);
-    let keys =
-        ["first", "second", "third"].map(|name| crate::provider_package_cache_key("npm", name));
+    let mut cache = crate::cache::MemoryCache::new(Duration::from_secs(60)).with_capacity(2);
+    let keys = ["first", "second", "third"]
+        .map(|name| crate::cache::provider_package_cache_key("npm", name));
     cache.insert(keys[0].clone(), 1);
     cache.insert(keys[1].clone(), 2);
     assert_eq!(cache.get(&keys[0]), Some(&1));
@@ -48,10 +48,10 @@ fn capacity_retains_recently_accessed_values() {
 
 #[test]
 fn byte_budget_preserves_recent_values_and_releases_allocations_on_clear() {
-    let mut cache =
-        crate::MemoryCache::new(Duration::from_secs(60)).with_byte_capacity(1600, String::capacity);
-    let keys =
-        ["first", "second", "third"].map(|name| crate::provider_package_cache_key("npm", name));
+    let mut cache = crate::cache::MemoryCache::new(Duration::from_secs(60))
+        .with_byte_capacity(1600, String::capacity);
+    let keys = ["first", "second", "third"]
+        .map(|name| crate::cache::provider_package_cache_key("npm", name));
     cache.insert(keys[0].clone(), "a".repeat(200));
     cache.insert(keys[1].clone(), "b".repeat(200));
     assert!(cache.get(&keys[0]).is_some());
@@ -68,10 +68,10 @@ fn byte_budget_preserves_recent_values_and_releases_allocations_on_clear() {
 
 #[test]
 fn a_value_larger_than_the_budget_does_not_displace_other_values() {
-    let mut cache =
-        crate::MemoryCache::new(Duration::from_secs(60)).with_byte_capacity(1600, String::capacity);
-    let first = crate::provider_package_cache_key("npm", "first");
-    let large = crate::provider_package_cache_key("npm", "large");
+    let mut cache = crate::cache::MemoryCache::new(Duration::from_secs(60))
+        .with_byte_capacity(1600, String::capacity);
+    let first = crate::cache::provider_package_cache_key("npm", "first");
+    let large = crate::cache::provider_package_cache_key("npm", "large");
     cache.insert(first.clone(), "a".repeat(100));
     cache.insert(large.clone(), "b".repeat(2000));
     assert!(cache.get(&first).is_some());
@@ -81,8 +81,8 @@ fn a_value_larger_than_the_budget_does_not_displace_other_values() {
 
 #[test]
 fn expiry_deadlines_follow_replacement_and_clear() {
-    let mut cache = crate::MemoryCache::new(Duration::from_secs(60));
-    let key = crate::provider_package_cache_key("npm", "example");
+    let mut cache = crate::cache::MemoryCache::new(Duration::from_secs(60));
+    let key = crate::cache::provider_package_cache_key("npm", "example");
     assert_eq!(cache.expires_at(&key), None);
     cache.insert(key.clone(), 1);
     let first = cache.expires_at(&key).expect("cached deadline");
@@ -94,10 +94,10 @@ fn expiry_deadlines_follow_replacement_and_clear() {
 
 #[test]
 fn expired_entries_release_memory_without_individual_reads() {
-    let mut cache = crate::MemoryCache::new(Duration::ZERO);
+    let mut cache = crate::cache::MemoryCache::new(Duration::ZERO);
     for name in ["first", "second"] {
         cache.insert(
-            crate::provider_package_cache_key("npm", name),
+            crate::cache::provider_package_cache_key("npm", name),
             name.to_owned(),
         );
     }

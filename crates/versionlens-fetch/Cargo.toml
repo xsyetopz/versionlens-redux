@@ -1,6 +1,6 @@
 [package]
-name = "versionlens-cache"
-description = "Cache keys and in-memory cache primitives for Version Lens."
+name = "versionlens-fetch"
+description = "Registry HTTP, proxy and TLS setup, and caches for Version Lens."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -14,6 +14,11 @@ version.workspace = true
 ring.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+thiserror.workspace = true
+reqwest.workspace = true
+rustls.workspace = true
+tokio.workspace = true
+flate2.workspace = true
 
 [dev-dependencies]
 versionlens-test-support.workspace = true

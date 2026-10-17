@@ -54,7 +54,7 @@ async fn batched_resolution_preserves_dependency_order() {
 
 #[tokio::test]
 async fn expired_operation_returns_errors_without_resolving_dependencies() {
-    let mut http = versionlens_http::standard_http_config();
+    let mut http = versionlens_fetch::standard_http_config();
     http.timeout_ms = 0;
     let session = crate::version_lens_session(SessionConfig {
         update_severity: Some(crate::Severity::Information),

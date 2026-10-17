@@ -7,9 +7,9 @@ use std::time::Duration;
 
 use flate2::read::GzDecoder;
 
-use crate::config::HttpConfig;
-use crate::error::HttpError;
-use crate::retry::RetryPolicy;
+use crate::http::config::HttpConfig;
+use crate::http::error::HttpError;
+use crate::http::retry::RetryPolicy;
 
 use agent::client;
 pub(crate) use headers::request_with_headers;
@@ -31,7 +31,7 @@ pub async fn get_text_with_accept(
     config: &HttpConfig,
     accept: Option<&str>,
 ) -> HttpResult {
-    get_text_with_accept_and_retry(url, config, accept, crate::disabled_retry_policy()).await
+    get_text_with_accept_and_retry(url, config, accept, crate::http::disabled_retry_policy()).await
 }
 
 pub async fn get_text_with_accept_and_retry(
@@ -112,17 +112,22 @@ async fn post_text_inner(
 ) -> HttpResult {
     let deadline = RequestDeadline::after(timeout);
     let client = client(config)?;
-    let bytes = send_with_retries("POST", crate::disabled_retry_policy(), deadline, || {
-        let request = request_with_headers(
-            client.post(url),
-            url,
-            &config.auth_headers,
-            Some(ACCEPT_JSON),
-        )
-        .header(reqwest::header::CONTENT_TYPE, "application/json")
-        .body(body.to_owned());
-        send(request, config, deadline)
-    })
+    let bytes = send_with_retries(
+        "POST",
+        crate::http::disabled_retry_policy(),
+        deadline,
+        || {
+            let request = request_with_headers(
+                client.post(url),
+                url,
+                &config.auth_headers,
+                Some(ACCEPT_JSON),
+            )
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body.to_owned());
+            send(request, config, deadline)
+        },
+    )
     .await?;
     response_text(bytes)
 }

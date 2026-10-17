@@ -327,7 +327,7 @@ fn clear_racing_a_write_across_processes_leaves_no_stale_record() -> io::Result<
     let mut child = std::process::Command::new(std::env::current_exe()?)
         .args([
             "--exact",
-            "persistent::tests::persistent_cache_subprocess",
+            "cache::persistent::tests::persistent_cache_subprocess",
             "--nocapture",
         ])
         .env("VERSIONLENS_CACHE_HELPER_DIRECTORY", &directory)

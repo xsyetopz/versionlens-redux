@@ -1580,16 +1580,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
-name = "versionlens-cache"
-version = "0.4.4"
-dependencies = [
- "ring",
- "serde",
- "serde_json",
- "versionlens-test-support",
-]
-
-[[package]]
 name = "versionlens-core"
 version = "0.4.4"
 dependencies = [
@@ -1604,8 +1594,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml_edit",
- "versionlens-cache",
- "versionlens-http",
+ "versionlens-fetch",
  "versionlens-model",
  "versionlens-parsers",
  "versionlens-providers",
@@ -1614,16 +1603,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "versionlens-http"
+name = "versionlens-fetch"
 version = "0.4.4"
 dependencies = [
  "flate2",
  "reqwest",
+ "ring",
  "rustls",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
+ "versionlens-test-support",
 ]
 
 [[package]]
@@ -1658,7 +1649,7 @@ dependencies = [
  "napi-build",
  "napi-derive",
  "versionlens-core",
- "versionlens-http",
+ "versionlens-fetch",
  "versionlens-model",
  "versionlens-test-support",
 ]

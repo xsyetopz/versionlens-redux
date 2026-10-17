@@ -17,7 +17,7 @@ fn empty_input() -> HttpConfigInput {
 
 #[test]
 fn config_input_uses_standard_defaults_for_missing_options() {
-    let config = crate::http_config_from_input(empty_input());
+    let config = crate::http::http_config_from_input(empty_input());
 
     assert_eq!(config.timeout_ms, 10_000);
     assert!(config.strict_ssl);
@@ -28,7 +28,7 @@ fn config_input_uses_standard_defaults_for_missing_options() {
 
 #[test]
 fn config_input_trims_proxy_and_ca_file_and_rejects_blank_values() {
-    let config = crate::http_config_from_input(HttpConfigInput {
+    let config = crate::http::http_config_from_input(HttpConfigInput {
         timeout_ms: Some(250),
         strict_ssl: Some(false),
         proxy: Some(" http://localhost:8080 ".to_owned()),
@@ -46,7 +46,7 @@ fn config_input_trims_proxy_and_ca_file_and_rejects_blank_values() {
     assert_eq!(config.proxy.as_deref(), Some("http://localhost:8080"));
     assert_eq!(config.ca_file.as_deref(), Some("/tmp/versionlens-ca.pem"));
 
-    let config = crate::http_config_from_input(HttpConfigInput {
+    let config = crate::http::http_config_from_input(HttpConfigInput {
         timeout_ms: None,
         strict_ssl: None,
         proxy: Some("   ".to_owned()),
@@ -65,7 +65,7 @@ fn config_input_trims_proxy_and_ca_file_and_rejects_blank_values() {
 
 #[test]
 fn config_input_trims_header_names_and_urls_and_rejects_blank_names() {
-    let config = crate::http_config_from_input(HttpConfigInput {
+    let config = crate::http::http_config_from_input(HttpConfigInput {
         timeout_ms: None,
         strict_ssl: None,
         proxy: None,

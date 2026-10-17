@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use versionlens_http::{ACCEPT_GITHUB_V3, ACCEPT_NPM_INSTALL_V1};
+use versionlens_fetch::{ACCEPT_GITHUB_V3, ACCEPT_NPM_INSTALL_V1};
 
 use super::{accept_header_for_request, retry_policy_for_request};
 use versionlens_model::Ecosystem::*;

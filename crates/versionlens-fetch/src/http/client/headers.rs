@@ -1,6 +1,6 @@
 use reqwest::{RequestBuilder, Url};
 
-use crate::config::HttpHeader;
+use crate::http::config::HttpHeader;
 
 const USER_AGENT_VALUE: &str = "versionlens-redux (github.com/xsyetopz/versionlens-redux)";
 

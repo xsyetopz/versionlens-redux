@@ -304,7 +304,7 @@ fn npmrc_proxy_false_disables_extension_proxy_for_npm_registry_fetches() {
     remove_dir_all(root).unwrap();
 }
 
-fn http_config(input: &DocumentInput, url: &str) -> versionlens_http::HttpConfig {
+fn http_config(input: &DocumentInput, url: &str) -> versionlens_fetch::HttpConfig {
     let context = crate::registry::RegistryContext::from_document(input);
     let session = standard_session();
     context.http_config_for_request(Npm, url, session.http_config(Npm))
@@ -351,7 +351,7 @@ fn write_client_cert_config(
 fn scoped_request_configs(
     context: &crate::registry::RegistryContext,
     session: &crate::VersionLensSession,
-) -> (versionlens_http::HttpConfig, versionlens_http::HttpConfig) {
+) -> (versionlens_fetch::HttpConfig, versionlens_fetch::HttpConfig) {
     (
         context.http_config_for_request(
             Npm,
@@ -367,8 +367,8 @@ fn scoped_request_configs(
 }
 
 fn assert_overridden_client_cert_config(
-    matching: &versionlens_http::HttpConfig,
-    other: &versionlens_http::HttpConfig,
+    matching: &versionlens_fetch::HttpConfig,
+    other: &versionlens_fetch::HttpConfig,
     cert_file: &std::path::Path,
     key_file: &std::path::Path,
 ) {
@@ -380,8 +380,8 @@ fn assert_overridden_client_cert_config(
 }
 
 fn assert_regular_client_cert_config(
-    matching: &versionlens_http::HttpConfig,
-    other: &versionlens_http::HttpConfig,
+    matching: &versionlens_fetch::HttpConfig,
+    other: &versionlens_fetch::HttpConfig,
     cert_file: &std::path::Path,
     key_file: &std::path::Path,
 ) {
@@ -391,7 +391,7 @@ fn assert_regular_client_cert_config(
 }
 
 fn assert_client_cert_files(
-    config: &versionlens_http::HttpConfig,
+    config: &versionlens_fetch::HttpConfig,
     cert_file: &std::path::Path,
     key_file: &std::path::Path,
 ) {
@@ -411,7 +411,7 @@ fn http_config_from_npmrc(
     env: Option<&str>,
     fixture: &str,
     url: &str,
-) -> versionlens_http::HttpConfig {
+) -> versionlens_fetch::HttpConfig {
     let root = temp_dir().join(format!("{root_name}-{}", id()));
     create_dir_all(&root).unwrap();
     write(root.join(".npmrc"), npmrc).unwrap();

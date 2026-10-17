@@ -14,7 +14,7 @@ fn request_light_parity_does_not_retry_transient_failures() {
 
 #[test]
 fn npm_registry_fetch_retry_policy_keeps_large_manifest_failures_fast() {
-    let policy = crate::npm_registry_fetch_retry_policy();
+    let policy = crate::http::npm_registry_fetch_retry_policy();
 
     assert_eq!(policy.max_retries(), 2);
     assert_eq!(policy.retry_backoff_ms(0), Some(250));
@@ -24,7 +24,7 @@ fn npm_registry_fetch_retry_policy_keeps_large_manifest_failures_fast() {
 
 #[test]
 fn npm_registry_fetch_retry_policy_retries_transient_non_post_statuses() {
-    let policy = crate::npm_registry_fetch_retry_policy();
+    let policy = crate::http::npm_registry_fetch_retry_policy();
 
     assert!(policy.should_retry_status("GET", 408));
     assert!(policy.should_retry_status("GET", 420));
@@ -37,7 +37,7 @@ fn npm_registry_fetch_retry_policy_retries_transient_non_post_statuses() {
 
 #[test]
 fn disabled_retry_policy_preserves_request_light_no_retry_behavior() {
-    let policy = crate::disabled_retry_policy();
+    let policy = crate::http::disabled_retry_policy();
 
     assert_eq!(policy.max_retries(), 0);
     assert_eq!(policy.retry_backoff_ms(0), None);

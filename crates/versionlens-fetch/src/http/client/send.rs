@@ -3,10 +3,10 @@ use std::time::{Duration, Instant};
 
 use reqwest::{RequestBuilder, Response};
 
-use crate::client::HttpBytesResult;
-use crate::config::HttpConfig;
-use crate::error::HttpError;
-use crate::retry::RetryPolicy;
+use crate::http::client::HttpBytesResult;
+use crate::http::config::HttpConfig;
+use crate::http::error::HttpError;
+use crate::http::retry::RetryPolicy;
 
 pub(super) const MAX_RESPONSE_BODY_BYTES: usize = 64 * 1024 * 1024;
 

@@ -47,7 +47,7 @@ pub(crate) type WorkspaceDocuments = BTreeMap<PathBuf, (String, Option<u64>)>;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct WorkspaceGraph {
-    pub(crate) fingerprint: Option<versionlens_cache::CacheKey>,
+    pub(crate) fingerprint: Option<versionlens_fetch::CacheKey>,
     root: Option<PathBuf>,
     source: Option<PathBuf>,
     members: Arc<BTreeMap<(Ecosystem, String), (String, PathBuf)>>,
@@ -108,7 +108,7 @@ impl WorkspaceGraph {
         let policy = lerna_policy(read(&root.join("lerna.json")).as_deref());
         let identity = format!("{members:?}|{duplicates:?}|{policy:?}|{pnpm_default_external}");
         Self {
-            fingerprint: Some(versionlens_cache::CacheKey::content(identity.as_bytes())),
+            fingerprint: Some(versionlens_fetch::CacheKey::content(identity.as_bytes())),
             root: Some(root.to_path_buf()),
             source: None,
             members: Arc::new(members),

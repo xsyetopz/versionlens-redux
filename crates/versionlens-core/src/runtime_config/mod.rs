@@ -1,4 +1,4 @@
-use versionlens_http::{HttpConfig, HttpHeader};
+use versionlens_fetch::{HttpConfig, HttpHeader};
 use versionlens_model::{Dependency, Ecosystem, ManifestKind};
 
 use crate::VersionLensSession;

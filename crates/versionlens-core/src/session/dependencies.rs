@@ -5,7 +5,7 @@ use versionlens_parsers::parse_document_as_manifest_with_dependency_paths;
 
 use crate::DependencyPropertyConfig;
 use crate::VersionLensSession;
-use versionlens_cache::CacheKey;
+use versionlens_fetch::CacheKey;
 
 impl VersionLensSession {
     pub(crate) fn dependencies(&self, input: &DocumentInput) -> Vec<Dependency> {

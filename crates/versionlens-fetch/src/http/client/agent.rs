@@ -6,8 +6,8 @@ use std::time::Duration;
 use reqwest::tls::{Certificate, Identity};
 use reqwest::{Client, Proxy};
 
-use crate::config::HttpConfig;
-use crate::error::HttpError;
+use crate::http::config::HttpConfig;
+use crate::http::error::HttpError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct ClientCacheKey {

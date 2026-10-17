@@ -77,13 +77,13 @@ impl VersionLensSession {
         }
         let http_config = self.effective_http_config(url, dependency.ecosystem, context);
         let retry_policy = if dependency.ecosystem == Ecosystem::Npm {
-            versionlens_http::npm_registry_fetch_retry_policy()
+            versionlens_fetch::npm_registry_fetch_retry_policy()
         } else {
-            versionlens_http::disabled_retry_policy()
+            versionlens_fetch::disabled_retry_policy()
         };
         let response = match operation.remaining_duration() {
             Some(remaining) => {
-                versionlens_http::get_bytes_with_accept_and_retry_timeout(
+                versionlens_fetch::get_bytes_with_accept_and_retry_timeout(
                     url,
                     &http_config,
                     None,
@@ -93,7 +93,7 @@ impl VersionLensSession {
                 .await
             }
             None => {
-                versionlens_http::get_bytes_with_accept_and_retry(
+                versionlens_fetch::get_bytes_with_accept_and_retry(
                     url,
                     &http_config,
                     None,

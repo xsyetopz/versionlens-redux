@@ -1,7 +1,9 @@
 use crate::Severity;
 use serde::{Deserialize, Serialize};
-use versionlens_cache::cache_ttl_ms;
-use versionlens_http::{HttpConfig, HttpConfigInput, http_config_from_input, standard_http_config};
+use versionlens_fetch::cache_ttl_ms;
+use versionlens_fetch::{
+    HttpConfig, HttpConfigInput, http_config_from_input, standard_http_config,
+};
 
 use super::{
     EnabledProviderConfig, ProviderSettings, ProviderSettingsInput, SuggestionIndicators,

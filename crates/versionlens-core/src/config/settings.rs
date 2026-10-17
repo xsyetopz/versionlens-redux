@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Deserializer};
-use versionlens_http::HttpConfigInput;
+use versionlens_fetch::HttpConfigInput;
 
 use super::{
     DependencyPropertyConfigInput, FilePatternConfigInput, PrereleaseTagConfigInput,
