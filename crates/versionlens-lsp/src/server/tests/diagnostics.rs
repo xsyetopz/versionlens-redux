@@ -148,3 +148,71 @@ fn shutdown(
         .join()
         .map_err(|_| anyhow::anyhow!("server panicked"))?
 }
+
+#[test]
+fn code_actions_offer_each_bump_inline_without_registry_requests() -> Result<()> {
+    let (address, requests) = super::incremental::serving_registry(
+        r#"{"dist-tags":{"latest":"8.0.1"},"versions":{"7.2.2":{},"7.3.5":{},"8.0.1":{}}}"#,
+    )?;
+    let (client, server_thread) = start_configured_server(
+        json!({"capabilities": {"workspace": {"workspaceEdit": {"documentChanges": true}}}}),
+        json!({
+            "suggestions": {"showVulnerabilities": false},
+            "npm": {"apiUrl": format!("http://{address}")}
+        }),
+    )?;
+    let uri = "file:///workspace/actions/package.json";
+    open(&client, uri, "astro", "^7.2.2")?;
+    let diagnostics = settled_diagnostics(&client, uri)?;
+    let before = requests
+        .lock()
+        .map(|requests| requests.clone())
+        .unwrap_or_default();
+
+    let cursor = json!({"line": 0, "character": 28});
+    send_request(
+        &client,
+        2,
+        "textDocument/codeAction",
+        json!({
+            "textDocument": {"uri": uri},
+            "range": {"start": cursor, "end": cursor},
+            "context": {"diagnostics": diagnostics}
+        }),
+    )?;
+    let actions = loop {
+        if let Message::Response(response) = receive(&client)?
+            && response.id == 2.into()
+        {
+            break ok_result(Message::Response(response))?;
+        }
+    };
+
+    let requirement =
+        json!({"start": {"line": 0, "character": 26}, "end": {"line": 0, "character": 32}});
+    let action = |text: &str, preferred: bool| {
+        json!({
+            "title": format!("Bump to {text}"),
+            "kind": "quickfix",
+            "diagnostics": diagnostics,
+            "isPreferred": preferred,
+            "edit": {"documentChanges": [{
+                "textDocument": {"uri": uri, "version": 1},
+                "edits": [{"range": requirement, "newText": text}]
+            }]}
+        })
+    };
+    assert_eq!(
+        actions,
+        json!([action("^7.3.5", false), action("^8.0.1", true)])
+    );
+    let after = requests
+        .lock()
+        .map(|requests| requests.clone())
+        .unwrap_or_default();
+    assert_eq!(
+        before, after,
+        "the code action request reached the registry"
+    );
+    shutdown(&client, 3, server_thread)
+}

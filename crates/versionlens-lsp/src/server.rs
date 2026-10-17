@@ -6,7 +6,9 @@ use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestI
 use lsp_types::notification::{
     DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
 };
-use lsp_types::request::{CodeLensRequest, ExecuteCommand, Request as LspRequest};
+use lsp_types::request::{
+    CodeActionRequest, CodeLensRequest, ExecuteCommand, Request as LspRequest,
+};
 use lsp_types::{
     CodeLensParams, Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, ExecuteCommandParams, Uri, WorkspaceFolder,
@@ -232,6 +234,26 @@ fn handle_request(
                 }
             };
             work.lenses(state, connection, id, params.text_document.uri.as_str())
+        }
+        CodeActionRequest::METHOD => {
+            let params = match serde_json::from_value::<lsp_types::CodeActionParams>(params) {
+                Ok(params) => params,
+                Err(error) => {
+                    return respond_error(
+                        connection,
+                        id,
+                        ErrorCode::InvalidParams,
+                        format!("invalid {} params: {error}", CodeActionRequest::METHOD),
+                    );
+                }
+            };
+            work.actions(
+                state,
+                connection,
+                id,
+                params.text_document.uri.as_str(),
+                params.range,
+            )
         }
         ExecuteCommand::METHOD => {
             let params = match serde_json::from_value::<ExecuteCommandParams>(params) {

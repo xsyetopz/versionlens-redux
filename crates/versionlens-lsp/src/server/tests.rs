@@ -215,6 +215,7 @@ fn initialize_client(client: &Connection) -> Result<()> {
     let capabilities =
         serde_json::from_value::<ServerCapabilities>(initialize_result["capabilities"].clone())?;
     assert!(capabilities.code_lens_provider.is_some());
+    assert!(capabilities.code_action_provider.is_some());
     let execute_commands = capabilities
         .execute_command_provider
         .ok_or_else(|| anyhow::anyhow!("expected execute command capabilities"))?;

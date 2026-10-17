@@ -1,7 +1,9 @@
 use lsp_types::{
     CodeLens, Command, Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range, Uri,
 };
-use versionlens_core::{Action, DependencyView, DiagnosticView, LensView, Severity, UpdateMode};
+use versionlens_core::{
+    Action, BumpActionView, DependencyView, DiagnosticView, LensView, Severity, UpdateMode,
+};
 use versionlens_model::{Position as ModelPosition, Range as ModelRange};
 
 use super::{DISPLAY_CODE_LENS_COMMAND, UPDATE_DEPENDENCY_COMMAND};
@@ -140,4 +142,53 @@ const fn diagnostic_severity(severity: Severity) -> DiagnosticSeverity {
         Severity::Information => DiagnosticSeverity::INFORMATION,
         Severity::Hint => DiagnosticSeverity::HINT,
     }
+}
+
+/// The quick fixes of a document, each carrying its edit inline. A client
+/// that takes document changes gets a versioned edit, so it rejects the edit
+/// for a newer document version.
+pub(crate) fn into_lsp_code_actions(
+    actions: Vec<BumpActionView>,
+    uri: &Uri,
+    version: Option<i32>,
+    document_changes: bool,
+) -> Vec<lsp_types::CodeAction> {
+    actions
+        .into_iter()
+        .map(|action| {
+            let edit = lsp_types::TextEdit {
+                range: into_lsp_range(action.edit.range),
+                new_text: action.edit.new_text,
+            };
+            let edit = if document_changes {
+                lsp_types::WorkspaceEdit {
+                    document_changes: Some(lsp_types::DocumentChanges::Edits(vec![
+                        lsp_types::TextDocumentEdit {
+                            text_document: lsp_types::OptionalVersionedTextDocumentIdentifier {
+                                uri: uri.clone(),
+                                version,
+                            },
+                            edits: vec![lsp_types::OneOf::Left(edit)],
+                        },
+                    ])),
+                    ..lsp_types::WorkspaceEdit::default()
+                }
+            } else {
+                lsp_types::WorkspaceEdit {
+                    changes: Some(std::iter::once((uri.clone(), vec![edit])).collect()),
+                    ..lsp_types::WorkspaceEdit::default()
+                }
+            };
+            lsp_types::CodeAction {
+                title: action.title,
+                kind: Some(lsp_types::CodeActionKind::QUICKFIX),
+                diagnostics: action
+                    .diagnostic
+                    .map(|diagnostic| vec![into_lsp_diagnostic(diagnostic)]),
+                edit: Some(edit),
+                is_preferred: Some(action.preferred),
+                ..lsp_types::CodeAction::default()
+            }
+        })
+        .collect()
 }

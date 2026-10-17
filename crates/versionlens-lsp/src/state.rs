@@ -109,6 +109,8 @@ struct StateModes {
 #[derive(Debug, Default)]
 pub(crate) struct ClientSupport {
     pub(crate) workspace_edits: bool,
+    /// The client takes versioned document changes in a workspace edit.
+    pub(crate) document_changes: bool,
     pub(crate) code_lens_refresh: bool,
     pub(crate) watched_files_dynamic: bool,
     /// The client answers `workspace/configuration`.
@@ -165,10 +167,11 @@ impl VersionLensLspState {
 
     pub(crate) fn with_client(mut self, capabilities: lsp_types::ClientCapabilities) -> Self {
         if let Some(workspace) = capabilities.workspace {
-            self.client.workspace_edits = workspace.apply_edit == Some(true)
-                && workspace
-                    .workspace_edit
-                    .is_some_and(|edit| edit.document_changes == Some(true));
+            self.client.document_changes = workspace
+                .workspace_edit
+                .is_some_and(|edit| edit.document_changes == Some(true));
+            self.client.workspace_edits =
+                workspace.apply_edit == Some(true) && self.client.document_changes;
             self.client.code_lens_refresh = workspace
                 .code_lens
                 .is_some_and(|lens| lens.refresh_support == Some(true));
@@ -235,6 +238,13 @@ impl VersionLensLspState {
             code_lens_provider: Some(CodeLensOptions {
                 resolve_provider: Some(false),
             }),
+            code_action_provider: Some(lsp_types::CodeActionProviderCapability::Options(
+                lsp_types::CodeActionOptions {
+                    code_action_kinds: Some(vec![lsp_types::CodeActionKind::QUICKFIX]),
+                    resolve_provider: Some(false),
+                    ..lsp_types::CodeActionOptions::default()
+                },
+            )),
             execute_command_provider: Some(ExecuteCommandOptions {
                 commands: vec![
                     DISPLAY_CODE_LENS_COMMAND.to_owned(),
@@ -299,6 +309,7 @@ mod documents;
 pub(crate) use documents::resolved_document;
 mod edits;
 mod presentation;
+pub(crate) use presentation::into_lsp_code_actions;
 pub use presentation::into_lsp_range;
 
 #[cfg(test)]

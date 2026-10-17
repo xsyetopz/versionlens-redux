@@ -8,10 +8,12 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
-use versionlens_core::{AnalyzeDocumentOutput, ResolveDocumentOutput, SessionTask};
+use versionlens_core::{AnalyzeDocumentOutput, BumpActionView, ResolveDocumentOutput, SessionTask};
 
 use super::{publish_diagnostics, respond, respond_error};
-use crate::state::{DocumentWork, ResolvedDocument, VersionLensLspState, resolved_document};
+use crate::state::{
+    DocumentWork, ResolvedDocument, VersionLensLspState, into_lsp_code_actions, resolved_document,
+};
 
 pub(super) struct Completion {
     id: RequestId,
@@ -21,12 +23,14 @@ pub(super) struct Completion {
 enum TaskOutput {
     Analyzed(AnalyzeDocumentOutput),
     Resolved(ResolveDocumentOutput),
+    Actions(Vec<BumpActionView>),
 }
 
 const PANICKED: &str = "VersionLens task panicked";
 
 enum RequestKind {
     Lenses,
+    Actions,
     Update,
 }
 
@@ -131,6 +135,48 @@ impl WorkQueue {
                 work,
                 job,
                 kind: RequestKind::Lenses,
+            },
+        )
+    }
+
+    /// Answers a code action request from cached results only, so it never
+    /// waits for a registry.
+    pub(super) fn actions(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+        id: RequestId,
+        uri: &str,
+        range: lsp_types::Range,
+    ) -> Result<()> {
+        let Some(work) = state.document_work(uri) else {
+            return respond(connection, id, json!([]));
+        };
+        let range = versionlens_model::Range {
+            start: versionlens_model::Position {
+                line: range.start.line,
+                character: range.start.character,
+            },
+            end: versionlens_model::Position {
+                line: range.end.line,
+                character: range.end.character,
+            },
+        };
+        let session = state.session_for(uri).clone();
+        let input = work.input.clone();
+        let job = async move {
+            tokio::task::spawn_blocking(move || session.bump_actions(&input, range))
+                .await
+                .map(TaskOutput::Actions)
+                .map_err(|_| PANICKED.to_owned())
+        };
+        self.submit(
+            connection,
+            Submission {
+                id,
+                work,
+                job,
+                kind: RequestKind::Actions,
             },
         )
     }
@@ -282,6 +328,15 @@ impl WorkQueue {
                     },
                 );
                 result
+            }
+            (RequestKind::Actions, TaskOutput::Actions(actions)) => {
+                let actions = into_lsp_code_actions(
+                    actions,
+                    &pending.work.uri.parse()?,
+                    pending.work.version,
+                    state.client.document_changes,
+                );
+                respond(connection, completion.id, serde_json::to_value(actions)?)
             }
             (RequestKind::Update, TaskOutput::Resolved(output)) => {
                 self.apply(state, connection, completion.id, output)
