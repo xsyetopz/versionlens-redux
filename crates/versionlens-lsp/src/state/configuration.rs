@@ -189,6 +189,15 @@ impl VersionLensLspState {
         Ok(())
     }
 
+    /// Drops the cached registry data of every session. Every document gets
+    /// a new generation, so no result computed from the old data is reused.
+    pub(crate) fn clear_caches(&mut self) -> io::Result<()> {
+        for group in self.groups() {
+            group.session.try_clear_cache()?;
+        }
+        self.renew_generations()
+    }
+
     pub(super) fn synchronize_workspace_documents(&mut self) {
         if self.modes.controller_managed {
             self.advance_document_generation();

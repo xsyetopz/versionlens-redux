@@ -2,13 +2,6 @@
   "actions": [
     {
       "command": "update",
-      "dependency": "demo",
-      "edits": [],
-      "lens": "⚪ demo unresolved",
-      "selectedVersion": null
-    },
-    {
-      "command": "update",
       "dependency": "foo",
       "edits": [
         {
@@ -31,11 +24,8 @@
   ],
   "codeLenses": [
     {
-      "arguments": [
-        "demo",
-        "demo\u001f1:9,1:14"
-      ],
-      "command": "versionlens.suggestion.onUpdateDependency",
+      "arguments": [],
+      "command": "",
       "range": {
         "end": {
           "character": 0,

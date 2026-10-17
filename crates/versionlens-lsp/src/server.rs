@@ -18,8 +18,7 @@ use serde_json::Value;
 use tokio::runtime::Runtime;
 
 use crate::state::{
-    DISPLAY_CODE_LENS_COMMAND, UPDATE_DEPENDENCY_COMMAND, VersionLensLspState,
-    VersionLensTextDocument,
+    CLEAR_CACHE_COMMAND, DISPLAY_CODE_LENS_COMMAND, VersionLensLspState, VersionLensTextDocument,
 };
 
 #[derive(Debug, Default, Deserialize)]
@@ -180,7 +179,11 @@ fn handle_message(
             if connection.handle_shutdown(&request)? {
                 return Ok(true);
             }
-            handle_request(connection, state, work, request)?;
+            if is_command(&request, CLEAR_CACHE_COMMAND) {
+                clear_cache(connection, state, work, checking, request)?;
+            } else {
+                handle_request(connection, state, work, request)?;
+            }
         }
         Message::Notification(notification) => match notification.method.as_str() {
             "exit" => return Ok(true),
@@ -211,6 +214,62 @@ fn handle_message(
         Message::Response(response) => work.applied(connection, response)?,
     }
     Ok(false)
+}
+
+fn is_command(request: &Request, command: &str) -> bool {
+    request.method == ExecuteCommand::METHOD
+        && request.params.get("command").and_then(Value::as_str) == Some(command)
+}
+
+/// Clears the caches of every session and checks the workspace again, so the
+/// next resolution fetches fresh registry data. It changes the server state,
+/// so it runs here and not with the document commands.
+fn clear_cache(
+    connection: &Connection,
+    state: &mut VersionLensLspState,
+    work: &mut WorkQueue,
+    checking: &mut WorkspaceController,
+    request: Request,
+) -> Result<()> {
+    let arguments = request
+        .params
+        .get("arguments")
+        .cloned()
+        .unwrap_or(Value::Null);
+    let no_arguments = match &arguments {
+        Value::Null => true,
+        Value::Array(arguments) => {
+            arguments.is_empty()
+                || matches!(arguments.as_slice(), [Value::Object(object)] if object.is_empty())
+        }
+        _ => false,
+    };
+    if !no_arguments {
+        return respond_error(
+            connection,
+            request.id,
+            ErrorCode::InvalidParams,
+            format!("{CLEAR_CACHE_COMMAND} takes no arguments"),
+        );
+    }
+    if let Err(error) = state.clear_caches() {
+        return respond_error(
+            connection,
+            request.id,
+            ErrorCode::RequestFailed,
+            format!("failed to clear the cache: {error}"),
+        );
+    }
+    work.invalidate(state, connection)?;
+    if let Err(error) = checking.restart(state) {
+        return respond_error(
+            connection,
+            request.id,
+            ErrorCode::RequestFailed,
+            format!("cache cleared, but checking did not restart: {error}"),
+        );
+    }
+    respond(connection, request.id, Value::Null)
 }
 
 fn handle_request(
@@ -271,13 +330,7 @@ fn handle_request(
                 DISPLAY_CODE_LENS_COMMAND if params.arguments.is_empty() => {
                     respond(connection, id, Value::Null)
                 }
-                UPDATE_DEPENDENCY_COMMAND => work.update(state, connection, id, params.arguments),
-                _ => respond_error(
-                    connection,
-                    id,
-                    ErrorCode::InvalidParams,
-                    format!("unsupported command: {}", params.command),
-                ),
+                command => work.command(state, connection, id, command, params.arguments),
             }
         }
         _ => respond_error(

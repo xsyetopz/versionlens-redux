@@ -299,7 +299,7 @@ impl WorkspaceController {
         let uri = document.uri.clone();
         let status = match analyzed.analysis {
             Ok(analysis) => {
-                let resolved = resolved_document(analysis, &document.uri, document.generation);
+                let resolved = resolved_document(analysis, &document.uri);
                 self.publish_result(state, connection, analyzed.group, document, resolved)?;
                 DocumentStatus::Idle
             }

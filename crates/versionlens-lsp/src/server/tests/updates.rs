@@ -48,13 +48,27 @@ fn project_version_command_sends_a_versioned_edit_and_waits_for_the_editor() -> 
         json!({"textDocument":{"uri":uri,"version":8},"contentChanges":[{"text":"{\"name\":\"@scope/pkg\",\"version\":\"2.0.0\"}"}]}),
     )?;
     assert_diagnostics(receive(&client)?, uri, true)?;
+    // The lens was made for version 7. Clicked after the edit, its patch bump
+    // is computed again from the current text, 2.0.0.
     send_request(
         &client,
         22,
         "workspace/executeCommand",
         serde_json::to_value(&command)?,
     )?;
-    assert_error(receive(&client)?, ErrorCode::ContentModified)?;
+    let Message::Request(request) = receive(&client)? else {
+        bail!("expected a workspace edit");
+    };
+    let changes = &request.params["edit"]["documentChanges"];
+    assert_eq!(changes[0]["textDocument"], json!({"uri":uri,"version":8}));
+    assert_eq!(changes[0]["edits"][0]["newText"], "2.0.1");
+    client
+        .sender
+        .send(Message::Response(lsp_server::Response::new_ok(
+            request.id,
+            json!({"applied":true}),
+        )))?;
+    assert_eq!(ok_result(receive(&client)?)?, Value::Null);
     shutdown_client(&client, 23, server_thread)
 }
 

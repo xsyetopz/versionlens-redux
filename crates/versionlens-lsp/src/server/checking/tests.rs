@@ -85,7 +85,6 @@ fn an_analysis_of_a_closed_document_is_not_published() -> Result<()> {
             document: CheckedDocument {
                 uri: uri.to_owned(),
                 version: Some(1),
-                generation: 0,
                 input,
                 open: true,
             },

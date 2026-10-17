@@ -1,6 +1,6 @@
 use lsp_types::{TextDocumentSyncCapability, TextDocumentSyncKind, Uri, WorkspaceFolder};
 
-use super::{DISPLAY_CODE_LENS_COMMAND, VersionLensLspState, VersionLensTextDocument};
+use super::{VersionLensLspState, VersionLensTextDocument};
 
 type FileTestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -22,8 +22,13 @@ fn capabilities_match_implemented_document_and_command_protocol() -> Result<(), 
     assert_eq!(
         execute_command.commands,
         [
-            DISPLAY_CODE_LENS_COMMAND,
-            crate::state::UPDATE_DEPENDENCY_COMMAND
+            "versionlens.displayCodeLens",
+            "versionlens.server.update",
+            "versionlens.server.updateAll",
+            "versionlens.server.sort",
+            "versionlens.server.chooseBuild",
+            "versionlens.server.clearCache",
+            "versionlens.server.manifestInfo",
         ]
     );
     Ok(())
