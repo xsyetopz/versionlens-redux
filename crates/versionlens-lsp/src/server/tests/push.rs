@@ -64,36 +64,61 @@ fn collect_until_idle(client: &Connection, uri: &str, requested: &AtomicBool) ->
         let message = client
             .receiver
             .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))?;
-        let Message::Notification(notification) = message else {
+        let Some(next) = seen_message(message, uri, requested) else {
             continue;
         };
-        if notification.params["uri"] != uri {
-            continue;
+        let idle = matches!(&next, Seen::Status(status) if status == "idle");
+        seen.push(next);
+        if idle
+            && seen
+                .iter()
+                .any(|seen| matches!(seen, Seen::Status(status) if status == "busy"))
+        {
+            return Ok(seen);
         }
-        match notification.method.as_str() {
-            "versionlens/status" => {
-                let status = notification.params["status"]
-                    .as_str()
-                    .unwrap_or_default()
-                    .to_owned();
-                let idle = status == "idle";
-                seen.push(Seen::Status(status));
-                if idle
-                    && seen
-                        .iter()
-                        .any(|seen| matches!(seen, Seen::Status(status) if status == "busy"))
-                {
-                    return Ok(seen);
-                }
-            }
-            "textDocument/publishDiagnostics" => seen.push(Seen::Diagnostics {
-                version: notification.params["version"]
-                    .as_i64()
-                    .and_then(|version| i32::try_from(version).ok()),
-                after_registry: requested.load(Ordering::SeqCst),
-            }),
-            _ => {}
-        }
+    }
+}
+
+/// Collects the status and diagnostics messages for `uri` that arrive
+/// within `window`.
+fn collect_within(
+    client: &Connection,
+    uri: &str,
+    requested: &AtomicBool,
+    window: Duration,
+) -> Vec<Seen> {
+    let deadline = std::time::Instant::now() + window;
+    let mut seen = Vec::new();
+    while let Ok(message) = client
+        .receiver
+        .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
+    {
+        seen.extend(seen_message(message, uri, requested));
+    }
+    seen
+}
+
+fn seen_message(message: Message, uri: &str, requested: &AtomicBool) -> Option<Seen> {
+    let Message::Notification(notification) = message else {
+        return None;
+    };
+    if notification.params["uri"] != uri {
+        return None;
+    }
+    match notification.method.as_str() {
+        "versionlens/status" => Some(Seen::Status(
+            notification.params["status"]
+                .as_str()
+                .unwrap_or_default()
+                .to_owned(),
+        )),
+        "textDocument/publishDiagnostics" => Some(Seen::Diagnostics {
+            version: notification.params["version"]
+                .as_i64()
+                .and_then(|version| i32::try_from(version).ok()),
+            after_registry: requested.load(Ordering::SeqCst),
+        }),
+        _ => None,
     }
 }
 
@@ -160,6 +185,12 @@ fn rapid_edits_are_resolved_once_after_the_debounce() -> Result<()> {
             }),
         )?;
     }
+    let early = collect_within(&client, uri, &requested, Duration::from_millis(200));
+    assert!(
+        early.is_empty(),
+        "the edits were checked before the debounce ended: {} messages",
+        early.len()
+    );
     let seen = collect_until_idle(&client, uri, &requested)?;
 
     assert_eq!(statuses(&seen), ["busy", "idle"]);
@@ -171,5 +202,43 @@ fn rapid_edits_are_resolved_once_after_the_debounce() -> Result<()> {
         })
         .collect::<Vec<_>>();
     assert_eq!(versions, [Some(3)]);
+    shutdown_client(&client, 2, server_thread)
+}
+
+#[test]
+fn an_edit_checked_early_by_a_workspace_reload_does_not_stay_busy() -> Result<()> {
+    let requested = Arc::new(AtomicBool::new(false));
+    let address = npm_registry(Arc::clone(&requested), Arc::new(AtomicUsize::new(0)))?;
+    let (client, server_thread) = start_without_code_lens(address)?;
+    let uri = "file:///workspace/reload/package.json";
+    open_json_document(
+        &client,
+        uri,
+        1,
+        "{\"dependencies\":{\"example\":\"1.0.0\"}}",
+    )?;
+    collect_until_idle(&client, uri, &requested)?;
+
+    send_notification(
+        &client,
+        "textDocument/didChange",
+        json!({
+            "textDocument": {"uri": uri, "version": 2},
+            "contentChanges": [{"text": "{\"dependencies\":{\"example\":\"^1.0.0\"}}"}]
+        }),
+    )?;
+    // A reload sends the unsaved text to checking before the debounce ends.
+    send_notification(
+        &client,
+        "workspace/didChangeWorkspaceFolders",
+        json!({"event": {"added": [], "removed": []}}),
+    )?;
+    let seen = collect_within(&client, uri, &requested, Duration::from_secs(2));
+
+    assert_ne!(
+        statuses(&seen).last(),
+        Some(&"busy"),
+        "the document stayed busy"
+    );
     shutdown_client(&client, 2, server_thread)
 }

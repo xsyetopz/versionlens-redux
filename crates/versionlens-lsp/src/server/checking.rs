@@ -13,6 +13,7 @@ use tokio::runtime::Handle;
 use versionlens_core::{
     AnalyzeDocumentOutput, WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking,
 };
+use versionlens_model::DocumentInput;
 
 use super::publish_diagnostics;
 use crate::protocol::{DocumentStatus, StatusNotification, StatusParams};
@@ -31,11 +32,16 @@ pub(super) struct Analyzed {
     analysis: Result<AnalyzeDocumentOutput, String>,
 }
 
-/// Documents waiting for the debounce before they are sent to checking.
+/// Documents waiting for their debounce before they are sent to checking.
+/// Each document has its own deadline, so steady edits to one document do
+/// not hold back another.
 #[derive(Default)]
 struct PendingDocuments {
-    uris: HashSet<String>,
-    due: Option<Instant>,
+    due: HashMap<String, Instant>,
+    /// The text last sent to checking for each open document. A document
+    /// still in its debounce is sent with this text, so a check triggered by
+    /// another document does not resolve a half-typed edit.
+    submitted: HashMap<String, DocumentInput>,
 }
 
 struct PublishedDocument {
@@ -113,6 +119,7 @@ impl WorkspaceController {
         self.checking
             .replace(state.workspace_checking_options())
             .map_err(anyhow::Error::msg)?;
+        self.pending.submitted.clear();
         self.seen_documents.clear();
         self.discovery.pending_failures.clear();
         self.discovery.full_scan_pending = true;
@@ -121,10 +128,31 @@ impl WorkspaceController {
     }
 
     /// Sends the open documents to checking without restarting discovery.
-    pub(super) fn update_documents(&self, state: &VersionLensLspState) -> Result<()> {
+    pub(super) fn update_documents(&mut self, state: &VersionLensLspState) -> Result<()> {
+        let overlays = self.overlays(state);
         self.checking
-            .update_documents(state.workspace_checking_options().discovery.overlays)
+            .update_documents(overlays)
             .map_err(anyhow::Error::msg)
+    }
+
+    /// The open documents to check: the current text, or the last sent text
+    /// for documents still in their debounce.
+    fn overlays(&mut self, state: &VersionLensLspState) -> Vec<DocumentInput> {
+        let mut uris = state.document_uris();
+        uris.sort();
+        uris.into_iter()
+            .filter_map(|uri| {
+                let held = self
+                    .pending
+                    .due
+                    .contains_key(&uri)
+                    .then(|| self.pending.submitted.get(&uri).cloned())
+                    .flatten();
+                let input = held.or_else(|| state.document_work(&uri).map(|work| work.input))?;
+                self.pending.submitted.insert(uri, input.clone());
+                Some(input)
+            })
+            .collect()
     }
 
     pub(super) fn restart(&mut self, state: &VersionLensLspState) -> std::io::Result<()> {
@@ -134,29 +162,26 @@ impl WorkspaceController {
         replacement.discovery.failures = mem::take(&mut self.discovery.failures);
         replacement.reported_failures = mem::take(&mut self.reported_failures);
         replacement.next_request = self.next_request;
-        replacement.pending = mem::take(&mut self.pending);
+        replacement.pending.due = mem::take(&mut self.pending.due);
         replacement.statuses = mem::take(&mut self.statuses);
         mem::swap(self, &mut replacement);
         Ok(())
     }
 
     /// Queues an opened or edited document for checking at `due`. Edits
-    /// push the deadline back, so a burst of edits is checked once.
+    /// push its deadline back, so a burst of edits is checked once.
     pub(super) fn schedule_document(&mut self, uri: &str, due: Instant, debounced: bool) {
         self.discovery.failures.remove(uri);
         self.discovery.pending_failures.remove(uri);
         // The next result is published even when it equals the last one, so
         // the client sees diagnostics for the new document version.
         self.published.remove(uri);
-        self.pending.uris.insert(uri.to_owned());
-        self.pending.due = Some(match self.pending.due {
-            Some(current) if !debounced => current.min(due),
-            _ => due,
-        });
+        let deadline = self.pending.due.entry(uri.to_owned()).or_insert(due);
+        *deadline = if debounced { due } else { (*deadline).min(due) };
     }
 
     pub(super) fn next_due(&self) -> Option<Instant> {
-        self.pending.due
+        self.pending.due.values().min().copied()
     }
 
     /// Sends the queued documents to checking once their debounce has passed.
@@ -166,12 +191,21 @@ impl WorkspaceController {
         connection: &Connection,
         now: Instant,
     ) -> Result<()> {
-        if self.pending.due.is_none_or(|due| due > now) {
+        let due = self
+            .pending
+            .due
+            .iter()
+            .filter(|(_, due)| **due <= now)
+            .map(|(uri, _)| uri.clone())
+            .collect::<Vec<_>>();
+        if due.is_empty() {
             return Ok(());
         }
-        self.pending.due = None;
+        for uri in &due {
+            self.pending.due.remove(uri);
+        }
         self.update_documents(state)?;
-        for uri in mem::take(&mut self.pending.uris) {
+        for uri in due {
             if state.document_is_open(&uri) {
                 self.set_status(connection, &uri, DocumentStatus::Busy)?;
             }
@@ -184,7 +218,8 @@ impl WorkspaceController {
         self.seen_documents.remove(uri);
         self.discovery.failures.remove(uri);
         self.discovery.pending_failures.remove(uri);
-        self.pending.uris.remove(uri);
+        self.pending.due.remove(uri);
+        self.pending.submitted.remove(uri);
         self.statuses.remove(uri);
     }
 
@@ -242,7 +277,10 @@ impl WorkspaceController {
             ),
         };
         self.publish_result(state, connection, document, resolved)?;
-        if open && !self.pending.uris.contains(&uri) {
+        if open {
+            // The result is for the current text, so a pending check of the
+            // same text would be skipped by checking and never clear `busy`.
+            self.pending.due.remove(&uri);
             self.set_status(connection, &uri, status)?;
         }
         Ok(())
@@ -278,8 +316,15 @@ impl WorkspaceController {
                 )
             }
             WorkspaceCheckResult::SnapshotLimit { uri, limit } => {
-                let (target, _) = state.diagnostic_target(&uri);
-                if self.statuses.get(&target) == Some(&DocumentStatus::Busy) {
+                // Checking stops at the first document over the limit, so no
+                // busy document gets a result.
+                let busy = self
+                    .statuses
+                    .iter()
+                    .filter(|(_, status)| **status == DocumentStatus::Busy)
+                    .map(|(uri, _)| uri.clone())
+                    .collect::<Vec<_>>();
+                for target in busy {
                     self.set_status(connection, &target, DocumentStatus::Error)?;
                 }
                 self.publish_discovery_warning(
@@ -492,3 +537,6 @@ fn discovery_warning(message: String) -> Diagnostic {
         ..warning(message)
     }
 }
+
+#[cfg(test)]
+mod tests;

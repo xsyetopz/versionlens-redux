@@ -116,6 +116,11 @@ impl VersionLensLspState {
                 == Some(event_path)
         });
         let Some(open_uri) = open_uri else {
+            // Only editor text carries a version. With no open document left
+            // to own it, the result describes text that was closed.
+            if input.version.is_some() {
+                return None;
+            }
             return Some(CheckedDocument {
                 uri: input.uri.clone(),
                 version: None,
