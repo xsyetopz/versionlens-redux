@@ -313,6 +313,62 @@ fn parses_gradle_catalog_inline_version_with_exact_requirement_range() {
 }
 
 #[test]
+fn gradle_catalog_version_resolves_through_first_referencing_library_in_file_order() {
+    let text = "[versions]\nkotlin = \"2.0.0\"\n\n[libraries]\nzeta = { module = \"example.test:first\", version.ref = \"kotlin\" }\nalpha = { module = \"example.test:second\", version.ref = \"kotlin\" }\n";
+
+    let dependencies = parse_fixture(text, "file:///work/gradle/libs.versions.toml", "toml");
+
+    assert_eq!(dependencies.len(), 3);
+    assert_eq!(dependencies[0].group, "versions");
+    assert_eq!(dependencies[0].name, "kotlin");
+    assert_eq!(
+        dependencies[0].hosted_name.as_deref(),
+        Some("example.test:first")
+    );
+    assert_eq!(dependencies[0].hosted_url, None);
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "2.0.0"
+    );
+}
+
+#[test]
+fn gradle_catalog_version_referenced_by_plugin_uses_the_plugin_marker() {
+    let text = "[versions]\nksp = \"1.0.0\"\n\n[plugins]\nksp = { id = \"com.google.devtools.ksp\", version.ref = \"ksp\" }\n";
+
+    let dependencies = parse_fixture(text, "file:///work/gradle/libs.versions.toml", "toml");
+
+    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies[0].group, "versions");
+    assert_eq!(dependencies[0].name, "ksp");
+    assert_eq!(
+        dependencies[0].hosted_name.as_deref(),
+        Some("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin")
+    );
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "1.0.0"
+    );
+}
+
+#[test]
+fn gradle_catalog_unreferenced_version_is_unresolved_without_error() {
+    let text = "[versions]\norphan = \"9.9.9\"\n";
+
+    let dependencies = parse_fixture(text, "file:///work/gradle/libs.versions.toml", "toml");
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].group, "versions");
+    assert_eq!(dependencies[0].name, "orphan");
+    assert_eq!(dependencies[0].hosted_name, None);
+    assert_eq!(dependencies[0].hosted_url.as_deref(), Some("version.alias"));
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "9.9.9"
+    );
+}
+
+#[test]
 fn parses_sbt_build_dependencies() {
     let text = package_file_fixture("parses-sbt-build-dependencies.txt");
 

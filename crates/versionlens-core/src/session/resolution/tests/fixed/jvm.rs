@@ -1,16 +1,18 @@
 #[tokio::test]
-async fn gradle_version_catalog_references_are_fixed_without_registry_updates() {
+async fn gradle_version_catalog_version_resolves_through_referencing_library() {
     let output = resolve_fixture!(
         "file:///repo/gradle/libs.versions.toml",
         "toml",
         "version-catalog-references-are-fixed-without-registry-updates.versions.toml",
-        &[RegistryResponseInput::new("org.codehaus.groovy:groovy".to_owned(), Maven, r#"<metadata><versioning><versions><version>4.0.0</version></versions></versioning></metadata>"#.to_owned())],
+        &[RegistryResponseInput::new("org.codehaus.groovy:groovy".to_owned(), Maven, r#"<metadata><versioning><versions><version>3.0.5</version><version>4.0.0</version></versions></versioning></metadata>"#.to_owned())],
     );
 
     assert_eq!(output.suggestions.len(), 2);
-    assert_suggestion(&output, 0, "fixed", Some("version catalog alias"));
+    assert_suggestion(&output, 0, "updateAvailable", Some("4.0.0"));
     assert_suggestion(&output, 1, "fixed", Some("version catalog reference"));
-    assert_no_edits(&output);
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "4.0.0");
+    assert_eq!(output.edits[0].range.start.line, 1);
 }
 
 #[tokio::test]
