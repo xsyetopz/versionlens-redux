@@ -49,5 +49,10 @@ fn normalize_requirement_part(part: &str) -> String {
         return "*".to_owned();
     }
 
+    // PEP 440 spells an exact pin `==x`, which the semver parser rejects.
+    if let Some(version) = part.strip_prefix("==") {
+        return strip_version_prefix(&format!("={version}"));
+    }
+
     strip_version_prefix(part)
 }

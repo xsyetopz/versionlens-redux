@@ -32,5 +32,5 @@ pub(in crate::versions::range::requirements) fn looks_like_range(requirement: &s
 
     requirement
         .chars()
-        .any(|char| matches!(char, '^' | '~' | '>' | '<' | '*' | 'x' | 'X'))
+        .any(|char| matches!(char, '^' | '~' | '>' | '<' | '=' | '*' | 'x' | 'X'))
 }
