@@ -65,7 +65,11 @@ pub(super) const CARGO: &[&str] = &[
     "target.*.build-dependencies.*",
     "workspace.dependencies",
     "workspace.dependencies.*",
+    "patch.*",
+    "patch.*.*",
 ];
+/// Cargo config files hold no dependencies, only overrides of them.
+pub(super) const CARGO_CONFIG: &[&str] = &["patch.*", "patch.*.*"];
 pub(super) const DOTNET_XML: &[&str] = &[
     "Project.Sdk",
     "Project.PropertyGroup.Version",

@@ -52,17 +52,17 @@ use crate::zig_zon::parse_zig_build_zon;
 use versionlens_model::Ecosystem;
 use versionlens_model::ManifestKind::{
     AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, BunVersion, Cabal, CabalProject,
-    CargoToml, ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy, ConanfileTxt,
-    Cpanfile, DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile, DotnetProjectJson,
-    DotnetToolsJson, DotnetXml, DubJson, DubSdl, DuneProject, Gemfile, GitHubActions, GleamToml,
-    GoMod, GradleBuild, GradleSettings, GradleVersionCatalogToml, HaxelibJson, HelmChartYaml,
-    JsrJson, JuliaManifestToml, JuliaProjectToml, KustomizationYaml, LeiningenProjectClj,
-    LuaRockspec, MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake, NodeVersion, NpmPackageJson,
-    NpmPackageJson5, NpmPackageYaml, Nvmrc, Opam, PaketDependencies, PaketReferences, PnpmYaml,
-    PubspecOverridesYaml, PubspecYaml, PythonPipfile, PythonPyprojectToml, PythonRequirementsTxt,
-    RDescription, RebarConfig, RenvLock, RubyGemspec, RustToolchain, RustToolchainToml, SbtBuild,
-    StackYaml, SwiftPackage, TerraformTf, UnityProjectManifestJson, VcpkgJson, XmakeLua,
-    ZigBuildZon,
+    CargoConfigToml, CargoToml, ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy,
+    ConanfileTxt, Cpanfile, DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile,
+    DotnetProjectJson, DotnetToolsJson, DotnetXml, DubJson, DubSdl, DuneProject, Gemfile,
+    GitHubActions, GleamToml, GoMod, GradleBuild, GradleSettings, GradleVersionCatalogToml,
+    HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml, JuliaProjectToml, KustomizationYaml,
+    LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake,
+    NodeVersion, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Nvmrc, Opam, PaketDependencies,
+    PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml, PythonPipfile,
+    PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
+    RustToolchain, RustToolchainToml, SbtBuild, StackYaml, SwiftPackage, TerraformTf,
+    UnityProjectManifestJson, VcpkgJson, XmakeLua, ZigBuildZon,
 };
 
 use super::ManifestFormat::{Custom, Json, Toml, Xml, Yaml};
@@ -71,9 +71,9 @@ use super::Rule::{Content, Extension, Language, Name, Uri};
 use super::Stage::{Content as ContentStage, Early, Editor, Late, Pubspec, Python, Workflow};
 use super::default_paths;
 use super::patterns::{
-    is_docker_compose_uri, is_dockerfile_uri, is_dotnet_xml_uri, is_github_actions_uri,
-    is_julia_versioned_manifest_uri, is_package_json_content, is_requirements_txt_uri,
-    is_unity_project_manifest_uri,
+    is_cargo_config_uri, is_docker_compose_uri, is_dockerfile_uri, is_dotnet_xml_uri,
+    is_github_actions_uri, is_julia_versioned_manifest_uri, is_package_json_content,
+    is_requirements_txt_uri, is_unity_project_manifest_uri,
 };
 use super::{ManifestFormat, ManifestKind, ManifestParser, ManifestRow, Pattern, Rule, Stage};
 
@@ -148,6 +148,14 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Toml,
         &[at(Early, Name("Cargo.toml"))],
         ParserWithPaths(parse_cargo_toml_with_paths, default_paths::CARGO),
+    ),
+    row(
+        CargoConfigToml,
+        Ecosystem::Cargo,
+        "cargo",
+        Toml,
+        &[at(Early, Uri(is_cargo_config_uri))],
+        ParserWithPaths(parse_cargo_toml_with_paths, default_paths::CARGO_CONFIG),
     ),
     row(
         ComposerJson,

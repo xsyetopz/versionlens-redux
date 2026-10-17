@@ -11,6 +11,18 @@
     "edit": "2.0.0"
   },
   {
+    "kind": "CargoConfigToml",
+    "path": "cargo-config/.cargo/config.toml",
+    "since": "0.5.0",
+    "language": "toml",
+    "text": "[patch.crates-io]\nfoo = { version = \"1.0.0\" }\n",
+    "package": "foo",
+    "ecosystem": "Cargo",
+    "requirement": "1.0.0",
+    "latest": "2.0.0",
+    "edit": "2.0.0"
+  },
+  {
     "kind": "ComposerJson",
     "path": "composer/composer.json",
     "language": "json",

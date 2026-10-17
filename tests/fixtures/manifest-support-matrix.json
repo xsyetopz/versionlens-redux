@@ -7,10 +7,21 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.cargo.files",
-          "defaultGlob": "**/{Cargo.toml,rust-toolchain,rust-toolchain.toml}",
-          "fileForms": ["Cargo.toml", "rust-toolchain", "rust-toolchain.toml"],
+          "defaultGlob": "**/{Cargo.toml,.cargo/config.toml,.cargo/config,rust-toolchain,rust-toolchain.toml}",
+          "fileForms": [
+            "Cargo.toml",
+            ".cargo/config.toml",
+            ".cargo/config",
+            "rust-toolchain",
+            "rust-toolchain.toml"
+          ],
           "languages": ["toml", "plaintext"],
-          "manifestKinds": ["CargoToml", "RustToolchain", "RustToolchainToml"],
+          "manifestKinds": [
+            "CargoToml",
+            "CargoConfigToml",
+            "RustToolchain",
+            "RustToolchainToml"
+          ],
           "parsers": [
             "parse_cargo_toml_with_paths",
             "parse_rust_toolchain",
@@ -35,7 +46,9 @@
           "target.*.build-dependencies",
           "target.*.build-dependencies.*",
           "workspace.dependencies",
-          "workspace.dependencies.*"
+          "workspace.dependencies.*",
+          "patch.*",
+          "patch.*.*"
         ]
       }
     },
