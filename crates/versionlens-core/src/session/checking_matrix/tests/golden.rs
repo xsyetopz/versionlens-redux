@@ -89,9 +89,9 @@ async fn capture_case(case: &ManifestCase) -> String {
     text
 }
 
-/// Converts a lens to the 0.4.4 `CodeLensPayload` shape: a command ID and
-/// positional arguments. 0.4.4 kept lens order by moving each lens one
-/// character right of the previous one, collapsed to a point.
+/// Converts a lens to the golden `CodeLensPayload` shape: a command ID,
+/// positional arguments, and a point range moved `order` characters right,
+/// because VS Code sorts the lenses of a line by position.
 fn golden_code_lens(lens: &LensView) -> Value {
     let mut range = lens.range;
     range.start.character = range
@@ -108,7 +108,7 @@ fn golden_code_lens(lens: &LensView) -> Value {
     })
 }
 
-/// The VS Code command ID that 0.4.4 put on a lens with this action.
+/// The VS Code command ID of the golden format for this lens action.
 fn golden_command(lens: &LensView) -> &'static str {
     match lens.action_kind() {
         "UpdateDependency" => "versionlens.suggestion.onUpdateDependency",
@@ -118,7 +118,7 @@ fn golden_command(lens: &LensView) -> &'static str {
     }
 }
 
-/// Converts a diagnostic to the 0.4.4 `DiagnosticPayload` shape, whose severity is a number.
+/// Converts a diagnostic to the golden `DiagnosticPayload` shape, whose severity is a number.
 fn golden_diagnostic(diagnostic: &DiagnosticView) -> Value {
     let severity = match diagnostic.severity {
         Severity::Error => 0,

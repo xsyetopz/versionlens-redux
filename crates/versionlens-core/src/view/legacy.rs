@@ -1,5 +1,5 @@
 //! Test-only flat view of a `LensView` action: its variant name and the positional
-//! string arguments of the 0.4.4 `CodeLensPayload` shape. Tests and the golden capture
+//! string arguments of the golden `CodeLensPayload` shape. Tests and the golden capture
 //! compare against these.
 
 use super::{Action, LensView};
