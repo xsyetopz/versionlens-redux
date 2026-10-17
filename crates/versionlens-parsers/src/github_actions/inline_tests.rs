@@ -346,3 +346,26 @@ fn escaped_action_scalars_use_encoded_requirement_ranges() {
         );
     }
 }
+
+#[test]
+fn env_references_resolve_from_step_then_job_then_workflow_env() {
+    let source = "env:\n  NODE_VERSION: \"18\"\njobs:\n  build:\n    env:\n      NODE_VERSION: \"20\"\n    steps:\n      - uses: actions/setup-node@v4\n        with:\n          node-version: ${{ env.NODE_VERSION }}\n      - uses: actions/setup-node@v4\n        env:\n          NODE_VERSION: \"22\"\n        with:\n          node-version: ${{ env.NODE_VERSION }}\n  other:\n    steps:\n      - uses: actions/setup-node@v4\n        with:\n          node-version: ${{ env.NODE_VERSION }}\n";
+    let dependencies = parse_github_actions(source);
+    let nodes = dependencies
+        .iter()
+        .filter(|dependency| dependency.name == "node")
+        .map(|dependency| dependency.requirement.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(nodes, ["18", "20", "22"]);
+}
+
+#[test]
+fn unresolvable_expressions_produce_no_runtime_dependency() {
+    let source = "steps:\n  - uses: actions/setup-dotnet@v4\n    with:\n      dotnet-version: ${{ steps.read.outputs.version }}\n  - uses: actions/setup-node@v4\n    with:\n      node-version: ${{ inputs.node }}\n";
+    let dependencies = parse_github_actions(source);
+    assert_eq!(
+        runtime_dependencies(&dependencies).len(),
+        0,
+        "{dependencies:?}"
+    );
+}

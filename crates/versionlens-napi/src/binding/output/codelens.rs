@@ -21,8 +21,17 @@ impl NativeCodeLensPayload {
             || (String::new(), Vec::new()),
             |action| command_and_arguments(action),
         );
+        // VS Code sorts the lenses of a line by position, so each lens moves
+        // `order` characters right to show in suggestion order.
+        let mut range = lens.range;
+        range.start.character = range
+            .start
+            .character
+            .saturating_add(lens.order)
+            .min(lens.range.end.character);
+        range.end = range.start;
         Self {
-            range: native_range_from_core(lens.range),
+            range: native_range_from_core(range),
             title: lens.title,
             command,
             arguments,

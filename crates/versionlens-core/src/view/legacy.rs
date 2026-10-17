@@ -1,16 +1,17 @@
-//! Test-only view of a `LensView` in the 0.4.4 `CodeLensPayload` shape: a VS Code
-//! command ID and positional string arguments. Tests and the golden capture compare
-//! against that shape.
+//! Test-only flat view of a `LensView` action: its variant name and the positional
+//! string arguments of the golden `CodeLensPayload` shape. Tests and the golden capture
+//! compare against these.
 
 use super::{Action, LensView};
 
 impl LensView {
-    pub(crate) fn command(&self) -> &'static str {
+    /// The `Action` variant name, or `""` for a display-only lens.
+    pub(crate) fn action_kind(&self) -> &'static str {
         match &self.action {
             None => "",
-            Some(Action::UpdateDependency { .. }) => "versionlens.suggestion.onUpdateDependency",
-            Some(Action::ChooseBuild { .. }) => "versionlens.suggestion.onChooseBuild",
-            Some(Action::OpenFile { .. }) => "versionlens.suggestion.onFileLink",
+            Some(Action::UpdateDependency { .. }) => "UpdateDependency",
+            Some(Action::ChooseBuild { .. }) => "ChooseBuild",
+            Some(Action::OpenFile { .. }) => "OpenFile",
         }
     }
 

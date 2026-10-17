@@ -282,12 +282,9 @@ async fn analyze_document_uses_cached_latest_for_code_lens_title() {
     let output = session.analyze_document(input);
 
     assert_eq!(output.code_lenses[0].title, "🟡 fixed 1.0.0");
-    assert_eq!(output.code_lenses[0].command(), "");
+    assert_eq!(output.code_lenses[0].action_kind(), "");
     assert_eq!(output.code_lenses[1].title, "↑  latest 1.1.0");
-    assert_eq!(
-        output.code_lenses[1].command(),
-        "versionlens.suggestion.onUpdateDependency"
-    );
+    assert_eq!(output.code_lenses[1].action_kind(), "UpdateDependency");
     assert_eq!(output.code_lenses[1].arguments()[0], "left-pad");
     assert!(output.code_lenses[1].arguments()[1].starts_with("left-pad"));
 }

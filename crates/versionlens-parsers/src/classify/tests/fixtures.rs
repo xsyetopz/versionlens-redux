@@ -27,8 +27,8 @@ fn field<'a>(value: &'a Value, name: &str) -> &'a str {
         .unwrap_or_else(|| panic!("missing string field {name} in {value}"))
 }
 
-/// Every manifest fixture classifies to the kind and ecosystem that the 0.4.4
-/// golden output records for it. The golden output names ecosystems by their
+/// Every manifest fixture classifies to the kind and ecosystem that its
+/// golden output records. The golden output names ecosystems by their
 /// settings namespace.
 #[test]
 fn classifies_every_fixture_to_its_golden_kind_and_ecosystem() {

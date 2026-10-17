@@ -9,6 +9,9 @@ pub struct LensView {
     pub kind: LensKind,
     pub title: String,
     pub action: Option<Action>,
+    /// Position among the lenses of one dependency, from 0. Editors show
+    /// lenses that share a range in this order.
+    pub order: u32,
 }
 
 impl LensView {
@@ -23,6 +26,7 @@ impl LensView {
             kind,
             title,
             action,
+            order: 0,
         }
     }
 }
