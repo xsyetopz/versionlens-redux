@@ -128,3 +128,22 @@ fn package_json_version_is_not_a_dependency() {
 
     assert_eq!(dependencies, vec![]);
 }
+
+#[test]
+fn configured_package_json_version_path_is_not_a_dependency() {
+    let input = versionlens_model::DocumentInput::new(
+        "file:///work/package.json".to_owned(),
+        "json".to_owned(),
+        r#"{"name":"demo","version":"0.4.4","dependencies":{"react":"^18.0.0"}}"#.to_owned(),
+        None,
+    );
+
+    let dependencies =
+        crate::parse_document_with_dependency_paths(&input, &["version", "dependencies"]);
+
+    let names = dependencies
+        .iter()
+        .map(|dependency| dependency.name.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(names, ["react"]);
+}
