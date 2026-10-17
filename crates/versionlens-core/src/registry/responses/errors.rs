@@ -6,7 +6,7 @@ use versionlens_providers::RegistryErrorStatus::{
     NotSupported as RegistryStatusNotSupported,
 };
 use versionlens_providers::{RegistryErrorStatus, npm_error_status_from_response};
-use versionlens_suggestions::{
+use versionlens_update::{
     Suggestion, UpdateChoice, error, invalid, no_match_with_message, not_supported,
 };
 

@@ -1,13 +1,13 @@
 use crate::selection::matches_dependency;
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
-use versionlens_edits::can_sort_dependencies;
-use versionlens_edits::update_edits;
+use versionlens_update::can_sort_dependencies;
+use versionlens_update::update_edits;
 
 use versionlens_model::ManifestKind::VersionLensMultiRegistries;
 use versionlens_model::{DocumentInput, ManifestKind, ProjectVersionBump};
 use versionlens_parsers::{ecosystem_for_manifest, provider_name_for_manifest};
-use versionlens_suggestions::{Suggestion, SuggestionStatus};
+use versionlens_update::{Suggestion, SuggestionStatus};
 
 use super::operation::OperationContext;
 use super::resolution::ResolutionRequest;

@@ -1,6 +1,6 @@
 [package]
-name = "versionlens-suggestions"
-description = "Suggestion resolution for Version Lens."
+name = "versionlens-update"
+description = "Version suggestions and text edits for dependency updates in Version Lens."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -13,7 +13,12 @@ version.workspace = true
 [dependencies]
 serde.workspace = true
 semver.workspace = true
+unicode-normalization.workspace = true
 versionlens-model.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+versionlens-test-support.workspace = true
 
 [lints]
 workspace = true

@@ -6,9 +6,7 @@ use versionlens_model::Ecosystem::{
 use versionlens_providers::{
     is_composer_platform_dependency, is_registry_dependency, is_unsupported_dotnet_requirement,
 };
-use versionlens_suggestions::{
-    Suggestion, directory, directory_not_found, error, fixed, not_supported,
-};
+use versionlens_update::{Suggestion, directory, directory_not_found, error, fixed, not_supported};
 
 mod fixed_spec;
 mod git;

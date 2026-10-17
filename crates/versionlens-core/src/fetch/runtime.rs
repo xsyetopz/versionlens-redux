@@ -9,7 +9,7 @@ use versionlens_model::{
     requirement_satisfies_latest_for_dialect,
 };
 use versionlens_providers::RuntimeSource;
-use versionlens_suggestions::UpdateChoice;
+use versionlens_update::UpdateChoice;
 
 mod body;
 mod integrity;

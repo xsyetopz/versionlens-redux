@@ -1,11 +1,14 @@
-use versionlens_model::{CanonicalReference, TextEdit};
-use versionlens_suggestions::SuggestionStatus::{
+use crate::SuggestionStatus::{
     InvalidRange as StatusInvalidRange, Satisfies as StatusSatisfies,
     UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_suggestions::{Suggestion, SuggestionStatus};
+use crate::{Suggestion, SuggestionStatus};
+use versionlens_model::{CanonicalReference, TextEdit};
 
 use crate::replacement::replacement_text;
+
+mod plan;
+pub use plan::{Bump, BumpKind, Plan, PlanStatus, plan};
 
 pub fn update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
     suggestions

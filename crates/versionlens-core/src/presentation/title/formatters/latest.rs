@@ -1,6 +1,6 @@
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::GitHub;
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 pub(in crate::presentation) fn latest_text(suggestion: &Suggestion) -> &str {
     suggestion.latest.as_deref().unwrap_or_default()

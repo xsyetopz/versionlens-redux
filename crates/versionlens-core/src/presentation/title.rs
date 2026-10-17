@@ -1,5 +1,5 @@
 use versionlens_model::Dependency;
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 mod formatters;
 

@@ -408,7 +408,7 @@ fn assert_semantic_target_uniqueness(
                 version: Some(version),
                 ..
             }) if *name == suggestion.dependency.name => {
-                Some(versionlens_suggestions::semantic_update_target(version))
+                Some(versionlens_update::semantic_update_target(version))
             }
             _ => None,
         })
@@ -421,7 +421,7 @@ fn assert_semantic_target_uniqueness(
     if suggestion.status == "satisfiesLatest"
         && let Some(latest) = suggestion.latest.as_deref()
     {
-        let latest = versionlens_suggestions::semantic_update_target(latest);
+        let latest = versionlens_update::semantic_update_target(latest);
         assert!(
             !targets.contains(&latest),
             "{case} emitted a status and update action for the same target: {suggestion:?}"

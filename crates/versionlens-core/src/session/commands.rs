@@ -2,17 +2,17 @@ use std::collections::HashSet;
 use std::panic::resume_unwind;
 use std::sync::Arc;
 
-use versionlens_edits::bulk_update_edits;
-use versionlens_edits::sort_dependency_edits;
-use versionlens_edits::update_edits;
 use versionlens_model::{Dependency, DocumentInput, ManifestKind};
-use versionlens_suggestions::Suggestion;
-use versionlens_suggestions::SuggestionStatus::{
+use versionlens_update::Suggestion;
+use versionlens_update::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
     DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,
     NotSupported as StatusNotSupported, Unresolved as StatusUnresolved,
     UpdateAvailable as StatusUpdateAvailable,
 };
+use versionlens_update::bulk_update_edits;
+use versionlens_update::sort_dependency_edits;
+use versionlens_update::update_edits;
 
 use super::documents::DependencySuggestionsRequest;
 use super::operation::OperationContext;
@@ -333,7 +333,7 @@ fn force_selected_version(suggestions: &mut [Suggestion], version: &str) {
                 .iter()
                 .any(|choice| choice.version == version)
         {
-            *suggestion = versionlens_suggestions::error(
+            *suggestion = versionlens_update::error(
                 suggestion.dependency.clone(),
                 "selected runtime version has not been verified".to_owned(),
             );

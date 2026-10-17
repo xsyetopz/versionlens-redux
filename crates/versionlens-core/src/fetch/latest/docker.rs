@@ -1,7 +1,7 @@
 use super::UpdateChoices;
 use serde_json::{Value, from_str};
 use std::cmp::Ordering::Greater as OrderingGreater;
-use versionlens_suggestions::{UpdateChoice, push_unique_choice};
+use versionlens_update::{UpdateChoice, push_unique_choice};
 
 pub(super) fn docker_update_choices(requirement: &str, latest: &str, body: &str) -> UpdateChoices {
     if latest.is_empty() || latest == requirement {

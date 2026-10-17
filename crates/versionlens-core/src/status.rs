@@ -1,9 +1,9 @@
-use versionlens_suggestions::SuggestionStatus::{
+use versionlens_update::SuggestionStatus::{
     DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Invalid as StatusInvalid,
     InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
     NotSupported as StatusNotSupported, UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_suggestions::{Suggestion, SuggestionStatus};
+use versionlens_update::{Suggestion, SuggestionStatus};
 
 use crate::view::{DiagnosticView, StatusView};
 
