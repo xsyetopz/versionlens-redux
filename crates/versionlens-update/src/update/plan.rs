@@ -131,14 +131,25 @@ pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> 
     Plan { status, bumps }
 }
 
-/// Whether `requirement` has a floor that an update raises while it still allows
-/// latest: `^`, `~`, or a Cargo bare version. Other ranges, such as `>=`, have
-/// no floor to raise.
+/// Whether `requirement` has a floor that an update raises while it allows latest.
+///
+/// Only a single `^`, `~` or Cargo bare comparator has one. Ranges such as `>=`
+/// have no floor to raise, and a floor bump on a compound range (`^1 || ^2`,
+/// `^1.2, <1.5`) would drop its other comparators. A registry alias
+/// (`npm:chalk@^1.0.0`) is read by its range.
 pub fn has_a_floor(requirement: &str, dialect: VersionDialect) -> bool {
     let requirement = requirement.trim();
-    requirement.starts_with(['^', '~'])
-        || (dialect == VersionDialect::Cargo
-            && requirement.starts_with(|character: char| character.is_ascii_digit()))
+    let requirement = versionlens_model::registry_alias_requirement(requirement)
+        .unwrap_or(requirement)
+        .trim();
+    let single_comparator = !requirement
+        .trim_start_matches(['^', '~', '>', '='])
+        .trim_start()
+        .contains(|character: char| character.is_whitespace() || matches!(character, ',' | '|'));
+    single_comparator
+        && (requirement.starts_with(['^', '~'])
+            || (dialect == VersionDialect::Cargo
+                && requirement.starts_with(|character: char| character.is_ascii_digit())))
 }
 
 /// Whether the floor of `requirement` already spells `version`, so raising the

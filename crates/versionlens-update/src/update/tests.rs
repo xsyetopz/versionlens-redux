@@ -490,3 +490,49 @@ fn normalize_exact_requirement(requirement: &str) -> String {
         .strip_prefix("==")
         .map_or_else(|| requirement.to_owned(), |version| format!("={version}"))
 }
+
+fn satisfies_latest(
+    name: &str,
+    requirement: &str,
+    ecosystem: Ecosystem,
+    latest: &str,
+) -> Suggestion {
+    Suggestion {
+        dependency: Dependency {
+            name: name.to_owned(),
+            requirement: requirement.to_owned(),
+            ecosystem,
+            group: "dependencies".to_owned(),
+            hosted_url: None,
+            hosted_name: None,
+            range: range(0, 0, 0, 5),
+            requirement_range: range(0, 9, 0, 30),
+            requirement_prefix: "".to_owned(),
+            requirement_suffix: "".to_owned(),
+            canonical_reference: None,
+        },
+        latest: Some(latest.to_owned()),
+        resolved: None,
+        status: crate::SuggestionStatus::SatisfiesLatest,
+        builds: vec![],
+        choices: vec![],
+    }
+}
+
+#[test]
+fn raises_the_floor_of_a_registry_alias_range() {
+    let edits = update_edits(&[satisfies_latest("chalk", "npm:chalk@^1.0.0", Npm, "1.2.0")]);
+
+    assert_eq!(edits.len(), 1);
+    assert_eq!(edits[0].new_text, "npm:chalk@^1.2.0");
+}
+
+#[test]
+fn leaves_compound_ranges_that_allow_latest_alone() {
+    let edits = update_edits(&[
+        satisfies_latest("left-pad", "^1.0.0 || ^2.0.0", Npm, "2.3.0"),
+        satisfies_latest("serde", "^1.2, <1.5", Cargo, "1.4.0"),
+    ]);
+
+    assert_eq!(edits, vec![]);
+}
