@@ -49,6 +49,7 @@ pub enum ManifestKind {
     MesonWrap,
     BazelWorkspace,
     SwiftPackage,
+    Cartfile,
     ZigBuildZon,
     Nimble,
     LuaRockspec,

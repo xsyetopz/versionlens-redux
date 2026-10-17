@@ -1,0 +1,95 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "example/foo",
+      "edits": [
+        {
+          "newText": "~> 2.0.0",
+          "range": {
+            "end": {
+              "character": 27,
+              "line": 0
+            },
+            "start": {
+              "character": 21,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [
+        "example/foo",
+        "example/foo\u001f0:21,0:27",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 8,
+          "line": 0
+        },
+        "start": {
+          "character": 8,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "swift",
+      "group": "dependencies",
+      "hostedName": "example/foo",
+      "hostedUrl": "https://api.github.com/repos/example/foo/tags",
+      "name": "example/foo",
+      "range": {
+        "end": {
+          "character": 19,
+          "line": 0
+        },
+        "start": {
+          "character": 8,
+          "line": 0
+        }
+      },
+      "requirement": "~> 1.0",
+      "requirementRange": {
+        "end": {
+          "character": 27,
+          "line": 0
+        },
+        "start": {
+          "character": 21,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "Cartfile",
+  "path": "carthage/Cartfile",
+  "updateAllEdits": [
+    {
+      "newText": "~> 2.0.0",
+      "range": {
+        "end": {
+          "character": 27,
+          "line": 0
+        },
+        "start": {
+          "character": 21,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

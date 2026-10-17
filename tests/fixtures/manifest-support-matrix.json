@@ -692,11 +692,11 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.swift.files",
-          "defaultGlob": "**/Package.swift",
-          "fileForms": ["Package.swift"],
-          "languages": ["swift"],
-          "manifestKinds": ["SwiftPackage"],
-          "parsers": ["parse_swift_package"]
+          "defaultGlob": "**/{Package.swift,Cartfile,Cartfile.private}",
+          "fileForms": ["Package.swift", "Cartfile", "Cartfile.private"],
+          "languages": ["swift", "plaintext"],
+          "manifestKinds": ["SwiftPackage", "Cartfile"],
+          "parsers": ["parse_swift_package", "parse_cartfile"]
         }
       ],
       "dependencyProperties": {

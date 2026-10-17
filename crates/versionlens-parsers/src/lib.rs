@@ -59,6 +59,7 @@ pub(crate) use julia_kustomize::{julia, kustomization_yaml};
 pub(crate) use jvm_manifests::{clojure_deps, leiningen_project};
 pub(crate) use jvm_scripts::{sbt_build, swift_package};
 pub(crate) use manifest_assets::{unity_manifest, yaml};
+pub(crate) use manifest_support::cartfile;
 pub(crate) use manifest_support::cocoapods_podfile;
 pub(crate) use native_manifests::{vcpkg, zig_zon};
 pub(crate) use ocaml_manifests::{dune_project, opam};

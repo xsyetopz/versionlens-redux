@@ -1,6 +1,7 @@
 use crate::ansible_galaxy::parse_ansible_galaxy_requirements_yaml_with_paths;
 use crate::bazel_module::parse_bazel_module_with_paths;
 use crate::cargo_toml::parse_cargo_toml_with_paths;
+use crate::cartfile::parse_cartfile;
 use crate::clojure_deps::parse_clojure_deps_edn;
 use crate::cocoapods_podfile::parse_cocoapods_podfile;
 use crate::conan::{parse_conanfile_py, parse_conanfile_txt};
@@ -52,16 +53,16 @@ use crate::zig_zon::parse_zig_build_zon;
 use versionlens_model::Ecosystem;
 use versionlens_model::ManifestKind::{
     AnsibleGalaxyRequirementsYaml, BazelModule, BazelWorkspace, BunVersion, Cabal, CabalProject,
-    CargoConfigToml, CargoToml, ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson, ConanfilePy,
-    ConanfileTxt, Cpanfile, DenoImportMapJson, DenoJson, DockerComposeYaml, Dockerfile,
-    DotnetProjectJson, DotnetToolsJson, DotnetXml, DubJson, DubSdl, DuneProject, Gemfile,
-    GitHubActions, GleamToml, GoMod, GradleBuild, GradleSettings, GradleVersionCatalogToml,
-    HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml, JuliaProjectToml, KustomizationYaml,
-    LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap, MixExs, Nimble, NixFlake,
-    NodeVersion, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Nvmrc, Opam, PaketDependencies,
-    PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml, PythonPipfile,
-    PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock, RubyGemspec,
-    RustToolchain, RustToolchainToml, SbtBuild, StackYaml, SwiftPackage, TerraformTf,
+    CargoConfigToml, CargoToml, Cartfile, ClojureDepsEdn, Cmake, CocoaPodsPodfile, ComposerJson,
+    ConanfilePy, ConanfileTxt, Cpanfile, DenoImportMapJson, DenoJson, DockerComposeYaml,
+    Dockerfile, DotnetProjectJson, DotnetToolsJson, DotnetXml, DubJson, DubSdl, DuneProject,
+    Gemfile, GitHubActions, GleamToml, GoMod, GradleBuild, GradleSettings,
+    GradleVersionCatalogToml, HaxelibJson, HelmChartYaml, JsrJson, JuliaManifestToml,
+    JuliaProjectToml, KustomizationYaml, LeiningenProjectClj, LuaRockspec, MavenPomXml, MesonWrap,
+    MixExs, Nimble, NixFlake, NodeVersion, NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Nvmrc,
+    Opam, PaketDependencies, PaketReferences, PnpmYaml, PubspecOverridesYaml, PubspecYaml,
+    PythonPipfile, PythonPyprojectToml, PythonRequirementsTxt, RDescription, RebarConfig, RenvLock,
+    RubyGemspec, RustToolchain, RustToolchainToml, SbtBuild, StackYaml, SwiftPackage, TerraformTf,
     UnityProjectManifestJson, VcpkgJson, XmakeLua, ZigBuildZon,
 };
 
@@ -468,6 +469,17 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("Package.swift"))],
         ParserDirect(parse_swift_package),
+    ),
+    row(
+        Cartfile,
+        Ecosystem::Swift,
+        "swift",
+        Custom,
+        &[
+            at(Early, Name("Cartfile")),
+            at(Early, Name("Cartfile.private")),
+        ],
+        ParserDirect(parse_cartfile),
     ),
     row(
         ZigBuildZon,

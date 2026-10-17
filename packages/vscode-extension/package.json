@@ -1437,8 +1437,8 @@
         },
         "versionlens.swift.files": {
           "type": "string",
-          "default": "**/Package.swift",
-          "description": "Swift Package.swift manifests to scan."
+          "default": "**/{Package.swift,Cartfile,Cartfile.private}",
+          "description": "Swift Package.swift and Carthage Cartfile manifests to scan."
         },
         "versionlens.swift.prereleaseTagFilter": {
           "type": "array",
