@@ -97,6 +97,22 @@ fn parses_configured_smoke_npm_custom_dependency_paths() {
     );
 }
 
+#[test]
+fn ignores_array_elements_under_terminal_wildcard_path() {
+    let text = r#"{"overrides":[{"name":"foo","version":"1.0.0"}]}"#;
+    let dependencies = parse_document_with_dependency_paths(
+        &DocumentInput::new(
+            "file:///work/package.json".to_owned(),
+            "json".to_owned(),
+            text.to_owned(),
+            None,
+        ),
+        &["overrides.*".to_owned()],
+    );
+
+    assert!(dependencies.is_empty());
+}
+
 fn package_file_fixture(name: &str) -> &'static str {
     crate::support::tests::fixture(
         "tests/fixtures/versionlens-parsers/src/json_manifest/tests/npm_nested",
