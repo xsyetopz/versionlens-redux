@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn project_version_command_sends_a_versioned_edit_and_waits_for_the_editor() -> Result<()> {
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_client(&client)?;
     let uri = "file:///workspace/jsr.json";
     open_json_document(
@@ -104,7 +104,7 @@ fn responsive_registry_request(cancel: bool) -> Result<()> {
         Ok(())
     });
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_configured(
         &client,
         json!({"capabilities":{}}),

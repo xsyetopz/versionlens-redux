@@ -35,7 +35,7 @@ async fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lense
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     });
 
     assert_eq!(

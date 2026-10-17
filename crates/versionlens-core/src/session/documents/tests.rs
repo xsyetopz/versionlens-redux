@@ -447,7 +447,7 @@ fn standard_config(show_suggestion_stats: bool) -> SessionConfig {
         show_vulnerabilities: true,
         show_suggestion_stats,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     }
 }
 

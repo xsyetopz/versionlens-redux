@@ -12,7 +12,7 @@ use crate::state::DISPLAY_CODE_LENS_COMMAND;
 #[test]
 fn raw_loop_rejects_bad_requests_and_survives_bad_notifications() -> Result<()> {
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
 
     send_request(&client, 1, "initialize", Value::String("bad".to_owned()))?;
     assert_error(receive(&client)?, ErrorCode::InvalidParams)?;
@@ -95,7 +95,7 @@ fn raw_loop_rejects_bad_requests_and_survives_bad_notifications() -> Result<()> 
 #[test]
 fn dynamically_registers_workspace_file_watching_when_supported() -> Result<()> {
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_workspace(
         &client,
         json!({
@@ -283,14 +283,14 @@ fn start_configured_server(
     settings: Value,
 ) -> Result<(Connection, thread::JoinHandle<Result<()>>)> {
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_configured(&client, params, settings)?;
     Ok((client, server_thread))
 }
 
 fn start_workspace_server(params: Value) -> Result<(Connection, thread::JoinHandle<Result<()>>)> {
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_workspace(&client, params)?;
     Ok((client, server_thread))
 }
@@ -451,6 +451,8 @@ mod push;
 
 mod configuration;
 
+#[cfg(unix)]
+mod cache;
 #[cfg(test)]
 mod diagnostics;
 

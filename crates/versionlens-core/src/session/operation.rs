@@ -9,7 +9,7 @@ pub(crate) struct OperationContext {
     deadline: Option<Instant>,
     pub(crate) attempted_at_ms: u64,
     pub(crate) persistent_epoch: Option<u64>,
-    storage: Option<Arc<versionlens_cache::PersistentCache>>,
+    storage: Option<Arc<versionlens_fetch::PersistentCache>>,
     cancellation: Option<Arc<std::sync::atomic::AtomicBool>>,
     generation: Option<(Arc<std::sync::atomic::AtomicU64>, u64)>,
 }
@@ -53,7 +53,7 @@ impl OperationContext {
 
     pub(crate) fn with_storage(
         mut self,
-        storage: Option<Arc<versionlens_cache::PersistentCache>>,
+        storage: Option<Arc<versionlens_fetch::PersistentCache>>,
         epoch: Option<u64>,
     ) -> Self {
         self.storage = storage;

@@ -1,7 +1,7 @@
 use crate::cache::vulnerability_cache_key;
 use crate::{ApplyCommandRequest, RegistryResponseInput, RegistryUrlConfig, VersionLensSession};
 use std::time::Duration;
-use versionlens_cache::PersistentRecord;
+use versionlens_fetch::PersistentRecord;
 use versionlens_model::{CanonicalReference, DocumentInput, Ecosystem::Dotnet, Ecosystem::Npm};
 use versionlens_update::{Suggestion, SuggestionStatus};
 
@@ -24,7 +24,7 @@ fn configured_session(
         config.cache_ttl_ms = cache_ttl_ms;
     }
     config.http.timeout_ms = 20;
-    config.http.auth_headers = vec![versionlens_http::HttpHeader {
+    config.http.auth_headers = vec![versionlens_fetch::HttpHeader {
         name: "Authorization".to_owned(),
         value: credential.to_owned(),
         url: Some("http://127.0.0.1:1".to_owned()),

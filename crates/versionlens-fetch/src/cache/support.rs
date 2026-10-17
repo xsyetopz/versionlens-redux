@@ -1,6 +1,6 @@
 use std::time::{Duration as StdDuration, Instant as StdInstant};
 
-use crate::{CacheEntry, entry};
+use crate::cache::{CacheEntry, entry};
 
 pub(crate) fn default<T: Default>() -> T {
     <T as Default>::default()

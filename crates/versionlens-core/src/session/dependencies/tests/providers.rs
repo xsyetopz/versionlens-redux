@@ -14,7 +14,7 @@ fn disabled_providers_are_filtered_in_rust() {
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     });
 
     let output = session.analyze_document(DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), package_file_fixture("npm-dependencies.json"), None));

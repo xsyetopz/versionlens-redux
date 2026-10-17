@@ -4,7 +4,7 @@ use super::{best_matching_auth_entry, full_url_or_origin_match_len};
 use crate::registry::files::RegistryFileRead;
 use std::path::{Path, PathBuf};
 
-use versionlens_http::HttpHeader;
+use versionlens_fetch::HttpHeader;
 use versionlens_model::{Dependency, DocumentInput};
 use versionlens_parsers::{
     DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig, DotnetSourceMapping, parse_nuget_config,

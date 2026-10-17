@@ -1,5 +1,5 @@
 use napi_derive::napi;
-use versionlens_http::{HttpConfigInput, HttpHeaderInput};
+use versionlens_fetch::{HttpConfigInput, HttpHeaderInput};
 
 #[napi(object)]
 pub struct NativeHttpConfig {

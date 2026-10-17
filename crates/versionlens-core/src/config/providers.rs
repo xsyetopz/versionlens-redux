@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use versionlens_cache::minutes_to_ms;
+use versionlens_fetch::minutes_to_ms;
 
 use versionlens_model::{Ecosystem, ManifestKind, ecosystem_from_config_name};
 

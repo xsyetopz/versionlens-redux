@@ -68,7 +68,7 @@ fn session_with_enabled_provider(provider: EnabledProviderConfig) -> VersionLens
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     })
 }
 

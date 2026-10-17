@@ -4,7 +4,7 @@ use std::path::Path as StdPath;
 use std::string::FromUtf8Error as StringFromUtf8Error;
 use std::sync::{Mutex as StdMutex, PoisonError as SyncPoisonError};
 use std::time::Duration as StdDuration;
-use versionlens_cache::MemoryCache;
+use versionlens_fetch::MemoryCache;
 
 pub(crate) fn default<T: Default>() -> T {
     <T as Default>::default()

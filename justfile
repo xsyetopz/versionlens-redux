@@ -25,7 +25,7 @@ rust-test *args:
     CARGO_TARGET_DIR=/tmp/versionlens-cargo-target cargo test --workspace --locked {{ args }}
 
 http-test name:
-    CARGO_TARGET_DIR=/tmp/versionlens-cargo-target cargo test -p versionlens-http --locked {{ name }} -- --exact --nocapture
+    CARGO_TARGET_DIR=/tmp/versionlens-cargo-target cargo test -p versionlens-fetch --locked {{ name }} -- --exact --nocapture
 
 http-large-response:
     just http-test client::send::tests::reads_large_registry_response_bodies

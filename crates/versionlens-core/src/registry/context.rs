@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use versionlens_http::{HttpConfig, HttpHeader};
+use versionlens_fetch::{HttpConfig, HttpHeader};
 use versionlens_model::Ecosystem::{Cargo, Composer, Dotnet, Go, Hex, Maven, Npm, Python, Ruby};
 use versionlens_model::ManifestKind::{
     CargoConfigToml, CargoToml, ClojureDepsEdn, ComposerJson, DenoImportMapJson, DenoJson,

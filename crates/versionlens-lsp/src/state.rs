@@ -113,7 +113,9 @@ pub struct VersionLensLspState {
 
 #[derive(Debug, Default)]
 struct StateModes {
-    persistent: bool,
+    /// Where sessions store results across restarts. `None` keeps them in
+    /// memory only.
+    cache_directory: Option<std::path::PathBuf>,
     controller_managed: bool,
 }
 
@@ -222,14 +224,6 @@ impl VersionLensLspState {
             root_uri,
             workspace_folders,
         }
-    }
-
-    pub(crate) fn with_application_cache(mut self) -> std::io::Result<Self> {
-        for group in &mut self.groups {
-            group.session = group.session.clone().with_application_cache()?;
-        }
-        self.modes.persistent = true;
-        Ok(self)
     }
 
     pub(crate) fn use_workspace_controller(&mut self) {

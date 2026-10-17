@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Instant;
 
 use anyhow::{Context, Result};
@@ -11,7 +12,7 @@ use lsp_types::request::{
 };
 use lsp_types::{
     CodeLensParams, Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, ExecuteCommandParams, Uri, WorkspaceFolder,
+    DidOpenTextDocumentParams, ExecuteCommandParams, MessageType, Uri, WorkspaceFolder,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -37,26 +38,37 @@ struct InitializeWorkspaceParams {
 mod checking;
 mod settings;
 mod work;
-use checking::WorkspaceController;
+use checking::{WorkspaceController, log_message};
 use settings::SettingsRequests;
 use work::WorkQueue;
 
 pub fn run_stdio_server() -> Result<()> {
     let (connection, io_threads) = Connection::stdio();
-    run_connection(&connection, true)?;
+    run_connection(
+        &connection,
+        Some(versionlens_core::application_cache_directory()),
+    )?;
     drop(connection);
     io_threads.join()?;
     Ok(())
 }
 
-fn run_connection(connection: &Connection, persistent: bool) -> Result<()> {
-    let mut state = initialize(connection, persistent)?;
+/// Runs the server on `connection`. `cache_directory` is where results are
+/// stored across restarts; `None` keeps them in memory only.
+fn run_connection(
+    connection: &Connection,
+    cache_directory: Option<std::io::Result<PathBuf>>,
+) -> Result<()> {
+    let mut state = initialize(connection, cache_directory)?;
     let mut settings = SettingsRequests::default();
     let queued = settings.first(connection, &mut state)?;
     run_message_loop(connection, &mut state, settings, queued)
 }
 
-fn initialize(connection: &Connection, persistent: bool) -> Result<VersionLensLspState> {
+fn initialize(
+    connection: &Connection,
+    mut cache_directory: Option<std::io::Result<PathBuf>>,
+) -> Result<VersionLensLspState> {
     loop {
         let (id, params) = connection.initialize_start()?;
         let params = match serde_json::from_value::<InitializeWorkspaceParams>(params) {
@@ -76,15 +88,26 @@ fn initialize(connection: &Connection, persistent: bool) -> Result<VersionLensLs
             params.workspace_folders.unwrap_or_default(),
         )
         .with_client(params.capabilities);
-        let state = if persistent {
-            state.with_application_cache()?
-        } else {
-            state
-        };
+        let mut state = state;
+        // An unwritable cache folder must not stop the server.
+        let cache_error = cache_directory.take().and_then(|directory| {
+            directory
+                .and_then(|path| state.use_persistent_cache(&path))
+                .err()
+        });
         let initialize_result = serde_json::json!({
             "capabilities": VersionLensLspState::server_capabilities(),
         });
         connection.initialize_finish(id, initialize_result)?;
+        if let Some(error) = cache_error {
+            log_message(
+                connection,
+                MessageType::WARNING,
+                format!(
+                    "persistent cache is disabled, so results are kept in memory only: {error}"
+                ),
+            )?;
+        }
         register_file_watcher(connection, &state)?;
         return Ok(state);
     }

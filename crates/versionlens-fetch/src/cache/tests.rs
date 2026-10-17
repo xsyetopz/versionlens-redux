@@ -327,7 +327,7 @@ fn clear_racing_a_write_across_processes_leaves_no_stale_record() -> io::Result<
     let mut child = std::process::Command::new(std::env::current_exe()?)
         .args([
             "--exact",
-            "persistent::tests::persistent_cache_subprocess",
+            "cache::persistent::tests::persistent_cache_subprocess",
             "--nocapture",
         ])
         .env("VERSIONLENS_CACHE_HELPER_DIRECTORY", &directory)
@@ -349,4 +349,48 @@ fn persistent_cache_subprocess() -> io::Result<()> {
     };
     PersistentCache::open(directory)?.clear()?;
     Ok(())
+}
+
+#[cfg(unix)]
+mod read_only {
+    use std::os::unix::fs::PermissionsExt;
+
+    use super::*;
+
+    /// Runs `check` on a fresh directory made read-only, and restores it.
+    fn with_read_only_directory(
+        seed: bool,
+        check: impl FnOnce(&Path) -> io::Result<()>,
+    ) -> io::Result<()> {
+        let directory = versionlens_test_support::temporary_directory("versionlens-cache-ro")?;
+        if seed {
+            seed_cache(&directory)?;
+        }
+        fs::set_permissions(&directory, fs::Permissions::from_mode(0o555))?;
+        let result = check(&directory);
+        fs::set_permissions(&directory, fs::Permissions::from_mode(0o755))?;
+        fs::remove_dir_all(&directory)?;
+        result
+    }
+
+    #[test]
+    fn a_cache_folder_that_cannot_be_created_fails_to_open() -> io::Result<()> {
+        with_read_only_directory(false, |parent| {
+            let error = PersistentCache::open(parent.join("cache")).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+            assert!(!parent.join("cache").exists());
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_read_only_cache_still_serves_stored_records_and_rejects_writes() -> io::Result<()> {
+        with_read_only_directory(true, |directory| {
+            let cache = PersistentCache::open(directory)?;
+            let epoch = cache.epoch()?;
+            assert!(cache.get("stored", 1)?.is_some());
+            assert!(cache.insert(epoch, "new".into(), record(100), 1).is_err());
+            Ok(())
+        })
+    }
 }

@@ -5,12 +5,12 @@ use std::thread::JoinHandle;
 use std::thread::spawn;
 use std::time::{Duration, Instant};
 
-use crate::config::{HttpConfig, HttpHeader};
+use crate::http::config::{HttpConfig, HttpHeader};
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use reqwest::RequestBuilder;
 
-use crate::HttpError::{Client as HttpClientError, Io as HttpIoError};
+use crate::http::HttpError::{Client as HttpClientError, Io as HttpIoError};
 
 use super::{
     ACCEPT_GITHUB_V3, ACCEPT_JSON,
@@ -31,9 +31,9 @@ async fn byte_get_preserves_non_utf8_response_data() {
 
     let bytes = get_bytes_with_accept_and_retry(
         &url,
-        &crate::standard_http_config(),
+        &crate::http::standard_http_config(),
         Some("application/octet-stream"),
-        crate::disabled_retry_policy(),
+        crate::http::disabled_retry_policy(),
     )
     .await
     .unwrap();
@@ -61,7 +61,7 @@ async fn negotiates_and_transparently_decompresses_gzip_responses() {
         &body,
     ));
 
-    let result = get_text(&url, &crate::standard_http_config())
+    let result = get_text(&url, &crate::http::standard_http_config())
         .await
         .unwrap();
     server.join().unwrap();
@@ -82,7 +82,7 @@ async fn accepts_plain_responses_when_the_server_ignores_gzip_negotiation() {
         Duration::ZERO,
     );
 
-    let result = get_text(&url, &crate::standard_http_config())
+    let result = get_text(&url, &crate::http::standard_http_config())
         .await
         .unwrap();
     server.join().unwrap();
@@ -102,7 +102,7 @@ async fn assert_archive_text(content_type: &str, body: HttpResponseBytes) {
         Duration::ZERO,
     );
 
-    let result = get_text(&url, &crate::standard_http_config())
+    let result = get_text(&url, &crate::http::standard_http_config())
         .await
         .unwrap();
     server.join().unwrap();
@@ -130,17 +130,20 @@ async fn request_timeout_is_capped_by_the_remaining_operation_budget() {
         &url,
         &HttpConfig {
             timeout_ms: 2_000,
-            ..crate::standard_http_config()
+            ..crate::http::standard_http_config()
         },
         Some(ACCEPT_JSON),
-        crate::disabled_retry_policy(),
+        crate::http::disabled_retry_policy(),
         BUDGET,
     )
     .await;
     let elapsed = started.elapsed();
     server.join().unwrap();
 
-    assert!(matches!(result, Err(crate::HttpError::DeadlineExceeded)));
+    assert!(matches!(
+        result,
+        Err(crate::http::HttpError::DeadlineExceeded)
+    ));
     assert!(
         elapsed < Duration::from_millis(200),
         "{BUDGET:?} transport budget took {elapsed:?}"
@@ -149,11 +152,11 @@ async fn request_timeout_is_capped_by_the_remaining_operation_budget() {
 
 #[tokio::test]
 async fn invalid_url_fails_before_network() {
-    let result = get_text("not a url", &crate::standard_http_config()).await;
+    let result = get_text("not a url", &crate::http::standard_http_config()).await;
 
     assert!(result.is_err());
 
-    let result = post_text("not a url", "{}", &crate::standard_http_config()).await;
+    let result = post_text("not a url", "{}", &crate::http::standard_http_config()).await;
 
     assert!(result.is_err());
 }
@@ -162,7 +165,7 @@ async fn invalid_url_fails_before_network() {
 async fn configured_ca_file_is_loaded_before_requests() {
     let config = HttpConfig {
         ca_file: Some("/tmp/versionlens-missing-ca.pem".to_owned()),
-        ..crate::standard_http_config()
+        ..crate::http::standard_http_config()
     };
 
     let result = get_text("not a url", &config).await;
@@ -178,7 +181,7 @@ fn reuses_agents_for_equivalent_connection_settings() {
             value: "Bearer first".to_owned(),
             url: None,
         }],
-        ..crate::standard_http_config()
+        ..crate::http::standard_http_config()
     };
     let second_config = HttpConfig {
         auth_headers: vec![HttpHeader {
@@ -186,7 +189,7 @@ fn reuses_agents_for_equivalent_connection_settings() {
             value: "Bearer second".to_owned(),
             url: None,
         }],
-        ..crate::standard_http_config()
+        ..crate::http::standard_http_config()
     };
 
     assert!(uses_same_agent_cache_key(&first_config, &second_config));
@@ -196,7 +199,7 @@ fn reuses_agents_for_equivalent_connection_settings() {
 fn does_not_cache_agents_with_custom_tls_material() {
     let config = HttpConfig {
         ca: Some("not a pem certificate".to_owned()),
-        ..crate::standard_http_config()
+        ..crate::http::standard_http_config()
     };
 
     assert!(!uses_agent_cache(&config));
@@ -206,7 +209,7 @@ fn does_not_cache_agents_with_custom_tls_material() {
 async fn configured_direct_ca_pem_is_loaded_before_requests() {
     let config = HttpConfig {
         ca: Some("not a pem certificate".to_owned()),
-        ..crate::standard_http_config()
+        ..crate::http::standard_http_config()
     };
 
     let result = get_text("not a url", &config).await;
@@ -219,7 +222,7 @@ async fn configured_direct_client_cert_pem_is_loaded_before_requests() {
     let config = HttpConfig {
         cert: Some("not a pem certificate".to_owned()),
         key: Some("not a pem private key".to_owned()),
-        ..crate::standard_http_config()
+        ..crate::http::standard_http_config()
     };
 
     let result = get_text("not a url", &config).await;
@@ -232,7 +235,7 @@ async fn configured_client_cert_files_are_loaded_before_requests() {
     let config = HttpConfig {
         cert_file: Some("/tmp/versionlens-missing-client-cert.pem".to_owned()),
         key_file: Some("/tmp/versionlens-missing-client-key.pem".to_owned()),
-        ..crate::standard_http_config()
+        ..crate::http::standard_http_config()
     };
 
     let result = get_text("not a url", &config).await;
@@ -270,12 +273,12 @@ fn applies_default_json_accept_header_to_request() {
     );
 }
 
-fn assert_io_error(result: Result<String, crate::HttpError>) {
+fn assert_io_error(result: Result<String, crate::http::HttpError>) {
     assert!(result.is_err());
     assert!(matches!(result, Err(HttpIoError(_))));
 }
 
-fn assert_client_error(result: Result<String, crate::HttpError>) {
+fn assert_client_error(result: Result<String, crate::http::HttpError>) {
     assert!(result.is_err());
     assert!(matches!(result, Err(HttpClientError(_))));
 }
@@ -438,9 +441,12 @@ fn get(url: &str) -> RequestBuilder {
 
 async fn assert_response_too_large(response: HttpResponseBytes) {
     let (url, server) = serve_once(response, Duration::ZERO);
-    let result = get_text(&url, &crate::standard_http_config()).await;
+    let result = get_text(&url, &crate::http::standard_http_config()).await;
     server.join().unwrap();
-    assert!(matches!(result, Err(crate::HttpError::ResponseTooLarge)));
+    assert!(matches!(
+        result,
+        Err(crate::http::HttpError::ResponseTooLarge)
+    ));
 }
 
 fn serve_once(response: impl Into<HttpResponseBytes>, delay: Duration) -> (String, JoinHandle<()>) {
@@ -492,3 +498,6 @@ fn gzip(body: &[u8]) -> HttpResponseBytes {
     encoder.write_all(body).unwrap();
     encoder.finish().unwrap()
 }
+
+mod proxy;
+mod rate_limit;

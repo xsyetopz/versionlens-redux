@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use versionlens_cache::{CacheKey, PersistentRecord};
+use versionlens_fetch::{CacheKey, PersistentRecord};
 use versionlens_model::{Dependency, DocumentInput};
 
 use super::CacheScope;

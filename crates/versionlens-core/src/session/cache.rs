@@ -3,8 +3,8 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, MutexGuard};
 use std::time::Duration;
 
-use versionlens_cache::{CacheKey, MemoryCache};
-use versionlens_http::HttpConfig;
+use versionlens_fetch::HttpConfig;
+use versionlens_fetch::{CacheKey, MemoryCache};
 use versionlens_model::{Dependency, Ecosystem, ManifestKind};
 use versionlens_update::{Suggestion, UpdateChoice};
 

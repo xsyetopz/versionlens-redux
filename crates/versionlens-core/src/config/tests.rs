@@ -1,4 +1,4 @@
-use versionlens_http::{HttpConfigInput, HttpHeaderInput};
+use versionlens_fetch::{HttpConfigInput, HttpHeaderInput};
 
 use super::{
     DependencyPropertyConfigInput, FilePatternConfigInput, PrereleaseTagConfigInput,
@@ -295,7 +295,7 @@ fn direct_session_config_preserves_nonblank_custom_indicators() {
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: false,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     });
 
     assert_eq!(session.config.suggestion_indicators, indicators);

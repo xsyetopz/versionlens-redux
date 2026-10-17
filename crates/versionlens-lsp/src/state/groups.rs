@@ -125,10 +125,9 @@ impl VersionLensLspState {
 
     fn new_session(&self, config: SessionConfig) -> io::Result<VersionLensSession> {
         let session = version_lens_session(config);
-        if self.modes.persistent {
-            session.with_application_cache()
-        } else {
-            Ok(session)
+        match &self.modes.cache_directory {
+            Some(directory) => session.with_persistent_cache(directory),
+            None => Ok(session),
         }
     }
 
@@ -169,11 +168,18 @@ impl VersionLensLspState {
             .collect()
     }
 
-    #[cfg(test)]
+    /// Stores session results in `directory` as well as in memory. When any
+    /// session cannot open it, nothing changes and sessions stay in memory.
     pub(crate) fn use_persistent_cache(&mut self, directory: &std::path::Path) -> io::Result<()> {
-        for group in &mut self.groups {
-            group.session = group.session.clone().with_persistent_cache(directory)?;
+        let sessions = self
+            .groups
+            .iter()
+            .map(|group| group.session.clone().with_persistent_cache(directory))
+            .collect::<io::Result<Vec<_>>>()?;
+        for (group, session) in self.groups.iter_mut().zip(sessions) {
+            group.session = session;
         }
+        self.modes.cache_directory = Some(directory.to_owned());
         Ok(())
     }
 

@@ -167,7 +167,7 @@ async fn prerelease_tag_filters_apply_to_responses() {
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     });
 
     let input = DocumentInput::new(
@@ -242,7 +242,7 @@ fn prerelease_session() -> crate::VersionLensSession {
         show_vulnerabilities: true,
         show_suggestion_stats: false,
         show_prereleases: true,
-        http: versionlens_http::standard_http_config(),
+        http: versionlens_fetch::standard_http_config(),
     })
 }
 

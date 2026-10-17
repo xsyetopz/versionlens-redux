@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use versionlens_cache::{PersistentCache, PersistentRecord};
+use versionlens_fetch::{PersistentCache, PersistentRecord};
 use versionlens_model::{CanonicalReference, Dependency};
 use versionlens_update::{Suggestion, SuggestionStatus, UpdateChoice};
 
@@ -22,7 +22,7 @@ pub(crate) struct CacheScope {
 }
 
 impl CacheScope {
-    pub(crate) fn suggestion_key(&self, dependency: &Dependency) -> versionlens_cache::CacheKey {
+    pub(crate) fn suggestion_key(&self, dependency: &Dependency) -> versionlens_fetch::CacheKey {
         let scope = if reads_workspace(dependency) {
             &self.local
         } else {
@@ -201,10 +201,6 @@ impl CachedSuggestionChoice {
 }
 
 impl VersionLensSession {
-    pub fn with_application_cache(self) -> std::io::Result<Self> {
-        self.with_persistent_cache(versionlens_cache::application_cache_directory()?)
-    }
-
     pub fn with_persistent_cache(mut self, directory: impl AsRef<Path>) -> std::io::Result<Self> {
         let cache = PersistentCache::open(directory)?;
         self.storage_state.observed_persistent_epoch = Arc::new(Mutex::new(Some(cache.epoch()?)));
@@ -284,7 +280,7 @@ impl VersionLensSession {
             workspace
                 .fingerprint
                 .as_ref()
-                .map(versionlens_cache::CacheKey::as_str),
+                .map(versionlens_fetch::CacheKey::as_str),
         ])
         .to_string();
         let scope = CacheScope {

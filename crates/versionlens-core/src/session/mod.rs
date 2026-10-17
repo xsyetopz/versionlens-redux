@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
 use crate::vulnerability::VulnerabilityCheck;
-use versionlens_cache::{CacheKey, MemoryCache};
+use versionlens_fetch::{CacheKey, MemoryCache};
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind, TextEdit};
 use versionlens_update::Suggestion;
 
@@ -57,7 +57,7 @@ pub struct VersionLensSession {
 
 #[derive(Debug, Clone)]
 pub(crate) struct SessionStorage {
-    pub(crate) persistent_cache: Option<Arc<versionlens_cache::PersistentCache>>,
+    pub(crate) persistent_cache: Option<Arc<versionlens_fetch::PersistentCache>>,
     pub(crate) observed_persistent_epoch: Arc<Mutex<Option<u64>>>,
     pub(crate) cache_epoch: Arc<AtomicU64>,
     pub(crate) task_epoch: Option<u64>,
