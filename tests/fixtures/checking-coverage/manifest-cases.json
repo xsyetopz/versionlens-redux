@@ -72,6 +72,20 @@
     "edit": "2.0.0"
   },
   {
+    "kind": "DotnetToolsJson",
+    "path": "dotnet-tools/.config/dotnet-tools.json",
+    "since": "0.5.0",
+    "language": "json",
+    "text": "{\"version\":1,\"isRoot\":true,\"tools\":{\"Foo\":{\"version\":\"1.0.0\",\"commands\":[\"foo\"]}}}\n",
+    "package": "Foo",
+    "ecosystem": "Dotnet",
+    "requirement": "1.0.0",
+    "latest": "1.0.0",
+    "selected": "2.0.0",
+    "status": "fixed",
+    "edit": "2.0.0"
+  },
+  {
     "kind": "DotnetXml",
     "path": "dotnet-xml/app.csproj",
     "language": "xml",

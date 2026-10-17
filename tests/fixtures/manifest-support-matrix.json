@@ -127,12 +127,13 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.dotnet.files",
-          "defaultGlob": "**/{*.csproj,*.fsproj,*.vbproj,project.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
+          "defaultGlob": "**/{*.csproj,*.fsproj,*.vbproj,project.json,dotnet-tools.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
           "fileForms": [
             "*.csproj",
             "*.fsproj",
             "*.vbproj",
             "project.json",
+            "dotnet-tools.json",
             "Directory.Packages.props",
             "packages.config",
             "paket.dependencies",
@@ -144,6 +145,7 @@
           "manifestKinds": [
             "DotnetXml",
             "DotnetProjectJson",
+            "DotnetToolsJson",
             "PaketDependencies",
             "PaketReferences"
           ],

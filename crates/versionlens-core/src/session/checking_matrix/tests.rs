@@ -29,6 +29,9 @@ mod fixtures;
 struct ManifestCase {
     kind: String,
     path: String,
+    /// The release that first supported this manifest kind. It names the
+    /// golden folder, so kinds 0.4.4 never read do not enter its baseline.
+    since: Option<String>,
     language: String,
     text: String,
     #[serde(flatten)]

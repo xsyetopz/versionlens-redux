@@ -13,7 +13,7 @@ const defaultFilePatternEntries = [
   ],
   [
     "dotnet.files",
-    "**/{*.csproj,*.fsproj,*.vbproj,project.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
+    "**/{*.csproj,*.fsproj,*.vbproj,project.json,dotnet-tools.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
     ["xml", "json", "jsonc", "plaintext"],
   ],
   [

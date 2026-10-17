@@ -50,7 +50,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 | Composer | composer.json | `versionlens.composer.files`, `versionlens.composer.apiUrl`, `versionlens.composer.dependencyProperties` | Packagist or configured Composer repository |
 | Deno | deno.json, deno.jsonc, import_map.json, jsr.json, jsr.jsonc | `versionlens.deno.files`, `versionlens.deno.dependencyProperties` | Deno import maps, JSR API, npm registry for npm: specifiers |
 | Docker | dockerfile, Dockerfile, compose.yaml, compose.yml, docker-compose.yaml, docker-compose.yml | `versionlens.docker.files` | OCI/Docker registry tags |
-| .NET | project.json, Directory.Packages.props, packages.config, paket.dependencies, paket.references | `versionlens.dotnet.files`, `versionlens.dotnet.dependencyProperties` | NuGet v3 service index or configured NuGet/Paket source |
+| .NET | project.json, dotnet-tools.json, Directory.Packages.props, packages.config, paket.dependencies, paket.references | `versionlens.dotnet.files`, `versionlens.dotnet.dependencyProperties` | NuGet v3 service index or configured NuGet/Paket source |
 | Dub | dub.json, dub.selections.json, dub.sdl | `versionlens.dub.files`, `versionlens.dub.apiUrl`, `versionlens.dub.dependencyProperties` | Dub registry API |
 | Go | go.mod, go.work | `versionlens.golang.files`, `versionlens.golang.apiUrl` | Go module proxy |
 | Hex | mix.exs, rebar.config, gleam.toml | `versionlens.hex.files`, `versionlens.hex.apiUrl`, `versionlens.hex.dependencyProperties` | Hex package API or configured Hex-compatible registry |

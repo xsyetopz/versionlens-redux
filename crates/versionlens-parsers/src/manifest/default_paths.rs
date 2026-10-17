@@ -46,6 +46,8 @@ pub(super) const DOTNET_PROJECT_JSON: &[&str] = &[
     "frameworks.*.dependencies",
     "runtimes.*.dependencies",
 ];
+/// `dotnet tool` manifests list each tool as an object with a `version`.
+pub(super) const DOTNET_TOOLS: &[&str] = &["tools"];
 pub(super) const DUB: &[&str] = &["dependencies", "versions", "configurations.*.dependencies"];
 pub(super) const CARGO: &[&str] = &[
     "package",

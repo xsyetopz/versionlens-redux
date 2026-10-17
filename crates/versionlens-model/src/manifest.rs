@@ -10,6 +10,7 @@ pub enum ManifestKind {
     JsrJson,
     DotnetProjectJson,
     DotnetXml,
+    DotnetToolsJson,
     PaketDependencies,
     PaketReferences,
     DockerComposeYaml,

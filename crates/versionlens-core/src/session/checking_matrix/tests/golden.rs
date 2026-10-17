@@ -10,14 +10,16 @@ use crate::workspace::tests::support::TestWorkspace;
 use crate::{Action, DiagnosticView, LensView, RegistryResponseInput, Severity, UpdateMode};
 
 /// Writes the lens, diagnostic and edit output of every manifest case to
-/// `tests/golden/0.4.4/`. Run with
+/// `tests/golden/<release>/`, where the release is the case's `since`, or
+/// 0.4.4 for kinds that release supported. Run with
 /// `cargo test -p versionlens-core capture_golden_output -- --ignored`.
 #[tokio::test]
-#[ignore = "writes tests/golden/0.4.4"]
+#[ignore = "writes tests/golden"]
 async fn capture_golden_output() {
-    let golden = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/golden/0.4.4");
+    let golden = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/golden");
     for case in manifest_cases() {
-        let output = golden.join(format!("{}.json", case.path));
+        let release = case.since.as_deref().unwrap_or("0.4.4");
+        let output = golden.join(release).join(format!("{}.json", case.path));
         fs::create_dir_all(output.parent().unwrap()).unwrap();
         fs::write(output, capture_case(&case).await).unwrap();
     }
