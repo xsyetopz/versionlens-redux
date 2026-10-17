@@ -112,7 +112,8 @@ fn replacement_uses_the_new_unsaved_snapshot_and_generation() {
     );
     let previous_operation = session.operation_context();
     let generation = checking.replace(replacement).unwrap();
-    assert!(!previous_operation.can_publish());
+    // Unsaved edits keep earlier resolution work valid.
+    assert!(previous_operation.can_publish());
     let current_operation = session.operation_context();
     release.send(()).unwrap();
     assert_eq!(generation, 2);
@@ -288,6 +289,71 @@ fn discovery_retries_preserve_failed_overlay_precedence() {
     assert!(input.uri.ends_with("/ci.yml"));
     let settled = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
     assert!(matches!(settled.result, WorkspaceCheckResult::Settled));
+    checking.stop();
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn document_updates_recheck_only_the_edited_document_without_rediscovery() {
+    let root =
+        versionlens_test_support::temporary_directory("versionlens-checking-update").unwrap();
+    let path = workflow(&root);
+    let other = root.join(".github/workflows/other.yml");
+    std::fs::write(&other, "jobs: {check: {steps: [{uses: './other'}]}}\n").unwrap();
+    let session = version_lens_session(
+        SessionConfigInput {
+            show_vulnerabilities: Some(false),
+            ..SessionConfigInput::default()
+        }
+        .into(),
+    );
+    let (sender, receiver) = channel();
+    let checking = session
+        .start_workspace_checking(options(&root), runtime(), move |event| {
+            let _ = sender.send(event);
+        })
+        .unwrap();
+    let mut checked = 0;
+    let mut scans = 0;
+    while checked < 2 || scans < 1 {
+        let event = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
+        match event.result {
+            WorkspaceCheckResult::DiscoverySettled => scans += 1,
+            WorkspaceCheckResult::Document { .. } => checked += 1,
+            _ => {}
+        }
+    }
+    let generation = checking.generation();
+
+    let edited = versionlens_model::DocumentInput::new(
+        crate::workspace_file_uri(&path).unwrap(),
+        "yaml",
+        "jobs: {check: {steps: [{uses: './changed'}]}}\n",
+        Some(root.to_string_lossy().into_owned()),
+    )
+    .with_version(2);
+    checking.update_documents(vec![edited]).unwrap();
+    assert_eq!(checking.generation(), generation);
+
+    let deadline = std::time::Instant::now() + Duration::from_millis(1500);
+    let mut rechecked = Vec::new();
+    while let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) {
+        let Ok(event) = receiver.recv_timeout(remaining) else {
+            break;
+        };
+        match event.result {
+            WorkspaceCheckResult::DiscoverySettled => scans += 1,
+            WorkspaceCheckResult::Document { input, .. } => rechecked.push(input.text),
+            _ => {}
+        }
+    }
+    assert_eq!(scans, 1, "an unsaved edit restarted discovery");
+    assert_eq!(
+        rechecked.len(),
+        1,
+        "expected only the edited document: {rechecked:?}"
+    );
+    assert!(rechecked[0].contains("./changed"));
     checking.stop();
     std::fs::remove_dir_all(root).unwrap();
 }

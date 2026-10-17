@@ -130,9 +130,11 @@ fn replacement_and_disk_generations_reject_stale_publication() {
     let root = workspace.document("package.json", r#"{"workspaces":[]}"#, 1);
     let session = session();
     let clone = session.clone();
+    // An unsaved edit keeps resolved state: cache keys already carry the
+    // workspace fingerprint, so results of earlier work stay valid.
     let before_replace = session.operation_context();
     assert!(clone.set_workspace_documents(vec![root.clone()]));
-    assert!(!before_replace.can_publish());
+    assert!(before_replace.can_publish());
 
     let unchanged = session.operation_context();
     assert!(!session.set_workspace_documents(vec![root]));
@@ -173,6 +175,30 @@ fn invalidation_rebuilds_graphs_and_clears_only_suggestion_freshness() {
     assert_cached_graphs(&session, 1);
     assert!(session.suggestion_cache().get(&key).is_none());
     assert!(session.cache().get(&latest_key).is_some());
+}
+
+#[test]
+fn overlay_edits_rebuild_graphs_but_keep_resolved_suggestions() {
+    let (workspace, session, member) = registered_member(r#"{"name":"a","version":"1.0.0"}"#, 2);
+    session.workspace_graph(&member);
+    assert_cached_graphs(&session, 1);
+    let cached_dependency = dependency("cached", "1.0.0");
+    let key = crate::cache::suggestion_cache_key(&cached_dependency, "workspace-test");
+    session.suggestion_cache().insert_with_ttl(
+        key.clone(),
+        versionlens_suggestions::fixed(cached_dependency, "1.0.0".to_owned()),
+        Duration::from_secs(60),
+    );
+    let root = workspace.document("package.json", r#"{"workspaces":["packages/*"]}"#, 1);
+    let edited = workspace.document(
+        "packages/a/package.json",
+        "{\n  // edited\n  \"name\":\"a\",\"version\":\"1.0.0\"}",
+        3,
+    );
+
+    assert!(session.set_workspace_documents(vec![root, edited]));
+    assert_cached_graphs(&session, 0);
+    assert!(session.suggestion_cache().get(&key).is_some());
 }
 
 #[test]

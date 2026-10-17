@@ -1,3 +1,4 @@
+use crate::session::storage::CacheScope;
 use versionlens_model::Dependency;
 use versionlens_suggestions::{Suggestion, resolve_dependency};
 
@@ -9,7 +10,7 @@ impl VersionLensSession {
     pub(crate) fn cached_suggestion(
         &self,
         dependency: &Dependency,
-        scope: &str,
+        scope: &CacheScope,
     ) -> Option<Suggestion> {
         if let Some(suggestion) = self.cached_resolved_suggestion(dependency, scope) {
             return Some(suggestion);

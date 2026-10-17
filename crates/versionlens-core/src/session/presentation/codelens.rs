@@ -1,3 +1,4 @@
+use crate::session::storage::CacheScope;
 use versionlens_model::{Dependency, Range, update_level};
 use versionlens_suggestions::Suggestion;
 
@@ -21,7 +22,7 @@ impl VersionLensSession {
     pub(crate) fn code_lenses_for_dependency(
         &self,
         dependency: &Dependency,
-        scope: &str,
+        scope: &CacheScope,
     ) -> CodeLensViews {
         let project_version_suggestions = project_version_code_lens_suggestions(dependency);
         if !project_version_suggestions.is_empty() {

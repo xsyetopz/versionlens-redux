@@ -9,9 +9,10 @@ use versionlens_model::{Dependency, Ecosystem, ManifestKind};
 use versionlens_suggestions::{Suggestion, UpdateChoice};
 
 use super::operation::OperationContext;
+use super::storage::CacheScope;
 use crate::ProviderCacheConfig;
 use crate::VersionLensSession;
-use crate::cache::{request_cache_key, suggestion_cache_key};
+use crate::cache::request_cache_key;
 use crate::registry::RegistryContext;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -170,9 +171,9 @@ impl VersionLensSession {
     pub(crate) fn cached_resolved_suggestion(
         &self,
         dependency: &Dependency,
-        scope: &str,
+        scope: &CacheScope,
     ) -> Option<Suggestion> {
-        let key = suggestion_cache_key(dependency, scope);
+        let key = scope.suggestion_key(dependency);
         if let Some(value) = self.suggestion_cache().get(&key) {
             let mut suggestion = value.to_owned();
             suggestion.dependency = dependency.clone();
@@ -196,13 +197,13 @@ impl VersionLensSession {
         suggestions: &[Suggestion],
         manifest_kind: Option<ManifestKind>,
         operation: &OperationContext,
-        scope: &str,
+        scope: &CacheScope,
     ) {
         let entries = suggestions
             .iter()
             .map(|suggestion| {
                 (
-                    suggestion_cache_key(&suggestion.dependency, scope),
+                    scope.suggestion_key(&suggestion.dependency),
                     self.persistent_suggestion_key(&suggestion.dependency, scope),
                     suggestion.to_owned(),
                     if suggestion.status == versionlens_suggestions::SuggestionStatus::Error {

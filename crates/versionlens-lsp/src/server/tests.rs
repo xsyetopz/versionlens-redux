@@ -388,3 +388,5 @@ mod updates;
 mod refresh;
 
 mod responsiveness;
+
+mod incremental;

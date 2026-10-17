@@ -333,7 +333,7 @@ fn handle_document_notification(
             state.close_document(uri.as_str());
             checking.forget_document(uri.as_str());
             publish_diagnostics(connection, uri, Vec::new(), None)?;
-            checking.replace(state)
+            checking.update_documents(state)
         }
         _ => Ok(()),
     }
@@ -421,7 +421,7 @@ fn finish_document_change(
     state.set_document_version(uri.as_str(), version);
     checking.observe_open_document(uri.as_str(), diagnostics.clone());
     publish_diagnostics(connection, uri, diagnostics, Some(version))?;
-    checking.replace(state)
+    checking.update_documents(state)
 }
 
 fn register_file_watcher(connection: &Connection, state: &VersionLensLspState) -> Result<()> {
