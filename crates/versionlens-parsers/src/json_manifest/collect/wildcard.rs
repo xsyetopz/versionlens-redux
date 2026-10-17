@@ -1,7 +1,8 @@
 use crate::json_manifest::npm::trim_package_descriptor;
+use crate::manifest::path_query::query;
 use jsonc_parser::ast::Object;
 use jsonc_parser::ast::ObjectProp as JsonObjectProp;
-use jsonc_parser::ast::Value::{Array as JsonValueArray, Object as JsonValueObject};
+use jsonc_parser::ast::Value::Object as JsonValueObject;
 
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Npm;
@@ -10,7 +11,8 @@ type JsonManifestDependencies = Vec<Dependency>;
 type JsonObject<'a> = &'a Object<'a>;
 
 use super::JsonManifestContext;
-use super::path::{object_at_path, value_at_path};
+use super::node::JsonNode;
+use super::path::object_at_path;
 use crate::json_manifest::dependency::{
     JsonDependencyRanges, JsonDependencySource, collect_dependency_object,
     json_manifest_dependency, property_name_range, string_content_end, string_content_start,
@@ -79,33 +81,18 @@ fn terminal_wildcard_group(parent_path: &str, child_name: &str) -> String {
     }
 }
 
+/// Collects every object that a path with a `*` segment reaches. The group
+/// is the matched keys, so an array element is named by its `name` or index.
 pub(super) fn collect_json_wildcard_path(
     context: &JsonManifestContext<'_>,
-    path: &[&str],
-    star: usize,
+    segments: &[&str],
     out: &mut JsonManifestDependencies,
 ) {
-    if collect_json_array_wildcard_path(context, path, star, out) {
-        return;
-    }
-
-    let Some(parent) = object_at_path(context.root, &path[..star]) else {
-        return;
-    };
-    let child_path = &path[star + 1..];
-    for prop in &parent.properties {
-        let JsonValueObject(child) = &prop.value else {
+    for found in query(JsonNode::Object(context.root), segments) {
+        let JsonNode::Object(object) = found.node else {
             continue;
         };
-        let Some(JsonValueObject(object)) = value_at_path(child, child_path) else {
-            continue;
-        };
-        let group = format!(
-            "{}.{}.{}",
-            path[..star].join("."),
-            prop.name.as_str(),
-            child_path.join(".")
-        );
+        let group = found.keys.join(".");
         let source = JsonDependencySource {
             text: context.text,
             group: &group,
@@ -113,46 +100,4 @@ pub(super) fn collect_json_wildcard_path(
         };
         collect_dependency_object(&source, object, out);
     }
-}
-
-fn collect_json_array_wildcard_path(
-    context: &JsonManifestContext<'_>,
-    path: &[&str],
-    star: usize,
-    out: &mut JsonManifestDependencies,
-) -> bool {
-    let Some(JsonValueArray(parent)) = value_at_path(context.root, &path[..star]) else {
-        return false;
-    };
-
-    let child_path = &path[star + 1..];
-    for (index, element) in parent.elements.iter().enumerate() {
-        let JsonValueObject(child) = element else {
-            continue;
-        };
-        let Some(JsonValueObject(object)) = value_at_path(child, child_path) else {
-            continue;
-        };
-        let group = format!(
-            "{}.{}.{}",
-            path[..star].join("."),
-            wildcard_array_segment(child, index),
-            child_path.join(".")
-        );
-        let source = JsonDependencySource {
-            text: context.text,
-            group: &group,
-            ecosystem: context.ecosystem,
-        };
-        collect_dependency_object(&source, object, out);
-    }
-
-    true
-}
-
-fn wildcard_array_segment(object: JsonObject<'_>, index: usize) -> String {
-    object
-        .get_string("name")
-        .map(|name| name.value.to_string())
-        .unwrap_or_else(|| index.to_string())
 }

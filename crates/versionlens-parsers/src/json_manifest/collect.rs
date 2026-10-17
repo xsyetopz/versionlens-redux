@@ -3,6 +3,7 @@ use versionlens_model::Ecosystem;
 
 use versionlens_model::Dependency;
 
+mod node;
 mod path;
 mod path_target;
 mod wildcard;
@@ -32,8 +33,8 @@ pub(super) fn collect_json_path(
         return;
     }
 
-    if let Some(star) = segments.iter().position(|segment| *segment == "*") {
-        collect_json_wildcard_path(context, &segments, star, out);
+    if segments.contains(&"*") {
+        collect_json_wildcard_path(context, &segments, out);
         return;
     }
 
