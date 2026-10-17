@@ -1,4 +1,4 @@
-use super::{PathNode, query};
+use super::{PathNode, query, selects};
 
 /// A small document tree that stands in for a parsed format.
 enum Tree {
@@ -166,4 +166,41 @@ fn star_over_a_leaf_matches_nothing() {
     let root = sample();
 
     assert!(query(&root, &["deps", "serde", "*"]).is_empty());
+}
+
+#[test]
+fn selects_a_key_path_that_the_query_matches_key_for_key() {
+    assert!(selects(&["deps", "serde"], &["deps", "serde"]));
+    assert!(selects(&["deps", "*"], &["deps", "tokio"]));
+    assert!(selects(
+        &["target", "*", "dependencies"],
+        &["target", "linux", "dependencies"]
+    ));
+}
+
+#[test]
+fn selects_rejects_a_key_path_of_another_length_or_key() {
+    assert!(!selects(&["deps"], &["deps", "serde"]));
+    assert!(!selects(&["deps", "serde"], &["deps"]));
+    assert!(!selects(&["deps", "*"], &["deps"]));
+    assert!(!selects(&["deps", "*"], &["other", "serde"]));
+}
+
+#[test]
+fn selects_everything_below_a_query_that_ends_in_star() {
+    assert!(selects(&["deps", "*"], &["deps", "serde", "features"]));
+    assert!(selects(
+        &["workspace", "metadata", "*"],
+        &["workspace", "metadata", "tool", "plugins"]
+    ));
+    assert!(!selects(&["deps", "*"], &["other", "serde", "features"]));
+}
+
+#[test]
+fn selects_nothing_below_a_query_that_does_not_end_in_star() {
+    assert!(!selects(&["deps"], &["deps", "serde", "features"]));
+    assert!(!selects(
+        &["target", "*", "dependencies"],
+        &["target", "linux", "dependencies", "libc"]
+    ));
 }

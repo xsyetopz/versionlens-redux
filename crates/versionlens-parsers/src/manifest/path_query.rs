@@ -26,6 +26,23 @@ pub(crate) fn query<N: PathNode>(root: N, segments: &[&str]) -> Vec<PathMatch<N>
     matches
 }
 
+/// Whether `segments` selects the key path `keys`. The query matches the path
+/// key for key. A query that ends in `*` also selects every path below its
+/// matches, so a `*` leaf selects the keys of the tables under each match.
+pub(crate) fn selects(segments: &[&str], keys: &[&str]) -> bool {
+    let within_depth = if segments.last() == Some(&"*") {
+        keys.len() >= segments.len()
+    } else {
+        keys.len() == segments.len()
+    };
+
+    within_depth
+        && segments
+            .iter()
+            .zip(keys)
+            .all(|(segment, key)| *segment == "*" || segment == key)
+}
+
 fn walk<N: PathNode>(
     node: N,
     segments: &[&str],
