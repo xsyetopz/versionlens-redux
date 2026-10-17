@@ -334,7 +334,8 @@ fn receive(connection: &Connection) -> Result<Message> {
         let message = connection.receiver.recv_timeout(Duration::from_secs(10))?;
         if matches!(
             &message,
-            Message::Notification(notification) if notification.method == "window/logMessage"
+            Message::Notification(notification)
+                if matches!(notification.method.as_str(), "window/logMessage" | "versionlens/status")
         ) || matches!(
             &message,
             Message::Notification(notification)
@@ -390,3 +391,5 @@ mod refresh;
 mod responsiveness;
 
 mod incremental;
+
+mod push;

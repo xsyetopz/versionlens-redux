@@ -9,7 +9,8 @@ use super::{
 };
 
 impl VersionLensLspState {
-    pub fn open_document(&mut self, mut document: VersionLensTextDocument) -> Vec<Diagnostic> {
+    /// Stores an opened document. Analysis happens later, off the protocol thread.
+    pub fn open_document(&mut self, mut document: VersionLensTextDocument) {
         if document.workspace_root.is_none() {
             document.workspace_root = self.workspace_root(&document.uri);
         } else {
@@ -19,7 +20,7 @@ impl VersionLensLspState {
             self.documents.clear();
             self.revisions.clear();
             self.session.cancel_pending_resolutions();
-            return Vec::new();
+            return;
         };
         self.generation = generation;
         let path = normalized_file_path(&document.uri);
@@ -36,16 +37,14 @@ impl VersionLensLspState {
                 core_uri,
             },
         );
-        let uri = document.uri.clone();
-        self.documents.insert(uri.clone(), document);
+        self.documents.insert(document.uri.clone(), document);
         self.synchronize_workspace_documents();
-        self.analyzed_document(&uri)
-            .map_or_else(Vec::new, |document| document.diagnostics)
     }
 
-    pub fn change_document(&mut self, uri: &str, text: String) -> Vec<Diagnostic> {
+    /// Stores the new text of an open document.
+    pub fn change_document(&mut self, uri: &str, text: String) {
         let Some(existing) = self.documents.get(uri) else {
-            return Vec::new();
+            return;
         };
         let document = VersionLensTextDocument {
             uri: existing.uri.clone(),
@@ -53,7 +52,7 @@ impl VersionLensLspState {
             text,
             workspace_root: existing.workspace_root.clone(),
         };
-        self.open_document(document)
+        self.open_document(document);
     }
 
     pub fn close_document(&mut self, uri: &str) {
@@ -102,15 +101,6 @@ impl VersionLensLspState {
         })
     }
 
-    pub(crate) fn analyzed_input(
-        &self,
-        input: DocumentInput,
-        uri: &str,
-        generation: u64,
-    ) -> ResolvedDocument {
-        resolved_document(self.session.analyze_document(input), uri, generation)
-    }
-
     pub(crate) fn checked_document(&self, input: &DocumentInput) -> Option<CheckedDocument> {
         let event_path = versionlens_core::workspace_path(&input.uri);
         let open_uri = self.documents.keys().find(|uri| {
@@ -126,6 +116,11 @@ impl VersionLensLspState {
                 == Some(event_path)
         });
         let Some(open_uri) = open_uri else {
+            // Only editor text carries a version. With no open document left
+            // to own it, the result describes text that was closed.
+            if input.version.is_some() {
+                return None;
+            }
             return Some(CheckedDocument {
                 uri: input.uri.clone(),
                 version: None,

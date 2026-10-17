@@ -240,13 +240,11 @@ async fn dependency_lenses_share_the_meaningful_source_range() {
 }
 
 #[test]
-fn changes_unknown_document_without_diagnostics() {
+fn changing_an_unknown_document_does_not_open_it() {
     let mut state = VersionLensLspState::standard();
-    assert!(
-        state
-            .change_document("file:///missing/package.json", "{}".to_owned())
-            .is_empty()
-    );
+    let uri = "file:///missing/package.json";
+    state.change_document(uri, "{}".to_owned());
+    assert!(state.document_work(uri).is_none());
 }
 
 fn uri(value: &str) -> Result<Uri, String> {
