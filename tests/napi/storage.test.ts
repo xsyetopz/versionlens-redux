@@ -180,14 +180,19 @@ it("native freshness follows resolved snapshots and cache invalidation", async (
 for (const action of [
   {
     name: "clearing caches",
+    keepsResults: false,
     invalidate: (session: NativeSession): void => session.clearCache(),
   },
   {
     name: "invalidating workspace files",
+    keepsResults: false,
     invalidate: (session: NativeSession): void => session.invalidateWorkspace(),
   },
   {
     name: "changing workspace snapshots",
+    // A snapshot change drops the outputs that were in flight, but results
+    // for documents it does not touch stay cached.
+    keepsResults: true,
     invalidate: (session: NativeSession): void => {
       expect(
         session.setWorkspaceDocuments([
@@ -216,12 +221,13 @@ for (const action of [
         for (const output of await Promise.all(pending)) {
           expect(output.suggestions).toHaveLength(0);
         }
-        expect(session.documentIsFresh(document)).toBe(false);
+        expect(session.documentIsFresh(document)).toBe(action.keepsResults);
         await stopRegistry();
         const restarted = await createSession();
+        // A kept result is also stored, so it outlives the registry.
         expect(
           (await restarted.resolveDocument(document)).suggestions[0]?.status,
-        ).toBe("error");
+        ).toBe(action.keepsResults ? "updateAvailable" : "error");
       },
     );
   });
