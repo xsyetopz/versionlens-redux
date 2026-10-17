@@ -117,7 +117,6 @@ fn responsive_registry_request(cancel: bool) -> Result<()> {
         1,
         "{\"dependencies\":{\"example\":\"1.0.0\"}}",
     )?;
-    receive(&client)?;
     send_request(
         &client,
         2,
@@ -134,25 +133,14 @@ fn responsive_registry_request(cancel: bool) -> Result<()> {
         })?;
     if cancel {
         send_notification(&client, "$/cancelRequest", json!({"id":2}))?;
-        assert_error(
-            client.receiver.recv_timeout(Duration::from_secs(1))?,
-            ErrorCode::RequestCanceled,
-        )?;
+        assert_error(next_response(&client)?, ErrorCode::RequestCanceled)?;
     } else {
         send_notification(
             &client,
             "textDocument/didChange",
             json!({"textDocument":{"uri":uri,"version":2},"contentChanges":[{"text":"{}"}]}),
         )?;
-        assert_diagnostics(
-            client.receiver.recv_timeout(Duration::from_secs(1))?,
-            uri,
-            true,
-        )?;
-        assert_error(
-            client.receiver.recv_timeout(Duration::from_secs(1))?,
-            ErrorCode::ContentModified,
-        )?;
+        assert_error(next_response(&client)?, ErrorCode::ContentModified)?;
     }
     shutdown_client(&client, 3, server_thread)?;
     release.send(())?;
@@ -160,4 +148,18 @@ fn responsive_registry_request(cancel: bool) -> Result<()> {
         .join()
         .map_err(|_| anyhow::anyhow!("registry panicked"))??;
     Ok(())
+}
+
+/// The next response within one second. Notifications sent meanwhile, such as
+/// status and diagnostics from push resolution, are skipped.
+fn next_response(client: &Connection) -> Result<Message> {
+    let deadline = std::time::Instant::now() + Duration::from_secs(1);
+    loop {
+        let message = client
+            .receiver
+            .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))?;
+        if matches!(message, Message::Response(_)) {
+            return Ok(message);
+        }
+    }
 }

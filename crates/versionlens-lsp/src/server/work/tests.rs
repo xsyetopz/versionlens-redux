@@ -176,3 +176,43 @@ fn lens_requests_do_not_wait_for_the_persistent_cache_lock() -> Result<()> {
     assert!(response.response_result.is_ok_and(|value| value.is_array()));
     Ok(())
 }
+
+/// Opening and editing a document run on the protocol thread, so they must
+/// not read the persistent cache, whose lock another process can hold.
+#[test]
+fn opening_and_changing_documents_do_not_wait_for_the_persistent_cache_lock() -> Result<()> {
+    let directory = versionlens_test_support::temporary_directory("open-cache-lock")?;
+    let mut state = VersionLensLspState::standard();
+    state.session = state.session.clone().with_persistent_cache(&directory)?;
+    let _ = std::fs::remove_file(directory.join("generation.json"));
+    let lock = std::fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(directory.join("cache.lock"))?;
+    lock.lock()?;
+    let release = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(2));
+        drop(lock);
+    });
+    let uri = "file:///workspace/Cargo.toml";
+
+    let started = Instant::now();
+    state.open_document(crate::state::VersionLensTextDocument {
+        uri: uri.to_owned(),
+        language_id: "toml".to_owned(),
+        text: "[dependencies]\nserde = \"1\"\n".to_owned(),
+        workspace_root: None,
+    });
+    state.change_document(uri, "[dependencies]\nserde = \"1.0\"\n".to_owned());
+    let elapsed = started.elapsed();
+    release
+        .join()
+        .map_err(|_| anyhow::anyhow!("lock holder panicked"))?;
+    assert!(
+        elapsed < Duration::from_millis(500),
+        "document notifications blocked the protocol thread for {elapsed:?}"
+    );
+    Ok(())
+}

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 
 use anyhow::{Context, Result};
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -32,12 +33,6 @@ struct InitializeWorkspaceParams {
     capabilities: lsp_types::ClientCapabilities,
     #[serde(flatten)]
     _remaining: HashMap<String, Value>,
-}
-
-struct DocumentChange {
-    uri: Uri,
-    diagnostics: Vec<Diagnostic>,
-    version: i32,
 }
 
 mod checking;
@@ -122,12 +117,20 @@ fn run_message_loop(connection: &Connection, state: &mut VersionLensLspState) ->
     state.use_workspace_controller();
     let mut checking = WorkspaceController::start(state, runtime.handle().clone())?;
     loop {
-        let expiry = work
-            .next_expiry()
+        let expiry = [work.next_expiry(), checking.next_due()]
+            .into_iter()
+            .flatten()
+            .min()
             .map_or_else(crossbeam_channel::never, crossbeam_channel::at);
         crossbeam_channel::select! {
             recv(expiry) -> now => {
-                if let Ok(now) = now { work.expire_applications(connection, now)?; }
+                if let Ok(now) = now {
+                    work.expire_applications(connection, now)?;
+                    checking.flush_due(state, connection, now)?;
+                }
+            }
+            recv(checking.analyzed) -> analyzed => {
+                if let Ok(analyzed) = analyzed { checking.finish_analysis(state, connection, analyzed)?; }
             }
             recv(work.receiver) -> completion => {
                 if let Ok(completion) = completion { work.complete(state, connection, completion)?; }
@@ -273,22 +276,15 @@ fn handle_document_notification(
                 return Ok(());
             };
             let uri = params.text_document.uri;
-            let diagnostics = state.open_document(VersionLensTextDocument {
+            state.open_document(VersionLensTextDocument {
                 uri: uri.to_string(),
                 language_id: params.text_document.language_id,
                 text: params.text_document.text,
                 workspace_root: None,
             });
-            finish_document_change(
-                connection,
-                state,
-                checking,
-                DocumentChange {
-                    uri,
-                    diagnostics,
-                    version: params.text_document.version,
-                },
-            )
+            state.set_document_version(uri.as_str(), params.text_document.version);
+            checking.schedule_document(uri.as_str(), Instant::now(), false);
+            Ok(())
         }
         DidChangeTextDocument::METHOD => {
             let Ok(params) =
@@ -311,17 +307,14 @@ fn handle_document_notification(
             else {
                 return Ok(());
             };
-            let diagnostics = state.change_document(uri.as_str(), text);
-            finish_document_change(
-                connection,
-                state,
-                checking,
-                DocumentChange {
-                    uri,
-                    diagnostics,
-                    version: params.text_document.version,
-                },
-            )
+            state.change_document(uri.as_str(), text);
+            state.set_document_version(uri.as_str(), params.text_document.version);
+            checking.schedule_document(
+                uri.as_str(),
+                Instant::now() + checking::EDIT_DEBOUNCE,
+                true,
+            );
+            Ok(())
         }
         DidCloseTextDocument::METHOD => {
             let Ok(params) =
@@ -405,23 +398,6 @@ fn show_configuration_error(connection: &Connection, message: String) -> Result<
         }),
     }))?;
     Ok(())
-}
-
-fn finish_document_change(
-    connection: &Connection,
-    state: &mut VersionLensLspState,
-    checking: &mut WorkspaceController,
-    change: DocumentChange,
-) -> Result<()> {
-    let DocumentChange {
-        uri,
-        diagnostics,
-        version,
-    } = change;
-    state.set_document_version(uri.as_str(), version);
-    checking.observe_open_document(uri.as_str(), diagnostics.clone());
-    publish_diagnostics(connection, uri, diagnostics, Some(version))?;
-    checking.update_documents(state)
 }
 
 fn register_file_watcher(connection: &Connection, state: &VersionLensLspState) -> Result<()> {

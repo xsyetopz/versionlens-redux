@@ -1,18 +1,42 @@
 use std::collections::{HashMap, HashSet};
 use std::mem;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
-use crossbeam_channel::{Receiver, Sender, bounded};
+use crossbeam_channel::{Receiver, Sender, bounded, unbounded};
 use lsp_server::{Connection, Message, Notification, Request, RequestId};
+use lsp_types::notification::Notification as _;
 use lsp_types::{CodeLens, Diagnostic, DiagnosticSeverity};
 use serde_json::Value;
 use tokio::runtime::Handle;
-use versionlens_core::{WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking};
+use versionlens_core::{
+    AnalyzeDocumentOutput, WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking,
+};
 
 use super::publish_diagnostics;
-use crate::state::{ResolvedDocument, VersionLensLspState};
+use crate::protocol::{DocumentStatus, StatusNotification, StatusParams};
+use crate::state::{CheckedDocument, ResolvedDocument, VersionLensLspState, resolved_document};
 
 const EVENT_QUEUE_CAPACITY: usize = 128;
+
+/// How long edits must pause before the edited documents are checked again.
+pub(super) const EDIT_DEBOUNCE: Duration = Duration::from_millis(300);
+
+/// The analysis of one checked document, made on the runtime because it
+/// reads the persistent cache.
+pub(super) struct Analyzed {
+    generation: u64,
+    document: CheckedDocument,
+    analysis: Result<AnalyzeDocumentOutput, String>,
+}
+
+/// Documents waiting for the debounce before they are sent to checking.
+#[derive(Default)]
+struct PendingDocuments {
+    uris: HashSet<String>,
+    due: Option<Instant>,
+}
 
 struct PublishedDocument {
     diagnostics: Vec<Diagnostic>,
@@ -37,6 +61,10 @@ pub(super) struct WorkspaceController {
     discovery: DiscoveryState,
     reported_failures: HashSet<String>,
     next_request: u64,
+    pending: PendingDocuments,
+    statuses: HashMap<String, DocumentStatus>,
+    analyzed_sender: Sender<Analyzed>,
+    pub(super) analyzed: Receiver<Analyzed>,
 }
 
 impl WorkspaceController {
@@ -53,6 +81,7 @@ impl WorkspaceController {
                 }
             },
         )?;
+        let (analyzed_sender, analyzed) = unbounded();
         Ok(Self {
             checking,
             runtime,
@@ -68,6 +97,10 @@ impl WorkspaceController {
             },
             reported_failures: HashSet::new(),
             next_request: 0,
+            pending: PendingDocuments::default(),
+            statuses: HashMap::new(),
+            analyzed_sender,
+            analyzed,
         })
     }
 
@@ -101,21 +134,49 @@ impl WorkspaceController {
         replacement.discovery.failures = mem::take(&mut self.discovery.failures);
         replacement.reported_failures = mem::take(&mut self.reported_failures);
         replacement.next_request = self.next_request;
+        replacement.pending = mem::take(&mut self.pending);
+        replacement.statuses = mem::take(&mut self.statuses);
         mem::swap(self, &mut replacement);
         Ok(())
     }
 
-    pub(super) fn observe_open_document(&mut self, uri: &str, diagnostics: Vec<Diagnostic>) {
+    /// Queues an opened or edited document for checking at `due`. Edits
+    /// push the deadline back, so a burst of edits is checked once.
+    pub(super) fn schedule_document(&mut self, uri: &str, due: Instant, debounced: bool) {
         self.discovery.failures.remove(uri);
         self.discovery.pending_failures.remove(uri);
-        self.published.insert(
-            uri.to_owned(),
-            PublishedDocument {
-                diagnostics,
-                code_lenses: Vec::new(),
-                discovery_failure: false,
-            },
-        );
+        // The next result is published even when it equals the last one, so
+        // the client sees diagnostics for the new document version.
+        self.published.remove(uri);
+        self.pending.uris.insert(uri.to_owned());
+        self.pending.due = Some(match self.pending.due {
+            Some(current) if !debounced => current.min(due),
+            _ => due,
+        });
+    }
+
+    pub(super) fn next_due(&self) -> Option<Instant> {
+        self.pending.due
+    }
+
+    /// Sends the queued documents to checking once their debounce has passed.
+    pub(super) fn flush_due(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+        now: Instant,
+    ) -> Result<()> {
+        if self.pending.due.is_none_or(|due| due > now) {
+            return Ok(());
+        }
+        self.pending.due = None;
+        self.update_documents(state)?;
+        for uri in mem::take(&mut self.pending.uris) {
+            if state.document_is_open(&uri) {
+                self.set_status(connection, &uri, DocumentStatus::Busy)?;
+            }
+        }
+        Ok(())
     }
 
     pub(super) fn forget_document(&mut self, uri: &str) {
@@ -123,6 +184,68 @@ impl WorkspaceController {
         self.seen_documents.remove(uri);
         self.discovery.failures.remove(uri);
         self.discovery.pending_failures.remove(uri);
+        self.pending.uris.remove(uri);
+        self.statuses.remove(uri);
+    }
+
+    fn set_status(
+        &mut self,
+        connection: &Connection,
+        uri: &str,
+        status: DocumentStatus,
+    ) -> Result<()> {
+        let previous = self
+            .statuses
+            .insert(uri.to_owned(), status)
+            .unwrap_or(DocumentStatus::Idle);
+        if previous == status {
+            return Ok(());
+        }
+        connection
+            .sender
+            .send(Message::Notification(Notification {
+                method: StatusNotification::METHOD.to_owned(),
+                params: serde_json::to_value(StatusParams {
+                    uri: uri.parse()?,
+                    status,
+                })?,
+            }))
+            .context("failed to send document status")
+    }
+
+    /// Publishes an analysis if its document has not changed since checking.
+    pub(super) fn finish_analysis(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+        analyzed: Analyzed,
+    ) -> Result<()> {
+        if analyzed.generation != self.checking.generation() {
+            return Ok(());
+        }
+        let Some(document) = state.checked_document(&analyzed.document.input) else {
+            return Ok(());
+        };
+        let open = document.open;
+        let uri = document.uri.clone();
+        let (resolved, status) = match analyzed.analysis {
+            Ok(analysis) => (
+                resolved_document(analysis, &document.uri, document.generation),
+                DocumentStatus::Idle,
+            ),
+            Err(message) => (
+                ResolvedDocument {
+                    code_lenses: Vec::new(),
+                    diagnostics: vec![warning(message)],
+                },
+                DocumentStatus::Error,
+            ),
+        };
+        self.publish_result(state, connection, document, resolved)?;
+        if open && !self.pending.uris.contains(&uri) {
+            self.set_status(connection, &uri, status)?;
+        }
+        Ok(())
     }
 
     pub(super) fn handle(
@@ -139,25 +262,33 @@ impl WorkspaceController {
                 let Some(document) = state.checked_document(&input) else {
                     return Ok(());
                 };
-                let resolved = match result {
-                    Ok(_) => state.analyzed_input(
-                        document.input.clone(),
-                        &document.uri,
-                        document.generation,
-                    ),
-                    Err(message) => ResolvedDocument {
-                        code_lenses: Vec::new(),
-                        diagnostics: vec![warning(message)],
-                    },
+                let generation = self.checking.generation();
+                let Err(message) = result else {
+                    self.analyze(state, document, generation);
+                    return Ok(());
                 };
-                self.publish_result(state, connection, document, resolved)
+                self.finish_analysis(
+                    state,
+                    connection,
+                    Analyzed {
+                        generation,
+                        document,
+                        analysis: Err(message),
+                    },
+                )
             }
-            WorkspaceCheckResult::SnapshotLimit { uri, limit } => self.publish_discovery_warning(
-                state,
-                connection,
-                &uri,
-                format!("workspace snapshot limit of {limit} bytes was exceeded"),
-            ),
+            WorkspaceCheckResult::SnapshotLimit { uri, limit } => {
+                let (target, _) = state.diagnostic_target(&uri);
+                if self.statuses.get(&target) == Some(&DocumentStatus::Busy) {
+                    self.set_status(connection, &target, DocumentStatus::Error)?;
+                }
+                self.publish_discovery_warning(
+                    state,
+                    connection,
+                    &uri,
+                    format!("workspace snapshot limit of {limit} bytes was exceeded"),
+                )
+            }
             WorkspaceCheckResult::DiscoveryFailure(failure) => {
                 let message = failure.to_string();
                 if let Some(uri) = failure
@@ -184,6 +315,21 @@ impl WorkspaceController {
             WorkspaceCheckResult::DiscoverySettled => self.finish_discovery(connection),
             WorkspaceCheckResult::Settled => self.finish_generation(state, connection),
         }
+    }
+
+    fn analyze(&self, state: &VersionLensLspState, document: CheckedDocument, generation: u64) {
+        let session = state.session.clone();
+        let sender = self.analyzed_sender.clone();
+        self.runtime.spawn_blocking(move || {
+            let input = document.input.clone();
+            let analysis = catch_unwind(AssertUnwindSafe(|| session.analyze_document(input)))
+                .map_err(|_| "VersionLens analysis panicked".to_owned());
+            let _ = sender.send(Analyzed {
+                generation,
+                document,
+                analysis,
+            });
+        });
     }
 
     fn publish_discovery_warning(
@@ -219,7 +365,7 @@ impl WorkspaceController {
         &mut self,
         state: &VersionLensLspState,
         connection: &Connection,
-        document: crate::state::CheckedDocument,
+        document: CheckedDocument,
         resolved: ResolvedDocument,
     ) -> Result<()> {
         self.seen_documents.insert(document.uri.clone());
