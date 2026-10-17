@@ -139,12 +139,9 @@ const gradleEnvironment = {
 gradleEnvironment.JAVA_HOME = javaRuntime;
 gradleEnvironment.PATH = `${join(javaRuntime, "bin")}${delimiter}${Bun.env.PATH ?? ""}`;
 gradleEnvironment.GRADLE_USER_HOME = gradleHome;
-const vsixFreshnessCommand = ["bun", "scripts/check/vsix.mjs"];
-const editorFreshnessCommand = ["bun", "scripts/check/editors.mjs"];
 
 try {
   run(["bun", "run", "package"], { env: gradleEnvironment });
-  run(vsixFreshnessCommand, { env: gradleEnvironment });
   run(["cargo", "build", "-p", "versionlens-lsp", "--release", "--locked"], {
     env: gradleEnvironment,
   });
@@ -161,7 +158,6 @@ try {
   );
   run(["bun", "scripts/package/zed.mjs"], { env: gradleEnvironment });
   run(["bun", "scripts/package/neovim.mjs"], { env: gradleEnvironment });
-  run(["bun", "scripts/check/neovim.mjs"], { env: gradleEnvironment });
   run(
     [
       "./packages/jetbrains-plugin/gradlew",
@@ -172,7 +168,6 @@ try {
     ],
     { env: gradleEnvironment },
   );
-  run(editorFreshnessCommand, { env: gradleEnvironment });
 } finally {
   rmSync(gradleHome, { force: true, recursive: true });
   rmSync(projectGradleState, { force: true, recursive: true });

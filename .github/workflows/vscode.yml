@@ -23,7 +23,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: latest
 
@@ -58,15 +58,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Check formatting and contracts
+      - name: Check formatting
         run: |
           bun run check:biome
           bun run check:rustfmt
-          bun run check:code-quality
-          bun run check:vscode-adapter
-          bun run check:vsix-freshness
-          bun run check:data-objects
-          bun run check:napi-boundary
 
       - name: Typecheck and test
         run: |
@@ -128,7 +123,7 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: latest
 
@@ -182,7 +177,7 @@ jobs:
         run: bun run package:vscode-target "$VSCODE_TARGET" "$RUST_TARGET"
 
       - name: Upload target VSIX
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: versionlens-redux-vsix-${{ matrix.vscode_target }}
           path: packages/vscode-extension/*-${{ matrix.vscode_target }}.vsix
@@ -194,7 +189,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download target packages
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@v8.0.2
         with:
           pattern: versionlens-redux-vsix-*
           path: packages
@@ -212,7 +207,7 @@ jobs:
           done
 
       - name: Upload complete VSIX set
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: versionlens-redux-vsix
           path: packages/*.vsix

@@ -140,10 +140,9 @@ bun run build
 bun run native:build
 bun run test:extension
 bun run test:napi
-bun run check:vscode-adapter
 ```
 
-Run `bun run check` from the repository root before committing broad package changes.
+Run `bun run verify` from the repository root before committing broad package changes.
 
 ## Assets
 

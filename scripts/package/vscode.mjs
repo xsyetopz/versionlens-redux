@@ -64,11 +64,9 @@ const nativeLibrary = join(
 );
 run([
   "bun",
-  "scripts/check/vsix.mjs",
+  "scripts/package/vsix.mjs",
   `packages/vscode-extension/${output}`,
-  "--native",
   nativeLibrary,
-  "--target",
   vscodeTarget,
 ]);
 console.log(`Packaged packages/vscode-extension/${output}`);

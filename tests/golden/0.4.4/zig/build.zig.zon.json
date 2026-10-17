@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 130,
+              "line": 0
+            },
+            "start": {
+              "character": 125,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 125,
+          "line": 0
+        },
+        "start": {
+          "character": 125,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "foo",
+        "foo\u001f0:125,0:130",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 126,
+          "line": 0
+        },
+        "start": {
+          "character": 126,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "zig",
+      "group": "dependencies",
+      "hostedName": "example/foo",
+      "hostedUrl": "https://api.github.com/repos/example/foo/tags",
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 130,
+          "line": 0
+        },
+        "start": {
+          "character": 125,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 130,
+          "line": 0
+        },
+        "start": {
+          "character": 125,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "ZigBuildZon",
+  "path": "zig/build.zig.zon",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 130,
+          "line": 0
+        },
+        "start": {
+          "character": 125,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

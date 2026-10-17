@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 18,
+              "line": 5
+            },
+            "start": {
+              "character": 13,
+              "line": 5
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 10,
+          "line": 4
+        },
+        "start": {
+          "character": 10,
+          "line": 4
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "foo",
+        "foo\u001f5:13,5:18",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 11,
+          "line": 4
+        },
+        "start": {
+          "character": 11,
+          "line": 4
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "helm",
+      "group": "dependencies",
+      "hostedName": null,
+      "hostedUrl": "https://example.test/charts",
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 13,
+          "line": 4
+        },
+        "start": {
+          "character": 10,
+          "line": 4
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 18,
+          "line": 5
+        },
+        "start": {
+          "character": 13,
+          "line": 5
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "HelmChartYaml",
+  "path": "helm/Chart.yaml",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 18,
+          "line": 5
+        },
+        "start": {
+          "character": 13,
+          "line": 5
+        }
+      }
+    }
+  ]
+}

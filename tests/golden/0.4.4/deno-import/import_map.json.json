@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "@foo/bar",
+      "edits": [
+        {
+          "newText": "jsr:@foo/bar@2.0.0",
+          "range": {
+            "end": {
+              "character": 42,
+              "line": 0
+            },
+            "start": {
+              "character": 24,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 12,
+          "line": 0
+        },
+        "start": {
+          "character": 12,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "@foo/bar",
+        "@foo/bar\u001f0:24,0:42",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 13,
+          "line": 0
+        },
+        "start": {
+          "character": 13,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "deno",
+      "group": "imports",
+      "hostedName": "@foo/bar",
+      "hostedUrl": null,
+      "name": "@foo/bar",
+      "range": {
+        "end": {
+          "character": 22,
+          "line": 0
+        },
+        "start": {
+          "character": 12,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 42,
+          "line": 0
+        },
+        "start": {
+          "character": 24,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "DenoImportMapJson",
+  "path": "deno-import/import_map.json",
+  "updateAllEdits": [
+    {
+      "newText": "jsr:@foo/bar@2.0.0",
+      "range": {
+        "end": {
+          "character": 42,
+          "line": 0
+        },
+        "start": {
+          "character": 24,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

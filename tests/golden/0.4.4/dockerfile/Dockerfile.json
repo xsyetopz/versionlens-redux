@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "platform/app",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 0
+            },
+            "start": {
+              "character": 18,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 5,
+          "line": 0
+        },
+        "start": {
+          "character": 5,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "platform/app",
+        "platform/app\u001f0:18,0:23",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 6,
+          "line": 0
+        },
+        "start": {
+          "character": 6,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "docker",
+      "group": "FROM",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "platform/app",
+      "range": {
+        "end": {
+          "character": 17,
+          "line": 0
+        },
+        "start": {
+          "character": 5,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 23,
+          "line": 0
+        },
+        "start": {
+          "character": 18,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "Dockerfile",
+  "path": "dockerfile/Dockerfile",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 23,
+          "line": 0
+        },
+        "start": {
+          "character": 18,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

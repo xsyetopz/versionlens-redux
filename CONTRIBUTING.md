@@ -42,8 +42,8 @@ bun run package:editors
 bun run version:bump 0.2.0
 ```
 
-2. Push the commit to `master` and wait for the VS Code, Zed, and JetBrains workflows to pass.
-3. Run the **Release** workflow from `master` with the same version.
+1. Push the commit to `master` and wait for the VS Code, Zed, and JetBrains workflows to pass.
+2. Run the **Release** workflow from `master` with the same version.
 
 The release workflow refuses stale commits, mismatched versions, existing tags, and commits without successful editor workflows. It downloads the compiled artifacts from those exact workflow runs before creating the tag and GitHub release.
 
@@ -52,7 +52,6 @@ The release workflow refuses stale commits, mismatched versions, existing tags, 
 Run the smallest check that covers your change. Common checks:
 
 ```bash
-bun run check:vscode-adapter
 bun run typecheck
 cargo fmt --all -- --check
 cargo test --workspace
@@ -61,10 +60,10 @@ cargo test --workspace
 Before a release or broad refactor, run:
 
 ```bash
-bun run check
+bun run verify
 ```
 
-`bun run check` is intentionally broad and can be slow. Do not run it in the background unless someone explicitly asked for that.
+`bun run verify` is intentionally broad and can be slow. Do not run it in the background unless someone explicitly asked for that.
 
 ## Pull requests
 

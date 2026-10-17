@@ -1,1 +1,0 @@
-"""Git worktree audit components."""

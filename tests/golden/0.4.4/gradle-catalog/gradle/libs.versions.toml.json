@@ -1,0 +1,96 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "example.test:foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 53,
+              "line": 1
+            },
+            "start": {
+              "character": 48,
+              "line": 1
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 1
+        },
+        "start": {
+          "character": 0,
+          "line": 1
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "example.test:foo",
+        "example.test:foo\u001f1:48,1:53",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 1,
+          "line": 1
+        },
+        "start": {
+          "character": 1,
+          "line": 1
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "maven",
+      "group": "libraries",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "example.test:foo",
+      "range": {
+        "end": {
+          "character": 3,
+          "line": 1
+        },
+        "start": {
+          "character": 0,
+          "line": 1
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 53,
+          "line": 1
+        },
+        "start": {
+          "character": 48,
+          "line": 1
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "GradleVersionCatalogToml",
+  "path": "gradle-catalog/gradle/libs.versions.toml",
+  "updateAllEdits": []
+}

@@ -1,0 +1,174 @@
+{
+  "actions": [
+    {
+      "command": "updateMajor",
+      "dependency": "@foo/bar",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 35,
+              "line": 0
+            },
+            "start": {
+              "character": 30,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  major 2.0.0",
+      "selectedVersion": null
+    },
+    {
+      "command": "updateMinor",
+      "dependency": "@foo/bar",
+      "edits": [
+        {
+          "newText": "1.1.0",
+          "range": {
+            "end": {
+              "character": 35,
+              "line": 0
+            },
+            "start": {
+              "character": 30,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  minor 1.1.0",
+      "selectedVersion": null
+    },
+    {
+      "command": "updatePatch",
+      "dependency": "@foo/bar",
+      "edits": [
+        {
+          "newText": "1.0.1",
+          "range": {
+            "end": {
+              "character": 35,
+              "line": 0
+            },
+            "start": {
+              "character": 30,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  patch 1.0.1",
+      "selectedVersion": null
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [
+        "@foo/bar",
+        "@foo/bar\u001f0:30,0:35",
+        "updateMajor"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 9,
+          "line": 0
+        },
+        "start": {
+          "character": 9,
+          "line": 0
+        }
+      },
+      "title": "↑  major 2.0.0"
+    },
+    {
+      "arguments": [
+        "@foo/bar",
+        "@foo/bar\u001f0:30,0:35",
+        "updateMinor"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 10,
+          "line": 0
+        },
+        "start": {
+          "character": 10,
+          "line": 0
+        }
+      },
+      "title": "↑  minor 1.1.0"
+    },
+    {
+      "arguments": [
+        "@foo/bar",
+        "@foo/bar\u001f0:30,0:35",
+        "updatePatch"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 11,
+          "line": 0
+        },
+        "start": {
+          "character": 11,
+          "line": 0
+        }
+      },
+      "title": "↑  patch 1.0.1"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "deno",
+      "group": "version",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "@foo/bar",
+      "range": {
+        "end": {
+          "character": 17,
+          "line": 0
+        },
+        "start": {
+          "character": 9,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 35,
+          "line": 0
+        },
+        "start": {
+          "character": 30,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "JsrJson",
+  "path": "jsr/jsr.json",
+  "updateAllEdits": [
+    {
+      "newText": "1.0.1",
+      "range": {
+        "end": {
+          "character": 35,
+          "line": 0
+        },
+        "start": {
+          "character": 30,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

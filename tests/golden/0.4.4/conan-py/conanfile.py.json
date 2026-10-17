@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 25,
+              "line": 2
+            },
+            "start": {
+              "character": 20,
+              "line": 2
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 16,
+          "line": 2
+        },
+        "start": {
+          "character": 16,
+          "line": 2
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "foo",
+        "foo\u001f2:20,2:25",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 17,
+          "line": 2
+        },
+        "start": {
+          "character": 17,
+          "line": 2
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "conan",
+      "group": "requires",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 25,
+          "line": 2
+        },
+        "start": {
+          "character": 16,
+          "line": 2
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 25,
+          "line": 2
+        },
+        "start": {
+          "character": 20,
+          "line": 2
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "ConanfilePy",
+  "path": "conan-py/conanfile.py",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 25,
+          "line": 2
+        },
+        "start": {
+          "character": 20,
+          "line": 2
+        }
+      }
+    }
+  ]
+}

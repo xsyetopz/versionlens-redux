@@ -1,0 +1,96 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "example.test:foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 108,
+              "line": 0
+            },
+            "start": {
+              "character": 103,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 23,
+          "line": 0
+        },
+        "start": {
+          "character": 23,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "example.test:foo",
+        "example.test:foo\u001f0:103,0:108",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 24,
+          "line": 0
+        },
+        "start": {
+          "character": 24,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "maven",
+      "group": "project.dependencies.dependency",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "example.test:foo",
+      "range": {
+        "end": {
+          "character": 131,
+          "line": 0
+        },
+        "start": {
+          "character": 23,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 108,
+          "line": 0
+        },
+        "start": {
+          "character": 103,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "MavenPomXml",
+  "path": "maven/pom.xml",
+  "updateAllEdits": []
+}

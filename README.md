@@ -22,7 +22,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 | `packages/neovim-plugin/` | Neovim plugin that starts the shared `versionlens-lsp` server. |
 | `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
 | `assets/versionlens/` | Shared icons, logo, and README media reused by editor packages. |
-| `scripts/` | Repository checks, build scripts, parity checks, and packaging guards. |
+| `scripts/` | Build, packaging, release, test, and benchmark scripts. |
 | `tests/` | Repo-level boundary, parser fixture, N-API, and e2e tests; VS Code unit tests live beside adapter source under `packages/vscode-extension/src/extension/__tests__/`. |
 
 ## Editor packages
@@ -58,10 +58,10 @@ cargo test --workspace        # Rust tests
 bun run package               # build a local VSIX
 bun run package:editors       # build all editor packages with bundled runtimes
 bun run marketplaces:configure # securely configure publishing secrets in GitHub
-bun run check                 # full repository validation
+bun run verify                # full repository validation
 ```
 
-`bun run check` covers Rust, TypeScript, package parity, workspace layout, adapter boundaries, VSIX freshness, source layout, and native tests. Use targeted scripts while iterating, then run the full check before committing broad changes.
+`bun run verify` covers formatting, lints, Rust, TypeScript, extension and native tests, and editor packaging. Use targeted scripts while iterating, then run the full check before committing broad changes.
 
 The release and Marketplace publication procedure is documented in [`docs/releasing.md`](docs/releasing.md). Publication is a separate, manually dispatched, approval-gated workflow and never runs for pull requests.
 

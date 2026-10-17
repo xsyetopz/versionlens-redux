@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "Foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 12,
+              "line": 3
+            },
+            "start": {
+              "character": 7,
+              "line": 3
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 3
+        },
+        "start": {
+          "character": 0,
+          "line": 3
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "Foo",
+        "Foo\u001f3:7,3:12",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 1,
+          "line": 3
+        },
+        "start": {
+          "character": 1,
+          "line": 3
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "julia",
+      "group": "compat",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "Foo",
+      "range": {
+        "end": {
+          "character": 13,
+          "line": 3
+        },
+        "start": {
+          "character": 0,
+          "line": 3
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 12,
+          "line": 3
+        },
+        "start": {
+          "character": 7,
+          "line": 3
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "JuliaProjectToml",
+  "path": "julia-project/Project.toml",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 12,
+          "line": 3
+        },
+        "start": {
+          "character": 7,
+          "line": 3
+        }
+      }
+    }
+  ]
+}

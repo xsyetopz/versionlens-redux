@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 18,
+          "line": 2
+        },
+        "start": {
+          "character": 18,
+          "line": 2
+        }
+      },
+      "title": "⚪ no match"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "luarocks",
+      "group": "dependencies",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 21,
+          "line": 2
+        },
+        "start": {
+          "character": 18,
+          "line": 2
+        }
+      },
+      "requirement": "== 1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 30,
+          "line": 2
+        },
+        "start": {
+          "character": 22,
+          "line": 2
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "LuaRockspec",
+  "path": "luarocks/demo-1.0.0-1.rockspec",
+  "updateAllEdits": []
+}

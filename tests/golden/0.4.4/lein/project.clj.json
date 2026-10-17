@@ -1,0 +1,258 @@
+{
+  "actions": [
+    {
+      "command": "updateMajor",
+      "dependency": "demo",
+      "edits": [
+        {
+          "newText": "1.0.0",
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 0
+            },
+            "start": {
+              "character": 18,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  major 1.0.0",
+      "selectedVersion": null
+    },
+    {
+      "command": "updateMinor",
+      "dependency": "demo",
+      "edits": [
+        {
+          "newText": "0.2.0",
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 0
+            },
+            "start": {
+              "character": 18,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  minor 0.2.0",
+      "selectedVersion": null
+    },
+    {
+      "command": "updatePatch",
+      "dependency": "demo",
+      "edits": [
+        {
+          "newText": "0.1.1",
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 0
+            },
+            "start": {
+              "character": 18,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  patch 0.1.1",
+      "selectedVersion": null
+    },
+    {
+      "command": "update",
+      "dependency": "example.test:foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 64,
+              "line": 0
+            },
+            "start": {
+              "character": 59,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [
+        "demo",
+        "demo\u001f0:18,0:23",
+        "updateMajor"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 12,
+          "line": 0
+        },
+        "start": {
+          "character": 12,
+          "line": 0
+        }
+      },
+      "title": "↑  major 1.0.0"
+    },
+    {
+      "arguments": [
+        "demo",
+        "demo\u001f0:18,0:23",
+        "updateMinor"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 13,
+          "line": 0
+        },
+        "start": {
+          "character": 13,
+          "line": 0
+        }
+      },
+      "title": "↑  minor 0.2.0"
+    },
+    {
+      "arguments": [
+        "demo",
+        "demo\u001f0:18,0:23",
+        "updatePatch"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 14,
+          "line": 0
+        },
+        "start": {
+          "character": 14,
+          "line": 0
+        }
+      },
+      "title": "↑  patch 0.1.1"
+    },
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 40,
+          "line": 0
+        },
+        "start": {
+          "character": 40,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "example.test:foo",
+        "example.test:foo\u001f0:59,0:64",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 41,
+          "line": 0
+        },
+        "start": {
+          "character": 41,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "maven",
+      "group": "version",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "demo",
+      "range": {
+        "end": {
+          "character": 24,
+          "line": 0
+        },
+        "start": {
+          "character": 12,
+          "line": 0
+        }
+      },
+      "requirement": "0.1.0",
+      "requirementRange": {
+        "end": {
+          "character": 23,
+          "line": 0
+        },
+        "start": {
+          "character": 18,
+          "line": 0
+        }
+      }
+    },
+    {
+      "ecosystem": "maven",
+      "group": "dependencies",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "example.test:foo",
+      "range": {
+        "end": {
+          "character": 66,
+          "line": 0
+        },
+        "start": {
+          "character": 40,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 64,
+          "line": 0
+        },
+        "start": {
+          "character": 59,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "LeiningenProjectClj",
+  "path": "lein/project.clj",
+  "updateAllEdits": [
+    {
+      "newText": "0.1.1",
+      "range": {
+        "end": {
+          "character": 23,
+          "line": 0
+        },
+        "start": {
+          "character": 18,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

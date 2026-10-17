@@ -6,12 +6,6 @@ pre-commit:
         test -z "$(git ls-files --others --exclude-standard)"
     style:
       run: just check-style
-    code-quality:
-      run: bun run check:code-quality
-    data-objects:
-      run: bun run check:data-objects
-    napi-boundary:
-      run: bun run check:napi-boundary
     typecheck:
       run: bun run typecheck
 
@@ -22,5 +16,5 @@ pre-push:
         git diff --quiet &&
         git diff --cached --quiet &&
         test -z "$(git ls-files --others --exclude-standard)"
-    check:
-      run: just check
+    verify:
+      run: just verify

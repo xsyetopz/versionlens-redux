@@ -1,0 +1,148 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "demo",
+      "edits": [],
+      "lens": "⚪ demo unresolved",
+      "selectedVersion": null
+    },
+    {
+      "command": "update",
+      "dependency": "foo",
+      "edits": [
+        {
+          "newText": "== 2.0.0",
+          "range": {
+            "end": {
+              "character": 22,
+              "line": 2
+            },
+            "start": {
+              "character": 14,
+              "line": 2
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [
+        "demo",
+        "demo\u001f1:9,1:14"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 1
+        },
+        "start": {
+          "character": 0,
+          "line": 1
+        }
+      },
+      "title": "⚪ demo unresolved"
+    },
+    {
+      "arguments": [
+        "foo",
+        "foo\u001f2:14,2:22",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 9,
+          "line": 2
+        },
+        "start": {
+          "character": 9,
+          "line": 2
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "cran",
+      "group": "Version",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "demo",
+      "range": {
+        "end": {
+          "character": 14,
+          "line": 1
+        },
+        "start": {
+          "character": 0,
+          "line": 1
+        }
+      },
+      "requirement": "0.1.0",
+      "requirementRange": {
+        "end": {
+          "character": 14,
+          "line": 1
+        },
+        "start": {
+          "character": 9,
+          "line": 1
+        }
+      }
+    },
+    {
+      "ecosystem": "cran",
+      "group": "Imports",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 23,
+          "line": 2
+        },
+        "start": {
+          "character": 9,
+          "line": 2
+        }
+      },
+      "requirement": "== 1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 22,
+          "line": 2
+        },
+        "start": {
+          "character": 14,
+          "line": 2
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "RDescription",
+  "path": "r-description/DESCRIPTION",
+  "updateAllEdits": [
+    {
+      "newText": "== 2.0.0",
+      "range": {
+        "end": {
+          "character": 22,
+          "line": 2
+        },
+        "start": {
+          "character": 14,
+          "line": 2
+        }
+      }
+    }
+  ]
+}

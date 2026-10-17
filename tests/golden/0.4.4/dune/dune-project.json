@@ -1,0 +1,95 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "foo",
+      "edits": [
+        {
+          "newText": "= 2.0.0",
+          "range": {
+            "end": {
+              "character": 43,
+              "line": 1
+            },
+            "start": {
+              "character": 36,
+              "line": 1
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [
+        "foo",
+        "foo\u001f1:36,1:43",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 30,
+          "line": 1
+        },
+        "start": {
+          "character": 30,
+          "line": 1
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "opam",
+      "group": "depends",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 45,
+          "line": 1
+        },
+        "start": {
+          "character": 30,
+          "line": 1
+        }
+      },
+      "requirement": "= 1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 43,
+          "line": 1
+        },
+        "start": {
+          "character": 36,
+          "line": 1
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "DuneProject",
+  "path": "dune/dune-project",
+  "updateAllEdits": [
+    {
+      "newText": "= 2.0.0",
+      "range": {
+        "end": {
+          "character": 43,
+          "line": 1
+        },
+        "start": {
+          "character": 36,
+          "line": 1
+        }
+      }
+    }
+  ]
+}

@@ -107,7 +107,7 @@ jobs:
           scope: zed
 
       - name: Upload Zed artifact
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: versionlens-redux-zed-extension-${{ matrix.editor_target }}
           path: dist/versionlens-redux-zed-extension-${{ matrix.editor_target }}.tar.gz

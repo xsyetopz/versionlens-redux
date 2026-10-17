@@ -30,7 +30,6 @@ Use the scripts already defined in `package.json`.
 Small checks:
 
 ```bash
-bun run check:vscode-adapter
 bun run typecheck
 cargo fmt --all -- --check
 ```
@@ -44,7 +43,7 @@ bun run package
 Full validation is expensive and includes Rust, TypeScript, extension, and native checks:
 
 ```bash
-bun run check
+bun run verify
 ```
 
 Do not leave long-running background checks unattended. Prefer the smallest targeted validation that covers the change.
@@ -54,7 +53,7 @@ Do not leave long-running background checks unattended. Prefer the smallest targ
 - Preserve existing behavior unless the requested task explicitly changes it.
 - Inspect callsites before changing public contracts across Rust, N-API, and TypeScript boundaries.
 - Keep VS Code command IDs, contributed menu contexts, and activation events aligned with `packages/vscode-extension/package.json`.
-- Keep Rust/TypeScript boundary data objects explicit and covered by existing check scripts.
+- Keep Rust/TypeScript boundary data objects explicit.
 - Avoid wrappers, compatibility shims, new dependencies, or generated artifacts unless the repository contract requires them.
 
 ## Git

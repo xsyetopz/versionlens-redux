@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "com.example.foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 41,
+              "line": 0
+            },
+            "start": {
+              "character": 36,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 18,
+          "line": 0
+        },
+        "start": {
+          "character": 18,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "com.example.foo",
+        "com.example.foo\u001f0:36,0:41",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 19,
+          "line": 0
+        },
+        "start": {
+          "character": 19,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "unity",
+      "group": "dependencies",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "com.example.foo",
+      "range": {
+        "end": {
+          "character": 33,
+          "line": 0
+        },
+        "start": {
+          "character": 18,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 41,
+          "line": 0
+        },
+        "start": {
+          "character": 36,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "UnityProjectManifestJson",
+  "path": "unity/Packages/manifest.json",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 41,
+          "line": 0
+        },
+        "start": {
+          "character": 36,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

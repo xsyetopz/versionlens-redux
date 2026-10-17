@@ -1,1 +1,0 @@
-"""Architecture provider capability implementations."""

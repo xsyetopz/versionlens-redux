@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "platform/app",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 17,
+              "line": 2
+            },
+            "start": {
+              "character": 12,
+              "line": 2
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 10,
+          "line": 1
+        },
+        "start": {
+          "character": 10,
+          "line": 1
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "platform/app",
+        "platform/app\u001f2:12,2:17",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 11,
+          "line": 1
+        },
+        "start": {
+          "character": 11,
+          "line": 1
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "docker",
+      "group": "images",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "platform/app",
+      "range": {
+        "end": {
+          "character": 22,
+          "line": 1
+        },
+        "start": {
+          "character": 10,
+          "line": 1
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 17,
+          "line": 2
+        },
+        "start": {
+          "character": 12,
+          "line": 2
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "KustomizationYaml",
+  "path": "kustomize/kustomization.yaml",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 17,
+          "line": 2
+        },
+        "start": {
+          "character": 12,
+          "line": 2
+        }
+      }
+    }
+  ]
+}

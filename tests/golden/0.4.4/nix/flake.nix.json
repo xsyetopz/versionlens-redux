@@ -1,0 +1,93 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "NixOS/nixpkgs",
+      "edits": [
+        {
+          "newText": "24.05",
+          "range": {
+            "end": {
+              "character": 51,
+              "line": 2
+            },
+            "start": {
+              "character": 46,
+              "line": 2
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 24.05",
+      "selectedVersion": null
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [
+        "NixOS/nixpkgs",
+        "NixOS/nixpkgs\u001f2:46,2:51"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 19,
+          "line": 2
+        },
+        "start": {
+          "character": 19,
+          "line": 2
+        }
+      },
+      "title": "↑  latest 24.05"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "nix",
+      "group": "inputs",
+      "hostedName": "nixpkgs",
+      "hostedUrl": "https://api.github.com/repos/NixOS/nixpkgs/tags",
+      "name": "NixOS/nixpkgs",
+      "range": {
+        "end": {
+          "character": 51,
+          "line": 2
+        },
+        "start": {
+          "character": 19,
+          "line": 2
+        }
+      },
+      "requirement": "23.11",
+      "requirementRange": {
+        "end": {
+          "character": 51,
+          "line": 2
+        },
+        "start": {
+          "character": 46,
+          "line": 2
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "NixFlake",
+  "path": "nix/flake.nix",
+  "updateAllEdits": [
+    {
+      "newText": "24.05",
+      "range": {
+        "end": {
+          "character": 51,
+          "line": 2
+        },
+        "start": {
+          "character": 46,
+          "line": 2
+        }
+      }
+    }
+  ]
+}

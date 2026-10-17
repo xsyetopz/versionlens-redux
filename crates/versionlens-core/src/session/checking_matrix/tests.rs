@@ -19,6 +19,12 @@ mod actions;
 #[path = "tests/regressions.rs"]
 mod regressions;
 
+#[path = "tests/golden.rs"]
+mod golden;
+
+#[path = "tests/fixtures.rs"]
+mod fixtures;
+
 #[derive(Debug, Deserialize)]
 struct ManifestCase {
     kind: String,

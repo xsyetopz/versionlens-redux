@@ -37,5 +37,5 @@ provider-cold-benchmark *args:
 package:
     bun run package
 
-check:
-    bun run check
+verify:
+    bun run verify

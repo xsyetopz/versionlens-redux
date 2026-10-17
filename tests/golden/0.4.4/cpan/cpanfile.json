@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "Foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 22,
+              "line": 0
+            },
+            "start": {
+              "character": 17,
+              "line": 0
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 10,
+          "line": 0
+        },
+        "start": {
+          "character": 10,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "Foo",
+        "Foo\u001f0:17,0:22",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 11,
+          "line": 0
+        },
+        "start": {
+          "character": 11,
+          "line": 0
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "cpan",
+      "group": "requires",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "Foo",
+      "range": {
+        "end": {
+          "character": 13,
+          "line": 0
+        },
+        "start": {
+          "character": 10,
+          "line": 0
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 22,
+          "line": 0
+        },
+        "start": {
+          "character": 17,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "Cpanfile",
+  "path": "cpan/cpanfile",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 22,
+          "line": 0
+        },
+        "start": {
+          "character": 17,
+          "line": 0
+        }
+      }
+    }
+  ]
+}

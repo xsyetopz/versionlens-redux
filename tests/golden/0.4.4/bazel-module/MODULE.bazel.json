@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 40,
+              "line": 1
+            },
+            "start": {
+              "character": 35,
+              "line": 1
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 1
+        },
+        "start": {
+          "character": 0,
+          "line": 1
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "foo",
+        "foo\u001f1:35,1:40",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 1,
+          "line": 1
+        },
+        "start": {
+          "character": 1,
+          "line": 1
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "bazel",
+      "group": "bazel_dep",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 42,
+          "line": 1
+        },
+        "start": {
+          "character": 0,
+          "line": 1
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 40,
+          "line": 1
+        },
+        "start": {
+          "character": 35,
+          "line": 1
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "BazelModule",
+  "path": "bazel-module/MODULE.bazel",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 40,
+          "line": 1
+        },
+        "start": {
+          "character": 35,
+          "line": 1
+        }
+      }
+    }
+  ]
+}

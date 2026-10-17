@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 0
+        },
+        "start": {
+          "character": 0,
+          "line": 0
+        }
+      },
+      "title": "🟡 fixed paket reference"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "dotnet",
+      "group": "paket.references",
+      "hostedName": null,
+      "hostedUrl": null,
+      "name": "Foo",
+      "range": {
+        "end": {
+          "character": 3,
+          "line": 0
+        },
+        "start": {
+          "character": 0,
+          "line": 0
+        }
+      },
+      "requirement": "",
+      "requirementRange": {
+        "end": {
+          "character": 3,
+          "line": 0
+        },
+        "start": {
+          "character": 3,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "PaketReferences",
+  "path": "paket-refs/paket.references",
+  "updateAllEdits": []
+}

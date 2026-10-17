@@ -12,6 +12,7 @@
       "!!**/.agents",
       "!!**/node_modules",
       "!!**/dist",
+      "!!tests/golden",
       "!!**/*.generated.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"
     ],
     "ignoreUnknown": true

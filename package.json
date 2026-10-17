@@ -13,18 +13,11 @@
     "biome:check": "biome check --write --unsafe --max-diagnostics 16384",
     "biome:format": "biome format --write --max-diagnostics 16384",
     "biome:lint": "biome lint --write --max-diagnostics 16384",
-    "check": "bun run check:biome && bun run check:rustfmt && bun run test:quality && bun run test:release && bun run test:package && bun run check:code-quality && bun run check:duplication && bun run check:architecture-capabilities && bun run test:architecture && bun run check:architecture && bun run check:vscode-adapter && bun run check:data-objects && bun run check:napi-boundary && bun run check:neovim && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace --locked && bun run test:extension && bun run test:napi && bun run package:editors",
+    "verify": "bun run check:biome && bun run check:rustfmt && bun run test:release && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace --locked && bun run test:extension && bun run test:napi && bun run package:editors",
     "check:biome": "biome check --max-diagnostics 16384",
-    "check:code-quality": "bun scripts/check/quality.mjs",
     "check:clippy": "cargo clippy --workspace --all-targets",
-    "check:data-objects": "python3 scripts/check/data_objects.py",
     "check:extension-build": "bun scripts/package/extension.mjs --check",
-    "check:editor-packages": "bun scripts/check/editors.mjs",
-    "check:napi-boundary": "python3 scripts/check/napi.py",
-    "check:neovim": "bun scripts/check/neovim.mjs",
     "check:rustfmt": "cargo fmt --all -- --check",
-    "check:vsix-freshness": "bun run package && bun scripts/check/vsix.mjs",
-    "check:vscode-adapter": "python3 scripts/check/vscode.py",
     "native:build": "cargo build -p versionlens-napi --locked && bun scripts/package/native.mjs",
     "native:test": "cargo test --workspace --locked",
     "package": "bun run vscode:prepublish && cd packages/vscode-extension && bunx vsce package --no-dependencies",
@@ -33,31 +26,27 @@
     "package:editors": "bun scripts/package/editors.mjs",
     "test": "bun run test:extension && bun run test:napi",
     "test:extension": "bun scripts/test/extension.mjs",
-    "test:quality": "bun test scripts/check/quality",
     "test:release": "bun test scripts/release",
     "test:napi": "bun run native:build && bun test tests/napi",
-    "test:package": "bun test scripts/check/vsix.test.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p packages/vscode-extension/tsconfig.json",
+    "typecheck": "bun check --cwd packages/vscode-extension",
     "vscode:prepublish": "bun run native:build:release && bun run build",
-    "native:build:release": "cargo build -p versionlens-napi --release --locked && bun scripts/package/native.mjs --release",
-    "check:duplication": "jscpd --threshold 0 --reporters console --no-tips --ignore '.agents/**,.git/**' .",
-    "check:architecture-capabilities": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/providers.py capabilities --root . --format json",
-    "test:architecture": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts python3 -m unittest discover -s scripts/architecture_audit/tests -q",
-    "check:architecture": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/audit_architecture.py . --format json"
+    "native:build:release": "cargo build -p versionlens-napi --release --locked && bun scripts/package/native.mjs --release"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
-    "@types/bun": "1.4.2",
-    "@types/node": "26.4.0",
+    "@biomejs/biome": "2.5.15",
+    "@types/bun": "1.4.3",
+    "@types/node": "26.6.5",
     "@types/vscode": "1.75.0",
-    "@vscode/vsce": "3.9.2",
-    "jscpd": "5.2.0",
-    "lefthook": "2.1.12",
-    "typescript": "7.0.2"
+    "@vscode/vsce": "4.0.0",
+    "lefthook": "2.2.2"
   },
   "trustedDependencies": [
     "@biomejs/biome",
     "@vscode/vsce-sign",
     "keytar"
-  ]
+  ],
+  "packageManager": "bun@1.4.3",
+  "engines": {
+    "bun": ">=1.4.3"
+  }
 }

@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "command": "update",
+      "dependency": "foo",
+      "edits": [
+        {
+          "newText": "2.0.0",
+          "range": {
+            "end": {
+              "character": 116,
+              "line": 1
+            },
+            "start": {
+              "character": 111,
+              "line": 1
+            }
+          }
+        }
+      ],
+      "lens": "↑  latest 2.0.0",
+      "selectedVersion": "2.0.0"
+    }
+  ],
+  "codeLenses": [
+    {
+      "arguments": [],
+      "command": "",
+      "range": {
+        "end": {
+          "character": 111,
+          "line": 1
+        },
+        "start": {
+          "character": 111,
+          "line": 1
+        }
+      },
+      "title": "🟡 fixed 1.0.0"
+    },
+    {
+      "arguments": [
+        "foo",
+        "foo\u001f1:111,1:116",
+        "update",
+        "2.0.0"
+      ],
+      "command": "versionlens.suggestion.onUpdateDependency",
+      "range": {
+        "end": {
+          "character": 112,
+          "line": 1
+        },
+        "start": {
+          "character": 112,
+          "line": 1
+        }
+      },
+      "title": "↑  latest 2.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ecosystem": "swift",
+      "group": "dependencies",
+      "hostedName": "example/foo",
+      "hostedUrl": "https://api.github.com/repos/example/foo/tags",
+      "name": "foo",
+      "range": {
+        "end": {
+          "character": 116,
+          "line": 1
+        },
+        "start": {
+          "character": 111,
+          "line": 1
+        }
+      },
+      "requirement": "1.0.0",
+      "requirementRange": {
+        "end": {
+          "character": 116,
+          "line": 1
+        },
+        "start": {
+          "character": 111,
+          "line": 1
+        }
+      }
+    }
+  ],
+  "diagnostics": [],
+  "kind": "SwiftPackage",
+  "path": "swift/Package.swift",
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 116,
+          "line": 1
+        },
+        "start": {
+          "character": 111,
+          "line": 1
+        }
+      }
+    }
+  ]
+}
