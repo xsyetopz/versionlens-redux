@@ -4,6 +4,7 @@ use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::GitHub;
 use versionlens_update::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
+    UpdateAvailable as StatusUpdateAvailable,
 };
 use versionlens_update::{Suggestion, UpdateChoice};
 
@@ -86,7 +87,13 @@ pub(crate) fn suggested_code_lens_view(
         );
     }
 
-    code_lens_view(dependency, title)
+    // Only an available update has something to apply. Any other status
+    // shows its title alone, because its command would change nothing.
+    if suggestion.is_some_and(|suggestion| suggestion.status == StatusUpdateAvailable) {
+        code_lens_view(dependency, title)
+    } else {
+        LensView::new(dependency.range, title, None)
+    }
 }
 
 pub(crate) fn update_choice_code_lens_view(

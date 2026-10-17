@@ -136,7 +136,7 @@ impl VersionLensSession {
         let selected_dependency = dependency_name.and_then(|selector| {
             suggestions
                 .iter()
-                .find(|suggestion| selection::matches_dependency(&suggestion.dependency, selector))
+                .find(|suggestion| suggestion.dependency.name == selection::selector_name(selector))
                 .map(|suggestion| &suggestion.dependency)
         });
         if !parts.edits.is_empty()

@@ -261,7 +261,14 @@ fn clear_cache(
         );
     }
     work.invalidate(state, connection)?;
-    checking.restart(state)?;
+    if let Err(error) = checking.restart(state) {
+        return respond_error(
+            connection,
+            request.id,
+            ErrorCode::RequestFailed,
+            format!("cache cleared, but checking did not restart: {error}"),
+        );
+    }
     respond(connection, request.id, Value::Null)
 }
 

@@ -288,3 +288,73 @@ fn positional_arguments_are_rejected() -> Result<()> {
     assert_eq!(error.code, ErrorCode::InvalidParams as i32);
     session.shutdown(3)
 }
+
+/// The update command of the lens for `dependency`.
+fn lens_command(session: &Session, id: i32, dependency: &str) -> Result<lsp_types::Command> {
+    send_request(
+        &session.client,
+        id,
+        "textDocument/codeLens",
+        json!({"textDocument": {"uri": session.uri}}),
+    )?;
+    let lenses = session
+        .response(id)?
+        .response_result
+        .map_err(|error| anyhow::anyhow!("code lens request failed: {error:?}"))?;
+    serde_json::from_value::<Vec<CodeLens>>(lenses)?
+        .into_iter()
+        .filter_map(|lens| lens.command)
+        .find(|command| {
+            command.command == "versionlens.server.update"
+                && command.arguments.as_ref().is_some_and(|arguments| {
+                    arguments[0]["dependency"]
+                        .as_str()
+                        .is_some_and(|selector| selector.starts_with(dependency))
+                })
+        })
+        .ok_or_else(|| anyhow::anyhow!("no update lens for {dependency}"))
+}
+
+#[test]
+fn a_lens_clicked_after_its_line_moved_updates_the_current_entry() -> Result<()> {
+    let session = start("file:///workspace/moved/package.json")?;
+    let command = lens_command(&session, 2, "beta")?;
+    send_notification(
+        &session.client,
+        "textDocument/didChange",
+        json!({
+            "textDocument": {"uri": session.uri, "version": 2},
+            "contentChanges": [{"text": format!("\n{MANIFEST}")}]
+        }),
+    )?;
+    send_request(
+        &session.client,
+        3,
+        "workspace/executeCommand",
+        serde_json::to_value(&command)?,
+    )?;
+
+    let edit = session.next_edit()?;
+    let change = &edit.params["edit"]["documentChanges"][0];
+    assert_eq!(change["textDocument"]["version"], 2);
+    assert_eq!(change["edits"][0]["range"]["start"]["line"], 1);
+    session.answer_edit(edit, json!({"applied": true}))?;
+    assert_eq!(session.response(3)?.response_result.ok(), Some(Value::Null));
+    session.shutdown(4)
+}
+
+#[test]
+fn an_update_with_a_version_and_no_level_applies_that_version() -> Result<()> {
+    let session = start("file:///workspace/version/package.json")?;
+    session.execute(
+        2,
+        "versionlens.server.update",
+        json!({"uri": session.uri, "dependency": "alpha", "version": "1.1.0"}),
+    )?;
+
+    let edit = session.next_edit()?;
+    assert_eq!(new_texts(&edit), ["1.1.0"]);
+    session.answer_edit(edit, json!({"applied": true}))?;
+    assert_eq!(session.response(2)?.response_result.ok(), Some(Value::Null));
+    session.shutdown(3)
+}

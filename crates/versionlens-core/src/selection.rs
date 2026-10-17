@@ -22,6 +22,40 @@ pub(crate) fn matches_dependency(dependency: &Dependency, selector: &str) -> boo
         })
 }
 
+/// The dependencies a selector names. A selector made before an edit can
+/// name a range that moved; it then falls back to its name, but only when
+/// one dependency has that name, so it never picks another entry.
+pub(crate) fn select_dependencies(
+    dependencies: Vec<Dependency>,
+    selector: &str,
+) -> Vec<Dependency> {
+    let name = selector_name(selector);
+    let named = dependencies
+        .iter()
+        .filter(|dependency| dependency.name == name)
+        .count();
+    let exact = dependencies
+        .iter()
+        .any(|dependency| matches_dependency(dependency, selector));
+    dependencies
+        .into_iter()
+        .filter(|dependency| {
+            if exact {
+                matches_dependency(dependency, selector)
+            } else {
+                named == 1 && dependency.name == name
+            }
+        })
+        .collect()
+}
+
+/// The dependency name of a selector.
+pub(crate) fn selector_name(selector: &str) -> &str {
+    selector
+        .split_once(SEPARATOR)
+        .map_or(selector, |(name, _)| name)
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct DependencySelection {
     name: String,
@@ -47,3 +81,6 @@ fn parse_position(position: &str) -> Option<Position> {
         character: character.parse().ok()?,
     })
 }
+
+#[cfg(test)]
+mod tests;

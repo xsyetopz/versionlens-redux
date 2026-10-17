@@ -1,4 +1,4 @@
-use crate::selection::matches_dependency;
+use crate::selection::select_dependencies;
 use std::collections::HashSet;
 use std::time::{Duration, Instant};
 use versionlens_update::can_sort_dependencies;
@@ -252,10 +252,7 @@ impl VersionLensSession {
         } else {
             self.dependencies(&input)
         };
-        let dependencies = dependencies
-            .into_iter()
-            .filter(|dependency| matches_dependency(dependency, selector))
-            .collect();
+        let dependencies = select_dependencies(dependencies, selector);
         self.resolve_dependencies(ResolutionRequest {
             input: &input,
             dependencies,

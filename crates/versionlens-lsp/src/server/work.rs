@@ -267,7 +267,11 @@ impl WorkQueue {
             UPDATE_COMMAND => {
                 command_arguments::<UpdateArguments>(arguments).map(|args| EditRequest {
                     uri: args.uri,
-                    command: args.level.map(Level::mode),
+                    // A version alone means that version, not every update.
+                    command: args
+                        .level
+                        .or(args.version.as_ref().map(|_| Level::Latest))
+                        .map(Level::mode),
                     sort: false,
                     dependency: Some(args.dependency),
                     version: args.version,
