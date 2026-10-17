@@ -1,4 +1,6 @@
 use super::parse_document;
+use super::parse_project_versions;
+use super::parse_project_versions_as_manifest;
 use super::test_support::{extract_range, parse_fixture};
 use crate::DocumentInput;
 use crate::parse_clojure_maven_repositories;
@@ -8,6 +10,7 @@ use crate::parse_gradle_plugin_maven_repositories;
 use crate::parse_leiningen_maven_repositories;
 use crate::parse_sbt_maven_repositories;
 use versionlens_model::Ecosystem::*;
+use versionlens_model::ManifestKind;
 use versionlens_model::VersionableKind;
 
 #[test]
@@ -596,6 +599,7 @@ include!("tests/cpp.rs");
 include!("tests/github_actions.rs");
 include!("tests/jvm.rs");
 include!("tests/native_infra.rs");
+include!("tests/project_versions.rs");
 
 fn package_file_fixture(name: &str) -> &'static str {
     crate::support::tests::fixture(

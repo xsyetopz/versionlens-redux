@@ -195,7 +195,11 @@ impl VersionLensSession {
         let suggestions = self
             .resolve_dependencies(ResolutionRequest {
                 input: &input,
-                dependencies: self.dependencies(&input),
+                dependencies: if project_bump.is_some() {
+                    self.command_dependencies(&input)
+                } else {
+                    self.dependencies(&input)
+                },
                 document_uri: &input.uri,
                 responses,
                 project_bump,
@@ -227,8 +231,12 @@ impl VersionLensSession {
         } = request;
         let manifest_kind = self.classify_document(&input);
         let context = self.registry_context(&input, manifest_kind);
-        let dependencies = self
-            .dependencies(&input)
+        let dependencies = if project_bump.is_some() {
+            self.command_dependencies(&input)
+        } else {
+            self.dependencies(&input)
+        };
+        let dependencies = dependencies
             .into_iter()
             .filter(|dependency| matches_dependency(dependency, selector))
             .collect();
