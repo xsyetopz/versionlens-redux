@@ -32,7 +32,7 @@ Owns: `crates/versionlens-versions`, `crates/versionlens-model`, `crates/version
   - the update command also applies floor bumps for ranges that already allow latest (`serde = "1.0"` → `1.1.0`), in every ecosystem whose range syntax has a floor (`^`, `~`, Cargo bare); exact pins are unaffected (user decision)
 
   Delete `push_intermediate_range_choices`, `range_minimum_matches_latest` and the `retain` in `session/resolution/dependency.rs`. Verify: the group 2.2 fixtures for suggestions pass with `cargo test -p versionlens-update -p versionlens-core`.
-- [ ] 3.3 Fix GitHub Action refs: compare commit SHAs, pick the most specific tag on a commit, and skip lookups for non-version refs. Verify: the `github-script` and `install-action@just` fixtures pass, and a mock-HTTP test asserts zero requests for `@just`.
+- [x] 3.3 Fix GitHub Action refs: compare commit SHAs, pick the most specific tag on a commit, and skip lookups for non-version refs. Verify: the `github-script` and `install-action@just` fixtures pass, and a mock-HTTP test asserts zero requests for `@just`.
 - [ ] 3.4 Merge `versionlens-cache`, `versionlens-http` and the core fetch I/O into `versionlens-fetch`:
   - honor `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`/`NO_PROXY`
   - add the platform trust store via `rustls-native-certs` (confirm it is already in `Cargo.lock`, otherwise record it as the one new dependency)

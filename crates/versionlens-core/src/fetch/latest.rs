@@ -159,12 +159,6 @@ fn response_update_choices_with_endpoint(request: ResponseUpdateRequest<'_>) -> 
         include_prereleases,
         prerelease_tags,
     } = request;
-    if matches!(
-        dependency.canonical_reference.as_ref(),
-        Some(versionlens_model::CanonicalReference::GitHubActionRef { .. })
-    ) {
-        return vec![];
-    }
     if dependency.ecosystem == Docker {
         return docker_update_choices(&dependency.requirement, latest, body);
     }

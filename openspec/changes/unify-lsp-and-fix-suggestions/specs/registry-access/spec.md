@@ -38,7 +38,7 @@ When a registry reports a rate limit (HTTP 403 or 429 with rate-limit headers), 
 - **THEN** one warning states the reset time and suggests setting `GITHUB_TOKEN` or running `gh auth login`, and no further GitHub requests are made until the reset time
 
 ### Requirement: No lookups for non-version refs
-The server SHALL NOT make registry requests for references that are not versions, such as branch names, non-version tags and bare commit SHAs without a version comment.
+The server SHALL NOT make registry requests for references that are not versions, such as branch names and non-version tags. Bare commit SHAs are still looked up, to find the release tag on the commit and offer SHA updates (user decision).
 
 #### Scenario: Branch ref
 - **WHEN** a workflow uses `taiki-e/install-action@just`

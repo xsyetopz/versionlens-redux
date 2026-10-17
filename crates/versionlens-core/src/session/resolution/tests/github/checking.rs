@@ -1,26 +1,5 @@
 use super::*;
 
-async fn resolve_floating_action(
-    responses: Vec<(u16, String)>,
-) -> (ResolveDocumentOutput, Vec<String>) {
-    let (base_url, server) = github_api_server(responses);
-    let output = github_session(base_url)
-        .resolve_document(DocumentInput::new(
-            "file:///work/.github/workflows/ci.yml",
-            "yaml",
-            package_file_fixture("floating-action-ref.yaml"),
-            None,
-        ))
-        .await;
-    (output, server.join().unwrap())
-}
-
-fn assert_current_floating_action(output: &ResolveDocumentOutput) {
-    assert_eq!(output.suggestions[0].status, "current");
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("stable"));
-    assert!(output.edits.is_empty());
-}
-
 fn assert_local_reference_statuses(output: &ResolveDocumentOutput) {
     assert_eq!(
         output
@@ -34,107 +13,22 @@ fn assert_local_reference_statuses(output: &ResolveDocumentOutput) {
 }
 
 #[tokio::test]
-async fn floating_action_tags_take_precedence_and_preserve_the_reference() {
-    let sha = "a".repeat(40);
-    let (output, paths) = resolve_floating_action(vec![
-        (200, r#"[{"name":"v1.0.0"}]"#.to_owned()),
-        (
-            200,
-            serde_json::json!({
-                "ref": "refs/tags/stable",
-                "object": {"type": "tag", "sha": sha}
-            })
-            .to_string(),
-        ),
-    ])
-    .await;
-    assert_eq!(
-        paths,
-        [
-            "/repos/acme/action/tags",
-            "/repos/acme/action/git/ref/tags/stable"
-        ]
-    );
-    assert_current_floating_action(&output);
-}
+async fn non_version_action_refs_are_fixed_without_a_request() {
+    // The server answers one request if one comes; none must come.
+    let (base_url, server) = github_api_server(vec![(200, r#"[{"name":"v1.0.0"}]"#)]);
+    let output = github_session(base_url)
+        .resolve_document(DocumentInput::new(
+            "file:///work/.github/workflows/ci.yml",
+            "yaml",
+            package_file_fixture("floating-action-ref.yaml"),
+            None,
+        ))
+        .await;
 
-#[tokio::test]
-async fn floating_action_branches_are_checked_after_an_absent_tag() {
-    let sha = "b".repeat(40);
-    let (output, paths) = resolve_floating_action(vec![
-        (200, r#"[{"name":"v1.0.0"}]"#.to_owned()),
-        (404, r#"{"message":"Not Found"}"#.to_owned()),
-        (
-            200,
-            serde_json::json!({
-                "ref": "refs/heads/stable",
-                "object": {"type": "commit", "sha": sha}
-            })
-            .to_string(),
-        ),
-    ])
-    .await;
-    assert_eq!(
-        paths,
-        [
-            "/repos/acme/action/tags",
-            "/repos/acme/action/git/ref/tags/stable",
-            "/repos/acme/action/git/ref/heads/stable"
-        ]
-    );
-    assert_current_floating_action(&output);
-}
-
-#[tokio::test]
-async fn floating_action_ref_failures_are_explicit() {
-    let cases = [
-        (
-            vec![
-                (200, r#"[]"#.to_owned()),
-                (404, r#"{"message":"Not Found"}"#.to_owned()),
-                (404, r#"{"message":"Not Found"}"#.to_owned()),
-            ],
-            "unavailable",
-        ),
-        (
-            vec![
-                (200, r#"[]"#.to_owned()),
-                (
-                    200,
-                    serde_json::json!([
-                        {"ref":"refs/tags/stable","object":{"type":"commit","sha":"a".repeat(40)}},
-                        {"ref":"refs/tags/stable/old","object":{"type":"commit","sha":"b".repeat(40)}}
-                    ])
-                    .to_string(),
-                ),
-            ],
-            "ambiguous",
-        ),
-        (
-            vec![
-                (200, r#"[]"#.to_owned()),
-                (
-                    200,
-                    r#"{"ref":"refs/tags/stable","object":{"type":"commit","sha":"abcdef0"}}"#
-                        .to_owned(),
-                ),
-            ],
-            "invalid",
-        ),
-    ];
-    for (responses, message) in cases {
-        let (output, _) = resolve_floating_action(responses).await;
-
-        assert_eq!(output.suggestions[0].status, "error");
-        assert!(
-            output.suggestions[0]
-                .latest
-                .as_deref()
-                .is_some_and(|value| value.contains(message)),
-            "{output:?}"
-        );
-        assert!(output.edits.is_empty());
-    }
+    assert_eq!(server.join().unwrap(), Vec::<String>::new());
+    assert_eq!(output.suggestions[0].status, "fixed");
+    assert_eq!(output.suggestions[0].latest.as_deref(), Some("stable"));
+    assert!(output.edits.is_empty());
 }
 
 #[tokio::test]
