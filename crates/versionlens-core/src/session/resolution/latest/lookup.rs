@@ -9,6 +9,7 @@ use crate::RegistryResponseInput;
 use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::fetch::github_current_ref_is_proven;
+use crate::fetch::registry_release_versions;
 use crate::fetch::response_update_choices;
 use crate::registry::{RegistryContext, registry_response_matches};
 
@@ -33,6 +34,7 @@ impl VersionLensSession {
             return Ok(LatestLookup {
                 latest: fetched.latest,
                 builds: fetched.builds,
+                versions: fetched.versions,
                 choices: fetched.choices,
                 fetch_error: None,
                 fixed_requirement_matched: false,
@@ -52,9 +54,11 @@ impl VersionLensSession {
             } else {
                 build_versions_from_responses(dependency, responses)
             };
+            let versions = registry_versions_from_responses(dependency, responses);
             Ok(LatestLookup {
                 latest,
                 builds,
+                versions,
                 choices,
                 fetch_error: None,
                 fixed_requirement_matched: false,
@@ -64,6 +68,7 @@ impl VersionLensSession {
             Ok(LatestLookup {
                 latest: fetched.latest,
                 builds: fetched.builds,
+                versions: fetched.versions,
                 choices: fetched.choices,
                 fetch_error: None,
                 fixed_requirement_matched: false,
@@ -110,6 +115,15 @@ fn build_versions_from_responses(
                 &dependency.requirement,
             )
         })
+        .unwrap_or_default()
+}
+
+fn registry_versions_from_responses(
+    dependency: &Dependency,
+    responses: &[RegistryResponseInput],
+) -> Vec<String> {
+    matching_dependency_response(responses, dependency)
+        .map(|response| registry_release_versions(dependency, None, &response.body))
         .unwrap_or_default()
 }
 
