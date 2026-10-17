@@ -133,7 +133,7 @@ fn unanswered_workspace_edits_finish_once_at_the_deadline_or_cancellation() -> R
 fn lens_requests_do_not_wait_for_the_persistent_cache_lock() -> Result<()> {
     let directory = versionlens_test_support::temporary_directory("lens-cache-lock")?;
     let mut state = VersionLensLspState::standard();
-    state.session = state.session.clone().with_persistent_cache(&directory)?;
+    state.use_persistent_cache(&directory)?;
     let uri = "file:///workspace/Cargo.toml";
     state.open_document(crate::state::VersionLensTextDocument {
         uri: uri.to_owned(),
@@ -183,7 +183,7 @@ fn lens_requests_do_not_wait_for_the_persistent_cache_lock() -> Result<()> {
 fn opening_and_changing_documents_do_not_wait_for_the_persistent_cache_lock() -> Result<()> {
     let directory = versionlens_test_support::temporary_directory("open-cache-lock")?;
     let mut state = VersionLensLspState::standard();
-    state.session = state.session.clone().with_persistent_cache(&directory)?;
+    state.use_persistent_cache(&directory)?;
     let _ = std::fs::remove_file(directory.join("generation.json"));
     let lock = std::fs::OpenOptions::new()
         .create(true)

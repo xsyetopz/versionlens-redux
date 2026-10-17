@@ -104,7 +104,7 @@ impl WorkQueue {
         }
         // The freshness check and the analysis read the persistent cache, so
         // they run on the runtime and not on the protocol thread.
-        let session = state.session.clone();
+        let session = state.session_for(uri).clone();
         let input = work.input.clone();
         let job = async move {
             let fresh = {
@@ -188,7 +188,7 @@ impl WorkQueue {
             dependency: args.arguments.get(1).cloned(),
             selected_version: args.arguments.get(3).cloned(),
         };
-        let session = state.session.clone();
+        let session = state.session_for(&args.uri).clone();
         let job = async move { session.run_task(task).await.map(TaskOutput::Resolved) };
         self.submit(
             connection,

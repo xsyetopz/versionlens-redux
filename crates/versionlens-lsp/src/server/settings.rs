@@ -10,7 +10,7 @@ use versionlens_core::Settings;
 
 use super::checking::WorkspaceController;
 use super::show_configuration_error;
-use crate::state::{self, VersionLensLspState};
+use crate::state::{self, FolderSettings, VersionLensLspState};
 
 const REQUEST_PREFIX: &str = "versionlens/configuration/";
 
@@ -89,27 +89,29 @@ impl SettingsRequests {
             Ok(result) => serde_json::from_value::<Vec<Value>>(result).unwrap_or_default(),
             Err(error) => return show_configuration_error(connection, error.message),
         };
-        let mut sections = sections.into_iter();
-        let config = match Settings::from_value(sections.next().unwrap_or(Value::Null)) {
-            Ok(settings) => settings.session_config(),
-            Err(message) => return show_configuration_error(connection, message),
-        };
-        let exclusions = state::workspace_exclusions(&sections.next().unwrap_or(Value::Null));
-        let session_changed = !state.configuration_is(&config);
-        if session_changed && let Err(error) = state.replace_configuration(config) {
-            return show_configuration_error(connection, error.to_string());
+        let mut settings = Vec::new();
+        for folder in sections.chunks(state::SECTIONS.len()) {
+            let versionlens = folder.first().cloned().unwrap_or(Value::Null);
+            let config = match Settings::from_value(versionlens) {
+                Ok(settings) => settings.session_config(),
+                Err(message) => return show_configuration_error(connection, message),
+            };
+            settings.push(FolderSettings {
+                config,
+                exclusions: state::workspace_exclusions(folder.get(1).unwrap_or(&Value::Null)),
+            });
         }
-        let exclusions_changed = state.replace_workspace_exclusions(exclusions);
+        let changed = match state.replace_settings(settings) {
+            Ok(changed) => changed,
+            Err(error) => return show_configuration_error(connection, error.to_string()),
+        };
         let Some(checking) = checking else {
             return Ok(());
         };
-        if session_changed {
-            checking.restart(state).map_err(Into::into)
-        } else if exclusions_changed {
-            checking.replace(state)
-        } else {
-            Ok(())
+        if changed {
+            checking.restart(state)?;
         }
+        Ok(())
     }
 }
 

@@ -146,7 +146,7 @@ fn existing_file_workspace_root_uses_its_parent_directory() -> FileTestResult {
         Some(directory_uri)
     );
     assert_eq!(
-        state.workspace_checking_options().discovery.roots,
+        state.workspace_checking_options(0).discovery.roots,
         [directory]
     );
     Ok(())
@@ -173,7 +173,9 @@ fn workspace_folder_changes_rebind_open_documents_and_invalidate_work() -> Resul
         let before = state
             .document_work(document_uri)
             .ok_or("missing open document")?;
-        state.change_workspace_folders(lsp_types::WorkspaceFoldersChangeEvent { added, removed });
+        state
+            .change_workspace_folders(lsp_types::WorkspaceFoldersChangeEvent { added, removed })
+            .map_err(|error| error.to_string())?;
         let after = state
             .document_work(document_uri)
             .ok_or("missing updated document")?;
@@ -216,7 +218,7 @@ async fn dependency_lenses_share_the_meaningful_source_range() {
     });
     let work = state.document_work(uri).unwrap();
     state
-        .session
+        .session_for(uri)
         .resolve_document_with_responses(
             work.input,
             &[versionlens_core::RegistryResponseInput::new(
@@ -279,9 +281,13 @@ fn configuration_changes_invalidate_document_work_and_preserve_versions() -> Res
     )?
     .session_config();
     assert!(!config.show_vulnerabilities);
-    state
-        .replace_configuration(config)
+    let changed = state
+        .replace_settings(vec![super::FolderSettings {
+            config,
+            ..super::FolderSettings::default()
+        }])
         .map_err(|error| error.to_string())?;
+    assert!(changed);
     assert!(!state.work_is_current(&work));
     assert_eq!(
         state.document_work(uri).ok_or("missing document")?.version,
@@ -372,7 +378,7 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     assert!(!state.watched_file_is_relevant(&file_uri(&unrelated)?));
     assert!(!state.watched_file_is_relevant(&file_uri(&generated)?));
     assert!(!state.watched_file_is_relevant(&file_uri(&cache)?));
-    let options = state.workspace_checking_options();
+    let options = state.workspace_checking_options(0);
     assert!(options.discovery.provider_exclusions.is_empty());
     assert!(
         options

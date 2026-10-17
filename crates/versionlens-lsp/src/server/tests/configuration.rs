@@ -29,8 +29,7 @@ fn settings_are_pulled_for_the_folder_and_pulled_again_on_change() -> Result<()>
     )?;
     let params = answer_configuration(&client, json!({"caching": {"duration": "invalid"}}))?;
     assert_eq!(params["items"][0]["section"], "versionlens");
-    let Message::Notification(error) = client.receiver.recv_timeout(Duration::from_secs(10))?
-    else {
+    let Message::Notification(error) = receive(&client)? else {
         bail!("expected a configuration error message");
     };
     assert_eq!(error.method, "window/showMessage");
@@ -101,4 +100,68 @@ fn receive_within(
             return Ok(message);
         }
     }
+}
+
+#[test]
+fn each_folder_is_presented_with_its_own_settings() -> Result<()> {
+    let (address, _) = super::incremental::serving_registry(
+        r#"{"dist-tags":{"latest":"2.0.0","next":"3.0.0-beta.1"},"versions":{"1.0.0":{},"2.0.0":{},"3.0.0-beta.1":{}}}"#,
+    )?;
+    let (server, client) = Connection::memory();
+    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let (with, without) = ("file:///workspace/with", "file:///workspace/without");
+    initialize_workspace(
+        &client,
+        json!({
+            "workspaceFolders": [
+                {"uri": with, "name": "with"},
+                {"uri": without, "name": "without"}
+            ],
+            "capabilities": {"workspace": {"configuration": true}}
+        }),
+    )?;
+    let settings = |prereleases: bool| {
+        json!({
+            "suggestions": {"showVulnerabilities": false, "showPrereleasesOnStartup": prereleases},
+            "npm": {"apiUrl": format!("http://{address}")}
+        })
+    };
+    let Message::Request(request) = receive(&client)? else {
+        bail!("expected the settings request");
+    };
+    assert_eq!(request.params["items"][0]["scopeUri"], with);
+    assert_eq!(request.params["items"][2]["scopeUri"], without);
+    client
+        .sender
+        .send(Message::Response(lsp_server::Response::new_ok(
+            request.id,
+            json!([settings(true), null, settings(false), null]),
+        )))?;
+
+    let manifest = r#"{"dependencies": {"alpha": "1.0.0"}}"#;
+    let mut titles = Vec::new();
+    for (id, folder) in [(10, with), (11, without)] {
+        let uri = format!("{folder}/package.json");
+        open_json_document(&client, &uri, 1, manifest)?;
+        titles.push(super::incremental::lens_titles(&client, id, &uri)?);
+    }
+    let shows_prerelease =
+        |titles: &[String]| titles.iter().any(|title| title.contains("3.0.0-beta.1"));
+    assert!(
+        shows_prerelease(&titles[0]),
+        "with prereleases: {:?}",
+        titles[0]
+    );
+    assert!(
+        !shows_prerelease(&titles[1]),
+        "without prereleases: {:?}",
+        titles[1]
+    );
+    // Background checking may still publish, so skip to the shutdown answer.
+    send_request(&client, 12, "shutdown", Value::Null)?;
+    while !matches!(receive(&client)?, Message::Response(response) if response.id == 12.into()) {}
+    send_notification(&client, "exit", Value::Null)?;
+    server_thread
+        .join()
+        .map_err(|_| anyhow::anyhow!("server panicked"))?
 }

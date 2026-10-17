@@ -148,7 +148,7 @@ fn run_message_loop(
             }
         }
     }
-    parts.state.session.cancel_pending_resolutions();
+    parts.state.cancel_pending_resolutions();
     runtime.shutdown_background();
     Ok(())
 }
@@ -192,9 +192,14 @@ fn handle_message(
                 }
             }
             "workspace/didChangeConfiguration" => settings.request(connection, state)?,
-            _ => {
+            method => {
+                // New folders need their settings.
+                let folders_changed = method == "workspace/didChangeWorkspaceFolders";
                 handle_notification(connection, state, checking, notification)?;
                 work.invalidate(state, connection)?;
+                if folders_changed {
+                    settings.request(connection, state)?;
+                }
             }
         },
         Message::Response(response) if settings::is_answer(&response.id) => {
@@ -275,8 +280,8 @@ fn handle_notification(
             ) else {
                 return Ok(());
             };
-            state.change_workspace_folders(params.event);
-            checking.replace(state)
+            state.change_workspace_folders(params.event)?;
+            checking.restart(state).map_err(Into::into)
         }
         "workspace/didChangeWatchedFiles" => {
             let Ok(params) = serde_json::from_value::<lsp_types::DidChangeWatchedFilesParams>(

@@ -2,11 +2,12 @@ use std::io;
 use std::path::Path;
 
 use serde_json::Value;
-use versionlens_core::{
-    SessionConfig, version_lens_session, workspace_exclusion_matches, workspace_exclusion_path,
-};
+use versionlens_core::{workspace_exclusion_matches, workspace_exclusion_path};
 
 use super::VersionLensLspState;
+
+/// The settings sections read for each folder, in answer order.
+pub(crate) const SECTIONS: [&str; 2] = ["versionlens", "files.exclude"];
 
 const GENERATED_DIRECTORY_EXCLUSIONS: &[&str] = &[
     "**/.git/**",
@@ -21,7 +22,7 @@ const GENERATED_DIRECTORY_EXCLUSIONS: &[&str] = &[
     "**/vendor/**",
 ];
 
-pub(super) fn default_workspace_exclusions() -> Vec<String> {
+pub(crate) fn default_workspace_exclusions() -> Vec<String> {
     GENERATED_DIRECTORY_EXCLUSIONS
         .iter()
         .map(|pattern| (*pattern).to_owned())
@@ -68,50 +69,45 @@ fn expand_braces(pattern: &str, output: &mut Vec<String>) {
 
 impl VersionLensLspState {
     #[cfg(test)]
-    pub(crate) fn with_workspace_exclusions(mut self, exclusions: Vec<String>) -> Self {
-        self.exclusions = exclusions;
-        self
+    pub(crate) fn with_workspace_exclusions(self, exclusions: Vec<String>) -> Self {
+        self.with_settings(super::FolderSettings {
+            exclusions,
+            ..super::FolderSettings::default()
+        })
     }
 
-    pub(crate) fn replace_workspace_exclusions(&mut self, exclusions: Vec<String>) -> bool {
-        if self.exclusions == exclusions {
-            return false;
-        }
-        self.exclusions = exclusions;
-        self.invalidate_workspace();
-        true
-    }
-
-    /// The `workspace/configuration` params for the settings sections the
-    /// server reads, scoped to the first workspace folder.
+    /// The `workspace/configuration` params: the settings sections the
+    /// server reads, for each folder scope in the order of `scopes`.
     pub(crate) fn configuration_params(&self) -> Value {
-        let scope = self
-            .workspace_folders
-            .first()
-            .or(self.root_uri.as_ref())
-            .map(|root| root.uri.to_string());
-        let item = |section: &str| match &scope {
-            Some(scope) => serde_json::json!({"scopeUri": scope, "section": section}),
-            None => serde_json::json!({"section": section}),
+        let scopes = self
+            .scopes()
+            .iter()
+            .map(|root| Some(root.uri.to_string()))
+            .collect::<Vec<_>>();
+        let scopes = if scopes.is_empty() {
+            vec![None]
+        } else {
+            scopes
         };
-        serde_json::json!({"items": [item("versionlens"), item("files.exclude")]})
-    }
-
-    pub(crate) fn configuration_is(&self, config: &SessionConfig) -> bool {
-        &self.configuration == config
+        let items = scopes
+            .iter()
+            .flat_map(|scope| {
+                SECTIONS.iter().map(move |section| match scope {
+                    Some(scope) => serde_json::json!({"scopeUri": scope, "section": section}),
+                    None => serde_json::json!({"section": section}),
+                })
+            })
+            .collect::<Vec<_>>();
+        serde_json::json!({ "items": items })
     }
 
     pub(crate) fn watched_file_is_relevant(&self, uri: &str) -> bool {
         let Some(path) = versionlens_core::workspace_path(uri) else {
             return false;
         };
-        let roots = if self.workspace_folders.is_empty() {
-            self.root_uri.iter().collect::<Vec<_>>()
-        } else {
-            self.workspace_folders.iter().collect::<Vec<_>>()
-        };
-        let Some((root, relative)) = roots
-            .into_iter()
+        let Some((root, relative)) = self
+            .scopes()
+            .iter()
             .filter_map(|root| {
                 let root = Path::new(root.path.as_deref()?);
                 path.strip_prefix(root)
@@ -123,11 +119,13 @@ impl VersionLensLspState {
             return false;
         };
         let relative = workspace_exclusion_path(relative);
-        !self
+        let group = &self.groups()[self.group_of(uri)];
+        !group
+            .settings
             .exclusions
             .iter()
             .any(|pattern| workspace_exclusion_matches(pattern, &relative, false))
-            && self
+            && group
                 .session
                 .document_is_supported(&versionlens_model::DocumentInput::new(
                     uri.to_owned(),
@@ -137,12 +135,14 @@ impl VersionLensLspState {
                 ))
     }
 
+    /// Applies a folder change. New folders get the default settings until
+    /// their settings are read.
     pub(crate) fn change_workspace_folders(
         &mut self,
         event: lsp_types::WorkspaceFoldersChangeEvent,
-    ) {
+    ) -> io::Result<()> {
         if event.added.is_empty() && event.removed.is_empty() {
-            return;
+            return Ok(());
         }
         self.root_uri = None;
         self.workspace_folders
@@ -167,31 +167,25 @@ impl VersionLensLspState {
                 document.workspace_root = root;
             }
         }
+        self.regroup()?;
         self.invalidate_workspace();
         self.synchronize_workspace_documents();
+        Ok(())
     }
 
-    pub(crate) fn replace_configuration(&mut self, config: SessionConfig) -> io::Result<()> {
-        let session = version_lens_session(config.clone());
-        let session = if self.modes.persistent {
-            session.with_application_cache()?
-        } else {
-            session
-        };
+    /// Gives every document a new generation, so work started with the old
+    /// settings is not used.
+    pub(super) fn renew_generations(&mut self) -> io::Result<()> {
         let count = u64::try_from(self.revisions.len()).map_err(io::Error::other)?;
         let generation = self
             .generation
             .checked_add(count)
             .ok_or_else(|| io::Error::other("document generation exhausted"))?;
-        self.session.cancel_pending_resolutions();
-        self.session = session;
-        self.configuration = config;
         for revision in self.revisions.values_mut() {
             self.generation += 1;
             revision.generation = self.generation;
         }
         self.generation = generation;
-        self.synchronize_workspace_documents();
         Ok(())
     }
 
@@ -200,20 +194,26 @@ impl VersionLensLspState {
             self.advance_document_generation();
             return;
         }
-        let documents = self
-            .documents
-            .keys()
-            .filter_map(|uri| self.document_work(uri).map(|work| work.input))
-            .collect();
-        if !self.session.set_workspace_documents(documents) {
-            return;
+        let mut changed = false;
+        for (index, group) in self.groups().iter().enumerate() {
+            let documents = self
+                .documents
+                .keys()
+                .filter(|uri| self.group_of(uri) == index)
+                .filter_map(|uri| self.document_work(uri).map(|work| work.input))
+                .collect();
+            changed |= group.session.set_workspace_documents(documents);
         }
-        self.advance_document_generation();
+        if changed {
+            self.advance_document_generation();
+        }
     }
 
     pub(crate) fn invalidate_workspace(&mut self) {
         if !self.modes.controller_managed {
-            self.session.invalidate_workspace();
+            for group in self.groups() {
+                group.session.invalidate_workspace();
+            }
         }
         self.advance_document_generation();
     }
@@ -222,7 +222,7 @@ impl VersionLensLspState {
         let Some(generation) = self.generation.checked_add(1) else {
             self.documents.clear();
             self.revisions.clear();
-            self.session.cancel_pending_resolutions();
+            self.cancel_pending_resolutions();
             return;
         };
         self.generation = generation;
