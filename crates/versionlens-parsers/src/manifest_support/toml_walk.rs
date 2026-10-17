@@ -1,3 +1,4 @@
+use crate::manifest::path_query::selects;
 use toml_edit::Item::{
     ArrayOfTables as TomlArrayOfTables, None as TomlNone, Table as TomlTable,
     Value as TomlItemValue,
@@ -47,4 +48,19 @@ fn visit_toml_item<'a>(
         TomlTable(child) => walk_toml_values(child, keys, visit),
         TomlArrayOfTables(_) | TomlNone => {}
     }
+}
+
+/// The first of `dependency_paths` that selects the table holding the leaf at
+/// `keys`. The leaf's own key is not part of its table path.
+pub(crate) fn selected_dependency_path<'a>(
+    keys: &[&Key],
+    dependency_paths: &'a [&str],
+) -> Option<&'a str> {
+    let (_, table_keys) = keys.split_last()?;
+    let table_keys = table_keys.iter().map(|key| key.get()).collect::<Vec<_>>();
+
+    dependency_paths
+        .iter()
+        .copied()
+        .find(|path| selects(&path.split('.').collect::<Vec<_>>(), &table_keys))
 }

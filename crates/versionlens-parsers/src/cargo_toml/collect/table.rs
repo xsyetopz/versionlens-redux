@@ -1,5 +1,5 @@
 use crate::cargo_toml::dependency::{CargoTomlDependencyInput, toml_dependency};
-use crate::cargo_toml::paths::match_cargo_dependency_table;
+use crate::manifest_support::toml_walk::selected_dependency_path;
 use toml_edit::{Key, Value as TomlValue};
 use versionlens_model::Dependency;
 
@@ -11,7 +11,7 @@ pub(super) fn collect_cargo_table_dependency(
     value: &TomlValue,
     out: &mut Vec<Dependency>,
 ) {
-    let Some(table_match) = match_cargo_dependency_table(keys, context.dependency_paths) else {
+    let Some(table_match) = selected_dependency_path(keys, context.dependency_paths) else {
         return;
     };
     let name_key = cargo_dependency_name_key(keys, table_match);

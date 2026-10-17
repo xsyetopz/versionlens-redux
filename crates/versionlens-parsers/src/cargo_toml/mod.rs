@@ -3,7 +3,6 @@ use versionlens_model::Dependency;
 
 mod collect;
 mod dependency;
-mod paths;
 mod project_version;
 
 use collect::{CargoCollectContext, collect_toml_value};
