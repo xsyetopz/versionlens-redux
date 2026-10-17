@@ -262,6 +262,17 @@ impl VersionLensSession {
         context: &RegistryContext,
         input: &versionlens_model::DocumentInput,
     ) -> CacheScope {
+        self.document_cache_scope_with_graph(context, input).0
+    }
+
+    /// Cache scope plus the workspace graph whose fingerprint it names.
+    /// Resolution uses this graph, so a result never lands under the
+    /// fingerprint of a different graph.
+    pub(crate) fn document_cache_scope_with_graph(
+        &self,
+        context: &RegistryContext,
+        input: &versionlens_model::DocumentInput,
+    ) -> (CacheScope, crate::workspace::WorkspaceGraph) {
         // Read the revision before any workspace file, so a result computed
         // from older files never lands under a newer revision.
         let revision = self.workspace_revision();
@@ -281,7 +292,7 @@ impl VersionLensSession {
             shared: scope,
         };
         self.hydrate_persistent_outcomes(input, &scope);
-        scope
+        (scope, workspace)
     }
 
     pub(crate) fn persistent_suggestion_key(

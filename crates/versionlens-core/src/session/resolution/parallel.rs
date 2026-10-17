@@ -12,7 +12,8 @@ pub(super) async fn resolve_dependencies(
     session: &VersionLensSession,
     request: ResolutionRequest<'_>,
 ) -> Vec<Suggestion> {
-    let cache_scope = session.document_cache_scope(request.context, request.input);
+    let (cache_scope, workspace) =
+        session.document_cache_scope_with_graph(request.context, request.input);
     let use_cached_suggestions = request.responses.is_empty() && request.project_bump.is_none();
     let mut dependencies = Vec::with_capacity(request.dependencies.len());
     let mut suggestions = iter::repeat_with(|| None)
@@ -28,7 +29,7 @@ pub(super) async fn resolve_dependencies(
         }
     }
 
-    let workspace = Arc::new(session.workspace_graph(request.input));
+    let workspace = Arc::new(workspace);
     let workspace_documents = session.workspace_documents();
     let workspace_root = Arc::new(
         workspace::document_path(request.input)
