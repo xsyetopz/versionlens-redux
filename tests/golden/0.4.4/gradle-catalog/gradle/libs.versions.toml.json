@@ -92,5 +92,19 @@
   "diagnostics": [],
   "kind": "GradleVersionCatalogToml",
   "path": "gradle-catalog/gradle/libs.versions.toml",
-  "updateAllEdits": []
+  "updateAllEdits": [
+    {
+      "newText": "2.0.0",
+      "range": {
+        "end": {
+          "character": 53,
+          "line": 1
+        },
+        "start": {
+          "character": 48,
+          "line": 1
+        }
+      }
+    }
+  ]
 }

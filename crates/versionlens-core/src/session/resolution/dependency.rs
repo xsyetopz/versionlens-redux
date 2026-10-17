@@ -5,7 +5,7 @@ use serde_json::from_str;
 use std::path::Path;
 use versionlens_model::Ecosystem::{Composer, Docker, Dotnet};
 use versionlens_model::{
-    Dependency, ProjectVersionBump, is_build_update, is_dotnet_requirement_parseable,
+    Dependency, ManifestKind, ProjectVersionBump, is_build_update, is_dotnet_requirement_parseable,
 };
 use versionlens_providers::{
     is_registry_dependency, is_unsupported_dotnet_requirement,
@@ -195,6 +195,7 @@ impl VersionLensSession {
             dependency,
             responses,
             has_registry_response,
+            context,
             ..
         } = request;
         if let Some(message) = lookup.fetch_error {
@@ -233,6 +234,8 @@ impl VersionLensSession {
             Some(latest)
                 if lookup.fixed_requirement_matched
                     && dependency.canonical_reference.is_none()
+                    // Gradle reads a plain catalog version as an upgradable requirement, not a strict pin.
+                    && context.manifest_kind() != Some(ManifestKind::GradleVersionCatalogToml)
                     && !latest_matches_fixed_current(&dependency, latest.as_str())
                     && !is_build_update(latest.as_str(), &dependency.requirement) =>
             {

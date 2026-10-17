@@ -61,18 +61,35 @@ fn collect_versions(
         let Some((requirement, span, prefix)) = gradle_version_requirement(value) else {
             continue;
         };
+        let coordinate = version_alias_coordinate(document, name);
         dependencies.push(gradle_dependency(GradleDependencyInput {
             text,
             group: "versions",
             name: name.to_owned(),
             requirement,
-            hosted_url: Some("version.alias"),
-            hosted_name: None,
+            hosted_url: coordinate.is_none().then_some("version.alias"),
+            hosted_name: coordinate.as_deref(),
             range_span: key.span(),
             requirement_span: span,
             requirement_prefix: prefix.unwrap_or_default(),
         }));
     }
+}
+
+fn version_alias_coordinate(document: &GradleCatalogDocument<'_>, alias: &str) -> Option<String> {
+    let referencing_library = catalog_inline_entries(document, "libraries")
+        .into_iter()
+        .filter(|inline| inline_version_ref(inline) == Some(alias))
+        .find_map(inline_module_name);
+    referencing_library.or_else(|| {
+        catalog_inline_entries(document, "plugins")
+            .into_iter()
+            .filter(|inline| inline_version_ref(inline) == Some(alias))
+            .find_map(|inline| {
+                let id = inline.get("id")?.as_str()?;
+                Some(gradle_plugin_marker_name(id))
+            })
+    })
 }
 
 fn collect_alias_table(
@@ -332,6 +349,25 @@ fn inline_version_requirement(inline: &InlineTable) -> InlineVersionRequirement<
     }
 
     None
+}
+
+fn inline_version_ref(inline: &InlineTable) -> Option<&str> {
+    let (version_ref, _, hosted_url, _) = inline_version_requirement(inline)?;
+    (hosted_url == Some("version.ref")).then_some(version_ref)
+}
+
+fn catalog_inline_entries<'a>(
+    document: &'a GradleCatalogDocument<'_>,
+    table_name: &str,
+) -> Vec<&'a InlineTable> {
+    let Some(table) = document.get(table_name).and_then(|value| value.as_table()) else {
+        return vec![];
+    };
+
+    table
+        .iter()
+        .filter_map(|(_, item)| item.as_value()?.as_inline_table())
+        .collect()
 }
 
 fn gradle_module_notation(notation: &str) -> Option<(&str, &str)> {

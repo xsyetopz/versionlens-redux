@@ -245,9 +245,7 @@
     "package": "example.test:foo",
     "ecosystem": "Maven",
     "requirement": "1.0.0",
-    "latest": "1.0.0",
-    "status": "fixed",
-    "selected": "2.0.0",
+    "latest": "2.0.0",
     "edit": "2.0.0",
     "range_text": "1.0.0"
   },
