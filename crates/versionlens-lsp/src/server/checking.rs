@@ -6,6 +6,7 @@ use crossbeam_channel::{Receiver, Sender, bounded};
 use lsp_server::{Connection, Message, Notification, Request, RequestId};
 use lsp_types::{CodeLens, Diagnostic, DiagnosticSeverity};
 use serde_json::Value;
+use tokio::runtime::Handle;
 use versionlens_core::{WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking};
 
 use super::publish_diagnostics;
@@ -28,6 +29,7 @@ struct DiscoveryState {
 
 pub(super) struct WorkspaceController {
     checking: WorkspaceChecking,
+    runtime: Handle,
     shutdown: Sender<()>,
     pub(super) receiver: Receiver<WorkspaceCheckEvent>,
     published: HashMap<String, PublishedDocument>,
@@ -38,11 +40,12 @@ pub(super) struct WorkspaceController {
 }
 
 impl WorkspaceController {
-    pub(super) fn start(state: &VersionLensLspState) -> std::io::Result<Self> {
+    pub(super) fn start(state: &VersionLensLspState, runtime: Handle) -> std::io::Result<Self> {
         let (sender, receiver) = bounded(EVENT_QUEUE_CAPACITY);
         let (shutdown, stopped) = bounded(1);
         let checking = state.session.start_workspace_checking(
             state.workspace_checking_options(),
+            runtime.clone(),
             move |event| {
                 crossbeam_channel::select! {
                     send(sender, event) -> _ => {}
@@ -52,6 +55,7 @@ impl WorkspaceController {
         )?;
         Ok(Self {
             checking,
+            runtime,
             shutdown,
             receiver,
             published: HashMap::new(),
@@ -85,7 +89,7 @@ impl WorkspaceController {
 
     pub(super) fn restart(&mut self, state: &VersionLensLspState) -> std::io::Result<()> {
         self.stop();
-        let mut replacement = Self::start(state)?;
+        let mut replacement = Self::start(state, self.runtime.clone())?;
         replacement.published = mem::take(&mut self.published);
         replacement.discovery.failures = mem::take(&mut self.discovery.failures);
         replacement.reported_failures = mem::take(&mut self.reported_failures);

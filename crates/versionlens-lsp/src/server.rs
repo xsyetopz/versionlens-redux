@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::time::Duration;
 
 use anyhow::{Context, Result};
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -13,6 +12,7 @@ use lsp_types::{
 };
 use serde::Deserialize;
 use serde_json::Value;
+use tokio::runtime::Runtime;
 
 use crate::state::{
     self, DISPLAY_CODE_LENS_COMMAND, UPDATE_DEPENDENCY_COMMAND, VersionLensLspState,
@@ -41,13 +41,16 @@ struct DocumentChange {
 }
 
 mod checking;
-mod transport;
 mod work;
 use checking::WorkspaceController;
 use work::WorkQueue;
 
 pub fn run_stdio_server() -> Result<()> {
-    transport::run(|connection| run_connection(connection, true))
+    let (connection, io_threads) = Connection::stdio();
+    run_connection(&connection, true)?;
+    drop(connection);
+    io_threads.join()?;
+    Ok(())
 }
 
 fn run_connection(connection: &Connection, persistent: bool) -> Result<()> {
@@ -114,13 +117,16 @@ fn initialize(connection: &Connection, persistent: bool) -> Result<VersionLensLs
 }
 
 fn run_message_loop(connection: &Connection, state: &mut VersionLensLspState) -> Result<()> {
-    let mut work = WorkQueue::new()?;
+    let runtime = Runtime::new().context("failed to create LSP async runtime")?;
+    let mut work = WorkQueue::new(runtime.handle().clone());
     state.use_workspace_controller();
-    let mut checking = WorkspaceController::start(state)?;
-    let deadlines = crossbeam_channel::tick(Duration::from_millis(200));
+    let mut checking = WorkspaceController::start(state, runtime.handle().clone())?;
     loop {
+        let expiry = work
+            .next_expiry()
+            .map_or_else(crossbeam_channel::never, crossbeam_channel::at);
         crossbeam_channel::select! {
-            recv(deadlines) -> now => {
+            recv(expiry) -> now => {
                 if let Ok(now) = now { work.expire_applications(connection, now)?; }
             }
             recv(work.receiver) -> completion => {
@@ -151,6 +157,7 @@ fn run_message_loop(connection: &Connection, state: &mut VersionLensLspState) ->
         }
     }
     state.session.cancel_pending_resolutions();
+    runtime.shutdown_background();
     Ok(())
 }
 

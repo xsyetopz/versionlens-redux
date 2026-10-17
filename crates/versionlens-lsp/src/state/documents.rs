@@ -1,4 +1,5 @@
 use lsp_types::{CodeLens, Diagnostic, PublishDiagnosticsParams, Uri};
+use versionlens_core::AnalyzeDocumentOutput;
 use versionlens_model::{DocumentInput, document_text_hash};
 
 use super::presentation::{into_lsp_code_lenses, into_lsp_diagnostic};
@@ -107,22 +108,7 @@ impl VersionLensLspState {
         uri: &str,
         generation: u64,
     ) -> ResolvedDocument {
-        let analysis = self.session.analyze_document(input);
-        let dependency_ranges = &analysis.dependencies;
-        ResolvedDocument {
-            code_lenses: analysis
-                .code_lenses
-                .into_iter()
-                .flat_map(|payload| {
-                    into_lsp_code_lenses(payload, dependency_ranges, uri, generation)
-                })
-                .collect(),
-            diagnostics: analysis
-                .diagnostics
-                .into_iter()
-                .map(into_lsp_diagnostic)
-                .collect(),
-        }
+        resolved_document(self.session.analyze_document(input), uri, generation)
     }
 
     pub(crate) fn checked_document(&self, input: &DocumentInput) -> Option<CheckedDocument> {
@@ -252,6 +238,27 @@ impl VersionLensLspState {
             |work| work.input,
         );
         self.session.analyze_document(input)
+    }
+}
+
+/// Maps an engine analysis to LSP lenses and diagnostics. It does no I/O.
+pub(crate) fn resolved_document(
+    analysis: AnalyzeDocumentOutput,
+    uri: &str,
+    generation: u64,
+) -> ResolvedDocument {
+    let dependency_ranges = &analysis.dependencies;
+    ResolvedDocument {
+        code_lenses: analysis
+            .code_lenses
+            .into_iter()
+            .flat_map(|payload| into_lsp_code_lenses(payload, dependency_ranges, uri, generation))
+            .collect(),
+        diagnostics: analysis
+            .diagnostics
+            .into_iter()
+            .map(into_lsp_diagnostic)
+            .collect(),
     }
 }
 

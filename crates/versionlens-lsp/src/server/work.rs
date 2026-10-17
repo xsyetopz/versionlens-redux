@@ -6,17 +6,24 @@ use crossbeam_channel::{Receiver, Sender, unbounded};
 use lsp_server::{Connection, ErrorCode, Message, Request, RequestId, Response};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use tokio::runtime::Runtime;
+use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
-use versionlens_core::{ResolveDocumentOutput, SessionTask};
+use versionlens_core::{AnalyzeDocumentOutput, ResolveDocumentOutput, SessionTask};
 
 use super::{publish_diagnostics, respond, respond_error};
-use crate::state::{DocumentWork, ResolvedDocument, VersionLensLspState};
+use crate::state::{DocumentWork, ResolvedDocument, VersionLensLspState, resolved_document};
 
 pub(super) struct Completion {
     id: RequestId,
-    output: Result<ResolveDocumentOutput, String>,
+    output: Result<TaskOutput, String>,
 }
+
+enum TaskOutput {
+    Analyzed(AnalyzeDocumentOutput),
+    Resolved(ResolveDocumentOutput),
+}
+
+const PANICKED: &str = "VersionLens task panicked";
 
 enum RequestKind {
     Lenses,
@@ -36,7 +43,7 @@ pub(super) struct WorkQueue {
     pub(super) receiver: Receiver<Completion>,
     applications: HashMap<RequestId, PendingApplication>,
     next_id: u64,
-    runtime: Runtime,
+    runtime: Handle,
 }
 
 struct CompletedDocument {
@@ -49,10 +56,10 @@ struct PendingApplication {
     deadline: Instant,
 }
 
-struct Submission {
+struct Submission<F> {
     id: RequestId,
     work: DocumentWork,
-    task: SessionTask,
+    job: F,
     kind: RequestKind,
 }
 
@@ -65,17 +72,17 @@ struct UpdateArguments {
 }
 
 impl WorkQueue {
-    pub(super) fn new() -> Result<Self> {
+    pub(super) fn new(runtime: Handle) -> Self {
         let (sender, receiver) = unbounded();
-        Ok(Self {
+        Self {
             pending: HashMap::new(),
             completed: HashMap::new(),
             sender,
             receiver,
             applications: HashMap::new(),
             next_id: 0,
-            runtime: Runtime::new().context("failed to create LSP async runtime")?,
-        })
+            runtime,
+        }
     }
 
     pub(super) fn lenses(
@@ -95,29 +102,34 @@ impl WorkQueue {
         {
             return respond_with_document(connection, id, &work, &completed.resolved);
         }
-        if state.session.document_is_fresh(&work.input) {
-            let resolved = state.analyzed_document(uri);
-            if let Some(resolved) = resolved {
-                let result = respond_with_document(connection, id, &work, &resolved);
-                self.completed.insert(
-                    uri.to_owned(),
-                    CompletedDocument {
-                        generation: work.generation,
-                        resolved,
-                    },
-                );
-                return result;
+        // The freshness check and the analysis read the persistent cache, so
+        // they run on the runtime and not on the protocol thread.
+        let session = state.session.clone();
+        let input = work.input.clone();
+        let job = async move {
+            let fresh = {
+                let session = session.clone();
+                let input = input.clone();
+                tokio::task::spawn_blocking(move || session.document_is_fresh(&input))
+                    .await
+                    .map_err(|_| PANICKED.to_owned())?
+            };
+            if !fresh {
+                session
+                    .run_task(SessionTask::Resolve(input.clone()))
+                    .await?;
             }
-            return respond(connection, id, json!([]));
-        }
-        let task = SessionTask::Resolve(work.input.clone());
+            tokio::task::spawn_blocking(move || session.analyze_document(input))
+                .await
+                .map(TaskOutput::Analyzed)
+                .map_err(|_| PANICKED.to_owned())
+        };
         self.submit(
-            state,
             connection,
             Submission {
                 id,
                 work,
-                task,
+                job,
                 kind: RequestKind::Lenses,
             },
         )
@@ -176,28 +188,27 @@ impl WorkQueue {
             dependency: args.arguments.get(1).cloned(),
             selected_version: args.arguments.get(3).cloned(),
         };
+        let session = state.session.clone();
+        let job = async move { session.run_task(task).await.map(TaskOutput::Resolved) };
         self.submit(
-            state,
             connection,
             Submission {
                 id,
                 work,
-                task,
+                job,
                 kind: RequestKind::Update,
             },
         )
     }
 
-    fn submit(
-        &mut self,
-        state: &VersionLensLspState,
-        connection: &Connection,
-        submission: Submission,
-    ) -> Result<()> {
+    fn submit<F>(&mut self, connection: &Connection, submission: Submission<F>) -> Result<()>
+    where
+        F: Future<Output = Result<TaskOutput, String>> + Send + 'static,
+    {
         let Submission {
             id,
             work,
-            task,
+            job,
             kind,
         } = submission;
         if self.pending.contains_key(&id) {
@@ -210,9 +221,14 @@ impl WorkQueue {
         }
         let sender = self.sender.clone();
         let completion_id = id.clone();
-        let session = state.session.clone();
-        let handle = self.runtime.spawn(async move {
-            let output = session.run_task(task).await;
+        let run = self.runtime.spawn(job);
+        let cancellation = run.abort_handle();
+        self.runtime.spawn(async move {
+            let output = match run.await {
+                Ok(output) => output,
+                Err(error) if error.is_panic() => Err(PANICKED.to_owned()),
+                Err(_) => return,
+            };
             let _ = sender.send(Completion {
                 id: completion_id,
                 output,
@@ -222,7 +238,7 @@ impl WorkQueue {
             id,
             Pending {
                 work,
-                cancellation: handle.abort_handle(),
+                cancellation,
                 kind,
             },
         );
@@ -252,24 +268,30 @@ impl WorkQueue {
                 return respond_error(connection, completion.id, ErrorCode::RequestFailed, message);
             }
         };
-        match pending.kind {
-            RequestKind::Lenses => {
-                let resolved = state.analyzed_document(&pending.work.uri);
-                if let Some(resolved) = resolved {
-                    let result =
-                        respond_with_document(connection, completion.id, &pending.work, &resolved);
-                    self.completed.insert(
-                        pending.work.uri,
-                        CompletedDocument {
-                            generation: pending.work.generation,
-                            resolved,
-                        },
-                    );
-                    return result;
-                }
-                respond(connection, completion.id, json!([]))
+        match (pending.kind, output) {
+            (RequestKind::Lenses, TaskOutput::Analyzed(analysis)) => {
+                let resolved =
+                    resolved_document(analysis, &pending.work.uri, pending.work.generation);
+                let result =
+                    respond_with_document(connection, completion.id, &pending.work, &resolved);
+                self.completed.insert(
+                    pending.work.uri,
+                    CompletedDocument {
+                        generation: pending.work.generation,
+                        resolved,
+                    },
+                );
+                result
             }
-            RequestKind::Update => self.apply(state, connection, completion.id, output),
+            (RequestKind::Update, TaskOutput::Resolved(output)) => {
+                self.apply(state, connection, completion.id, output)
+            }
+            _ => respond_error(
+                connection,
+                completion.id,
+                ErrorCode::InternalError,
+                "unexpected task output".to_owned(),
+            ),
         }
     }
 
@@ -369,6 +391,13 @@ impl WorkQueue {
             )?;
         }
         Ok(())
+    }
+
+    pub(super) fn next_expiry(&self) -> Option<Instant> {
+        self.applications
+            .values()
+            .map(|application| application.deadline)
+            .min()
     }
 
     pub(super) fn expire_applications(

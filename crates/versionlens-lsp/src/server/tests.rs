@@ -386,3 +386,5 @@ fn assert_diagnostics(message: Message, expected_uri: &str, empty: bool) -> Resu
 mod updates;
 
 mod refresh;
+
+mod responsiveness;
