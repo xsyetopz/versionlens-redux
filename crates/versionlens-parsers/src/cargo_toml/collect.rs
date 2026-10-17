@@ -1,4 +1,3 @@
-mod project;
 mod table;
 
 use toml_edit::{Key, Value as TomlValue};
@@ -6,7 +5,6 @@ use toml_edit::{Key, Value as TomlValue};
 use versionlens_model::Dependency;
 
 use super::dependency::{CargoTomlDependencyInput, toml_dependency};
-use project::collect_cargo_project_version;
 use table::collect_cargo_table_dependency;
 
 pub(super) struct CargoCollectContext<'a> {
@@ -20,7 +18,7 @@ pub(super) fn collect_toml_value(
     value: &TomlValue,
     out: &mut Vec<Dependency>,
 ) {
-    if keys.len() < 2 || collect_cargo_project_version(context, keys, value, out) {
+    if keys.len() < 2 {
         return;
     }
 
