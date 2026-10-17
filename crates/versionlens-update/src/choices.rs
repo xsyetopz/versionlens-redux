@@ -3,10 +3,11 @@ use std::cmp::Ordering::{
     Equal as OrderingEqual, Greater as OrderingGreater, Less as OrderingLess,
 };
 use std::collections::BTreeSet;
-use versionlens_model::requirement_satisfies_latest;
+use versionlens_model::VersionDialect;
 
 use crate::suggestion::UpdateChoice;
 use crate::support;
+use crate::{BumpKind, PlanStatus, has_a_floor};
 
 type UpdateChoices = Vec<UpdateChoice>;
 
@@ -15,7 +16,14 @@ pub fn release_update_choices(
     latest: &str,
     versions: &[String],
 ) -> UpdateChoices {
-    release_update_choices_with_prereleases(requirement, latest, versions, true, &[])
+    release_update_choices_with_prereleases(
+        requirement,
+        latest,
+        versions,
+        true,
+        &[],
+        VersionDialect::Semver,
+    )
 }
 
 pub fn release_update_choices_with_prereleases(
@@ -24,9 +32,10 @@ pub fn release_update_choices_with_prereleases(
     versions: &[String],
     include_prereleases: bool,
     prerelease_tags: &[String],
+    dialect: VersionDialect,
 ) -> UpdateChoices {
     let requirement = comparable_requirement(requirement);
-    let mut choices = stable_update_choices(requirement, latest, versions);
+    let mut choices = stable_update_choices(requirement, latest, versions, dialect);
     if include_prereleases {
         choices.extend(prerelease_update_choices(
             requirement,
@@ -42,11 +51,19 @@ fn comparable_requirement(requirement: &str) -> &str {
     versionlens_model::registry_alias_requirement(requirement).unwrap_or(requirement)
 }
 
-fn stable_update_choices(requirement: &str, latest: &str, versions: &[String]) -> UpdateChoices {
-    let stable_versions = stable_versions(versions);
-    let Some(current) = parse_release_semver(requirement.trim()) else {
-        return range_update_choices(requirement, latest, &stable_versions, versions.is_empty());
+fn stable_update_choices(
+    requirement: &str,
+    latest: &str,
+    versions: &[String],
+    dialect: VersionDialect,
+) -> UpdateChoices {
+    // Cargo reads a bare version as a caret requirement, not a pin.
+    let current =
+        parse_release_semver(requirement.trim()).filter(|_| dialect != VersionDialect::Cargo);
+    let Some(current) = current else {
+        return range_update_choices(requirement, latest, versions, dialect);
     };
+    let stable_versions = stable_versions(versions);
 
     let mut choices = vec![];
     if !current_matches_latest(&current, latest)
@@ -83,105 +100,48 @@ fn current_matches_latest(current: &Version, latest: &str) -> bool {
     })
 }
 
+/// Choices for a range requirement, built from the bounded bump set of
+/// `update::plan`. With no version list, the registry's latest is the only
+/// known release.
 fn range_update_choices(
     requirement: &str,
     latest: &str,
-    stable_versions: &[(&str, Version)],
-    has_no_versions: bool,
+    versions: &[String],
+    dialect: VersionDialect,
 ) -> UpdateChoices {
-    if !looks_like_range_requirement(requirement) {
+    if !looks_like_range_requirement(requirement) && dialect != VersionDialect::Cargo {
         return vec![];
     }
 
+    let known_latest;
+    let versions = if versions.is_empty() {
+        known_latest = [latest.to_owned()];
+        &known_latest[..]
+    } else {
+        versions
+    };
+    let plan = crate::plan(requirement, dialect, versions);
+    if plan.status == PlanStatus::AllowsLatest && !has_a_floor(requirement, dialect) {
+        return vec![];
+    }
     let mut choices = vec![];
-    if range_latest_update_is_useful(requirement, latest) {
-        push_unique_choice(&mut choices, latest_choice_label(latest), latest, "update");
-    }
-
-    if stable_versions.is_empty() {
-        return if has_no_versions { choices } else { vec![] };
-    }
-
-    if let Some(version) = latest_satisfying_range(requirement, stable_versions) {
-        if let Some(current) = parse_release_semver(&version) {
-            if let Some(version) = next_range_major(&current, stable_versions) {
-                push_unique_choice(&mut choices, "major", &version, "updateMajor");
-            }
-            if let Some(version) = next_minor(&current, stable_versions) {
-                push_unique_choice(&mut choices, "minor", &version, "updateMinor");
-            }
-            if let Some(version) = next_patch(&current, stable_versions) {
-                push_unique_choice(&mut choices, "patch", &version, "updatePatch");
-            }
-        }
-        if !requirement_satisfies_latest(requirement, latest)
-            && range_target_update_is_useful(requirement, &version)
-        {
-            push_unique_choice(&mut choices, "bump", &version, "update");
-        }
-
-        push_intermediate_range_choices(&mut choices, &version, latest, stable_versions);
+    for bump in plan.bumps {
+        let (label, command) = match bump.kind {
+            BumpKind::Satisfying => ("bump", "update"),
+            BumpKind::Patch => ("patch", "updatePatch"),
+            BumpKind::Minor => ("minor", "updateMinor"),
+            BumpKind::Major => ("major", "updateMajor"),
+            BumpKind::Latest => (latest_choice_label(&bump.version), "update"),
+        };
+        push_unique_choice(&mut choices, label, &bump.version, command);
     }
 
     sort_choices_incrementally(&mut choices);
     choices
 }
 
-fn push_intermediate_range_choices(
-    choices: &mut UpdateChoices,
-    current: &str,
-    latest: &str,
-    stable_versions: &[(&str, Version)],
-) {
-    let Ok(current) = crate::parse_semver(current) else {
-        return;
-    };
-    let Ok(latest) = crate::parse_semver(latest.trim()) else {
-        return;
-    };
-
-    // Ranged requirements can cross several release lines. Keep every known
-    // stable release between the effective current version and the registry's
-    // latest version so users can advance incrementally instead of jumping
-    // straight to the latest release.
-    for (release, _version) in stable_versions
-        .iter()
-        .filter(|(_, version)| *version > current && *version < latest)
-    {
-        push_unique_choice(choices, "version", release, "update");
-    }
-}
-
-fn range_latest_update_is_useful(requirement: &str, latest: &str) -> bool {
-    !requirement_satisfies_latest(requirement, latest)
-}
-
-fn range_target_update_is_useful(requirement: &str, target: &str) -> bool {
-    if !requirement_satisfies_latest(requirement, target) {
-        return true;
-    }
-
-    let Some(minimum) = minimum_version(requirement) else {
-        return true;
-    };
-    let Some(target) = parse_release_semver(target) else {
-        return true;
-    };
-
-    release_precedence(&minimum) != release_precedence(&target)
-}
-
 fn release_precedence(version: &Version) -> (u64, u64, u64, &semver::Prerelease) {
     (version.major, version.minor, version.patch, &version.pre)
-}
-
-fn next_range_major(current: &Version, stable_versions: &[(&str, Version)]) -> Option<String> {
-    let next_major = stable_versions
-        .iter()
-        .map(|(_, version)| version.major)
-        .filter(|major| *major > current.major)
-        .min()?;
-    latest_release_for_major(next_major, stable_versions)
 }
 
 fn latest_choice_label(latest: &str) -> &'static str {
@@ -190,17 +150,6 @@ fn latest_choice_label(latest: &str) -> &'static str {
     } else {
         "latest"
     }
-}
-
-fn latest_satisfying_range(
-    requirement: &str,
-    stable_versions: &[(&str, Version)],
-) -> Option<String> {
-    stable_versions
-        .iter()
-        .filter(|(release, _)| requirement_satisfies_latest(requirement, release))
-        .max_by(|(_, left), (_, right)| left.cmp(right))
-        .map(|(release, _)| (*release).to_owned())
 }
 
 fn next_major(

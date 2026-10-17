@@ -16,9 +16,6 @@ async fn code_lenses_offer_bump_update_choices_for_ranges() {
         [
             "M satisfies 4.1.10",
             "U bump 4.1.10",
-            "U version 5.1.1",
-            "U version 5.2.0",
-            "U version 5.3.3",
             "U latest 5.4.5",
         ]
     );
@@ -27,9 +24,6 @@ async fn code_lenses_offer_bump_update_choices_for_ranges() {
         [
             Vec::<&str>::new(),
             vec!["update", "4.1.10"],
-            vec!["update", "5.1.1"],
-            vec!["update", "5.2.0"],
-            vec!["update", "5.3.3"],
             vec!["update", "5.4.5"]
         ]
     );

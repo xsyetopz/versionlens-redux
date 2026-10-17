@@ -225,3 +225,47 @@ async fn bulk_update_skips_prerelease_only_invalid_range_updates() {
     assert_eq!(output.suggestions[0].status, "invalidRange");
     assert!(output.edits.is_empty());
 }
+
+#[tokio::test]
+async fn bulk_update_raises_the_floor_of_a_caret_range_that_allows_latest() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), r#"{"dependencies":{"left-pad":"^1.0.0"}}"#.to_owned(), None),
+        Some("update"),
+        None,
+        &[RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.3.0"},"versions":{"1.0.0":{},"1.3.0":{}}}"#.to_owned())],
+    ).await;
+
+    assert_eq!(output.edits.len(), 1, "suggestions: {:?}", output.suggestions);
+    assert_eq!(output.edits[0].new_text, "^1.3.0");
+}
+
+#[tokio::test]
+async fn bulk_update_raises_the_floor_of_a_cargo_bare_requirement() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput::new("file:///Cargo.toml".to_owned(), "toml".to_owned(), "[dependencies]\nserde = \"1.0\"\n".to_owned(), None),
+        Some("update"),
+        None,
+        &[RegistryResponseInput::new("serde".to_owned(), Cargo, r#"{"versions":[{"num":"1.0.0","yanked":false},{"num":"1.1.0","yanked":false}]}"#.to_owned())],
+    ).await;
+
+    assert_eq!(output.edits.len(), 1, "suggestions: {:?}", output.suggestions);
+    assert_eq!(output.edits[0].new_text, "1.1.0");
+}
+
+#[tokio::test]
+async fn bulk_update_leaves_an_exact_pin_at_latest_alone() {
+    let session = standard_session();
+
+    let output = session.apply_command(
+        DocumentInput::new("file:///package.json".to_owned(), "json".to_owned(), r#"{"dependencies":{"left-pad":"1.3.0"}}"#.to_owned(), None),
+        Some("update"),
+        None,
+        &[RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.3.0"},"versions":{"1.0.0":{},"1.3.0":{}}}"#.to_owned())],
+    ).await;
+
+    assert!(output.edits.is_empty(), "edits: {:?}", output.edits);
+}

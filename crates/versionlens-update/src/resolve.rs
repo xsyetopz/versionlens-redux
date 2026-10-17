@@ -6,16 +6,14 @@ use crate::suggestion::SuggestionStatus::{
 };
 use versionlens_model::Ecosystem::{Deno, Docker, Dotnet, Nix, Npm, Python};
 use versionlens_model::{
-    Dependency, VersionDialect, compare_versions_for_dialect, is_build_update,
-    is_dotnet_requirement_parseable, is_update_available_for_dialect,
-    normalized_version_for_dialect, requirement_has_empty_comparator_intersection,
-    requirement_is_parseable_for_dialect, requirement_satisfies_latest_for_dialect,
+    Dependency, VersionDialect, is_build_update, is_dotnet_requirement_parseable,
+    is_update_available_for_dialect, normalized_version_for_dialect,
+    requirement_has_empty_comparator_intersection, requirement_is_parseable_for_dialect,
+    requirement_satisfies_latest_for_dialect,
 };
 
 use crate::constructors::no_match;
 use crate::suggestion::{Suggestion, SuggestionStatus};
-use crate::support;
-use std::cmp::Ordering;
 
 mod github;
 mod npm;
@@ -90,7 +88,8 @@ fn resolved_status(dependency: &Dependency, latest: &str) -> SuggestionStatus {
     }
 
     if requirement_satisfies_latest_for_dialect(requirement, latest, dialect) {
-        if range_minimum_matches_latest(requirement, latest, dialect) {
+        // The requirement allows latest. It is current unless its floor can rise.
+        if crate::floor_reaches(requirement, latest, dialect) {
             return StatusCurrent;
         }
         return StatusSatisfiesLatest;
@@ -148,7 +147,8 @@ fn registry_requirement_is_not_parseable(
         && !requirement_is_parseable_for_dialect(requirement, latest, dialect)
 }
 
-fn version_dialect(dependency: &Dependency) -> VersionDialect {
+/// The version dialect that reads the requirement of `dependency`.
+pub fn version_dialect(dependency: &Dependency) -> VersionDialect {
     if dependency.ecosystem == Python {
         VersionDialect::Pep440
     } else if dependency.is_cargo_dependency_requirement() {
@@ -156,19 +156,6 @@ fn version_dialect(dependency: &Dependency) -> VersionDialect {
     } else {
         VersionDialect::Semver
     }
-}
-
-fn range_minimum_matches_latest(requirement: &str, latest: &str, dialect: VersionDialect) -> bool {
-    let Some(minimum) = range_minimum(requirement) else {
-        return false;
-    };
-
-    compare_versions_for_dialect(&minimum, latest, dialect) == Some(Ordering::Equal)
-}
-
-fn range_minimum(requirement: &str) -> Option<String> {
-    let token = support::minimum_version_token(requirement)?;
-    support::normalize_version_token(token)
 }
 
 fn docker_tag_update_available(dependency: &Dependency, latest: &str) -> bool {

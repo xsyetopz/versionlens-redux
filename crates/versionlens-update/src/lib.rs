@@ -16,9 +16,12 @@ pub use constructors::{
     directory, directory_not_found, error, fixed, invalid, no_match, no_match_with_message,
     not_supported, resolve_with_latest, unresolved,
 };
-pub use resolve::resolve_dependency;
+pub use resolve::{resolve_dependency, version_dialect};
 pub use sort::{can_sort_dependencies, sort_dependency_edits};
 pub use suggestion::{Suggestion, SuggestionStatus, UpdateChoice};
 pub(crate) use support::default;
-pub use update::{Bump, BumpKind, Plan, PlanStatus, bulk_update_edits, plan, update_edits};
+pub use update::{
+    Bump, BumpKind, Plan, PlanStatus, bulk_update_edits, floor_reaches, has_a_floor, plan,
+    update_edits,
+};
 pub(crate) use versionlens_model::parse_semver;

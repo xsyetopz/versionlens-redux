@@ -35,9 +35,7 @@ async fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
         [
             "M satisfies 1.1.2",
             "U bump 1.1.2",
-            "U version 1.2.0",
             "U minor 1.2.2",
-            "U version 2.0.0",
             "U latest 2.2.2"
         ]
     );
@@ -46,9 +44,7 @@ async fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
         [
             Vec::<&str>::new(),
             vec!["update", "1.1.2"],
-            vec!["update", "1.2.0"],
             vec!["updateMinor", "1.2.2"],
-            vec!["update", "2.0.0"],
             vec!["update", "2.2.2"]
         ]
     );

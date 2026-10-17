@@ -4,7 +4,7 @@ use versionlens_providers::{
     RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
     release_versions_from_response_for_package,
 };
-use versionlens_update::{UpdateChoice, release_update_choices_with_prereleases};
+use versionlens_update::{UpdateChoice, release_update_choices_with_prereleases, version_dialect};
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
@@ -192,6 +192,7 @@ fn response_update_choices_with_endpoint(request: ResponseUpdateRequest<'_>) -> 
         &versions,
         include_prereleases,
         prerelease_tags,
+        version_dialect(dependency),
     );
     if current_tag.is_some() && !choices.iter().any(|choice| choice.version == latest) {
         choices.push(UpdateChoice {
@@ -211,11 +212,23 @@ fn update_choice_versions_from_response(
     body: &str,
     latest: &str,
 ) -> Vec<String> {
+    let versions = registry_release_versions(dependency, endpoint, body);
+    if dependency.ecosystem == Npm {
+        return npm_versions_capped_to_latest(versions, latest);
+    }
+    versions
+}
+
+fn registry_release_versions(
+    dependency: &Dependency,
+    endpoint: Option<&RegistryEndpoint>,
+    body: &str,
+) -> Vec<String> {
     let package = dependency
         .hosted_name
         .as_deref()
         .unwrap_or(&dependency.name);
-    let versions = endpoint.map_or_else(
+    endpoint.map_or_else(
         || release_versions_from_response_for_package(dependency.ecosystem, package, body),
         |endpoint| {
             release_versions_from_response_for_endpoint(
@@ -225,11 +238,7 @@ fn update_choice_versions_from_response(
                 body,
             )
         },
-    );
-    if dependency.ecosystem == Npm {
-        return npm_versions_capped_to_latest(versions, latest);
-    }
-    versions
+    )
 }
 
 fn npm_versions_capped_to_latest(versions: Vec<String>, latest: &str) -> Vec<String> {
