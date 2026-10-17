@@ -29,5 +29,17 @@ pub(crate) fn parse_pubspec_yaml_with_paths(
     .unwrap_or_default()
 }
 
+pub(crate) fn parse_pubspec_overrides_yaml_with_paths(
+    text: &str,
+    paths: &[&str],
+) -> Vec<Dependency> {
+    let override_paths = if paths.is_empty() {
+        &["dependency_overrides"][..]
+    } else {
+        paths
+    };
+    parse_pubspec_yaml_with_paths(text, override_paths)
+}
+
 #[cfg(test)]
 mod tests;

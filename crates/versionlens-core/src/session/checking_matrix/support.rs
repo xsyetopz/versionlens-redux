@@ -135,16 +135,11 @@ pub(super) fn test_session() -> VersionLensSession {
     VersionLensSession::new(session_config(crate::default(), false))
 }
 
+/// Each manifest table row carries its parser, so the rows are the dispatch set.
 pub(super) fn parser_dispatch_kind_names() -> BTreeSet<String> {
-    include_str!("../../../../versionlens-parsers/src/document/parsers.rs")
-        .split("ManifestKind::")
-        .skip(1)
-        .map(|tail| {
-            tail.chars()
-                .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
-                .collect::<String>()
-        })
-        .filter(|kind| !kind.is_empty())
+    versionlens_parsers::MANIFESTS
+        .iter()
+        .map(|row| format!("{:?}", row.kind))
         .collect()
 }
 
