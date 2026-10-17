@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request};
-use lsp_types::{CodeLens, PublishDiagnosticsParams, ServerCapabilities};
+use lsp_types::{CodeLens, NumberOrString, PublishDiagnosticsParams, ServerCapabilities};
 use serde_json::{Value, json};
 
 use super::run_connection;
@@ -412,6 +412,8 @@ fn assert_error(message: Message, expected_code: ErrorCode) -> Result<()> {
     Ok(())
 }
 
+/// Asserts a diagnostics notification for `expected_uri`, and whether it has
+/// no diagnostic other than an available update.
 fn assert_diagnostics(message: Message, expected_uri: &str, empty: bool) -> Result<()> {
     let Message::Notification(notification) = message else {
         bail!("expected diagnostics notification, got {message:?}");
@@ -419,7 +421,15 @@ fn assert_diagnostics(message: Message, expected_uri: &str, empty: bool) -> Resu
     assert_eq!(notification.method, "textDocument/publishDiagnostics");
     let params = serde_json::from_value::<PublishDiagnosticsParams>(notification.params)?;
     assert_eq!(params.uri.as_str(), expected_uri);
-    assert_eq!(params.diagnostics.is_empty(), empty);
+    let update = Some(NumberOrString::String(
+        versionlens_core::UPDATE_AVAILABLE.to_owned(),
+    ));
+    let noise = params
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code != update)
+        .count();
+    assert_eq!(noise == 0, empty, "{:?}", params.diagnostics);
     Ok(())
 }
 
@@ -434,3 +444,6 @@ mod incremental;
 mod push;
 
 mod configuration;
+
+#[cfg(test)]
+mod diagnostics;

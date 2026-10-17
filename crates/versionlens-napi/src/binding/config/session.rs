@@ -30,6 +30,7 @@ impl NativeSessionConfig {
             show_vulnerabilities: self.show_vulnerabilities,
             show_suggestion_stats: self.show_suggestion_stats,
             show_prereleases: self.show_prereleases,
+            update_severity: None,
             http: self.http.map(|http| http.into()),
         })
     }

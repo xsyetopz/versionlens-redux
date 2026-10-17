@@ -51,6 +51,7 @@ fn manifest_scoped_provider_http_does_not_override_package_json_npm() {
 
 fn session_with_provider_http(provider_http: Vec<ProviderHttpConfig>) -> crate::VersionLensSession {
     crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: ProviderSettings {

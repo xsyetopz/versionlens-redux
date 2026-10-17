@@ -79,7 +79,14 @@ async fn capture_case(case: &ManifestCase) -> String {
         "path": case.path,
         "dependencies": analysis.dependencies,
         "codeLenses": analysis.code_lenses.iter().map(golden_code_lens).collect::<Vec<_>>(),
-        "diagnostics": analysis.diagnostics.iter().map(golden_diagnostic).collect::<Vec<_>>(),
+        // Update diagnostics have their own tests. Leaving them out means a
+        // golden file changes only when lens, edit or vulnerability output does.
+        "diagnostics": analysis
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.code.as_deref() != Some(crate::UPDATE_AVAILABLE))
+            .map(golden_diagnostic)
+            .collect::<Vec<_>>(),
         "updateAllEdits": resolved.edits,
         "actions": actions,
     });

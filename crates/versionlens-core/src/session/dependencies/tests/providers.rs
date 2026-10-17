@@ -3,6 +3,7 @@ use versionlens_model::Ecosystem::Opam as OpamEcosystem;
 #[test]
 fn disabled_providers_are_filtered_in_rust() {
     let session = crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![EnabledProviderConfig {
             ecosystem: Cargo,

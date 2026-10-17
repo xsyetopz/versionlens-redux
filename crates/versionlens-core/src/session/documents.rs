@@ -100,7 +100,7 @@ impl VersionLensSession {
             .flat_map(|dependency| self.code_lenses_for_dependency(dependency, &scope))
             .collect();
         let mut diagnostic_ranges: HashSet<(u32, u32, u32, u32)> = crate::default();
-        let diagnostics: Vec<DiagnosticView> = dependencies
+        let mut diagnostics: Vec<DiagnosticView> = dependencies
             .iter()
             .filter(|dependency| {
                 let range = dependency.requirement_range;
@@ -119,6 +119,22 @@ impl VersionLensSession {
             &diagnostics,
             &suggestions,
             self.config.show_suggestion_stats,
+        );
+        let mut update_ranges: HashSet<(u32, u32, u32, u32)> = crate::default();
+        diagnostics.extend(
+            suggestions
+                .iter()
+                .flatten()
+                .filter_map(|suggestion| self.update_diagnostic(suggestion))
+                .filter(|diagnostic| {
+                    let range = diagnostic.range;
+                    update_ranges.insert((
+                        range.start.line,
+                        range.start.character,
+                        range.end.line,
+                        range.end.character,
+                    ))
+                }),
         );
         let install_task_config_key = (!dependencies.is_empty())
             .then(|| install_task_config_key_for_manifest(manifest_kind))

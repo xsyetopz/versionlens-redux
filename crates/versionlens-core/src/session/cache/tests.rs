@@ -12,6 +12,7 @@ fn session_with_manifest_cache(
     manifest_kind: Option<versionlens_model::ManifestKind>,
 ) -> crate::VersionLensSession {
     crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: ProviderSettings {

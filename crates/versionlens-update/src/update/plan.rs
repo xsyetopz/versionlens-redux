@@ -160,6 +160,30 @@ pub fn floor_reaches(requirement: &str, version: &str, dialect: VersionDialect) 
     })
 }
 
+/// Whether raising the floor of `requirement` to `version` changes its major
+/// or minor number. A patch-only floor bump is too small to report as an
+/// update, so it stays a lens and a code action.
+pub fn floor_crosses_minor(requirement: &str, version: &str, dialect: VersionDialect) -> bool {
+    has_a_floor(requirement, dialect)
+        && minimum_version_token(requirement.trim())
+            .and_then(major_minor)
+            .zip(major_minor(version))
+            .is_some_and(|(floor, version)| floor != version)
+}
+
+/// The major and minor numbers of a version, with a missing minor read as 0.
+fn major_minor(version: &str) -> Option<(u64, u64)> {
+    let mut numbers = version
+        .trim_matches(['[', ']'])
+        .split(|character: char| !character.is_ascii_digit());
+    let major = numbers.next()?.parse().ok()?;
+    let minor = numbers
+        .next()
+        .and_then(|minor| minor.parse().ok())
+        .unwrap_or(0);
+    Some((major, minor))
+}
+
 /// The version an exact pin names: `=x`, `==x`, `[x]`, or a bare version in the
 /// Semver dialect, which reads a bare version as exact. The Cargo dialect reads a
 /// bare version as a caret requirement, so it is not a pin there. Requirements

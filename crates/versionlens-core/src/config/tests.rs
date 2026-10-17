@@ -212,6 +212,7 @@ fn session_config_input_applies_core_defaults() {
         show_vulnerabilities: None,
         show_suggestion_stats: None,
         show_prereleases: false,
+        update_severity: None,
         http: None,
     });
 
@@ -286,6 +287,7 @@ fn direct_session_config_preserves_nonblank_custom_indicators() {
         build: " build ".to_owned(),
     };
     let session = crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 1,
         enabled_providers: vec![],
         providers: crate::default(),
@@ -398,6 +400,7 @@ fn normalized_session_config() -> SessionConfig {
         show_vulnerabilities: Some(false),
         show_suggestion_stats: Some(true),
         show_prereleases: true,
+        update_severity: None,
         http: Some(HttpConfigInput {
             timeout_ms: Some(250),
             strict_ssl: Some(false),

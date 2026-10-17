@@ -1,6 +1,7 @@
 #[test]
 fn hosted_dependencies_use_hosted_registry_url() {
     let session = crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: ProviderSettings {
@@ -93,6 +94,7 @@ fn github_actions_input() -> DocumentInput {
 
 fn github_actions_session(providers: ProviderSettings) -> crate::VersionLensSession {
     crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers,

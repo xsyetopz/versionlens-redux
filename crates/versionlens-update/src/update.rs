@@ -8,7 +8,9 @@ use versionlens_model::{CanonicalReference, TextEdit};
 use crate::replacement::replacement_text;
 
 mod plan;
-pub use plan::{Bump, BumpKind, Plan, PlanStatus, floor_reaches, has_a_floor, plan};
+pub use plan::{
+    Bump, BumpKind, Plan, PlanStatus, floor_crosses_minor, floor_reaches, has_a_floor, plan,
+};
 
 pub fn update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
     suggestions
@@ -25,6 +27,13 @@ pub fn bulk_update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
         .filter(|suggestion| bulk_update_release_allowed(suggestion.latest.as_deref()))
         .filter_map(suggestion_update_edit)
         .collect()
+}
+
+/// The edit to the latest offered target of one suggestion.
+pub fn update_edit(suggestion: &Suggestion) -> Option<TextEdit> {
+    update_edit_allowed(suggestion)
+        .then(|| suggestion_update_edit(suggestion))
+        .flatten()
 }
 
 fn update_edit_allowed(suggestion: &Suggestion) -> bool {
