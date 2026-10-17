@@ -222,8 +222,13 @@ fn initialize_client(client: &Connection) -> Result<()> {
     assert_eq!(
         execute_commands.commands,
         [
-            DISPLAY_CODE_LENS_COMMAND,
-            crate::state::UPDATE_DEPENDENCY_COMMAND
+            "versionlens.displayCodeLens",
+            "versionlens.server.update",
+            "versionlens.server.updateAll",
+            "versionlens.server.sort",
+            "versionlens.server.chooseBuild",
+            "versionlens.server.clearCache",
+            "versionlens.server.manifestInfo",
         ]
     );
     send_notification(client, "initialized", json!({}))
@@ -448,3 +453,6 @@ mod configuration;
 
 #[cfg(test)]
 mod diagnostics;
+
+#[cfg(test)]
+mod commands;

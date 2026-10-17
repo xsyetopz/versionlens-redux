@@ -10,7 +10,18 @@ use serde::{Deserialize, Serialize};
 use versionlens_core::{WorkspaceCheckingOptions, WorkspaceDiscoveryOptions};
 use versionlens_model::DocumentInput;
 
-pub(crate) const UPDATE_DEPENDENCY_COMMAND: &str = "versionlens.suggestion.onUpdateDependency";
+/// Updates one dependency: `{ uri, dependency, level?, version? }`.
+pub(crate) const UPDATE_COMMAND: &str = "versionlens.server.update";
+/// Updates every dependency of a document at a level: `{ uri, level? }`.
+pub(crate) const UPDATE_ALL_COMMAND: &str = "versionlens.server.updateAll";
+/// Sorts the dependencies of a document: `{ uri }`.
+pub(crate) const SORT_COMMAND: &str = "versionlens.server.sort";
+/// Sets a dependency to one build: `{ uri, dependency, build }`.
+pub(crate) const CHOOSE_BUILD_COMMAND: &str = "versionlens.server.chooseBuild";
+/// Drops cached registry data and checks the workspace again: `{}`.
+pub(crate) const CLEAR_CACHE_COMMAND: &str = "versionlens.server.clearCache";
+/// Describes the manifest of a document: `{ uri }`.
+pub(crate) const MANIFEST_INFO_COMMAND: &str = "versionlens.server.manifestInfo";
 
 pub(crate) const DISPLAY_CODE_LENS_COMMAND: &str = "versionlens.displayCodeLens";
 
@@ -142,7 +153,6 @@ pub(crate) struct ResolvedDocument {
 pub(crate) struct CheckedDocument {
     pub(crate) uri: String,
     pub(crate) version: Option<i32>,
-    pub(crate) generation: u64,
     pub(crate) input: DocumentInput,
     pub(crate) open: bool,
 }
@@ -246,10 +256,17 @@ impl VersionLensLspState {
                 },
             )),
             execute_command_provider: Some(ExecuteCommandOptions {
-                commands: vec![
-                    DISPLAY_CODE_LENS_COMMAND.to_owned(),
-                    UPDATE_DEPENDENCY_COMMAND.to_owned(),
-                ],
+                commands: [
+                    DISPLAY_CODE_LENS_COMMAND,
+                    UPDATE_COMMAND,
+                    UPDATE_ALL_COMMAND,
+                    SORT_COMMAND,
+                    CHOOSE_BUILD_COMMAND,
+                    CLEAR_CACHE_COMMAND,
+                    MANIFEST_INFO_COMMAND,
+                ]
+                .map(str::to_owned)
+                .to_vec(),
                 ..ExecuteCommandOptions::default()
             }),
             workspace: Some(lsp_types::WorkspaceServerCapabilities {

@@ -5,14 +5,19 @@ use anyhow::{Context, Result};
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use lsp_server::{Connection, ErrorCode, Message, Request, RequestId, Response};
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
-use versionlens_core::{AnalyzeDocumentOutput, BumpActionView, ResolveDocumentOutput, SessionTask};
+use versionlens_core::{
+    AnalyzeDocumentOutput, BumpActionView, ResolveDocumentOutput, SessionTask, UpdateMode,
+};
 
 use super::{publish_diagnostics, respond, respond_error};
 use crate::state::{
-    DocumentWork, ResolvedDocument, VersionLensLspState, into_lsp_code_actions, resolved_document,
+    CHOOSE_BUILD_COMMAND, DocumentWork, MANIFEST_INFO_COMMAND, ResolvedDocument, SORT_COMMAND,
+    UPDATE_ALL_COMMAND, UPDATE_COMMAND, VersionLensLspState, into_lsp_code_actions,
+    resolved_document,
 };
 
 pub(super) struct Completion {
@@ -32,6 +37,7 @@ enum RequestKind {
     Lenses,
     Actions,
     Update,
+    ManifestInfo,
 }
 
 struct Pending {
@@ -69,10 +75,76 @@ struct Submission<F> {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct DocumentArguments {
+    uri: String,
+}
+
+/// One dependency, named by its selector. With no level, every update the
+/// dependency has is applied as the lens offered it.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct UpdateArguments {
     uri: String,
-    generation: u64,
-    arguments: Vec<String>,
+    dependency: String,
+    level: Option<Level>,
+    version: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct UpdateAllArguments {
+    uri: String,
+    #[serde(default)]
+    level: Level,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ChooseBuildArguments {
+    uri: String,
+    dependency: String,
+    build: String,
+}
+
+#[derive(Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Level {
+    #[default]
+    Latest,
+    Major,
+    Minor,
+    Patch,
+    Release,
+    Prerelease,
+}
+
+impl Level {
+    const fn mode(self) -> UpdateMode {
+        match self {
+            Self::Latest => UpdateMode::Update,
+            Self::Major => UpdateMode::UpdateMajor,
+            Self::Minor => UpdateMode::UpdateMinor,
+            Self::Patch => UpdateMode::UpdatePatch,
+            Self::Release => UpdateMode::UpdateRelease,
+            Self::Prerelease => UpdateMode::UpdatePrerelease,
+        }
+    }
+}
+
+/// The edit a command asks the session for.
+struct EditRequest {
+    uri: String,
+    command: Option<UpdateMode>,
+    sort: bool,
+    dependency: Option<String>,
+    version: Option<String>,
+}
+
+/// The one named-argument object of a command. Positional lists and unknown
+/// fields are rejected.
+fn command_arguments<T: DeserializeOwned>(arguments: Vec<Value>) -> Option<T> {
+    let [argument] = <[Value; 1]>::try_from(arguments).ok()?;
+    serde_json::from_value(argument).ok()
 }
 
 impl WorkQueue {
@@ -181,12 +253,80 @@ impl WorkQueue {
         )
     }
 
-    pub(super) fn update(
+    /// Runs a document command. Edit commands work on the current document,
+    /// so a lens clicked after an edit applies to the edited text.
+    pub(super) fn command(
         &mut self,
         state: &VersionLensLspState,
         connection: &Connection,
         id: RequestId,
+        command: &str,
         arguments: Vec<Value>,
+    ) -> Result<()> {
+        let request = match command {
+            UPDATE_COMMAND => {
+                command_arguments::<UpdateArguments>(arguments).map(|args| EditRequest {
+                    uri: args.uri,
+                    command: args.level.map(Level::mode),
+                    sort: false,
+                    dependency: Some(args.dependency),
+                    version: args.version,
+                })
+            }
+            UPDATE_ALL_COMMAND => {
+                command_arguments::<UpdateAllArguments>(arguments).map(|args| EditRequest {
+                    uri: args.uri,
+                    command: Some(args.level.mode()),
+                    sort: false,
+                    dependency: None,
+                    version: None,
+                })
+            }
+            CHOOSE_BUILD_COMMAND => {
+                command_arguments::<ChooseBuildArguments>(arguments).map(|args| EditRequest {
+                    uri: args.uri,
+                    command: Some(UpdateMode::Update),
+                    sort: false,
+                    dependency: Some(args.dependency),
+                    version: Some(args.build),
+                })
+            }
+            SORT_COMMAND => {
+                command_arguments::<DocumentArguments>(arguments).map(|args| EditRequest {
+                    uri: args.uri,
+                    command: None,
+                    sort: true,
+                    dependency: None,
+                    version: None,
+                })
+            }
+            MANIFEST_INFO_COMMAND => {
+                return match command_arguments::<DocumentArguments>(arguments) {
+                    Some(args) => self.manifest_info(state, connection, id, &args.uri),
+                    None => invalid_arguments(connection, id, command),
+                };
+            }
+            _ => {
+                return respond_error(
+                    connection,
+                    id,
+                    ErrorCode::InvalidParams,
+                    format!("unsupported command: {command}"),
+                );
+            }
+        };
+        match request {
+            Some(request) => self.edit(state, connection, id, request),
+            None => invalid_arguments(connection, id, command),
+        }
+    }
+
+    fn edit(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+        id: RequestId,
+        request: EditRequest,
     ) -> Result<()> {
         if !state.client.workspace_edits {
             return respond_error(
@@ -196,45 +336,21 @@ impl WorkQueue {
                 "editor does not support versioned workspace edits".to_owned(),
             );
         }
-        let parsed = if arguments.len() == 1 {
-            serde_json::from_value::<UpdateArguments>(arguments[0].clone()).ok()
+        let Some(work) = state.document_work(&request.uri) else {
+            return document_not_open(connection, id, &request.uri);
+        };
+        let command = if request.sort {
+            Some("sort".to_owned())
         } else {
-            None
+            request.command.map(|mode| mode.as_str().to_owned())
         };
-        let Some(args) = parsed else {
-            return respond_error(
-                connection,
-                id,
-                ErrorCode::InvalidParams,
-                "invalid update arguments".to_owned(),
-            );
-        };
-        let Some(work) = state
-            .document_work(&args.uri)
-            .filter(|work| work.generation == args.generation)
-        else {
-            return respond_error(
-                connection,
-                id,
-                ErrorCode::ContentModified,
-                "document changed; request fresh code lenses".to_owned(),
-            );
-        };
-        if !(2..=4).contains(&args.arguments.len()) {
-            return respond_error(
-                connection,
-                id,
-                ErrorCode::InvalidParams,
-                "invalid dependency arguments".to_owned(),
-            );
-        }
         let task = SessionTask::Command {
             document: work.input.clone(),
-            command: args.arguments.get(2).cloned(),
-            dependency: args.arguments.get(1).cloned(),
-            selected_version: args.arguments.get(3).cloned(),
+            command,
+            dependency: request.dependency,
+            selected_version: request.version,
         };
-        let session = state.session_for(&args.uri).clone();
+        let session = state.session_for(&request.uri).clone();
         let job = async move { session.run_task(task).await.map(TaskOutput::Resolved) };
         self.submit(
             connection,
@@ -243,6 +359,35 @@ impl WorkQueue {
                 work,
                 job,
                 kind: RequestKind::Update,
+            },
+        )
+    }
+
+    fn manifest_info(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+        id: RequestId,
+        uri: &str,
+    ) -> Result<()> {
+        let Some(work) = state.document_work(uri) else {
+            return document_not_open(connection, id, uri);
+        };
+        let session = state.session_for(uri).clone();
+        let input = work.input.clone();
+        let job = async move {
+            tokio::task::spawn_blocking(move || session.analyze_document(input))
+                .await
+                .map(TaskOutput::Analyzed)
+                .map_err(|_| PANICKED.to_owned())
+        };
+        self.submit(
+            connection,
+            Submission {
+                id,
+                work,
+                job,
+                kind: RequestKind::ManifestInfo,
             },
         )
     }
@@ -316,8 +461,7 @@ impl WorkQueue {
         };
         match (pending.kind, output) {
             (RequestKind::Lenses, TaskOutput::Analyzed(analysis)) => {
-                let resolved =
-                    resolved_document(analysis, &pending.work.uri, pending.work.generation);
+                let resolved = resolved_document(analysis, &pending.work.uri);
                 let result =
                     respond_with_document(connection, completion.id, &pending.work, &resolved);
                 self.completed.insert(
@@ -341,6 +485,17 @@ impl WorkQueue {
             (RequestKind::Update, TaskOutput::Resolved(output)) => {
                 self.apply(state, connection, completion.id, output)
             }
+            (RequestKind::ManifestInfo, TaskOutput::Analyzed(analysis)) => respond(
+                connection,
+                completion.id,
+                json!({
+                    "supported": analysis.is_supported_manifest,
+                    "provider": analysis.active_provider_name,
+                    "canSortDependencies": analysis.can_sort_dependencies,
+                    "installTaskConfigKey": analysis.install_task_config_key,
+                    "dependencyCount": analysis.dependencies.len(),
+                }),
+            ),
             _ => respond_error(
                 connection,
                 completion.id,
@@ -526,6 +681,24 @@ impl WorkQueue {
         }
         Ok(())
     }
+}
+
+fn invalid_arguments(connection: &Connection, id: RequestId, command: &str) -> Result<()> {
+    respond_error(
+        connection,
+        id,
+        ErrorCode::InvalidParams,
+        format!("{command} takes one object of named arguments"),
+    )
+}
+
+fn document_not_open(connection: &Connection, id: RequestId, uri: &str) -> Result<()> {
+    respond_error(
+        connection,
+        id,
+        ErrorCode::InvalidParams,
+        format!("document is not open: {uri}"),
+    )
 }
 
 fn respond_with_document(

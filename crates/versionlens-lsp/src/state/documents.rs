@@ -82,16 +82,7 @@ impl VersionLensLspState {
             code_lenses: analysis
                 .code_lenses
                 .into_iter()
-                .flat_map(|payload| {
-                    into_lsp_code_lenses(
-                        payload,
-                        dependency_ranges,
-                        uri,
-                        self.revisions
-                            .get(uri)
-                            .map_or(0, |revision| revision.generation),
-                    )
-                })
+                .flat_map(|payload| into_lsp_code_lenses(payload, dependency_ranges, uri))
                 .collect(),
             diagnostics: analysis
                 .diagnostics
@@ -124,7 +115,6 @@ impl VersionLensLspState {
             return Some(CheckedDocument {
                 uri: input.uri.clone(),
                 version: None,
-                generation: 0,
                 input: input.clone(),
                 open: false,
             });
@@ -138,7 +128,6 @@ impl VersionLensLspState {
         Some(CheckedDocument {
             uri: open_uri.clone(),
             version: work.version,
-            generation: work.generation,
             input: input.clone(),
             open: true,
         })
@@ -203,17 +192,13 @@ impl VersionLensLspState {
 }
 
 /// Maps an engine analysis to LSP lenses and diagnostics. It does no I/O.
-pub(crate) fn resolved_document(
-    analysis: AnalyzeDocumentOutput,
-    uri: &str,
-    generation: u64,
-) -> ResolvedDocument {
+pub(crate) fn resolved_document(analysis: AnalyzeDocumentOutput, uri: &str) -> ResolvedDocument {
     let dependency_ranges = &analysis.dependencies;
     ResolvedDocument {
         code_lenses: analysis
             .code_lenses
             .into_iter()
-            .flat_map(|payload| into_lsp_code_lenses(payload, dependency_ranges, uri, generation))
+            .flat_map(|payload| into_lsp_code_lenses(payload, dependency_ranges, uri))
             .collect(),
         diagnostics: analysis
             .diagnostics

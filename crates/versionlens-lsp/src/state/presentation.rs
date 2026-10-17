@@ -6,7 +6,7 @@ use versionlens_core::{
 };
 use versionlens_model::{Position as ModelPosition, Range as ModelRange};
 
-use super::{DISPLAY_CODE_LENS_COMMAND, UPDATE_DEPENDENCY_COMMAND};
+use super::{CHOOSE_BUILD_COMMAND, DISPLAY_CODE_LENS_COMMAND, UPDATE_COMMAND};
 
 pub fn into_lsp_range(range: ModelRange) -> Range {
     Range {
@@ -19,7 +19,6 @@ pub(super) fn into_lsp_code_lenses(
     lens: LensView,
     dependencies: &[DependencyView],
     uri: &str,
-    generation: u64,
 ) -> Vec<CodeLens> {
     let range = dependencies
         .iter()
@@ -27,37 +26,32 @@ pub(super) fn into_lsp_code_lenses(
         .map_or(lens.range, dependency_source_range);
     match lens.action {
         Some(Action::ChooseBuild {
-            selector,
-            name,
-            builds,
-            ..
+            selector, builds, ..
         }) => builds
             .into_iter()
             .map(|version| {
                 command_lens(
                     range,
                     format!("{} {version}", lens.title),
-                    uri,
-                    generation,
-                    vec![
-                        name.clone(),
-                        selector.clone(),
-                        UpdateMode::Update.as_str().to_owned(),
-                        version,
-                    ],
+                    CHOOSE_BUILD_COMMAND,
+                    serde_json::json!({"uri": uri, "dependency": selector, "build": version}),
                 )
             })
             .collect(),
         Some(Action::UpdateDependency {
-            name,
             selector,
             mode,
             version,
+            ..
         }) => {
-            let mut arguments = vec![name, selector];
-            arguments.extend(mode.map(|mode| mode.as_str().to_owned()));
-            arguments.extend(version);
-            vec![command_lens(range, lens.title, uri, generation, arguments)]
+            let mut arguments = serde_json::json!({"uri": uri, "dependency": selector});
+            if let Some(level) = mode.map(update_level) {
+                arguments["level"] = level.into();
+            }
+            if let Some(version) = version {
+                arguments["version"] = version.into();
+            }
+            vec![command_lens(range, lens.title, UPDATE_COMMAND, arguments)]
         }
         Some(Action::OpenFile { .. }) | None => vec![CodeLens {
             range: into_lsp_range(range),
@@ -98,21 +92,30 @@ fn position_key(position: ModelPosition) -> (u32, u32) {
     (position.line, position.character)
 }
 
+/// The `level` argument of the update command for a lens mode.
+const fn update_level(mode: UpdateMode) -> &'static str {
+    match mode {
+        UpdateMode::Update => "latest",
+        UpdateMode::UpdateMajor => "major",
+        UpdateMode::UpdateMinor => "minor",
+        UpdateMode::UpdatePatch => "patch",
+        UpdateMode::UpdateRelease => "release",
+        UpdateMode::UpdatePrerelease => "prerelease",
+    }
+}
+
 fn command_lens(
     range: ModelRange,
     title: String,
-    uri: &str,
-    generation: u64,
-    arguments: Vec<String>,
+    command: &str,
+    arguments: serde_json::Value,
 ) -> CodeLens {
     CodeLens {
         range: into_lsp_range(range),
         command: Some(Command {
             title,
-            command: UPDATE_DEPENDENCY_COMMAND.to_owned(),
-            arguments: Some(vec![
-                serde_json::json!({"uri":uri,"generation":generation,"arguments":arguments}),
-            ]),
+            command: command.to_owned(),
+            arguments: Some(vec![arguments]),
         }),
         data: None,
     }
