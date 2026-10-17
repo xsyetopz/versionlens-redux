@@ -6,7 +6,7 @@ use std::time::Duration;
 use crate::vulnerability::VulnerabilityCheck;
 use versionlens_cache::{CacheKey, MemoryCache};
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind, TextEdit};
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 use crate::concurrency::Priority;
 use crate::config::SessionConfig;
@@ -161,7 +161,7 @@ fn cancelled_resolution(suggestions: Vec<Suggestion>) -> ResolveDocumentOutput {
     let suggestions = suggestions
         .into_iter()
         .map(|suggestion| {
-            versionlens_suggestions::error(suggestion.dependency, "checking cancelled".to_owned())
+            versionlens_update::error(suggestion.dependency, "checking cancelled".to_owned())
         })
         .collect();
     finish_resolve_output(suggestions, resolve_output_parts(vec![], 0, vec![], 0))

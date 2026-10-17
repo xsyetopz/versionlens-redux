@@ -24,5 +24,5 @@ fn apply_same_line_edits(text: &str, edits: &[TextEdit]) -> String {
 }
 
 fn package_file_fixture(name: &str) -> &'static str {
-    crate::support::tests::fixture("tests/fixtures/versionlens-edits/src/sort/tests", name)
+    crate::support::tests::fixture("tests/fixtures/versionlens-update/src/sort/tests", name)
 }

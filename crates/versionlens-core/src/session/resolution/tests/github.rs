@@ -91,11 +91,7 @@ async fn resolve_action_source(source: &str, body: &str) -> ResolveDocumentOutpu
         .await
 }
 
-fn action_choices(
-    source: &str,
-    latest: &str,
-    body: &str,
-) -> Vec<versionlens_suggestions::UpdateChoice> {
+fn action_choices(source: &str, latest: &str, body: &str) -> Vec<versionlens_update::UpdateChoice> {
     let input = DocumentInput::new(
         "file:///work/.github/workflows/ci.yml".to_owned(),
         "yaml".to_owned(),

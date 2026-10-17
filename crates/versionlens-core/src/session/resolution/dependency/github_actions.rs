@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Component, Path};
 
 use versionlens_model::{CanonicalReference, Dependency};
-use versionlens_suggestions::{Suggestion, error, fixed};
+use versionlens_update::{Suggestion, error, fixed};
 
 use crate::workspace::WorkspaceDocuments;
 

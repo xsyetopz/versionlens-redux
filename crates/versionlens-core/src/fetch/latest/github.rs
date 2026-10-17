@@ -10,7 +10,7 @@ use versionlens_model::{latest_version_with_prerelease_tags, version_tag_parts};
 use versionlens_providers::{
     RegistryEndpoint, github_tag_ref_url, release_versions_from_response_for_package,
 };
-use versionlens_suggestions::UpdateChoice;
+use versionlens_update::UpdateChoice;
 
 pub(crate) fn github_current_ref_is_proven(dependency: &Dependency, body: &str) -> bool {
     if dependency.ecosystem != GitHub {

@@ -60,7 +60,7 @@ pub(crate) use support::{
 };
 pub use update::{Bump, BumpKind, Plan, PlanStatus};
 pub(crate) use versionlens_model::parse_semver;
-pub use versionlens_suggestions::{Suggestion, SuggestionStatus};
+pub use versionlens_update::{Suggestion, SuggestionStatus};
 pub use view::{
     Action, DependencyView, DiagnosticView, LensKind, LensView, Severity, StatusView,
     SuggestionView, UpdateMode,

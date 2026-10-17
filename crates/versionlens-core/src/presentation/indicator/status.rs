@@ -1,5 +1,5 @@
-use versionlens_suggestions::SuggestionStatus;
-use versionlens_suggestions::SuggestionStatus::{
+use versionlens_update::SuggestionStatus;
+use versionlens_update::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, UpdateAvailable as StatusUpdateAvailable,
 };
 

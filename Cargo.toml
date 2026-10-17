@@ -2,15 +2,14 @@
 members = [
   "crates/versionlens-cache",
   "crates/versionlens-core",
-  "crates/versionlens-edits",
   "crates/versionlens-http",
   "crates/versionlens-napi",
   "crates/versionlens-lsp",
   "crates/versionlens-model",
   "crates/versionlens-parsers",
   "crates/versionlens-providers",
-  "crates/versionlens-suggestions",
   "crates/versionlens-test-support",
+  "crates/versionlens-update",
   "crates/versionlens-vscode-model",
 ]
 resolver = "3"
@@ -64,14 +63,13 @@ tokio = { version = "1.53.3", features = [
 ] }
 versionlens-cache = { path = "crates/versionlens-cache" }
 versionlens-core = { path = "crates/versionlens-core" }
-versionlens-edits = { path = "crates/versionlens-edits" }
 versionlens-http = { path = "crates/versionlens-http" }
 versionlens-lsp = { path = "crates/versionlens-lsp" }
 versionlens-model = { path = "crates/versionlens-model" }
 versionlens-parsers = { path = "crates/versionlens-parsers" }
 versionlens-providers = { path = "crates/versionlens-providers" }
-versionlens-suggestions = { path = "crates/versionlens-suggestions" }
 versionlens-test-support = { path = "crates/versionlens-test-support" }
+versionlens-update = { path = "crates/versionlens-update" }
 versionlens-vscode-model = { path = "crates/versionlens-vscode-model" }
 
 [workspace.lints.rust]

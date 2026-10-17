@@ -3,7 +3,7 @@ use std::sync::Arc;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::GitHub;
 use versionlens_providers::build_versions_from_response;
-use versionlens_suggestions::UpdateChoice;
+use versionlens_update::UpdateChoice;
 
 use crate::RegistryResponseInput;
 use crate::VersionLensSession;

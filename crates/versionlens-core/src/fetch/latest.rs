@@ -4,7 +4,7 @@ use versionlens_providers::{
     RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
     release_versions_from_response_for_package,
 };
-use versionlens_suggestions::{UpdateChoice, release_update_choices_with_prereleases};
+use versionlens_update::{UpdateChoice, release_update_choices_with_prereleases};
 
 use crate::VersionLensSession;
 use crate::error::FetchError;

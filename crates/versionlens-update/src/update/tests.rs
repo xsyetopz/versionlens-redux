@@ -1,9 +1,7 @@
+use crate::SuggestionStatus::{Current as StatusCurrent, UpdateAvailable as StatusUpdateAvailable};
+use crate::{Suggestion, UpdateChoice};
 use semver::{Version, VersionReq};
 use versionlens_model::{Dependency, Ecosystem};
-use versionlens_suggestions::SuggestionStatus::{
-    Current as StatusCurrent, UpdateAvailable as StatusUpdateAvailable,
-};
-use versionlens_suggestions::{Suggestion, UpdateChoice};
 
 use super::update_edits;
 use crate::support::tests::range;

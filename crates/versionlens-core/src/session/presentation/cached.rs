@@ -1,5 +1,5 @@
 use versionlens_model::Dependency;
-use versionlens_suggestions::{Suggestion, resolve_dependency};
+use versionlens_update::{Suggestion, resolve_dependency};
 
 use crate::VersionLensSession;
 use crate::non_registry::{deno_import_has_no_suggestions, known_non_registry_suggestion};

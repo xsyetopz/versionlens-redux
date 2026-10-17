@@ -1,4 +1,4 @@
-use versionlens_suggestions::{UpdateChoice, deduplicate_update_choices};
+use versionlens_update::{UpdateChoice, deduplicate_update_choices};
 
 use crate::VersionLensSession;
 use crate::cache::suggestion_cache_key;

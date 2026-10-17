@@ -3,7 +3,7 @@ use crate::{ApplyCommandRequest, RegistryResponseInput, RegistryUrlConfig, Versi
 use std::time::Duration;
 use versionlens_cache::PersistentRecord;
 use versionlens_model::{CanonicalReference, DocumentInput, Ecosystem::Dotnet, Ecosystem::Npm};
-use versionlens_suggestions::{Suggestion, SuggestionStatus};
+use versionlens_update::{Suggestion, SuggestionStatus};
 
 fn session(directory: &std::path::Path, credential: &str) -> VersionLensSession {
     configured_session(directory, credential, "http://127.0.0.1:1", None)

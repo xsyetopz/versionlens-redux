@@ -102,7 +102,7 @@ fn changed_disk_member_invalidates_persistent_local_suggestion_freshness() {
     let scope = first.document_cache_scope(&context, &consumer);
     let operation = first.operation_context();
     first.cache_resolved_suggestions(
-        &[versionlens_suggestions::resolve_dependency(
+        &[versionlens_update::resolve_dependency(
             local_dependency,
             Some(local.version),
         )],
@@ -153,7 +153,7 @@ fn invalidation_rebuilds_graphs_and_clears_only_suggestion_freshness() {
     let latest_key = crate::cache::latest_cache_key(&cached_dependency);
     session.suggestion_cache().insert_with_ttl(
         key.clone(),
-        versionlens_suggestions::fixed(cached_dependency, "1.0.0".to_owned()),
+        versionlens_update::fixed(cached_dependency, "1.0.0".to_owned()),
         Duration::from_secs(60),
     );
     session.cache().insert_with_ttl(

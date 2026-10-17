@@ -6,7 +6,7 @@ use std::time::Duration;
 use versionlens_cache::{CacheKey, MemoryCache};
 use versionlens_http::HttpConfig;
 use versionlens_model::{Dependency, Ecosystem, ManifestKind};
-use versionlens_suggestions::{Suggestion, UpdateChoice};
+use versionlens_update::{Suggestion, UpdateChoice};
 
 use super::operation::OperationContext;
 use crate::ProviderCacheConfig;
@@ -205,7 +205,7 @@ impl VersionLensSession {
                     suggestion_cache_key(&suggestion.dependency, scope),
                     self.persistent_suggestion_key(&suggestion.dependency, scope),
                     suggestion.to_owned(),
-                    if suggestion.status == versionlens_suggestions::SuggestionStatus::Error {
+                    if suggestion.status == versionlens_update::SuggestionStatus::Error {
                         self.cache_ttl(suggestion.dependency.ecosystem, manifest_kind)
                             .min(Duration::from_secs(30))
                     } else {

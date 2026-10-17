@@ -1,6 +1,6 @@
 use std::{iter, sync::Arc};
 
-use versionlens_suggestions::{Suggestion, error};
+use versionlens_update::{Suggestion, error};
 
 use super::ResolutionRequest;
 use super::dependency::ResolveDependencyInput;
