@@ -23,7 +23,10 @@ fn configured_session(
     if let Some(cache_ttl_ms) = cache_ttl_ms {
         config.cache_ttl_ms = cache_ttl_ms;
     }
-    config.http.timeout_ms = 20;
+    // The budget covers the whole check, including local file reads and
+    // cache writes, so it must hold when every test runs at once. The
+    // registry port refuses connections, so failures stay fast.
+    config.http.timeout_ms = 10_000;
     config.http.auth_headers = vec![versionlens_fetch::HttpHeader {
         name: "Authorization".to_owned(),
         value: credential.to_owned(),
@@ -40,10 +43,21 @@ fn dotnet_session(directory: &std::path::Path) -> VersionLensSession {
         ecosystem: Dotnet,
         url: "http://127.0.0.1:1".to_owned(),
     }];
-    config.http.timeout_ms = 20;
-    VersionLensSession::new(config)
+    // The budget covers the whole check, including local file reads and
+    // cache writes, so it must hold when every test runs at once. The
+    // registry port refuses connections, so failures stay fast.
+    config.http.timeout_ms = 10_000;
+    let session = VersionLensSession::new(config)
         .with_persistent_cache(directory)
-        .unwrap()
+        .unwrap();
+    // Without this, NuGet sources come from `dotnet nuget list source` on
+    // the test machine, which can reach the real nuget.org.
+    *session
+        .request_state
+        .dotnet_registry_sources
+        .lock()
+        .unwrap() = Some(vec!["http://127.0.0.1:1".to_owned()]);
+    session
 }
 
 fn input() -> DocumentInput {
