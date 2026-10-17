@@ -3,7 +3,7 @@ use std::cmp::Ordering::{
     Equal as OrderingEqual, Greater as OrderingGreater, Less as OrderingLess,
 };
 use std::collections::BTreeSet;
-use versionlens_versions::requirement_satisfies_latest;
+use versionlens_model::requirement_satisfies_latest;
 
 use crate::suggestion::UpdateChoice;
 use crate::support;
@@ -466,7 +466,7 @@ pub fn push_unique_choice(
 
 pub fn semantic_update_target(value: &str) -> String {
     let value = value.trim();
-    versionlens_versions::normalized_version(value).unwrap_or_else(|| value.to_owned())
+    versionlens_model::normalized_version(value).unwrap_or_else(|| value.to_owned())
 }
 
 pub fn deduplicate_update_choices(choices: &mut Vec<UpdateChoice>) {

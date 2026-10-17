@@ -1,9 +1,3 @@
-use semver::{Error as SemverError, Version as SemverVersion};
-
-pub(crate) fn parse_semver(value: &str) -> Result<SemverVersion, SemverError> {
-    value.parse()
-}
-
 pub(crate) fn normalize_version_part(part: &str) -> Option<String> {
     if part == "*" || part.eq_ignore_ascii_case("x") {
         return Some("0".to_owned());

@@ -4,8 +4,7 @@ mod runtime;
 use crate::positions::line_range;
 use crate::{support, yaml};
 use versionlens_model::Ecosystem::GitHub;
-use versionlens_model::{CanonicalReference, Dependency, GithubRepository};
-use versionlens_versions::version_tag_parts;
+use versionlens_model::{CanonicalReference, Dependency, GithubRepository, version_tag_parts};
 
 pub(crate) fn parse_github_actions(text: &str) -> Vec<Dependency> {
     support::with_yaml_mapping(text, |root| {

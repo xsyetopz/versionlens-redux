@@ -22,9 +22,8 @@ pub use response::{
     npm_error_status_from_response, npm_release_versions, release_versions_from_response,
     release_versions_from_response_for_endpoint, release_versions_from_response_for_package,
 };
-pub(crate) use support::{
-    default, json_array_mut, json_bool, parse_semver, path, string_from_utf8, xml_reader,
-};
+pub(crate) use support::{default, json_array_mut, json_bool, path, string_from_utf8, xml_reader};
+pub(crate) use versionlens_model::parse_semver;
 pub use vulnerability::{
     VulnerabilityAdvisory, vulnerability_advisories_from_response, vulnerability_request_body,
     vulnerability_titles_from_response, vulnerability_url, vulnerability_version_from_requirement,

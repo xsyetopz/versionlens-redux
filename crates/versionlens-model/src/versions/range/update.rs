@@ -1,7 +1,7 @@
-use crate::parse::{normalize_requirement, parse_coerced_version, parse_version};
-use crate::pep440;
-use crate::policy::UpdateLevel;
-use crate::policy::VersionDialect;
+use crate::versions::parse::{normalize_requirement, parse_coerced_version, parse_version};
+use crate::versions::pep440;
+use crate::versions::policy::UpdateLevel;
+use crate::versions::policy::VersionDialect;
 
 use super::compare::is_newer;
 use super::requirement_has_empty_comparator_intersection;
@@ -9,7 +9,7 @@ use super::requirements::{
     disjunctive_requirement_satisfies, nuget_requirement_satisfies, pessimistic_update_available,
     range_requirement_satisfies, semver_range_requirement_satisfies,
 };
-use crate::policy::UpdateLevel::{Major, Minor, Patch};
+use crate::versions::policy::UpdateLevel::{Major, Minor, Patch};
 
 pub fn is_update_available(latest: &str, requirement: &str) -> bool {
     if requirement.trim().is_empty() {

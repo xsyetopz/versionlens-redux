@@ -1,12 +1,7 @@
 use quick_xml::Reader as XmlReader;
-use semver::{Error as SemverError, Version as SemverVersion};
 use serde_json::Value as JsonValue;
 use std::path::Path as StdPath;
 use std::string::FromUtf8Error as StringFromUtf8Error;
-
-pub(crate) fn parse_semver(value: &str) -> Result<SemverVersion, SemverError> {
-    value.parse()
-}
 
 pub(crate) fn path(value: &str) -> &StdPath {
     value.as_ref()

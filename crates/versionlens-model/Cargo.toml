@@ -11,6 +11,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+semver.workspace = true
 serde.workspace = true
 
 [lints]

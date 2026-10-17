@@ -14,4 +14,4 @@ pub use constructors::{
 };
 pub use resolve::resolve_dependency;
 pub use suggestion::{Suggestion, SuggestionStatus, UpdateChoice};
-pub(crate) use support::parse_semver;
+pub(crate) use versionlens_model::parse_semver;

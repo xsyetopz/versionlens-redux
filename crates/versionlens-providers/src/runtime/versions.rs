@@ -1,6 +1,6 @@
 use serde_json::Value;
 use std::iter::once;
-use versionlens_versions::{VersionDialect, normalized_version_for_dialect};
+use versionlens_model::{VersionDialect, normalized_version_for_dialect};
 
 use super::{
     RuntimeSource,
@@ -336,7 +336,7 @@ fn deno_versions(body: &str) -> Result<Vec<String>, String> {
             entry
                 .as_str()
                 .and_then(|version| {
-                    versionlens_versions::normalized_version(version.trim_start_matches('v'))
+                    versionlens_model::normalized_version(version.trim_start_matches('v'))
                 })
                 .ok_or_else(|| "Deno release response contains an invalid version".to_owned())
         })
@@ -350,7 +350,7 @@ fn deno_channel_version(channel: &str, body: &str) -> Result<String, String> {
             .then(|| format!("0.0.0-{value}"))
             .ok_or_else(|| "Deno canary response has no immutable revision".to_owned());
     }
-    let version = versionlens_versions::normalized_version(value.trim_start_matches('v'))
+    let version = versionlens_model::normalized_version(value.trim_start_matches('v'))
         .ok_or_else(|| format!("Deno {channel} response contains an invalid version"))?;
     let parsed = semver::Version::parse(&version)
         .map_err(|_| format!("Deno {channel} response contains an invalid version"))?;
@@ -371,9 +371,9 @@ fn normalize_go_version(value: &str) -> Option<String> {
             if number.is_empty() || !number.bytes().all(|byte| byte.is_ascii_digit()) {
                 return None;
             }
-            let base = versionlens_versions::normalized_version(base)?;
+            let base = versionlens_model::normalized_version(base)?;
             return Some(format!("{base}-{label}.{number}"));
         }
     }
-    versionlens_versions::normalized_version(value)
+    versionlens_model::normalized_version(value)
 }

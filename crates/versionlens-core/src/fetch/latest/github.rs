@@ -6,11 +6,11 @@ use crate::{
 };
 use serde_json::{Value, from_str};
 use versionlens_model::{CanonicalReference, Dependency, Ecosystem::GitHub};
+use versionlens_model::{latest_version_with_prerelease_tags, version_tag_parts};
 use versionlens_providers::{
     RegistryEndpoint, github_tag_ref_url, release_versions_from_response_for_package,
 };
 use versionlens_suggestions::UpdateChoice;
-use versionlens_versions::{latest_version_with_prerelease_tags, version_tag_parts};
 
 pub(crate) fn github_current_ref_is_proven(dependency: &Dependency, body: &str) -> bool {
     if dependency.ecosystem != GitHub {
@@ -133,7 +133,7 @@ pub(super) fn github_action_tag(reference: &CanonicalReference, body: &str) -> O
             {
                 return None;
             }
-            let latest = versionlens_versions::latest_version(
+            let latest = versionlens_model::latest_version(
                 matching.iter().map(|tag| tag.version.as_str()),
                 true,
             )?;
@@ -263,7 +263,7 @@ pub(super) fn attach_github_action_replacements(
     choices.retain_mut(|choice| {
         if matches!(reference, CanonicalReference::GitHubActionCommit { .. })
             && !matches!(
-                versionlens_versions::compare_versions(&choice.version, current_version),
+                versionlens_model::compare_versions(&choice.version, current_version),
                 Some(std::cmp::Ordering::Equal | std::cmp::Ordering::Greater)
             )
         {

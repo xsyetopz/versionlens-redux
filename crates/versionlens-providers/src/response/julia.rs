@@ -1,4 +1,4 @@
-use versionlens_versions::latest_version_with_prerelease_tags;
+use versionlens_model::latest_version_with_prerelease_tags;
 
 pub(crate) fn latest_julia_version(
     body: &str,

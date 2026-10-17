@@ -1,5 +1,4 @@
 use anyhow::Error as AnyhowError;
-use semver::{Error as SemverError, Version as SemverVersion, VersionReq as SemverVersionReq};
 use std::error::Error as StdError;
 use std::path::Path as StdPath;
 use std::string::FromUtf8Error as StringFromUtf8Error;
@@ -9,10 +8,6 @@ use versionlens_cache::MemoryCache;
 
 pub(crate) fn default<T: Default>() -> T {
     <T as Default>::default()
-}
-
-pub(crate) fn parse_semver(value: &str) -> Result<SemverVersion, SemverError> {
-    value.parse()
 }
 
 pub(crate) fn recover_poison<T>(poisoned: SyncPoisonError<T>) -> T {
@@ -48,10 +43,6 @@ where
 
 pub(crate) fn string_from_utf8(value: Vec<u8>) -> Result<String, StringFromUtf8Error> {
     value.try_into()
-}
-
-pub(crate) fn parse_semver_req(value: &str) -> Result<SemverVersionReq, SemverError> {
-    value.parse()
 }
 
 #[cfg(test)]

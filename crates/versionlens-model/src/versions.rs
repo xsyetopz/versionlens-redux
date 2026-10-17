@@ -1,3 +1,5 @@
+use semver::VersionReq;
+
 mod latest;
 mod parse;
 mod pep440;
@@ -19,7 +21,7 @@ pub use range::{
     requirement_is_parseable, requirement_is_parseable_for_dialect, requirement_satisfies_latest,
     requirement_satisfies_latest_for_dialect, update_level,
 };
-pub use support::{compare_numeric_segments, compare_numeric_text, numeric_segments};
+pub use support::{compare_numeric_segments, compare_numeric_text, numeric_segments, parse_semver};
 
 /// Split a version-bearing tag into its preserved textual prefix and its
 /// comparable version.
@@ -51,13 +53,13 @@ pub fn composer_requirement_is_parseable(requirement: &str) -> bool {
         .map(strip_version_prefix)
         .collect::<Vec<_>>()
         .join(" ");
-    parse_semver_req(&normalized)
+    VersionReq::parse(&normalized)
         .or_else(|_| {
-            parse_semver_req(&normalized.split_whitespace().collect::<Vec<_>>().join(", "))
+            VersionReq::parse(&normalized.split_whitespace().collect::<Vec<_>>().join(", "))
         })
         .is_ok()
 }
-pub(crate) use support::{parse_semver, parse_semver_req, semver_version};
+pub(crate) use support::semver_version;
 
 #[cfg(test)]
 mod tag_tests;

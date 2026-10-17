@@ -1,4 +1,4 @@
-use versionlens_versions::{
+use versionlens_model::{
     VersionDialect, requirement_is_parseable_for_dialect, requirement_satisfies_latest_for_dialect,
 };
 

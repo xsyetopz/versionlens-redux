@@ -3,7 +3,7 @@ mod json;
 mod yanked;
 
 use serde_json::Value;
-use versionlens_versions::{
+use versionlens_model::{
     VersionDialect, compare_versions_for_dialect, normalized_version_for_dialect,
 };
 

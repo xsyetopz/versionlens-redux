@@ -5,10 +5,9 @@ use versionlens_edits::can_sort_dependencies;
 use versionlens_edits::update_edits;
 
 use versionlens_model::ManifestKind::VersionLensMultiRegistries;
-use versionlens_model::{DocumentInput, ManifestKind};
+use versionlens_model::{DocumentInput, ManifestKind, ProjectVersionBump};
 use versionlens_parsers::{ecosystem_for_manifest, provider_name_for_manifest};
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
-use versionlens_versions::ProjectVersionBump;
 
 use super::operation::OperationContext;
 use super::resolution::ResolutionRequest;

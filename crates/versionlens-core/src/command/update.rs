@@ -1,11 +1,11 @@
+use versionlens_model::{ProjectVersionBump, UpdateLevel, update_level};
 use versionlens_suggestions::Suggestion;
-use versionlens_versions::{ProjectVersionBump, UpdateLevel, update_level};
 
 use crate::project::is_project_version_dependency;
-use versionlens_versions::ProjectVersionBump::{
+use versionlens_model::ProjectVersionBump::{
     Major as ProjectMajor, Minor as ProjectMinor, Patch as ProjectPatch, Prerelease, Release,
 };
-use versionlens_versions::UpdateLevel::{
+use versionlens_model::UpdateLevel::{
     Major as LevelMajor, Minor as LevelMinor, Patch as LevelPatch,
 };
 

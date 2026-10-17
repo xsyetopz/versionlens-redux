@@ -1,4 +1,4 @@
-use versionlens_versions::{latest_version_with_prerelease_tags, normalized_version};
+use versionlens_model::{latest_version_with_prerelease_tags, normalized_version};
 
 pub(crate) fn latest_luarocks_version(
     body: &str,

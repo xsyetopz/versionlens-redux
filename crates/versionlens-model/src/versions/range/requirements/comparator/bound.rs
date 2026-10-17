@@ -1,6 +1,6 @@
 use semver::Version;
 
-use crate::parse::parse_version;
+use crate::versions::parse::parse_version;
 
 pub(super) type ComparatorBound = (Version, bool);
 type OptionalComparatorBound = Option<ComparatorBound>;

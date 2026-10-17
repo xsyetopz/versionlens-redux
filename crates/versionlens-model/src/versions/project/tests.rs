@@ -1,5 +1,5 @@
 use super::{is_prerelease_project_version, next_project_version};
-use crate::policy::ProjectVersionBump::{Major, Minor, Patch, Prerelease};
+use crate::versions::policy::ProjectVersionBump::{Major, Minor, Patch, Prerelease};
 
 #[test]
 fn bumps_project_versions() {

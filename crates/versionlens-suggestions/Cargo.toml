@@ -14,7 +14,6 @@ version.workspace = true
 serde.workspace = true
 semver.workspace = true
 versionlens-model.workspace = true
-versionlens-versions.workspace = true
 
 [lints]
 workspace = true

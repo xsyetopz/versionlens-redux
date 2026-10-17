@@ -1,6 +1,6 @@
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_versions::{
+use versionlens_model::{
     VersionDialect::Pep440, compare_versions_for_dialect, latest_version_for_dialect,
     normalized_version_for_dialect,
 };

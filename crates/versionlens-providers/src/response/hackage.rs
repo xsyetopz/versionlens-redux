@@ -46,7 +46,7 @@ fn latest_stackage_snapshot(value: &Value, package: &str) -> Option<String> {
 }
 
 fn compare_stackage_snapshots(left: &&str, right: &&str) -> Ordering {
-    versionlens_versions::compare_numeric_text(left, right, &['.']).then_with(|| left.cmp(right))
+    versionlens_model::compare_numeric_text(left, right, &['.']).then_with(|| left.cmp(right))
 }
 
 fn hackage_prerelease_allowed(
@@ -67,7 +67,7 @@ fn hackage_prerelease_allowed(
 fn compare_hackage_versions(left: &&str, right: &&str) -> Ordering {
     let (left_release, left_prerelease) = split_prerelease(left);
     let (right_release, right_prerelease) = split_prerelease(right);
-    versionlens_versions::compare_numeric_text(left_release, right_release, &['.']).then_with(
+    versionlens_model::compare_numeric_text(left_release, right_release, &['.']).then_with(
         || match (left_prerelease, right_prerelease) {
             (None, None) => OrderingEqual,
             (None, Some(_)) => OrderingGreater,

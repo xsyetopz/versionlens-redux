@@ -1,5 +1,4 @@
-use versionlens_model::Dependency;
-use versionlens_versions::requirement_has_empty_comparator_intersection;
+use versionlens_model::{Dependency, requirement_has_empty_comparator_intersection};
 
 use super::python::python_replacement;
 use super::ruby::{ruby_prefixed_replacement, ruby_replacement};

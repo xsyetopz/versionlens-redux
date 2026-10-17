@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use serde_json::Value;
-use versionlens_versions::latest_version_with_prerelease_tags;
+use versionlens_model::latest_version_with_prerelease_tags;
 
 use crate::response::dispatch::ResponseRequest;
 

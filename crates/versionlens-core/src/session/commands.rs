@@ -343,18 +343,18 @@ fn force_selected_version(suggestions: &mut [Suggestion], version: &str) {
             versionlens_model::registry_alias_requirement(&suggestion.dependency.requirement)
                 .unwrap_or(&suggestion.dependency.requirement);
         let dialect = if suggestion.dependency.ecosystem == versionlens_model::Ecosystem::Python {
-            versionlens_versions::VersionDialect::Pep440
+            versionlens_model::VersionDialect::Pep440
         } else {
-            versionlens_versions::VersionDialect::Semver
+            versionlens_model::VersionDialect::Semver
         };
-        if versionlens_versions::normalized_version_for_dialect(version, dialect).is_some()
-            && versionlens_versions::requirement_is_parseable_for_dialect(
+        if versionlens_model::normalized_version_for_dialect(version, dialect).is_some()
+            && versionlens_model::requirement_is_parseable_for_dialect(
                 requirement,
                 version,
                 dialect,
             )
-            && !versionlens_versions::is_update_available_for_dialect(version, requirement, dialect)
-            && !versionlens_versions::requirement_satisfies_latest_for_dialect(
+            && !versionlens_model::is_update_available_for_dialect(version, requirement, dialect)
+            && !versionlens_model::requirement_satisfies_latest_for_dialect(
                 requirement,
                 version,
                 dialect,

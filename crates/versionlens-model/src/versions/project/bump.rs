@@ -1,10 +1,10 @@
 use semver::Version;
 
-use crate::policy::ProjectVersionBump;
+use crate::versions::policy::ProjectVersionBump;
 
 use super::component::bump_version_component;
 use super::prerelease::{increment_prerelease, release_version};
-use crate::policy::ProjectVersionBump::{Major, Minor, Patch, Prerelease, Release};
+use crate::versions::policy::ProjectVersionBump::{Major, Minor, Patch, Prerelease, Release};
 
 pub(super) fn default_project_version_bump(version: &Version) -> ProjectVersionBump {
     if version.pre.is_empty() {

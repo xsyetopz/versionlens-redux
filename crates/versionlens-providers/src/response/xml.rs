@@ -1,6 +1,6 @@
 use std::cmp::Ordering::Equal as OrderingEqual;
 
-use versionlens_versions::{
+use versionlens_model::{
     VersionDialect, compare_versions, latest_version_for_dialect,
     latest_version_with_prerelease_tags, normalized_version, normalized_version_for_dialect,
 };

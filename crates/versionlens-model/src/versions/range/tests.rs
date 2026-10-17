@@ -7,8 +7,8 @@ use super::{
     is_update_available_for_dialect, requirement_is_parseable_for_dialect,
     requirement_satisfies_latest_for_dialect, update_level,
 };
-use crate::VersionDialect;
-use crate::policy::UpdateLevel::{Major, Minor, Patch};
+use crate::versions::VersionDialect;
+use crate::versions::policy::UpdateLevel::{Major, Minor, Patch};
 
 #[test]
 fn compares_prefixed_versions() {

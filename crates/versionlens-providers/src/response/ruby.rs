@@ -1,7 +1,7 @@
 use super::versions::latest_version_array;
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_versions::normalized_version;
+use versionlens_model::normalized_version;
 
 use super::github::{latest_github_commit, latest_github_tag};
 

@@ -3,7 +3,7 @@ use serde::de::IgnoredAny;
 use serde_json::Value;
 use serde_json::from_str;
 use std::collections::HashMap;
-use versionlens_versions::{build_variants, latest_version_with_prerelease_tags};
+use versionlens_model::{build_variants, latest_version_with_prerelease_tags};
 
 use super::github::{latest_github_commit, latest_github_tag};
 use super::versions::latest_version_strings;

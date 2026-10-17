@@ -61,7 +61,7 @@ fn docker_matching_tag_shape_updates(
         if candidate.suffix != current.suffix || candidate.numbers.len() != current.numbers.len() {
             continue;
         }
-        if versionlens_versions::compare_numeric_segments(&candidate.numbers, &current.numbers)
+        if versionlens_model::compare_numeric_segments(&candidate.numbers, &current.numbers)
             != OrderingGreater
         {
             continue;
@@ -73,7 +73,7 @@ fn docker_matching_tag_shape_updates(
     }
 
     updates.sort_by(|left, right| {
-        versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+        versionlens_model::compare_numeric_segments(&left.numbers, &right.numbers)
     });
     updates
 }
@@ -89,7 +89,7 @@ fn docker_next_major_update<'a>(
                 && docker_trailing_components_are_zero(&candidate.numbers, 1)
         })
         .min_by(|left, right| {
-            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+            versionlens_model::compare_numeric_segments(&left.numbers, &right.numbers)
         })
         .map(|candidate| candidate.tag.as_str())
 }
@@ -108,7 +108,7 @@ fn docker_next_minor_update<'a>(
                 && docker_trailing_components_are_zero(&candidate.numbers, 2)
         })
         .min_by(|left, right| {
-            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+            versionlens_model::compare_numeric_segments(&left.numbers, &right.numbers)
         })
         .map(|candidate| candidate.tag.as_str())
 }
@@ -129,7 +129,7 @@ fn docker_next_patch_update<'a>(
                 && docker_trailing_components_are_zero(&candidate.numbers, 3)
         })
         .min_by(|left, right| {
-            versionlens_versions::compare_numeric_segments(&left.numbers, &right.numbers)
+            versionlens_model::compare_numeric_segments(&left.numbers, &right.numbers)
         })
         .map(|candidate| candidate.tag.as_str())
 }
@@ -144,7 +144,7 @@ fn docker_tag_shape(tag: &str) -> Option<DockerTagShape> {
         .map_or((tag, None), |(version, suffix)| {
             (version, (!suffix.is_empty()).then_some(suffix))
         });
-    let numbers = versionlens_versions::numeric_segments(version)?;
+    let numbers = versionlens_model::numeric_segments(version)?;
     Some(DockerTagShape {
         numbers,
         suffix: suffix.map(|value| value.to_owned()),

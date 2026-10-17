@@ -1,17 +1,19 @@
-use crate::parse::{parse_padded_version, parse_version};
+use semver::VersionReq;
 
-pub(in crate::range) fn nuget_requirement_satisfies(
+use crate::versions::parse::{parse_padded_version, parse_version};
+
+pub(in crate::versions::range) fn nuget_requirement_satisfies(
     requirement: &str,
     latest: &str,
 ) -> Option<bool> {
     let latest = parse_version(latest)?;
     let requirement = nuget_requirement(requirement)?;
-    crate::parse_semver_req(&requirement)
+    VersionReq::parse(&requirement)
         .map(|requirement| requirement.matches(&latest))
         .ok()
 }
 
-pub(in crate::range) fn nuget_requirement(requirement: &str) -> Option<String> {
+pub(in crate::versions::range) fn nuget_requirement(requirement: &str) -> Option<String> {
     let requirement = requirement.trim();
     let open = requirement.as_bytes().first().copied()?;
     let close = requirement.as_bytes().last().copied()?;

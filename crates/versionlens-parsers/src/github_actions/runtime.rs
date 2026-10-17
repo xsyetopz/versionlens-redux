@@ -133,7 +133,7 @@ pub(super) fn collect(
         }
     } else if repository.eq_ignore_ascii_case("dtolnay/rust-toolchain")
         && (matches!(revision, "stable" | "beta" | "nightly")
-            || versionlens_versions::normalized_version(revision).is_some()
+            || versionlens_model::normalized_version(revision).is_some()
             || revision.starts_with("nightly-"))
         && let Some(mut dependency) = scalar_dependency(text, uses, schema, None)
         && let Some(span) = yaml::scalar_range(text, uses)
@@ -158,7 +158,7 @@ pub(super) fn revision_is_toolchain(action: &MarkedMappingNode) -> bool {
             .and_then(|inputs| inputs.get_scalar("toolchain"))
             .is_none()
         && (matches!(revision, "stable" | "beta" | "nightly")
-            || versionlens_versions::normalized_version(revision).is_some()
+            || versionlens_model::normalized_version(revision).is_some()
             || revision.starts_with("nightly-"))
 }
 
