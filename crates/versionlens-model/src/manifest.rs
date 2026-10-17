@@ -4,12 +4,14 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub enum ManifestKind {
     CargoToml,
+    CargoConfigToml,
     ComposerJson,
     DenoJson,
     DenoImportMapJson,
     JsrJson,
     DotnetProjectJson,
     DotnetXml,
+    DotnetToolsJson,
     PaketDependencies,
     PaketReferences,
     DockerComposeYaml,
@@ -47,6 +49,7 @@ pub enum ManifestKind {
     MesonWrap,
     BazelWorkspace,
     SwiftPackage,
+    Cartfile,
     ZigBuildZon,
     Nimble,
     LuaRockspec,

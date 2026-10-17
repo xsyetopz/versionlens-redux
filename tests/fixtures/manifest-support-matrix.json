@@ -7,10 +7,21 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.cargo.files",
-          "defaultGlob": "**/{Cargo.toml,rust-toolchain,rust-toolchain.toml}",
-          "fileForms": ["Cargo.toml", "rust-toolchain", "rust-toolchain.toml"],
+          "defaultGlob": "**/{Cargo.toml,.cargo/config.toml,.cargo/config,rust-toolchain,rust-toolchain.toml}",
+          "fileForms": [
+            "Cargo.toml",
+            ".cargo/config.toml",
+            ".cargo/config",
+            "rust-toolchain",
+            "rust-toolchain.toml"
+          ],
           "languages": ["toml", "plaintext"],
-          "manifestKinds": ["CargoToml", "RustToolchain", "RustToolchainToml"],
+          "manifestKinds": [
+            "CargoToml",
+            "CargoConfigToml",
+            "RustToolchain",
+            "RustToolchainToml"
+          ],
           "parsers": [
             "parse_cargo_toml_with_paths",
             "parse_rust_toolchain",
@@ -35,7 +46,9 @@
           "target.*.build-dependencies",
           "target.*.build-dependencies.*",
           "workspace.dependencies",
-          "workspace.dependencies.*"
+          "workspace.dependencies.*",
+          "patch.*",
+          "patch.*.*"
         ]
       }
     },
@@ -127,12 +140,13 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.dotnet.files",
-          "defaultGlob": "**/{*.csproj,*.fsproj,*.vbproj,project.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
+          "defaultGlob": "**/{*.csproj,*.fsproj,*.vbproj,project.json,dotnet-tools.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
           "fileForms": [
             "*.csproj",
             "*.fsproj",
             "*.vbproj",
             "project.json",
+            "dotnet-tools.json",
             "Directory.Packages.props",
             "packages.config",
             "paket.dependencies",
@@ -144,6 +158,7 @@
           "manifestKinds": [
             "DotnetXml",
             "DotnetProjectJson",
+            "DotnetToolsJson",
             "PaketDependencies",
             "PaketReferences"
           ],
@@ -677,11 +692,11 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.swift.files",
-          "defaultGlob": "**/Package.swift",
-          "fileForms": ["Package.swift"],
-          "languages": ["swift"],
-          "manifestKinds": ["SwiftPackage"],
-          "parsers": ["parse_swift_package"]
+          "defaultGlob": "**/{Package.swift,Cartfile,Cartfile.private}",
+          "fileForms": ["Package.swift", "Cartfile", "Cartfile.private"],
+          "languages": ["swift", "plaintext"],
+          "manifestKinds": ["SwiftPackage", "Cartfile"],
+          "parsers": ["parse_swift_package", "parse_cartfile"]
         }
       ],
       "dependencyProperties": {

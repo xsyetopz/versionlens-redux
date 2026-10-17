@@ -292,7 +292,7 @@
         },
         "versionlens.cargo.files": {
           "type": "string",
-          "default": "**/{Cargo.toml,rust-toolchain,rust-toolchain.toml}",
+          "default": "**/{Cargo.toml,.cargo/config.toml,.cargo/config,rust-toolchain,rust-toolchain.toml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.composer.files": {
@@ -312,7 +312,7 @@
         },
         "versionlens.dotnet.files": {
           "type": "string",
-          "default": "**/{*.csproj,*.fsproj,*.vbproj,project.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
+          "default": "**/{*.csproj,*.fsproj,*.vbproj,project.json,dotnet-tools.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.dub.files": {
@@ -720,7 +720,9 @@
             "target.*.build-dependencies",
             "target.*.build-dependencies.*",
             "workspace.dependencies",
-            "workspace.dependencies.*"
+            "workspace.dependencies.*",
+            "patch.*",
+            "patch.*.*"
           ],
           "description": "Defines which properties in cargo.toml should be parsed by this extension"
         },
@@ -1435,8 +1437,8 @@
         },
         "versionlens.swift.files": {
           "type": "string",
-          "default": "**/Package.swift",
-          "description": "Swift Package.swift manifests to scan."
+          "default": "**/{Package.swift,Cartfile,Cartfile.private}",
+          "description": "Swift Package.swift and Carthage Cartfile manifests to scan."
         },
         "versionlens.swift.prereleaseTagFilter": {
           "type": "array",

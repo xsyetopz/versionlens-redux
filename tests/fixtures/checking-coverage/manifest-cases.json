@@ -11,6 +11,18 @@
     "edit": "2.0.0"
   },
   {
+    "kind": "CargoConfigToml",
+    "path": "cargo-config/.cargo/config.toml",
+    "since": "0.5.0",
+    "language": "toml",
+    "text": "[patch.crates-io]\nfoo = { version = \"1.0.0\" }\n",
+    "package": "foo",
+    "ecosystem": "Cargo",
+    "requirement": "1.0.0",
+    "latest": "2.0.0",
+    "edit": "2.0.0"
+  },
+  {
     "kind": "ComposerJson",
     "path": "composer/composer.json",
     "language": "json",
@@ -63,6 +75,20 @@
     "path": "dotnet-json/project.json",
     "language": "json",
     "text": "{\"dependencies\":{\"Foo\":\"1.0.0\"}}\n",
+    "package": "Foo",
+    "ecosystem": "Dotnet",
+    "requirement": "1.0.0",
+    "latest": "1.0.0",
+    "selected": "2.0.0",
+    "status": "fixed",
+    "edit": "2.0.0"
+  },
+  {
+    "kind": "DotnetToolsJson",
+    "path": "dotnet-tools/.config/dotnet-tools.json",
+    "since": "0.5.0",
+    "language": "json",
+    "text": "{\"version\":1,\"isRoot\":true,\"tools\":{\"Foo\":{\"version\":\"1.0.0\",\"commands\":[\"foo\"]}}}\n",
     "package": "Foo",
     "ecosystem": "Dotnet",
     "requirement": "1.0.0",
@@ -521,6 +547,19 @@
     "requirement": "1.0.0",
     "latest": "2.0.0",
     "edit": "2.0.0"
+  },
+  {
+    "kind": "Cartfile",
+    "path": "carthage/Cartfile",
+    "since": "0.5.0",
+    "language": "plaintext",
+    "text": "github \"example/foo\" ~> 1.0\n",
+    "package": "example/foo",
+    "response_package": "example/foo",
+    "ecosystem": "Swift",
+    "requirement": "~> 1.0",
+    "latest": "2.0.0",
+    "edit": "~> 2.0.0"
   },
   {
     "kind": "ZigBuildZon",

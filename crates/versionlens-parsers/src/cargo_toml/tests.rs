@@ -252,3 +252,84 @@ fn package_file_fixture(name: &str) -> &'static str {
         name,
     )
 }
+
+const CARGO_PATCHES: &str = r#"[dependencies]
+serde = "1.0"
+
+[patch.crates-io]
+serde = { git = "https://github.com/serde-rs/serde", tag = "v1.0.200" }
+local = { path = "../local" }
+
+[patch.crates-io.rand]
+git = "https://github.com/rust-random/rand"
+
+[patch."https://github.com/example/repo"]
+other = { version = "0.3" }
+"#;
+
+fn found(dependencies: &[versionlens_model::Dependency]) -> Vec<(&str, &str, &str)> {
+    dependencies
+        .iter()
+        .map(|dependency| {
+            (
+                dependency.group.as_str(),
+                dependency.name.as_str(),
+                extract_range(CARGO_PATCHES, dependency.requirement_range),
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn parses_cargo_patch_tables() {
+    let dependencies = parse_fixture(CARGO_PATCHES, "file:///work/Cargo.toml", "toml");
+
+    assert_eq!(
+        found(&dependencies),
+        [
+            ("dependencies", "serde", "1.0"),
+            (
+                "patch.crates-io",
+                "serde",
+                "https://github.com/serde-rs/serde"
+            ),
+            ("patch.crates-io", "local", "../local"),
+            (
+                "patch.crates-io.rand",
+                "rand",
+                "https://github.com/rust-random/rand"
+            ),
+            ("patch.https://github.com/example/repo", "other", "0.3"),
+        ]
+    );
+}
+
+#[test]
+fn parses_only_patch_tables_in_cargo_config() {
+    for uri in [
+        "file:///work/.cargo/config.toml",
+        "file:///work/.cargo/config",
+    ] {
+        let dependencies = parse_fixture(CARGO_PATCHES, uri, "toml");
+
+        assert!(
+            dependencies
+                .iter()
+                .all(|dependency| dependency.ecosystem == Cargo),
+            "{uri}"
+        );
+        assert_eq!(
+            found(&dependencies)
+                .iter()
+                .map(|(_, name, requirement)| (*name, *requirement))
+                .collect::<Vec<_>>(),
+            [
+                ("serde", "https://github.com/serde-rs/serde"),
+                ("local", "../local"),
+                ("rand", "https://github.com/rust-random/rand"),
+                ("other", "0.3"),
+            ],
+            "{uri}"
+        );
+    }
+}

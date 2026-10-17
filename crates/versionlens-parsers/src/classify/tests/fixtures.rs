@@ -38,7 +38,8 @@ fn classifies_every_fixture_to_its_golden_kind_and_ecosystem() {
 
     for case in cases {
         let path = field(case, "path");
-        let golden = read_json(&format!("tests/golden/0.4.4/{path}.json"));
+        let release = case["since"].as_str().unwrap_or("0.4.4");
+        let golden = read_json(&format!("tests/golden/{release}/{path}.json"));
         let input = DocumentInput::new(
             format!("file:///workspace/{path}"),
             field(case, "language"),

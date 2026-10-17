@@ -2,11 +2,11 @@ use std::path::PathBuf;
 use versionlens_http::{HttpConfig, HttpHeader};
 use versionlens_model::Ecosystem::{Cargo, Composer, Dotnet, Go, Hex, Maven, Npm, Python, Ruby};
 use versionlens_model::ManifestKind::{
-    CargoToml, ClojureDepsEdn, ComposerJson, DenoImportMapJson, DenoJson, DotnetProjectJson,
-    DotnetXml, Gemfile, GleamToml, GoMod, GradleBuild, GradleSettings, GradleVersionCatalogToml,
-    JsrJson, LeiningenProjectClj, MavenPomXml, MixExs, NpmPackageJson, NpmPackageYaml,
-    PaketDependencies, PaketReferences, PnpmYaml, PythonPipfile, PythonPyprojectToml,
-    PythonRequirementsTxt, RebarConfig, RubyGemspec, SbtBuild,
+    CargoConfigToml, CargoToml, ClojureDepsEdn, ComposerJson, DenoImportMapJson, DenoJson,
+    DotnetProjectJson, DotnetToolsJson, DotnetXml, Gemfile, GleamToml, GoMod, GradleBuild,
+    GradleSettings, GradleVersionCatalogToml, JsrJson, LeiningenProjectClj, MavenPomXml, MixExs,
+    NpmPackageJson, NpmPackageYaml, PaketDependencies, PaketReferences, PnpmYaml, PythonPipfile,
+    PythonPyprojectToml, PythonRequirementsTxt, RebarConfig, RubyGemspec, SbtBuild,
 };
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 use versionlens_parsers::{
@@ -87,11 +87,10 @@ impl RegistryContext {
         files: &impl RegistryFileRead,
     ) -> Self {
         let mut context = match kind {
-            CargoToml => Self::from_cargo_document(input, files),
+            CargoToml | CargoConfigToml => Self::from_cargo_document(input, files),
             ComposerJson => Self::from_composer_document(input, files),
-            DotnetProjectJson | DotnetXml | PaketDependencies | PaketReferences => {
-                Self::from_dotnet_document(input, files)
-            }
+            DotnetProjectJson | DotnetToolsJson | DotnetXml | PaketDependencies
+            | PaketReferences => Self::from_dotnet_document(input, files),
             Gemfile | RubyGemspec => Self::from_ruby_document(input),
             GoMod => Self::from_go_document(input, files),
             MavenPomXml

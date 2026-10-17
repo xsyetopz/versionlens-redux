@@ -40,3 +40,42 @@ fn package_file_fixture(name: &str) -> &'static str {
         name,
     )
 }
+
+#[test]
+fn parses_dotnet_local_tool_manifests() {
+    let text = r#"{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-ef": { "version": "8.0.4", "commands": ["dotnet-ef"] },
+    "csharpier": { "version": "0.28.2", "commands": ["dotnet-csharpier"] }
+  }
+}
+"#;
+    for uri in [
+        "file:///work/dotnet-tools.json",
+        "file:///work/.config/dotnet-tools.json",
+    ] {
+        let dependencies = crate::support::tests::parse_test_document(text, uri, "json");
+
+        let found: Vec<_> = dependencies
+            .iter()
+            .map(|dependency| {
+                (
+                    dependency.ecosystem,
+                    dependency.group.as_str(),
+                    dependency.name.as_str(),
+                    extract_range(text, dependency.requirement_range),
+                )
+            })
+            .collect();
+        assert_eq!(
+            found,
+            [
+                (Dotnet, "tools", "dotnet-ef", "8.0.4"),
+                (Dotnet, "tools", "csharpier", "0.28.2"),
+            ],
+            "{uri}"
+        );
+    }
+}

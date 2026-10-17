@@ -46,11 +46,11 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 
 | Provider | Files | Main settings | Registry/source |
 | --- | --- | --- | --- |
-| Cargo | Cargo.toml, rust-toolchain, rust-toolchain.toml | `versionlens.cargo.files`, `versionlens.cargo.apiUrl`, `versionlens.cargo.dependencyProperties` | crates.io index/API or configured Cargo registry |
+| Cargo | Cargo.toml, .cargo/config.toml, rust-toolchain, rust-toolchain.toml | `versionlens.cargo.files`, `versionlens.cargo.apiUrl`, `versionlens.cargo.dependencyProperties` | crates.io index/API or configured Cargo registry |
 | Composer | composer.json | `versionlens.composer.files`, `versionlens.composer.apiUrl`, `versionlens.composer.dependencyProperties` | Packagist or configured Composer repository |
 | Deno | deno.json, deno.jsonc, import_map.json, jsr.json, jsr.jsonc | `versionlens.deno.files`, `versionlens.deno.dependencyProperties` | Deno import maps, JSR API, npm registry for npm: specifiers |
 | Docker | dockerfile, Dockerfile, compose.yaml, compose.yml, docker-compose.yaml, docker-compose.yml | `versionlens.docker.files` | OCI/Docker registry tags |
-| .NET | project.json, Directory.Packages.props, packages.config, paket.dependencies, paket.references | `versionlens.dotnet.files`, `versionlens.dotnet.dependencyProperties` | NuGet v3 service index or configured NuGet/Paket source |
+| .NET | project.json, dotnet-tools.json, Directory.Packages.props, packages.config, paket.dependencies, paket.references | `versionlens.dotnet.files`, `versionlens.dotnet.dependencyProperties` | NuGet v3 service index or configured NuGet/Paket source |
 | Dub | dub.json, dub.selections.json, dub.sdl | `versionlens.dub.files`, `versionlens.dub.apiUrl`, `versionlens.dub.dependencyProperties` | Dub registry API |
 | Go | go.mod, go.work | `versionlens.golang.files`, `versionlens.golang.apiUrl` | Go module proxy |
 | Hex | mix.exs, rebar.config, gleam.toml | `versionlens.hex.files`, `versionlens.hex.apiUrl`, `versionlens.hex.dependencyProperties` | Hex package API or configured Hex-compatible registry |
@@ -68,7 +68,7 @@ TOML support requires a VS Code TOML language extension such as Even Better TOML
 | C/C++ build files | CMakeLists.txt, *.cmake, xmake.lua, subprojects/*.wrap, WORKSPACE, WORKSPACE.bazel | `versionlens.cpp.files`, `versionlens.cpp.apiUrl`, `versionlens.cpp.dependencyProperties` | GitHub tags for GitHub-backed CMake, Meson wrap, and Bazel dependencies; Xmake package recipes from xmake-repo for Xmake dependencies |
 | GitHub Actions | `.github/workflows/*.{yml,yaml}`, `.github/actions/**/action.{yml,yaml}` | `versionlens.github.files`, `versionlens.github.apiUrl`, `versionlens.github.dependencyProperties` | GitHub repository tags, including prefixed/path-qualified tags; full or abbreviated SHA pins are supported when an adjacent version comment matches the pinned tag, while bare SHA, branch, local, mismatched, and ambiguous refs are ignored |
 | vcpkg | vcpkg.json | `versionlens.vcpkg.files`, `versionlens.vcpkg.apiUrl`, `versionlens.vcpkg.dependencyProperties` | vcpkg registry version database from the configured registry repository |
-| Swift | Package.swift | `versionlens.swift.files`, `versionlens.swift.apiUrl`, `versionlens.swift.dependencyProperties` | Swift package registry API or GitHub tags for GitHub URL dependencies |
+| Swift | Package.swift, Cartfile, Cartfile.private | `versionlens.swift.files`, `versionlens.swift.apiUrl`, `versionlens.swift.dependencyProperties` | Swift package registry API or GitHub tags for GitHub URL dependencies |
 | Zig | build.zig.zon | `versionlens.zig.files`, `versionlens.zig.apiUrl`, `versionlens.zig.dependencyProperties` | Zig package URLs with GitHub tag lookup for GitHub-hosted archives |
 | Nim | .nimble | `versionlens.nim.files`, `versionlens.nim.apiUrl`, `versionlens.nim.dependencyProperties` | Nimble packages index with GitHub tag lookup for GitHub URL dependencies |
 | LuaRocks | .rockspec | `versionlens.luarocks.files`, `versionlens.luarocks.apiUrl`, `versionlens.luarocks.dependencyProperties` | LuaRocks manifest repository |

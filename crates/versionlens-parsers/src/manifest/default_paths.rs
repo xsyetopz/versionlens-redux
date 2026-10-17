@@ -46,6 +46,8 @@ pub(super) const DOTNET_PROJECT_JSON: &[&str] = &[
     "frameworks.*.dependencies",
     "runtimes.*.dependencies",
 ];
+/// `dotnet tool` manifests list each tool as an object with a `version`.
+pub(super) const DOTNET_TOOLS: &[&str] = &["tools"];
 pub(super) const DUB: &[&str] = &["dependencies", "versions", "configurations.*.dependencies"];
 pub(super) const CARGO: &[&str] = &[
     "package",
@@ -63,7 +65,11 @@ pub(super) const CARGO: &[&str] = &[
     "target.*.build-dependencies.*",
     "workspace.dependencies",
     "workspace.dependencies.*",
+    "patch.*",
+    "patch.*.*",
 ];
+/// Cargo config files hold no dependencies, only overrides of them.
+pub(super) const CARGO_CONFIG: &[&str] = &["patch.*", "patch.*.*"];
 pub(super) const DOTNET_XML: &[&str] = &[
     "Project.Sdk",
     "Project.PropertyGroup.Version",

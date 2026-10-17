@@ -14,7 +14,7 @@ pub(super) fn collect_cargo_table_dependency(
     let Some(table_match) = selected_dependency_path(keys, context.dependency_paths) else {
         return;
     };
-    let name_key = cargo_dependency_name_key(keys, table_match);
+    let name_key = cargo_dependency_name_key(keys, table_match, context.dependency_paths);
     let group = cargo_dependency_group(keys);
 
     if let Some(dependency) = toml_dependency(CargoTomlDependencyInput {
@@ -29,11 +29,25 @@ pub(super) fn collect_cargo_table_dependency(
     }
 }
 
-fn cargo_dependency_name_key<'a>(keys: &'a [&'a Key], table_match: &str) -> &'a Key {
-    if table_match.ends_with(".*") && keys.len() >= 3 {
-        keys[keys.len() - 2]
-    } else {
+/// A path ending in `.*` selects one dependency per table, as in
+/// `[dependencies.serde]`, so the name is the table key. When the paths also
+/// hold the path with one more `.*`, as `patch.*` and `patch.*.*` do, the
+/// wildcard names a group of dependencies instead, and the entries directly
+/// in it are named by their own keys.
+fn cargo_dependency_name_key<'a>(
+    keys: &'a [&'a Key],
+    table_match: &str,
+    dependency_paths: &[&str],
+) -> &'a Key {
+    if !table_match.ends_with(".*") || keys.len() < 3 {
+        return keys[keys.len() - 1];
+    }
+    let groups_entries = dependency_paths.contains(&format!("{table_match}.*").as_str())
+        && keys.len() == table_match.split('.').count() + 1;
+    if groups_entries {
         keys[keys.len() - 1]
+    } else {
+        keys[keys.len() - 2]
     }
 }
 

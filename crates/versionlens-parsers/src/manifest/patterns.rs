@@ -49,6 +49,13 @@ pub(super) fn is_julia_versioned_manifest_uri(uri: &str) -> bool {
 }
 
 /// .NET project files, except copies under `obj` and `bin`.
+/// `.cargo/config.toml`, or the older `.cargo/config`.
+pub(super) fn is_cargo_config_uri(uri: &str) -> bool {
+    let mut segments = uri.rsplit('/');
+    let name = segments.next().unwrap_or_default();
+    (name == "config.toml" || name == "config") && segments.next() == Some(".cargo")
+}
+
 pub(super) fn is_dotnet_xml_uri(uri: &str) -> bool {
     let generated = uri
         .split('/')
