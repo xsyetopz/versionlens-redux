@@ -11,14 +11,14 @@ pub use document::{
     registry_alias_requirement,
 };
 pub use ecosystem::{
-    ALL_ECOSYSTEMS, Ecosystem, ecosystem_config_namespace, ecosystem_from_config_name,
+    Ecosystem, all_ecosystems, ecosystem_config_namespace, ecosystem_from_config_name,
     ecosystem_provider_id,
 };
 pub use edit::{
     DocumentEditPlan, DocumentSnapshot, TextEdit, WorkspaceEditPlan, document_text_hash,
 };
 pub use github::GithubRepository;
-pub use manifest::{ManifestKind, ecosystem_for_manifest, provider_name_for_manifest};
+pub use manifest::ManifestKind;
 pub use position::Position;
 pub use range::Range;
 

@@ -133,8 +133,8 @@ fn builds_haxelib_registry_urls() {
 
 #[test]
 fn registry_urls_escape_unsafe_bytes_for_every_ecosystem() {
-    for ecosystem in versionlens_model::ALL_ECOSYSTEMS {
-        let url = registry_url(*ecosystem, " package name\\with\nnewline ");
+    for ecosystem in versionlens_model::all_ecosystems() {
+        let url = registry_url(ecosystem, " package name\\with\nnewline ");
         assert!(
             url.bytes().all(|byte| byte.is_ascii_graphic()),
             "{ecosystem:?} produced an unsafe registry URL: {url:?}"

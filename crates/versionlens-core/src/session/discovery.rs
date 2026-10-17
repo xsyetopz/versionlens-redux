@@ -4,7 +4,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use ignore::{IncrementalIgnore, WalkBuilder};
-use versionlens_model::{DocumentInput, Ecosystem, ManifestKind, ecosystem_for_manifest};
+use versionlens_model::{DocumentInput, Ecosystem, ManifestKind};
+use versionlens_parsers::ecosystem_for_manifest;
 
 use super::VersionLensSession;
 
