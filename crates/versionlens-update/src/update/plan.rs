@@ -22,7 +22,7 @@ pub enum PlanStatus {
     ExcludesLatest,
 }
 
-/// One candidate version for a requirement. Bumps are deduplicated by version.
+/// One candidate version for a requirement. Bumps are deduplicated by rendered text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Bump {
     pub kind: BumpKind,
@@ -104,18 +104,24 @@ pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> 
     }
     candidates.push((BumpKind::Latest, latest.as_str()));
 
-    let minimum = minimum_version_token(requirement).map(|token| token.trim_matches(['[', ']']));
+    let minimum = minimum_version_token(requirement)
+        .map(|token| rendered_text(token.trim_matches(['[', ']']), dialect));
+    let latest_text = rendered_text(&latest, dialect);
     let mut bumps: Vec<Bump> = Vec::new();
     for (kind, version) in candidates {
+        let text = rendered_text(version, dialect);
         // Only the Latest bump names the latest release; the other tiers skip it.
-        if version == latest && kind != BumpKind::Latest {
+        if text == latest_text && kind != BumpKind::Latest {
             continue;
         }
-        if bumps.iter().any(|bump| bump.version == version) {
+        if bumps
+            .iter()
+            .any(|bump| rendered_text(&bump.version, dialect) == text)
+        {
             continue;
         }
-        // A candidate equal to the requirement's own version changes no text.
-        if Some(version) == minimum && satisfies(version) {
+        // A candidate whose text equals the requirement's own version changes nothing.
+        if minimum.as_ref() == Some(&text) && satisfies(version) {
             continue;
         }
         bumps.push(Bump {
@@ -156,6 +162,11 @@ fn exact_pin(requirement: &str, dialect: VersionDialect) -> Option<&str> {
                 )
         });
     (is_plain && normalized_version_for_dialect(pinned, dialect).is_some()).then_some(pinned)
+}
+
+/// The version as the dialect renders it, so `v1.5.0` and `1.5.0` are one text.
+fn rendered_text(version: &str, dialect: VersionDialect) -> String {
+    normalized_version_for_dialect(version, dialect).unwrap_or_else(|| version.trim().to_owned())
 }
 
 fn is_release(version: &str, dialect: VersionDialect) -> bool {

@@ -177,6 +177,19 @@ fn prerelease_versions_are_never_bumps() {
 }
 
 #[test]
+fn bump_spelling_the_requirement_version_differently_is_dropped() {
+    let result = plan("~1.5.0", Semver, &versions(&["1.5.0", "v1.5.0", "1.6.0"]));
+
+    assert_eq!(
+        result,
+        Plan {
+            status: PlanStatus::ExcludesLatest,
+            bumps: vec![bump(BumpKind::Latest, "1.6.0")],
+        }
+    );
+}
+
+#[test]
 fn no_releases_allows_latest_without_bumps() {
     let result = plan("^1.0.0", Semver, &[]);
 
