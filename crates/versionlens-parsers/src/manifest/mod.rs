@@ -1,11 +1,30 @@
 //! The manifest table: one row per supported file type.
 
-use versionlens_model::{DocumentInput, Ecosystem, ManifestKind};
+use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 
 mod patterns;
 mod table;
 
 pub use table::MANIFESTS;
+
+type ParsedDependencies = Vec<Dependency>;
+
+/// The parser for a manifest kind: the document text, and the dependency
+/// paths when the format selects dependencies by path.
+#[derive(Clone, Copy)]
+pub(crate) enum ManifestParser {
+    Direct(fn(&str) -> ParsedDependencies),
+    WithPaths(fn(&str, &[&str]) -> ParsedDependencies),
+}
+
+impl ManifestParser {
+    pub(crate) fn parse(self, text: &str, paths: &[&str]) -> ParsedDependencies {
+        match self {
+            Self::Direct(parser) => parser(text),
+            Self::WithPaths(parser) => parser(text, paths),
+        }
+    }
+}
 
 /// How a manifest file is written. `Custom` file types keep a hand-written parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,6 +89,7 @@ pub struct ManifestRow {
     pub provider: &'static str,
     pub format: ManifestFormat,
     pub patterns: &'static [Pattern],
+    pub(crate) parser: ManifestParser,
 }
 
 impl Rule {
