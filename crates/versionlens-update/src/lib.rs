@@ -20,5 +20,5 @@ pub use resolve::resolve_dependency;
 pub use sort::{can_sort_dependencies, sort_dependency_edits};
 pub use suggestion::{Suggestion, SuggestionStatus, UpdateChoice};
 pub(crate) use support::default;
-pub use update::{bulk_update_edits, update_edits};
+pub use update::{Bump, BumpKind, Plan, PlanStatus, bulk_update_edits, plan, update_edits};
 pub(crate) use versionlens_model::parse_semver;
