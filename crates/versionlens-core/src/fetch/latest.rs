@@ -24,6 +24,7 @@ mod response;
 pub(crate) struct LatestFetch {
     pub(crate) latest: Option<String>,
     pub(crate) builds: Vec<String>,
+    pub(crate) versions: Vec<String>,
     pub(crate) choices: Vec<UpdateChoice>,
 }
 
@@ -68,6 +69,7 @@ impl VersionLensSession {
             None => Ok(LatestFetch {
                 latest: None,
                 builds: vec![],
+                versions: vec![],
                 choices: vec![],
             }),
         }
@@ -87,6 +89,7 @@ impl VersionLensSession {
             return Ok(LatestFetch {
                 latest: None,
                 builds: vec![],
+                versions: vec![],
                 choices: vec![],
             });
         };
@@ -128,6 +131,7 @@ impl VersionLensSession {
                 &body,
                 &dependency.requirement,
             ),
+            versions: registry_release_versions(dependency, Some(endpoint), &body),
             choices,
         })
     }
@@ -211,11 +215,23 @@ fn update_choice_versions_from_response(
     body: &str,
     latest: &str,
 ) -> Vec<String> {
+    let versions = registry_release_versions(dependency, endpoint, body);
+    if dependency.ecosystem == Npm {
+        return npm_versions_capped_to_latest(versions, latest);
+    }
+    versions
+}
+
+pub(crate) fn registry_release_versions(
+    dependency: &Dependency,
+    endpoint: Option<&RegistryEndpoint>,
+    body: &str,
+) -> Vec<String> {
     let package = dependency
         .hosted_name
         .as_deref()
         .unwrap_or(&dependency.name);
-    let versions = endpoint.map_or_else(
+    endpoint.map_or_else(
         || release_versions_from_response_for_package(dependency.ecosystem, package, body),
         |endpoint| {
             release_versions_from_response_for_endpoint(
@@ -225,11 +241,7 @@ fn update_choice_versions_from_response(
                 body,
             )
         },
-    );
-    if dependency.ecosystem == Npm {
-        return npm_versions_capped_to_latest(versions, latest);
-    }
-    versions
+    )
 }
 
 fn npm_versions_capped_to_latest(versions: Vec<String>, latest: &str) -> Vec<String> {

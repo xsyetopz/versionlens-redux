@@ -114,6 +114,7 @@ impl VersionLensSession {
         Ok(LatestFetch {
             latest: Some(latest),
             builds: vec![],
+            versions: vec![],
             choices,
         })
     }
