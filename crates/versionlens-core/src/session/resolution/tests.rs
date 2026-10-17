@@ -39,7 +39,9 @@ fn lens_titles(output: &crate::AnalyzeDocumentOutput) -> Vec<&str> {
         .collect()
 }
 
-fn lens_titles_and_arguments(output: &crate::AnalyzeDocumentOutput) -> (Vec<&str>, Vec<Vec<&str>>) {
+fn lens_titles_and_arguments(
+    output: &crate::AnalyzeDocumentOutput,
+) -> (Vec<&str>, Vec<Vec<String>>) {
     (
         lens_titles(output),
         crate::support::tests::code_lens_arguments(output),

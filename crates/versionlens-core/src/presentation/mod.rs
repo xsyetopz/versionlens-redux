@@ -6,11 +6,11 @@ use versionlens_suggestions::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
 };
 use versionlens_suggestions::{Suggestion, UpdateChoice};
-use versionlens_vscode_model::CodeLensPayload;
 
 use crate::SuggestionIndicators;
 use crate::project::ProjectVersionCodeLensSuggestion;
 use crate::selection::dependency_selector;
+use crate::view::{Action, LensView, UpdateMode};
 
 mod diagnostics;
 mod indicator;
@@ -21,80 +21,80 @@ pub(crate) use diagnostics::vulnerability_diagnostics;
 
 type SuggestionRef<'a> = Option<&'a Suggestion>;
 
-pub(crate) fn code_lens_payload(dependency: &Dependency, title: String) -> CodeLensPayload {
-    CodeLensPayload {
-        range: dependency.range,
+pub(crate) fn code_lens_view(dependency: &Dependency, title: String) -> LensView {
+    LensView::new(
+        dependency.range,
         title,
-        command: "versionlens.suggestion.onUpdateDependency".to_owned(),
-        arguments: vec![
-            dependency.name.as_str().to_owned(),
-            dependency_selector(dependency),
-        ],
-    }
+        Some(Action::UpdateDependency {
+            name: dependency.name.as_str().to_owned(),
+            selector: dependency_selector(dependency),
+            mode: None,
+            version: None,
+        }),
+    )
 }
 
-pub(crate) fn project_version_code_lens_payload(
+pub(crate) fn project_version_code_lens_view(
     dependency: &Dependency,
     suggestion: ProjectVersionCodeLensSuggestion,
     indicators: &SuggestionIndicators,
-) -> CodeLensPayload {
+) -> LensView {
     let title = with_indicator(
         &indicators.updateable,
         format!("{} {}", suggestion.label, suggestion.latest),
     );
-    CodeLensPayload {
-        range: dependency.range,
+    LensView::new(
+        dependency.range,
         title,
-        command: "versionlens.suggestion.onUpdateDependency".to_owned(),
-        arguments: vec![
-            dependency.name.as_str().to_owned(),
-            dependency_selector(dependency),
-            suggestion.command.to_owned(),
-        ],
-    }
+        Some(Action::UpdateDependency {
+            name: dependency.name.as_str().to_owned(),
+            selector: dependency_selector(dependency),
+            mode: Some(suggestion.command),
+            version: None,
+        }),
+    )
 }
 
-pub(crate) fn suggested_code_lens_payload(
+pub(crate) fn suggested_code_lens_view(
     dependency: &Dependency,
     suggestion: SuggestionRef<'_>,
     title: String,
-) -> CodeLensPayload {
+) -> LensView {
     if let Some(suggestion) = suggestion
         && suggestion.status == StatusBuildAvailable
         && let Some(builds) = build_choices(suggestion)
     {
-        let mut arguments = vec![
-            dependency_selector(dependency),
-            dependency.name.as_str().to_owned(),
-            dependency.requirement.as_str().to_owned(),
-        ];
-        arguments.extend(builds);
-        return CodeLensPayload {
-            range: dependency.range,
+        return LensView::new(
+            dependency.range,
             title,
-            command: "versionlens.suggestion.onChooseBuild".to_owned(),
-            arguments,
-        };
+            Some(Action::ChooseBuild {
+                selector: dependency_selector(dependency),
+                name: dependency.name.as_str().to_owned(),
+                requirement: dependency.requirement.as_str().to_owned(),
+                builds,
+            }),
+        );
     }
 
     if let Some(path) = directory_open_path(suggestion) {
-        return CodeLensPayload {
-            range: dependency.range,
+        return LensView::new(
+            dependency.range,
             title,
-            command: "versionlens.suggestion.onFileLink".to_owned(),
-            arguments: vec![path.to_owned()],
-        };
+            Some(Action::OpenFile {
+                path: path.to_owned(),
+            }),
+        );
     }
 
-    code_lens_payload(dependency, title)
+    code_lens_view(dependency, title)
 }
 
-pub(crate) fn update_choice_code_lens_payload(
+pub(crate) fn update_choice_code_lens_view(
     dependency: &Dependency,
     choice: &UpdateChoice,
     indicators: &SuggestionIndicators,
     has_vulnerabilities: bool,
-) -> CodeLensPayload {
+) -> LensView {
     let title = with_indicator(
         choice_indicator(choice, indicators, has_vulnerabilities),
         format!(
@@ -103,17 +103,14 @@ pub(crate) fn update_choice_code_lens_payload(
             displayed_choice_version(dependency, choice)
         ),
     );
-    CodeLensPayload {
-        range: dependency.range,
-        title,
-        command: "versionlens.suggestion.onUpdateDependency".to_owned(),
-        arguments: vec![
-            dependency.name.as_str().to_owned(),
-            dependency_selector(dependency),
-            choice.command.as_str().to_owned(),
-            choice.version.as_str().to_owned(),
-        ],
-    }
+    // A stored choice whose command is not a known mode yields a display-only lens.
+    let action = UpdateMode::parse(choice.command.as_str()).map(|mode| Action::UpdateDependency {
+        name: dependency.name.as_str().to_owned(),
+        selector: dependency_selector(dependency),
+        mode: Some(mode),
+        version: Some(choice.version.as_str().to_owned()),
+    });
+    LensView::new(dependency.range, title, action)
 }
 
 fn displayed_choice_version(dependency: &Dependency, choice: &UpdateChoice) -> String {

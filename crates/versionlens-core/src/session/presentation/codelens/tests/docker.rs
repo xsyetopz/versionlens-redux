@@ -52,7 +52,10 @@ async fn docker_code_lenses(text: &str) -> Vec<(String, String)> {
         .analyze_document(input)
         .code_lenses
         .into_iter()
-        .map(|lens| (lens.title, lens.command))
+        .map(|lens| {
+            let command = lens.command().to_owned();
+            (lens.title, command)
+        })
         .collect()
 }
 
@@ -86,21 +89,10 @@ async fn docker_code_lenses_map_latest_update_choice_to_matching_tag_shape() {
         output
             .code_lenses
             .iter()
-            .find(|lens| lens.command == "versionlens.suggestion.onChooseBuild")
-            .map(|lens| lens
-                .arguments
-                .iter()
-                .skip(1)
-                .map(|value| value.as_str())
-                .collect()),
-        Some(vec![
-            "node",
-            "22-bookworm",
-            "22",
-            "22-bookworm",
-            "22.4",
-            "22.4.3"
-        ])
+            .find(|lens| lens.command() == "versionlens.suggestion.onChooseBuild")
+            .map(|lens| lens.arguments().into_iter().skip(1).collect::<Vec<_>>())
+            .expect("choose build lens"),
+        ["node", "22-bookworm", "22", "22-bookworm", "22.4", "22.4.3"]
     );
 }
 

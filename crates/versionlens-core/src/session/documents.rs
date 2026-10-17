@@ -10,7 +10,6 @@ use versionlens_model::{
 };
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
 use versionlens_versions::ProjectVersionBump;
-use versionlens_vscode_model::DiagnosticPayload;
 
 use super::operation::OperationContext;
 use super::resolution::ResolutionRequest;
@@ -18,11 +17,12 @@ use crate::VersionLensSession;
 use crate::cache::suggestion_cache_key;
 use crate::command::install_task_config_key_for_manifest;
 use crate::contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
-use crate::dependency::into_dependency_payloads;
+use crate::dependency::into_dependency_views;
 use crate::project::is_project_version_dependency;
 use crate::schema::schema_output;
 use crate::snapshot::dependency_signature;
-use crate::status::{status_payload, to_u32};
+use crate::status::{status_view, to_u32};
+use crate::view::DiagnosticView;
 pub(super) struct DependencySuggestionsRequest<'a> {
     pub(super) input: DocumentInput,
     pub(super) selector: &'a str,
@@ -103,7 +103,7 @@ impl VersionLensSession {
             .flat_map(|dependency| self.code_lenses_for_dependency(dependency, &scope))
             .collect();
         let mut diagnostic_ranges: HashSet<(u32, u32, u32, u32)> = crate::default();
-        let diagnostics: Vec<DiagnosticPayload> = dependencies
+        let diagnostics: Vec<DiagnosticView> = dependencies
             .iter()
             .filter(|dependency| {
                 let range = dependency.requirement_range;
@@ -117,7 +117,7 @@ impl VersionLensSession {
             .flat_map(|dependency| self.diagnostics_for_dependency(dependency, responses))
             .collect();
 
-        let status = status_payload(
+        let status = status_view(
             dependencies.len(),
             &diagnostics,
             &suggestions,
@@ -128,7 +128,7 @@ impl VersionLensSession {
             .flatten();
         let dependency_signature = dependency_signature(&dependencies);
         let can_sort_dependencies = can_sort_dependencies(&dependencies);
-        let dependency_payloads = into_dependency_payloads(dependencies);
+        let dependency_views = into_dependency_views(dependencies);
 
         AnalyzeDocumentOutput {
             can_sort_dependencies,
@@ -136,7 +136,7 @@ impl VersionLensSession {
             active_provider_name,
             install_task_config_key,
             dependency_signature,
-            dependencies: dependency_payloads,
+            dependencies: dependency_views,
             code_lenses,
             diagnostics,
             status,

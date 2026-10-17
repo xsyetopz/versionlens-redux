@@ -1,7 +1,11 @@
 use napi_derive::napi;
-use versionlens_vscode_model::CodeLensPayload;
+use versionlens_core::{Action, LensView};
 
 use crate::binding::position::{NativeRange, native_range_from_core};
+
+const UPDATE_DEPENDENCY_COMMAND: &str = "versionlens.suggestion.onUpdateDependency";
+const CHOOSE_BUILD_COMMAND: &str = "versionlens.suggestion.onChooseBuild";
+const FILE_LINK_COMMAND: &str = "versionlens.suggestion.onFileLink";
 
 #[napi(object)]
 pub struct NativeCodeLensPayload {
@@ -12,18 +16,51 @@ pub struct NativeCodeLensPayload {
 }
 
 impl NativeCodeLensPayload {
-    pub(super) fn from_core(payload: CodeLensPayload) -> Self {
+    pub(super) fn from_core(lens: LensView) -> Self {
+        let (command, arguments) = lens.action.map_or_else(
+            || (String::new(), Vec::new()),
+            |action| command_and_arguments(action),
+        );
         Self {
-            range: native_range_from_core(payload.range),
-            title: payload.title,
-            command: payload.command,
-            arguments: payload.arguments,
+            range: native_range_from_core(lens.range),
+            title: lens.title,
+            command,
+            arguments,
         }
     }
 }
 
-impl From<CodeLensPayload> for NativeCodeLensPayload {
-    fn from(value: CodeLensPayload) -> Self {
+/// Maps a typed action to the VS Code command ID and positional arguments
+/// that the extension's command handlers read.
+fn command_and_arguments(action: Action) -> (String, Vec<String>) {
+    match action {
+        Action::UpdateDependency {
+            name,
+            selector,
+            mode,
+            version,
+        } => {
+            let mut arguments = vec![name, selector];
+            arguments.extend(mode.map(|mode| mode.as_str().to_owned()));
+            arguments.extend(version);
+            (UPDATE_DEPENDENCY_COMMAND.to_owned(), arguments)
+        }
+        Action::ChooseBuild {
+            selector,
+            name,
+            requirement,
+            builds,
+        } => {
+            let mut arguments = vec![selector, name, requirement];
+            arguments.extend(builds);
+            (CHOOSE_BUILD_COMMAND.to_owned(), arguments)
+        }
+        Action::OpenFile { path } => (FILE_LINK_COMMAND.to_owned(), vec![path]),
+    }
+}
+
+impl From<LensView> for NativeCodeLensPayload {
+    fn from(value: LensView) -> Self {
         Self::from_core(value)
     }
 }

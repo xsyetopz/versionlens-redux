@@ -2,15 +2,16 @@ pub(crate) mod properties;
 
 use versionlens_model::Dependency;
 use versionlens_model::ecosystem_config_namespace;
-use versionlens_vscode_model::DependencyPayload;
 
-pub(crate) fn into_dependency_payloads(dependencies: Vec<Dependency>) -> Vec<DependencyPayload> {
-    dependencies.into_iter().map(dependency_payload).collect()
+use crate::view::DependencyView;
+
+pub(crate) fn into_dependency_views(dependencies: Vec<Dependency>) -> Vec<DependencyView> {
+    dependencies.into_iter().map(dependency_view).collect()
 }
 
-pub fn dependency_payload(dependency: Dependency) -> DependencyPayload {
+pub fn dependency_view(dependency: Dependency) -> DependencyView {
     let ecosystem = ecosystem_config_namespace(dependency.ecosystem).to_owned();
-    DependencyPayload {
+    DependencyView {
         name: dependency.name,
         requirement: dependency.requirement,
         ecosystem,

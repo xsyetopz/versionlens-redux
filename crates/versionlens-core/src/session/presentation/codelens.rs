@@ -2,7 +2,6 @@ use versionlens_model::Dependency;
 use versionlens_model::Range;
 use versionlens_suggestions::Suggestion;
 use versionlens_versions::update_level;
-use versionlens_vscode_model::CodeLensPayload;
 
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
@@ -10,28 +9,29 @@ use crate::presentation::statuses::{
     StatusSatisfies, StatusSatisfiesLatest, StatusUpdateAvailable, SuggestionStatus,
 };
 use crate::presentation::{
-    code_lens_title, project_version_code_lens_payload, suggested_code_lens_payload,
-    update_choice_code_lens_payload,
+    code_lens_title, project_version_code_lens_view, suggested_code_lens_view,
+    update_choice_code_lens_view,
 };
 use crate::project::project_version_code_lens_suggestions;
+use crate::view::LensView;
 use crate::{SuggestionIndicators, VersionLensSession};
 use versionlens_model::Ecosystem::Docker;
 
-type CodeLensPayloads = Vec<CodeLensPayload>;
+type CodeLensViews = Vec<LensView>;
 
 impl VersionLensSession {
     pub(crate) fn code_lenses_for_dependency(
         &self,
         dependency: &Dependency,
         scope: &str,
-    ) -> CodeLensPayloads {
+    ) -> CodeLensViews {
         let project_version_suggestions = project_version_code_lens_suggestions(dependency);
         if !project_version_suggestions.is_empty() {
             return ordered_code_lenses(
                 project_version_suggestions
                     .into_iter()
                     .map(|suggestion| {
-                        project_version_code_lens_payload(
+                        project_version_code_lens_view(
                             dependency,
                             suggestion,
                             &self.config.suggestion_indicators,
@@ -73,7 +73,7 @@ impl VersionLensSession {
             && dependency.ecosystem != Docker
             && suggestion.choices.is_empty()
         {
-            if let Some(build_lens) = build_choice_code_lens_payload(
+            if let Some(build_lens) = build_choice_code_lens_view(
                 dependency,
                 &suggestion,
                 &self.config.suggestion_indicators,
@@ -86,14 +86,14 @@ impl VersionLensSession {
 
         if shows_update_choice_lenses(suggestion.status) && !suggestion.choices.is_empty() {
             lenses.extend(suggestion.choices.iter().map(|choice| {
-                update_choice_code_lens_payload(
+                update_choice_code_lens_view(
                     dependency,
                     choice,
                     &self.config.suggestion_indicators,
                     choice_has_cached_vulnerabilities(self, dependency, choice.version.as_str()),
                 )
             }));
-            if let Some(build_lens) = build_choice_code_lens_payload(
+            if let Some(build_lens) = build_choice_code_lens_view(
                 dependency,
                 &suggestion,
                 &self.config.suggestion_indicators,
@@ -104,7 +104,7 @@ impl VersionLensSession {
             return ordered_code_lenses(lenses);
         }
 
-        if let Some(build_lens) = build_choice_code_lens_payload(
+        if let Some(build_lens) = build_choice_code_lens_view(
             dependency,
             &suggestion,
             &self.config.suggestion_indicators,
@@ -118,7 +118,7 @@ impl VersionLensSession {
             return ordered_code_lenses(lenses);
         }
 
-        lenses.push(suggested_code_lens_payload(
+        lenses.push(suggested_code_lens_view(
             dependency,
             Some(&suggestion),
             title,
@@ -131,7 +131,7 @@ fn runtime_constraint_lens(
     dependency: &Dependency,
     suggestion: &Suggestion,
     indicators: &SuggestionIndicators,
-) -> CodeLensPayload {
+) -> LensView {
     let title = if suggestion.status == versionlens_suggestions::SuggestionStatus::SatisfiesLatest {
         format!(
             "checked {}; compatible {}",
@@ -141,15 +141,10 @@ fn runtime_constraint_lens(
     } else {
         code_lens_title(dependency, Some(suggestion), indicators, false)
     };
-    CodeLensPayload {
-        range: dependency.range,
-        title,
-        command: String::new(),
-        arguments: vec![],
-    }
+    LensView::new(dependency.range, title, None)
 }
 
-fn ordered_code_lenses(mut lenses: CodeLensPayloads) -> CodeLensPayloads {
+fn ordered_code_lenses(mut lenses: CodeLensViews) -> CodeLensViews {
     for (order, lens) in lenses.iter_mut().enumerate() {
         lens.range = ordered_code_lens_range(lens.range, order);
     }
@@ -216,12 +211,12 @@ fn uses_status_command(status: SuggestionStatus) -> bool {
     )
 }
 
-fn build_choice_code_lens_payload(
+fn build_choice_code_lens_view(
     dependency: &Dependency,
     suggestion: &Suggestion,
     indicators: &SuggestionIndicators,
     has_vulnerabilities: bool,
-) -> Option<CodeLensPayload> {
+) -> Option<LensView> {
     if suggestion.builds.is_empty() {
         return None;
     }
@@ -244,7 +239,7 @@ fn build_choice_code_lens_payload(
         indicators,
         has_vulnerabilities,
     );
-    Some(suggested_code_lens_payload(
+    Some(suggested_code_lens_view(
         dependency,
         Some(&build_suggestion),
         title,
@@ -255,15 +250,10 @@ fn status_only_code_lens(
     dependency: &Dependency,
     suggestion: Option<&Suggestion>,
     indicators: &SuggestionIndicators,
-) -> Option<CodeLensPayload> {
+) -> Option<LensView> {
     let status = status_only_suggestion(dependency, suggestion)?;
     let title = code_lens_title(dependency, Some(&status), indicators, false);
-    Some(CodeLensPayload {
-        range: dependency.range,
-        title,
-        command: "".to_owned(),
-        arguments: vec![],
-    })
+    Some(LensView::new(dependency.range, title, None))
 }
 
 fn status_only_suggestion(

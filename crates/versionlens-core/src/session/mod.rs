@@ -15,7 +15,7 @@ use crate::contract::{
     AuthorizationRequestPayload, ResolveDocumentOutput, ResolveDocumentOutputParts,
     resolve_document_output,
 };
-use crate::suggestion::into_suggestion_payloads;
+use crate::suggestion::into_suggestion_views;
 use cache::CachedLatest;
 
 mod cache;
@@ -171,7 +171,7 @@ pub(crate) fn finish_resolve_output(
     suggestions: Vec<Suggestion>,
     mut parts: ResolveDocumentOutputParts,
 ) -> ResolveDocumentOutput {
-    parts.suggestions = into_suggestion_payloads(suggestions);
+    parts.suggestions = into_suggestion_views(suggestions);
     resolve_document_output(parts)
 }
 

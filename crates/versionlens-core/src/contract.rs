@@ -5,17 +5,16 @@ use versionlens_model::{
     DocumentEditPlan, DocumentInput, DocumentSnapshot, TextEdit, WorkspaceEditPlan,
     document_text_hash,
 };
-use versionlens_vscode_model::{
-    CodeLensPayload, DependencyPayload, DiagnosticPayload, StatusPayload, SuggestionPayload,
-};
+
+use crate::view::{DependencyView, DiagnosticView, LensView, StatusView, SuggestionView};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalyzeDocumentOutput {
-    pub dependencies: Vec<DependencyPayload>,
-    pub code_lenses: Vec<CodeLensPayload>,
-    pub diagnostics: Vec<DiagnosticPayload>,
-    pub status: StatusPayload,
+    pub dependencies: Vec<DependencyView>,
+    pub code_lenses: Vec<LensView>,
+    pub diagnostics: Vec<DiagnosticView>,
+    pub status: StatusView,
     pub can_sort_dependencies: bool,
     pub is_supported_manifest: bool,
     pub active_provider_name: Option<String>,
@@ -26,7 +25,7 @@ pub struct AnalyzeDocumentOutput {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolveDocumentOutput {
-    pub suggestions: Vec<SuggestionPayload>,
+    pub suggestions: Vec<SuggestionView>,
     pub edits: Vec<TextEdit>,
     pub authorization_required_count: u32,
     pub authorization_required_requests: Vec<AuthorizationRequestPayload>,
@@ -37,7 +36,7 @@ pub struct ResolveDocumentOutput {
 }
 
 pub(crate) struct ResolveDocumentOutputParts {
-    pub(crate) suggestions: Vec<SuggestionPayload>,
+    pub(crate) suggestions: Vec<SuggestionView>,
     pub(crate) edits: Vec<TextEdit>,
     pub(crate) authorization_required_count: u32,
     pub(crate) authorization_required_requests: Vec<AuthorizationRequestPayload>,

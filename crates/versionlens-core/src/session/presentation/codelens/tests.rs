@@ -164,7 +164,7 @@ fn lens_commands(output: &AnalyzeDocumentOutput) -> Vec<&str> {
     output
         .code_lenses
         .iter()
-        .map(|lens| lens.command.as_str())
+        .map(|lens| lens.command())
         .collect()
 }
 

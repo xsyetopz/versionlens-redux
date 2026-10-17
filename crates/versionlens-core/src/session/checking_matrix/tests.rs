@@ -185,7 +185,7 @@ async fn versionable_categories_remain_distinct_and_safe() {
                 rendered
                     .code_lenses
                     .iter()
-                    .all(|lens| lens.command.is_empty())
+                    .all(|lens| lens.command().is_empty())
             );
         }
     }
@@ -396,18 +396,22 @@ async fn assert_manifest_pipeline(
 
 fn assert_semantic_target_uniqueness(
     rendered: &crate::AnalyzeDocumentOutput,
-    suggestion: &versionlens_vscode_model::SuggestionPayload,
+    suggestion: &crate::SuggestionView,
     case: &str,
 ) {
     let targets = rendered
         .code_lenses
         .iter()
-        .filter(|lens| {
-            lens.command == "versionlens.suggestion.onUpdateDependency"
-                && lens.arguments.first() == Some(&suggestion.dependency.name)
-                && lens.arguments.len() >= 4
+        .filter_map(|lens| match &lens.action {
+            Some(crate::Action::UpdateDependency {
+                name,
+                version: Some(version),
+                ..
+            }) if *name == suggestion.dependency.name => {
+                Some(versionlens_suggestions::semantic_update_target(version))
+            }
+            _ => None,
         })
-        .map(|lens| versionlens_suggestions::semantic_update_target(&lens.arguments[3]))
         .collect::<Vec<_>>();
     assert_eq!(
         targets.iter().collect::<BTreeSet<_>>().len(),

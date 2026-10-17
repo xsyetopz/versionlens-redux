@@ -64,7 +64,7 @@ fn runtime_response(package: &str) -> String {
 pub(super) fn suggestion_for<'a>(
     output: &'a crate::contract::ResolveDocumentOutput,
     package: &str,
-) -> &'a versionlens_vscode_model::SuggestionPayload {
+) -> &'a crate::SuggestionView {
     output
         .suggestions
         .iter()

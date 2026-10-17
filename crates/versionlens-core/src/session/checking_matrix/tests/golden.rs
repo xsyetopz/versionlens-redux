@@ -1,13 +1,13 @@
 use std::fs;
 use std::path::PathBuf;
 
-use serde_json::json;
+use serde_json::{Value, json};
 use versionlens_model::DocumentInput;
 
 use super::super::ApplyCommandRequest;
 use super::{ManifestCase, manifest_cases, response_body, test_session};
-use crate::RegistryResponseInput;
 use crate::workspace::tests::support::TestWorkspace;
+use crate::{Action, DiagnosticView, LensView, RegistryResponseInput, Severity, UpdateMode};
 
 /// Writes the lens, diagnostic and edit output of every manifest case to
 /// `tests/golden/0.4.4/`. Run with
@@ -76,8 +76,8 @@ async fn capture_case(case: &ManifestCase) -> String {
         "kind": case.kind,
         "path": case.path,
         "dependencies": analysis.dependencies,
-        "codeLenses": analysis.code_lenses,
-        "diagnostics": analysis.diagnostics,
+        "codeLenses": analysis.code_lenses.iter().map(golden_code_lens).collect::<Vec<_>>(),
+        "diagnostics": analysis.diagnostics.iter().map(golden_diagnostic).collect::<Vec<_>>(),
         "updateAllEdits": resolved.edits,
         "actions": actions,
     });
@@ -89,20 +89,51 @@ async fn capture_case(case: &ManifestCase) -> String {
     text
 }
 
-pub(super) fn lens_actions(
-    lens: &versionlens_vscode_model::CodeLensPayload,
-) -> Vec<(&str, &str, Option<&str>)> {
-    let argument = |index: usize| lens.arguments.get(index).map(String::as_str);
-    match lens.command.as_str() {
-        "versionlens.suggestion.onUpdateDependency" => vec![(
-            argument(2).unwrap_or("update"),
-            argument(0).unwrap(),
-            argument(3),
+/// Converts a lens to the 0.4.4 `CodeLensPayload` shape: a command ID and
+/// positional arguments.
+fn golden_code_lens(lens: &LensView) -> Value {
+    json!({
+        "range": lens.range,
+        "title": lens.title,
+        "command": lens.command(),
+        "arguments": lens.arguments(),
+    })
+}
+
+/// Converts a diagnostic to the 0.4.4 `DiagnosticPayload` shape, whose severity is a number.
+fn golden_diagnostic(diagnostic: &DiagnosticView) -> Value {
+    let severity = match diagnostic.severity {
+        Severity::Error => 0,
+        Severity::Warning => 1,
+        Severity::Information => 2,
+        Severity::Hint => 3,
+    };
+    json!({
+        "range": diagnostic.range,
+        "message": diagnostic.message,
+        "severity": severity,
+        "source": diagnostic.source,
+        "code": diagnostic.code,
+        "codeDescriptionUrl": diagnostic.code_description_url,
+    })
+}
+
+pub(super) fn lens_actions(lens: &LensView) -> Vec<(&str, &str, Option<&str>)> {
+    match &lens.action {
+        Some(Action::UpdateDependency {
+            name,
+            mode,
+            version,
+            ..
+        }) => vec![(
+            mode.map_or("update", UpdateMode::as_str),
+            name.as_str(),
+            version.as_deref(),
         )],
-        "versionlens.suggestion.onChooseBuild" => lens.arguments[3..]
+        Some(Action::ChooseBuild { name, builds, .. }) => builds
             .iter()
-            .map(|build| ("update", argument(1).unwrap(), Some(build.as_str())))
+            .map(|build| ("update", name.as_str(), Some(build.as_str())))
             .collect(),
-        _ => Vec::new(),
+        Some(Action::OpenFile { .. }) | None => Vec::new(),
     }
 }

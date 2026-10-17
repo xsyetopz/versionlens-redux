@@ -1611,7 +1611,6 @@ dependencies = [
  "versionlens-suggestions",
  "versionlens-test-support",
  "versionlens-versions",
- "versionlens-vscode-model",
 ]
 
 [[package]]
@@ -1654,7 +1653,6 @@ dependencies = [
  "versionlens-core",
  "versionlens-model",
  "versionlens-test-support",
- "versionlens-vscode-model",
 ]
 
 [[package]]
@@ -1675,7 +1673,6 @@ dependencies = [
  "versionlens-http",
  "versionlens-model",
  "versionlens-test-support",
- "versionlens-vscode-model",
 ]
 
 [[package]]

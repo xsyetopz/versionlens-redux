@@ -193,72 +193,57 @@ where
     result
 }
 
-pub(crate) fn code_lens_arguments<'a>(output: &'a AnalyzeDocumentOutput) -> Vec<Vec<&'a str>> {
+pub(crate) fn code_lens_arguments(output: &AnalyzeDocumentOutput) -> Vec<Vec<String>> {
     code_lens_arguments_after(output, 1)
 }
 
-pub(crate) fn all_code_lens_arguments<'a>(output: &'a AnalyzeDocumentOutput) -> Vec<Vec<&'a str>> {
+pub(crate) fn all_code_lens_arguments(output: &AnalyzeDocumentOutput) -> Vec<Vec<String>> {
     code_lens_arguments_after(output, 0)
 }
 
-fn code_lens_arguments_after<'a>(
-    output: &'a AnalyzeDocumentOutput,
+fn code_lens_arguments_after(
+    output: &AnalyzeDocumentOutput,
     skip_lenses: usize,
-) -> Vec<Vec<&'a str>> {
+) -> Vec<Vec<String>> {
     output
         .code_lenses
         .iter()
         .skip(skip_lenses)
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(|value| value.as_str())
-                .collect()
-        })
+        .map(|lens| lens.arguments().into_iter().skip(2).collect())
         .collect()
 }
 
-pub(crate) fn update_code_lens_arguments<'a>(
-    output: &'a AnalyzeDocumentOutput,
-) -> Vec<Vec<&'a str>> {
+pub(crate) fn update_code_lens_arguments(output: &AnalyzeDocumentOutput) -> Vec<Vec<String>> {
     output
         .code_lenses
         .iter()
         .filter_map(|lens| {
-            if lens.command != "versionlens.suggestion.onUpdateDependency" {
+            if lens.command() != "versionlens.suggestion.onUpdateDependency" {
                 return None;
             }
-            let command = lens.arguments.get(2)?;
-            let version = lens.arguments.get(3)?;
-            Some(vec![command.as_str(), version.as_str()])
+            let arguments = lens.arguments();
+            Some(vec![arguments.get(2)?.clone(), arguments.get(3)?.clone()])
         })
         .collect()
 }
 
-pub(crate) fn code_lens_arguments_for_title<'a>(
-    output: &'a AnalyzeDocumentOutput,
+pub(crate) fn code_lens_arguments_for_title(
+    output: &AnalyzeDocumentOutput,
     title: &str,
-) -> Vec<Vec<&'a str>> {
+) -> Vec<Vec<String>> {
     output
         .code_lenses
         .iter()
         .filter(|lens| lens.title == title)
-        .map(|lens| {
-            lens.arguments
-                .iter()
-                .skip(2)
-                .map(|value| value.as_str())
-                .collect()
-        })
+        .map(|lens| lens.arguments().into_iter().skip(2).collect())
         .collect()
 }
 
-pub(crate) fn code_lens_commands<'a>(output: &'a AnalyzeDocumentOutput) -> Vec<&'a str> {
+pub(crate) fn code_lens_commands(output: &AnalyzeDocumentOutput) -> Vec<String> {
     output
         .code_lenses
         .iter()
-        .filter_map(|lens| lens.arguments.get(2).map(|value| value.as_str()))
+        .filter_map(|lens| lens.arguments().get(2).cloned())
         .collect()
 }
 

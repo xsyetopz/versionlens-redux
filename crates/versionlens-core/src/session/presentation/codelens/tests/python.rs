@@ -5,7 +5,7 @@ fn assert_python_code_lenses(output: &crate::AnalyzeDocumentOutput, expected: &[
         output
             .code_lenses
             .iter()
-            .map(|lens| (lens.title.as_str(), lens.command.as_str()))
+            .map(|lens| (lens.title.as_str(), lens.command()))
             .collect::<Vec<_>>(),
         expected
     );

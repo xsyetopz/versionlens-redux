@@ -1,5 +1,5 @@
 use napi_derive::napi;
-use versionlens_vscode_model::SuggestionPayload;
+use versionlens_core::SuggestionView;
 
 use super::dependency::NativeDependency;
 
@@ -12,7 +12,7 @@ pub struct NativeSuggestion {
 }
 
 impl NativeSuggestion {
-    pub(super) fn from_core(suggestion: SuggestionPayload) -> Self {
+    pub(super) fn from_core(suggestion: SuggestionView) -> Self {
         Self {
             dependency: suggestion.dependency.into(),
             latest: suggestion.latest,
@@ -22,8 +22,8 @@ impl NativeSuggestion {
     }
 }
 
-impl From<SuggestionPayload> for NativeSuggestion {
-    fn from(value: SuggestionPayload) -> Self {
+impl From<SuggestionView> for NativeSuggestion {
+    fn from(value: SuggestionView) -> Self {
         Self::from_core(value)
     }
 }

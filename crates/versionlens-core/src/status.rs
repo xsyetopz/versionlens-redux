@@ -4,16 +4,17 @@ use versionlens_suggestions::SuggestionStatus::{
     NotSupported as StatusNotSupported, UpdateAvailable as StatusUpdateAvailable,
 };
 use versionlens_suggestions::{Suggestion, SuggestionStatus};
-use versionlens_vscode_model::{DiagnosticPayload, StatusPayload};
+
+use crate::view::{DiagnosticView, StatusView};
 
 type OptionalSuggestions<'a> = &'a [Option<Suggestion>];
 
-pub(crate) fn status_payload(
+pub(crate) fn status_view(
     dependency_count: usize,
-    diagnostics: &[DiagnosticPayload],
+    diagnostics: &[DiagnosticView],
     suggestions: OptionalSuggestions<'_>,
     show_suggestion_stats: bool,
-) -> StatusPayload {
+) -> StatusView {
     let dependency_count = to_u32(dependency_count);
     let update_count = suggestions_with_status(suggestions, StatusUpdateAvailable);
     let vulnerability_count = diagnostics.len();
@@ -36,7 +37,7 @@ pub(crate) fn status_payload(
         format!("$(versions) {update_count}/{dependency_count}")
     };
 
-    StatusPayload {
+    StatusView {
         dependency_count,
         update_count,
         vulnerability_count,
