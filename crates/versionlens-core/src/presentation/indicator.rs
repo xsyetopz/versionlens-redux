@@ -1,4 +1,4 @@
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 use crate::SuggestionIndicators;
 

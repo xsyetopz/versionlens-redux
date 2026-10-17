@@ -1,5 +1,5 @@
 use versionlens_model::Dependency;
-use versionlens_suggestions::UpdateChoice;
+use versionlens_update::UpdateChoice;
 
 use crate::RegistryResponseInput;
 use crate::VersionLensSession;

@@ -48,6 +48,7 @@ pub fn is_update_available_for_dialect(
 ) -> bool {
     match dialect {
         VersionDialect::Semver => is_update_available(latest, requirement),
+        VersionDialect::Cargo => is_update_available(latest, &cargo_requirement(requirement)),
         VersionDialect::Pep440 => pep440::is_update_available(latest, requirement),
     }
 }
@@ -63,6 +64,9 @@ pub fn requirement_satisfies_latest_for_dialect(
 ) -> bool {
     match dialect {
         VersionDialect::Semver => requirement_satisfies_latest(requirement, latest),
+        VersionDialect::Cargo => {
+            requirement_satisfies_latest(&cargo_requirement(requirement), latest)
+        }
         VersionDialect::Pep440 => pep440::requirement_satisfies(requirement, latest),
     }
 }
@@ -84,7 +88,21 @@ pub fn requirement_is_parseable_for_dialect(
 ) -> bool {
     match dialect {
         VersionDialect::Semver => requirement_is_parseable(requirement, latest),
+        VersionDialect::Cargo => requirement_is_parseable(&cargo_requirement(requirement), latest),
         VersionDialect::Pep440 => pep440::requirement_is_parseable(requirement),
+    }
+}
+
+/// Cargo reads a bare version such as `1.0.200` as the caret requirement `^1.0.200`.
+/// Operators (`=`, `^`, `~`) and wildcards are left as written.
+fn cargo_requirement(requirement: &str) -> String {
+    let requirement = requirement.trim();
+    let is_bare = requirement.starts_with(|character: char| character.is_ascii_digit())
+        && parse_version(requirement).is_some();
+    if is_bare {
+        format!("^{requirement}")
+    } else {
+        requirement.to_owned()
     }
 }
 

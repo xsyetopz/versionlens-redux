@@ -2,10 +2,10 @@ use self::indicator::{code_lens_indicator, update_indicator, with_indicator};
 use self::title::code_lens_title_text;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::GitHub;
-use versionlens_suggestions::SuggestionStatus::{
+use versionlens_update::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
 };
-use versionlens_suggestions::{Suggestion, UpdateChoice};
+use versionlens_update::{Suggestion, UpdateChoice};
 
 use crate::SuggestionIndicators;
 use crate::project::ProjectVersionCodeLensSuggestion;

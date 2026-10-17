@@ -130,6 +130,37 @@ fn exact_pins_still_update() {
 }
 
 #[test]
+fn exact_pins_satisfy_their_own_version() {
+    for (requirement, version, dialect) in [
+        ("=0.7.0", "0.7.0", VersionDialect::Semver),
+        ("=0.7.0", "0.7.0", VersionDialect::Cargo),
+        ("==0.7.0", "0.7.0", VersionDialect::Semver),
+        ("==2.34.2", "2.34.2", VersionDialect::Pep440),
+        ("[0.7.0]", "0.7.0", VersionDialect::Semver),
+    ] {
+        assert!(
+            requirement_satisfies_latest_for_dialect(requirement, version, dialect),
+            "{requirement} against {version} in {dialect:?}",
+        );
+    }
+}
+
+#[test]
+fn exact_pins_do_not_satisfy_other_versions() {
+    for (requirement, version, dialect) in [
+        ("=0.7.0", "0.7.1", VersionDialect::Semver),
+        ("==0.7.0", "0.8.0", VersionDialect::Semver),
+        ("==2.34.2", "2.34.1", VersionDialect::Pep440),
+        ("[0.7.0]", "0.7.1", VersionDialect::Semver),
+    ] {
+        assert!(
+            !requirement_satisfies_latest_for_dialect(requirement, version, dialect),
+            "{requirement} against {version} in {dialect:?}",
+        );
+    }
+}
+
+#[test]
 fn build_variants_match_upstream_coerced_version_family() {
     let versions = [
         "1.0.0+build.1",

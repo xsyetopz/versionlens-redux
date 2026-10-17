@@ -1603,25 +1603,12 @@ dependencies = [
  "tokio",
  "toml_edit",
  "versionlens-cache",
- "versionlens-edits",
  "versionlens-http",
  "versionlens-model",
  "versionlens-parsers",
  "versionlens-providers",
- "versionlens-suggestions",
  "versionlens-test-support",
-]
-
-[[package]]
-name = "versionlens-edits"
-version = "0.4.4"
-dependencies = [
- "semver",
- "serde_json",
- "unicode-normalization",
- "versionlens-model",
- "versionlens-suggestions",
- "versionlens-test-support",
+ "versionlens-update",
 ]
 
 [[package]]
@@ -1705,17 +1692,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "versionlens-suggestions"
+name = "versionlens-test-support"
+version = "0.4.4"
+
+[[package]]
+name = "versionlens-update"
 version = "0.4.4"
 dependencies = [
  "semver",
  "serde",
+ "serde_json",
+ "unicode-normalization",
  "versionlens-model",
+ "versionlens-test-support",
 ]
-
-[[package]]
-name = "versionlens-test-support"
-version = "0.4.4"
 
 [[package]]
 name = "versionlens-vscode-model"

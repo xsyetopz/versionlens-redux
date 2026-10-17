@@ -1,6 +1,6 @@
 use crate::session::storage::CacheScope;
 use versionlens_model::{Dependency, Range, update_level};
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
@@ -131,7 +131,7 @@ fn runtime_constraint_lens(
     suggestion: &Suggestion,
     indicators: &SuggestionIndicators,
 ) -> LensView {
-    let title = if suggestion.status == versionlens_suggestions::SuggestionStatus::SatisfiesLatest {
+    let title = if suggestion.status == versionlens_update::SuggestionStatus::SatisfiesLatest {
         format!(
             "checked {}; compatible {}",
             dependency.requirement,

@@ -43,5 +43,9 @@ pub(crate) fn minimum_version_token(requirement: &str) -> Option<&str> {
     (!token.is_empty()).then_some(token)
 }
 
+pub(crate) fn default<T: Default>() -> T {
+    <T as Default>::default()
+}
+
 #[cfg(test)]
 pub(crate) mod tests;

@@ -1,6 +1,6 @@
 use self::parallel::resolve_dependencies;
 use versionlens_model::{Dependency, DocumentInput, ProjectVersionBump};
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 use super::operation::OperationContext;
 use crate::RegistryResponseInput;

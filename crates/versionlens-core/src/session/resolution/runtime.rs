@@ -1,5 +1,5 @@
 use versionlens_providers::RuntimeSource;
-use versionlens_suggestions::{Suggestion, SuggestionStatus, error, resolve_dependency};
+use versionlens_update::{Suggestion, SuggestionStatus, error, resolve_dependency};
 
 use super::latest::LatestResolutionRequest;
 use crate::VersionLensSession;

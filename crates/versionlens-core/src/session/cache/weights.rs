@@ -1,7 +1,7 @@
 use super::CachedLatest;
 use crate::vulnerability::VulnerabilityCheck;
 use versionlens_model::{CanonicalReference, Dependency};
-use versionlens_suggestions::{Suggestion, UpdateChoice};
+use versionlens_update::{Suggestion, UpdateChoice};
 
 fn optional(value: Option<&String>) -> usize {
     value.map_or(0, String::capacity)

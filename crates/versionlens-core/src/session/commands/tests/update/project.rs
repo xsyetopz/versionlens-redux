@@ -148,7 +148,7 @@ async fn apply_command_updates_cargo_renamed_package_version_preserving_alias() 
             ), None),
         None,
         Some("local_name"),
-        &[RegistryResponseInput::new("registry-name".to_owned(), Cargo, r#"{"versions":[{"num":"1.1.0"}]}"#.to_owned())],
+        &[RegistryResponseInput::new("registry-name".to_owned(), Cargo, r#"{"versions":[{"num":"2.0.0"}]}"#.to_owned())],
     ).await;
 
     assert_eq!(output.suggestions.len(), 1);
@@ -158,7 +158,7 @@ async fn apply_command_updates_cargo_renamed_package_version_preserving_alias() 
         Some("registry-name")
     );
     assert_eq!(output.edits.len(), 1);
-    assert_eq!(output.edits[0].new_text, "1.1.0");
+    assert_eq!(output.edits[0].new_text, "2.0.0");
 }
 
 #[tokio::test]

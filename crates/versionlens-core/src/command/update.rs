@@ -1,5 +1,5 @@
 use versionlens_model::{ProjectVersionBump, UpdateLevel, update_level};
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 use crate::project::is_project_version_dependency;
 use versionlens_model::ProjectVersionBump::{

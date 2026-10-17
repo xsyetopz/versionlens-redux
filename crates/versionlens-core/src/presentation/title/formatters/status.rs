@@ -1,5 +1,5 @@
 use versionlens_model::Dependency;
-use versionlens_suggestions::Suggestion;
+use versionlens_update::Suggestion;
 
 use super::latest::{latest_text, latest_title_text};
 

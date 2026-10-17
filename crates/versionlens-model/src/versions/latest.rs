@@ -37,7 +37,7 @@ pub fn latest_version_for_dialect<'a>(
     prerelease_tags: &[String],
     dialect: VersionDialect,
 ) -> Option<String> {
-    if dialect == VersionDialect::Semver {
+    if matches!(dialect, VersionDialect::Semver | VersionDialect::Cargo) {
         return latest_version_with_prerelease_tags(versions, include_prereleases, prerelease_tags);
     }
 

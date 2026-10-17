@@ -6,15 +6,16 @@ use crate::suggestion::SuggestionStatus::{
 };
 use versionlens_model::Ecosystem::{Deno, Docker, Dotnet, Nix, Npm, Python};
 use versionlens_model::{
-    Dependency, VersionDialect, is_build_update, is_dotnet_requirement_parseable,
-    is_update_available_for_dialect, normalized_version_for_dialect,
-    requirement_has_empty_comparator_intersection, requirement_is_parseable_for_dialect,
-    requirement_satisfies_latest_for_dialect,
+    Dependency, VersionDialect, compare_versions_for_dialect, is_build_update,
+    is_dotnet_requirement_parseable, is_update_available_for_dialect,
+    normalized_version_for_dialect, requirement_has_empty_comparator_intersection,
+    requirement_is_parseable_for_dialect, requirement_satisfies_latest_for_dialect,
 };
 
 use crate::constructors::no_match;
 use crate::suggestion::{Suggestion, SuggestionStatus};
 use crate::support;
+use std::cmp::Ordering;
 
 mod github;
 mod npm;
@@ -72,7 +73,7 @@ fn resolved_status(dependency: &Dependency, latest: &str) -> SuggestionStatus {
         return StatusBuildAvailable;
     }
 
-    if dialect == VersionDialect::Semver
+    if matches!(dialect, VersionDialect::Semver | VersionDialect::Cargo)
         && requirement_has_empty_comparator_intersection(requirement)
     {
         return StatusInvalidRange;
@@ -89,7 +90,7 @@ fn resolved_status(dependency: &Dependency, latest: &str) -> SuggestionStatus {
     }
 
     if requirement_satisfies_latest_for_dialect(requirement, latest, dialect) {
-        if range_minimum_matches_latest(requirement, latest) {
+        if range_minimum_matches_latest(requirement, latest, dialect) {
             return StatusCurrent;
         }
         return StatusSatisfiesLatest;
@@ -150,18 +151,19 @@ fn registry_requirement_is_not_parseable(
 fn version_dialect(dependency: &Dependency) -> VersionDialect {
     if dependency.ecosystem == Python {
         VersionDialect::Pep440
+    } else if dependency.is_cargo_dependency_requirement() {
+        VersionDialect::Cargo
     } else {
         VersionDialect::Semver
     }
 }
 
-fn range_minimum_matches_latest(requirement: &str, latest: &str) -> bool {
+fn range_minimum_matches_latest(requirement: &str, latest: &str, dialect: VersionDialect) -> bool {
     let Some(minimum) = range_minimum(requirement) else {
         return false;
     };
 
-    let latest = latest.trim_start_matches(['v', 'V']);
-    latest.starts_with(&minimum)
+    compare_versions_for_dialect(&minimum, latest, dialect) == Some(Ordering::Equal)
 }
 
 fn range_minimum(requirement: &str) -> Option<String> {

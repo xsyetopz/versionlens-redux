@@ -21,12 +21,11 @@ toml_edit.workspace = true
 tokio.workspace = true
 marked-yaml.workspace = true
 versionlens-cache.workspace = true
-versionlens-edits.workspace = true
 versionlens-http.workspace = true
 versionlens-model.workspace = true
 versionlens-parsers.workspace = true
 versionlens-providers.workspace = true
-versionlens-suggestions.workspace = true
+versionlens-update.workspace = true
 
 [dev-dependencies]
 versionlens-test-support.workspace = true

@@ -11,13 +11,12 @@ use versionlens_providers::{
     is_registry_dependency, is_unsupported_dotnet_requirement,
     release_versions_from_response_for_package,
 };
-use versionlens_suggestions::SuggestionStatus::{
+use versionlens_update::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Current as StatusCurrent, Satisfies as StatusSatisfies,
     UpdateAvailable as StatusUpdateAvailable,
 };
-use versionlens_suggestions::{
+use versionlens_update::{
     Suggestion, UpdateChoice, error, fixed, invalid, no_match, resolve_dependency,
-    semantic_update_target,
 };
 
 use crate::RegistryResponseInput;
@@ -285,7 +284,7 @@ impl VersionLensSession {
 fn with_lookup_choices(
     mut suggestion: Suggestion,
     builds: Vec<String>,
-    mut choices: UpdateChoices,
+    choices: UpdateChoices,
 ) -> Suggestion {
     if let Some(versionlens_model::CanonicalReference::GitHubActionCommit { commit }) =
         suggestion.dependency.canonical_reference.as_ref()
@@ -326,12 +325,6 @@ fn with_lookup_choices(
     }
     if docker_explicit_latest_alias_is_current(&suggestion, &builds) {
         suggestion.latest = Some("latest".to_owned());
-    }
-    if suggestion.status == versionlens_suggestions::SuggestionStatus::SatisfiesLatest
-        && let Some(latest) = suggestion.latest.as_deref()
-    {
-        let latest = semantic_update_target(latest);
-        choices.retain(|choice| semantic_update_target(&choice.version) != latest);
     }
     suggestion.builds = builds;
     suggestion.choices = choices;
@@ -498,6 +491,10 @@ fn fixed_response_releases(
 }
 
 fn fixed_current(dependency: &Dependency) -> Option<Version> {
+    if dependency.is_cargo_dependency_requirement() {
+        // Cargo reads a bare version as a caret requirement, so it is never a fixed pin.
+        return None;
+    }
     crate::parse_semver(dependency.requirement.trim()).ok()
 }
 

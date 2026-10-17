@@ -25,7 +25,7 @@ pub fn normalized_version(raw: &str) -> Option<String> {
 
 pub fn normalized_version_for_dialect(raw: &str, dialect: VersionDialect) -> Option<String> {
     match dialect {
-        VersionDialect::Semver => normalized_version(raw),
+        VersionDialect::Semver | VersionDialect::Cargo => normalized_version(raw),
         VersionDialect::Pep440 => Some(pep440::parse_version(raw)?.to_string()),
     }
 }

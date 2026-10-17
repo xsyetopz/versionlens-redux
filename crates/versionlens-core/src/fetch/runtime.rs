@@ -9,7 +9,7 @@ use versionlens_model::{
     requirement_satisfies_latest_for_dialect,
 };
 use versionlens_providers::RuntimeSource;
-use versionlens_suggestions::UpdateChoice;
+use versionlens_update::UpdateChoice;
 
 mod body;
 mod integrity;
@@ -181,6 +181,8 @@ fn runtime_dialect(dependency: &Dependency) -> VersionDialect {
         || dependency.ecosystem == Ecosystem::Python && !dependency.group.starts_with("with.")
     {
         VersionDialect::Pep440
+    } else if dependency.is_cargo_dependency_requirement() {
+        VersionDialect::Cargo
     } else {
         VersionDialect::Semver
     }

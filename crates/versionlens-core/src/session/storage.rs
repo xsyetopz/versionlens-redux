@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use versionlens_cache::{PersistentCache, PersistentRecord};
 use versionlens_model::{CanonicalReference, Dependency};
-use versionlens_suggestions::{Suggestion, SuggestionStatus, UpdateChoice};
+use versionlens_update::{Suggestion, SuggestionStatus, UpdateChoice};
 
 use super::cache::CachedLatest;
 use super::operation::{OperationContext, timestamp_ms};

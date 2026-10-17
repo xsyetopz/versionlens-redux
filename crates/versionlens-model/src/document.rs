@@ -135,6 +135,15 @@ impl Dependency {
                         .any(|part| matches!(part, "x" | "X")))
     }
 
+    /// Whether this is a Cargo dependency requirement, which the Cargo dialect reads
+    /// (a bare version is a caret requirement). A Cargo project version and a Rust
+    /// toolchain version (`rust-toolchain`, `channel`) stay literal.
+    pub fn is_cargo_dependency_requirement(&self) -> bool {
+        self.ecosystem == Ecosystem::Cargo
+            && !self.is_runtime_version()
+            && matches!(self.versionable_kind(), VersionableKind::Dependency)
+    }
+
     pub fn versionable_kind(&self) -> VersionableKind {
         if self.is_runtime_constraint() {
             return VersionableKind::RuntimeConstraint;

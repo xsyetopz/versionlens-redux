@@ -21,7 +21,6 @@ mod snapshot;
 mod status;
 mod suggestion;
 mod support;
-mod update;
 mod view;
 mod vulnerability;
 mod workspace;
@@ -58,9 +57,9 @@ pub(crate) use support::{
     anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, path, recover_poison,
     string_from_utf8,
 };
-pub use update::{Bump, BumpKind, Plan, PlanStatus};
 pub(crate) use versionlens_model::parse_semver;
-pub use versionlens_suggestions::{Suggestion, SuggestionStatus};
+pub use versionlens_update::{Bump, BumpKind, Plan, PlanStatus};
+pub use versionlens_update::{Suggestion, SuggestionStatus};
 pub use view::{
     Action, DependencyView, DiagnosticView, LensKind, LensView, Severity, StatusView,
     SuggestionView, UpdateMode,
