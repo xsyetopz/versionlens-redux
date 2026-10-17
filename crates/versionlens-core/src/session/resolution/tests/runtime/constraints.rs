@@ -99,7 +99,7 @@ async fn ci_runtime_channels_and_numeric_constraints_keep_the_declared_selector(
 }
 
 #[tokio::test]
-async fn unsupported_ci_runtime_variants_report_errors() {
+async fn ci_runtime_variants_without_a_release_catalog_are_not_supported() {
     for (action, input, context, name, _ecosystem, requirement) in [
         (
             "actions/setup-python",
@@ -157,6 +157,6 @@ async fn unsupported_ci_runtime_variants_report_errors() {
             .iter()
             .find(|suggestion| suggestion.dependency.name == name)
             .unwrap();
-        assert_eq!(runtime.status, "error", "{name}: {runtime:?}");
+        assert_eq!(runtime.status, "notSupported", "{name}: {runtime:?}");
     }
 }

@@ -265,6 +265,30 @@ async fn vscode_engine_field_is_skipped_without_an_error() {
 }
 
 #[tokio::test]
+async fn unsupported_setup_dotnet_syntax_is_not_supported_rather_than_an_error() {
+    let checked = check(
+        &offline_session(),
+        "file:///work/.github/workflows/ci.yml",
+        "yaml",
+        "steps:\n  - uses: actions/setup-dotnet@v4\n    with:\n      dotnet-version: 8.0.100.1\n",
+        &[RegistryResponseInput::new(
+            "actions/setup-dotnet",
+            Ecosystem::GitHub,
+            r#"[{"name":"v4"}]"#,
+        )],
+    )
+    .await;
+    assert_silent(&checked);
+    let dotnet = checked
+        .resolved
+        .suggestions
+        .iter()
+        .find(|suggestion| suggestion.dependency.name == "dotnet")
+        .unwrap_or_else(|| panic!("dotnet not checked: {:?}", checked.resolved.suggestions));
+    assert_eq!(dotnet.status, "notSupported");
+}
+
+#[tokio::test]
 async fn workflow_env_reference_resolves_the_runtime() {
     let checked = check(
         &test_session(),

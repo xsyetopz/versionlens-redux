@@ -7,6 +7,13 @@ pub(crate) enum FetchError {
     OperationTimeout,
     #[error("{0}")]
     RegistryStatus(String),
+    /// An HTTP error status, with the host that sent it.
+    #[error("{message} ({status} {host})")]
+    HttpStatus {
+        message: &'static str,
+        status: u16,
+        host: String,
+    },
     #[error(transparent)]
     Unexpected(#[from] AnyhowError),
 }

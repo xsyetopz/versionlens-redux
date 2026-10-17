@@ -30,7 +30,8 @@ impl VersionLensSession {
                 "runtime input requires a literal value or a finite matrix",
             ));
         }
-        let source = RuntimeSource::for_dependency(dependency).map_err(runtime_error)?;
+        let source = RuntimeSource::for_dependency(dependency)
+            .map_err(|error| runtime_error(error.to_string()))?;
         let body = if let Some(response) = responses
             .iter()
             .find(|response| registry_response_matches(response, dependency))

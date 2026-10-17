@@ -1,11 +1,14 @@
 use versionlens_model::Dependency;
 
 use super::{
-    RuntimeSource, VersionDialect, requirement_is_parseable_for_dialect, semantic_runtime_source,
-    supported_semver_requirement,
+    RuntimeSource, RuntimeSourceError, VersionDialect, requirement_is_parseable_for_dialect,
+    semantic_runtime_source, supported_semver_requirement,
 };
 
-pub(super) fn python(dependency: &Dependency, requirement: &str) -> Result<RuntimeSource, String> {
+pub(super) fn python(
+    dependency: &Dependency,
+    requirement: &str,
+) -> Result<RuntimeSource, RuntimeSourceError> {
     if !dependency.group.starts_with("with.") {
         return Ok(RuntimeSource::Python);
     }
@@ -14,29 +17,40 @@ pub(super) fn python(dependency: &Dependency, requirement: &str) -> Result<Runti
         || requirement.to_ascii_lowercase().contains("graalpy")
         || requirement.ends_with("-dev")
     {
-        return Err(
+        return Err(RuntimeSourceError::NotSupported(
             "setup-python interpreter variants are not supported by the CPython release catalog"
                 .to_owned(),
-        );
+        ));
     }
     semantic_runtime_source(requirement, "Python", RuntimeSource::Python)
 }
 
-pub(super) fn java(dependency: &Dependency, requirement: &str) -> Result<RuntimeSource, String> {
+pub(super) fn java(
+    dependency: &Dependency,
+    requirement: &str,
+) -> Result<RuntimeSource, RuntimeSourceError> {
     match dependency.hosted_name.as_deref() {
         Some(distribution) if distribution.eq_ignore_ascii_case("temurin") => {}
         Some("runtime-context-expression") => {
-            return Err("setup-java distribution requires a literal value".to_owned());
-        }
-        Some(distribution) => {
-            return Err(format!(
-                "setup-java distribution {distribution} is not supported; only temurin can be checked"
+            return Err(RuntimeSourceError::Invalid(
+                "setup-java distribution requires a literal value".to_owned(),
             ));
         }
-        None => return Err("setup-java requires the distribution input".to_owned()),
+        Some(distribution) => {
+            return Err(RuntimeSourceError::NotSupported(format!(
+                "setup-java distribution {distribution} is not supported; only temurin can be checked"
+            )));
+        }
+        None => {
+            return Err(RuntimeSourceError::Invalid(
+                "setup-java requires the distribution input".to_owned(),
+            ));
+        }
     }
     if !requirement_is_parseable_for_dialect(requirement, requirement, VersionDialect::Pep440) {
-        return Err("Java setup input requires a supported numeric version or range".to_owned());
+        return Err(RuntimeSourceError::Invalid(
+            "Java setup input requires a supported numeric version or range".to_owned(),
+        ));
     }
     let feature = requirement
         .trim_start_matches('v')
@@ -45,14 +59,23 @@ pub(super) fn java(dependency: &Dependency, requirement: &str) -> Result<Runtime
         .next()
         .and_then(|part| part.parse::<u64>().ok())
         .filter(|feature| *feature > 0)
-        .ok_or_else(|| "Java setup input has no concrete feature version".to_owned())?;
+        .ok_or_else(|| {
+            RuntimeSourceError::Invalid(
+                "Java setup input has no concrete feature version".to_owned(),
+            )
+        })?;
     Ok(RuntimeSource::JavaTemurin(feature))
 }
 
-pub(super) fn dotnet(dependency: &Dependency, requirement: &str) -> Result<RuntimeSource, String> {
+pub(super) fn dotnet(
+    dependency: &Dependency,
+    requirement: &str,
+) -> Result<RuntimeSource, RuntimeSourceError> {
     let (channel, quality) = dotnet_context(dependency.hosted_name.as_deref());
     if quality.is_some_and(|quality| !quality.eq_ignore_ascii_case("ga")) {
-        return Err("setup-dotnet daily and preview quality catalogs are not supported".to_owned());
+        return Err(RuntimeSourceError::NotSupported(
+            "setup-dotnet daily and preview quality catalogs are not supported".to_owned(),
+        ));
     }
     if requirement.eq_ignore_ascii_case("latest") {
         return match channel {
@@ -68,14 +91,18 @@ pub(super) fn dotnet(dependency: &Dependency, requirement: &str) -> Result<Runti
                     dotnet_channel_name(channel).unwrap_or_else(|| channel.to_owned()),
                 ))
             }
-            Some("runtime-context-expression") => {
-                Err("setup-dotnet channel requires a literal value".to_owned())
-            }
-            Some(channel) => Err(format!("setup-dotnet channel {channel} is not supported")),
+            Some("runtime-context-expression") => Err(RuntimeSourceError::Invalid(
+                "setup-dotnet channel requires a literal value".to_owned(),
+            )),
+            Some(channel) => Err(RuntimeSourceError::NotSupported(format!(
+                "setup-dotnet channel {channel} is not supported"
+            ))),
         };
     }
     if !dotnet_supported_requirement(requirement) {
-        return Err("setup-dotnet input uses an unsupported SDK version syntax".to_owned());
+        return Err(RuntimeSourceError::NotSupported(
+            "setup-dotnet input uses an unsupported SDK version syntax".to_owned(),
+        ));
     }
     let numeric = trim_dotnet_wildcard(requirement);
     let parts = numeric.split('.').collect::<Vec<_>>();
@@ -88,11 +115,13 @@ pub(super) fn dotnet(dependency: &Dependency, requirement: &str) -> Result<Runti
     )))
 }
 
-pub(super) fn ruby(requirement: &str) -> Result<RuntimeSource, String> {
+pub(super) fn ruby(requirement: &str) -> Result<RuntimeSource, RuntimeSourceError> {
     if requirement == "ruby" || supported_semver_requirement(requirement) {
         return Ok(RuntimeSource::Ruby);
     }
-    Err("setup-ruby input supports only MRI numeric versions".to_owned())
+    Err(RuntimeSourceError::NotSupported(
+        "setup-ruby input supports only MRI numeric versions".to_owned(),
+    ))
 }
 
 fn dotnet_context(context: Option<&str>) -> (Option<&str>, Option<&str>) {

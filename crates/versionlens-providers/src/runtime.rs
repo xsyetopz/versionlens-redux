@@ -16,6 +16,25 @@ use source::{
 #[cfg(test)]
 mod tests;
 
+/// Why a runtime input has no release source to check against.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RuntimeSourceError {
+    /// No upstream catalog covers this runtime or input form, so it is skipped.
+    NotSupported(String),
+    /// The input is malformed or needs a value that is not written literally.
+    Invalid(String),
+}
+
+impl std::fmt::Display for RuntimeSourceError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotSupported(message) | Self::Invalid(message) => formatter.write_str(message),
+        }
+    }
+}
+
+impl std::error::Error for RuntimeSourceError {}
+
 pub enum RuntimeSource {
     Node,
     Go,
@@ -40,7 +59,7 @@ pub enum RuntimeSource {
 }
 
 impl RuntimeSource {
-    pub fn for_dependency(dependency: &Dependency) -> Result<Self, String> {
+    pub fn for_dependency(dependency: &Dependency) -> Result<Self, RuntimeSourceError> {
         let requirement = dependency.requirement.trim();
         match dependency.name.as_str() {
             "node" => Ok(Self::Node),
@@ -71,9 +90,9 @@ impl RuntimeSource {
             "npm" => Ok(Self::PackageManager("npm")),
             "pnpm" => Ok(Self::PackageManager("pnpm")),
             "yarn" => yarn_source(requirement),
-            name => Err(format!(
+            name => Err(RuntimeSourceError::NotSupported(format!(
                 "upstream releases are not configured for runtime {name}"
-            )),
+            ))),
         }
     }
 
@@ -172,7 +191,7 @@ impl RuntimeSource {
     }
 }
 
-fn go_source(requirement: &str) -> Result<RuntimeSource, String> {
+fn go_source(requirement: &str) -> Result<RuntimeSource, RuntimeSourceError> {
     if matches!(requirement, "stable" | "oldstable") {
         Ok(RuntimeSource::Go)
     } else {
@@ -180,15 +199,18 @@ fn go_source(requirement: &str) -> Result<RuntimeSource, String> {
     }
 }
 
-fn deno_source(requirement: &str) -> Result<RuntimeSource, String> {
+fn deno_source(requirement: &str) -> Result<RuntimeSource, RuntimeSourceError> {
     match requirement {
         "latest" => Ok(RuntimeSource::DenoChannel("release")),
         "lts" => Ok(RuntimeSource::DenoChannel("release-lts")),
         "rc" => Ok(RuntimeSource::DenoChannel("release-rc")),
         "canary" => Ok(RuntimeSource::DenoChannel("canary")),
-        value if value.len() == 40 && value.bytes().all(|byte| byte.is_ascii_hexdigit()) => Err(
-            "Deno commit hashes cannot be checked against the published release catalog".to_owned(),
-        ),
+        value if value.len() == 40 && value.bytes().all(|byte| byte.is_ascii_hexdigit()) => {
+            Err(RuntimeSourceError::NotSupported(
+                "Deno commit hashes cannot be checked against the published release catalog"
+                    .to_owned(),
+            ))
+        }
         _ => semantic_runtime_source(requirement, "Deno", RuntimeSource::DenoVersions),
     }
 }
@@ -197,13 +219,13 @@ fn semantic_runtime_source(
     requirement: &str,
     label: &str,
     source: RuntimeSource,
-) -> Result<RuntimeSource, String> {
+) -> Result<RuntimeSource, RuntimeSourceError> {
     if supported_semver_requirement(requirement) {
         Ok(source)
     } else {
-        Err(format!(
+        Err(RuntimeSourceError::Invalid(format!(
             "{label} setup input requires a supported version, range, or release channel"
-        ))
+        )))
     }
 }
 
@@ -222,7 +244,7 @@ fn supported_semver_requirement(requirement: &str) -> bool {
         })
 }
 
-fn yarn_source(requirement: &str) -> Result<RuntimeSource, String> {
+fn yarn_source(requirement: &str) -> Result<RuntimeSource, RuntimeSourceError> {
     let version = requirement
         .split_once("+sha")
         .map_or(requirement, |(version, _)| version)
@@ -238,7 +260,9 @@ fn yarn_source(requirement: &str) -> Result<RuntimeSource, String> {
         return Ok(RuntimeSource::YarnModern);
     }
     let requirement = semver::VersionReq::parse(version).map_err(|_| {
-        "Yarn release source requires a valid version, range, or channel".to_owned()
+        RuntimeSourceError::Invalid(
+            "Yarn release source requires a valid version, range, or channel".to_owned(),
+        )
     })?;
     let mut family = None;
     for comparator in &requirement.comparators {
@@ -260,10 +284,7 @@ fn yarn_source(requirement: &str) -> Result<RuntimeSource, String> {
         };
         if let Some(candidate) = candidate {
             if family.is_some_and(|family| family != candidate) {
-                return Err(
-                    "Yarn version range spans release sources and cannot be checked safely"
-                        .to_owned(),
-                );
+                return Err(yarn_spans_release_sources());
             }
             family = Some(candidate);
         }
@@ -271,10 +292,14 @@ fn yarn_source(requirement: &str) -> Result<RuntimeSource, String> {
     match family {
         Some(true) => Ok(RuntimeSource::PackageManager("yarn")),
         Some(false) => Ok(RuntimeSource::YarnModern),
-        None => {
-            Err("Yarn version range spans release sources and cannot be checked safely".to_owned())
-        }
+        None => Err(yarn_spans_release_sources()),
     }
+}
+
+fn yarn_spans_release_sources() -> RuntimeSourceError {
+    RuntimeSourceError::Invalid(
+        "Yarn version range spans release sources and cannot be checked safely".to_owned(),
+    )
 }
 
 fn rust_channel(requirement: &str) -> Option<(&str, Option<&str>)> {

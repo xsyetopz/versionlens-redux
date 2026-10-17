@@ -1,6 +1,6 @@
 use versionlens_model::{Dependency, Ecosystem, Position, Range};
 
-use super::RuntimeSource;
+use super::{RuntimeSource, RuntimeSourceError};
 
 fn yarn(requirement: &str) -> Dependency {
     runtime("yarn", requirement, Ecosystem::Npm, "packageManager", None)
@@ -35,6 +35,87 @@ fn runtime(
         requirement_prefix: String::new(),
         requirement_suffix: String::new(),
         canonical_reference: None,
+    }
+}
+
+#[test]
+fn inputs_without_a_release_source_are_not_supported() {
+    let not_supported = [
+        runtime("vscode", "^1.75.0", Ecosystem::Npm, "engines", None),
+        runtime(
+            "dotnet",
+            "8.0.100.1",
+            Ecosystem::Dotnet,
+            "with.dotnet-version",
+            None,
+        ),
+        runtime(
+            "dotnet",
+            "8.0",
+            Ecosystem::Dotnet,
+            "with.dotnet-version",
+            Some("quality=preview"),
+        ),
+        runtime(
+            "java",
+            "17",
+            Ecosystem::Maven,
+            "with.java-version",
+            Some("zulu"),
+        ),
+        runtime(
+            "python",
+            "pypy3.10",
+            Ecosystem::Python,
+            "with.python-version",
+            None,
+        ),
+        runtime(
+            "ruby",
+            "jruby-9.4",
+            Ecosystem::Ruby,
+            "with.ruby-version",
+            None,
+        ),
+        runtime(
+            "deno",
+            &"a".repeat(40),
+            Ecosystem::Deno,
+            "with.deno-version",
+            None,
+        ),
+    ];
+    for dependency in &not_supported {
+        assert!(
+            matches!(
+                RuntimeSource::for_dependency(dependency),
+                Err(RuntimeSourceError::NotSupported(_))
+            ),
+            "{} {}",
+            dependency.name,
+            dependency.requirement
+        );
+    }
+    let invalid = [
+        runtime("java", "17", Ecosystem::Maven, "with.java-version", None),
+        runtime(
+            "go",
+            "not a version",
+            Ecosystem::Go,
+            "with.go-version",
+            None,
+        ),
+    ];
+    for dependency in &invalid {
+        assert!(
+            matches!(
+                RuntimeSource::for_dependency(dependency),
+                Err(RuntimeSourceError::Invalid(_))
+            ),
+            "{} {}",
+            dependency.name,
+            dependency.requirement
+        );
     }
 }
 

@@ -328,8 +328,7 @@ impl VersionLensSession {
             .await
         {
             Ok(Some(body)) => body,
-            Ok(None) => return Ok(false),
-            Err(FetchError::RegistryStatus(status)) if status == "not found" => return Ok(false),
+            Ok(None) | Err(FetchError::HttpStatus { status: 404, .. }) => return Ok(false),
             Err(error) => return Err(error),
         };
         if github_action_reference_is_proven_by_exact_ref(reference, &body) {

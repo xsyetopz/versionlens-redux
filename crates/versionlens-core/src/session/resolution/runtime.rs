@@ -1,5 +1,5 @@
-use versionlens_providers::RuntimeSource;
-use versionlens_update::{Suggestion, SuggestionStatus, error, resolve_dependency};
+use versionlens_providers::{RuntimeSource, RuntimeSourceError};
+use versionlens_update::{Suggestion, SuggestionStatus, error, not_supported, resolve_dependency};
 
 use super::latest::LatestResolutionRequest;
 use crate::VersionLensSession;
@@ -12,7 +12,8 @@ impl VersionLensSession {
         let dependency = request.dependency.clone();
         let source = match RuntimeSource::for_dependency(&dependency) {
             Ok(source) => source,
-            Err(message) => return error(dependency, message),
+            Err(RuntimeSourceError::NotSupported(_)) => return not_supported(dependency),
+            Err(RuntimeSourceError::Invalid(message)) => return error(dependency, message),
         };
         let lookup = self.resolve_latest(request).await;
         if let Some(error_message) = lookup.fetch_error {
