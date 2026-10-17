@@ -11,7 +11,6 @@ members = [
   "crates/versionlens-providers",
   "crates/versionlens-suggestions",
   "crates/versionlens-test-support",
-  "crates/versionlens-versions",
   "crates/versionlens-vscode-model",
 ]
 resolver = "3"
@@ -73,7 +72,6 @@ versionlens-parsers = { path = "crates/versionlens-parsers" }
 versionlens-providers = { path = "crates/versionlens-providers" }
 versionlens-suggestions = { path = "crates/versionlens-suggestions" }
 versionlens-test-support = { path = "crates/versionlens-test-support" }
-versionlens-versions = { path = "crates/versionlens-versions" }
 versionlens-vscode-model = { path = "crates/versionlens-vscode-model" }
 
 [workspace.lints.rust]

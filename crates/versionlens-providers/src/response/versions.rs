@@ -1,5 +1,5 @@
 use serde_json::Value;
-use versionlens_versions::{
+use versionlens_model::{
     VersionDialect, latest_version_for_dialect, latest_version_with_prerelease_tags,
 };
 

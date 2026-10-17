@@ -1,7 +1,7 @@
 use semver::Version;
 
-use crate::policy::ProjectVersionBump;
-use crate::policy::ProjectVersionBump::{Major, Minor, Patch};
+use crate::versions::policy::ProjectVersionBump;
+use crate::versions::policy::ProjectVersionBump::{Major, Minor, Patch};
 
 type VersionBump = fn(&Version) -> Option<Version>;
 
@@ -37,11 +37,15 @@ pub(super) fn bump_version_component(
 }
 
 fn major_version_bump(version: &Version) -> Option<Version> {
-    Some(crate::semver_version(version.major.checked_add(1)?, 0, 0))
+    Some(crate::versions::semver_version(
+        version.major.checked_add(1)?,
+        0,
+        0,
+    ))
 }
 
 fn minor_version_bump(version: &Version) -> Option<Version> {
-    Some(crate::semver_version(
+    Some(crate::versions::semver_version(
         version.major,
         version.minor.checked_add(1)?,
         0,
@@ -49,7 +53,7 @@ fn minor_version_bump(version: &Version) -> Option<Version> {
 }
 
 fn patch_version_bump(version: &Version) -> Option<Version> {
-    Some(crate::semver_version(
+    Some(crate::versions::semver_version(
         version.major,
         version.minor,
         version.patch.checked_add(1)?,

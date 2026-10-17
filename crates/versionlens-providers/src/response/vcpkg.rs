@@ -8,7 +8,7 @@ pub(crate) fn latest_vcpkg_version(
 ) -> Option<String> {
     let versions = object_version_values(value)?;
 
-    versionlens_versions::latest_version_with_prerelease_tags(
+    versionlens_model::latest_version_with_prerelease_tags(
         versions,
         include_prereleases,
         prerelease_tags,

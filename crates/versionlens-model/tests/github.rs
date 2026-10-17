@@ -1,3 +1,4 @@
+use semver as _;
 use serde as _;
 use versionlens_model::GithubRepository;
 

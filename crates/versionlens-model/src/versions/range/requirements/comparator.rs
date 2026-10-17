@@ -1,7 +1,7 @@
 mod bound;
 mod patch;
 
-use crate::parse::normalize_requirement;
+use crate::versions::parse::normalize_requirement;
 
 use bound::{ComparatorBound, comparator_bound, max_lower_bound, min_upper_bound};
 use patch::next_patch;

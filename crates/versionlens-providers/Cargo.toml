@@ -19,7 +19,6 @@ serde_json.workspace = true
 sha2.workspace = true
 toml_edit.workspace = true
 versionlens-model.workspace = true
-versionlens-versions.workspace = true
 
 [dev-dependencies]
 versionlens-test-support.workspace = true

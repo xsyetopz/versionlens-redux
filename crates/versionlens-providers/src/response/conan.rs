@@ -37,6 +37,6 @@ fn conan_reference_version<'a>(reference: &'a str, package: &str) -> Option<&'a 
 fn compare_conan_versions(left: &str, right: &str) -> Ordering {
     match (crate::parse_semver(left), crate::parse_semver(right)) {
         (Ok(left), Ok(right)) => left.cmp(&right),
-        _ => versionlens_versions::compare_numeric_text(left, right, &['.', '-', '+']),
+        _ => versionlens_model::compare_numeric_text(left, right, &['.', '-', '+']),
     }
 }

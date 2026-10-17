@@ -1,8 +1,8 @@
 use semver::Version;
 
-use crate::parse::{parse_padded_version, parse_version, strip_version_prefix};
+use crate::versions::parse::{parse_padded_version, parse_version, strip_version_prefix};
 
-pub(in crate::range) fn pessimistic_requirement_satisfies(
+pub(in crate::versions::range) fn pessimistic_requirement_satisfies(
     requirement: &str,
     latest: &str,
 ) -> Option<bool> {
@@ -12,7 +12,7 @@ pub(in crate::range) fn pessimistic_requirement_satisfies(
     Some(latest >= lower && latest < upper)
 }
 
-pub(in crate::range) fn pessimistic_update_available(
+pub(in crate::versions::range) fn pessimistic_update_available(
     requirement: &str,
     latest: &str,
 ) -> Option<bool> {
@@ -27,9 +27,9 @@ fn pessimistic_bounds(requirement: &str) -> Option<(Version, Version)> {
     let component_count = lower.split('.').count();
     let lower = parse_padded_version(&strip_version_prefix(lower))?;
     let upper = if component_count >= 3 {
-        crate::semver_version(lower.major, lower.minor + 1, 0)
+        crate::versions::semver_version(lower.major, lower.minor + 1, 0)
     } else {
-        crate::semver_version(lower.major + 1, 0, 0)
+        crate::versions::semver_version(lower.major + 1, 0, 0)
     };
 
     Some((lower, upper))

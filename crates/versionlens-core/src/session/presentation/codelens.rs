@@ -1,7 +1,5 @@
-use versionlens_model::Dependency;
-use versionlens_model::Range;
+use versionlens_model::{Dependency, Range, update_level};
 use versionlens_suggestions::Suggestion;
-use versionlens_versions::update_level;
 
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,

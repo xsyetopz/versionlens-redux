@@ -7,7 +7,7 @@ pub(super) fn latest_terraform_json_response(
     request: &ResponseRequest<'_>,
 ) -> Option<String> {
     let versions = object_version_values(value)?;
-    versionlens_versions::latest_version_with_prerelease_tags(
+    versionlens_model::latest_version_with_prerelease_tags(
         versions,
         request.include_prereleases,
         request.prerelease_tags,

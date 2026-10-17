@@ -3,13 +3,13 @@ use crate::{
     RegistryResponseInput, VersionLensSession, error::FetchError,
     registry::registry_response_matches,
 };
-use versionlens_model::{Dependency, Ecosystem};
+use versionlens_model::{
+    Dependency, Ecosystem, VersionDialect, latest_version, latest_version_for_dialect,
+    normalized_version_for_dialect, requirement_satisfies_latest,
+    requirement_satisfies_latest_for_dialect,
+};
 use versionlens_providers::RuntimeSource;
 use versionlens_suggestions::UpdateChoice;
-use versionlens_versions::{
-    VersionDialect, latest_version, latest_version_for_dialect, normalized_version_for_dialect,
-    requirement_satisfies_latest, requirement_satisfies_latest_for_dialect,
-};
 
 mod body;
 mod integrity;
@@ -146,12 +146,11 @@ fn runtime_matches(dependency: &Dependency, version: &str) -> bool {
         .map_or(dependency.requirement.as_str(), |(version, _)| version);
     if dependency.group == "rust-version" {
         return matches!(
-            versionlens_versions::compare_versions(version, requirement),
+            versionlens_model::compare_versions(version, requirement),
             Some(std::cmp::Ordering::Equal | std::cmp::Ordering::Greater)
         );
     }
-    if versionlens_versions::compare_versions(version, requirement)
-        == Some(std::cmp::Ordering::Equal)
+    if versionlens_model::compare_versions(version, requirement) == Some(std::cmp::Ordering::Equal)
     {
         return true;
     }

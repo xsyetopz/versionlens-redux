@@ -1,5 +1,5 @@
 use serde_json::Value;
-use versionlens_versions::{VersionDialect, latest_version_for_dialect};
+use versionlens_model::{VersionDialect, latest_version_for_dialect};
 
 use super::yanked::python_release_is_yanked;
 use crate::response::versions::latest_version_strings_for_dialect;

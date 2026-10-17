@@ -1,8 +1,8 @@
 use semver::Version;
 
-use crate::VersionDialect;
-use crate::parse::parse_version;
-use crate::pep440;
+use crate::versions::VersionDialect;
+use crate::versions::parse::parse_version;
+use crate::versions::pep440;
 
 mod prerelease;
 

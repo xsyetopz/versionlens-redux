@@ -1,8 +1,8 @@
 use super::{
     latest_stable, latest_version, latest_version_for_dialect, latest_version_with_prerelease_tags,
 };
-use crate::range::is_update_available;
-use crate::{VersionDialect, normalized_version_for_dialect};
+use crate::versions::range::is_update_available;
+use crate::versions::{VersionDialect, normalized_version_for_dialect};
 
 #[test]
 fn picks_latest_stable_semver() {

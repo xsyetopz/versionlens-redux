@@ -55,10 +55,11 @@ pub use session::{
     workspace_exclusion_matches, workspace_exclusion_path,
 };
 pub(crate) use support::{
-    anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, parse_semver,
-    parse_semver_req, path, recover_poison, string_from_utf8,
+    anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, path, recover_poison,
+    string_from_utf8,
 };
 pub use update::{Bump, BumpKind, Plan, PlanStatus};
+pub(crate) use versionlens_model::parse_semver;
 pub use versionlens_suggestions::{Suggestion, SuggestionStatus};
 pub use view::{
     Action, DependencyView, DiagnosticView, LensKind, LensView, Severity, StatusView,

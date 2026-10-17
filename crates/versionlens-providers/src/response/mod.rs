@@ -1,8 +1,7 @@
-use versionlens_model::Ecosystem;
 use versionlens_model::Ecosystem::{
     Composer, Cran, Docker, Dotnet, GitHub, Hex, Maven, Npm, Python, Ruby,
 };
-use versionlens_versions::compare_versions;
+use versionlens_model::{Ecosystem, compare_versions};
 pub(crate) mod cargo;
 mod composer;
 mod conan;
@@ -120,8 +119,8 @@ fn github_release_versions(body: &str) -> Vec<String> {
         .map(|tag| tag.trim_start_matches(['v', 'V']).to_owned())
         .collect::<Vec<_>>();
     versions.sort_by(|left, right| {
-        versionlens_versions::normalized_version(left)
-            .cmp(&versionlens_versions::normalized_version(right))
+        versionlens_model::normalized_version(left)
+            .cmp(&versionlens_model::normalized_version(right))
     });
     versions.dedup();
     versions

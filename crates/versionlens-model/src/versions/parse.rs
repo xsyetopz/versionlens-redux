@@ -1,7 +1,7 @@
 use semver::Version;
 
-use crate::pep440;
-use crate::policy::VersionDialect;
+use crate::versions::pep440;
+use crate::versions::policy::VersionDialect;
 
 type ParsedVersion = Option<Version>;
 
@@ -40,5 +40,5 @@ pub(crate) fn parse_padded_version(raw: &str) -> ParsedVersion {
         2 => format!("{raw}.0"),
         _ => raw.to_owned(),
     };
-    crate::parse_semver(&version).ok()
+    crate::versions::parse_semver(&version).ok()
 }

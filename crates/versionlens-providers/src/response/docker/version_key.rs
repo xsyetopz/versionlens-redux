@@ -24,7 +24,7 @@ pub(super) fn docker_version_key(
     if first_part.len() > 4 {
         return None;
     }
-    let parts = versionlens_versions::numeric_segments(version)?;
+    let parts = versionlens_model::numeric_segments(version)?;
     (parts.len() <= 3).then_some(parts)
 }
 
@@ -50,7 +50,7 @@ fn docker_prerelease_suffix_matches(suffix: &str, tag: &str) -> bool {
 }
 
 pub(super) fn compare_docker_key(left: &[u64], right: &[u64]) -> Ordering {
-    let number_ordering = versionlens_versions::compare_numeric_segments(left, right);
+    let number_ordering = versionlens_model::compare_numeric_segments(left, right);
 
     if number_ordering == Ordering::Equal {
         left.len().cmp(&right.len())

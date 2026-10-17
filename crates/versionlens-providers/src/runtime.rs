@@ -1,6 +1,6 @@
-use versionlens_model::Dependency;
-use versionlens_versions::{
-    VersionDialect, normalized_version_for_dialect, requirement_is_parseable_for_dialect,
+use versionlens_model::{
+    Dependency, VersionDialect, normalized_version_for_dialect,
+    requirement_is_parseable_for_dialect,
 };
 
 mod channels;

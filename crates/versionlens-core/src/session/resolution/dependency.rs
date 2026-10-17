@@ -3,8 +3,10 @@ use semver::Version;
 use serde_json::Value;
 use serde_json::from_str;
 use std::path::Path;
-use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::{Composer, Docker, Dotnet};
+use versionlens_model::{
+    Dependency, ProjectVersionBump, is_build_update, is_dotnet_requirement_parseable,
+};
 use versionlens_providers::{
     is_registry_dependency, is_unsupported_dotnet_requirement,
     release_versions_from_response_for_package,
@@ -17,7 +19,6 @@ use versionlens_suggestions::{
     Suggestion, UpdateChoice, error, fixed, invalid, no_match, resolve_dependency,
     semantic_update_target,
 };
-use versionlens_versions::{ProjectVersionBump, is_build_update, is_dotnet_requirement_parseable};
 
 use crate::RegistryResponseInput;
 use crate::VersionLensSession;
@@ -415,7 +416,7 @@ fn dotnet_invalid_requirement_choices(latest: Option<String>) -> UpdateChoices {
 
 fn invalid_composer_registry_requirement(dependency: &Dependency) -> bool {
     dependency.ecosystem == Composer
-        && !versionlens_versions::composer_requirement_is_parseable(&dependency.requirement)
+        && !versionlens_model::composer_requirement_is_parseable(&dependency.requirement)
 }
 
 fn npm_dist_tag_missing_from_responses(
@@ -425,7 +426,7 @@ fn npm_dist_tag_missing_from_responses(
     let requirement = dependency.requirement.trim();
     prerelease::npm_requirement_may_be_dist_tag(dependency)
         && crate::parse_semver(requirement).is_err()
-        && crate::parse_semver_req(requirement).is_err()
+        && semver::VersionReq::parse(requirement).is_err()
         && responses
             .iter()
             .filter(|response| registry_response_matches(response, dependency))

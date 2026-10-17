@@ -1,9 +1,9 @@
 use std::cmp::Ordering;
 use std::cmp::Ordering::Greater as OrderingGreater;
 
-use crate::VersionDialect;
-use crate::parse::parse_version;
-use crate::pep440;
+use crate::versions::VersionDialect;
+use crate::versions::parse::parse_version;
+use crate::versions::pep440;
 
 pub fn compare_versions(left: &str, right: &str) -> Option<Ordering> {
     Some(parse_version(left)?.cmp(&parse_version(right)?))

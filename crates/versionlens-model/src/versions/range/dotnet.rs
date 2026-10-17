@@ -1,4 +1,4 @@
-use crate::parse::parse_version;
+use crate::versions::parse::parse_version;
 
 use super::requirements::nuget_requirement;
 

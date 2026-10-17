@@ -1,6 +1,6 @@
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_versions::{compare_versions, normalized_version};
+use versionlens_model::{compare_versions, normalized_version};
 
 pub(crate) fn dotnet_release_versions(body: &str) -> Vec<String> {
     let Ok(value) = from_str::<Value>(body) else {

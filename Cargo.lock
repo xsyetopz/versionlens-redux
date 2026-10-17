@@ -1610,7 +1610,6 @@ dependencies = [
  "versionlens-providers",
  "versionlens-suggestions",
  "versionlens-test-support",
- "versionlens-versions",
 ]
 
 [[package]]
@@ -1623,7 +1622,6 @@ dependencies = [
  "versionlens-model",
  "versionlens-suggestions",
  "versionlens-test-support",
- "versionlens-versions",
 ]
 
 [[package]]
@@ -1659,6 +1657,7 @@ dependencies = [
 name = "versionlens-model"
 version = "0.4.4"
 dependencies = [
+ "semver",
  "serde",
 ]
 
@@ -1688,7 +1687,6 @@ dependencies = [
  "toml_edit",
  "versionlens-model",
  "versionlens-test-support",
- "versionlens-versions",
 ]
 
 [[package]]
@@ -1704,7 +1702,6 @@ dependencies = [
  "toml_edit",
  "versionlens-model",
  "versionlens-test-support",
- "versionlens-versions",
 ]
 
 [[package]]
@@ -1714,19 +1711,11 @@ dependencies = [
  "semver",
  "serde",
  "versionlens-model",
- "versionlens-versions",
 ]
 
 [[package]]
 name = "versionlens-test-support"
 version = "0.4.4"
-
-[[package]]
-name = "versionlens-versions"
-version = "0.4.4"
-dependencies = [
- "semver",
-]
 
 [[package]]
 name = "versionlens-vscode-model"

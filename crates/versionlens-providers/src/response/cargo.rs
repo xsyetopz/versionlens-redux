@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::de::{IgnoredAny, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
-use versionlens_versions::{latest_version, latest_version_with_prerelease_tags};
+use versionlens_model::{latest_version, latest_version_with_prerelease_tags};
 
 #[derive(Default)]
 struct CargoResponse<'a> {

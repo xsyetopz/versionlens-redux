@@ -184,7 +184,7 @@ fn response_update_choices_with_endpoint(request: ResponseUpdateRequest<'_>) -> 
         .and_then(|reference| github::github_action_tag(reference, body));
     let requirement = current_tag
         .as_deref()
-        .and_then(versionlens_versions::version_tag_parts)
+        .and_then(versionlens_model::version_tag_parts)
         .map_or(dependency.requirement.as_str(), |(_, version)| version);
     let mut choices = release_update_choices_with_prereleases(
         requirement,

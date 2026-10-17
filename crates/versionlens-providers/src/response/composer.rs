@@ -1,6 +1,6 @@
 use serde_json::Value;
 use serde_json::from_str;
-use versionlens_versions::{latest_version_with_prerelease_tags, normalized_version};
+use versionlens_model::{latest_version_with_prerelease_tags, normalized_version};
 
 pub(crate) fn latest_composer_version(
     value: &Value,
