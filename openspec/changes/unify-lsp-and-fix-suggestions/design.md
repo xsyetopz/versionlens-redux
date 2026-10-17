@@ -29,7 +29,7 @@ Audit findings that shape this design:
 
 **Non-Goals:**
 - Rewriting the engine in TypeScript.
-- Changing settings keys, command IDs or the VS Code `>=1.75.0` engine floor.
+- Changing settings keys or command IDs. The VS Code engine floor rises from `>=1.75.0` to `^1.91.0`, the minimum of `vscode-languageclient` 10.
 - New ecosystems. New file types are added only within existing ecosystems.
 - A web or remote extension host build.
 
@@ -121,7 +121,7 @@ Delete the custom lint and audit scripts: `scripts/architecture_audit`, `scripts
 - [VS Code behavior regressions during the client rewrite] → Before deleting napi, capture the 0.4.4 lens, diagnostic and edit output for the fixture corpus as golden files, and require the LSP path to match them, except where a spec in this change requires a difference.
 - [Child-process startup latency in VS Code vs in-process napi] → The binary starts in under 50 ms. Lenses appear on first resolution, as they do today. Measure activation-to-first-lens on the fixture workspace and record it in the PR.
 - [Per-platform VSIX misses a platform users had] → All 9 napi targets are kept as LSP targets, including armhf and alpine. A universal fallback VSIX is not published.
-- [`vscode-languageclient` 8.1 is old] → It is pinned by the 1.75 engine floor and contains no protocol features we need beyond 3.17. Revisit when the floor is raised.
+- [Raising the engine floor to 1.91 drops VS Code 1.75–1.90] → `vscode-languageclient` 8.1 and 9.0 type definitions fail `bun run typecheck`, and 10.1 is the first that passes. 10.1 needs VS Code `^1.91.0`.
 - [Generated `package.json` settings could change defaults] → A check diffs the 0.4.4 key/type/default set against the generated set (manifest-support spec).
 - [Large parallel refactor causes merge conflicts] → Work is split into 4 lanes with disjoint file ownership and fixed integration points (tasks.md). Merges go through one integration branch in a fixed order.
 - [Gradle catalog lookup picks the wrong coordinate when one version is shared by unrelated libraries] → Use the first library in file order, and plugins only when there is no library. Document the behavior and cover it with a fixture.

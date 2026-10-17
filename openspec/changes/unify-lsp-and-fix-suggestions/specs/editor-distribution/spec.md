@@ -27,7 +27,7 @@ Each release SHALL publish every binary as `versionlens-lsp-<version>-<target>` 
 - **THEN** its SHA-256 matches the entry in that release's `SHA256SUMS`
 
 ### Requirement: VS Code platform packages
-The VS Code extension SHALL be published as one platform-specific VSIX per target, each bundling its target's binary. It SHALL keep the `>=1.75.0` engine requirement.
+The VS Code extension SHALL be published as one platform-specific VSIX per target, each bundling its target's binary. It SHALL require VS Code `^1.91.0`.
 
 #### Scenario: Install on Alpine
 - **WHEN** the extension is installed on alpine-x64
