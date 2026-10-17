@@ -11,7 +11,6 @@ use versionlens_providers::http_status_message_from_code;
 use crate::VersionLensSession;
 use crate::concurrency::acquire_registry_permits;
 use crate::error::FetchError;
-use crate::error::FetchError::RegistryStatus as FetchRegistryStatus;
 use crate::registry::RegistryContext;
 use crate::session::operation::OperationContext;
 
@@ -95,15 +94,22 @@ impl VersionLensSession {
         if matches!(error, HttpError::DeadlineExceeded) {
             return FetchError::OperationTimeout;
         }
-        if let Some(message) = error.status_code().and_then(http_status_message_from_code) {
-            if error.status_code() == Some(401) {
+        if let Some(status) = error.status_code()
+            && let Some(message) = http_status_message_from_code(status)
+        {
+            if status == 401 {
                 let auth_url = self.authorization_url_for_request(url);
                 operation.record_authorization_request(auth_url, url.to_owned());
             }
-            return FetchRegistryStatus(message.to_owned());
+            return FetchError::HttpStatus {
+                message,
+                status,
+                host: url_host(url).to_owned(),
+            };
         }
+        let kind = http_error_kind(&error);
         crate::anyhow_error(error)
-            .context(format!("failed to fetch {source} URL {url}"))
+            .context(format!("failed to fetch {source} URL {url}: {kind}"))
             .into()
     }
 }
@@ -144,6 +150,34 @@ impl VersionLensSession {
             .or_else(|| url_origin(request_url))
             .unwrap_or_else(|| request_url.to_owned())
     }
+}
+
+/// The kind of a transport failure, for error lenses and logs.
+fn http_error_kind(error: &HttpError) -> String {
+    match error {
+        HttpError::Client(error) if error.is_timeout() => "timed out".to_owned(),
+        HttpError::Client(error) if error.is_connect() => "connection failed".to_owned(),
+        HttpError::Client(error) if error.is_redirect() => "too many redirects".to_owned(),
+        HttpError::Client(error) if error.is_decode() || error.is_body() => {
+            "unreadable response body".to_owned()
+        }
+        HttpError::Client(error) => match error.status() {
+            Some(status) => format!("HTTP {}", status.as_u16()),
+            None => "request failed".to_owned(),
+        },
+        HttpError::Io(error) => format!("I/O error ({})", error.kind()),
+        HttpError::Schema(error) => format!("invalid JSON ({error})"),
+        HttpError::DeadlineExceeded
+        | HttpError::ResponseTooLarge
+        | HttpError::SchemaValidation(_) => error.to_string(),
+    }
+}
+
+/// The host and port of a URL, without scheme, credentials or path.
+fn url_host(url: &str) -> &str {
+    let rest = url.find("://").map_or(url, |index| &url[index + 3..]);
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or(rest);
+    authority.rsplit('@').next().unwrap_or(authority)
 }
 
 fn starts_with_ignore_ascii_case(value: &str, prefix: &str) -> bool {

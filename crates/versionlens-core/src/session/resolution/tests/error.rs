@@ -167,6 +167,45 @@ async fn unauthorized_registry_response_reports_auth_request_urls() {
     );
 }
 
+#[tokio::test]
+async fn registry_http_status_error_names_the_status_and_host() {
+    let (base_url, server) = super::github::github_api_server(vec![(404, "{}")]);
+    let host = base_url
+        .trim_start_matches("http://")
+        .split('/')
+        .next()
+        .unwrap()
+        .to_owned();
+    let session = crate::support::tests::session_with_provider_settings(
+        ProviderSettings {
+            registry_urls: vec![RegistryUrlConfig {
+                ecosystem: Npm,
+                url: base_url.clone(),
+            }],
+            ..crate::default()
+        },
+        false,
+    );
+
+    let output = session
+        .resolve_document(DocumentInput::new(
+            "file:///package.json".to_owned(),
+            "json".to_owned(),
+            package_file_fixture("unauthorized-registry-response-reports-auth-request-urls.json"),
+            None,
+        ))
+        .await;
+
+    assert_eq!(server.join().unwrap(), ["/repos/left-pad"]);
+    let expected = format!("not found (404 {host})");
+    crate::support::tests::assert_suggestion_without_edits(
+        &output,
+        0,
+        "error",
+        Some(expected.as_str()),
+    );
+}
+
 fn package_file_fixture(name: &str) -> String {
     crate::support::tests::fixture("tests/fixtures/session/resolution/tests/error", name)
 }

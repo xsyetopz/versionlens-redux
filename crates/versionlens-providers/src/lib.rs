@@ -1,5 +1,5 @@
 mod runtime;
-pub use runtime::RuntimeSource;
+pub use runtime::{RuntimeSource, RuntimeSourceError};
 mod python;
 mod registry;
 mod response;
