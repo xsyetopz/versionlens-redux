@@ -9,10 +9,16 @@ use versionlens_model::{CanonicalReference, Dependency, GithubRepository, versio
 pub(crate) fn parse_github_actions(text: &str) -> Vec<Dependency> {
     support::with_yaml_mapping(text, |root| {
         let mut dependencies = vec![];
+        let workflow_env = root.get_mapping("env");
+        let outer = Scope {
+            matrix: None,
+            job_env: None,
+            workflow_env,
+        };
         if let Some(runs) = root.get_mapping("runs") {
-            collect_steps(text, runs, None, &mut dependencies);
+            collect_steps(text, runs, outer, &mut dependencies);
         }
-        collect_steps(text, root, None, &mut dependencies);
+        collect_steps(text, root, outer, &mut dependencies);
         if let Some(jobs) = root.get_mapping("jobs") {
             for (_, job) in jobs.iter() {
                 if let Some(job) = job.as_mapping() {
@@ -25,7 +31,12 @@ pub(crate) fn parse_github_actions(text: &str) -> Vec<Dependency> {
                     {
                         dependencies.push(dependency);
                     }
-                    collect_steps(text, job, matrix, &mut dependencies);
+                    let scope = Scope {
+                        matrix,
+                        job_env: job.get_mapping("env"),
+                        workflow_env,
+                    };
+                    collect_steps(text, job, scope, &mut dependencies);
                 }
             }
         }
@@ -76,16 +87,25 @@ struct ReferenceDependencyInput<'a> {
     canonical_reference: CanonicalReference,
 }
 
+/// The expression sources of a job or workflow: `matrix` and the `env` blocks,
+/// which `${{ env.X }}` reads from in step, job, then workflow order.
+#[derive(Clone, Copy)]
+struct Scope<'a> {
+    matrix: Option<&'a marked_yaml::types::MarkedMappingNode>,
+    job_env: Option<&'a marked_yaml::types::MarkedMappingNode>,
+    workflow_env: Option<&'a marked_yaml::types::MarkedMappingNode>,
+}
+
 fn collect_steps(
     text: &str,
     mapping: &marked_yaml::types::MarkedMappingNode,
-    matrix: Option<&marked_yaml::types::MarkedMappingNode>,
+    scope: Scope<'_>,
     dependencies: &mut Vec<Dependency>,
 ) {
     if let Some(steps) = mapping.get_sequence("steps") {
         for step in steps.iter() {
             if let Some(step) = step.as_mapping() {
-                runtime::collect(text, step, matrix, dependencies);
+                runtime::collect(text, step, scope, dependencies);
                 if !runtime::revision_is_toolchain(step)
                     && let Some(value) = step.get_scalar("uses")
                     && let Some(dependency) = parse_uses_scalar(text, value, UsesKind::Action)

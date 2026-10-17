@@ -498,7 +498,7 @@ async fn floating_rust_channels_are_verified_without_changing_the_channel() {
 }
 
 #[tokio::test]
-async fn unresolved_runtime_expressions_have_explicit_cached_failures() {
+async fn unresolved_runtime_expressions_are_skipped_without_an_error() {
     let session = session_without_vulnerabilities();
     let input = DocumentInput::new(
         "file:///work/.github/workflows/ci.yml",
@@ -516,17 +516,21 @@ async fn unresolved_runtime_expressions_have_explicit_cached_failures() {
             )],
         )
         .await;
-    let node = output
-        .suggestions
-        .iter()
-        .find(|suggestion| suggestion.dependency.name == "node")
-        .unwrap();
-    assert_eq!(node.status, "error");
     assert!(
-        node.latest
-            .as_deref()
-            .unwrap()
-            .contains("literal value or a finite matrix")
+        output
+            .suggestions
+            .iter()
+            .all(|suggestion| suggestion.dependency.name != "node"),
+        "expression was looked up: {:?}",
+        output.suggestions
+    );
+    assert!(
+        output
+            .suggestions
+            .iter()
+            .all(|suggestion| suggestion.status != "error"),
+        "{:?}",
+        output.suggestions
     );
     assert!(session.document_is_fresh(&input));
 }
