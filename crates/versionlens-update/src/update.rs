@@ -1,19 +1,19 @@
+use crate::Suggestion;
 use crate::SuggestionStatus::{
     InvalidRange as StatusInvalidRange, Satisfies as StatusSatisfies,
-    UpdateAvailable as StatusUpdateAvailable,
+    SatisfiesLatest as StatusSatisfiesLatest, UpdateAvailable as StatusUpdateAvailable,
 };
-use crate::{Suggestion, SuggestionStatus};
 use versionlens_model::{CanonicalReference, TextEdit};
 
 use crate::replacement::replacement_text;
 
 mod plan;
-pub use plan::{Bump, BumpKind, Plan, PlanStatus, plan};
+pub use plan::{Bump, BumpKind, Plan, PlanStatus, floor_reaches, has_a_floor, plan};
 
 pub fn update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
     suggestions
         .iter()
-        .filter(|suggestion| update_edit_allowed(suggestion.status))
+        .filter(|suggestion| update_edit_allowed(suggestion))
         .filter_map(suggestion_update_edit)
         .collect()
 }
@@ -21,17 +21,21 @@ pub fn update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
 pub fn bulk_update_edits(suggestions: &[Suggestion]) -> Vec<TextEdit> {
     suggestions
         .iter()
-        .filter(|suggestion| update_edit_allowed(suggestion.status))
+        .filter(|suggestion| update_edit_allowed(suggestion))
         .filter(|suggestion| bulk_update_release_allowed(suggestion.latest.as_deref()))
         .filter_map(suggestion_update_edit)
         .collect()
 }
 
-fn update_edit_allowed(status: SuggestionStatus) -> bool {
-    matches!(
-        status,
-        StatusUpdateAvailable | StatusInvalidRange | StatusSatisfies
-    )
+fn update_edit_allowed(suggestion: &Suggestion) -> bool {
+    match suggestion.status {
+        StatusUpdateAvailable | StatusInvalidRange | StatusSatisfies => true,
+        StatusSatisfiesLatest => has_a_floor(
+            &suggestion.dependency.requirement,
+            crate::version_dialect(&suggestion.dependency),
+        ),
+        _ => false,
+    }
 }
 
 fn bulk_update_release_allowed(latest: Option<&str>) -> bool {

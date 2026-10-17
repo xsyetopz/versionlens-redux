@@ -4,7 +4,7 @@ use versionlens_providers::{
     RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
     release_versions_from_response_for_package,
 };
-use versionlens_update::{UpdateChoice, release_update_choices_with_prereleases};
+use versionlens_update::{UpdateChoice, release_update_choices_with_prereleases, version_dialect};
 
 use crate::VersionLensSession;
 use crate::error::FetchError;
@@ -24,7 +24,6 @@ mod response;
 pub(crate) struct LatestFetch {
     pub(crate) latest: Option<String>,
     pub(crate) builds: Vec<String>,
-    pub(crate) versions: Vec<String>,
     pub(crate) choices: Vec<UpdateChoice>,
 }
 
@@ -69,7 +68,6 @@ impl VersionLensSession {
             None => Ok(LatestFetch {
                 latest: None,
                 builds: vec![],
-                versions: vec![],
                 choices: vec![],
             }),
         }
@@ -89,7 +87,6 @@ impl VersionLensSession {
             return Ok(LatestFetch {
                 latest: None,
                 builds: vec![],
-                versions: vec![],
                 choices: vec![],
             });
         };
@@ -131,7 +128,6 @@ impl VersionLensSession {
                 &body,
                 &dependency.requirement,
             ),
-            versions: registry_release_versions(dependency, Some(endpoint), &body),
             choices,
         })
     }
@@ -196,6 +192,7 @@ fn response_update_choices_with_endpoint(request: ResponseUpdateRequest<'_>) -> 
         &versions,
         include_prereleases,
         prerelease_tags,
+        version_dialect(dependency),
     );
     if current_tag.is_some() && !choices.iter().any(|choice| choice.version == latest) {
         choices.push(UpdateChoice {
@@ -222,7 +219,7 @@ fn update_choice_versions_from_response(
     versions
 }
 
-pub(crate) fn registry_release_versions(
+fn registry_release_versions(
     dependency: &Dependency,
     endpoint: Option<&RegistryEndpoint>,
     body: &str,

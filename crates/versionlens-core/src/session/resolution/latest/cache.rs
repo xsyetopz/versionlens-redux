@@ -91,7 +91,6 @@ fn failed_latest_lookup(fetch_error: crate::error::FetchError) -> LatestLookup {
     LatestLookup {
         latest: None,
         builds: vec![],
-        versions: vec![],
         choices: vec![],
         fetch_error: Some(fetch_error),
         fixed_requirement_matched: false,
@@ -113,7 +112,6 @@ fn cached_latest_lookup(
     Some(LatestLookup {
         latest: Some(cached.latest.as_str().to_owned()),
         builds: copied_strings(&cached.builds),
-        versions: vec![],
         choices,
         fetch_error: None,
         fixed_requirement_matched: cached.fixed_requirement_matched.unwrap_or(false),

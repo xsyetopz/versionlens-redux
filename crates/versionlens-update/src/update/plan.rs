@@ -104,8 +104,6 @@ pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> 
     }
     candidates.push((BumpKind::Latest, latest.as_str()));
 
-    let minimum = minimum_version_token(requirement)
-        .map(|token| rendered_text(token.trim_matches(['[', ']']), dialect));
     let latest_text = rendered_text(&latest, dialect);
     let mut bumps: Vec<Bump> = Vec::new();
     for (kind, version) in candidates {
@@ -121,7 +119,7 @@ pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> 
             continue;
         }
         // A candidate whose text equals the requirement's own version changes nothing.
-        if minimum.as_ref() == Some(&text) && satisfies(version) {
+        if satisfies(version) && floor_reaches(requirement, version, dialect) {
             continue;
         }
         bumps.push(Bump {
@@ -131,6 +129,24 @@ pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> 
     }
 
     Plan { status, bumps }
+}
+
+/// Whether `requirement` has a floor that an update raises while it still allows
+/// latest: `^`, `~`, or a Cargo bare version. Other ranges, such as `>=`, have
+/// no floor to raise.
+pub fn has_a_floor(requirement: &str, dialect: VersionDialect) -> bool {
+    let requirement = requirement.trim();
+    requirement.starts_with(['^', '~'])
+        || (dialect == VersionDialect::Cargo
+            && requirement.starts_with(|character: char| character.is_ascii_digit()))
+}
+
+/// Whether the floor of `requirement` already spells `version`, so raising the
+/// floor to `version` changes nothing.
+pub fn floor_reaches(requirement: &str, version: &str, dialect: VersionDialect) -> bool {
+    minimum_version_token(requirement.trim()).is_some_and(|token| {
+        rendered_text(token.trim_matches(['[', ']']), dialect) == rendered_text(version, dialect)
+    })
 }
 
 /// The version an exact pin names: `=x`, `==x`, `[x]`, or a bare version in the

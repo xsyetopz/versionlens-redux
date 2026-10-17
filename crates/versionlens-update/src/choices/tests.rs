@@ -76,8 +76,10 @@ fn release_update_choices_offer_latest_for_stale_fixed_versions_without_history(
 }
 
 #[test]
-fn release_update_choices_omit_latest_when_range_already_resolves_latest_without_history() {
-    assert!(release_update_choices("^1.0.0", "1.2.0", &[]).is_empty());
+fn release_update_choices_raise_the_floor_to_latest_without_history() {
+    let choices = release_update_choices("^1.0.0", "1.2.0", &[]);
+
+    assert_eq!(labels(&choices), [("latest", "1.2.0", "update")]);
 }
 
 #[test]
@@ -95,9 +97,11 @@ fn release_update_choices_omit_noop_latest_for_current_registry_alias_ranges_wit
 }
 
 #[test]
-fn release_update_choices_omit_latest_for_registry_alias_ranges_resolving_latest() {
+fn release_update_choices_raise_the_floor_of_registry_alias_ranges_to_latest() {
     for requirement in ["npm:chalk@^1.0.0", "jsr:@scope/chalk@^1.0.0"] {
-        assert!(release_update_choices(requirement, "1.2.0", &[]).is_empty());
+        let choices = release_update_choices(requirement, "1.2.0", &[]);
+
+        assert_eq!(labels(&choices), [("latest", "1.2.0", "update")]);
     }
 }
 
@@ -116,6 +120,7 @@ fn release_update_choices_preserve_prerelease_choices_for_registry_aliases() {
         &versions,
         true,
         &[],
+        versionlens_model::VersionDialect::Semver,
     );
 
     assert_eq!(choices.len(), 1);
@@ -160,7 +165,7 @@ fn release_update_choices_sort_stable_suggestions_incrementally() {
 }
 
 #[test]
-fn release_update_choices_offer_bump_targets_for_ranges() {
+fn release_update_choices_offer_bounded_targets_for_ranges() {
     let releases = releases(&[
         "2.1.2", "3.0.0", "3.1.0", "4.0.0", "4.0.1", "4.1.10", "5.1.1", "5.2.0", "5.3.3", "5.4.5",
     ]);
@@ -170,13 +175,7 @@ fn release_update_choices_offer_bump_targets_for_ranges() {
 
     assert_eq!(
         labels,
-        [
-            ("bump", "4.1.10", "update"),
-            ("version", "5.1.1", "update"),
-            ("version", "5.2.0", "update"),
-            ("version", "5.3.3", "update"),
-            ("latest", "5.4.5", "update")
-        ]
+        [("bump", "4.1.10", "update"), ("latest", "5.4.5", "update")]
     );
 }
 
@@ -216,7 +215,7 @@ fn release_update_choices_normalize_v_prefixes_and_never_offer_latest_as_a_noop(
 }
 
 #[test]
-fn release_update_choices_offer_every_intermediate_release_for_a_range() {
+fn release_update_choices_do_not_list_intermediate_releases_for_a_range() {
     let releases = releases(&["0.5.0", "0.6.0", "0.6.1", "0.7.0"]);
 
     let choices = release_update_choices("^0.5.0", "0.7.0", &releases);
@@ -225,7 +224,7 @@ fn release_update_choices_offer_every_intermediate_release_for_a_range() {
         .map(|choice| choice.version.as_str())
         .collect::<Vec<_>>();
 
-    assert_eq!(versions, ["0.6.0", "0.6.1", "0.7.0"]);
+    assert_eq!(versions, ["0.7.0"]);
 }
 
 #[test]
