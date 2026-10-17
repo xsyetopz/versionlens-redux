@@ -219,3 +219,55 @@ fn snapshot_limits_and_discovery_failures_are_logged_not_published() -> Result<(
     assert_eq!(methods(&sent), ["window/logMessage", "window/logMessage"]);
     Ok(())
 }
+
+#[test]
+fn an_outer_folder_does_not_publish_for_a_nested_folder_with_other_settings() -> Result<()> {
+    let folder = |uri: &str| -> Result<lsp_types::WorkspaceFolder> {
+        Ok(lsp_types::WorkspaceFolder {
+            uri: uri.parse()?,
+            name: uri.to_owned(),
+        })
+    };
+    let mut state = VersionLensLspState::with_workspace(
+        None,
+        vec![folder("file:///outer")?, folder("file:///outer/nested")?],
+    );
+    let mut nested = crate::state::FolderSettings::default();
+    nested.config.show_prereleases = true;
+    state.replace_settings(vec![crate::state::FolderSettings::default(), nested])?;
+    let uri = "file:///outer/nested/package.json";
+    state.open_document(VersionLensTextDocument {
+        uri: uri.to_owned(),
+        language_id: "json".to_owned(),
+        text: "{}".to_owned(),
+        workspace_root: None,
+    });
+    state.set_document_version(uri, 1);
+    let input = state
+        .document_work(uri)
+        .map(|work| work.input)
+        .expect("the document is open");
+    assert_eq!(state.group_of(uri), 1);
+    let (mut controller, _runtime) = controller(&state)?;
+    let (server, client) = Connection::memory();
+
+    // The outer folder's checker found the nested manifest and failed it.
+    let generation = controller.groups[0].checking.generation();
+    controller.handle(
+        &state,
+        &server,
+        (
+            0,
+            WorkspaceCheckEvent {
+                generation,
+                result: WorkspaceCheckResult::Document {
+                    input: Box::new(input),
+                    result: Err("the outer folder's result".to_owned()),
+                },
+            },
+        ),
+    )?;
+
+    assert_eq!(sent(&client), []);
+    Ok(())
+}

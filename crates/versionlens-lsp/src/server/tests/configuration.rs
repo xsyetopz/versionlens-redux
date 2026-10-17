@@ -74,14 +74,22 @@ fn an_answer_to_an_older_settings_request_is_dropped() -> Result<()> {
                 json!([settings, null]),
             )))
     };
-    // The newest answer is valid; the older one arrives late and is invalid,
-    // so an error message means the stale answer was applied.
-    answer(&requests[1], json!({}))?;
-    answer(&requests[0], json!({"caching": {"duration": "invalid"}}))?;
-    assert!(matches!(
-        receive_within(&client, Duration::from_millis(500)),
-        Err(crossbeam_channel::RecvTimeoutError::Timeout)
-    ));
+    // Both answers are invalid, so the configuration error shows which one
+    // was applied: none for the older answer, one for the newest.
+    let invalid = json!({"caching": {"duration": "invalid"}});
+    answer(&requests[0], invalid.clone())?;
+    assert!(
+        matches!(
+            receive_within(&client, Duration::from_millis(500)),
+            Err(crossbeam_channel::RecvTimeoutError::Timeout)
+        ),
+        "the older answer was applied"
+    );
+    answer(&requests[1], invalid)?;
+    let Message::Notification(error) = receive(&client)? else {
+        bail!("expected the newest answer to be applied");
+    };
+    assert_eq!(error.method, "window/showMessage");
     shutdown_client(&client, 2, server_thread)
 }
 

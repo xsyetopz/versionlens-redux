@@ -408,3 +408,32 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     assert!(configured_npm.watched_file_is_relevant(&file_uri(&configured)?));
     Ok(())
 }
+
+#[test]
+fn folders_that_differ_only_in_exclusions_get_their_own_sessions() -> Result<(), String> {
+    let mut state = VersionLensLspState::with_workspace(
+        None,
+        vec![
+            folder("file:///first", "first")?,
+            folder("file:///second", "second")?,
+        ],
+    );
+    let mut second = super::FolderSettings::default();
+    second.exclusions.push("**/generated/**".to_owned());
+    state
+        .replace_settings(vec![super::FolderSettings::default(), second])
+        .map_err(|error| error.to_string())?;
+    let [first, second] = state.groups() else {
+        return Err(format!("expected two groups, got {}", state.groups().len()));
+    };
+    let documents = vec![versionlens_model::DocumentInput::new(
+        "file:///first/package.json".to_owned(),
+        "json".to_owned(),
+        "{}".to_owned(),
+        None,
+    )];
+    assert!(first.session.set_workspace_documents(documents.clone()));
+    // A shared session would already hold these documents.
+    assert!(second.session.set_workspace_documents(documents));
+    Ok(())
+}

@@ -338,6 +338,11 @@ impl WorkspaceController {
                 let Some(document) = state.checked_document(&input) else {
                     return Ok(());
                 };
+                // A folder's discovery also walks nested folders, which can
+                // have other settings and are checked by their own group.
+                if state.group_of(&document.uri) != group {
+                    return Ok(());
+                }
                 let generation = event.generation;
                 let Err(message) = result else {
                     self.analyze(group, document, generation);

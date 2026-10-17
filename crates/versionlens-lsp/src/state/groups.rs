@@ -94,7 +94,9 @@ impl VersionLensLspState {
     }
 
     /// Builds the groups from the folder settings. A group whose settings
-    /// did not change keeps its session, so its caches stay warm.
+    /// did not change keeps its session, so its caches stay warm. A session
+    /// is never shared by two groups, because each group's checker sets the
+    /// session's open documents to its own.
     pub(super) fn regroup(&mut self) -> io::Result<()> {
         let mut groups: Vec<SessionGroup> = Vec::new();
         for (scope, settings) in self.folder_settings().into_iter().enumerate() {
@@ -102,11 +104,7 @@ impl VersionLensLspState {
                 group.scopes.push(scope);
                 continue;
             }
-            let session = match self
-                .groups
-                .iter()
-                .find(|group| group.settings.config == settings.config)
-            {
+            let session = match self.groups.iter().find(|group| group.settings == settings) {
                 Some(group) => group.session.clone(),
                 None => self.new_session(settings.config.clone())?,
             };
@@ -117,10 +115,7 @@ impl VersionLensLspState {
             });
         }
         for old in &self.groups {
-            if !groups
-                .iter()
-                .any(|group| group.settings.config == old.settings.config)
-            {
+            if !groups.iter().any(|group| group.settings == old.settings) {
                 old.session.cancel_pending_resolutions();
             }
         }
