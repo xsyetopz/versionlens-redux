@@ -23,6 +23,7 @@ mod json_manifest;
 mod julia_kustomize;
 mod jvm_manifests;
 mod jvm_scripts;
+mod manifest;
 mod manifest_assets;
 mod manifest_support;
 mod maven_xml;
@@ -94,6 +95,10 @@ pub use gradle::{
 pub use jvm_manifests::clojure_deps::parse_clojure_maven_repositories;
 pub use jvm_manifests::leiningen_project::parse_leiningen_maven_repositories;
 pub use jvm_scripts::sbt_build::parse_sbt_maven_repositories;
+pub use manifest::{
+    MANIFESTS, ManifestFormat, ManifestRow, Pattern, Rule, Stage, ecosystem_for_manifest,
+    manifest_row, provider_name_for_manifest,
+};
 pub use maven_xml::{
     MavenAuthEntry, MavenMirror, MavenNamedRepository, MavenRepository,
     extract_maven_repository_urls, parse_maven_effective_settings_https_repositories,
@@ -121,7 +126,7 @@ pub(crate) use support::{
 };
 pub use versionlens_model::{
     Dependency, DocumentInput, Ecosystem, ManifestKind, ecosystem_config_namespace,
-    ecosystem_for_manifest, ecosystem_from_config_name,
+    ecosystem_from_config_name,
 };
 pub use yarnrc::{
     parse_yarnrc_npm_auth_entries_with_env, parse_yarnrc_npm_registry_entries_with_env,

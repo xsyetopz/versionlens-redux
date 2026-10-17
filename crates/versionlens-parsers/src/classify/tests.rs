@@ -4,6 +4,7 @@ use super::classify_document;
 use versionlens_model::ManifestKind;
 
 mod cases;
+mod fixtures;
 
 use cases::{JSON_TOML_XML_CASES, YAML_PLAINTEXT_OTHER_CASES};
 

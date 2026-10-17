@@ -441,7 +441,7 @@ fn assert_manifest_input(
     );
     let kind = session.classify_document(input);
     assert!(
-        versionlens_model::provider_name_for_manifest(kind).is_some(),
+        versionlens_parsers::provider_name_for_manifest(kind).is_some(),
         "{} classified unsupported",
         case.kind
     );
@@ -483,7 +483,7 @@ fn assert_manifest_input(
     assert!(analysis.is_supported_manifest, "{} unsupported", case.kind);
     assert_eq!(
         analysis.active_provider_name.as_deref(),
-        versionlens_model::provider_name_for_manifest(kind)
+        versionlens_parsers::provider_name_for_manifest(kind)
     );
     dependency.clone()
 }

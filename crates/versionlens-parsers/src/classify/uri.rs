@@ -7,15 +7,3 @@ pub(super) fn document_uri(uri: &str) -> &str {
 pub(super) fn is_file_uri(uri: &str) -> bool {
     uri.starts_with("file:")
 }
-
-pub(super) fn file_name(uri: &str) -> Option<&str> {
-    uri.rsplit('/').next()
-}
-
-pub(super) fn has_extension<const N: usize>(name: &str, extensions: [&str; N]) -> bool {
-    crate::path(name).extension().is_some_and(|extension| {
-        extensions
-            .iter()
-            .any(|item| extension.eq_ignore_ascii_case(item))
-    })
-}
