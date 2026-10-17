@@ -67,7 +67,7 @@ async fn build_code_lens_chooses_available_build_versions() {
     let commands = lens_commands(&output);
 
     assert_eq!(titles, ["L latest 1.0.0+build.1", "B change build"]);
-    assert_eq!(commands, ["", "versionlens.suggestion.onChooseBuild"]);
+    assert_eq!(commands, ["", "ChooseBuild"]);
     assert_eq!(
         &output.code_lenses[1].arguments()[1..],
         [
@@ -93,7 +93,7 @@ async fn build_code_lens_keeps_latest_status_when_current_has_build_versions() {
     let commands = lens_commands(&output);
 
     assert_eq!(titles, ["L latest 3.0.0", "B change build"]);
-    assert_eq!(commands, ["", "versionlens.suggestion.onChooseBuild"]);
+    assert_eq!(commands, ["", "ChooseBuild"]);
     assert_eq!(
         &output.code_lenses[1].arguments()[1..],
         ["left-pad", "3.0.0", "3.0.0", "3.0.0+b1", "3.0.0+b2"]
@@ -112,7 +112,7 @@ async fn build_code_lens_keeps_latest_status_when_current_build_differs_from_lat
     let commands = lens_commands(&output);
 
     assert_eq!(titles, ["L latest 3.0.0+b1", "B change build"]);
-    assert_eq!(commands, ["", "versionlens.suggestion.onChooseBuild"]);
+    assert_eq!(commands, ["", "ChooseBuild"]);
     assert_eq!(
         &output.code_lenses[1].arguments()[1..],
         ["left-pad", "3.0.0+b1", "3.0.0", "3.0.0+b1", "3.0.0+b2"]
@@ -135,10 +135,7 @@ async fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
     .await;
 
     assert_eq!(output.code_lenses[0].title, "B change build");
-    assert_eq!(
-        output.code_lenses[0].command(),
-        "versionlens.suggestion.onChooseBuild"
-    );
+    assert_eq!(output.code_lenses[0].action_kind(), "ChooseBuild");
     assert_eq!(
         &output.code_lenses[0].arguments()[1..],
         ["left-pad", "1.0.0+build.1", "1.0.0+build.2"]
@@ -165,10 +162,7 @@ async fn directory_code_lens_opens_local_dependency_path() {
 
     let local_path = local.to_string_lossy();
     assert_eq!(output.code_lenses[0].title, "D file://../local");
-    assert_eq!(
-        output.code_lenses[0].command(),
-        "versionlens.suggestion.onFileLink"
-    );
+    assert_eq!(output.code_lenses[0].action_kind(), "OpenFile");
     assert_eq!(output.code_lenses[0].arguments(), [local_path.as_ref()]);
     remove_dir_all(root).unwrap();
 }
@@ -202,10 +196,7 @@ async fn npm_link_code_lens_opens_package_json_target_path() {
         output.code_lenses[0].title,
         "D file://../local/package.json"
     );
-    assert_eq!(
-        output.code_lenses[0].command(),
-        "versionlens.suggestion.onFileLink"
-    );
+    assert_eq!(output.code_lenses[0].action_kind(), "OpenFile");
     assert_eq!(output.code_lenses[0].arguments(), [target_path.as_ref()]);
     remove_dir_all(root).unwrap();
 }
@@ -224,6 +215,6 @@ async fn missing_directory_code_lens_is_disabled_not_found_status() {
     let output = session.analyze_document(input);
 
     assert_eq!(output.code_lenses[0].title, "E not found ../local");
-    assert_eq!(output.code_lenses[0].command(), "");
+    assert_eq!(output.code_lenses[0].action_kind(), "");
     assert!(output.code_lenses[0].arguments().is_empty());
 }

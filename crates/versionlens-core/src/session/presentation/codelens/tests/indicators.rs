@@ -11,7 +11,7 @@ async fn code_lens_title_uses_configured_indicators() {
     let commands = lens_commands(&output);
 
     assert_eq!(titles, ["M fixed 1.0.0", "U latest 1.1.0"]);
-    assert_eq!(commands, ["", "versionlens.suggestion.onUpdateDependency"]);
+    assert_eq!(commands, ["", "UpdateDependency"]);
 }
 
 #[tokio::test]
@@ -56,8 +56,8 @@ async fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lense
         ["🟡 fixed 1.0.0", "↑  latest 1.1.0"]
     );
     assert_eq!(
-        output.code_lenses[1].command(),
-        "versionlens.suggestion.onUpdateDependency"
+        output.code_lenses[1].action_kind(),
+        "UpdateDependency"
     );
 }
 
@@ -98,7 +98,7 @@ async fn code_lenses_offer_release_update_choices_for_fixed_versions() {
 }
 
 #[tokio::test]
-async fn code_lens_ranges_encode_suggestion_order() {
+async fn code_lenses_carry_their_order_and_the_dependency_range() {
     let session = session_with_indicators(test_indicators(), false);
     let input = package_document("left-pad-1.0.0.json");
 
@@ -110,22 +110,24 @@ async fn code_lens_ranges_encode_suggestion_order() {
             &["1.0.0", "1.0.1", "1.1.0", "2.1.0"],
         )],
     ).await;
-    let dependency_start = output.dependencies[0].range.start.character;
-    let starts = output
+    let dependency_range = output.dependencies[0].range;
+    let orders = output
         .code_lenses
         .iter()
-        .map(|lens| lens.range.start.character)
+        .map(|lens| lens.order)
         .collect::<Vec<_>>();
-    let expected_starts = (0..starts.len())
-        .map(|order| dependency_start + u32::try_from(order).expect("code lens order fits u32"))
+    let expected_orders = (0..orders.len())
+        .map(|order| u32::try_from(order).expect("code lens order fits u32"))
         .collect::<Vec<_>>();
-    let zero_width = output
-        .code_lenses
-        .iter()
-        .all(|lens| lens.range.start == lens.range.end);
 
-    assert_eq!(starts, expected_starts);
-    assert!(zero_width);
+    assert!(orders.len() > 1, "{:?}", output.code_lenses);
+    assert_eq!(orders, expected_orders);
+    assert!(
+        output
+            .code_lenses
+            .iter()
+            .all(|lens| lens.range == dependency_range)
+    );
 }
 
 #[tokio::test]
@@ -152,7 +154,7 @@ async fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
             (
                 lens.range.start.line,
                 lens.title.as_str(),
-                lens.command(),
+                lens.action_kind(),
             )
         })
         .collect::<Vec<_>>();
@@ -164,7 +166,7 @@ async fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
             (3, "L latest 1.3.14", ""),
             (4, "L latest 26.0.1", ""),
             (5, "S satisfies latest 1.125.0", ""),
-            (5, "U latest 1.125.0", "versionlens.suggestion.onUpdateDependency"),
+            (5, "U latest 1.125.0", "UpdateDependency"),
             (6, "L latest 3.9.2", ""),
             (7, "L latest 6.0.3", "")
         ]

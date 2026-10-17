@@ -1,5 +1,5 @@
 use crate::session::storage::CacheScope;
-use versionlens_model::{Dependency, Range, update_level};
+use versionlens_model::{Dependency, update_level};
 use versionlens_update::Suggestion;
 
 use crate::presentation::statuses::{
@@ -145,23 +145,9 @@ fn runtime_constraint_lens(
 
 fn ordered_code_lenses(mut lenses: CodeLensViews) -> CodeLensViews {
     for (order, lens) in lenses.iter_mut().enumerate() {
-        lens.range = ordered_code_lens_range(lens.range, order);
+        lens.order = u32::try_from(order).unwrap_or(u32::MAX);
     }
     lenses
-}
-
-fn ordered_code_lens_range(range: Range, order: usize) -> Range {
-    let Ok(offset) = u32::try_from(order) else {
-        return range;
-    };
-    let mut ordered = range;
-    ordered.start.character = ordered
-        .start
-        .character
-        .saturating_add(offset)
-        .min(range.end.character);
-    ordered.end = ordered.start;
-    ordered
 }
 
 fn build_has_cached_vulnerabilities(

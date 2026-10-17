@@ -27,6 +27,20 @@ async fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
         )],
     )
     .await;
+    let orders = output
+        .code_lenses
+        .iter()
+        .map(|lens| lens.order)
+        .collect::<Vec<_>>();
+    assert_eq!(orders, [0, 1, 2, 3]);
+    assert!(
+        output
+            .code_lenses
+            .iter()
+            .all(|lens| lens.range == output.code_lenses[0].range),
+        "lenses of one dependency share its range: {:?}",
+        output.code_lenses
+    );
     let titles = lens_titles(&output);
     let arguments = crate::support::tests::all_code_lens_arguments(&output);
 

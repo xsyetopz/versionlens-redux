@@ -53,7 +53,7 @@ async fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
 
     assert_eq!(resolved.suggestions[0].status, "invalid");
     assert_eq!(titles, ["E invalid version", "U latest latest"]);
-    assert_eq!(commands, ["", "versionlens.suggestion.onUpdateDependency"]);
+    assert_eq!(commands, ["", "UpdateDependency"]);
     assert_eq!(arguments, [vec!["update", "latest"]]);
 }
 
