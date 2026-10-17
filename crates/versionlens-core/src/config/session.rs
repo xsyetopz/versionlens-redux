@@ -42,10 +42,10 @@ pub struct SessionConfigInput {
 #[serde(rename_all = "lowercase")]
 pub enum UpdateSeverity {
     Error,
-    Warning,
+    Warn,
     /// The default, because VS Code's Problems panel does not list hints.
     #[default]
-    Information,
+    Info,
     Hint,
     Off,
 }
@@ -54,8 +54,8 @@ impl UpdateSeverity {
     const fn severity(self) -> Option<Severity> {
         match self {
             Self::Error => Some(Severity::Error),
-            Self::Warning => Some(Severity::Warning),
-            Self::Information => Some(Severity::Information),
+            Self::Warn => Some(Severity::Warning),
+            Self::Info => Some(Severity::Information),
             Self::Hint => Some(Severity::Hint),
             Self::Off => None,
         }

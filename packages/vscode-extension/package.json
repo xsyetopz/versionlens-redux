@@ -489,12 +489,12 @@
           "type": "string",
           "enum": [
             "error",
-            "warning",
-            "information",
+            "warn",
+            "info",
             "hint",
             "off"
           ],
-          "default": "information",
+          "default": "info",
           "description": "Severity of update-available diagnostics. `off` hides them; vulnerability diagnostics are unaffected."
         },
         "versionlens.suggestions.showSuggestionsStats": {

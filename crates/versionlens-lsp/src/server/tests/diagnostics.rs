@@ -109,7 +109,7 @@ fn update_severity_off_publishes_no_update_diagnostics() -> Result<()> {
 
 #[test]
 fn closing_a_document_clears_its_update_diagnostics() -> Result<()> {
-    let (client, server_thread) = start(ASTRO, json!({"updateSeverity": "warning"}))?;
+    let (client, server_thread) = start(ASTRO, json!({"updateSeverity": "warn"}))?;
     let uri = "file:///workspace/close/package.json";
     open(&client, uri, "astro", "^7.2.2")?;
     let diagnostics = settled_diagnostics(&client, uri)?;

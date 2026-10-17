@@ -26,7 +26,7 @@ After a manifest is resolved, the server SHALL publish one diagnostic per depend
 - **THEN** no update-available diagnostic is published, and the floor bump to `^2.5.14` stays available as a code lens and a code action
 
 ### Requirement: Configurable severity
-Update-available diagnostics SHALL default to Information severity. A setting `versionlens.diagnostics.updateSeverity` SHALL accept `error`, `warning`, `information`, `hint` and `off`. With `off`, no update-available diagnostics are published.
+Update-available diagnostics SHALL default to Information severity. A setting `versionlens.diagnostics.updateSeverity` SHALL accept `error`, `warn`, `info`, `hint` and `off`. With `off`, no update-available diagnostics are published.
 
 #### Scenario: Default severity
 - **WHEN** the setting is not configured
