@@ -90,14 +90,32 @@ async fn capture_case(case: &ManifestCase) -> String {
 }
 
 /// Converts a lens to the 0.4.4 `CodeLensPayload` shape: a command ID and
-/// positional arguments.
+/// positional arguments. 0.4.4 kept lens order by moving each lens one
+/// character right of the previous one, collapsed to a point.
 fn golden_code_lens(lens: &LensView) -> Value {
+    let mut range = lens.range;
+    range.start.character = range
+        .start
+        .character
+        .saturating_add(lens.order)
+        .min(lens.range.end.character);
+    range.end = range.start;
     json!({
-        "range": lens.range,
+        "range": range,
         "title": lens.title,
-        "command": lens.command(),
+        "command": golden_command(lens),
         "arguments": lens.arguments(),
     })
+}
+
+/// The VS Code command ID that 0.4.4 put on a lens with this action.
+fn golden_command(lens: &LensView) -> &'static str {
+    match lens.action_kind() {
+        "UpdateDependency" => "versionlens.suggestion.onUpdateDependency",
+        "ChooseBuild" => "versionlens.suggestion.onChooseBuild",
+        "OpenFile" => "versionlens.suggestion.onFileLink",
+        _ => "",
+    }
 }
 
 /// Converts a diagnostic to the 0.4.4 `DiagnosticPayload` shape, whose severity is a number.

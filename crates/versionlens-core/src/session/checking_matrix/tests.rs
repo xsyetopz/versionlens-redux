@@ -185,7 +185,7 @@ async fn versionable_categories_remain_distinct_and_safe() {
                 rendered
                     .code_lenses
                     .iter()
-                    .all(|lens| lens.command().is_empty())
+                    .all(|lens| lens.action_kind().is_empty())
             );
         }
     }

@@ -62,7 +62,7 @@ async fn github_action_runtime_pins_complete_the_workspace_checking_pipeline() {
         cached
             .code_lenses
             .iter()
-            .filter(|lens| !lens.command().is_empty())
+            .filter(|lens| !lens.action_kind().is_empty())
             .count()
             >= 3
     );
@@ -114,6 +114,6 @@ async fn github_action_runtime_constraints_never_raise_the_declared_minimum() {
         cached
             .code_lenses
             .iter()
-            .all(|lens| lens.command().is_empty())
+            .all(|lens| lens.action_kind().is_empty())
     );
 }

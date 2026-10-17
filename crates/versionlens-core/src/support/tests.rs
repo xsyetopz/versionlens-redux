@@ -218,7 +218,7 @@ pub(crate) fn update_code_lens_arguments(output: &AnalyzeDocumentOutput) -> Vec<
         .code_lenses
         .iter()
         .filter_map(|lens| {
-            if lens.command() != "versionlens.suggestion.onUpdateDependency" {
+            if lens.action_kind() != "UpdateDependency" {
                 return None;
             }
             let arguments = lens.arguments();
