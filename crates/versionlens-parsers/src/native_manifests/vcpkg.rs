@@ -11,18 +11,8 @@ use versionlens_model::Ecosystem::Vcpkg;
 type VcpkgDependencies = Vec<Dependency>;
 type VcpkgObject<'a> = &'a Object<'a>;
 
-const DEFAULT_DEPENDENCY_PATHS: &[&str] = &["dependencies", "features.*.dependencies", "overrides"];
-
 pub(crate) fn parse_vcpkg_json_with_paths(text: &str, paths: &[&str]) -> VcpkgDependencies {
-    parse_vcpkg_json(text, dependency_paths(paths)).unwrap_or_default()
-}
-
-fn dependency_paths<'a>(paths: &'a [&'a str]) -> &'a [&'a str] {
-    if paths.is_empty() {
-        DEFAULT_DEPENDENCY_PATHS
-    } else {
-        paths
-    }
+    parse_vcpkg_json(text, paths).unwrap_or_default()
 }
 
 fn parse_vcpkg_json(text: &str, paths: &[&str]) -> Result<VcpkgDependencies, JsonParseError> {

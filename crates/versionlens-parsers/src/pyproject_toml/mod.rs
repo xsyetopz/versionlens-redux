@@ -7,7 +7,6 @@ mod paths;
 
 use collect::TomlKind::{Pipfile as TomlPipfile, Pyproject as TomlPyproject};
 use collect::{TomlKind, TomlValueContext, collect_toml_value};
-use paths::selected_dependency_paths;
 
 type PythonTomlDependencies = Vec<Dependency>;
 
@@ -30,7 +29,6 @@ fn parse_python_toml(
     kind: TomlKind,
     dependency_paths: &[&str],
 ) -> PythonTomlDependencies {
-    let dependency_paths = selected_dependency_paths(dependency_paths);
     collect_toml_dependencies(text, |text, keys, value, dependencies| {
         let context = TomlValueContext {
             text,

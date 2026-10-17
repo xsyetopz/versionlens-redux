@@ -7,7 +7,6 @@ mod paths;
 mod project_version;
 
 use collect::{CargoCollectContext, collect_toml_value};
-use paths::selected_dependency_paths;
 use project_version::cargo_project_version;
 
 pub(crate) fn parse_cargo_toml_project_versions(text: &str) -> Vec<Dependency> {
@@ -20,7 +19,6 @@ pub(crate) fn parse_cargo_toml_with_paths(
     text: &str,
     dependency_paths: &[&str],
 ) -> Vec<Dependency> {
-    let dependency_paths = selected_dependency_paths(dependency_paths);
     collect_toml_dependencies(text, |text, keys, value, dependencies| {
         let context = CargoCollectContext {
             text,

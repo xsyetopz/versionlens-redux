@@ -1,21 +1,5 @@
 use std::collections::BTreeSet;
 
-pub(super) const PUBSPEC_DEPENDENCY_PATHS: &[&str] = &[
-    "version",
-    "workspace",
-    "dependencies",
-    "dev_dependencies",
-    "dependency_overrides",
-];
-
-pub(super) fn selected_dependency_paths<'a>(dependency_paths: &'a [&'a str]) -> Vec<&'a str> {
-    if dependency_paths.is_empty() {
-        PUBSPEC_DEPENDENCY_PATHS.to_vec()
-    } else {
-        dependency_paths.to_vec()
-    }
-}
-
 pub(super) fn dependency_groups<'a>(dependency_paths: &[&'a str]) -> Vec<&'a str> {
     let mut seen: BTreeSet<&str> = crate::default();
     dependency_paths

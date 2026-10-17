@@ -6,18 +6,8 @@ use jsonc_parser::errors::ParseError as JsonParseError;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Haxelib;
 
-const DEFAULT_DEPENDENCY_PATHS: &[&str] = &["dependencies"];
-
 pub(crate) fn parse_haxelib_json_with_paths(text: &str, paths: &[&str]) -> Vec<Dependency> {
-    parse_haxelib_json(text, dependency_paths(paths)).unwrap_or_default()
-}
-
-fn dependency_paths<'a>(paths: &'a [&'a str]) -> &'a [&'a str] {
-    if paths.is_empty() {
-        DEFAULT_DEPENDENCY_PATHS
-    } else {
-        paths
-    }
+    parse_haxelib_json(text, paths).unwrap_or_default()
 }
 
 fn parse_haxelib_json(text: &str, paths: &[&str]) -> Result<Vec<Dependency>, JsonParseError> {

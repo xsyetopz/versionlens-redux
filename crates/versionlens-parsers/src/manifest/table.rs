@@ -34,7 +34,7 @@ use crate::nix_flake::parse_nix_flake_with_paths;
 use crate::opam::parse_opam;
 use crate::paket::{parse_paket_dependencies, parse_paket_references};
 use crate::pnpm_yaml::parse_pnpm_yaml_with_paths;
-use crate::pubspec_yaml::{parse_pubspec_overrides_yaml_with_paths, parse_pubspec_yaml_with_paths};
+use crate::pubspec_yaml::parse_pubspec_yaml_with_paths;
 use crate::pyproject_toml::{parse_pipfile_with_paths, parse_pyproject_toml_with_paths};
 use crate::r_description::{parse_r_description, parse_renv_lock};
 use crate::rebar_config::parse_rebar_config;
@@ -69,6 +69,7 @@ use super::ManifestFormat::{Custom, Json, Toml, Xml, Yaml};
 use super::ManifestParser::{Direct as ParserDirect, WithPaths as ParserWithPaths};
 use super::Rule::{Content, Extension, Language, Name, Uri};
 use super::Stage::{Content as ContentStage, Early, Editor, Late, Pubspec, Python, Workflow};
+use super::default_paths;
 use super::patterns::{
     is_docker_compose_uri, is_dockerfile_uri, is_dotnet_xml_uri, is_github_actions_uri,
     is_julia_versioned_manifest_uri, is_package_json_content, is_requirements_txt_uri,
@@ -146,7 +147,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "cargo",
         Toml,
         &[at(Early, Name("Cargo.toml"))],
-        ParserWithPaths(parse_cargo_toml_with_paths),
+        ParserWithPaths(parse_cargo_toml_with_paths, default_paths::CARGO),
     ),
     row(
         ComposerJson,
@@ -154,7 +155,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "composer",
         Json,
         &[at(Early, Name("composer.json"))],
-        ParserWithPaths(parse_composer_json_with_paths),
+        ParserWithPaths(parse_composer_json_with_paths, default_paths::COMPOSER),
     ),
     row(
         DenoJson,
@@ -162,7 +163,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "deno",
         Json,
         &[at(Early, Name("deno.json")), at(Early, Name("deno.jsonc"))],
-        ParserWithPaths(parse_deno_json_with_paths),
+        ParserWithPaths(parse_deno_json_with_paths, default_paths::DENO),
     ),
     row(
         DenoImportMapJson,
@@ -170,7 +171,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "deno",
         Json,
         &[at(Early, Name("import_map.json"))],
-        ParserWithPaths(parse_deno_json_with_paths),
+        ParserWithPaths(parse_deno_json_with_paths, default_paths::DENO),
     ),
     row(
         JsrJson,
@@ -178,7 +179,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "deno",
         Json,
         &[at(Early, Name("jsr.json")), at(Early, Name("jsr.jsonc"))],
-        ParserWithPaths(parse_jsr_json_with_paths),
+        ParserWithPaths(parse_jsr_json_with_paths, default_paths::JSR),
     ),
     row(
         DotnetXml,
@@ -189,7 +190,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("packages.config")),
             at(Early, Uri(is_dotnet_xml_uri)),
         ],
-        ParserWithPaths(parse_dotnet_xml_with_paths),
+        ParserWithPaths(parse_dotnet_xml_with_paths, default_paths::DOTNET_XML),
     ),
     row(
         PaketDependencies,
@@ -213,7 +214,10 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "dotnet",
         Json,
         &[at(Early, Name("project.json"))],
-        ParserWithPaths(parse_dotnet_project_json_with_paths),
+        ParserWithPaths(
+            parse_dotnet_project_json_with_paths,
+            default_paths::DOTNET_PROJECT_JSON,
+        ),
     ),
     row(
         GradleVersionCatalogToml,
@@ -275,7 +279,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "maven",
         Xml,
         &[at(Early, Name("pom.xml"))],
-        ParserWithPaths(parse_maven_xml_with_paths),
+        ParserWithPaths(parse_maven_xml_with_paths, default_paths::MAVEN),
     ),
     row(
         MixExs,
@@ -398,7 +402,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "vcpkg",
         Json,
         &[at(Early, Name("vcpkg.json"))],
-        ParserWithPaths(parse_vcpkg_json_with_paths),
+        ParserWithPaths(parse_vcpkg_json_with_paths, default_paths::VCPKG),
     ),
     row(
         Cmake,
@@ -484,7 +488,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "haxelib",
         Json,
         &[at(Early, Name("haxelib.json"))],
-        ParserWithPaths(parse_haxelib_json_with_paths),
+        ParserWithPaths(parse_haxelib_json_with_paths, default_paths::HAXELIB),
     ),
     row(
         TerraformTf,
@@ -500,7 +504,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "helm",
         Yaml,
         &[at(Early, Name("Chart.yaml"))],
-        ParserWithPaths(parse_helm_chart_yaml_with_paths),
+        ParserWithPaths(parse_helm_chart_yaml_with_paths, default_paths::NONE),
     ),
     row(
         AnsibleGalaxyRequirementsYaml,
@@ -511,7 +515,10 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("requirements.yml")),
             at(Early, Name("requirements.yaml")),
         ],
-        ParserWithPaths(parse_ansible_galaxy_requirements_yaml_with_paths),
+        ParserWithPaths(
+            parse_ansible_galaxy_requirements_yaml_with_paths,
+            default_paths::NONE,
+        ),
     ),
     row(
         BazelModule,
@@ -519,7 +526,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "bazel",
         Custom,
         &[at(Early, Name("MODULE.bazel"))],
-        ParserWithPaths(parse_bazel_module_with_paths),
+        ParserWithPaths(parse_bazel_module_with_paths, default_paths::NONE),
     ),
     row(
         NixFlake,
@@ -527,7 +534,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "nix",
         Custom,
         &[at(Early, Name("flake.nix"))],
-        ParserWithPaths(parse_nix_flake_with_paths),
+        ParserWithPaths(parse_nix_flake_with_paths, default_paths::NONE),
     ),
     row(
         KustomizationYaml,
@@ -539,7 +546,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("kustomization.yml")),
             at(Early, Name("Kustomization")),
         ],
-        ParserWithPaths(parse_kustomization_yaml_with_paths),
+        ParserWithPaths(parse_kustomization_yaml_with_paths, default_paths::NONE),
     ),
     row(
         CocoaPodsPodfile,
@@ -555,7 +562,10 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "unity",
         Json,
         &[at(Early, Uri(is_unity_project_manifest_uri))],
-        ParserWithPaths(parse_unity_project_manifest_json_with_paths),
+        ParserWithPaths(
+            parse_unity_project_manifest_json_with_paths,
+            default_paths::NONE,
+        ),
     ),
     row(
         RubyGemspec,
@@ -576,7 +586,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name(".yarnrc.yml")),
             at(Early, Name(".yarnrc.yaml")),
         ],
-        ParserWithPaths(parse_pnpm_yaml_with_paths),
+        ParserWithPaths(parse_pnpm_yaml_with_paths, default_paths::PNPM),
     ),
     row(
         DockerComposeYaml,
@@ -617,7 +627,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Late, Name("dub.json")),
             at(Late, Name("dub.selections.json")),
         ],
-        ParserWithPaths(parse_dub_json_with_paths),
+        ParserWithPaths(parse_dub_json_with_paths, default_paths::DUB),
     ),
     row(
         DubSdl,
@@ -652,7 +662,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Late, Name("package.json")),
             at(ContentStage, Content(is_package_json_content)),
         ],
-        ParserWithPaths(parse_package_json_with_paths),
+        ParserWithPaths(parse_package_json_with_paths, default_paths::NPM),
     ),
     row(
         NpmPackageJson5,
@@ -660,7 +670,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "npm",
         Json,
         &[at(Late, Name("package.json5"))],
-        ParserWithPaths(parse_package_json_with_paths),
+        ParserWithPaths(parse_package_json_with_paths, default_paths::NPM),
     ),
     row(
         NpmPackageYaml,
@@ -671,7 +681,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Late, Name("package.yaml")),
             at(Late, Name("package.yml")),
         ],
-        ParserWithPaths(parse_pnpm_yaml_with_paths),
+        ParserWithPaths(parse_pnpm_yaml_with_paths, default_paths::PNPM),
     ),
     row(
         PythonRequirementsTxt,
@@ -690,7 +700,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "pypi",
         Toml,
         &[at(Python, Name("Pipfile"))],
-        ParserWithPaths(parse_pipfile_with_paths),
+        ParserWithPaths(parse_pipfile_with_paths, default_paths::PYPI),
     ),
     row(
         PythonPyprojectToml,
@@ -698,7 +708,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "pypi",
         Toml,
         &[at(Python, Name("pyproject.toml"))],
-        ParserWithPaths(parse_pyproject_toml_with_paths),
+        ParserWithPaths(parse_pyproject_toml_with_paths, default_paths::PYPI),
     ),
     row(
         PubspecOverridesYaml,
@@ -706,7 +716,10 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "pub",
         Yaml,
         &[at(Pubspec, Name("pubspec_overrides.yaml"))],
-        ParserWithPaths(parse_pubspec_overrides_yaml_with_paths),
+        ParserWithPaths(
+            parse_pubspec_yaml_with_paths,
+            default_paths::PUBSPEC_OVERRIDES,
+        ),
     ),
     row(
         PubspecYaml,
@@ -717,6 +730,6 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Pubspec, Name("pubspec.yaml")),
             at(Pubspec, Name("pubspec.yml")),
         ],
-        ParserWithPaths(parse_pubspec_yaml_with_paths),
+        ParserWithPaths(parse_pubspec_yaml_with_paths, default_paths::PUBSPEC),
     ),
 ];

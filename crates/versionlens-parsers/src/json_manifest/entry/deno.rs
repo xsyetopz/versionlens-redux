@@ -1,6 +1,5 @@
 use crate::json_manifest::deno::parse_deno_imports;
 use crate::json_manifest::dependency::{JsonDependencySource, json_manifest_string_dependency};
-use crate::json_manifest::paths::{DENO_DEPENDENCY_PATHS, JSR_DEPENDENCY_PATHS, dependency_paths};
 use jsonc_parser::ast::Value::Object as JsonValueObject;
 use jsonc_parser::errors::ParseError as JsonParseError;
 use jsonc_parser::parse_to_ast;
@@ -8,16 +7,13 @@ use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Deno;
 
 pub(crate) fn parse_deno_json_with_paths(text: &str, paths: &[&str]) -> Vec<Dependency> {
-    let dependency_paths = dependency_paths(paths, DENO_DEPENDENCY_PATHS);
-    let mut dependencies =
-        parse_jsr_json_project_version(text, dependency_paths).unwrap_or_default();
-    dependencies.extend(parse_deno_imports(text, dependency_paths).unwrap_or_default());
+    let mut dependencies = parse_jsr_json_project_version(text, paths).unwrap_or_default();
+    dependencies.extend(parse_deno_imports(text, paths).unwrap_or_default());
     dependencies
 }
 
 pub(crate) fn parse_jsr_json_with_paths(text: &str, paths: &[&str]) -> Vec<Dependency> {
-    parse_jsr_json_project_version(text, dependency_paths(paths, JSR_DEPENDENCY_PATHS))
-        .unwrap_or_default()
+    parse_jsr_json_project_version(text, paths).unwrap_or_default()
 }
 
 fn parse_jsr_json_project_version(
