@@ -15,7 +15,7 @@ pub fn compare_versions_for_dialect(
     dialect: VersionDialect,
 ) -> Option<Ordering> {
     match dialect {
-        VersionDialect::Semver => compare_versions(left, right),
+        VersionDialect::Semver | VersionDialect::Cargo => compare_versions(left, right),
         VersionDialect::Pep440 => {
             Some(pep440::parse_version(left)?.cmp(&pep440::parse_version(right)?))
         }

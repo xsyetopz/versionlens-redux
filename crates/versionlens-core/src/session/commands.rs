@@ -344,6 +344,8 @@ fn force_selected_version(suggestions: &mut [Suggestion], version: &str) {
                 .unwrap_or(&suggestion.dependency.requirement);
         let dialect = if suggestion.dependency.ecosystem == versionlens_model::Ecosystem::Python {
             versionlens_model::VersionDialect::Pep440
+        } else if suggestion.dependency.is_cargo_dependency_requirement() {
+            versionlens_model::VersionDialect::Cargo
         } else {
             versionlens_model::VersionDialect::Semver
         };

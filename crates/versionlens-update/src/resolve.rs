@@ -73,7 +73,7 @@ fn resolved_status(dependency: &Dependency, latest: &str) -> SuggestionStatus {
         return StatusBuildAvailable;
     }
 
-    if dialect == VersionDialect::Semver
+    if matches!(dialect, VersionDialect::Semver | VersionDialect::Cargo)
         && requirement_has_empty_comparator_intersection(requirement)
     {
         return StatusInvalidRange;
@@ -151,6 +151,8 @@ fn registry_requirement_is_not_parseable(
 fn version_dialect(dependency: &Dependency) -> VersionDialect {
     if dependency.ecosystem == Python {
         VersionDialect::Pep440
+    } else if dependency.is_cargo_dependency_requirement() {
+        VersionDialect::Cargo
     } else {
         VersionDialect::Semver
     }

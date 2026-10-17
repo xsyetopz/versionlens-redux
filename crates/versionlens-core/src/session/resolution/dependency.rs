@@ -498,6 +498,10 @@ fn fixed_response_releases(
 }
 
 fn fixed_current(dependency: &Dependency) -> Option<Version> {
+    if dependency.is_cargo_dependency_requirement() {
+        // Cargo reads a bare version as a caret requirement, so it is never a fixed pin.
+        return None;
+    }
     crate::parse_semver(dependency.requirement.trim()).ok()
 }
 

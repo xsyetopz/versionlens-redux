@@ -1,5 +1,5 @@
 use super::{Bump, BumpKind, Plan, PlanStatus, plan};
-use versionlens_model::VersionDialect::{Pep440, Semver};
+use versionlens_model::VersionDialect::{Cargo, Pep440, Semver};
 
 fn versions(list: &[&str]) -> Vec<String> {
     list.iter().map(|version| (*version).to_owned()).collect()
@@ -121,6 +121,32 @@ fn bare_npm_version_is_an_exact_pin() {
                 bump(BumpKind::Minor, "1.1.0"),
                 bump(BumpKind::Latest, "2.0.0"),
             ],
+        }
+    );
+}
+
+#[test]
+fn cargo_bare_version_is_a_caret_requirement() {
+    let result = plan("1.0.200", Cargo, &versions(&["1.0.200", "1.0.210"]));
+
+    assert_eq!(
+        result,
+        Plan {
+            status: PlanStatus::AllowsLatest,
+            bumps: vec![bump(BumpKind::Latest, "1.0.210")],
+        }
+    );
+}
+
+#[test]
+fn cargo_exact_pin_names_only_its_version() {
+    let result = plan("=1.0.200", Cargo, &versions(&["1.0.200", "1.0.210"]));
+
+    assert_eq!(
+        result,
+        Plan {
+            status: PlanStatus::ExcludesLatest,
+            bumps: vec![bump(BumpKind::Latest, "1.0.210")],
         }
     );
 }

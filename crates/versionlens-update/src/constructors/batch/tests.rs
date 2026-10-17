@@ -1,6 +1,6 @@
 use crate::suggestion::SuggestionStatus::{
     Current as StatusCurrent, SatisfiesLatest as StatusSatisfiesLatest,
-    Unresolved as StatusUnresolved, UpdateAvailable as StatusUpdateAvailable,
+    Unresolved as StatusUnresolved,
 };
 
 use super::{resolve_with_latest, unresolved};
@@ -25,7 +25,7 @@ fn latest_marks_update_status() {
         "1.5.0",
     );
 
-    assert_eq!(suggestions[0].status, StatusUpdateAvailable);
+    assert_eq!(suggestions[0].status, StatusSatisfiesLatest);
     assert_eq!(suggestions[1].status, StatusCurrent);
 }
 

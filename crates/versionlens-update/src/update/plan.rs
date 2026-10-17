@@ -42,7 +42,7 @@ pub enum BumpKind {
 ///
 /// Candidates come from the registry's `versions`. Pre-releases are never
 /// candidates. An exact pin (`=x`, `==x`, `[x]`, or a bare version in the
-/// Semver dialect) targets its version.
+/// Semver dialect) targets its version. Cargo does not pin on a bare version.
 pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> Plan {
     let requirement = requirement.trim();
     let Some(latest) =
@@ -134,7 +134,8 @@ pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> 
 }
 
 /// The version an exact pin names: `=x`, `==x`, `[x]`, or a bare version in the
-/// Semver dialect (where a bare version means exact, as in npm). Requirements
+/// Semver dialect, which reads a bare version as exact. The Cargo dialect reads a
+/// bare version as a caret requirement, so it is not a pin there. Requirements
 /// with other operators, ranges or wildcards are not pins.
 fn exact_pin(requirement: &str, dialect: VersionDialect) -> Option<&str> {
     let pinned = if let Some(rest) = requirement
