@@ -5,8 +5,13 @@ fn project_version_command_sends_a_versioned_edit_and_waits_for_the_editor() -> 
     let (server, client) = Connection::memory();
     let server_thread = thread::spawn(move || run_connection(&server, false));
     initialize_client(&client)?;
-    let uri = "file:///workspace/package.json";
-    open_json_document(&client, uri, 7, "{\"version\":\"1.0.0\"}")?;
+    let uri = "file:///workspace/jsr.json";
+    open_json_document(
+        &client,
+        uri,
+        7,
+        "{\"name\":\"@scope/pkg\",\"version\":\"1.0.0\"}",
+    )?;
     assert_diagnostics(receive(&client)?, uri, true)?;
     let command = checked_command(&client, 20, uri, "1.0.1")?;
     send_request(
@@ -40,7 +45,7 @@ fn project_version_command_sends_a_versioned_edit_and_waits_for_the_editor() -> 
     send_notification(
         &client,
         "textDocument/didChange",
-        json!({"textDocument":{"uri":uri,"version":8},"contentChanges":[{"text":"{\"version\":\"2.0.0\"}"}]}),
+        json!({"textDocument":{"uri":uri,"version":8},"contentChanges":[{"text":"{\"name\":\"@scope/pkg\",\"version\":\"2.0.0\"}"}]}),
     )?;
     assert_diagnostics(receive(&client)?, uri, true)?;
     send_request(

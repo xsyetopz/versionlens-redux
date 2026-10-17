@@ -29,7 +29,7 @@ fn raw_loop_rejects_bad_requests_and_survives_bad_notifications() -> Result<()> 
     send_notification(&client, "textDocument/didChange", json!({"bad": true}))?;
     send_notification(&client, "versionlens/unknown", json!({"bad": true}))?;
 
-    let uri = "file:///workspace/project/package.json";
+    let uri = "file:///workspace/project/jsr.json";
     send_notification(
         &client,
         "textDocument/didOpen",
@@ -38,7 +38,7 @@ fn raw_loop_rejects_bad_requests_and_survives_bad_notifications() -> Result<()> 
                 "uri": uri,
                 "languageId": "json",
                 "version": 1,
-                "text": "{\"version\":\"1.0.0\"}"
+                "text": "{\"name\":\"@scope/pkg\",\"version\":\"1.0.0\"}"
             }
         }),
     )?;
@@ -57,7 +57,7 @@ fn raw_loop_rejects_bad_requests_and_survives_bad_notifications() -> Result<()> 
         "textDocument/didChange",
         json!({
             "textDocument": {"uri": uri, "version": 3},
-            "contentChanges": [{"text": "{\"version\":\"1.1.0\"}"}]
+            "contentChanges": [{"text": "{\"name\":\"@scope/pkg\",\"version\":\"1.1.0\"}"}]
         }),
     )?;
     assert_diagnostics(receive(&client)?, uri, true)?;

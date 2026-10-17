@@ -187,11 +187,11 @@ fn workspace_folder_changes_rebind_open_documents_and_invalidate_work() -> Resul
 #[test]
 fn code_lenses_bind_updates_to_the_document_and_close_with_it() {
     let mut state = VersionLensLspState::standard();
-    let uri = "file:///workspace/package.json";
+    let uri = "file:///workspace/jsr.json";
     state.open_document(VersionLensTextDocument {
         uri: uri.to_owned(),
         language_id: "json".to_owned(),
-        text: r#"{"version":"1.0.0"}"#.to_owned(),
+        text: r#"{"name":"@scope/pkg","version":"1.0.0"}"#.to_owned(),
         workspace_root: Some("/workspace".to_owned()),
     });
 
