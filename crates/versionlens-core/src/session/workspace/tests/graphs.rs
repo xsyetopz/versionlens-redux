@@ -186,7 +186,7 @@ fn overlay_edits_rebuild_graphs_but_keep_resolved_suggestions() {
     let key = crate::cache::suggestion_cache_key(&cached_dependency, "workspace-test");
     session.suggestion_cache().insert_with_ttl(
         key.clone(),
-        versionlens_suggestions::fixed(cached_dependency, "1.0.0".to_owned()),
+        versionlens_update::fixed(cached_dependency, "1.0.0".to_owned()),
         Duration::from_secs(60),
     );
     let root = workspace.document("package.json", r#"{"workspaces":["packages/*"]}"#, 1);
