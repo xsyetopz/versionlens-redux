@@ -40,17 +40,20 @@ fn a_snapshot_limit_ends_every_busy_document_in_error() -> Result<()> {
     }
     sent(&client);
 
-    let generation = controller.checking.generation();
+    let generation = controller.groups[0].checking.generation();
     controller.handle(
         &state,
         &server,
-        WorkspaceCheckEvent {
-            generation,
-            result: WorkspaceCheckResult::SnapshotLimit {
-                uri: uris[0].to_owned(),
-                limit: 1,
+        (
+            0,
+            WorkspaceCheckEvent {
+                generation,
+                result: WorkspaceCheckResult::SnapshotLimit {
+                    uri: uris[0].to_owned(),
+                    limit: 1,
+                },
             },
-        },
+        ),
     )?;
 
     let mut errors = sent(&client)
@@ -72,11 +75,12 @@ fn an_analysis_of_a_closed_document_is_not_published() -> Result<()> {
     let mut input = DocumentInput::new(uri.to_owned(), "json".to_owned(), "{}".to_owned(), None);
     input.version = Some(1);
 
-    let generation = controller.checking.generation();
+    let generation = controller.groups[0].checking.generation();
     controller.finish_analysis(
         &state,
         &server,
         Analyzed {
+            group: 0,
             generation,
             document: CheckedDocument {
                 uri: uri.to_owned(),
@@ -131,17 +135,20 @@ fn a_cancelled_check_publishes_nothing() -> Result<()> {
     controller.set_status(&server, OPEN, DocumentStatus::Busy)?;
     sent(&client);
 
-    let generation = controller.checking.generation();
+    let generation = controller.groups[0].checking.generation();
     controller.handle(
         &state,
         &server,
-        WorkspaceCheckEvent {
-            generation,
-            result: WorkspaceCheckResult::Document {
-                input: Box::new(input),
-                result: Err(versionlens_core::CHECKING_CANCELLED.to_owned()),
+        (
+            0,
+            WorkspaceCheckEvent {
+                generation,
+                result: WorkspaceCheckResult::Document {
+                    input: Box::new(input),
+                    result: Err(versionlens_core::CHECKING_CANCELLED.to_owned()),
+                },
             },
-        },
+        ),
     )?;
 
     assert_eq!(sent(&client), []);
@@ -156,17 +163,20 @@ fn a_failed_check_is_logged_and_marks_the_document_in_error() -> Result<()> {
     controller.set_status(&server, OPEN, DocumentStatus::Busy)?;
     sent(&client);
 
-    let generation = controller.checking.generation();
+    let generation = controller.groups[0].checking.generation();
     controller.handle(
         &state,
         &server,
-        WorkspaceCheckEvent {
-            generation,
-            result: WorkspaceCheckResult::Document {
-                input: Box::new(input),
-                result: Err("the resolver failed".to_owned()),
+        (
+            0,
+            WorkspaceCheckEvent {
+                generation,
+                result: WorkspaceCheckResult::Document {
+                    input: Box::new(input),
+                    result: Err("the resolver failed".to_owned()),
+                },
             },
-        },
+        ),
     )?;
 
     let sent = sent(&client);
@@ -186,7 +196,7 @@ fn snapshot_limits_and_discovery_failures_are_logged_not_published() -> Result<(
     let (state, _) = open_state();
     let (mut controller, _runtime) = controller(&state)?;
     let (server, client) = Connection::memory();
-    let generation = controller.checking.generation();
+    let generation = controller.groups[0].checking.generation();
     let root = std::env::temp_dir().join("versionlens-missing-root");
     for result in [
         WorkspaceCheckResult::SnapshotLimit {
@@ -198,10 +208,66 @@ fn snapshot_limits_and_discovery_failures_are_logged_not_published() -> Result<(
             kind: versionlens_core::WorkspaceDiscoveryFailureKind::InvalidUtf8,
         }),
     ] {
-        controller.handle(&state, &server, WorkspaceCheckEvent { generation, result })?;
+        controller.handle(
+            &state,
+            &server,
+            (0, WorkspaceCheckEvent { generation, result }),
+        )?;
     }
 
     let sent = sent(&client);
     assert_eq!(methods(&sent), ["window/logMessage", "window/logMessage"]);
+    Ok(())
+}
+
+#[test]
+fn an_outer_folder_does_not_publish_for_a_nested_folder_with_other_settings() -> Result<()> {
+    let folder = |uri: &str| -> Result<lsp_types::WorkspaceFolder> {
+        Ok(lsp_types::WorkspaceFolder {
+            uri: uri.parse()?,
+            name: uri.to_owned(),
+        })
+    };
+    let mut state = VersionLensLspState::with_workspace(
+        None,
+        vec![folder("file:///outer")?, folder("file:///outer/nested")?],
+    );
+    let mut nested = crate::state::FolderSettings::default();
+    nested.config.show_prereleases = true;
+    state.replace_settings(vec![crate::state::FolderSettings::default(), nested])?;
+    let uri = "file:///outer/nested/package.json";
+    state.open_document(VersionLensTextDocument {
+        uri: uri.to_owned(),
+        language_id: "json".to_owned(),
+        text: "{}".to_owned(),
+        workspace_root: None,
+    });
+    state.set_document_version(uri, 1);
+    let input = state
+        .document_work(uri)
+        .map(|work| work.input)
+        .expect("the document is open");
+    assert_eq!(state.group_of(uri), 1);
+    let (mut controller, _runtime) = controller(&state)?;
+    let (server, client) = Connection::memory();
+
+    // The outer folder's checker found the nested manifest and failed it.
+    let generation = controller.groups[0].checking.generation();
+    controller.handle(
+        &state,
+        &server,
+        (
+            0,
+            WorkspaceCheckEvent {
+                generation,
+                result: WorkspaceCheckResult::Document {
+                    input: Box::new(input),
+                    result: Err("the outer folder's result".to_owned()),
+                },
+            },
+        ),
+    )?;
+
+    assert_eq!(sent(&client), []);
     Ok(())
 }

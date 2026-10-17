@@ -30,7 +30,7 @@ pub use config::{
     FilePatternConfig, FilePatternConfigInput, PrereleaseTagConfig, PrereleaseTagConfigInput,
     ProviderCacheConfig, ProviderCacheConfigInput, ProviderHttpConfig, ProviderHttpConfigInput,
     ProviderSettings, ProviderSettingsInput, RegistryUrlConfig, RegistryUrlConfigInput,
-    SessionConfig, SessionConfigInput, SuggestionIndicators, SuggestionIndicatorsInput,
+    SessionConfig, SessionConfigInput, Settings, SuggestionIndicators, SuggestionIndicatorsInput,
     dependency_property_config_from_name, dependency_property_manifest_kind_from_name,
     enabled_provider_config_from_name, file_pattern_config_from_name,
     file_pattern_manifest_kind_from_name, prerelease_tag_config_from_name,

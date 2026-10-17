@@ -11,8 +11,8 @@ use lsp_types::{CodeLens, Diagnostic, MessageType};
 use serde_json::Value;
 use tokio::runtime::Handle;
 use versionlens_core::{
-    AnalyzeDocumentOutput, CHECKING_CANCELLED, WorkspaceCheckEvent, WorkspaceCheckResult,
-    WorkspaceChecking,
+    AnalyzeDocumentOutput, CHECKING_CANCELLED, VersionLensSession, WorkspaceCheckEvent,
+    WorkspaceCheckResult, WorkspaceChecking,
 };
 use versionlens_model::DocumentInput;
 
@@ -28,6 +28,7 @@ pub(super) const EDIT_DEBOUNCE: Duration = Duration::from_millis(300);
 /// The analysis of one checked document, made on the runtime because it
 /// reads the persistent cache.
 pub(super) struct Analyzed {
+    group: usize,
     generation: u64,
     document: CheckedDocument,
     analysis: Result<AnalyzeDocumentOutput, String>,
@@ -55,14 +56,32 @@ struct DiscoveryState {
     exhausted: bool,
 }
 
-pub(super) struct WorkspaceController {
+/// The checking of one settings group, with the session of that group.
+struct GroupChecking {
     checking: WorkspaceChecking,
-    runtime: Handle,
-    shutdown: Sender<()>,
-    pub(super) receiver: Receiver<WorkspaceCheckEvent>,
-    published: HashMap<String, PublishedDocument>,
+    session: VersionLensSession,
     seen_documents: HashSet<String>,
     discovery: DiscoveryState,
+}
+
+impl GroupChecking {
+    fn rescan(&mut self) {
+        self.seen_documents.clear();
+        self.discovery.full_scan_pending = true;
+        self.discovery.exhausted = false;
+    }
+}
+
+/// A checking event and the index of the group that sent it.
+pub(super) type GroupEvent = (usize, WorkspaceCheckEvent);
+
+pub(super) struct WorkspaceController {
+    groups: Vec<GroupChecking>,
+    runtime: Handle,
+    /// Dropped to stop the event senders of every group.
+    shutdown: Option<Sender<()>>,
+    pub(super) receiver: Receiver<GroupEvent>,
+    published: HashMap<String, PublishedDocument>,
     reported_failures: HashSet<String>,
     next_request: u64,
     pending: PendingDocuments,
@@ -74,29 +93,37 @@ pub(super) struct WorkspaceController {
 impl WorkspaceController {
     pub(super) fn start(state: &VersionLensLspState, runtime: Handle) -> std::io::Result<Self> {
         let (sender, receiver) = bounded(EVENT_QUEUE_CAPACITY);
-        let (shutdown, stopped) = bounded(1);
-        let checking = state.session.start_workspace_checking(
-            state.workspace_checking_options(),
-            runtime.clone(),
-            move |event| {
-                crossbeam_channel::select! {
-                    send(sender, event) -> _ => {}
-                    recv(stopped) -> _ => {}
-                }
-            },
-        )?;
+        let (shutdown, stopped) = bounded::<()>(0);
+        let mut groups = Vec::new();
+        for (index, group) in state.groups().iter().enumerate() {
+            let (sender, stopped) = (sender.clone(), stopped.clone());
+            let checking = group.session.start_workspace_checking(
+                state.workspace_checking_options(index),
+                runtime.clone(),
+                move |event| {
+                    crossbeam_channel::select! {
+                        send(sender, (index, event)) -> _ => {}
+                        recv(stopped) -> _ => {}
+                    }
+                },
+            )?;
+            groups.push(GroupChecking {
+                checking,
+                session: group.session.clone(),
+                seen_documents: HashSet::new(),
+                discovery: DiscoveryState {
+                    full_scan_pending: true,
+                    exhausted: false,
+                },
+            });
+        }
         let (analyzed_sender, analyzed) = unbounded();
         Ok(Self {
-            checking,
+            groups,
             runtime,
-            shutdown,
+            shutdown: Some(shutdown),
             receiver,
             published: HashMap::new(),
-            seen_documents: HashSet::new(),
-            discovery: DiscoveryState {
-                full_scan_pending: true,
-                exhausted: false,
-            },
             reported_failures: HashSet::new(),
             next_request: 0,
             pending: PendingDocuments::default(),
@@ -106,33 +133,48 @@ impl WorkspaceController {
         })
     }
 
-    fn stop(&self) {
-        let _ = self.shutdown.try_send(());
-        self.checking.stop();
+    fn stop(&mut self) {
+        self.shutdown = None;
+        for group in &self.groups {
+            group.checking.stop();
+        }
     }
 
     pub(super) fn replace(&mut self, state: &VersionLensLspState) -> Result<()> {
-        self.checking
-            .replace(state.workspace_checking_options())
-            .map_err(anyhow::Error::msg)?;
+        if self.groups.len() != state.groups().len() {
+            return self.restart(state).map_err(Into::into);
+        }
+        for (index, group) in self.groups.iter_mut().enumerate() {
+            group
+                .checking
+                .replace(state.workspace_checking_options(index))
+                .map_err(anyhow::Error::msg)?;
+            group.rescan();
+        }
         self.pending.submitted.clear();
-        self.seen_documents.clear();
-        self.discovery.full_scan_pending = true;
-        self.discovery.exhausted = false;
         Ok(())
     }
 
     /// Sends the open documents to checking without restarting discovery.
     pub(super) fn update_documents(&mut self, state: &VersionLensLspState) -> Result<()> {
-        let overlays = self.overlays(state);
-        self.checking
-            .update_documents(overlays)
-            .map_err(anyhow::Error::msg)
+        let mut overlays = vec![Vec::new(); self.groups.len()];
+        for (uri, input) in self.overlays(state) {
+            if let Some(group) = overlays.get_mut(state.group_of(&uri)) {
+                group.push(input);
+            }
+        }
+        for (group, overlays) in self.groups.iter().zip(overlays) {
+            group
+                .checking
+                .update_documents(overlays)
+                .map_err(anyhow::Error::msg)?;
+        }
+        Ok(())
     }
 
     /// The open documents to check: the current text, or the last sent text
     /// for documents still in their debounce.
-    fn overlays(&mut self, state: &VersionLensLspState) -> Vec<DocumentInput> {
+    fn overlays(&mut self, state: &VersionLensLspState) -> Vec<(String, DocumentInput)> {
         let mut uris = state.document_uris();
         uris.sort();
         uris.into_iter()
@@ -144,8 +186,8 @@ impl WorkspaceController {
                     .then(|| self.pending.submitted.get(&uri).cloned())
                     .flatten();
                 let input = held.or_else(|| state.document_work(&uri).map(|work| work.input))?;
-                self.pending.submitted.insert(uri, input.clone());
-                Some(input)
+                self.pending.submitted.insert(uri.clone(), input.clone());
+                Some((uri, input))
             })
             .collect()
     }
@@ -207,7 +249,9 @@ impl WorkspaceController {
 
     pub(super) fn forget_document(&mut self, uri: &str) {
         self.published.remove(uri);
-        self.seen_documents.remove(uri);
+        for group in &mut self.groups {
+            group.seen_documents.remove(uri);
+        }
         self.pending.due.remove(uri);
         self.pending.submitted.remove(uri);
         self.statuses.remove(uri);
@@ -245,7 +289,7 @@ impl WorkspaceController {
         connection: &Connection,
         analyzed: Analyzed,
     ) -> Result<()> {
-        if analyzed.generation != self.checking.generation() {
+        if !self.is_current(analyzed.group, analyzed.generation) {
             return Ok(());
         }
         let Some(document) = state.checked_document(&analyzed.document.input) else {
@@ -256,7 +300,7 @@ impl WorkspaceController {
         let status = match analyzed.analysis {
             Ok(analysis) => {
                 let resolved = resolved_document(analysis, &document.uri, document.generation);
-                self.publish_result(state, connection, document, resolved)?;
+                self.publish_result(state, connection, analyzed.group, document, resolved)?;
                 DocumentStatus::Idle
             }
             // A failure is about VersionLens or the registry, not the
@@ -284,9 +328,9 @@ impl WorkspaceController {
         &mut self,
         state: &VersionLensLspState,
         connection: &Connection,
-        event: WorkspaceCheckEvent,
+        (group, event): GroupEvent,
     ) -> Result<()> {
-        if event.generation != self.checking.generation() {
+        if !self.is_current(group, event.generation) {
             return Ok(());
         }
         match event.result {
@@ -294,9 +338,14 @@ impl WorkspaceController {
                 let Some(document) = state.checked_document(&input) else {
                     return Ok(());
                 };
-                let generation = self.checking.generation();
+                // A folder's discovery also walks nested folders, which can
+                // have other settings and are checked by their own group.
+                if state.group_of(&document.uri) != group {
+                    return Ok(());
+                }
+                let generation = event.generation;
                 let Err(message) = result else {
-                    self.analyze(state, document, generation);
+                    self.analyze(group, document, generation);
                     return Ok(());
                 };
                 // A newer check of the same document follows.
@@ -307,6 +356,7 @@ impl WorkspaceController {
                     state,
                     connection,
                     Analyzed {
+                        group,
                         generation,
                         document,
                         analysis: Err(message),
@@ -319,7 +369,9 @@ impl WorkspaceController {
                 let busy = self
                     .statuses
                     .iter()
-                    .filter(|(_, status)| **status == DocumentStatus::Busy)
+                    .filter(|(uri, status)| {
+                        **status == DocumentStatus::Busy && state.group_of(uri) == group
+                    })
                     .map(|(uri, _)| uri.clone())
                     .collect::<Vec<_>>();
                 for target in busy {
@@ -347,21 +399,33 @@ impl WorkspaceController {
                 )
             }
             WorkspaceCheckResult::DiscoverySettled => {
-                self.finish_discovery();
+                if let Some(group) = self.groups.get_mut(group) {
+                    group.discovery.exhausted = true;
+                }
                 Ok(())
             }
-            WorkspaceCheckResult::Settled => self.finish_generation(state, connection),
+            WorkspaceCheckResult::Settled => self.finish_generation(state, connection, group),
         }
     }
 
-    fn analyze(&self, state: &VersionLensLspState, document: CheckedDocument, generation: u64) {
-        let session = state.session.clone();
+    /// Whether an event comes from the current checking of its group.
+    fn is_current(&self, group: usize, generation: u64) -> bool {
+        self.groups
+            .get(group)
+            .is_some_and(|group| group.checking.generation() == generation)
+    }
+
+    fn analyze(&self, group: usize, document: CheckedDocument, generation: u64) {
+        let Some(session) = self.groups.get(group).map(|group| group.session.clone()) else {
+            return;
+        };
         let sender = self.analyzed_sender.clone();
         self.runtime.spawn_blocking(move || {
             let input = document.input.clone();
             let analysis = catch_unwind(AssertUnwindSafe(|| session.analyze_document(input)))
                 .map_err(|_| "VersionLens analysis panicked".to_owned());
             let _ = sender.send(Analyzed {
+                group,
                 generation,
                 document,
                 analysis,
@@ -373,10 +437,13 @@ impl WorkspaceController {
         &mut self,
         state: &VersionLensLspState,
         connection: &Connection,
+        group: usize,
         document: CheckedDocument,
         resolved: ResolvedDocument,
     ) -> Result<()> {
-        self.seen_documents.insert(document.uri.clone());
+        if let Some(group) = self.groups.get_mut(group) {
+            group.seen_documents.insert(document.uri.clone());
+        }
         let diagnostics_changed = self
             .published
             .get(&document.uri)
@@ -407,32 +474,38 @@ impl WorkspaceController {
         Ok(())
     }
 
+    /// Clears the results of the group's documents that a full scan no
+    /// longer found.
     fn finish_generation(
         &mut self,
         state: &VersionLensLspState,
         connection: &Connection,
+        group: usize,
     ) -> Result<()> {
-        if !self.discovery.full_scan_pending || !self.discovery.exhausted {
+        let Some(checking) = self.groups.get_mut(group) else {
+            return Ok(());
+        };
+        if !checking.discovery.full_scan_pending || !checking.discovery.exhausted {
             return Ok(());
         }
         let removed = self
             .published
-            .iter()
-            .filter(|(uri, _)| !self.seen_documents.contains(*uri) && !state.document_is_open(uri))
-            .map(|(uri, _)| uri.clone())
+            .keys()
+            .filter(|uri| {
+                state.group_of(uri) == group
+                    && !checking.seen_documents.contains(*uri)
+                    && !state.document_is_open(uri)
+            })
+            .cloned()
             .collect::<Vec<_>>();
+        checking.seen_documents.clear();
+        checking.discovery.full_scan_pending = false;
+        checking.discovery.exhausted = false;
         for uri in removed {
             publish_diagnostics(connection, uri.parse()?, Vec::new(), None)?;
             self.published.remove(&uri);
         }
-        self.seen_documents.clear();
-        self.discovery.full_scan_pending = false;
-        self.discovery.exhausted = false;
         Ok(())
-    }
-
-    fn finish_discovery(&mut self) {
-        self.discovery.exhausted = true;
     }
 
     fn request_lens_refresh(&mut self, connection: &Connection) -> Result<()> {

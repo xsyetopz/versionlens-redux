@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 sys.dont_write_bytecode = True
 
-from lsp_protocol import receive, send
+from lsp_protocol import answer_configuration, receive, send
 
 SAMPLES = 5
 SAMPLE_SPACING_SECONDS = 30
@@ -259,11 +259,14 @@ def workloads(route, case, text, dependency_count):
 
 
 def initialize(process, route, prerelease, root_uri):
-    providers = {}
+    settings = {
+        "suggestions": {
+            "showPrereleasesOnStartup": prerelease,
+            "showVulnerabilities": False,
+        }
+    }
     if route.registry_url:
-        providers["registryUrls"] = [
-            {"ecosystem": route.ecosystem.lower(), "url": route.registry_url}
-        ]
+        settings[route.ecosystem.lower()] = {"apiUrl": route.registry_url}
     send(
         process,
         {
@@ -272,17 +275,13 @@ def initialize(process, route, prerelease, root_uri):
             "method": "initialize",
             "params": {
                 "rootUri": root_uri,
-                "capabilities": {},
-                "initializationOptions": {
-                    "showPrereleases": prerelease,
-                    "showVulnerabilities": False,
-                    "providers": providers,
-                },
+                "capabilities": {"workspace": {"configuration": True}},
             },
         },
     )
     receive(process, 1)
     send(process, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
+    answer_configuration(process, settings)
 
 
 def code_lenses(process, request_id, uri, diagnostics):

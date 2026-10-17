@@ -19,7 +19,7 @@ impl VersionLensLspState {
         let Some(generation) = self.generation.checked_add(1) else {
             self.documents.clear();
             self.revisions.clear();
-            self.session.cancel_pending_resolutions();
+            self.cancel_pending_resolutions();
             return;
         };
         self.generation = generation;
@@ -198,7 +198,7 @@ impl VersionLensLspState {
             || document_input(document, &document.uri),
             |work| work.input,
         );
-        self.session.analyze_document(input)
+        self.session_for(&document.uri).analyze_document(input)
     }
 }
 

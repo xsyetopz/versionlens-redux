@@ -91,25 +91,11 @@ fn responsive_registry_request(cancel: bool) -> Result<()> {
     });
     let (server, client) = Connection::memory();
     let server_thread = thread::spawn(move || run_connection(&server, false));
-    let mut config: versionlens_core::SessionConfig =
-        versionlens_core::SessionConfigInput::default().into();
-    config.show_vulnerabilities = false;
-    config.http.proxy = None;
-    config
-        .providers
-        .registry_urls
-        .push(versionlens_core::RegistryUrlConfig {
-            ecosystem: versionlens_model::Ecosystem::Npm,
-            url: format!("http://{address}"),
-        });
-    send_request(
+    initialize_configured(
         &client,
-        1,
-        "initialize",
-        json!({"capabilities":{},"initializationOptions":config}),
+        json!({"capabilities":{}}),
+        json!({"suggestions":{"showVulnerabilities":false},"npm":{"apiUrl":format!("http://{address}")}}),
     )?;
-    ok_result(receive(&client)?)?;
-    send_notification(&client, "initialized", json!({}))?;
     let uri = "file:///workspace/package.json";
     open_json_document(
         &client,

@@ -7,11 +7,8 @@ use lsp_types::{
     WorkspaceFolder,
 };
 use serde::{Deserialize, Serialize};
-use versionlens_core::{
-    SessionConfigInput, VersionLensSession, WorkspaceCheckingOptions, WorkspaceDiscoveryOptions,
-    WorkspaceProviderExclusion, version_lens_session,
-};
-use versionlens_model::{DocumentInput, Ecosystem};
+use versionlens_core::{WorkspaceCheckingOptions, WorkspaceDiscoveryOptions};
+use versionlens_model::DocumentInput;
 
 pub(crate) const UPDATE_DEPENDENCY_COMMAND: &str = "versionlens.suggestion.onUpdateDependency";
 
@@ -31,6 +28,7 @@ struct WorkspaceRoot {
     uri: Uri,
     path: Option<String>,
     input_root: Option<String>,
+    settings: FolderSettings,
 }
 
 impl WorkspaceRoot {
@@ -51,6 +49,7 @@ impl WorkspaceRoot {
             uri,
             path,
             input_root,
+            settings: FolderSettings::default(),
         }
     }
 
@@ -89,14 +88,14 @@ fn normalized_file_path(uri: &str) -> Option<std::path::PathBuf> {
 
 #[derive(Debug)]
 pub struct VersionLensLspState {
-    pub(crate) session: VersionLensSession,
-    configuration: versionlens_core::SessionConfig,
+    groups: Vec<SessionGroup>,
+    /// The settings when there is no workspace folder.
+    unscoped_settings: FolderSettings,
     documents: HashMap<String, VersionLensTextDocument>,
     revisions: HashMap<String, DocumentRevision>,
     generation: u64,
     root_uri: Option<WorkspaceRoot>,
     workspace_folders: Vec<WorkspaceRoot>,
-    exclusions: Vec<String>,
     pub(crate) client: ClientSupport,
     modes: StateModes,
 }
@@ -112,6 +111,8 @@ pub(crate) struct ClientSupport {
     pub(crate) workspace_edits: bool,
     pub(crate) code_lens_refresh: bool,
     pub(crate) watched_files_dynamic: bool,
+    /// The client answers `workspace/configuration`.
+    pub(crate) configuration: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -145,10 +146,21 @@ pub(crate) struct CheckedDocument {
 }
 
 impl VersionLensLspState {
-    pub(crate) fn with_config(mut self, config: versionlens_core::SessionConfig) -> Self {
-        self.session = version_lens_session(config.clone());
-        self.configuration = config;
+    /// Gives every folder the same settings.
+    #[cfg(test)]
+    pub(crate) fn with_settings(mut self, settings: FolderSettings) -> Self {
+        let count = self.scopes().len().max(1);
+        self.replace_settings(vec![settings; count])
+            .expect("in-memory sessions do not fail");
         self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_config(self, config: versionlens_core::SessionConfig) -> Self {
+        self.with_settings(FolderSettings {
+            config,
+            ..FolderSettings::default()
+        })
     }
 
     pub(crate) fn with_client(mut self, capabilities: lsp_types::ClientCapabilities) -> Self {
@@ -163,6 +175,7 @@ impl VersionLensLspState {
             self.client.watched_files_dynamic = workspace
                 .did_change_watched_files
                 .is_some_and(|files| files.dynamic_registration == Some(true));
+            self.client.configuration = workspace.configuration == Some(true);
         }
         self
     }
@@ -175,26 +188,33 @@ impl VersionLensLspState {
         root_uri: Option<Uri>,
         workspace_folders: Vec<WorkspaceFolder>,
     ) -> Self {
-        let configuration: versionlens_core::SessionConfig = SessionConfigInput::default().into();
+        let root_uri = root_uri.map(WorkspaceRoot::new);
+        let workspace_folders = workspace_folders
+            .into_iter()
+            .map(|folder| WorkspaceRoot::new(folder.uri))
+            .collect::<Vec<_>>();
+        let scope_count = if workspace_folders.is_empty() {
+            usize::from(root_uri.is_some())
+        } else {
+            workspace_folders.len()
+        };
         Self {
-            session: version_lens_session(configuration.clone()),
-            configuration,
+            groups: vec![SessionGroup::initial(scope_count.max(1))],
+            unscoped_settings: FolderSettings::default(),
             documents: HashMap::new(),
             revisions: HashMap::new(),
             generation: 0,
             client: ClientSupport::default(),
             modes: StateModes::default(),
-            root_uri: root_uri.map(WorkspaceRoot::new),
-            workspace_folders: workspace_folders
-                .into_iter()
-                .map(|folder| WorkspaceRoot::new(folder.uri))
-                .collect(),
-            exclusions: configuration::default_workspace_exclusions(),
+            root_uri,
+            workspace_folders,
         }
     }
 
     pub(crate) fn with_application_cache(mut self) -> std::io::Result<Self> {
-        self.session = self.session.with_application_cache()?;
+        for group in &mut self.groups {
+            group.session = group.session.clone().with_application_cache()?;
+        }
         self.modes.persistent = true;
         Ok(self)
     }
@@ -233,28 +253,23 @@ impl VersionLensLspState {
         }
     }
 
-    pub(crate) fn workspace_checking_options(&self) -> WorkspaceCheckingOptions {
-        let roots = if self.workspace_folders.is_empty() {
-            self.root_uri
-                .iter()
-                .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
-                .collect()
-        } else {
-            self.workspace_folders
-                .iter()
-                .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
-                .collect()
-        };
+    /// The checking options of one settings group: its folders, its
+    /// exclusions and its open documents.
+    pub(crate) fn workspace_checking_options(&self, group: usize) -> WorkspaceCheckingOptions {
+        let roots = self
+            .group_roots(group)
+            .into_iter()
+            .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
+            .collect();
         let mut discovery = WorkspaceDiscoveryOptions::new(roots);
-        discovery.exclusions = self.exclusions.clone();
-        discovery.provider_exclusions = vec![WorkspaceProviderExclusion {
-            ecosystem: Ecosystem::Dotnet,
-            patterns: vec!["**/obj/**".to_owned()],
-        }];
+        discovery
+            .exclusions
+            .clone_from(&self.groups[group].settings.exclusions);
         let mut uris = self.document_uris();
         uris.sort();
         discovery.overlays = uris
             .into_iter()
+            .filter(|uri| self.group_of(uri) == group)
             .filter_map(|uri| self.document_work(&uri).map(|work| work.input))
             .collect();
         WorkspaceCheckingOptions::new(discovery)
@@ -276,7 +291,10 @@ impl VersionLensLspState {
 }
 
 mod configuration;
-pub(crate) use configuration::{session_configuration, workspace_exclusions};
+pub(crate) use configuration::{SECTIONS, workspace_exclusions};
+mod groups;
+pub(crate) use groups::FolderSettings;
+use groups::SessionGroup;
 mod documents;
 pub(crate) use documents::resolved_document;
 mod edits;

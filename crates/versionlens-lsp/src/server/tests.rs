@@ -137,11 +137,10 @@ fn publishes_unversioned_results_for_unopened_workspace_documents() -> Result<()
     let root_uri = versionlens_core::workspace_file_uri(&root).context("missing root URI")?;
     let workflow_uri = versionlens_core::workspace_file_uri(&workflow.canonicalize()?)
         .context("missing workflow URI")?;
-    let (client, server_thread) = start_workspace_server(json!({
-        "rootUri": root_uri,
-        "capabilities": {},
-        "initializationOptions": {"showVulnerabilities": false}
-    }))?;
+    let (client, server_thread) = start_configured_server(
+        json!({"rootUri": root_uri, "capabilities": {}}),
+        json!({"suggestions": {"showVulnerabilities": false}}),
+    )?;
     let deadline = std::time::Instant::now() + Duration::from_secs(5);
     loop {
         let message = client
@@ -234,6 +233,53 @@ fn initialize_workspace(client: &Connection, params: Value) -> Result<Value> {
     let result = ok_result(receive(client)?)?;
     send_notification(client, "initialized", json!({}))?;
     Ok(result)
+}
+
+/// Initializes a client that answers `workspace/configuration` with
+/// `settings` for the `versionlens` section and `null` for the others.
+fn initialize_configured(client: &Connection, mut params: Value, settings: Value) -> Result<Value> {
+    params["capabilities"]["workspace"]["configuration"] = json!(true);
+    let result = initialize_workspace(client, params)?;
+    answer_configuration(client, settings)?;
+    Ok(result)
+}
+
+/// Answers the next `workspace/configuration` request and returns its
+/// params.
+fn answer_configuration(client: &Connection, settings: Value) -> Result<Value> {
+    loop {
+        match client.receiver.recv_timeout(Duration::from_secs(10))? {
+            Message::Request(request) if request.method == "workspace/configuration" => {
+                let items = request.params["items"].as_array().map_or(0, Vec::len);
+                let mut result = vec![Value::Null; items];
+                if let Some(first) = result.first_mut() {
+                    *first = settings;
+                }
+                client
+                    .sender
+                    .send(Message::Response(lsp_server::Response::new_ok(
+                        request.id, result,
+                    )))?;
+                return Ok(request.params);
+            }
+            Message::Notification(notification)
+                if matches!(
+                    notification.method.as_str(),
+                    "window/logMessage" | "versionlens/status"
+                ) => {}
+            message => bail!("expected a configuration request, got {message:?}"),
+        }
+    }
+}
+
+fn start_configured_server(
+    params: Value,
+    settings: Value,
+) -> Result<(Connection, thread::JoinHandle<Result<()>>)> {
+    let (server, client) = Connection::memory();
+    let server_thread = thread::spawn(move || run_connection(&server, false));
+    initialize_configured(&client, params, settings)?;
+    Ok((client, server_thread))
 }
 
 fn start_workspace_server(params: Value) -> Result<(Connection, thread::JoinHandle<Result<()>>)> {
@@ -386,3 +432,5 @@ mod responsiveness;
 mod incremental;
 
 mod push;
+
+mod configuration;

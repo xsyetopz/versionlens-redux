@@ -16,7 +16,7 @@ use serde_json::Value;
 use tokio::runtime::Runtime;
 
 use crate::state::{
-    self, DISPLAY_CODE_LENS_COMMAND, UPDATE_DEPENDENCY_COMMAND, VersionLensLspState,
+    DISPLAY_CODE_LENS_COMMAND, UPDATE_DEPENDENCY_COMMAND, VersionLensLspState,
     VersionLensTextDocument,
 };
 
@@ -28,16 +28,16 @@ struct InitializeWorkspaceParams {
     #[serde(default)]
     workspace_folders: Option<Vec<WorkspaceFolder>>,
     #[serde(default)]
-    initialization_options: Option<Value>,
-    #[serde(default)]
     capabilities: lsp_types::ClientCapabilities,
     #[serde(flatten)]
     _remaining: HashMap<String, Value>,
 }
 
 mod checking;
+mod settings;
 mod work;
 use checking::WorkspaceController;
+use settings::SettingsRequests;
 use work::WorkQueue;
 
 pub fn run_stdio_server() -> Result<()> {
@@ -50,7 +50,9 @@ pub fn run_stdio_server() -> Result<()> {
 
 fn run_connection(connection: &Connection, persistent: bool) -> Result<()> {
     let mut state = initialize(connection, persistent)?;
-    run_message_loop(connection, &mut state)
+    let mut settings = SettingsRequests::default();
+    let queued = settings.first(connection, &mut state)?;
+    run_message_loop(connection, &mut state, settings, queued)
 }
 
 fn initialize(connection: &Connection, persistent: bool) -> Result<VersionLensLspState> {
@@ -68,35 +70,11 @@ fn initialize(connection: &Connection, persistent: bool) -> Result<VersionLensLs
                 continue;
             }
         };
-        let exclusions = state::workspace_exclusions(
-            params
-                .initialization_options
-                .as_ref()
-                .unwrap_or(&Value::Null),
-        );
         let state = VersionLensLspState::with_workspace(
             params.root_uri,
             params.workspace_folders.unwrap_or_default(),
-        );
-        let state = state.with_client(params.capabilities);
-        let state = match params.initialization_options {
-            Some(value) => match state::session_configuration(
-                value.get("versionlens").unwrap_or(&value).clone(),
-            ) {
-                Ok(config) => state.with_config(config),
-                Err(error) => {
-                    respond_error(
-                        connection,
-                        id,
-                        ErrorCode::InvalidParams,
-                        format!("invalid initialization options: {error}"),
-                    )?;
-                    continue;
-                }
-            },
-            None => state,
-        }
-        .with_workspace_exclusions(exclusions);
+        )
+        .with_client(params.capabilities);
         let state = if persistent {
             state.with_application_cache()?
         } else {
@@ -111,12 +89,36 @@ fn initialize(connection: &Connection, persistent: bool) -> Result<VersionLensLs
     }
 }
 
-fn run_message_loop(connection: &Connection, state: &mut VersionLensLspState) -> Result<()> {
+fn run_message_loop(
+    connection: &Connection,
+    state: &mut VersionLensLspState,
+    mut settings: SettingsRequests,
+    queued: Vec<Message>,
+) -> Result<()> {
     let runtime = Runtime::new().context("failed to create LSP async runtime")?;
     let mut work = WorkQueue::new(runtime.handle().clone());
     state.use_workspace_controller();
     let mut checking = WorkspaceController::start(state, runtime.handle().clone())?;
-    loop {
+    let mut parts = LoopParts {
+        state,
+        work: &mut work,
+        checking: &mut checking,
+        settings: &mut settings,
+    };
+    let mut stopped = false;
+    for message in queued {
+        if handle_message(connection, &mut parts, message)? {
+            stopped = true;
+            break;
+        }
+    }
+    while !stopped {
+        let LoopParts {
+            state,
+            work,
+            checking,
+            ..
+        } = &mut parts;
         let expiry = [work.next_expiry(), checking.next_due()]
             .into_iter()
             .flatten()
@@ -139,29 +141,74 @@ fn run_message_loop(connection: &Connection, state: &mut VersionLensLspState) ->
                 if let Ok(event) = event { checking.handle(state, connection, event)?; }
             }
             recv(connection.receiver) -> message => {
-                let Ok(message) = message else { break };
-                match message {
-                    Message::Request(request) => {
-                        if connection.handle_shutdown(&request)? { break; }
-                        handle_request(connection, state, &mut work, request)?;
-                    }
-                    Message::Notification(notification) => {
-                        if notification.method == "exit" { break; }
-                        if notification.method == "$/cancelRequest" {
-                            if let Some(id) = notification.params.get("id").and_then(|id| serde_json::from_value::<RequestId>(id.clone()).ok()) { work.cancel(connection, &id)?; }
-                        } else {
-                            handle_notification(connection, state, &mut checking, notification)?;
-                            work.invalidate(state, connection)?;
-                        }
-                    }
-                    Message::Response(response) => work.applied(connection, response)?,
-                }
+                stopped = match message {
+                    Ok(message) => handle_message(connection, &mut parts, message)?,
+                    Err(_) => true,
+                };
             }
         }
     }
-    state.session.cancel_pending_resolutions();
+    parts.state.cancel_pending_resolutions();
     runtime.shutdown_background();
     Ok(())
+}
+
+/// The parts of the server that a client message can change.
+struct LoopParts<'a> {
+    state: &'a mut VersionLensLspState,
+    work: &'a mut WorkQueue,
+    checking: &'a mut WorkspaceController,
+    settings: &'a mut SettingsRequests,
+}
+
+/// Handles one client message. Returns `true` when the server must stop.
+fn handle_message(
+    connection: &Connection,
+    parts: &mut LoopParts<'_>,
+    message: Message,
+) -> Result<bool> {
+    let LoopParts {
+        state,
+        work,
+        checking,
+        settings,
+    } = parts;
+    match message {
+        Message::Request(request) => {
+            if connection.handle_shutdown(&request)? {
+                return Ok(true);
+            }
+            handle_request(connection, state, work, request)?;
+        }
+        Message::Notification(notification) => match notification.method.as_str() {
+            "exit" => return Ok(true),
+            "$/cancelRequest" => {
+                if let Some(id) = notification
+                    .params
+                    .get("id")
+                    .and_then(|id| serde_json::from_value::<RequestId>(id.clone()).ok())
+                {
+                    work.cancel(connection, &id)?;
+                }
+            }
+            "workspace/didChangeConfiguration" => settings.request(connection, state)?,
+            method => {
+                // New folders need their settings.
+                let folders_changed = method == "workspace/didChangeWorkspaceFolders";
+                handle_notification(connection, state, checking, notification)?;
+                work.invalidate(state, connection)?;
+                if folders_changed {
+                    settings.request(connection, state)?;
+                }
+            }
+        },
+        Message::Response(response) if settings::is_answer(&response.id) => {
+            settings.answer(connection, state, Some(checking), response)?;
+            work.invalidate(state, connection)?;
+        }
+        Message::Response(response) => work.applied(connection, response)?,
+    }
+    Ok(false)
 }
 
 fn handle_request(
@@ -233,8 +280,8 @@ fn handle_notification(
             ) else {
                 return Ok(());
             };
-            state.change_workspace_folders(params.event);
-            checking.replace(state)
+            state.change_workspace_folders(params.event)?;
+            checking.restart(state).map_err(Into::into)
         }
         "workspace/didChangeWatchedFiles" => {
             let Ok(params) = serde_json::from_value::<lsp_types::DidChangeWatchedFilesParams>(
@@ -251,12 +298,6 @@ fn handle_notification(
             }
             state.invalidate_workspace();
             checking.replace(state)
-        }
-        "workspace/didChangeConfiguration" => {
-            let Some(settings) = notification.params.get("settings") else {
-                return Ok(());
-            };
-            change_configuration(connection, state, checking, settings)
         }
         _ => handle_document_notification(connection, state, checking, notification),
     }
@@ -329,63 +370,6 @@ fn handle_document_notification(
             checking.update_documents(state)
         }
         _ => Ok(()),
-    }
-}
-
-fn change_configuration(
-    connection: &Connection,
-    state: &mut VersionLensLspState,
-    checking: &mut WorkspaceController,
-    settings: &Value,
-) -> Result<()> {
-    let exclusions = state::workspace_exclusions(settings);
-    let session_settings = settings.get("versionlens").cloned().or_else(|| {
-        settings.as_object().and_then(|settings| {
-            settings
-                .keys()
-                .any(|key| {
-                    matches!(
-                        key.as_str(),
-                        "cacheDurationMinutes"
-                            | "cacheTtlSeconds"
-                            | "cacheTtlMs"
-                            | "enabledProviders"
-                            | "providers"
-                            | "suggestionIndicators"
-                            | "showVulnerabilities"
-                            | "showSuggestionStats"
-                            | "showPrereleases"
-                            | "http"
-                    )
-                })
-                .then(|| Value::Object(settings.clone()))
-        })
-    });
-    let config = match session_settings.map(state::session_configuration) {
-        Some(Ok(config)) => Some(config),
-        None => None,
-        Some(Err(message)) => {
-            show_configuration_error(connection, message)?;
-            return Ok(());
-        }
-    };
-    let session_changed = config
-        .as_ref()
-        .is_some_and(|config| !state.configuration_is(config));
-    if let Some(config) = config
-        && session_changed
-        && let Err(error) = state.replace_configuration(config)
-    {
-        show_configuration_error(connection, error.to_string())?;
-        return Ok(());
-    }
-    let exclusions_changed = state.replace_workspace_exclusions(exclusions);
-    if session_changed {
-        checking.restart(state).map_err(Into::into)
-    } else if exclusions_changed {
-        checking.replace(state)
-    } else {
-        Ok(())
     }
 }
 

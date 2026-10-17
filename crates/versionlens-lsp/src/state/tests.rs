@@ -146,7 +146,7 @@ fn existing_file_workspace_root_uses_its_parent_directory() -> FileTestResult {
         Some(directory_uri)
     );
     assert_eq!(
-        state.workspace_checking_options().discovery.roots,
+        state.workspace_checking_options(0).discovery.roots,
         [directory]
     );
     Ok(())
@@ -173,7 +173,9 @@ fn workspace_folder_changes_rebind_open_documents_and_invalidate_work() -> Resul
         let before = state
             .document_work(document_uri)
             .ok_or("missing open document")?;
-        state.change_workspace_folders(lsp_types::WorkspaceFoldersChangeEvent { added, removed });
+        state
+            .change_workspace_folders(lsp_types::WorkspaceFoldersChangeEvent { added, removed })
+            .map_err(|error| error.to_string())?;
         let after = state
             .document_work(document_uri)
             .ok_or("missing updated document")?;
@@ -216,7 +218,7 @@ async fn dependency_lenses_share_the_meaningful_source_range() {
     });
     let work = state.document_work(uri).unwrap();
     state
-        .session
+        .session_for(uri)
         .resolve_document_with_responses(
             work.input,
             &[versionlens_core::RegistryResponseInput::new(
@@ -274,20 +276,18 @@ fn configuration_changes_invalidate_document_work_and_preserve_versions() -> Res
     state.open_document(document(uri, None));
     state.set_document_version(uri, 9);
     let work = state.document_work(uri).ok_or("missing document")?;
-    let config = super::session_configuration(
-        serde_json::json!({"showVulnerabilities":false,"http":{"timeoutMs":250}}),
-    )?;
+    let config = versionlens_core::Settings::from_value(
+        serde_json::json!({"suggestions":{"showVulnerabilities":false}}),
+    )?
+    .session_config();
     assert!(!config.show_vulnerabilities);
-    assert_eq!(config.http.timeout_ms, 250);
-    assert!(config.http.strict_ssl);
-    assert_eq!(
-        super::session_configuration(serde_json::json!({"cacheDurationMinutes": 2.0}))?
-            .cache_ttl_ms,
-        120_000
-    );
-    state
-        .replace_configuration(config)
+    let changed = state
+        .replace_settings(vec![super::FolderSettings {
+            config,
+            ..super::FolderSettings::default()
+        }])
         .map_err(|error| error.to_string())?;
+    assert!(changed);
     assert!(!state.work_is_current(&work));
     assert_eq!(
         state.document_work(uri).ok_or("missing document")?.version,
@@ -295,9 +295,6 @@ fn configuration_changes_invalidate_document_work_and_preserve_versions() -> Res
     );
     assert!(!state.accepts_document_version(uri, 9));
     assert!(state.accepts_document_version(uri, 10));
-    assert!(
-        super::session_configuration(serde_json::json!({"http":{"timeoutMs":"invalid"}})).is_err()
-    );
     Ok(())
 }
 
@@ -365,7 +362,7 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     let root_uri = versionlens_core::workspace_file_uri(&root).ok_or("missing root URI")?;
     let state = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
         .with_workspace_exclusions(super::workspace_exclusions(&serde_json::json!({
-            "files": {"exclude": {"**/{generated,cache}/**": true}}
+            "**/{generated,cache}/**": true
         })));
     let included = root.join("src/package.json");
     let cargo = root.join("src/Cargo.toml");
@@ -381,31 +378,62 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     assert!(!state.watched_file_is_relevant(&file_uri(&unrelated)?));
     assert!(!state.watched_file_is_relevant(&file_uri(&generated)?));
     assert!(!state.watched_file_is_relevant(&file_uri(&cache)?));
-    let options = state.workspace_checking_options();
-    assert_eq!(options.discovery.provider_exclusions.len(), 1);
-    assert_eq!(
-        options.discovery.provider_exclusions[0].ecosystem,
-        versionlens_model::Ecosystem::Dotnet
-    );
-    assert_eq!(
-        options.discovery.provider_exclusions[0].patterns,
-        ["**/obj/**"]
+    let options = state.workspace_checking_options(0);
+    assert!(options.discovery.provider_exclusions.is_empty());
+    assert!(
+        options
+            .discovery
+            .exclusions
+            .contains(&"**/obj/**".to_owned())
     );
 
     let cargo_only = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
-        .with_config(super::session_configuration(serde_json::json!({
-            "enabledProviders": ["cargo"]
-        }))?);
+        .with_config(
+            versionlens_core::Settings::from_value(serde_json::json!({
+                "enabledProviders": ["cargo"]
+            }))?
+            .session_config(),
+        );
     assert!(cargo_only.watched_file_is_relevant(&file_uri(&cargo)?));
     assert!(!cargo_only.watched_file_is_relevant(&file_uri(&included)?));
 
     let configured_npm = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
-        .with_config(super::session_configuration(serde_json::json!({
-            "enabledProviders": ["npm"],
-            "providers": {
-                "filePatterns": [{"ecosystem": "npm", "pattern": "**/deps.custom"}]
-            }
-        }))?);
+        .with_config(
+            versionlens_core::Settings::from_value(serde_json::json!({
+                "enabledProviders": ["npm"],
+                "npm": {"files": "**/deps.custom"}
+            }))?
+            .session_config(),
+        );
     assert!(configured_npm.watched_file_is_relevant(&file_uri(&configured)?));
+    Ok(())
+}
+
+#[test]
+fn folders_that_differ_only_in_exclusions_get_their_own_sessions() -> Result<(), String> {
+    let mut state = VersionLensLspState::with_workspace(
+        None,
+        vec![
+            folder("file:///first", "first")?,
+            folder("file:///second", "second")?,
+        ],
+    );
+    let mut second = super::FolderSettings::default();
+    second.exclusions.push("**/generated/**".to_owned());
+    state
+        .replace_settings(vec![super::FolderSettings::default(), second])
+        .map_err(|error| error.to_string())?;
+    let [first, second] = state.groups() else {
+        return Err(format!("expected two groups, got {}", state.groups().len()));
+    };
+    let documents = vec![versionlens_model::DocumentInput::new(
+        "file:///first/package.json".to_owned(),
+        "json".to_owned(),
+        "{}".to_owned(),
+        None,
+    )];
+    assert!(first.session.set_workspace_documents(documents.clone()));
+    // A shared session would already hold these documents.
+    assert!(second.session.set_workspace_documents(documents));
     Ok(())
 }

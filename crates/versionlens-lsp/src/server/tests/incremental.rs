@@ -8,19 +8,17 @@ use super::*;
 /// before it counts registry requests.
 const SETTLE: Duration = Duration::from_millis(1500);
 
-type Requests = Arc<Mutex<BTreeMap<String, usize>>>;
+pub(super) type Requests = Arc<Mutex<BTreeMap<String, usize>>>;
 
 #[test]
 fn editing_a_manifest_resolves_only_changed_dependencies() -> Result<()> {
     let (address, requests) = counting_registry()?;
     let (server, client) = Connection::memory();
     let server_thread = thread::spawn(move || run_connection(&server, false));
-    initialize_workspace(
+    initialize_configured(
         &client,
-        json!({
-            "capabilities":{},
-            "initializationOptions":{"showVulnerabilities":false,"http":{"proxy":null,"timeoutMs":3000},"providers":{"registryUrls":[{"ecosystem":"npm","url":format!("http://{address}")}]}}
-        }),
+        json!({"capabilities":{}}),
+        json!({"suggestions":{"showVulnerabilities":false},"npm":{"apiUrl":format!("http://{address}")}}),
     )?;
     let uri = "file:///workspace/package.json";
     open_json_document(&client, uri, 1, &manifest("// first", "1.0.0"))?;
@@ -84,7 +82,7 @@ fn change_document(client: &Connection, uri: &str, version: i32, text: &str) -> 
     )
 }
 
-fn lens_titles(client: &Connection, id: i32, uri: &str) -> Result<Vec<String>> {
+pub(super) fn lens_titles(client: &Connection, id: i32, uri: &str) -> Result<Vec<String>> {
     send_request(
         client,
         id,
@@ -120,6 +118,11 @@ fn snapshot(requests: &Requests) -> BTreeMap<String, usize> {
 
 /// Serves every package with `latest` 2.0.0 and counts requests by path.
 fn counting_registry() -> Result<(std::net::SocketAddr, Requests)> {
+    serving_registry(r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"2.0.0":{}}}"#)
+}
+
+/// Serves `body` for every package and counts requests by path.
+pub(super) fn serving_registry(body: &'static str) -> Result<(std::net::SocketAddr, Requests)> {
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
     let requests = Requests::default();
@@ -146,7 +149,6 @@ fn counting_registry() -> Result<(std::net::SocketAddr, Requests)> {
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .entry(path)
                 .or_default() += 1;
-            let body = r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"2.0.0":{}}}"#;
             let _ = write!(
                 socket,
                 "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
