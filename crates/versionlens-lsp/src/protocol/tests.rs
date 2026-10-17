@@ -161,8 +161,14 @@ fn protocol_update_command_values_match_lens_command_names() -> TestResult {
         (UpdateCommand::UpdateMajor, "updateMajor"),
         (UpdateCommand::UpdateMinor, "updateMinor"),
         (UpdateCommand::UpdatePatch, "updatePatch"),
+        (UpdateCommand::UpdateRelease, "updateRelease"),
+        (UpdateCommand::UpdatePrerelease, "updatePrerelease"),
     ] {
         assert_eq!(serde_json::to_value(command)?, json!(name));
+        assert_eq!(
+            serde_json::from_value::<UpdateCommand>(json!(name))?,
+            command
+        );
     }
     Ok(())
 }

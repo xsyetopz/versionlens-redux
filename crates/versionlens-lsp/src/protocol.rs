@@ -69,7 +69,8 @@ pub enum UpdateLevel {
 }
 
 /// Single-dependency update command. The values are the same command names
-/// that version lenses already carry.
+/// that version lenses already carry, including the project-version bumps
+/// `updateRelease` and `updatePrerelease`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum UpdateCommand {
@@ -77,6 +78,8 @@ pub enum UpdateCommand {
     UpdateMajor,
     UpdateMinor,
     UpdatePatch,
+    UpdateRelease,
+    UpdatePrerelease,
 }
 
 /// Arguments for commands that act on one whole document, such as sort
