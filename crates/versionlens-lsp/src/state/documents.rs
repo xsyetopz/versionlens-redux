@@ -154,40 +154,6 @@ impl VersionLensLspState {
         self.documents.contains_key(uri)
     }
 
-    pub(crate) fn diagnostic_target(&self, uri: &str) -> (String, Option<i32>) {
-        let event_path = versionlens_core::workspace_path(uri);
-        if let Some(root) = self
-            .workspace_folders
-            .iter()
-            .chain(self.root_uri.iter())
-            .find(|root| root.path.as_deref().map(std::path::Path::new) == event_path.as_deref())
-        {
-            return (root.uri.to_string(), None);
-        }
-        self.documents
-            .keys()
-            .find(|open_uri| {
-                open_uri.as_str() == uri
-                    || event_path.as_deref().is_some_and(|event_path| {
-                        self.revisions
-                            .get(open_uri.as_str())
-                            .and_then(|revision| revision.path.as_deref())
-                            == Some(event_path)
-                    })
-            })
-            .map_or_else(
-                || (uri.to_owned(), None),
-                |open_uri| {
-                    (
-                        open_uri.clone(),
-                        self.revisions
-                            .get(open_uri.as_str())
-                            .and_then(|revision| revision.version),
-                    )
-                },
-            )
-    }
-
     pub(crate) fn set_document_version(&mut self, uri: &str, version: i32) {
         if let Some(revision) = self.revisions.get_mut(uri) {
             revision.version = Some(version);

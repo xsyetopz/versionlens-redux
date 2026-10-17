@@ -7,11 +7,12 @@ use anyhow::{Context, Result};
 use crossbeam_channel::{Receiver, Sender, bounded, unbounded};
 use lsp_server::{Connection, Message, Notification, Request, RequestId};
 use lsp_types::notification::Notification as _;
-use lsp_types::{CodeLens, Diagnostic, DiagnosticSeverity};
+use lsp_types::{CodeLens, Diagnostic, MessageType};
 use serde_json::Value;
 use tokio::runtime::Handle;
 use versionlens_core::{
-    AnalyzeDocumentOutput, WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking,
+    AnalyzeDocumentOutput, CHECKING_CANCELLED, WorkspaceCheckEvent, WorkspaceCheckResult,
+    WorkspaceChecking,
 };
 use versionlens_model::DocumentInput;
 
@@ -47,12 +48,9 @@ struct PendingDocuments {
 struct PublishedDocument {
     diagnostics: Vec<Diagnostic>,
     code_lenses: Vec<CodeLens>,
-    discovery_failure: bool,
 }
 
 struct DiscoveryState {
-    failures: HashSet<String>,
-    pending_failures: HashSet<String>,
     full_scan_pending: bool,
     exhausted: bool,
 }
@@ -96,8 +94,6 @@ impl WorkspaceController {
             published: HashMap::new(),
             seen_documents: HashSet::new(),
             discovery: DiscoveryState {
-                failures: HashSet::new(),
-                pending_failures: HashSet::new(),
                 full_scan_pending: true,
                 exhausted: false,
             },
@@ -121,7 +117,6 @@ impl WorkspaceController {
             .map_err(anyhow::Error::msg)?;
         self.pending.submitted.clear();
         self.seen_documents.clear();
-        self.discovery.pending_failures.clear();
         self.discovery.full_scan_pending = true;
         self.discovery.exhausted = false;
         Ok(())
@@ -159,7 +154,6 @@ impl WorkspaceController {
         self.stop();
         let mut replacement = Self::start(state, self.runtime.clone())?;
         replacement.published = mem::take(&mut self.published);
-        replacement.discovery.failures = mem::take(&mut self.discovery.failures);
         replacement.reported_failures = mem::take(&mut self.reported_failures);
         replacement.next_request = self.next_request;
         replacement.pending.due = mem::take(&mut self.pending.due);
@@ -171,8 +165,6 @@ impl WorkspaceController {
     /// Queues an opened or edited document for checking at `due`. Edits
     /// push its deadline back, so a burst of edits is checked once.
     pub(super) fn schedule_document(&mut self, uri: &str, due: Instant, debounced: bool) {
-        self.discovery.failures.remove(uri);
-        self.discovery.pending_failures.remove(uri);
         // The next result is published even when it equals the last one, so
         // the client sees diagnostics for the new document version.
         self.published.remove(uri);
@@ -216,8 +208,6 @@ impl WorkspaceController {
     pub(super) fn forget_document(&mut self, uri: &str) {
         self.published.remove(uri);
         self.seen_documents.remove(uri);
-        self.discovery.failures.remove(uri);
-        self.discovery.pending_failures.remove(uri);
         self.pending.due.remove(uri);
         self.pending.submitted.remove(uri);
         self.statuses.remove(uri);
@@ -263,20 +253,24 @@ impl WorkspaceController {
         };
         let open = document.open;
         let uri = document.uri.clone();
-        let (resolved, status) = match analyzed.analysis {
-            Ok(analysis) => (
-                resolved_document(analysis, &document.uri, document.generation),
-                DocumentStatus::Idle,
-            ),
-            Err(message) => (
-                ResolvedDocument {
-                    code_lenses: Vec::new(),
-                    diagnostics: vec![warning(message)],
-                },
-                DocumentStatus::Error,
-            ),
+        let status = match analyzed.analysis {
+            Ok(analysis) => {
+                let resolved = resolved_document(analysis, &document.uri, document.generation);
+                self.publish_result(state, connection, document, resolved)?;
+                DocumentStatus::Idle
+            }
+            // A failure is about VersionLens or the registry, not the
+            // manifest, so it goes to the log and the status and the last
+            // published result stays.
+            Err(message) => {
+                log_message(
+                    connection,
+                    MessageType::ERROR,
+                    format!("VersionLens could not check {uri}: {message}"),
+                )?;
+                DocumentStatus::Error
+            }
         };
-        self.publish_result(state, connection, document, resolved)?;
         if open {
             // The result is for the current text, so a pending check of the
             // same text would be skipped by checking and never clear `busy`.
@@ -305,6 +299,10 @@ impl WorkspaceController {
                     self.analyze(state, document, generation);
                     return Ok(());
                 };
+                // A newer check of the same document follows.
+                if message == CHECKING_CANCELLED {
+                    return Ok(());
+                }
                 self.finish_analysis(
                     state,
                     connection,
@@ -327,37 +325,31 @@ impl WorkspaceController {
                 for target in busy {
                     self.set_status(connection, &target, DocumentStatus::Error)?;
                 }
-                self.publish_discovery_warning(
-                    state,
+                log_message(
                     connection,
-                    &uri,
-                    format!("workspace snapshot limit of {limit} bytes was exceeded"),
+                    MessageType::WARNING,
+                    format!(
+                        "VersionLens stopped checking at {uri}: the workspace snapshot limit of {limit} bytes was exceeded"
+                    ),
                 )
             }
             WorkspaceCheckResult::DiscoveryFailure(failure) => {
                 let message = failure.to_string();
-                if let Some(uri) = failure
-                    .path
-                    .as_deref()
-                    .and_then(versionlens_core::workspace_file_uri)
-                {
-                    return self.publish_discovery_warning(state, connection, &uri, message);
-                }
+                // Discovery retries with backoff, so the same failure would
+                // otherwise be logged on every retry.
                 if !self.reported_failures.insert(message.clone()) {
                     return Ok(());
                 }
-                connection
-                    .sender
-                    .send(Message::Notification(Notification {
-                        method: "window/logMessage".to_owned(),
-                        params: serde_json::json!({
-                            "type": 2,
-                            "message": format!("VersionLens workspace discovery: {message}"),
-                        }),
-                    }))
-                    .context("failed to report workspace discovery failure")
+                log_message(
+                    connection,
+                    MessageType::WARNING,
+                    format!("VersionLens workspace discovery: {message}"),
+                )
             }
-            WorkspaceCheckResult::DiscoverySettled => self.finish_discovery(connection),
+            WorkspaceCheckResult::DiscoverySettled => {
+                self.finish_discovery();
+                Ok(())
+            }
             WorkspaceCheckResult::Settled => self.finish_generation(state, connection),
         }
     }
@@ -377,35 +369,6 @@ impl WorkspaceController {
         });
     }
 
-    fn publish_discovery_warning(
-        &mut self,
-        state: &VersionLensLspState,
-        connection: &Connection,
-        uri: &str,
-        message: String,
-    ) -> Result<()> {
-        let (uri, version) = state.diagnostic_target(uri);
-        self.discovery.failures.insert(uri.clone());
-        self.discovery.pending_failures.insert(uri.clone());
-        let diagnostics = vec![discovery_warning(message)];
-        let changed = self
-            .published
-            .get(&uri)
-            .is_none_or(|previous| previous.diagnostics != diagnostics);
-        if changed {
-            publish_diagnostics(connection, uri.parse()?, diagnostics.clone(), version)?;
-        }
-        self.published.insert(
-            uri,
-            PublishedDocument {
-                diagnostics,
-                code_lenses: Vec::new(),
-                discovery_failure: true,
-            },
-        );
-        Ok(())
-    }
-
     fn publish_result(
         &mut self,
         state: &VersionLensLspState,
@@ -414,8 +377,6 @@ impl WorkspaceController {
         resolved: ResolvedDocument,
     ) -> Result<()> {
         self.seen_documents.insert(document.uri.clone());
-        self.discovery.failures.remove(&document.uri);
-        self.discovery.pending_failures.remove(&document.uri);
         let diagnostics_changed = self
             .published
             .get(&document.uri)
@@ -441,7 +402,6 @@ impl WorkspaceController {
             PublishedDocument {
                 diagnostics: resolved.diagnostics,
                 code_lenses: resolved.code_lenses,
-                discovery_failure: false,
             },
         );
         Ok(())
@@ -458,11 +418,7 @@ impl WorkspaceController {
         let removed = self
             .published
             .iter()
-            .filter(|(uri, published)| {
-                !published.discovery_failure
-                    && !self.seen_documents.contains(*uri)
-                    && !state.document_is_open(uri)
-            })
+            .filter(|(uri, _)| !self.seen_documents.contains(*uri) && !state.document_is_open(uri))
             .map(|(uri, _)| uri.clone())
             .collect::<Vec<_>>();
         for uri in removed {
@@ -475,25 +431,8 @@ impl WorkspaceController {
         Ok(())
     }
 
-    fn finish_discovery(&mut self, connection: &Connection) -> Result<()> {
-        let recovered = self
-            .discovery
-            .failures
-            .difference(&self.discovery.pending_failures)
-            .filter(|uri| {
-                self.published
-                    .get(*uri)
-                    .is_some_and(|published| published.discovery_failure)
-            })
-            .cloned()
-            .collect::<Vec<_>>();
-        for uri in recovered {
-            publish_diagnostics(connection, uri.parse()?, Vec::new(), None)?;
-            self.published.remove(&uri);
-        }
-        self.discovery.failures = mem::take(&mut self.discovery.pending_failures);
+    fn finish_discovery(&mut self) {
         self.discovery.exhausted = true;
-        Ok(())
     }
 
     fn request_lens_refresh(&mut self, connection: &Connection) -> Result<()> {
@@ -521,21 +460,14 @@ impl Drop for WorkspaceController {
     }
 }
 
-fn warning(message: String) -> Diagnostic {
-    Diagnostic {
-        range: lsp_types::Range::default(),
-        severity: Some(DiagnosticSeverity::WARNING),
-        source: Some("VersionLens".to_owned()),
-        message,
-        ..Diagnostic::default()
-    }
-}
-
-fn discovery_warning(message: String) -> Diagnostic {
-    Diagnostic {
-        source: Some("VersionLens workspace discovery".to_owned()),
-        ..warning(message)
-    }
+fn log_message(connection: &Connection, kind: MessageType, message: String) -> Result<()> {
+    connection
+        .sender
+        .send(Message::Notification(Notification {
+            method: "window/logMessage".to_owned(),
+            params: serde_json::to_value(lsp_types::LogMessageParams { typ: kind, message })?,
+        }))
+        .context("failed to send log message")
 }
 
 #[cfg(test)]

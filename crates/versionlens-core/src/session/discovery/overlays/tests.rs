@@ -71,3 +71,19 @@ fn standalone_discovery_applies_provider_enablement_and_size_limits() {
         }))
     );
 }
+
+#[test]
+fn open_documents_outside_the_workspace_roots_are_still_checked() {
+    let root =
+        versionlens_test_support::temporary_directory("versionlens-outside-overlay").unwrap();
+    let session = version_lens_session(SessionConfigInput::default().into());
+    let mut input = options();
+    input.roots = vec![root.clone()];
+    let expected = input.overlays[0].clone();
+    let documents = session
+        .discover_workspace_documents(input)
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    assert_eq!(documents, [expected]);
+    std::fs::remove_dir_all(root).unwrap();
+}

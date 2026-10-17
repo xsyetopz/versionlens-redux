@@ -5,7 +5,7 @@ use versionlens_model::DocumentInput;
 
 use super::{Analyzed, WorkspaceController};
 use crate::protocol::DocumentStatus;
-use crate::state::{CheckedDocument, VersionLensLspState};
+use crate::state::{CheckedDocument, VersionLensLspState, VersionLensTextDocument};
 
 fn controller(
     state: &VersionLensLspState,
@@ -90,5 +90,118 @@ fn an_analysis_of_a_closed_document_is_not_published() -> Result<()> {
     )?;
 
     assert_eq!(sent(&client), []);
+    Ok(())
+}
+
+const OPEN: &str = "file:///work/package.json";
+
+/// A state with one open manifest, and its current checking input.
+fn open_state() -> (VersionLensLspState, DocumentInput) {
+    let mut state = VersionLensLspState::with_workspace(None, Vec::new());
+    state.open_document(VersionLensTextDocument {
+        uri: OPEN.to_owned(),
+        language_id: "json".to_owned(),
+        text: "{\"dependencies\":{\"example\":\"1.0.0\"}}".to_owned(),
+        workspace_root: None,
+    });
+    state.set_document_version(OPEN, 1);
+    let input = state
+        .document_work(OPEN)
+        .map(|work| work.input)
+        .expect("the document is open");
+    (state, input)
+}
+
+fn methods(sent: &[(String, serde_json::Value)]) -> Vec<&str> {
+    sent.iter().map(|(method, _)| method.as_str()).collect()
+}
+
+fn statuses(sent: &[(String, serde_json::Value)]) -> Vec<&str> {
+    sent.iter()
+        .filter(|(method, _)| method == "versionlens/status")
+        .filter_map(|(_, params)| params["status"].as_str())
+        .collect()
+}
+
+#[test]
+fn a_cancelled_check_publishes_nothing() -> Result<()> {
+    let (state, input) = open_state();
+    let (mut controller, _runtime) = controller(&state)?;
+    let (server, client) = Connection::memory();
+    controller.set_status(&server, OPEN, DocumentStatus::Busy)?;
+    sent(&client);
+
+    let generation = controller.checking.generation();
+    controller.handle(
+        &state,
+        &server,
+        WorkspaceCheckEvent {
+            generation,
+            result: WorkspaceCheckResult::Document {
+                input: Box::new(input),
+                result: Err(versionlens_core::CHECKING_CANCELLED.to_owned()),
+            },
+        },
+    )?;
+
+    assert_eq!(sent(&client), []);
+    Ok(())
+}
+
+#[test]
+fn a_failed_check_is_logged_and_marks_the_document_in_error() -> Result<()> {
+    let (state, input) = open_state();
+    let (mut controller, _runtime) = controller(&state)?;
+    let (server, client) = Connection::memory();
+    controller.set_status(&server, OPEN, DocumentStatus::Busy)?;
+    sent(&client);
+
+    let generation = controller.checking.generation();
+    controller.handle(
+        &state,
+        &server,
+        WorkspaceCheckEvent {
+            generation,
+            result: WorkspaceCheckResult::Document {
+                input: Box::new(input),
+                result: Err("the resolver failed".to_owned()),
+            },
+        },
+    )?;
+
+    let sent = sent(&client);
+    assert!(!methods(&sent).contains(&"textDocument/publishDiagnostics"));
+    assert_eq!(statuses(&sent), ["error"]);
+    assert!(sent.iter().any(|(method, params)| {
+        method == "window/logMessage"
+            && params["message"]
+                .as_str()
+                .is_some_and(|message| message.contains("the resolver failed"))
+    }));
+    Ok(())
+}
+
+#[test]
+fn snapshot_limits_and_discovery_failures_are_logged_not_published() -> Result<()> {
+    let (state, _) = open_state();
+    let (mut controller, _runtime) = controller(&state)?;
+    let (server, client) = Connection::memory();
+    let generation = controller.checking.generation();
+    let root = std::env::temp_dir().join("versionlens-missing-root");
+    for result in [
+        WorkspaceCheckResult::SnapshotLimit {
+            uri: OPEN.to_owned(),
+            limit: 1,
+        },
+        WorkspaceCheckResult::DiscoveryFailure(versionlens_core::WorkspaceDiscoveryFailure {
+            path: Some(root.join("package.json")),
+            kind: versionlens_core::WorkspaceDiscoveryFailureKind::InvalidUtf8,
+        }),
+    ] {
+        controller.handle(&state, &server, WorkspaceCheckEvent { generation, result })?;
+    }
+
+    let sent = sent(&client);
+    assert_eq!(methods(&sent), ["window/logMessage", "window/logMessage"]);
     Ok(())
 }

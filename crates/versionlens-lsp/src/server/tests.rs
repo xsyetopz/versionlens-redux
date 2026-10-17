@@ -166,31 +166,34 @@ fn publishes_unversioned_results_for_unopened_workspace_documents() -> Result<()
 }
 
 #[test]
-fn clears_discovery_diagnostic_after_automatic_retry_recovers() -> Result<()> {
+fn discovery_failures_are_logged_once_and_never_published() -> Result<()> {
     let root = versionlens_test_support::temporary_directory("versionlens-lsp-retry")?;
     std::fs::remove_dir_all(&root)?;
     let root_uri = versionlens_core::workspace_file_uri(&root).context("missing root URI")?;
     let (client, server_thread) =
         start_workspace_server(json!({"rootUri": root_uri, "capabilities": {}}))?;
 
-    assert_diagnostics(
-        client.receiver.recv_timeout(Duration::from_secs(10))?,
-        &root_uri,
-        false,
-    )?;
-    assert!(matches!(
-        client.receiver.recv_timeout(Duration::from_millis(500)),
-        Err(crossbeam_channel::RecvTimeoutError::Timeout)
-    ));
-    std::fs::create_dir_all(&root)?;
-    assert_diagnostics(
-        client.receiver.recv_timeout(Duration::from_secs(10))?,
-        &root_uri,
-        true,
-    )?;
+    // The missing root fails discovery, which retries after 1 s; the retry
+    // fails the same way and must not be logged again.
+    let mut logged = Vec::new();
+    let deadline = std::time::Instant::now() + Duration::from_millis(2500);
+    while let Some(wait) = deadline.checked_duration_since(std::time::Instant::now()) {
+        let Ok(message) = client.receiver.recv_timeout(wait) else {
+            break;
+        };
+        let Message::Notification(notification) = message else {
+            bail!("unexpected message {message:?}");
+        };
+        match notification.method.as_str() {
+            "window/logMessage" => logged.push(notification.params),
+            "versionlens/status" => {}
+            method => bail!("unexpected notification {method}"),
+        }
+    }
+    assert_eq!(logged.len(), 1, "{logged:?}");
+    assert_eq!(logged[0]["type"], 2);
 
     shutdown_client(&client, 2, server_thread)?;
-    std::fs::remove_dir_all(root)?;
     Ok(())
 }
 
@@ -336,16 +339,6 @@ fn receive(connection: &Connection) -> Result<Message> {
             &message,
             Message::Notification(notification)
                 if matches!(notification.method.as_str(), "window/logMessage" | "versionlens/status")
-        ) || matches!(
-            &message,
-            Message::Notification(notification)
-                if notification.method == "textDocument/publishDiagnostics"
-                    && notification.params["diagnostics"].as_array().is_some_and(|diagnostics| {
-                        !diagnostics.is_empty()
-                            && diagnostics.iter().all(|diagnostic| {
-                                diagnostic["source"] == "VersionLens workspace discovery"
-                            })
-                    })
         ) {
             continue;
         }

@@ -30,9 +30,6 @@ impl fmt::Display for WorkspaceDiscoveryFailure {
             Kind::InvalidOverlayUri | Kind::InvalidFileUri => {
                 formatter.write_str("invalid file URI")
             }
-            Kind::OutsideWorkspace => {
-                formatter.write_str("document is outside the configured workspace")
-            }
             Kind::EscapesWorkspace => formatter.write_str("path resolves outside the workspace"),
             Kind::InvalidUtf8 => formatter.write_str("file is not valid UTF-8"),
             Kind::FileTooLarge(file_size) => write!(
