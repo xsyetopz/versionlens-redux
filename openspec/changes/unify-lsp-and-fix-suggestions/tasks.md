@@ -44,7 +44,7 @@ Owns: `crates/versionlens-versions`, `crates/versionlens-model`, `crates/version
 
   Verify: `cargo test -p versionlens-fetch` covers the proxy env, a read-only cache dir and 403 with `x-ratelimit-reset`.
 - [ ] 3.5 Add credential sources in order: client-supplied, then `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token` (once per session, 2 s timeout, only after 401/403), then the existing config files. Add redaction tests. Verify: `cargo test -p versionlens-fetch credentials`, and a test asserts no token appears in `Debug`/log output.
-- [ ] 3.6 Return `NotSupported` (skipped, no error) for runtimes with no release source, including `engines.vscode` and unsupported setup-dotnet syntax. Include the cause (status, host, error kind) in resolution errors. Verify: the `engines.vscode` fixture produces no error, and the 404 test renders `not found (404 registry.npmjs.org)`.
+- [x] 3.6 Return `NotSupported` (skipped, no error) for runtimes with no release source, including `engines.vscode` and unsupported setup-dotnet syntax. Include the cause (status, host, error kind) in resolution errors. Verify: the `engines.vscode` fixture produces no error, and the 404 test renders `not found (404 registry.npmjs.org)`.
 
 ## 4. Lane B: language server runtime and protocol (subagent 2)
 
