@@ -58,6 +58,7 @@ pub(crate) use support::{
     anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, path, recover_poison,
     string_from_utf8,
 };
+pub use versionlens_fetch::application_cache_directory;
 pub(crate) use versionlens_model::parse_semver;
 pub use versionlens_update::{Bump, BumpKind, Plan, PlanStatus};
 pub use versionlens_update::{Suggestion, SuggestionStatus};

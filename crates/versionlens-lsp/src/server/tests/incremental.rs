@@ -14,7 +14,7 @@ pub(super) type Requests = Arc<Mutex<BTreeMap<String, usize>>>;
 fn editing_a_manifest_resolves_only_changed_dependencies() -> Result<()> {
     let (address, requests) = counting_registry()?;
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_configured(
         &client,
         json!({"capabilities":{}}),

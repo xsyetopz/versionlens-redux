@@ -20,7 +20,7 @@ fn opening_a_manifest_checks_versions_and_requests_a_refresh() -> Result<()> {
         Ok(())
     });
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_configured(
         &client,
         json!({"capabilities":{"workspace":{"codeLens":{"refreshSupport":true},"applyEdit":true,"workspaceEdit":{"documentChanges":true}}}}),

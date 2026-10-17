@@ -89,8 +89,8 @@ The server pulls the `versionlens` section for each workspace folder and caches 
 | providers, lsp, test-support | unchanged names |
 | napi, vscode-model | deleted |
 
-- **Proxy and TLS:** `versionlens-fetch` honors `*_PROXY`/`NO_PROXY` and adds the platform trust store with `rustls-native-certs`. That crate is already in the dependency graph through ureq's feature, so this is a feature flag, not a new dependency. This assumption is verified in task 3.4.
-- **Cache:** the persistent cache drops the HMAC envelope in favor of a versioned JSON file per host. It falls back to memory if its directory is unwritable.
+- **Proxy and TLS:** `versionlens-fetch` honors `*_PROXY`/`NO_PROXY`. Its `reqwest` client verifies certificates against the platform trust store through `rustls-platform-verifier`, so no new dependency is needed (verified in task 3.4).
+- **Cache:** the persistent cache stays one versioned JSON file. Its record keys stay a keyed HMAC, because they hash the session config, including credentials (user decision in task 3.4). It falls back to memory, with one warning, if its directory is unwritable.
 
 ### D9. Declarative manifest table and generated editor lists
 - **Manifest table:** `parsers/src/manifest/table.rs` holds one row per file type: patterns, ecosystem, format, dependency path queries and version-field exclusions.

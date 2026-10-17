@@ -1,5 +1,6 @@
 mod agent;
 mod headers;
+mod rate_limit;
 mod send;
 
 use std::io::Read;
@@ -86,7 +87,7 @@ async fn get_with_accept_and_retry_inner(
     let client = client(config)?;
     send_with_retries("GET", retry_policy, deadline, || {
         let request = request_with_headers(client.get(url), url, &config.auth_headers, accept);
-        send(request, config, deadline)
+        send(request, url, config, deadline)
     })
     .await
 }
@@ -125,7 +126,7 @@ async fn post_text_inner(
             )
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(body.to_owned());
-            send(request, config, deadline)
+            send(request, url, config, deadline)
         },
     )
     .await?;

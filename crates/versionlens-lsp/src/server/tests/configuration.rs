@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn settings_are_pulled_for_the_folder_and_pulled_again_on_change() -> Result<()> {
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     let folder = "file:///workspace/project";
     initialize_workspace(
         &client,
@@ -116,7 +116,7 @@ fn each_folder_is_presented_with_its_own_settings() -> Result<()> {
         r#"{"dist-tags":{"latest":"2.0.0","next":"3.0.0-beta.1"},"versions":{"1.0.0":{},"2.0.0":{},"3.0.0-beta.1":{}}}"#,
     )?;
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     let (with, without) = ("file:///workspace/with", "file:///workspace/without");
     initialize_workspace(
         &client,

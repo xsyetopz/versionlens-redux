@@ -33,14 +33,15 @@ Owns: `crates/versionlens-versions`, `crates/versionlens-model`, `crates/version
 
   Delete `push_intermediate_range_choices`, `range_minimum_matches_latest` and the `retain` in `session/resolution/dependency.rs`. Verify: the group 2.2 fixtures for suggestions pass with `cargo test -p versionlens-update -p versionlens-core`.
 - [x] 3.3 Fix GitHub Action refs: compare commit SHAs, pick the most specific tag on a commit, and skip lookups for non-version refs. Verify: the `github-script` and `install-action@just` fixtures pass, and a mock-HTTP test asserts zero requests for `@just`.
-- [ ] 3.4 Merge `versionlens-cache`, `versionlens-http` and the core fetch I/O into `versionlens-fetch`:
+- [x] 3.4 Merge `versionlens-cache`, `versionlens-http` and the core fetch I/O into `versionlens-fetch`:
   - honor `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`/`NO_PROXY`
-  - add the platform trust store via `rustls-native-certs` (confirm it is already in `Cargo.lock`, otherwise record it as the one new dependency)
+  - add the platform trust store (the client is `reqwest`, which already verifies through `rustls-platform-verifier`, so no new dependency; a configured `ca` replaces it)
   - keep `versionlens.http.strictSSL`
   - keep rate-limit headers
-  - add a per-host circuit until the reset time
-  - use an in-memory cache fallback when the cache dir is unwritable
-  - use a versioned JSON persistent cache without HMAC
+  - add a circuit per host and credential until the reset time (registries count limits per credential, so a new token is not held by an exhausted anonymous limit)
+  - use an in-memory cache fallback when the cache dir is unwritable, with one `window/logMessage` warning
+  - keep the versioned JSON persistent cache (`SCHEMA`) and its keyed HMAC key derivation (user decision: the keys hash credentials, and `ring` stays in the build through `rustls` anyway)
+  - core `fetch/http.rs` stays in core, because it reads session state (caches, operation context)
 
   Verify: `cargo test -p versionlens-fetch` covers the proxy env, a read-only cache dir and 403 with `x-ratelimit-reset`.
 - [ ] 3.5 Add credential sources in order: client-supplied, then `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token` (once per session, 2 s timeout, only after 401/403), then the existing config files. Add redaction tests. Verify: `cargo test -p versionlens-fetch credentials`, and a test asserts no token appears in `Debug`/log output.
@@ -60,6 +61,7 @@ Owns: `crates/versionlens-lsp`, `crates/versionlens-core/src/{session,presentati
 - [ ] 4.8 Add typed `workspace/executeCommand` commands: update, bulk update (latest/major/minor/patch), sort, choose build, clear cache, manifest info. Update always resolves (applies through `workspace/applyEdit` or returns an error, including the reason for `applied: false`). Never emit a no-op lens. Verify: one integration test per command, including stale-version and rejected-edit cases.
 - [ ] 4.9 Add the `versionlens/authorization` server-to-client request with method-not-found fallback, without blocking other resolution. Verify: an integration test with a responding client (retry succeeds) and a non-supporting client (fallback, no hang).
 - [x] 4.10 Remove the remaining VS Code command-ID strings and u8 severity from the engine, and remove the lens-ordering hack. Ordering becomes an explicit field of `LensView`. Verify: `grep -rn --exclude-dir=tests --exclude=tests.rs "versionlens\.\(suggestion\|update\)" crates/versionlens-core` finds nothing (the test-only golden renderer keeps the 0.4.4 IDs, by user choice), and the golden lens order is preserved.
+- [ ] 4.11 Report rate limits: map `HttpError::RateLimited` to a rate-limited dependency status instead of an error diagnostic, and send one `window/showMessage` per host and reset period with the reset time and how to authenticate (`GITHUB_TOKEN`, `gh auth login`). Verify: an LSP test where GitHub answers 403 with `x-ratelimit-remaining: 0` gets one warning, no error diagnostic, and no further request before the reset.
 
 ## 5. Lane C: parsers and manifest table (subagent 3)
 

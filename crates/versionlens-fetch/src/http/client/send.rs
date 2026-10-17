@@ -8,20 +8,30 @@ use crate::http::config::HttpConfig;
 use crate::http::error::HttpError;
 use crate::http::retry::RetryPolicy;
 
+use super::headers::credential_fingerprint;
+use super::rate_limit;
+
 pub(super) const MAX_RESPONSE_BODY_BYTES: usize = 64 * 1024 * 1024;
 
 pub(super) async fn send(
     request: RequestBuilder,
+    url: &str,
     config: &HttpConfig,
     deadline: RequestDeadline,
-) -> Result<Response, reqwest::Error> {
+) -> Result<Response, HttpError> {
+    let credential = credential_fingerprint(url, &config.auth_headers);
+    rate_limit::ensure_open(url, credential)?;
     let request = match deadline.remaining() {
         Ok(Some(remaining)) => {
             request.timeout(Duration::from_millis(config.timeout_ms).min(remaining))
         }
         _ => request,
     };
-    request.send().await?.error_for_status()
+    let response = request.send().await?;
+    if let Some(error) = rate_limit::hold_if_limited(url, credential, &response) {
+        return Err(error);
+    }
+    Ok(response.error_for_status()?)
 }
 
 pub(super) async fn send_with_retries<F, Fut>(
@@ -32,7 +42,7 @@ pub(super) async fn send_with_retries<F, Fut>(
 ) -> HttpBytesResult
 where
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<Response, reqwest::Error>>,
+    Fut: Future<Output = Result<Response, HttpError>>,
 {
     let mut attempt = 0;
     loop {
@@ -51,10 +61,13 @@ where
                 }
                 let Some(delay) = retry_policy
                     .retry_backoff_ms(attempt)
-                    .filter(|_| retry_policy.should_retry_error(method, &error))
+                    .filter(|_| match &error {
+                        HttpError::Client(error) => retry_policy.should_retry_error(method, error),
+                        _ => false,
+                    })
                     .map(Duration::from_millis)
                 else {
-                    return Err(error.into());
+                    return Err(error);
                 };
                 if deadline
                     .remaining()?

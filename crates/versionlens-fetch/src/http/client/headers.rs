@@ -1,3 +1,5 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use reqwest::{RequestBuilder, Url};
 
 use crate::http::config::HttpHeader;
@@ -23,6 +25,21 @@ pub(crate) fn request_with_headers(
         }
     }
     request
+}
+
+/// Identifies the credential headers sent to `url`. Registries count rate
+/// limits per credential, so a limit on one must not hold another. Kept in
+/// memory only.
+pub(crate) fn credential_fingerprint(url: &str, headers: &[HttpHeader]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    for header in headers
+        .iter()
+        .filter(|header| matches_header_url(header, url))
+    {
+        header.name.to_ascii_lowercase().hash(&mut hasher);
+        header.value.hash(&mut hasher);
+    }
+    hasher.finish()
 }
 
 fn matches_header_url(header: &HttpHeader, url: &str) -> bool {

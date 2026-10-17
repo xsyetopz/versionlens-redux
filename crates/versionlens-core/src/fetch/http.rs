@@ -169,6 +169,7 @@ fn http_error_kind(error: &HttpError) -> String {
         HttpError::Schema(error) => format!("invalid JSON ({error})"),
         HttpError::DeadlineExceeded
         | HttpError::ResponseTooLarge
+        | HttpError::RateLimited { .. }
         | HttpError::SchemaValidation(_) => error.to_string(),
     }
 }

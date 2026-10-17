@@ -201,10 +201,6 @@ impl CachedSuggestionChoice {
 }
 
 impl VersionLensSession {
-    pub fn with_application_cache(self) -> std::io::Result<Self> {
-        self.with_persistent_cache(versionlens_fetch::application_cache_directory()?)
-    }
-
     pub fn with_persistent_cache(mut self, directory: impl AsRef<Path>) -> std::io::Result<Self> {
         let cache = PersistentCache::open(directory)?;
         self.storage_state.observed_persistent_epoch = Arc::new(Mutex::new(Some(cache.epoch()?)));

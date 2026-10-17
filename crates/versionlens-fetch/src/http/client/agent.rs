@@ -76,10 +76,11 @@ fn build_client(config: &HttpConfig) -> Result<Client, HttpError> {
         .tls_danger_accept_invalid_certs(!config.strict_ssl)
         .tls_danger_accept_invalid_hostnames(!config.strict_ssl);
 
-    builder = match &config.proxy {
-        Some(proxy) => builder.proxy(Proxy::all(proxy)?),
-        None => builder.no_proxy(),
-    };
+    // With no configured proxy, reqwest reads the `*_PROXY` and `NO_PROXY`
+    // variables, which corporate networks rely on.
+    if let Some(proxy) = &config.proxy {
+        builder = builder.proxy(Proxy::all(proxy)?);
+    }
 
     let ca = match (config.ca_file.as_deref(), config.ca.as_deref()) {
         (Some(path), _) => Some(read(path)?),

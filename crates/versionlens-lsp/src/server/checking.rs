@@ -533,7 +533,11 @@ impl Drop for WorkspaceController {
     }
 }
 
-fn log_message(connection: &Connection, kind: MessageType, message: String) -> Result<()> {
+pub(super) fn log_message(
+    connection: &Connection,
+    kind: MessageType,
+    message: String,
+) -> Result<()> {
     connection
         .sender
         .send(Message::Notification(Notification {

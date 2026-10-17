@@ -29,7 +29,7 @@ fn other_documents_and_shutdown_do_not_wait_for_a_delayed_registry() -> Result<(
         Ok(())
     });
     let (server, client) = Connection::memory();
-    let server_thread = thread::spawn(move || run_connection(&server, false));
+    let server_thread = thread::spawn(move || run_connection(&server, None));
     initialize_configured(
         &client,
         json!({"capabilities":{}}),
