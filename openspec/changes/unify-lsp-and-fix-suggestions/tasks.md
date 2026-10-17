@@ -77,7 +77,7 @@ Owns: `crates/versionlens-parsers`, `crates/versionlens-core/src/{classify,docum
 
 Owns: `packages/vscode-extension/src`, `packages/vscode-extension/test`, `packages/neovim-plugin` (except the generated `support.lua`), `packages/zed-extension/src`, `packages/jetbrains-plugin/build.gradle.kts`, `.github/workflows/*`, `scripts/package/*`, `scripts/release/*`.
 
-- [ ] 6.1 Add `vscode-languageclient@8.1.x` and bundle it in `scripts/package/extension.mjs`. Verify: `bun run package` produces a VSIX whose bundle contains the client and whose manifest has `engines.vscode >=1.75.0`.
+- [x] 6.1 Add `vscode-languageclient@10.1.x` and bundle it in `scripts/package/extension.mjs`, and raise the engine floor to `^1.91.0` (8.1 and 9.0 type definitions fail `bun run typecheck`). Verify: `bun run package` produces a VSIX whose bundle contains the client and whose manifest has `engines.vscode ^1.91.0`.
 - [ ] 6.2 Rewrite the VS Code extension as an LSP client:
   - Keep lifecycle, command registration, SecretStorage auth (answering `versionlens/authorization`) and tasks.
   - Map `versionlens/status` to the existing busy/error context keys.

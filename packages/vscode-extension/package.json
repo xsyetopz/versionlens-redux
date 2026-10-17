@@ -29,7 +29,7 @@
     "Other"
   ],
   "engines": {
-    "vscode": ">=1.75.0"
+    "vscode": "^1.91.0"
   },
   "activationEvents": [
     "onLanguage:jsonc",
@@ -493,16 +493,16 @@
         "versionlens.suggestions.indicators": {
           "type": "object",
           "default": {
-            "Directory": "\ud83d\udcc1 ",
-            "Downgradeable": "\u2193 ",
-            "Error": "\ud83d\udd34",
-            "Latest": "\ud83d\udfe2",
-            "SatisfiesLatest": "\ud83d\udfe2",
-            "NoMatch": "\u26aa",
-            "Match": "\ud83d\udfe1",
-            "Updateable": "\u2191 ",
-            "UpdateableVulnerable": "\u26a0\ufe0f",
-            "Build": "\u224c "
+            "Directory": "📁 ",
+            "Downgradeable": "↓ ",
+            "Error": "🔴",
+            "Latest": "🟢",
+            "SatisfiesLatest": "🟢",
+            "NoMatch": "⚪",
+            "Match": "🟡",
+            "Updateable": "↑ ",
+            "UpdateableVulnerable": "⚠️",
+            "Build": "≌ "
           },
           "properties": {
             "Build": {
@@ -2265,5 +2265,8 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "vscode-languageclient": "~10.1.2"
   }
 }

@@ -6,7 +6,7 @@ VersionLens Redux 0.4.x has two engines behind four editors. VS Code calls Rust 
 
 ## What Changes
 
-- **BREAKING (internal):** VS Code stops loading `versionlens_napi.node`. It becomes an LSP client of the same `versionlens-lsp` binary used by JetBrains, Neovim and Zed. The `versionlens-napi` and `versionlens-vscode-model` crates are removed. User-facing commands, settings keys and the `>=1.75.0` engine floor are unchanged.
+- **BREAKING (internal):** VS Code stops loading `versionlens_napi.node`. It becomes an LSP client of the same `versionlens-lsp` binary used by JetBrains, Neovim and Zed. The `versionlens-napi` and `versionlens-vscode-model` crates are removed. User-facing commands and settings keys are unchanged. The VS Code engine floor rises from `>=1.75.0` to `^1.91.0`.
 - Updates become lint-style diagnostics with code `update-available` and default severity Information, plus a "Bump to x.y.z" quick-fix code action. Every LSP editor shows them in its problems list.
 - Suggestion policy:
   - Do not offer a bump that would not change the requirement text. This removes the duplicate `latest v9 | ↑ latest v9` and `=0.7.0` cases.
