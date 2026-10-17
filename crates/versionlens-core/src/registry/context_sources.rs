@@ -305,7 +305,11 @@ fn gradle_settings_repositories_override_project(settings_texts: &[String]) -> b
 }
 
 fn is_gradle_plugin_marker(dependency: &Dependency) -> bool {
-    dependency.group == "plugins" && dependency.name.ends_with(".gradle.plugin")
+    dependency
+        .hosted_name
+        .as_deref()
+        .unwrap_or(&dependency.name)
+        .ends_with(".gradle.plugin")
 }
 
 fn all_repository_mirror_urls(mirrors: &[MavenMirror]) -> Vec<String> {

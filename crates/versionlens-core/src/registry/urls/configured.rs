@@ -41,8 +41,7 @@ pub(super) fn gradle_plugin_portal_registry_endpoint(
     dependency: &Dependency,
 ) -> Option<RegistryEndpoint> {
     if dependency.ecosystem == Maven
-        && dependency.group == "plugins"
-        && dependency.name.ends_with(".gradle.plugin")
+        && registry_package_name(dependency).ends_with(".gradle.plugin")
     {
         Some(registry_endpoint_with_base(
             Maven,

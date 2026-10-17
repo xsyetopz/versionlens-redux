@@ -27,6 +27,20 @@ fn gradle_version_catalog_plugin_aliases_use_plugin_marker_lookup() {
 }
 
 #[test]
+fn gradle_version_catalog_version_referenced_by_plugin_uses_plugin_portal() {
+    assert_registry_urls_for_fixture(
+        "file:///gradle/libs.versions.toml",
+        "toml",
+        "gradle-version-catalog-version-referenced-by-plugin-uses-plugin-portal.versions.toml",
+        "ksp",
+        &[
+            "https://plugins.gradle.org/m2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/maven-metadata.xml",
+            "https://repo.maven.apache.org/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/maven-metadata.xml",
+        ],
+    );
+}
+
+#[test]
 fn gradle_version_catalog_library_aliases_use_module_lookup() {
     assert_registry_urls_for_fixture(
         "file:///gradle/libs.versions.toml",

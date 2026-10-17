@@ -25,7 +25,22 @@ async fn gradle_version_catalog_direct_library_versions_use_maven_lookup() {
     );
 
     assert_eq!(output.suggestions.len(), 1);
-    assert_suggestion(&output, 0, "fixed", Some("3.17.0"));
+    assert_suggestion(&output, 0, "updateAvailable", Some("3.18.0"));
+    assert_eq!(output.edits.len(), 1);
+    assert_eq!(output.edits[0].new_text, "3.18.0");
+}
+
+#[tokio::test]
+async fn gradle_version_catalog_unreferenced_versions_are_fixed_without_registry_lookup() {
+    let output = resolve_fixture!(
+        "file:///repo/gradle/libs.versions.toml",
+        "toml",
+        "version-catalog-unreferenced-versions-are-fixed-without-registry-lookup.versions.toml",
+        &[],
+    );
+
+    assert_eq!(output.suggestions.len(), 1);
+    assert_suggestion(&output, 0, "fixed", Some("version catalog alias"));
     assert_no_edits(&output);
 }
 
