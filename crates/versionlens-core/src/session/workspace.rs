@@ -79,8 +79,10 @@ impl VersionLensSession {
         }
         state.documents = Arc::new(workspace_documents);
         state.registry_documents = Arc::new(registry_documents);
-        invalidate_state(self, &mut state);
-        self.suggestion_cache().clear();
+        // Graphs and registry contexts are rebuilt from the new text. Resolved
+        // suggestions stay: their cache keys carry the registry context and the
+        // workspace fingerprint, so an edit that changes either misses them.
+        rebuild_graphs(&mut state);
         drop(state);
         true
     }
@@ -107,6 +109,15 @@ impl VersionLensSession {
         state.graphs.clear();
         state.registry_files = RegistryFileSnapshot::new(state.registry_documents.clone());
         state.registry_contexts.clear();
+    }
+
+    /// Changes each time the unsaved documents or the files on disk change.
+    pub(crate) fn workspace_revision(&self) -> u64 {
+        self.storage_state
+            .workspace
+            .lock()
+            .unwrap_or_else(crate::recover_poison)
+            .generation
     }
 
     pub(crate) fn workspace_documents(&self) -> Arc<WorkspaceDocuments> {
@@ -212,11 +223,15 @@ fn workspace_input_affects_graph(input: &DocumentInput) -> bool {
     })
 }
 
-fn invalidate_state(session: &VersionLensSession, state: &mut WorkspaceState) {
+fn rebuild_graphs(state: &mut WorkspaceState) {
     state.generation = state.generation.wrapping_add(1);
     state.graphs.clear();
     state.registry_files = RegistryFileSnapshot::new(state.registry_documents.clone());
     state.registry_contexts.clear();
+}
+
+fn invalidate_state(session: &VersionLensSession, state: &mut WorkspaceState) {
+    rebuild_graphs(state);
     session
         .storage_state
         .cache_epoch

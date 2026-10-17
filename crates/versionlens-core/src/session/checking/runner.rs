@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -46,6 +46,7 @@ pub(super) struct Runner<F> {
     discovery: Option<WorkspaceDiscovery>,
     discovery_options: Option<WorkspaceDiscoveryOptions>,
     discovery_overlays: Vec<PathBuf>,
+    overlay_uris: BTreeSet<String>,
     discovery_retry: Option<Instant>,
     discovery_backoff: Duration,
     documents: BTreeMap<String, Entry>,
@@ -77,6 +78,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             discovery: None,
             discovery_options: None,
             discovery_overlays: Vec::new(),
+            overlay_uris: BTreeSet::new(),
             discovery_retry: None,
             discovery_backoff: RETRY_DELAY,
             documents: BTreeMap::new(),
@@ -120,7 +122,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
     }
 
     fn apply_pending(&mut self) {
-        let (generation, options) = {
+        let (generation, pending) = {
             let mut pending = self
                 .shared
                 .pending
@@ -128,13 +130,16 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
                 .unwrap_or_else(crate::recover_poison);
             (
                 self.shared.generation.load(Ordering::Acquire),
-                pending.take(),
+                std::mem::take(&mut *pending),
             )
         };
+        if let Some(documents) = pending.documents {
+            self.update_documents(documents);
+        }
         let Some(WorkspaceCheckingOptions {
             discovery,
             max_snapshot_bytes,
-        }) = options
+        }) = pending.options
         else {
             return;
         };
@@ -147,6 +152,11 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
         self.discovery = None;
         self.discovery_options = None;
         self.discovery_overlays.clear();
+        self.overlay_uris = discovery
+            .overlays
+            .iter()
+            .map(|input| input.uri.clone())
+            .collect();
         self.discovery_retry = None;
         self.discovery_backoff = RETRY_DELAY;
         for input in &discovery.overlays {
@@ -174,6 +184,66 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
         retry.cancellation = discovery.cancellation.clone();
         self.discovery_options = Some(retry);
         self.discovery = Some(self.session.discover_workspace_documents(discovery));
+    }
+
+    /// Applies a new set of unsaved documents in place. Changed documents are
+    /// checked again, and closed ones fall back to their saved file.
+    fn update_documents(&mut self, documents: Vec<DocumentInput>) {
+        let uris = documents
+            .iter()
+            .map(|input| input.uri.clone())
+            .collect::<BTreeSet<_>>();
+        let closed = self
+            .overlay_uris
+            .difference(&uris)
+            .cloned()
+            .collect::<Vec<_>>();
+        for uri in closed {
+            let saved = self.documents.get(&uri).and_then(|entry| {
+                let text = std::fs::read_to_string(crate::workspace_path(&uri)?).ok()?;
+                Some(DocumentInput::new(
+                    uri.clone(),
+                    entry.input.language_id.clone(),
+                    text,
+                    entry.input.workspace_root.clone(),
+                ))
+            });
+            self.remove(&uri);
+            if let Some(saved) = saved {
+                self.insert(saved);
+            }
+        }
+        for input in documents {
+            let unchanged = self.documents.get(&input.uri).is_some_and(|entry| {
+                entry.input.version == input.version && entry.input.text == input.text
+            });
+            if unchanged {
+                continue;
+            }
+            self.remove(&input.uri);
+            self.insert(input);
+        }
+        self.discovery_overlays = uris
+            .iter()
+            .filter_map(|uri| crate::workspace_path(uri))
+            .collect();
+        if let Some(discovery) = self.discovery.as_mut() {
+            discovery.skip_paths(&self.discovery_overlays);
+        }
+        self.overlay_uris = uris;
+        self.settled = false;
+    }
+
+    fn remove(&mut self, uri: &str) {
+        let Some(entry) = self.documents.remove(uri) else {
+            return;
+        };
+        self.snapshot_bytes = self
+            .snapshot_bytes
+            .saturating_sub(snapshot_weight(&entry.input));
+        if entry.task.is_some() {
+            self.active = self.active.saturating_sub(1);
+        }
     }
 
     fn current_cache_epoch(&self) -> u64 {
@@ -376,7 +446,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             .pending
             .lock()
             .unwrap_or_else(crate::recover_poison);
-        if pending.is_none() && !self.shared.closed.load(Ordering::Acquire) {
+        if pending.is_empty() && !self.shared.closed.load(Ordering::Acquire) {
             drop(
                 self.shared
                     .ready

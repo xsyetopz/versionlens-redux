@@ -3,9 +3,10 @@ use std::sync::atomic::Ordering;
 use versionlens_cache::{CacheKey, PersistentRecord};
 use versionlens_model::{Dependency, DocumentInput};
 
+use super::CacheScope;
 use super::{suggestion_record, timestamp_ms, vulnerability_record};
 use crate::VersionLensSession;
-use crate::cache::{suggestion_cache_key, vulnerability_cache_key};
+use crate::cache::vulnerability_cache_key;
 use crate::vulnerability::{VulnerabilityCheck, supports_vulnerability_check};
 
 enum OutcomeKind {
@@ -21,7 +22,7 @@ struct HydrationEntry<'a> {
 }
 
 impl VersionLensSession {
-    pub(super) fn hydrate_persistent_outcomes(&self, input: &DocumentInput, scope: &str) {
+    pub(super) fn hydrate_persistent_outcomes(&self, input: &DocumentInput, scope: &CacheScope) {
         let Some(cache) = &self.storage_state.persistent_cache else {
             return;
         };
@@ -49,12 +50,12 @@ impl VersionLensSession {
     fn hydration_entries<'a>(
         &self,
         dependencies: &'a [Dependency],
-        scope: &str,
+        scope: &CacheScope,
         epoch: u64,
     ) -> Vec<HydrationEntry<'a>> {
         let mut entries = Vec::new();
         for dependency in dependencies {
-            let memory_key = suggestion_cache_key(dependency, scope);
+            let memory_key = scope.suggestion_key(dependency);
             if self.suggestion_cache().get(&memory_key).is_none() {
                 let persistent_key = self.persistent_suggestion_key(dependency, scope);
                 if !persistent_key.is_empty() {

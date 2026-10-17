@@ -12,7 +12,6 @@ use versionlens_suggestions::{Suggestion, SuggestionStatus};
 use super::operation::OperationContext;
 use super::resolution::ResolutionRequest;
 use crate::VersionLensSession;
-use crate::cache::suggestion_cache_key;
 use crate::command::install_task_config_key_for_manifest;
 use crate::contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
 use crate::dependency::into_dependency_views;
@@ -53,7 +52,7 @@ impl VersionLensSession {
             if is_project_version_dependency(dependency) {
                 continue;
             }
-            let key = suggestion_cache_key(dependency, &scope);
+            let key = scope.suggestion_key(dependency);
             let Some((suggestion, deadline)) = cache.get_with_expiry(&key) else {
                 return Some(Duration::ZERO);
             };

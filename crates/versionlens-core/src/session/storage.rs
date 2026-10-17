@@ -12,6 +12,35 @@ use crate::registry::RegistryContext;
 use crate::vulnerability::{VulnerabilityCheck, supports_vulnerability_check};
 use crate::{VersionLensSession, cache, project};
 
+/// Cache scope of one document. Registry results use the shared part. Results
+/// that read other workspace files, such as local actions and project
+/// versions, also name the workspace revision, so an unsaved edit misses them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CacheScope {
+    shared: String,
+    local: String,
+}
+
+impl CacheScope {
+    pub(crate) fn suggestion_key(&self, dependency: &Dependency) -> versionlens_cache::CacheKey {
+        let scope = if reads_workspace(dependency) {
+            &self.local
+        } else {
+            &self.shared
+        };
+        cache::suggestion_cache_key(dependency, scope)
+    }
+}
+
+/// True when a dependency resolves from workspace files and not a registry.
+pub(crate) fn reads_workspace(dependency: &Dependency) -> bool {
+    project::is_project_version_dependency(dependency)
+        || matches!(
+            dependency.canonical_reference,
+            Some(CanonicalReference::GitHubActionLocal { .. })
+        )
+}
+
 struct PersistentOutcome<'a, T> {
     value: &'a T,
     failed: bool,
@@ -232,7 +261,10 @@ impl VersionLensSession {
         &self,
         context: &RegistryContext,
         input: &versionlens_model::DocumentInput,
-    ) -> String {
+    ) -> CacheScope {
+        // Read the revision before any workspace file, so a result computed
+        // from older files never lands under a newer revision.
+        let revision = self.workspace_revision();
         let workspace = self.workspace_graph(input);
         let scope = serde_json::json!([
             self.cache_scope(context),
@@ -244,17 +276,20 @@ impl VersionLensSession {
                 .map(versionlens_cache::CacheKey::as_str),
         ])
         .to_string();
+        let scope = CacheScope {
+            local: format!("{scope}|workspace-{revision}"),
+            shared: scope,
+        };
         self.hydrate_persistent_outcomes(input, &scope);
         scope
     }
 
-    pub(crate) fn persistent_suggestion_key(&self, dependency: &Dependency, scope: &str) -> String {
-        if project::is_project_version_dependency(dependency)
-            || matches!(
-                dependency.canonical_reference,
-                Some(CanonicalReference::GitHubActionLocal { .. })
-            )
-        {
+    pub(crate) fn persistent_suggestion_key(
+        &self,
+        dependency: &Dependency,
+        scope: &CacheScope,
+    ) -> String {
+        if reads_workspace(dependency) {
             return String::new();
         }
         let Some(cache) = &self.storage_state.persistent_cache else {
@@ -272,7 +307,7 @@ impl VersionLensSession {
         ]);
         cache.partition_key(&[
             b"suggestion-v1",
-            scope.as_bytes(),
+            scope.shared.as_bytes(),
             identity.to_string().as_bytes(),
         ])
     }

@@ -507,7 +507,7 @@ async fn document_freshness_tracks_version_and_advisory_expiry() {
         .cached_resolved_suggestion(&dependency, &scope)
         .unwrap();
     session.suggestion_cache().insert_with_ttl(
-        crate::cache::suggestion_cache_key(&dependency, &scope),
+        scope.suggestion_key(&dependency),
         cached,
         std::time::Duration::ZERO,
     );

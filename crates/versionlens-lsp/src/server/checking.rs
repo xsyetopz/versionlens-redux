@@ -87,6 +87,13 @@ impl WorkspaceController {
         Ok(())
     }
 
+    /// Sends the open documents to checking without restarting discovery.
+    pub(super) fn update_documents(&self, state: &VersionLensLspState) -> Result<()> {
+        self.checking
+            .update_documents(state.workspace_checking_options().discovery.overlays)
+            .map_err(anyhow::Error::msg)
+    }
+
     pub(super) fn restart(&mut self, state: &VersionLensLspState) -> std::io::Result<()> {
         self.stop();
         let mut replacement = Self::start(state, self.runtime.clone())?;
