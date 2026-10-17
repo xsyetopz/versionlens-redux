@@ -167,6 +167,22 @@ fn pnpm_yaml_treats_a_leading_negative_extglob_as_an_include() {
 }
 
 #[test]
+fn literal_regex_characters_and_classes_match_as_globs() {
+    let dotted = WorkspacePattern::parse("packages/v1.0+(x)$").unwrap();
+    assert!(dotted.matches(&["packages", "v1.0xx$"]));
+    assert!(!dotted.matches(&["packages", "v1a0x$"]));
+
+    let class = WorkspacePattern::parse("packages/[a-c][!0-9]").unwrap();
+    assert!(class.matches(&["packages", "bz"]));
+    assert!(!class.matches(&["packages", "dz"]));
+    assert!(!class.matches(&["packages", "b5"]));
+
+    let unclosed = WorkspacePattern::parse("packages/[ab{c").unwrap();
+    assert!(unclosed.matches(&["packages", "[ab{c"]));
+    assert!(unclosed.explicitly_names("[ab{c"));
+}
+
+#[test]
 fn unsupported_negative_extglob_forms_are_rejected() {
     assert!(WorkspacePattern::parse("packages/pre-!(private)").is_none());
     assert!(WorkspacePattern::parse("packages/!(!(private))").is_none());

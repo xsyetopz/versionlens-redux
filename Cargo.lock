@@ -1596,6 +1596,8 @@ dependencies = [
  "anyhow",
  "ignore",
  "marked-yaml",
+ "regex-automata",
+ "regex-syntax",
  "semver",
  "serde",
  "serde_json",
