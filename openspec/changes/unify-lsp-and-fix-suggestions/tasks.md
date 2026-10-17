@@ -20,7 +20,7 @@ Execution model: no more than 4 subagents run at once. Groups 1 and 2 are done s
 
 Owns: `crates/versionlens-versions`, `crates/versionlens-model`, `crates/versionlens-suggestions`, `crates/versionlens-edits`, `crates/versionlens-cache`, `crates/versionlens-http`, `crates/versionlens-core/src/{fetch,registry,session/resolution}`, `crates/versionlens-providers`.
 
-- [ ] 3.1 Merge `versionlens-versions` into `versionlens-model`, and deduplicate the five `parse_semver` copies into one per dialect. Verify: `cargo test -p versionlens-model` passes and `grep -rn "fn parse_semver" crates | wc -l` prints 1.
+- [x] 3.1 Merge `versionlens-versions` into `versionlens-model`, and deduplicate the five `parse_semver` copies into one per dialect. Verify: `cargo test -p versionlens-model` passes and `grep -rn "fn parse_semver" crates | wc -l` prints 1.
 - [ ] 3.2 Merge `versionlens-suggestions` and `versionlens-edits` into `versionlens-update`. Implement `update::plan` per design D3:
   - one dialect-aware currency rule
   - floor bump
