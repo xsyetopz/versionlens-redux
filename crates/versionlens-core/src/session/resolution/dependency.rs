@@ -17,7 +17,6 @@ use versionlens_update::SuggestionStatus::{
 };
 use versionlens_update::{
     Suggestion, UpdateChoice, error, fixed, invalid, no_match, resolve_dependency,
-    semantic_update_target,
 };
 
 use crate::RegistryResponseInput;
@@ -285,7 +284,7 @@ impl VersionLensSession {
 fn with_lookup_choices(
     mut suggestion: Suggestion,
     builds: Vec<String>,
-    mut choices: UpdateChoices,
+    choices: UpdateChoices,
 ) -> Suggestion {
     if let Some(versionlens_model::CanonicalReference::GitHubActionCommit { commit }) =
         suggestion.dependency.canonical_reference.as_ref()
@@ -326,12 +325,6 @@ fn with_lookup_choices(
     }
     if docker_explicit_latest_alias_is_current(&suggestion, &builds) {
         suggestion.latest = Some("latest".to_owned());
-    }
-    if suggestion.status == versionlens_update::SuggestionStatus::SatisfiesLatest
-        && let Some(latest) = suggestion.latest.as_deref()
-    {
-        let latest = semantic_update_target(latest);
-        choices.retain(|choice| semantic_update_target(&choice.version) != latest);
     }
     suggestion.builds = builds;
     suggestion.choices = choices;
