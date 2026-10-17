@@ -2,6 +2,7 @@
 
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 
+mod default_paths;
 pub(crate) mod path_query;
 mod patterns;
 mod table;
@@ -11,18 +12,24 @@ pub use table::MANIFESTS;
 type ParsedDependencies = Vec<Dependency>;
 
 /// The parser for a manifest kind: the document text, and the dependency
-/// paths when the format selects dependencies by path.
+/// paths when the format selects dependencies by path. `WithPaths` holds the
+/// default paths, used when the user configures none.
 #[derive(Clone, Copy)]
 pub(crate) enum ManifestParser {
     Direct(fn(&str) -> ParsedDependencies),
-    WithPaths(fn(&str, &[&str]) -> ParsedDependencies),
+    WithPaths(
+        fn(&str, &[&str]) -> ParsedDependencies,
+        &'static [&'static str],
+    ),
 }
 
 impl ManifestParser {
     pub(crate) fn parse(self, text: &str, paths: &[&str]) -> ParsedDependencies {
         match self {
             Self::Direct(parser) => parser(text),
-            Self::WithPaths(parser) => parser(text, paths),
+            Self::WithPaths(parser, defaults) => {
+                parser(text, if paths.is_empty() { defaults } else { paths })
+            }
         }
     }
 }
@@ -91,6 +98,16 @@ pub struct ManifestRow {
     pub format: ManifestFormat,
     pub patterns: &'static [Pattern],
     pub(crate) parser: ManifestParser,
+}
+
+impl ManifestRow {
+    /// The dependency paths used when the user configures none.
+    pub fn default_dependency_paths(&self) -> &'static [&'static str] {
+        match self.parser {
+            ManifestParser::Direct(_) => &[],
+            ManifestParser::WithPaths(_, defaults) => defaults,
+        }
+    }
 }
 
 impl Rule {

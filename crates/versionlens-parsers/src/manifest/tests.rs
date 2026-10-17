@@ -54,3 +54,22 @@ fn maps_runtime_manifests_to_their_provider_families() {
         assert_eq!(provider_name_for_manifest(kind), Some("cargo"));
     }
 }
+
+#[test]
+fn rows_hold_their_default_dependency_paths() {
+    use versionlens_model::ManifestKind::{NixFlake, NpmPackageJson, PubspecOverridesYaml};
+
+    let defaults = |kind| {
+        manifest_row(kind)
+            .expect("row exists")
+            .default_dependency_paths()
+    };
+
+    let npm = defaults(NpmPackageJson);
+    assert!(npm.contains(&"dependencies"));
+    assert!(!npm.contains(&"version"));
+    assert_eq!(defaults(CargoToml).first(), Some(&"package"));
+    assert_eq!(defaults(PubspecOverridesYaml), ["dependency_overrides"]);
+    assert!(defaults(NixFlake).is_empty());
+    assert!(defaults(GoMod).is_empty());
+}

@@ -8,7 +8,6 @@ mod dependency;
 mod paths;
 
 use collect::{PubspecCollectContext, collect_pubspec_dependency_groups, collect_pubspec_version};
-use paths::selected_dependency_paths;
 
 pub(crate) fn parse_pubspec_yaml_with_paths(
     text: &str,
@@ -16,7 +15,6 @@ pub(crate) fn parse_pubspec_yaml_with_paths(
 ) -> Vec<Dependency> {
     support::with_yaml_mapping(text, |root| {
         let mut dependencies = vec![];
-        let dependency_paths = selected_dependency_paths(dependency_paths);
         let context = PubspecCollectContext {
             text,
             dependency_paths: &dependency_paths,
@@ -27,18 +25,6 @@ pub(crate) fn parse_pubspec_yaml_with_paths(
         dependencies
     })
     .unwrap_or_default()
-}
-
-pub(crate) fn parse_pubspec_overrides_yaml_with_paths(
-    text: &str,
-    paths: &[&str],
-) -> Vec<Dependency> {
-    let override_paths = if paths.is_empty() {
-        &["dependency_overrides"][..]
-    } else {
-        paths
-    };
-    parse_pubspec_yaml_with_paths(text, override_paths)
 }
 
 #[cfg(test)]

@@ -8,32 +8,11 @@ mod dependency;
 
 use collect::collect_dotnet_xml_dependencies;
 
-const DOTNET_DEPENDENCY_PATHS: &[&str] = &[
-    "Project.Sdk",
-    "Project.PropertyGroup.Version",
-    "Project.PropertyGroup.AssemblyVersion",
-    "Project.ItemGroup.GlobalPackageReference",
-    "Project.ItemGroup.PackageReference",
-    "Project.ItemGroup.PackageVersion",
-    "Project.ItemGroup.DotNetCliToolReference",
-    "packages.package",
-    "paket.dependencies",
-    "paket.references",
-];
-
 pub(crate) fn parse_dotnet_xml_with_paths(
     text: &str,
     dependency_paths: &[&str],
 ) -> Vec<Dependency> {
-    collect_dotnet_xml_dependencies(text, selected_dependency_paths(dependency_paths))
-}
-
-fn selected_dependency_paths<'a>(dependency_paths: &'a [&'a str]) -> Vec<&'a str> {
-    if dependency_paths.is_empty() {
-        DOTNET_DEPENDENCY_PATHS.to_vec()
-    } else {
-        dependency_paths.to_vec()
-    }
+    collect_dotnet_xml_dependencies(text, dependency_paths.to_vec())
 }
 
 pub(super) struct DotnetEventContext<'a> {

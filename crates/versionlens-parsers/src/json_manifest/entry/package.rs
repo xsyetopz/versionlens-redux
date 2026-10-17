@@ -1,5 +1,4 @@
 use crate::json_manifest::dependency::{JsonDependencySource, json_manifest_string_dependency};
-use crate::json_manifest::paths::NPM_DEPENDENCY_PATHS;
 use jsonc_parser::ast::Value::Object as JsonValueObject;
 use jsonc_parser::parse_to_ast;
 use versionlens_model::Dependency;
@@ -9,7 +8,7 @@ use super::generic::parse_manifest_with_paths;
 use versionlens_model::Ecosystem::Npm;
 
 pub(crate) fn parse_package_json_with_paths(text: &str, paths: &[&str]) -> Vec<Dependency> {
-    parse_manifest_with_paths(text, paths, NPM_DEPENDENCY_PATHS, Npm)
+    parse_manifest_with_paths(text, paths, Npm)
 }
 
 /// The root `version` field of a package.json: the project version, not a dependency.

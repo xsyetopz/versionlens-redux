@@ -1,31 +1,5 @@
 use toml_edit::Key;
 
-const CARGO_DEPENDENCY_PATHS: &[&str] = &[
-    "package",
-    "dependencies",
-    "dependencies.*",
-    "dev-dependencies",
-    "dev-dependencies.*",
-    "build-dependencies",
-    "build-dependencies.*",
-    "target.*.dependencies",
-    "target.*.dependencies.*",
-    "target.*.dev-dependencies",
-    "target.*.dev-dependencies.*",
-    "target.*.build-dependencies",
-    "target.*.build-dependencies.*",
-    "workspace.dependencies",
-    "workspace.dependencies.*",
-];
-
-pub(super) fn selected_dependency_paths<'a>(dependency_paths: &'a [&'a str]) -> Vec<&'a str> {
-    if dependency_paths.is_empty() {
-        CARGO_DEPENDENCY_PATHS.to_vec()
-    } else {
-        dependency_paths.to_vec()
-    }
-}
-
 pub(super) fn match_cargo_dependency_table<'a>(
     keys: &[&Key],
     dependency_paths: &'a [&str],
