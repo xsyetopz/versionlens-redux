@@ -7,9 +7,9 @@ use marked_yaml::types::Node::{Scalar as YamlScalar, Sequence as YamlSequence};
 use serde_json::Value as JsonValue;
 use toml_edit::{DocumentMut as TomlDocument, Item as TomlItem};
 
-use self::matcher::WorkspacePattern;
+use self::pattern::WorkspacePattern;
 
-mod matcher;
+mod pattern;
 
 const PACKAGE_MANIFEST: &str = "package.json";
 const CARGO_MANIFEST: &str = "Cargo.toml";
