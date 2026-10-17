@@ -38,9 +38,11 @@ pub enum BumpKind {
     Latest,
 }
 
-/// Builds the status and the bounded bump set for `requirement` from the
-/// registry's `versions`. Pre-releases are never candidates. An exact pin
-/// (`=x`, `==x`, `[x]`, or a bare version in the Semver dialect) targets its version.
+/// Builds the status and the bounded bump set for `requirement`.
+///
+/// Candidates come from the registry's `versions`. Pre-releases are never
+/// candidates. An exact pin (`=x`, `==x`, `[x]`, or a bare version in the
+/// Semver dialect) targets its version.
 pub fn plan(requirement: &str, dialect: VersionDialect, versions: &[String]) -> Plan {
     let requirement = requirement.trim();
     let Some(latest) =

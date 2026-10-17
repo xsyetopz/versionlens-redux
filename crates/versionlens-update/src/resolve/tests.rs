@@ -1,6 +1,6 @@
 use crate::suggestion::SuggestionStatus::{
     Current as StatusCurrent, InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
-    UpdateAvailable as StatusUpdateAvailable,
+    SatisfiesLatest as StatusSatisfiesLatest, UpdateAvailable as StatusUpdateAvailable,
 };
 
 use super::resolve_dependency;
@@ -78,6 +78,16 @@ fn ranges_whose_minimum_matches_latest_resolve_as_current_like_upstream() {
     assert_eq!(
         resolve_dependency(current, Some("1.1.0".to_owned())).status,
         StatusCurrent
+    );
+}
+
+#[test]
+fn range_minimum_is_compared_as_a_version_not_as_a_prefix() {
+    let current = crate::support::tests::test_dependency("typescript", "^1.2.1");
+
+    assert_eq!(
+        resolve_dependency(current, Some("1.2.10".to_owned())).status,
+        StatusSatisfiesLatest
     );
 }
 
