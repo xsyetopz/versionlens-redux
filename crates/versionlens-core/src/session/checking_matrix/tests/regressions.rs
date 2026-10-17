@@ -146,38 +146,28 @@ async fn cargo_inherited_version_edits_only_the_workspace_root() {
     let session = test_session();
     assert!(session.set_workspace_documents(vec![root.clone(), member.clone()]));
 
-    let root_dependency = session.dependencies(&root).remove(0);
+    let root_dependency = session.command_dependencies(&root).remove(0);
     assert_eq!(
         root_dependency.versionable_kind(),
         VersionableKind::ProjectVersion
     );
-    let root_output = session.resolve_document(root).await;
-    let root_suggestion = root_output
-        .suggestions
-        .iter()
-        .find(|suggestion| suggestion.dependency.name == "version")
-        .expect("workspace version must resolve locally");
-    assert_eq!(root_suggestion.status, "updateAvailable");
-    assert_eq!(root_suggestion.latest.as_deref(), Some("1.0.1"));
+    let root_output = session
+        .apply_command(root, Some("updatePatch"), Some("version"), &[])
+        .await;
     assert_eq!(root_output.edits.len(), 1);
     assert_eq!(
         apply_edits(root_text, &root_output.edits),
         "[workspace]\nmembers = [\"member\"]\n[workspace.package]\nversion = \"1.0.1\"\n"
     );
 
-    let member_dependency = session.dependencies(&member).remove(0);
+    let member_dependency = session.command_dependencies(&member).remove(0);
     assert_eq!(member_dependency.requirement, "workspace:true");
     assert_eq!(
         member_dependency.versionable_kind(),
         VersionableKind::WorkspaceReference
     );
-    let member_output = session.resolve_document(member).await;
+    let member_output = session
+        .apply_command(member, Some("updatePatch"), Some("version"), &[])
+        .await;
     assert!(member_output.edits.is_empty());
-    let suggestion = member_output
-        .suggestions
-        .iter()
-        .find(|suggestion| suggestion.dependency.name == "version")
-        .expect("inherited version must remain visible");
-    assert_eq!(suggestion.status, "fixed");
-    assert_eq!(suggestion.latest.as_deref(), Some("workspace:true"));
 }

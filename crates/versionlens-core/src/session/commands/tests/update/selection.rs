@@ -198,7 +198,7 @@ async fn apply_command_bulk_update_skips_project_version_edits() {
         &[],
     ).await;
 
-    assert_eq!(output.suggestions.len(), 1);
+    assert!(output.suggestions.is_empty());
     assert!(output.edits.is_empty());
 }
 

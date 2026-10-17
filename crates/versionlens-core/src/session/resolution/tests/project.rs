@@ -8,7 +8,7 @@ use super::{DocumentInput, standard_session};
 use versionlens_model::Ecosystem::Composer;
 
 #[tokio::test]
-async fn resolves_project_version_without_registry_response() {
+async fn cargo_project_version_is_not_resolved_without_registry_response() {
     let session = standard_session();
 
     let output = session
@@ -23,7 +23,8 @@ async fn resolves_project_version_without_registry_response() {
         )
         .await;
 
-    assert_update(&output, "1.2.4");
+    assert!(output.suggestions.is_empty());
+    assert!(output.edits.is_empty());
 }
 
 #[tokio::test]
@@ -168,4 +169,3 @@ fn composer_auth_json_supplies_request_scoped_auth_headers() {
 fn package_file_fixture(name: &str) -> String {
     crate::support::tests::fixture("tests/fixtures/session/resolution/project", name)
 }
-use super::assert_update;
