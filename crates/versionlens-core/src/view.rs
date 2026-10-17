@@ -98,6 +98,10 @@ impl UpdateMode {
     }
 }
 
+/// The code of the diagnostic on a requirement that does not allow the
+/// latest release.
+pub const UPDATE_AVAILABLE: &str = "update-available";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Severity {
     Error,

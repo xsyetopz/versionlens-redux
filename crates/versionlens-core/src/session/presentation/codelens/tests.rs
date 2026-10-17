@@ -96,6 +96,7 @@ fn session_with_indicators(
     show_vulnerabilities: bool,
 ) -> VersionLensSession {
     crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: crate::default(),

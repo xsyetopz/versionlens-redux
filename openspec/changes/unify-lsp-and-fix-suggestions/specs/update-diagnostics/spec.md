@@ -7,21 +7,21 @@ Reports available dependency updates as lint-style diagnostics with one-step qui
 ## ADDED Requirements
 
 ### Requirement: Update-available diagnostic
-After a manifest is resolved, the server SHALL publish one diagnostic per dependency whose requirement does not allow the latest release, with:
+After a manifest is resolved, the server SHALL publish one diagnostic per dependency whose requirement does not allow the latest release, or whose floor bump to latest changes the major or minor number, with:
 - range: the dependency's requirement text
 - code: `update-available`
 - source: `VersionLens`
 - message: the current requirement and the latest offered target
 
 #### Scenario: Outdated dependency
-- **WHEN** `package.json` contains `"astro": "^7.2.2"` and the latest compatible release is 7.3.5
+- **WHEN** `package.json` contains `"astro": "^7.2.2"` and latest is 7.3.5
 - **THEN** a diagnostic with code `update-available` and message `^7.2.2 → ^7.3.5` covers the text `^7.2.2`
 
 #### Scenario: Up-to-date dependency
 - **WHEN** a dependency's requirement text would not change under any offered bump
 - **THEN** no update-available diagnostic is published for it
 
-#### Scenario: Range already allows latest
+#### Scenario: Patch-only floor bump
 - **WHEN** `package.json` contains `"@biomejs/biome": "^2.5.8"` and latest is 2.5.14
 - **THEN** no update-available diagnostic is published, and the floor bump to `^2.5.14` stays available as a code lens and a code action
 

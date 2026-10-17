@@ -43,6 +43,7 @@ pub(crate) fn session_config(
     show_vulnerabilities: bool,
 ) -> SessionConfig {
     SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers,

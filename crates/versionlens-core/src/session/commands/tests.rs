@@ -21,6 +21,7 @@ fn session_with_dependency_properties(
     properties: &[&str],
 ) -> VersionLensSession {
     crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: ProviderSettings {

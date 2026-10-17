@@ -10,6 +10,7 @@ use super::{
     DependencyPropertyConfigInput, FilePatternConfigInput, PrereleaseTagConfigInput,
     ProviderCacheConfigInput, ProviderHttpConfigInput, ProviderSettingsInput,
     RegistryUrlConfigInput, SessionConfig, SessionConfigInput, SuggestionIndicatorsInput,
+    UpdateSeverity,
 };
 
 /// The `versionlens` settings section. A missing key keeps the engine default.
@@ -20,6 +21,7 @@ pub struct Settings {
     pub caching: GlobalCaching,
     pub http: HttpSettings,
     pub suggestions: SuggestionSettings,
+    pub diagnostics: DiagnosticSettings,
     /// Settings per ecosystem, keyed by its configuration name, such as
     /// `npm` or `dotnet`.
     #[serde(flatten)]
@@ -47,6 +49,12 @@ pub struct EcosystemCaching {
 pub struct HttpSettings {
     #[serde(rename = "strictSSL")]
     pub strict_ssl: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DiagnosticSettings {
+    pub update_severity: Option<UpdateSeverity>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
@@ -141,6 +149,7 @@ impl Settings {
                 .suggestions
                 .show_prereleases_on_startup
                 .unwrap_or(false),
+            update_severity: self.diagnostics.update_severity,
             http: Some(HttpConfigInput {
                 timeout_ms: None,
                 strict_ssl: self.http.strict_ssl,

@@ -153,6 +153,7 @@ async fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_late
 #[tokio::test]
 async fn prerelease_tag_filters_apply_to_responses() {
     let session = crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: ProviderSettings {
@@ -233,6 +234,7 @@ async fn show_prereleases_applies_to_python_releases() {
 
 fn prerelease_session() -> crate::VersionLensSession {
     crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: crate::default(),

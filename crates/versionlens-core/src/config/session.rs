@@ -1,3 +1,4 @@
+use crate::Severity;
 use serde::{Deserialize, Serialize};
 use versionlens_cache::cache_ttl_ms;
 use versionlens_http::{HttpConfig, HttpConfigInput, http_config_from_input, standard_http_config};
@@ -17,6 +18,8 @@ pub struct SessionConfig {
     pub show_vulnerabilities: bool,
     pub show_suggestion_stats: bool,
     pub show_prereleases: bool,
+    /// The severity of `update-available` diagnostics, or `None` for none.
+    pub update_severity: Option<Severity>,
     pub http: HttpConfig,
 }
 
@@ -30,7 +33,33 @@ pub struct SessionConfigInput {
     pub show_vulnerabilities: Option<bool>,
     pub show_suggestion_stats: Option<bool>,
     pub show_prereleases: bool,
+    pub update_severity: Option<UpdateSeverity>,
     pub http: Option<HttpConfigInput>,
+}
+
+/// The `versionlens.diagnostics.updateSeverity` setting.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateSeverity {
+    Error,
+    Warning,
+    /// The default, because VS Code's Problems panel does not list hints.
+    #[default]
+    Information,
+    Hint,
+    Off,
+}
+
+impl UpdateSeverity {
+    const fn severity(self) -> Option<Severity> {
+        match self {
+            Self::Error => Some(Severity::Error),
+            Self::Warning => Some(Severity::Warning),
+            Self::Information => Some(Severity::Information),
+            Self::Hint => Some(Severity::Hint),
+            Self::Off => None,
+        }
+    }
 }
 
 fn provider_settings_from_input(input: ProviderSettingsInput) -> ProviderSettings {
@@ -62,6 +91,7 @@ impl SessionConfig {
             show_vulnerabilities: input.show_vulnerabilities.unwrap_or(true),
             show_suggestion_stats: input.show_suggestion_stats.unwrap_or(false),
             show_prereleases: input.show_prereleases,
+            update_severity: input.update_severity.unwrap_or_default().severity(),
             http: input
                 .http
                 .map(http_config_from_input)

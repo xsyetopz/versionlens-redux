@@ -17,6 +17,7 @@ async fn code_lens_title_uses_configured_indicators() {
 #[tokio::test]
 async fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lenses() {
     let session = crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: crate::default(),

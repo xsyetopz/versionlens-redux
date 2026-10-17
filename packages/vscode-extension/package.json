@@ -485,6 +485,18 @@
           "default": true,
           "description": "Show package vulnerabilities as red squiggles in the editor."
         },
+        "versionlens.diagnostics.updateSeverity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "information",
+            "hint",
+            "off"
+          ],
+          "default": "information",
+          "description": "Severity of update-available diagnostics. `off` hides them; vulnerability diagnostics are unaffected."
+        },
         "versionlens.suggestions.showSuggestionsStats": {
           "type": "boolean",
           "default": false,

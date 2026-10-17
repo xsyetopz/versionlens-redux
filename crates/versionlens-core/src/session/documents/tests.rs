@@ -302,7 +302,12 @@ async fn analyze_document_uses_cached_latest_for_diagnostics() {
 
     let output = session.analyze_document(input.clone());
 
-    assert!(output.diagnostics.is_empty());
+    let codes = output
+        .diagnostics
+        .iter()
+        .map(|diagnostic| (diagnostic.code.as_deref(), diagnostic.message.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(codes, [(Some(crate::UPDATE_AVAILABLE), "1.0.0 → 1.1.0")]);
     assert_eq!(output.status.dependency_count, 1);
     assert_eq!(output.status.update_count, 1);
     assert_eq!(output.status.vulnerability_count, 0);
@@ -434,6 +439,7 @@ fn standard_session(show_suggestion_stats: bool) -> VersionLensSession {
 
 fn standard_config(show_suggestion_stats: bool) -> SessionConfig {
     SessionConfig {
+        update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
         providers: crate::default(),
@@ -598,3 +604,5 @@ async fn failed_checks_wait_for_retry_and_empty_documents_need_no_timer() {
     session.clear_cache();
     assert_eq!(session.document_check_delay(&input), Some(Duration::ZERO));
 }
+
+mod updates;

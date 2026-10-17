@@ -15,7 +15,7 @@ pub use providers::{
     provider_http_config_from_name, provider_settings_manifest_kind_from_name,
     registry_url_config_from_name,
 };
-pub use session::{SessionConfig, SessionConfigInput};
+pub use session::{SessionConfig, SessionConfigInput, UpdateSeverity};
 pub use settings::Settings;
 pub use suggestions::{
     SuggestionIndicators, SuggestionIndicatorsInput, standard_suggestion_indicators,

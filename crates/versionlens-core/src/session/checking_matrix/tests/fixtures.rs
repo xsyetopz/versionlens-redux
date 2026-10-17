@@ -105,8 +105,15 @@ fn assert_no_bump(checked: &Checked) {
     assert_eq!(checked.resolved.edits, vec![]);
 }
 
+/// No error, and no diagnostic other than an available update.
 fn assert_silent(checked: &Checked) {
-    assert_eq!(checked.analysis.diagnostics, vec![]);
+    let noise = checked
+        .analysis
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.as_deref() != Some(crate::UPDATE_AVAILABLE))
+        .collect::<Vec<_>>();
+    assert_eq!(noise, Vec::<&crate::DiagnosticView>::new());
     assert!(
         checked
             .resolved
