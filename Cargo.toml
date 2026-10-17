@@ -18,7 +18,7 @@ resolver = "3"
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.98"
+rust-version = "1.99"
 license = "ISC"
 repository = "https://github.com/xsyetopz/versionlens-redux.git"
 readme = "README.md"
@@ -29,32 +29,34 @@ version = "0.4.4"
 [workspace.dependencies]
 ignore = "0.4.33"
 ring = "0.17.14"
-rustls = { version = "0.23.37", default-features = false, features = [
+rustls = { version = "0.23.46", default-features = false, features = [
   "ring",
   "std",
   "tls12",
 ] }
-sha2 = "0.11.0"
+sha2 = "0.11.1"
 crossbeam-channel = "0.5.17"
 base64 = "0.23.1"
 anyhow = "1.0.104"
-napi = "3.12.5"
-napi-build = "2.4.2"
-napi-derive = "3.6.6"
-jsonc-parser = "0.33.2"
+napi = "3.14.2"
+napi-build = "2.6.0"
+napi-derive = "3.6.12"
+jsonc-parser = "0.34.0"
 lsp-server = "0.10.0"
 lsp-types = "0.97.0"
 marked-yaml = "0.8.0"
 quick-xml = "0.42.0"
 semver = "1.0.28"
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
-thiserror = "2.0.20"
-toml_edit = "0.25.12"
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+toml_edit = "0.25.17"
 unicode-normalization = "0.1.25"
-reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider"] }
-flate2 = "1.1.2"
-tokio = { version = "1.53.1", features = [
+reqwest = { version = "0.13.5", default-features = false, features = [
+  "rustls-no-provider",
+] }
+flate2 = "1.1.10"
+tokio = { version = "1.53.3", features = [
   "macros",
   "rt",
   "rt-multi-thread",
@@ -120,6 +122,7 @@ unnecessary_safety_comment = "deny"
 
 allow_attributes = "deny"
 allow_attributes_without_reason = "deny"
+assert_is_empty = "allow"
 assigning_clones = "allow"
 collapsible_if = "allow"
 derivable_impls = "allow"

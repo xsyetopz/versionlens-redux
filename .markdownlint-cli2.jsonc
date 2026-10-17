@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint-cli2/main/schema/markdownlint-cli2-config-schema.json",
+  "globs": ["**/*.md"],
+  "config": { "extends": "./.markdownlint.jsonc" },
+  "ignores": [
+    "node_modules/**",
+    "external/**",
+    ".claude/**",
+    ".agents/**",
+    "src/**"
+  ]
+}
