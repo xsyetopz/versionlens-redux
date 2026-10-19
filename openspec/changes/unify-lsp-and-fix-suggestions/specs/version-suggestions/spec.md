@@ -24,6 +24,10 @@ A bump suggestion SHALL be offered only if applying it changes the dependency's 
 - **WHEN** applying the latest target would produce the identical requirement text
 - **THEN** that suggestion is not offered
 
+#### Scenario: Status lens without an update has no update command
+- **WHEN** a dependency's lens only reports a status and no suggestion with a non-empty edit exists
+- **THEN** the lens carries no update command
+
 ### Requirement: Floor bump for satisfied ranges
 When a range requirement satisfies the latest release but its minimum version is lower than latest, a bump to the same range operator with latest as the minimum SHALL be offered. Versions SHALL be compared by version semantics, not by string prefix.
 

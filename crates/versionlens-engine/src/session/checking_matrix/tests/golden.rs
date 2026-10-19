@@ -261,3 +261,112 @@ pub(super) fn lens_actions(lens: &LensView) -> Vec<(&str, &str, Option<&str>)> {
         Some(Action::OpenFile { .. }) | None => Vec::new(),
     }
 }
+
+/// Commit that first captured `tests/golden/0.4.4` from the napi build.
+const BASELINE_COMMIT: &str = "67f3b1d4";
+
+fn golden_path(case: &ManifestCase) -> PathBuf {
+    let release = case.since.as_deref().unwrap_or("0.4.4");
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tests/golden")
+        .join(release)
+        .join(format!("{}.json", case.path))
+}
+
+/// The engine output of every manifest case equals its file in `tests/golden`.
+#[tokio::test]
+async fn engine_output_matches_the_golden_folder() {
+    let mut stale = Vec::new();
+    for case in manifest_cases() {
+        let expected = fs::read_to_string(golden_path(&case)).unwrap_or_default();
+        if capture_case(&case).await != expected {
+            stale.push(case.path.clone());
+        }
+    }
+    assert!(
+        stale.is_empty(),
+        "golden files out of date:\n{}",
+        stale.join("\n")
+    );
+}
+
+/// `tests/golden/0.4.4` differs from the 67f3b1d4 capture exactly in the files
+/// that `tests/golden/DIFFERENCES.md` lists under a `### <path>` heading: no
+/// unlisted difference, no stale entry, no file missing from the baseline. The
+/// check panics under `CI` and is skipped locally where git or that commit is
+/// unavailable.
+#[test]
+fn golden_differences_with_the_baseline_are_documented() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/golden");
+    let documented = fs::read_to_string(root.join("DIFFERENCES.md")).unwrap();
+    let listed: Vec<&str> = documented
+        .lines()
+        .filter_map(|line| line.strip_prefix("### `")?.strip_suffix('`'))
+        .collect();
+    let git = |args: &[&str]| {
+        std::process::Command::new("git")
+            .current_dir(&root)
+            .args(args)
+            .output()
+            .ok()
+            .filter(|output| output.status.success())
+    };
+    let Some(files) = git(&["ls-tree", "-r", "--name-only", BASELINE_COMMIT, "0.4.4"]) else {
+        assert!(
+            std::env::var_os("CI").is_none(),
+            "git history for {BASELINE_COMMIT} is unavailable; fetch with depth 0"
+        );
+        eprintln!("skipping baseline comparison: {BASELINE_COMMIT} is unavailable");
+        return;
+    };
+    let prefix = git(&["rev-parse", "--show-prefix"]).map(|o| String::from_utf8(o.stdout).unwrap());
+    let prefix = prefix.unwrap_or_default().trim().to_owned();
+    let baseline_files: Vec<String> = String::from_utf8(files.stdout)
+        .unwrap()
+        .lines()
+        .map(|file| file.trim_start_matches("0.4.4/").to_owned())
+        .collect();
+    let mut problems = Vec::new();
+    for name in &baseline_files {
+        let baseline = git(&["show", &format!("{BASELINE_COMMIT}:{prefix}0.4.4/{name}")]);
+        let current = fs::read(root.join("0.4.4").join(name)).ok();
+        let same = baseline.map(|o| o.stdout) == current;
+        let is_listed = listed.contains(&name.as_str());
+        if !same && !is_listed {
+            problems.push(format!("undocumented difference: {name}"));
+        }
+        if (same || current.is_none()) && is_listed {
+            problems.push(format!("stale entry (identical or missing): {name}"));
+        }
+    }
+    for entry in &listed {
+        if !baseline_files.iter().any(|name| name == entry) {
+            problems.push(format!("listed but not in the baseline: {entry}"));
+        }
+    }
+    let mut pending = vec![root.join("0.4.4")];
+    while let Some(dir) = pending.pop() {
+        for entry in fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+        {
+            if entry.is_dir() {
+                pending.push(entry);
+                continue;
+            }
+            let name = entry
+                .strip_prefix(root.join("0.4.4"))
+                .unwrap()
+                .to_string_lossy()
+                .replace('\\', "/");
+            if !baseline_files.contains(&name) {
+                problems.push(format!("not in the baseline: {name}"));
+            }
+        }
+    }
+    assert!(
+        problems.is_empty(),
+        "0.4.4 golden files disagree with {BASELINE_COMMIT} and DIFFERENCES.md:\n{}",
+        problems.join("\n")
+    );
+}
