@@ -1,3 +1,6 @@
+use crate::manifest::adapter::line_span;
+use crate::manifest::adapter::yaml::YamlNode;
+use crate::manifest::path_query::{PathNode, query};
 use crate::positions::offset_range;
 use crate::support;
 use versionlens_model::Dependency;
@@ -39,38 +42,52 @@ pub(crate) fn parse_cabal_project(text: &str) -> HackageDependencies {
 }
 
 pub(crate) fn parse_stack_yaml(text: &str) -> HackageDependencies {
+    let Ok(document) = marked_yaml::parse_yaml(0, text) else {
+        return vec![];
+    };
+    let root = YamlNode::root(text, &document);
+
     let mut dependencies = vec![];
-    if let Some(resolver) = stack_resolver_dependency(text) {
+    if let Some(resolver) = stack_resolver_dependency(text, root) {
         dependencies.push(resolver);
     }
 
-    let Some((start, end)) = yaml_list_span(text, "extra-deps") else {
-        return dependencies;
-    };
-
-    let mut offset = start;
-    while offset < end {
-        let line_end = text[offset..end]
-            .find('\n')
-            .map(|index| offset + index)
-            .unwrap_or(end);
-        let line = &text[offset..line_end];
-        let trimmed = line.trim_start();
-        let leading = line.len() - trimmed.len();
-        if let Some(value) = trimmed.strip_prefix("- ") {
-            let value_start = offset + leading + 2;
-            if let Some(dependency) = parse_stack_extra_dep(text, value, value_start) {
-                dependencies.push(dependency);
-            }
+    for entry in query(root, &["extra-deps", "*"]) {
+        if let Some(dependency) = stack_extra_dep(text, entry.node) {
+            dependencies.push(dependency);
         }
-        offset = line_end.saturating_add(1);
     }
 
     dependencies
 }
 
-fn stack_resolver_dependency(text: &str) -> ParsedHackageDependency {
-    let resolver = field_value(text, "resolver")?;
+/// A scalar entry is a package id or a path; a mapping entry names a
+/// repository with `git` or `github`.
+fn stack_extra_dep(text: &str, entry: YamlNode<'_>) -> ParsedHackageDependency {
+    if let Some(value) = entry.scalar() {
+        return parse_stack_extra_dep(text, &value.value, value.span.start);
+    }
+    ["git", "github"].into_iter().find_map(|field| {
+        let url = entry.children_named(field).first()?.scalar()?;
+        Some(fixed_stack_dependency(
+            text,
+            &url.value,
+            "git",
+            url.span.start,
+            url.span.end,
+        ))
+    })
+}
+
+fn stack_resolver_dependency(text: &str, root: YamlNode<'_>) -> ParsedHackageDependency {
+    let node = *root.children_named("resolver").first()?;
+    let scalar = node.scalar()?;
+    let resolver = FieldValue {
+        field_start: line_span(text, &node.key_span()?).start,
+        value_start: scalar.span.start,
+        value_end: scalar.span.end,
+        value: scalar.value,
+    };
     let value = resolver.value.trim();
     if value.is_empty() {
         return None;
@@ -317,33 +334,6 @@ fn first_cabal_constraint(text: &str, start: usize, end: usize) -> Option<CabalC
             .get(constraint.operator_start..constraint.version_start)?
             .to_owned(),
     })
-}
-
-fn yaml_list_span(text: &str, field: &str) -> Option<(usize, usize)> {
-    let pattern = format!("{field}:");
-    let lines = support::line_offsets(text).collect::<Vec<_>>();
-    for (index, (line_start, line)) in lines.iter().copied().enumerate() {
-        let trimmed = line.trim_start();
-        let leading = line.len() - trimmed.len();
-        if trimmed != pattern {
-            continue;
-        }
-        let start = line_start + line.len() + 1;
-        let mut end = text.len();
-        for (next_start, next_line) in lines.iter().copied().skip(index + 1) {
-            if next_line.trim().is_empty() {
-                continue;
-            }
-            let next_indent = next_line.len() - next_line.trim_start().len();
-            if next_indent <= leading && !next_line.trim_start().starts_with('-') {
-                end = next_start;
-                break;
-            }
-        }
-        return Some((start, end));
-    }
-
-    None
 }
 
 fn parse_stack_extra_dep(text: &str, value: &str, value_start: usize) -> ParsedHackageDependency {

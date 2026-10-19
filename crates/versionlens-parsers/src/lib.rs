@@ -49,6 +49,8 @@ mod source_scanning;
 mod test_support;
 mod workspace_files;
 mod yarnrc;
+#[cfg(test)]
+mod zz_snapshot;
 
 pub(crate) use build_inputs::{ansible_galaxy, bazel_module};
 pub(crate) use build_tool_manifests::{nix_flake, terraform_hcl};

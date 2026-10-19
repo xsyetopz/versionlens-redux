@@ -8,6 +8,7 @@ use std::ops::Range;
 pub(crate) mod json;
 pub(crate) mod toml;
 pub(crate) mod xml;
+pub(crate) mod yaml;
 
 /// A string that a query reached: its decoded value and the byte span of its
 /// content, which excludes any quotes.
