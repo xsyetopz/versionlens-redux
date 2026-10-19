@@ -8,6 +8,8 @@ pub struct NpmRegistryEntry {
 
 pub(crate) type NpmRegistryEntries = Vec<NpmRegistryEntry>;
 
+// The Debug output carries raw tokens and feeds cache-scope hashing, so it must
+// stay as is and must never be logged.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpmAuthEntry {
     pub registry: String,

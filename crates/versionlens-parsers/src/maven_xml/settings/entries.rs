@@ -5,6 +5,8 @@ pub struct MavenRepository {
     pub protocol: String,
 }
 
+// The Debug output carries raw tokens and feeds cache-scope hashing, so it must
+// stay as is and must never be logged.
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MavenAuthEntry {

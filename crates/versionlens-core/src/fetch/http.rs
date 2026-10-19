@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use versionlens_fetch::{
-    ACCEPT_GITHUB_V3, ACCEPT_JSON, ACCEPT_NPM_INSTALL_V1, HttpError, RetryPolicy,
-    get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout,
+    ACCEPT_GITHUB_V3, ACCEPT_JSON, ACCEPT_NPM_INSTALL_V1, Credential, HttpConfig, HttpError,
+    RetryPolicy, get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout,
 };
 use versionlens_model::Ecosystem;
 use versionlens_model::Ecosystem::{Go, Maven, Npm, Python};
@@ -52,19 +52,11 @@ impl VersionLensSession {
 
         let accept = accept_header_for_request(ecosystem, url);
         let retry_policy = retry_policy_for_request(ecosystem, url);
-        let response = match operation.remaining_duration() {
-            Some(remaining) => {
-                get_text_with_accept_and_retry_timeout(
-                    url,
-                    &http_config,
-                    accept,
-                    retry_policy,
-                    remaining,
-                )
-                .await
-            }
-            None => get_text_with_accept_and_retry(url, &http_config, accept, retry_policy).await,
-        };
+        let (response, http_config) = self
+            .fetch_text_with_gh_retry(url, http_config, accept, retry_policy, operation)
+            .await;
+        // A retry carries another credential, so its body belongs to another key.
+        let cache_key = self.request_cache_key(url, &http_config);
 
         match response {
             Ok(body) => {
@@ -114,6 +106,22 @@ impl VersionLensSession {
     }
 }
 
+async fn fetch_text(
+    url: &str,
+    config: &HttpConfig,
+    accept: Option<&str>,
+    retry_policy: RetryPolicy,
+    operation: &OperationContext,
+) -> Result<String, HttpError> {
+    match operation.remaining_duration() {
+        Some(remaining) => {
+            get_text_with_accept_and_retry_timeout(url, config, accept, retry_policy, remaining)
+                .await
+        }
+        None => get_text_with_accept_and_retry(url, config, accept, retry_policy).await,
+    }
+}
+
 fn accept_header_for_request(ecosystem: Ecosystem, url: &str) -> Option<&'static str> {
     if starts_with_ignore_ascii_case(url, "https://api.github.com/repos/") {
         return Some(ACCEPT_GITHUB_V3);
@@ -137,6 +145,51 @@ fn retry_policy_for_request(ecosystem: Ecosystem, url: &str) -> RetryPolicy {
 }
 
 impl VersionLensSession {
+    /// Fetches `url`; when GitHub refuses it and `gh auth token` supplies a
+    /// token not yet sent, retries once with it. Returns the config used last.
+    async fn fetch_text_with_gh_retry(
+        &self,
+        url: &str,
+        mut http_config: HttpConfig,
+        accept: Option<&str>,
+        retry_policy: RetryPolicy,
+        operation: &OperationContext,
+    ) -> (Result<String, HttpError>, HttpConfig) {
+        let mut response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+        if let Err(error) = &response
+            && let Some(status) = error.status_code()
+            && let Some(credential) = self.credential_after_denied(url, status, operation).await
+            && !http_config
+                .auth_headers
+                .contains(&credential.authorization_header())
+        {
+            versionlens_fetch::apply_credential(&mut http_config.auth_headers, &credential);
+            response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+        }
+        (response, http_config)
+    }
+
+    /// The `gh auth token` credential, when GitHub refused `url` with `status`
+    /// and no earlier source applies. Runs `gh` on a blocking thread and waits
+    /// no longer than the operation deadline.
+    async fn credential_after_denied(
+        &self,
+        url: &str,
+        status: u16,
+        operation: &OperationContext,
+    ) -> Option<Credential> {
+        let credentials = self.request_state.credentials.clone();
+        let url = url.to_owned();
+        let task =
+            tokio::task::spawn_blocking(move || credentials.resolve_after_denied(&url, status));
+        match operation.remaining_duration() {
+            Some(remaining) => tokio::time::timeout(remaining, task).await.ok()?,
+            None => task.await,
+        }
+        .ok()
+        .flatten()
+    }
+
     pub(crate) fn authorization_url_for_request(&self, request_url: &str) -> String {
         self.config
             .http
