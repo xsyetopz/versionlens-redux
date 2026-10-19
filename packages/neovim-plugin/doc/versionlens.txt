@@ -106,8 +106,10 @@ previously downloaded binary, then `versionlens-lsp` on $PATH.
 
 `settings` is the `versionlens` configuration section. It is sent to the server
 in `vim.lsp.start` and returned for the server's `workspace/configuration`
-requests, so Neovim answers them without extra handlers. Empty tables are sent
-as JSON objects (the server rejects arrays). For example:
+requests, so Neovim answers them without extra handlers. An empty `settings` is sent
+as a JSON object (the server rejects an array). Nested empty tables stay
+arrays, as list settings need; write `vim.empty_dict()` for an empty nested
+object. For example:
 
 >lua
     require("versionlens").setup({ settings = { ... } })

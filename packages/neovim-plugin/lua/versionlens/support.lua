@@ -181,6 +181,8 @@ function M.editor_target()
     architecture = "x64"
   elseif machine == "arm64" or machine == "aarch64" then
     architecture = "arm64"
+  elseif platform == "linux" and (machine:match("^armv[67]") or machine == "arm") then
+    architecture = "armhf"
   else
     return nil
   end

@@ -12,19 +12,10 @@ local downloading = false
 local pending = {}
 local download_error = nil
 
--- Empty tables would encode as JSON arrays; the server expects objects.
-local function as_objects(value)
-  if type(value) ~= "table" then
-    return value
-  end
-  if next(value) == nil then
-    return vim.empty_dict()
-  end
-  local copy = {}
-  for key, item in pairs(value) do
-    copy[key] = as_objects(item)
-  end
-  return copy
+-- An empty top-level table would encode as a JSON array; the server expects an object.
+-- Nested tables are left alone because empty list settings must stay arrays.
+local function as_object(value)
+  return vim.tbl_isempty(value) and vim.empty_dict() or value
 end
 
 local function notify(message, level)
@@ -112,7 +103,7 @@ function M.start(bufnr)
     capabilities = capabilities,
     handlers = { ["workspace/codeLens/refresh"] = refresh_client_lenses },
     root_dir = support.root_dir(bufnr, M.config),
-    settings = { versionlens = as_objects(M.config.settings) },
+    settings = { versionlens = as_object(M.config.settings) },
     on_attach = function(client, attached_bufnr)
       M.refresh(attached_bufnr)
       if user_on_attach then

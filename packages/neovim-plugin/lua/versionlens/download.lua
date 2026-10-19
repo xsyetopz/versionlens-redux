@@ -153,7 +153,6 @@ function M.install(version, callback)
 
   local function fail(message)
     vim.fn.delete(scratch, "rf")
-    vim.fn.delete(binary .. ".part")
     vim.uv.fs_rmdir(directory) -- only succeeds when empty
     callback(message)
   end
@@ -163,12 +162,12 @@ function M.install(version, callback)
     if not found then
       return fail(archive .. " does not contain " .. support.executable_name())
     end
-    local partial = binary .. ".part"
+    local partial = vim.fs.joinpath(scratch, "server.part")
     if not vim.uv.fs_rename(found, partial) then
       return fail("could not move the server binary into place")
     end
     vim.uv.fs_chmod(partial, tonumber("755", 8))
-    if not vim.uv.fs_rename(partial, binary) then
+    if not vim.uv.fs_rename(partial, binary) and vim.fn.executable(binary) ~= 1 then
       return fail("could not install the server binary")
     end
     vim.fn.delete(scratch, "rf")
