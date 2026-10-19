@@ -261,3 +261,72 @@ pub(super) fn lens_actions(lens: &LensView) -> Vec<(&str, &str, Option<&str>)> {
         Some(Action::OpenFile { .. }) | None => Vec::new(),
     }
 }
+
+/// Commit that first captured `tests/golden/0.4.4` from the napi build.
+const BASELINE_COMMIT: &str = "67f3b1d4";
+
+fn golden_path(case: &ManifestCase) -> PathBuf {
+    let release = case.since.as_deref().unwrap_or("0.4.4");
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tests/golden")
+        .join(release)
+        .join(format!("{}.json", case.path))
+}
+
+/// The engine output of every manifest case equals its file in `tests/golden`.
+#[tokio::test]
+async fn engine_output_matches_the_golden_folder() {
+    let mut stale = Vec::new();
+    for case in manifest_cases() {
+        let expected = fs::read_to_string(golden_path(&case)).unwrap_or_default();
+        if capture_case(&case).await != expected {
+            stale.push(case.path.clone());
+        }
+    }
+    assert!(
+        stale.is_empty(),
+        "golden files out of date:\n{}",
+        stale.join("\n")
+    );
+}
+
+/// `tests/golden/0.4.4` differs from the 67f3b1d4 capture only in the files
+/// that `tests/golden/DIFFERENCES.md` lists under a `### <path>` heading. The
+/// check is skipped where git or that commit is unavailable.
+#[test]
+fn golden_differences_with_the_baseline_are_documented() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/golden");
+    let documented = fs::read_to_string(root.join("DIFFERENCES.md")).unwrap();
+    let listed: Vec<&str> = documented
+        .lines()
+        .filter_map(|line| line.strip_prefix("### `")?.strip_suffix('`'))
+        .collect();
+    let git = |args: &[&str]| {
+        std::process::Command::new("git")
+            .current_dir(&root)
+            .args(args)
+            .output()
+            .ok()
+            .filter(|output| output.status.success())
+    };
+    let Some(files) = git(&["ls-tree", "-r", "--name-only", BASELINE_COMMIT, "0.4.4"]) else {
+        return;
+    };
+    let prefix = git(&["rev-parse", "--show-prefix"]).map(|o| String::from_utf8(o.stdout).unwrap());
+    let prefix = prefix.unwrap_or_default().trim().to_owned();
+    let mut undocumented = Vec::new();
+    for file in String::from_utf8(files.stdout).unwrap().lines() {
+        let name = file.trim_start_matches("0.4.4/");
+        let baseline = git(&["show", &format!("{BASELINE_COMMIT}:{prefix}{file}")]);
+        let current = fs::read(root.join(file)).ok();
+        let same = baseline.map(|o| o.stdout) == current;
+        if !same && !listed.contains(&name) {
+            undocumented.push(name.to_owned());
+        }
+    }
+    assert!(
+        undocumented.is_empty(),
+        "differences from {BASELINE_COMMIT} missing in DIFFERENCES.md:\n{}",
+        undocumented.join("\n")
+    );
+}
