@@ -1,10 +1,14 @@
 import { type ChildProcess, spawn } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 type Json = Record<string, unknown>;
 type RequestHandler = (params: never) => unknown;
 
 interface Waiter {
   predicate: (params: never) => boolean;
+  reject: (error: Error) => void;
   resolve: (params: never) => void;
 }
 
@@ -27,9 +31,32 @@ class LspConnection {
   private readonly handlers = new Map<string, RequestHandler>();
   private waiters: { method: string; waiter: Waiter }[] = [];
   readonly stderr: string[] = [];
+  /** Private cache home, so the tests never read or write the real cache. */
+  private readonly home = mkdtempSync(join(tmpdir(), "versionlens-lsp-"));
 
   constructor(command: string) {
-    this.process = spawn(command, [], { stdio: ["pipe", "pipe", "pipe"] });
+    this.process = spawn(command, [], {
+      env: {
+        ...process.env,
+        HOME: this.home,
+        LOCALAPPDATA: this.home,
+        XDG_CACHE_HOME: this.home,
+      },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    this.process.once("exit", (code, signal): void => {
+      const error = new Error(
+        `the server exited (code ${code}, signal ${signal}); stderr: ${this.stderr.join("")}`,
+      );
+      for (const pending of this.pending.values()) {
+        pending.reject(error);
+      }
+      this.pending.clear();
+      for (const { waiter } of this.waiters) {
+        waiter.reject(error);
+      }
+      this.waiters = [];
+    });
     this.process.stdout?.on("data", (chunk: Buffer): void => {
       this.buffer = Buffer.concat([this.buffer, chunk]);
       this.drain();
@@ -67,7 +94,7 @@ class LspConnection {
   waitFor<T extends Json = Json>(
     method: string,
     predicate: (params: T) => boolean = (): boolean => true,
-    timeoutMs = 10_000,
+    timeoutMs = 4000,
   ): Promise<T> {
     const seen = this.notifications.find(
       (entry): boolean =>
@@ -78,16 +105,24 @@ class LspConnection {
     }
     return new Promise<T>((resolve, reject): void => {
       const timer = setTimeout((): void => {
+        this.waiters = this.waiters.filter(
+          (entry) => entry.waiter.reject !== fail,
+        );
         reject(
           new Error(
             `timed out waiting for ${method}; stderr: ${this.stderr.join("")}`,
           ),
         );
       }, timeoutMs);
+      const fail = (error: Error): void => {
+        clearTimeout(timer);
+        reject(error);
+      };
       this.waiters.push({
         method,
         waiter: {
           predicate: predicate as (params: never) => boolean,
+          reject: fail,
           resolve: ((params: T): void => {
             clearTimeout(timer);
             resolve(params);
@@ -98,17 +133,29 @@ class LspConnection {
   }
 
   async shutdown(): Promise<void> {
+    const alive = (): boolean =>
+      this.process.exitCode === null && this.process.signalCode === null;
+    const timer = setTimeout((): void => {
+      this.process.kill();
+    }, 3000);
     try {
-      await this.request("shutdown", null);
-      this.notify("exit", null);
+      if (alive()) {
+        const killed = new Promise<never>((_, reject): void => {
+          this.process.once("exit", (): void => reject(new Error("killed")));
+        });
+        await Promise.race([this.request("shutdown", null), killed]).catch(
+          (): void => undefined,
+        );
+        this.notify("exit", null);
+      }
+      if (alive()) {
+        await new Promise<void>((resolve): void => {
+          this.process.once("exit", (): void => resolve());
+        });
+      }
     } finally {
-      const exited = new Promise<void>((resolve): void => {
-        this.process.once("exit", (): void => resolve());
-      });
-      setTimeout((): void => {
-        this.process.kill();
-      }, 3000).unref();
-      await exited;
+      clearTimeout(timer);
+      rmSync(this.home, { force: true, recursive: true });
     }
   }
 

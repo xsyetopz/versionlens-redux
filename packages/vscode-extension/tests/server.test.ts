@@ -44,6 +44,7 @@ const clientCapabilities = {
     applyEdit: true,
     codeLens: { refreshSupport: true },
     configuration: true,
+    didChangeWatchedFiles: { dynamicRegistration: true },
     workspaceEdit: { documentChanges: true },
     workspaceFolders: true,
   },
@@ -83,7 +84,14 @@ function startRegistry(required?: string): FakeRegistry {
 
 function serverBinary(): string {
   const override = process.env["VERSIONLENS_LSP"]?.trim();
-  return override || join(repositoryRoot, "target/debug/versionlens-lsp");
+  if (override) {
+    return override;
+  }
+  const targetDirectory =
+    process.env["CARGO_TARGET_DIR"] || join(repositoryRoot, "target");
+  const name =
+    process.platform === "win32" ? "versionlens-lsp.exe" : "versionlens-lsp";
+  return resolve(targetDirectory, "debug", name);
 }
 
 beforeAll((): void => {
@@ -125,8 +133,11 @@ async function startSession(
     flags: { showPrereleases: options.flags?.showPrereleases ?? false },
   };
   cleanups.push(async (): Promise<void> => {
-    await connection.shutdown();
-    registry.stop();
+    try {
+      await connection.shutdown();
+    } finally {
+      registry.stop();
+    }
   });
   // What the client's `workspace.configuration` middleware does.
   connection.onRequest("workspace/configuration", (params: Json): unknown[] => {
@@ -143,13 +154,16 @@ async function startSession(
       return value;
     });
   });
+  connection.onRequest("client/registerCapability", (): null => null);
+  connection.onRequest("client/unregisterCapability", (): null => null);
   if (options.authorization) {
     connection.onRequest("versionlens/authorization", options.authorization);
   }
   await connection.request("initialize", {
     capabilities: clientCapabilities,
     processId: process.pid,
-    rootUri: null,
+    rootUri: "file:///workspace",
+    workspaceFolders: [{ name: "workspace", uri: "file:///workspace" }],
   });
   connection.notify("initialized", {});
   return { configurations, connection, registry };
@@ -202,7 +216,7 @@ describe("versionlens-lsp as the VS Code client drives it", (): void => {
     );
     expect(update?.command?.arguments).toEqual([
       {
-        dependency: expect.any(String),
+        dependency: expect.stringMatching(/^astro/),
         level: "latest",
         uri: URI,
         version: "7.3.5",
@@ -287,6 +301,9 @@ describe("versionlens-lsp as the VS Code client drives it", (): void => {
     open(connection);
     await settled(connection);
 
+    expect(JSON.stringify(connection.requests)).toContain(
+      "workspace/didChangeWatchedFiles",
+    );
     expect(configurations.length).toBeGreaterThan(0);
     expect(configurations[0]).toMatchObject({
       suggestions: {
@@ -372,6 +389,8 @@ describe("versionlens/authorization answered by the client", (): void => {
     expect(registry.authorization).toContain(`Basic ${encoded}`);
   });
 
+  // The server publishes its diagnostics before it sends idle (checking.rs),
+  // so an idle with nothing published means nothing will be.
   it("falls back to no credential when the user declined the host", async (): Promise<void> => {
     const registry = startRegistry("Bearer never");
     const { asked, connection } = await authorizedSession(

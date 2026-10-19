@@ -24,9 +24,13 @@ function collectTestFiles(directory) {
 
 // The server tests drive the real binary, so build it from the workspace.
 if (!process.env.VERSIONLENS_LSP) {
-  const build = spawnSync("cargo", ["build", "-p", "versionlens-lsp"], {
-    stdio: "inherit",
-  });
+  const build = spawnSync(
+    "cargo",
+    ["build", "-p", "versionlens-lsp", "--locked"],
+    {
+      stdio: "inherit",
+    },
+  );
   if (build.status !== 0) {
     process.exit(build.status ?? 1);
   }
