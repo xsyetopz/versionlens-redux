@@ -275,6 +275,14 @@ it("answers the server by host name, whatever the stored port and case", async (
       { host: "registry.example.com", status: 401 },
     ),
   ).toEqual({ scheme: "ApiKey", token: "abc" });
+
+  context.secrets.values.set(`/storage__${url}`, "rawtoken");
+  expect(
+    await answerAuthorization(
+      { context, promptedHosts: new Set<string>() } as never,
+      { host: "registry.example.com", status: 401 },
+    ),
+  ).toEqual({ scheme: "", token: "rawtoken" });
 });
 
 function extensionContext(

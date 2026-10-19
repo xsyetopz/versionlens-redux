@@ -21,8 +21,6 @@ interface AuthorizationCredential {
   token: string;
 }
 
-const defaultCustomScheme = "Bearer";
-
 /**
  * Answers the server's credential question from SecretStorage. When nothing
  * is stored for the host, the user is asked once per session.
@@ -85,8 +83,8 @@ function isSuppressed(state: ExtensionState, host: string): boolean {
 
 /**
  * Basic credentials are stored as the base64 pair. A custom value is the
- * whole header value, so its first word is the scheme and a bare token is
- * a bearer token.
+ * whole header value, so its first word is the scheme. A bare token has an
+ * empty scheme, which the server sends as the whole header value.
  */
 function credential(
   entry: UrlAuthenticationData,
@@ -102,7 +100,7 @@ function credential(
       token: token.slice(separator + 1).trim(),
     };
   }
-  return { scheme: defaultCustomScheme, token };
+  return { scheme: "", token };
 }
 
 export type { AuthorizationCredential, AuthorizationParams };
