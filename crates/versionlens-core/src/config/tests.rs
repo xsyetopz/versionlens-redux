@@ -1,19 +1,14 @@
-use versionlens_fetch::{HttpConfigInput, HttpHeaderInput};
-
 use super::{
-    DependencyPropertyConfigInput, FilePatternConfigInput, PrereleaseTagConfigInput,
-    ProviderCacheConfigInput, ProviderHttpConfigInput, ProviderSettingsInput,
-    RegistryUrlConfigInput, SessionConfig, SessionConfigInput, SuggestionIndicatorsInput,
-    dependency_property_config_from_name, dependency_property_manifest_kind_from_name,
-    enabled_provider_config_from_name, file_pattern_config_from_name,
-    prerelease_tag_config_from_name, provider_cache_config_from_name,
-    provider_http_config_from_name, provider_settings_manifest_kind_from_name,
-    registry_url_config_from_name,
+    SessionConfig, SuggestionIndicators, dependency_property_config_from_name,
+    dependency_property_manifest_kind_from_name, enabled_provider_config_from_name,
+    file_pattern_config_from_name, prerelease_tag_config_from_name,
+    provider_cache_config_from_name, provider_http_config_from_name,
+    provider_settings_manifest_kind_from_name, registry_url_config_from_name,
 };
 use versionlens_model::Ecosystem::*;
 use versionlens_model::ManifestKind::{
-    Cabal, ComposerJson, DenoImportMapJson, DenoJson, GitHubActions, JsrJson, MixExs,
-    NpmPackageJson, NpmPackageJson5, NpmPackageYaml, Opam, PnpmYaml,
+    Cabal, DenoImportMapJson, DenoJson, GitHubActions, JsrJson, MixExs, NpmPackageJson,
+    NpmPackageJson5, NpmPackageYaml, Opam, PnpmYaml,
 };
 
 #[test]
@@ -202,19 +197,8 @@ fn provider_http_config_maps_manifest_scope() {
 }
 
 #[test]
-fn session_config_input_applies_core_defaults() {
-    let config = crate::support::tests::session_config_from_input(SessionConfigInput {
-        cache_duration_minutes: None,
-        cache_ttl_seconds: None,
-        enabled_providers: None,
-        providers: None,
-        suggestion_indicators: None,
-        show_vulnerabilities: None,
-        show_suggestion_stats: None,
-        show_prereleases: false,
-        update_severity: None,
-        http: None,
-    });
+fn session_config_default_applies_core_defaults() {
+    let config = SessionConfig::default();
 
     assert_eq!(config.cache_ttl_ms, 180_000);
     assert!(config.enabled_providers.is_empty());
@@ -232,17 +216,18 @@ fn suggestion_indicators_replace_blank_values_with_standard_indicators() {
     let defaults = crate::standard_suggestion_indicators();
 
     for blank in ["", " \t\n\u{2003} "] {
-        let indicators = crate::SuggestionIndicators::from_input(SuggestionIndicatorsInput {
-            latest: Some(blank.to_owned()),
-            satisfies_latest: Some(blank.to_owned()),
-            directory: Some(blank.to_owned()),
-            error: Some(blank.to_owned()),
-            no_match: Some(blank.to_owned()),
-            matched: Some(blank.to_owned()),
-            updateable: Some(blank.to_owned()),
-            updateable_vulnerable: Some(blank.to_owned()),
-            build: Some(blank.to_owned()),
-        });
+        let indicators = SuggestionIndicators {
+            latest: blank.to_owned(),
+            satisfies_latest: blank.to_owned(),
+            directory: blank.to_owned(),
+            error: blank.to_owned(),
+            no_match: blank.to_owned(),
+            matched: blank.to_owned(),
+            updateable: blank.to_owned(),
+            updateable_vulnerable: blank.to_owned(),
+            build: blank.to_owned(),
+        }
+        .with_standard_indicators_for_blanks();
 
         assert_eq!(indicators, defaults);
     }
@@ -250,17 +235,18 @@ fn suggestion_indicators_replace_blank_values_with_standard_indicators() {
 
 #[test]
 fn suggestion_indicators_preserve_nonblank_custom_values_verbatim() {
-    let indicators = crate::SuggestionIndicators::from_input(SuggestionIndicatorsInput {
-        latest: Some(" latest ".to_owned()),
-        satisfies_latest: Some(" satisfies ".to_owned()),
-        directory: Some(" directory ".to_owned()),
-        error: Some(" error ".to_owned()),
-        no_match: Some(" no-match ".to_owned()),
-        matched: Some(" matched ".to_owned()),
-        updateable: Some(" update ".to_owned()),
-        updateable_vulnerable: Some(" vulnerable ".to_owned()),
-        build: Some(" build ".to_owned()),
-    });
+    let indicators = SuggestionIndicators {
+        latest: " latest ".to_owned(),
+        satisfies_latest: " satisfies ".to_owned(),
+        directory: " directory ".to_owned(),
+        error: " error ".to_owned(),
+        no_match: " no-match ".to_owned(),
+        matched: " matched ".to_owned(),
+        updateable: " update ".to_owned(),
+        updateable_vulnerable: " vulnerable ".to_owned(),
+        build: " build ".to_owned(),
+    }
+    .with_standard_indicators_for_blanks();
 
     assert_eq!(indicators.latest, " latest ");
     assert_eq!(indicators.satisfies_latest, " satisfies ");
@@ -299,126 +285,4 @@ fn direct_session_config_preserves_nonblank_custom_indicators() {
     });
 
     assert_eq!(session.config.suggestion_indicators, indicators);
-}
-
-#[test]
-fn session_config_input_normalizes_session_indicator_and_http_values() {
-    let config = normalized_session_config();
-
-    assert_eq!(config.cache_ttl_ms, 30_000);
-    assert_eq!(config.enabled_providers.len(), 2);
-    assert_eq!(config.enabled_providers[0].ecosystem, Cargo);
-    assert_eq!(config.enabled_providers[1].ecosystem, Npm);
-    assert_eq!(config.enabled_providers[1].manifest_kind, Some(PnpmYaml));
-    assert_eq!(config.suggestion_indicators.updateable, "U");
-    assert_eq!(config.suggestion_indicators.latest, "\u{1F7E2}");
-    assert!(!config.show_vulnerabilities);
-    assert!(config.show_suggestion_stats);
-    assert!(config.show_prereleases);
-    assert_eq!(config.http.timeout_ms, 250);
-    assert!(!config.http.strict_ssl);
-    assert_eq!(config.http.proxy.as_deref(), Some("http://localhost:8080"));
-    assert_eq!(config.http.auth_headers.len(), 1);
-    assert_eq!(config.http.auth_headers[0].name, "authorization");
-}
-
-#[test]
-fn session_config_input_normalizes_provider_values() {
-    let config = normalized_session_config();
-
-    assert_eq!(config.providers.registry_urls.len(), 1);
-    assert_eq!(
-        config.providers.registry_urls[0].url,
-        "https://mirror.test/crates"
-    );
-    assert_eq!(config.providers.prerelease_tags[0].tags, ["beta"]);
-    assert_eq!(config.providers.provider_cache[0].cache_ttl_ms, 15_000);
-    assert_eq!(
-        config.providers.provider_http[0].manifest_kind,
-        Some(PnpmYaml)
-    );
-    assert_eq!(
-        config.providers.dependency_properties[0].manifest_kind,
-        Some(PnpmYaml)
-    );
-    assert_eq!(
-        config.providers.file_patterns[0].manifest_kind,
-        ComposerJson
-    );
-    assert_eq!(
-        config.providers.file_patterns[0].pattern,
-        "**/acme.composer.json"
-    );
-}
-
-fn normalized_session_config() -> SessionConfig {
-    crate::support::tests::session_config_from_input(SessionConfigInput {
-        cache_duration_minutes: Some(0.5),
-        cache_ttl_seconds: Some(90),
-        enabled_providers: Some(vec![
-            "cargo".to_owned(),
-            "unknown".to_owned(),
-            "pnpm".to_owned(),
-        ]),
-        providers: Some(ProviderSettingsInput {
-            registry_urls: Some(vec![
-                RegistryUrlConfigInput {
-                    ecosystem: "cargo".to_owned(),
-                    url: "   ".to_owned(),
-                },
-                RegistryUrlConfigInput {
-                    ecosystem: "cargo".to_owned(),
-                    url: " https://mirror.test/crates ".to_owned(),
-                },
-            ]),
-            prerelease_tag_filters: Some(vec![PrereleaseTagConfigInput {
-                ecosystem: "npm".to_owned(),
-                tags: vec![" beta ".to_owned(), " ".to_owned()],
-            }]),
-            provider_cache: Some(vec![ProviderCacheConfigInput {
-                ecosystem: "pnpm".to_owned(),
-                cache_duration_minutes: Some(0.25),
-            }]),
-            provider_http: Some(vec![ProviderHttpConfigInput {
-                ecosystem: "pnpm".to_owned(),
-                strict_ssl: Some(false),
-            }]),
-            dependency_properties: Some(vec![DependencyPropertyConfigInput {
-                ecosystem: "npm".to_owned(),
-                provider: Some("pnpm".to_owned()),
-                properties: vec!["catalog".to_owned()],
-            }]),
-            file_patterns: Some(vec![FilePatternConfigInput {
-                ecosystem: "composer".to_owned(),
-                pattern: " **/acme.composer.json ".to_owned(),
-            }]),
-        }),
-        suggestion_indicators: Some(SuggestionIndicatorsInput {
-            updateable: Some("U".to_owned()),
-            ..crate::default()
-        }),
-        show_vulnerabilities: Some(false),
-        show_suggestion_stats: Some(true),
-        show_prereleases: true,
-        update_severity: None,
-        http: Some(HttpConfigInput {
-            timeout_ms: Some(250),
-            strict_ssl: Some(false),
-            proxy: Some(" http://localhost:8080 ".to_owned()),
-            ca_file: None,
-            ca: None,
-            cert_file: None,
-            key_file: None,
-            cert: None,
-            key: None,
-            auth_headers: Some(vec![
-                HttpHeaderInput::new(" ", "ignored", None),
-                HttpHeaderInput::new(
-                    " authorization ",
-                    " Bearer token ",
-                    Some(" https://registry.example.test ".to_owned()),
-                ),
-            ]),
-        }),
-    })
 }

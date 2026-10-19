@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use super::{Credential, CredentialChain, Secret, apply_credential, run_for_output};
-use crate::http::{HttpConfig, HttpConfigInput, HttpHeader, HttpHeaderInput};
+use crate::http::{HttpConfig, HttpHeader};
 
 const API: &str = "https://api.github.com/repos/actions/checkout/tags";
 const OTHER: &str = "https://registry.npmjs.org/left-pad";
@@ -203,22 +203,4 @@ fn credentials_redaction_http_config_debug() {
     };
     assert_clean(&format!("{config:?}"));
     assert_clean(&format!("{config:#?}"));
-
-    let input = HttpConfigInput {
-        timeout_ms: None,
-        strict_ssl: None,
-        proxy: Some(format!("http://user:{SECRET}@proxy.example:8080")),
-        ca_file: None,
-        ca: None,
-        cert_file: None,
-        key_file: None,
-        cert: None,
-        key: Some(SECRET.to_owned()),
-        auth_headers: Some(vec![HttpHeaderInput::new(
-            "Authorization",
-            format!("Bearer {SECRET}"),
-            None,
-        )]),
-    };
-    assert_clean(&format!("{input:?}"));
 }

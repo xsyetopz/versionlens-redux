@@ -4,13 +4,14 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Deserializer};
-use versionlens_fetch::HttpConfigInput;
+use versionlens_fetch::{HttpConfig, cache_ttl_ms, standard_http_config};
 
 use super::{
-    DependencyPropertyConfigInput, FilePatternConfigInput, PrereleaseTagConfigInput,
-    ProviderCacheConfigInput, ProviderHttpConfigInput, ProviderSettingsInput,
-    RegistryUrlConfigInput, SessionConfig, SessionConfigInput, SuggestionIndicatorsInput,
-    UpdateSeverity,
+    ProviderSettings, SessionConfig, SuggestionIndicators, UpdateSeverity,
+    dependency_property_config_from_name, enabled_provider_config_from_name,
+    file_pattern_config_from_name, prerelease_tag_config_from_name,
+    provider_cache_config_from_name, provider_http_config_from_name, registry_url_config_from_name,
+    standard_suggestion_indicators,
 };
 
 /// The `versionlens` settings section. A missing key keeps the engine default.
@@ -122,119 +123,82 @@ impl Settings {
     }
 
     pub fn session_config(self) -> SessionConfig {
-        SessionConfig::from(self.into_input())
-    }
-
-    fn into_input(self) -> SessionConfigInput {
-        let mut providers = ProviderSettingsInput {
-            registry_urls: Some(Vec::new()),
-            prerelease_tag_filters: Some(Vec::new()),
-            provider_cache: Some(Vec::new()),
-            provider_http: Some(Vec::new()),
-            dependency_properties: Some(Vec::new()),
-            file_patterns: Some(Vec::new()),
-        };
+        let mut providers = ProviderSettings::default();
         for (name, settings) in self.ecosystems {
             settings.add_to(&name, &mut providers);
         }
-        SessionConfigInput {
-            cache_duration_minutes: self.caching.duration,
-            cache_ttl_seconds: None,
-            enabled_providers: self.enabled_providers,
-            providers: Some(providers),
-            suggestion_indicators: self.suggestions.indicators.map(indicators),
-            show_vulnerabilities: self.suggestions.show_vulnerabilities,
-            show_suggestion_stats: self.suggestions.show_suggestions_stats,
+        SessionConfig {
+            cache_ttl_ms: cache_ttl_ms(self.caching.duration, None),
+            enabled_providers: self
+                .enabled_providers
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|provider| enabled_provider_config_from_name(provider))
+                .collect(),
+            providers,
+            suggestion_indicators: self
+                .suggestions
+                .indicators
+                .map(indicators)
+                .unwrap_or_else(standard_suggestion_indicators),
+            show_vulnerabilities: self.suggestions.show_vulnerabilities.unwrap_or(true),
+            show_suggestion_stats: self.suggestions.show_suggestions_stats.unwrap_or(false),
             show_prereleases: self
                 .suggestions
                 .show_prereleases_on_startup
                 .unwrap_or(false),
-            update_severity: self.diagnostics.update_severity,
-            http: Some(HttpConfigInput {
-                timeout_ms: None,
-                strict_ssl: self.http.strict_ssl,
-                proxy: None,
-                ca_file: None,
-                ca: None,
-                cert_file: None,
-                key_file: None,
-                cert: None,
-                key: None,
-                auth_headers: None,
-            }),
+            update_severity: self
+                .diagnostics
+                .update_severity
+                .unwrap_or_default()
+                .severity(),
+            http: HttpConfig {
+                strict_ssl: self.http.strict_ssl.unwrap_or(true),
+                ..standard_http_config()
+            },
         }
     }
 }
 
 impl EcosystemSettings {
-    fn add_to(self, name: &str, providers: &mut ProviderSettingsInput) {
-        let ecosystem = || name.to_owned();
-        let registry_urls = providers.registry_urls.get_or_insert_default();
-        registry_urls.extend(
+    fn add_to(self, name: &str, providers: &mut ProviderSettings) {
+        providers.registry_urls.extend(
             self.api_url
                 .into_iter()
                 .chain(self.nuget.sources.into_iter().flatten())
-                .map(|url| RegistryUrlConfigInput {
-                    ecosystem: ecosystem(),
-                    url,
-                }),
+                .filter_map(|url| registry_url_config_from_name(name, url)),
         );
-        if let Some(pattern) = self.files {
-            providers
-                .file_patterns
-                .get_or_insert_default()
-                .push(FilePatternConfigInput {
-                    ecosystem: ecosystem(),
-                    pattern,
-                });
-        }
-        if let Some(tags) = self.prerelease_tag_filter {
-            providers
-                .prerelease_tag_filters
-                .get_or_insert_default()
-                .push(PrereleaseTagConfigInput {
-                    ecosystem: ecosystem(),
-                    tags,
-                });
-        }
-        if let Some(properties) = self.dependency_properties {
-            providers
-                .dependency_properties
-                .get_or_insert_default()
-                .push(DependencyPropertyConfigInput {
-                    ecosystem: ecosystem(),
-                    provider: None,
-                    properties,
-                });
-        }
-        if let Some(minutes) = self.caching.duration {
-            providers
-                .provider_cache
-                .get_or_insert_default()
-                .push(ProviderCacheConfigInput {
-                    ecosystem: ecosystem(),
-                    cache_duration_minutes: Some(minutes),
-                });
-        }
-        if let Some(strict_ssl) = self.http.strict_ssl {
-            providers
-                .provider_http
-                .get_or_insert_default()
-                .push(ProviderHttpConfigInput {
-                    ecosystem: ecosystem(),
-                    strict_ssl: Some(strict_ssl),
-                });
-        }
+        providers.file_patterns.extend(
+            self.files
+                .and_then(|pattern| file_pattern_config_from_name(name, pattern)),
+        );
+        providers.prerelease_tags.extend(
+            self.prerelease_tag_filter
+                .and_then(|tags| prerelease_tag_config_from_name(name, tags)),
+        );
+        providers.dependency_properties.extend(
+            self.dependency_properties.and_then(|properties| {
+                dependency_property_config_from_name(name, None, properties)
+            }),
+        );
+        providers
+            .provider_cache
+            .extend(provider_cache_config_from_name(name, self.caching.duration));
+        providers.provider_http.extend(
+            self.http
+                .strict_ssl
+                .and_then(|strict_ssl| provider_http_config_from_name(name, Some(strict_ssl))),
+        );
     }
 }
 
-fn indicators(mut configured: BTreeMap<String, String>) -> SuggestionIndicatorsInput {
+fn indicators(mut configured: BTreeMap<String, String>) -> SuggestionIndicators {
     let mut take = |index: usize| {
         let (name, legacy) = INDICATOR_NAMES[index];
         let legacy = configured.remove(legacy);
-        configured.remove(name).or(legacy)
+        configured.remove(name).or(legacy).unwrap_or_default()
     };
-    SuggestionIndicatorsInput {
+    SuggestionIndicators {
         latest: take(0),
         satisfies_latest: take(1),
         directory: take(2),
@@ -245,6 +209,7 @@ fn indicators(mut configured: BTreeMap<String, String>) -> SuggestionIndicatorsI
         updateable_vulnerable: take(7),
         build: take(8),
     }
+    .with_standard_indicators_for_blanks()
 }
 
 #[cfg(test)]

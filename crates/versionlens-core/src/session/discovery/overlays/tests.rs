@@ -1,8 +1,8 @@
 use versionlens_model::DocumentInput;
 
 use crate::{
-    SessionConfigInput, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize,
-    WorkspaceDiscoveryOptions, version_lens_session,
+    SessionConfig, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize,
+    WorkspaceDiscoveryOptions, enabled_provider_config_from_name, version_lens_session,
 };
 
 fn options() -> WorkspaceDiscoveryOptions {
@@ -21,7 +21,7 @@ fn options() -> WorkspaceDiscoveryOptions {
 
 #[test]
 fn standalone_discovery_preserves_the_supplied_snapshot_without_filesystem_roots() {
-    let session = version_lens_session(SessionConfigInput::default().into());
+    let session = version_lens_session(SessionConfig::default());
     let input = options();
     let expected = input.overlays[0].clone();
     let documents = session
@@ -33,20 +33,19 @@ fn standalone_discovery_preserves_the_supplied_snapshot_without_filesystem_roots
 
 #[test]
 fn standalone_discovery_applies_provider_enablement_and_size_limits() {
-    let session = version_lens_session(
-        SessionConfigInput {
-            enabled_providers: Some(vec!["cargo".to_owned()]),
-            ..SessionConfigInput::default()
-        }
-        .into(),
-    );
+    let session = version_lens_session(SessionConfig {
+        enabled_providers: vec![
+            enabled_provider_config_from_name("cargo").expect("cargo provider"),
+        ],
+        ..SessionConfig::default()
+    });
     assert!(
         session
             .discover_workspace_documents(options())
             .next()
             .is_none()
     );
-    let session = version_lens_session(SessionConfigInput::default().into());
+    let session = version_lens_session(SessionConfig::default());
     let mut excluded = options();
     excluded.exclusions.push("**/package.json".to_owned());
     assert!(
@@ -76,7 +75,7 @@ fn standalone_discovery_applies_provider_enablement_and_size_limits() {
 fn open_documents_outside_the_workspace_roots_are_still_checked() {
     let root =
         versionlens_test_support::temporary_directory("versionlens-outside-overlay").unwrap();
-    let session = version_lens_session(SessionConfigInput::default().into());
+    let session = version_lens_session(SessionConfig::default());
     let mut input = options();
     input.roots = vec![root.clone()];
     let expected = input.overlays[0].clone();

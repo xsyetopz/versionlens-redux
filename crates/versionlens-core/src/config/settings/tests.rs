@@ -2,7 +2,7 @@ use serde_json::json;
 use versionlens_model::{Ecosystem, ManifestKind};
 
 use super::Settings;
-use crate::{SessionConfig, SessionConfigInput};
+use crate::SessionConfig;
 
 fn config(value: serde_json::Value) -> SessionConfig {
     Settings::from_value(value)
@@ -12,14 +12,8 @@ fn config(value: serde_json::Value) -> SessionConfig {
 
 #[test]
 fn missing_settings_give_the_engine_defaults() {
-    assert_eq!(
-        config(json!({})),
-        SessionConfig::from(SessionConfigInput::default())
-    );
-    assert_eq!(
-        config(json!(null)),
-        SessionConfig::from(SessionConfigInput::default())
-    );
+    assert_eq!(config(json!({})), SessionConfig::default());
+    assert_eq!(config(json!(null)), SessionConfig::default());
 }
 
 #[test]

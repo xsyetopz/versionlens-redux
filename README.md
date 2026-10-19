@@ -29,7 +29,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 
 | Package | README | Runtime boundary |
 | --- | --- | --- |
-| VS Code | [`packages/vscode-extension/README.md`](packages/vscode-extension/README.md) | TypeScript adapter + `versionlens-napi` native module |
+| VS Code | [`packages/vscode-extension/README.md`](packages/vscode-extension/README.md) | TypeScript LSP client + shared `versionlens-lsp` binary |
 | Zed | [`packages/zed-extension/README.md`](packages/zed-extension/README.md) | Shared `versionlens-lsp` binary |
 | Neovim | [`packages/neovim-plugin/README.md`](packages/neovim-plugin/README.md) | Lua adapter + shared `versionlens-lsp` binary |
 | JetBrains | [`packages/jetbrains-plugin/README.md`](packages/jetbrains-plugin/README.md) | Shared `versionlens-lsp` binary through the IntelliJ Platform LSP API |
@@ -51,7 +51,6 @@ bun install --frozen-lockfile
 
 ```bash
 bun run build                 # build the VS Code extension bundle
-bun run native:build          # build the Rust N-API module used by VS Code
 cargo build -p versionlens-lsp # build the shared LSP server
 bun run typecheck             # TypeScript checks
 cargo test --workspace        # Rust tests

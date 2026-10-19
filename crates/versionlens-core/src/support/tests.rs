@@ -1,7 +1,5 @@
 use crate::registry::RegistryContext;
-use crate::{
-    AnalyzeDocumentOutput, ProviderSettings, SessionConfig, SessionConfigInput, VersionLensSession,
-};
+use crate::{AnalyzeDocumentOutput, ProviderSettings, SessionConfig, VersionLensSession};
 use crate::{contract, registry};
 use std::io::Result as IoResult;
 use std::io::{Read, Write};
@@ -16,10 +14,6 @@ use versionlens_model::{Dependency, DocumentInput, Ecosystem};
 
 pub(crate) fn clone_arc<T>(value: &StdArc<T>) -> StdArc<T> {
     value.clone()
-}
-
-pub(crate) fn session_config_from_input(input: SessionConfigInput) -> SessionConfig {
-    input.into()
 }
 
 pub(crate) fn system_time_now() -> SystemTime {

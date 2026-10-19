@@ -9,9 +9,6 @@ pub use client::{
     get_text_with_accept, get_text_with_accept_and_retry, get_text_with_accept_and_retry_timeout,
     post_text, post_text_with_timeout,
 };
-pub use config::{
-    HttpConfig, HttpConfigInput, HttpHeader, HttpHeaderInput, http_config_from_input,
-    standard_http_config,
-};
+pub use config::{HttpConfig, HttpHeader, standard_http_config};
 pub use error::HttpError;
 pub use retry::{RetryPolicy, disabled_retry_policy, npm_registry_fetch_retry_policy};

@@ -132,14 +132,12 @@ If logs do not show the cause, open **Help > Toggle Developer Tools**.
 
 ## Development
 
-The VS Code package uses TypeScript for the adapter and `versionlens-napi` for the Rust boundary.
+The VS Code package is a TypeScript LSP client that launches the bundled `versionlens-lsp` binary.
 
 ```bash
 bun install --frozen-lockfile
 bun run build
-bun run native:build
 bun run test:extension
-bun run test:napi
 ```
 
 Run `bun run verify` from the repository root before committing broad package changes.

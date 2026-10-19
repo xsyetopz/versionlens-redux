@@ -14,47 +14,9 @@ pub struct SuggestionIndicators {
     pub build: String,
 }
 
-#[macro_export]
-macro_rules! define_suggestion_indicators_input {
-    ($(#[$meta:meta])* $name:ident) => {
-        $(#[$meta])*
-        pub struct $name {
-            pub latest: Option<String>,
-            pub satisfies_latest: Option<String>,
-            pub directory: Option<String>,
-            pub error: Option<String>,
-            pub no_match: Option<String>,
-            pub matched: Option<String>,
-            pub updateable: Option<String>,
-            pub updateable_vulnerable: Option<String>,
-            pub build: Option<String>,
-        }
-    };
-}
-
-define_suggestion_indicators_input!(
-    #[derive(Debug, Default, PartialEq, Eq)]
-    SuggestionIndicatorsInput
-);
-
 impl SuggestionIndicators {
     pub fn standard() -> Self {
         standard_suggestion_indicators()
-    }
-
-    pub fn from_input(input: SuggestionIndicatorsInput) -> Self {
-        Self {
-            latest: input.latest.unwrap_or_default(),
-            satisfies_latest: input.satisfies_latest.unwrap_or_default(),
-            directory: input.directory.unwrap_or_default(),
-            error: input.error.unwrap_or_default(),
-            no_match: input.no_match.unwrap_or_default(),
-            matched: input.matched.unwrap_or_default(),
-            updateable: input.updateable.unwrap_or_default(),
-            updateable_vulnerable: input.updateable_vulnerable.unwrap_or_default(),
-            build: input.build.unwrap_or_default(),
-        }
-        .with_standard_indicators_for_blanks()
     }
 
     pub(crate) fn with_standard_indicators_for_blanks(self) -> Self {
