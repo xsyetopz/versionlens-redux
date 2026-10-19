@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use versionlens_model::Dependency;
 
-use super::nodes::XmlNode;
+use crate::manifest::adapter::xml::{XmlElement, XmlNode};
+use crate::manifest::path_query::query;
 
 mod package;
 mod project;
@@ -16,7 +17,6 @@ struct MavenParseContext<'a> {
     text: &'a str,
     nodes: &'a [XmlNode],
     properties: &'a HashMap<String, usize>,
-    dependency_paths: &'a [&'a str],
 }
 
 pub(super) fn collect_maven_dependencies(
@@ -29,24 +29,29 @@ pub(super) fn collect_maven_dependencies(
         text,
         nodes,
         properties: &properties,
-        dependency_paths,
     };
 
-    nodes
-        .iter()
-        .filter_map(|node| maven_dependency_from_node(&context, node))
+    selected_node_indexes(nodes, dependency_paths)
+        .into_iter()
+        .filter_map(|index| enabled_maven_dependency(&context, &nodes[index]))
         .collect()
 }
 
-fn maven_dependency_from_node(
-    context: &MavenParseContext<'_>,
-    node: &XmlNode,
-) -> Option<Dependency> {
-    context
-        .dependency_paths
-        .contains(&node.path.as_str())
-        .then(|| enabled_maven_dependency(context, node))
-        .flatten()
+/// The nodes that the dependency paths select, in the order of the nodes.
+fn selected_node_indexes(nodes: &[XmlNode], dependency_paths: &[&str]) -> Vec<usize> {
+    let mut indexes = dependency_paths
+        .iter()
+        .flat_map(|path| {
+            query(
+                XmlElement::root(nodes),
+                &path.split('.').collect::<Vec<_>>(),
+            )
+        })
+        .filter_map(|found| found.node.index())
+        .collect::<Vec<_>>();
+    indexes.sort_unstable();
+    indexes.dedup();
+    indexes
 }
 
 fn enabled_maven_dependency(context: &MavenParseContext<'_>, node: &XmlNode) -> Option<Dependency> {

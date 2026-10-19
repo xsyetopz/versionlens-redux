@@ -17,13 +17,14 @@ fn map(entries: Vec<(&str, Tree)>) -> Tree {
 }
 
 impl<'a> PathNode for &'a Tree {
-    fn child(&self, key: &str) -> Option<Self> {
+    fn children_named(&self, key: &str) -> Vec<Self> {
         match *self {
             Tree::Map(entries) => entries
                 .iter()
-                .find(|(name, _)| name == key)
-                .map(|(_, child)| child),
-            Tree::Leaf | Tree::List(_) => None,
+                .filter(|(name, _)| name == key)
+                .map(|(_, child)| child)
+                .collect(),
+            Tree::Leaf | Tree::List(_) => Vec::new(),
         }
     }
 

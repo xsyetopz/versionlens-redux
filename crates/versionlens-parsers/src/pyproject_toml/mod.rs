@@ -1,4 +1,4 @@
-use crate::manifest_support::toml_walk::collect_toml_dependencies;
+use crate::manifest::adapter::toml::collect_toml_dependencies;
 use versionlens_model::Dependency;
 
 mod collect;

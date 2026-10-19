@@ -59,11 +59,7 @@ fn maps_runtime_manifests_to_their_provider_families() {
 fn rows_hold_their_default_dependency_paths() {
     use versionlens_model::ManifestKind::{NixFlake, NpmPackageJson, PubspecOverridesYaml};
 
-    let defaults = |kind| {
-        manifest_row(kind)
-            .expect("row exists")
-            .default_dependency_paths()
-    };
+    let defaults = |kind| manifest_row(kind).expect("row exists").dependency_paths;
 
     let npm = defaults(NpmPackageJson);
     assert!(npm.contains(&"dependencies"));

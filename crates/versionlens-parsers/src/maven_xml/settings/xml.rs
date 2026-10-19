@@ -1,5 +1,5 @@
-use super::super::nodes::{XmlNode, collect_nodes, texts_from_nodes};
 use super::profile::{active_profile_ids, profile_is_active};
+use crate::manifest::adapter::xml::{XmlNode, collect_nodes, texts_from_nodes};
 
 const SETTINGS_LOCAL_REPOSITORY_PATH: &str = "settings.localRepository";
 const SETTINGS_REPOSITORY_URL_PATH: &str = "settings.profiles.profile.repositories.repository.url";

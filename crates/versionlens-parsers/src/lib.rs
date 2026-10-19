@@ -47,6 +47,7 @@ mod runtime_manifests;
 mod source_scanning;
 #[cfg(test)]
 mod test_support;
+mod workspace_files;
 mod yarnrc;
 
 pub(crate) use build_inputs::{ansible_galaxy, bazel_module};
@@ -129,6 +130,11 @@ pub(crate) use support::{
 pub use versionlens_model::{
     Dependency, DocumentInput, Ecosystem, ManifestKind, ecosystem_config_namespace,
     ecosystem_from_config_name,
+};
+pub use workspace_files::{
+    CargoWorkspaceMembers, action_manifest_is_valid, parse_cargo_package_identity,
+    parse_cargo_workspace_members, parse_cargo_workspace_version, parse_pnpm_workspace_packages,
+    reusable_workflow_is_valid,
 };
 pub use yarnrc::{
     parse_yarnrc_npm_auth_entries_with_env, parse_yarnrc_npm_registry_entries_with_env,

@@ -7,7 +7,7 @@ use crate::positions::to_usize;
 use super::XmlNode;
 use event::xml_event_finished;
 
-pub(in crate::maven_xml) fn collect_nodes(text: &str) -> Option<Vec<XmlNode>> {
+pub(crate) fn collect_nodes(text: &str) -> Option<Vec<XmlNode>> {
     let mut reader = crate::xml_reader(text);
     let mut collector = crate::default();
 

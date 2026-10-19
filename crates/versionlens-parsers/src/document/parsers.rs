@@ -6,5 +6,5 @@ pub(super) fn parse_manifest_kind(
     text: &str,
     paths: &[&str],
 ) -> Vec<Dependency> {
-    manifest_row(kind).map_or_else(Vec::new, |row| row.parser.parse(text, paths))
+    manifest_row(kind).map_or_else(Vec::new, |row| row.parse(text, paths))
 }

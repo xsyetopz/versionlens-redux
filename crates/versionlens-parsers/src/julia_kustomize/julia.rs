@@ -1,63 +1,69 @@
-use std::collections::BTreeMap;
+use std::ops::Range;
 
+use crate::manifest::adapter::line_span;
+use crate::manifest::adapter::toml::TomlNode;
+use crate::manifest::path_query::{PathNode, query};
 use crate::positions::offset_range;
-use crate::support;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Julia;
 
-type ParsedStringEntry = Option<StringEntry>;
+/// A `key = "value"` entry of a `Project.toml` table.
+struct StringEntry {
+    key: String,
+    value: String,
+    /// The whole line that holds the entry.
+    line: Range<usize>,
+    value_span: Range<usize>,
+}
+
+/// A `Project.toml` source: a `path`, or else the `url` of a repository.
+struct SourceEntry {
+    source: &'static str,
+    value: String,
+    line: Range<usize>,
+    value_span: Range<usize>,
+}
 
 pub(crate) fn parse_julia_project(text: &str) -> Vec<Dependency> {
+    let Ok(document) = crate::parse_toml_document(text) else {
+        return vec![];
+    };
+    let root = TomlNode::root(text, &document);
+
     let mut dependencies = vec![];
-    let name = root_string_field(text, "name");
-    let version = root_string_field(text, "version");
-    if let (Some(name), Some(version)) = (name.as_ref(), version.as_ref()) {
-        dependencies.push(Dependency {
-            name: name.value.as_str().to_owned(),
-            requirement: version.value.as_str().to_owned(),
-            ecosystem: Julia,
-            group: "version".to_owned(),
-            hosted_url: None,
-            hosted_name: None,
-            range: offset_range(text, version.line_start, version.line_end),
-            requirement_range: offset_range(text, version.value_start, version.value_end),
-            requirement_prefix: "".to_owned(),
-            requirement_suffix: "".to_owned(),
-            canonical_reference: None,
-        });
+    if let Some(version) = project_version(text, root) {
+        dependencies.push(version);
     }
 
-    let deps = table_string_entries(text, "deps");
-    let compat = table_string_entries(text, "compat");
-    let sources = table_source_entries(text, "sources");
+    let deps = string_entries(text, root, "deps");
+    let compat = string_entries(text, root, "compat");
+    let sources = source_entries(text, root);
     let mut names = deps
         .iter()
-        .map(|entry| entry.key.as_str().to_owned())
+        .map(|entry| entry.key.as_str())
         .collect::<Vec<_>>();
     for entry in &compat {
-        if entry.key != "julia" && !names.contains(&entry.key) {
-            names.push(entry.key.as_str().to_owned());
+        if entry.key != "julia" && !names.contains(&entry.key.as_str()) {
+            names.push(entry.key.as_str());
         }
     }
 
     for package in names {
-        if let Some(source) = sources.get(&package) {
-            dependencies.push(source_dependency(text, "sources", &package, source));
-            continue;
-        }
-
-        if let Some(entry) = compat.iter().find(|entry| entry.key == package) {
+        // A later entry of the same key wins, as in the file.
+        if let Some(source) = sources.iter().rfind(|(key, _)| key == package) {
+            dependencies.push(source_dependency(text, package, &source.1));
+        } else if let Some(entry) = compat.iter().rfind(|entry| entry.key == package) {
             dependencies.push(string_entry_dependency(text, "compat", entry));
         } else if let Some(entry) = deps.iter().find(|entry| entry.key == package) {
             dependencies.push(Dependency {
-                name: entry.key.as_str().to_owned(),
+                name: entry.key.clone(),
                 requirement: "latest".to_owned(),
                 ecosystem: Julia,
                 group: "deps".to_owned(),
                 hosted_url: None,
-                hosted_name: Some(entry.value.as_str().to_owned()),
-                range: offset_range(text, entry.line_start, entry.line_end),
-                requirement_range: offset_range(text, entry.value_end, entry.value_end),
+                hosted_name: Some(entry.value.clone()),
+                range: offset_range(text, entry.line.start, entry.line.end),
+                requirement_range: offset_range(text, entry.value_span.end, entry.value_span.end),
                 requirement_prefix: " # compat ".to_owned(),
                 requirement_suffix: "".to_owned(),
                 canonical_reference: None,
@@ -72,280 +78,148 @@ pub(crate) fn parse_julia_project(text: &str) -> Vec<Dependency> {
     dependencies
 }
 
-pub(crate) fn parse_julia_manifest(text: &str) -> Vec<Dependency> {
-    let mut dependencies = vec![];
-    let lines = support::line_offsets(text).collect::<Vec<_>>();
-    let mut index = 0usize;
-    while index < lines.len() {
-        let (line_start, line) = lines[index];
-        let trimmed = line.trim();
-        let Some(name) = trimmed
-            .strip_prefix("[[deps.")
-            .and_then(|value| value.strip_suffix("]]"))
-        else {
-            index += 1;
-            continue;
-        };
-        let block_start = line_start;
-        let mut block_end = text.len();
-        let mut version = None;
-        let mut path = None;
-        let mut repo_url = None;
-        index += 1;
-        while let Some((next_start, next_line)) = lines.get(index).copied() {
-            if next_line.trim_start().starts_with("[[deps.") {
-                block_end = next_start;
-                break;
-            }
-            if version.is_none() {
-                version = line_string_assignment(next_start, next_line, "version");
-            }
-            if path.is_none() {
-                path = line_string_assignment(next_start, next_line, "path");
-            }
-            if repo_url.is_none() {
-                repo_url = line_string_assignment(next_start, next_line, "repo-url");
-            }
-            index += 1;
-        }
-
-        let source = path
-            .as_ref()
-            .map(|entry| ("path", entry))
-            .or_else(|| repo_url.as_ref().map(|entry| ("git", entry)));
-        if let Some((source_kind, source)) = source {
-            dependencies.push(Dependency {
-                name: name.to_owned(),
-                requirement: source.value.as_str().to_owned(),
-                ecosystem: Julia,
-                group: "deps".to_owned(),
-                hosted_url: Some(source_kind.to_owned()),
-                hosted_name: None,
-                range: offset_range(text, block_start, block_end),
-                requirement_range: offset_range(text, source.value_start, source.value_end),
-                requirement_prefix: "".to_owned(),
-                requirement_suffix: "".to_owned(),
-                canonical_reference: None,
-            });
-        } else if let Some(version) = version {
-            dependencies.push(Dependency {
-                name: name.to_owned(),
-                requirement: version.value.as_str().to_owned(),
-                ecosystem: Julia,
-                group: "deps".to_owned(),
-                hosted_url: None,
-                hosted_name: None,
-                range: offset_range(text, block_start, block_end),
-                requirement_range: offset_range(text, version.value_start, version.value_end),
-                requirement_prefix: "".to_owned(),
-                requirement_suffix: "".to_owned(),
-                canonical_reference: None,
-            });
-        }
-    }
-
-    dependencies
+/// The package named by `name`, at the `version` of the project.
+fn project_version(text: &str, root: TomlNode<'_>) -> Option<Dependency> {
+    let name = root.children_named("name").first()?.scalar()?;
+    let version_node = *root.children_named("version").first()?;
+    let version = version_node.scalar()?;
+    let line = line_span(text, &(version_node.key_span()?.start..version.span.end));
+    Some(Dependency {
+        name: name.value,
+        requirement: version.value,
+        ecosystem: Julia,
+        group: "version".to_owned(),
+        hosted_url: None,
+        hosted_name: None,
+        range: offset_range(text, line.start, line.end),
+        requirement_range: offset_range(text, version.span.start, version.span.end),
+        requirement_prefix: "".to_owned(),
+        requirement_suffix: "".to_owned(),
+        canonical_reference: None,
+    })
 }
 
-#[derive(Clone)]
-struct StringEntry {
-    key: String,
-    value: String,
-    line_start: usize,
-    line_end: usize,
-    value_start: usize,
-    value_end: usize,
+fn string_entries(text: &str, root: TomlNode<'_>, table: &str) -> Vec<StringEntry> {
+    query(root, &[table, "*"])
+        .into_iter()
+        .filter_map(|found| {
+            let value = found.node.scalar()?;
+            let line = line_span(text, &(found.node.key_span()?.start..value.span.end));
+            Some(StringEntry {
+                key: found.keys[1].clone(),
+                value: value.value,
+                line,
+                value_span: value.span,
+            })
+        })
+        .collect()
 }
 
-#[derive(Clone)]
-struct SourceEntry {
-    value: String,
-    source: &'static str,
-    line_start: usize,
-    line_end: usize,
-    value_start: usize,
-    value_end: usize,
+fn source_entries(text: &str, root: TomlNode<'_>) -> Vec<(String, SourceEntry)> {
+    query(root, &["sources", "*"])
+        .into_iter()
+        .filter_map(|found| {
+            let (source, value) =
+                [("path", "path"), ("git", "url")]
+                    .into_iter()
+                    .find_map(|(source, field)| {
+                        Some((source, found.node.children_named(field).first()?.scalar()?))
+                    })?;
+            let line = line_span(text, &(found.node.key_span()?.start..value.span.end));
+            Some((
+                found.keys[1].clone(),
+                SourceEntry {
+                    source,
+                    value: value.value,
+                    line,
+                    value_span: value.span,
+                },
+            ))
+        })
+        .collect()
 }
 
 fn string_entry_dependency(text: &str, group: &str, entry: &StringEntry) -> Dependency {
     Dependency {
-        name: entry.key.as_str().to_owned(),
-        requirement: entry.value.as_str().to_owned(),
+        name: entry.key.clone(),
+        requirement: entry.value.clone(),
         ecosystem: Julia,
         group: group.to_owned(),
         hosted_url: None,
         hosted_name: None,
-        range: offset_range(text, entry.line_start, entry.line_end),
-        requirement_range: offset_range(text, entry.value_start, entry.value_end),
+        range: offset_range(text, entry.line.start, entry.line.end),
+        requirement_range: offset_range(text, entry.value_span.start, entry.value_span.end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
         canonical_reference: None,
     }
 }
 
-fn source_dependency(text: &str, group: &str, package: &str, source: &SourceEntry) -> Dependency {
+fn source_dependency(text: &str, package: &str, source: &SourceEntry) -> Dependency {
     Dependency {
         name: package.to_owned(),
-        requirement: source.value.as_str().to_owned(),
+        requirement: source.value.clone(),
         ecosystem: Julia,
-        group: group.to_owned(),
+        group: "sources".to_owned(),
         hosted_url: Some(source.source.to_owned()),
         hosted_name: None,
-        range: offset_range(text, source.line_start, source.line_end),
-        requirement_range: offset_range(text, source.value_start, source.value_end),
+        range: offset_range(text, source.line.start, source.line.end),
+        requirement_range: offset_range(text, source.value_span.start, source.value_span.end),
         requirement_prefix: "".to_owned(),
         requirement_suffix: "".to_owned(),
         canonical_reference: None,
     }
 }
 
-fn root_string_field(text: &str, field: &str) -> ParsedStringEntry {
-    for (line_start, line) in support::line_offsets(text) {
-        if line.trim_start().starts_with('[') {
-            return None;
-        }
-        if let Some(entry) = line_string_assignment(line_start, line, field) {
-            return Some(entry);
-        }
-    }
-
-    None
-}
-
-fn table_string_entries(text: &str, table: &str) -> Vec<StringEntry> {
-    let Some((start, end)) = table_span(text, table) else {
+/// The `[[deps.Name]]` blocks of a `Manifest.toml`. A block runs to the next
+/// `[[deps.` header, or to the end of the file.
+pub(crate) fn parse_julia_manifest(text: &str) -> Vec<Dependency> {
+    let Ok(document) = crate::parse_toml_document(text) else {
         return vec![];
     };
-    support::line_offsets(text)
-        .filter(|(line_start, _)| *line_start >= start && *line_start < end)
-        .filter_map(|(line_start, line)| line_string_entry(line_start, line))
-        .collect()
-}
+    let root = TomlNode::root(text, &document);
 
-fn table_source_entries(text: &str, table: &str) -> BTreeMap<String, SourceEntry> {
-    let Some((start, end)) = table_span(text, table) else {
-        return crate::default();
-    };
-
-    let mut sources: BTreeMap<String, SourceEntry> = crate::default();
-    for (line_start, line) in support::line_offsets(text) {
-        if line_start < start || line_start >= end {
-            continue;
-        }
-        let Some((key, value_start)) = assignment_key_and_value_start(line_start, line) else {
-            continue;
-        };
-        let Some((source, value, value_offset)) =
-            inline_source_value(line, value_start - line_start)
-        else {
-            continue;
-        };
-        sources.insert(
-            key,
-            SourceEntry {
-                value: value.to_owned(),
-                source,
-                line_start,
-                line_end: line_start + line.len(),
-                value_start: line_start + value_offset,
-                value_end: line_start + value_offset + value.len(),
-            },
-        );
-    }
-
-    sources
-}
-
-fn inline_source_value(
-    line: &str,
-    value_start_in_line: usize,
-) -> Option<(&'static str, &str, usize)> {
-    let value = line.get(value_start_in_line..)?;
-    quoted_inline_key(value, "path")
-        .map(|(value, offset)| ("path", value, value_start_in_line + offset))
-        .or_else(|| {
-            quoted_inline_key(value, "url")
-                .map(|(value, offset)| ("git", value, value_start_in_line + offset))
+    let mut blocks = query(root, &["deps", "*", "*"])
+        .into_iter()
+        .filter_map(|found| {
+            let span = found.node.table_span()?;
+            Some((line_span(text, &span).start, found))
         })
-}
+        .collect::<Vec<_>>();
+    blocks.sort_by_key(|(start, _)| *start);
 
-fn quoted_inline_key<'a>(value: &'a str, key: &str) -> Option<(&'a str, usize)> {
-    let key_at = value.find(key)?;
-    let after_key = value.get(key_at + key.len()..)?;
-    let quote_relative = after_key.find('"')?;
-    let start = key_at + key.len() + quote_relative + 1;
-    let end = start + value.get(start..)?.find('"')?;
-    Some((value.get(start..end)?, start))
-}
+    let ends = blocks
+        .iter()
+        .skip(1)
+        .map(|(start, _)| *start)
+        .chain([text.len()])
+        .collect::<Vec<_>>();
 
-fn table_span(text: &str, table: &str) -> Option<(usize, usize)> {
-    let header = format!("[{table}]");
-    let lines = support::line_offsets(text).collect::<Vec<_>>();
-    for (index, (line_start, line)) in lines.iter().copied().enumerate() {
-        if line.trim() != header {
-            continue;
-        }
-        let start = line_start + line.len() + 1;
-        let end = lines
-            .iter()
-            .copied()
-            .skip(index + 1)
-            .find(|(_, line)| line.trim_start().starts_with('['))
-            .map(|(next_start, _)| next_start)
-            .unwrap_or(text.len());
-        return Some((start, end));
-    }
-
-    None
-}
-
-fn line_string_entry(line_start: usize, line: &str) -> ParsedStringEntry {
-    let (key, value_start) = assignment_key_and_value_start(line_start, line)?;
-    let value = quoted_value(line, value_start - line_start)?;
-    Some(StringEntry {
-        key,
-        value: value.0.to_owned(),
-        line_start,
-        line_end: line_start + line.len(),
-        value_start: line_start + value.1,
-        value_end: line_start + value.1 + value.0.len(),
-    })
-}
-
-fn line_string_assignment(line_start: usize, line: &str, key: &str) -> ParsedStringEntry {
-    let (candidate, value_start) = assignment_key_and_value_start(line_start, line)?;
-    if candidate != key {
-        return None;
-    }
-    let value = quoted_value(line, value_start - line_start)?;
-    Some(StringEntry {
-        key: candidate,
-        value: value.0.to_owned(),
-        line_start,
-        line_end: line_start + line.len(),
-        value_start: line_start + value.1,
-        value_end: line_start + value.1 + value.0.len(),
-    })
-}
-
-fn assignment_key_and_value_start(line_start: usize, line: &str) -> Option<(String, usize)> {
-    let trimmed = line.trim_start();
-    if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with('[') {
-        return None;
-    }
-    let leading = line.len() - trimmed.len();
-    let equals = trimmed.find('=')?;
-    let key = trimmed.get(..equals)?.trim().trim_matches('"');
-    if key.is_empty() {
-        return None;
-    }
-    Some((key.to_owned(), line_start + leading + equals + 1))
-}
-
-fn quoted_value(line: &str, start: usize) -> Option<(&str, usize)> {
-    let rest = line.get(start..)?;
-    let quote = rest.find('"')?;
-    let value_start = start + quote + 1;
-    let value_end = value_start + line.get(value_start..)?.find('"')?;
-    Some((line.get(value_start..value_end)?, value_start))
+    blocks
+        .iter()
+        .zip(ends)
+        .filter_map(|((start, found), end)| {
+            let field = |name: &str| found.node.children_named(name).first()?.scalar();
+            let source = field("path")
+                .map(|entry| ("path", entry))
+                .or_else(|| field("repo-url").map(|entry| ("git", entry)));
+            let (hosted_url, requirement) = match source {
+                Some((kind, entry)) => (Some(kind), entry),
+                None => (None, field("version")?),
+            };
+            Some(Dependency {
+                name: found.keys[1].clone(),
+                requirement: requirement.value,
+                ecosystem: Julia,
+                group: "deps".to_owned(),
+                hosted_url: hosted_url.map(str::to_owned),
+                hosted_name: None,
+                range: offset_range(text, *start, end),
+                requirement_range: offset_range(text, requirement.span.start, requirement.span.end),
+                requirement_prefix: "".to_owned(),
+                requirement_suffix: "".to_owned(),
+                canonical_reference: None,
+            })
+        })
+        .collect()
 }

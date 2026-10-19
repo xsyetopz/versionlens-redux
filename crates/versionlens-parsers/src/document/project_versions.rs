@@ -1,6 +1,5 @@
-use crate::cargo_toml::parse_cargo_toml_project_versions;
 use crate::classify::classify_document;
-use crate::json_manifest::parse_package_json_project_version;
+use crate::manifest::manifest_row;
 use versionlens_model::{Dependency, DocumentInput, ManifestKind};
 
 /// The project version fields of a document: the npm `version` and the Cargo
@@ -14,11 +13,5 @@ pub fn parse_project_versions_as_manifest(
     input: &DocumentInput,
     kind: ManifestKind,
 ) -> Vec<Dependency> {
-    match kind {
-        ManifestKind::NpmPackageJson | ManifestKind::NpmPackageJson5 => {
-            parse_package_json_project_version(&input.text)
-        }
-        ManifestKind::CargoToml => parse_cargo_toml_project_versions(&input.text),
-        _ => Vec::new(),
-    }
+    manifest_row(kind).map_or_else(Vec::new, |row| row.parse_own_version(&input.text))
 }

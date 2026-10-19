@@ -1,6 +1,6 @@
 use versionlens_model::Dependency;
 
-use super::super::nodes::{XmlNode, text_range};
+use crate::manifest::adapter::xml::{XmlNode, text_range};
 use versionlens_model::Ecosystem::Maven;
 
 pub(super) fn project_version_dependency(text: &str, node: &XmlNode) -> Dependency {

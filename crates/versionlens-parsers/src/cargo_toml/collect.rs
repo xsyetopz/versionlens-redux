@@ -1,5 +1,7 @@
 mod table;
 
+use super::project_version::{cargo_project_version, is_own_version_leaf};
+
 use toml_edit::{Key, Value as TomlValue};
 
 use versionlens_model::Dependency;
@@ -10,6 +12,8 @@ use table::collect_cargo_table_dependency;
 pub(super) struct CargoCollectContext<'a> {
     pub(super) text: &'a str,
     pub(super) dependency_paths: &'a [&'a str],
+    /// Whether the walk reads the version fields, and nothing else.
+    pub(super) own_version: bool,
 }
 
 pub(super) fn collect_toml_value(
@@ -19,6 +23,15 @@ pub(super) fn collect_toml_value(
     out: &mut Vec<Dependency>,
 ) {
     if keys.len() < 2 {
+        return;
+    }
+
+    if context.own_version {
+        out.extend(cargo_project_version(context, keys, value));
+        return;
+    }
+
+    if is_own_version_leaf(keys) {
         return;
     }
 

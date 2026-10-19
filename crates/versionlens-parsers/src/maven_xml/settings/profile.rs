@@ -1,4 +1,4 @@
-use super::super::nodes::{XmlNode, child_named, direct_children};
+use crate::manifest::adapter::xml::{XmlNode, child_named, direct_children};
 
 pub(super) fn active_profile_ids(nodes: &[XmlNode]) -> Vec<String> {
     nodes

@@ -1,5 +1,7 @@
-use super::nodes::{XmlNode, child_named, collect_nodes, direct_children, texts_from_nodes};
 use super::settings::MavenNamedRepository;
+use crate::manifest::adapter::xml::{
+    XmlNode, child_named, collect_nodes, direct_children, texts_from_nodes,
+};
 
 const PROJECT_REPOSITORY_PATHS: &[&str] = &[
     "project.repositories.repository",

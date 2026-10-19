@@ -74,8 +74,8 @@ impl WorkspaceGraph {
                     .map(|value| value.starts_with("pnpm@"))
             })
             .unwrap_or(false);
-        let inherited_cargo_version =
-            read(&root.join("Cargo.toml")).and_then(|text| cargo_workspace_version(&text));
+        let inherited_cargo_version = read(&root.join("Cargo.toml"))
+            .and_then(|text| versionlens_parsers::parse_cargo_workspace_version(&text));
         let mut members = BTreeMap::new();
         let mut duplicates = BTreeSet::new();
         let mut documents = WorkspaceDocuments::new();
@@ -354,36 +354,14 @@ fn identity(
             ))
         }
         "Cargo.toml" => {
-            let document = text.parse::<toml_edit::DocumentMut>().ok()?;
-            let package = document.get("package")?;
-            let version = package.get("version")?;
-            let version = version.as_str().map(str::to_owned).or_else(|| {
-                version
-                    .as_table_like()?
-                    .get("workspace")?
-                    .as_bool()
-                    .filter(|inherited| *inherited)
-                    .and(inherited_cargo_version.map(str::to_owned))
-            })?;
-            Some((
-                package.get("name")?.as_str()?.to_owned(),
-                version,
-                Ecosystem::Cargo,
-            ))
+            let (name, version) =
+                versionlens_parsers::parse_cargo_package_identity(text, inherited_cargo_version)?;
+            Some((name, version, Ecosystem::Cargo))
         }
         _ => None,
     }
 }
 
-fn cargo_workspace_version(text: &str) -> Option<String> {
-    text.parse::<toml_edit::DocumentMut>()
-        .ok()?
-        .get("workspace")?
-        .get("package")?
-        .get("version")?
-        .as_str()
-        .map(str::to_owned)
-}
 fn lerna_policy(text: Option<&str>) -> WorkspacePolicy {
     let Some(v) = text.and_then(|text| serde_json::from_str::<Value>(text).ok()) else {
         return WorkspacePolicy::None;

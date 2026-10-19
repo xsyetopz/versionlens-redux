@@ -1,13 +1,14 @@
 //! A path-query engine over any keyed document tree. A query is a list of
 //! segments: a `*` segment matches every child of the node it stands on, and
-//! any other segment matches the one child stored under that key. Format
+//! any other segment matches the children stored under that key. Format
 //! adapters implement [`PathNode`]; the callers name the groups of the
 //! dependencies they collect from the keys of each match.
 
 /// A node of a parsed document that a path query can walk.
 pub(crate) trait PathNode: Sized {
-    /// The child stored under `key`, if the node has one.
-    fn child(&self, key: &str) -> Option<Self>;
+    /// The children stored under `key`: none, one, or every element of that
+    /// name where the format allows a name to repeat.
+    fn children_named(&self, key: &str) -> Vec<Self>;
 
     /// Every child, paired with the key that a `*` segment reports for it.
     fn children(&self) -> Vec<(String, Self)>;
@@ -63,10 +64,12 @@ fn walk<N: PathNode>(
             walk(child, rest, keys, matches);
             keys.pop();
         }
-    } else if let Some(child) = node.child(segment) {
-        keys.push((*segment).to_owned());
-        walk(child, rest, keys, matches);
-        keys.pop();
+    } else {
+        for child in node.children_named(segment) {
+            keys.push((*segment).to_owned());
+            walk(child, rest, keys, matches);
+            keys.pop();
+        }
     }
 }
 

@@ -6,7 +6,7 @@ use crate::manifest::path_query::PathNode;
 /// walked by key and by index; a `*` over an array keys each element by its
 /// `name` when it has one, and by its index otherwise.
 #[derive(Clone, Copy)]
-pub(super) enum JsonNode<'a> {
+pub(crate) enum JsonNode<'a> {
     Object(&'a Object<'a>),
     Array(&'a Array<'a>),
     Scalar,
@@ -23,11 +23,15 @@ impl<'a> JsonNode<'a> {
 }
 
 impl<'a> PathNode for JsonNode<'a> {
-    fn child(&self, key: &str) -> Option<Self> {
+    fn children_named(&self, key: &str) -> Vec<Self> {
         let Self::Object(object) = *self else {
-            return None;
+            return Vec::new();
         };
-        object.get(key).map(|prop| Self::of(&prop.value))
+        object
+            .get(key)
+            .map(|prop| Self::of(&prop.value))
+            .into_iter()
+            .collect()
     }
 
     fn children(&self) -> Vec<(String, Self)> {
