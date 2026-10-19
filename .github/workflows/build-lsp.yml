@@ -143,7 +143,7 @@ jobs:
       - name: Upload archive
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: ${{ inputs.artifact-name }}-archive-${{ matrix.rust_target }}
+          name: ${{ inputs.artifact-name || 'versionlens-lsp' }}-archive-${{ matrix.rust_target }}
           path: dist/${{ steps.archive.outputs.file }}
           if-no-files-found: error
 
@@ -154,7 +154,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       version: ${{ needs.setup.outputs.version }}
-      release-artifact: ${{ inputs.artifact-name }}
+      release-artifact: ${{ inputs.artifact-name || 'versionlens-lsp' }}
       checksums-file: SHA256SUMS
     steps:
       - name: Checkout
@@ -163,7 +163,7 @@ jobs:
       - name: Download archives
         uses: actions/download-artifact@v8.0.2
         with:
-          pattern: ${{ inputs.artifact-name }}-archive-*
+          pattern: ${{ inputs.artifact-name || 'versionlens-lsp' }}-archive-*
           path: dist
           merge-multiple: true
 
@@ -196,7 +196,7 @@ jobs:
       - name: Upload archives and SHA256SUMS
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: ${{ inputs.artifact-name }}
+          name: ${{ inputs.artifact-name || 'versionlens-lsp' }}
           path: |
             dist/*.tar.gz
             dist/*.zip
