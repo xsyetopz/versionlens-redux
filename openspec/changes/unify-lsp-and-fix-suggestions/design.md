@@ -26,6 +26,7 @@ Audit findings that shape this design:
 - One 9-target build matrix with checksums. All editors at 0.5.0.
 - Bun-native tooling (`bun check`), without the `typescript` package.
 - Reduce product Rust to about 27k lines and VS Code TypeScript to about 1.2k, with no new runtime dependencies beyond `vscode-languageclient`, `lsp-server` (already used) and `globset`.
+  - Target missed: measured about 47.3k Rust and about 2.0k TS at commit 4579859d. See `pr-description.md` in this change folder. Reductions are deferred to a follow-up change.
 
 **Non-Goals:**
 - Rewriting the engine in TypeScript.
