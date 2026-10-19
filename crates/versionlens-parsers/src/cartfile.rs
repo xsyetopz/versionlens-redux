@@ -3,7 +3,7 @@
 //! operator requirement (`~> 1.0`, `>= 1.0`, `== 1.0`) or a quoted
 //! branch, tag or commit.
 
-use crate::common_support::github;
+use crate::github;
 use crate::positions::line_range;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Swift;
