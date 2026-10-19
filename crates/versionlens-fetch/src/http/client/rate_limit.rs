@@ -57,7 +57,20 @@ pub(super) fn hold_if_limited(
     }
     let reset = reset_time(response.headers(), SystemTime::now())?;
     let host = host_key(url)?;
-    held_hosts().insert((host.clone(), credential), Hold { status, reset });
+    // Concurrent responses compute their own reset, which can differ by a
+    // second. The first hold stands so every blocked request reports one reset.
+    let now = SystemTime::now();
+    let mut table = held_hosts();
+    let hold = *table
+        .entry((host.clone(), credential))
+        .and_modify(|hold| {
+            if hold.reset <= now {
+                *hold = Hold { status, reset };
+            }
+        })
+        .or_insert(Hold { status, reset });
+    drop(table);
+    let (status, reset) = (hold.status, hold.reset);
     Some(HttpError::RateLimited {
         host,
         status,

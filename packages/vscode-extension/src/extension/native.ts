@@ -190,6 +190,7 @@ export interface NativeSuggestion {
     | "invalidRange"
     | "noMatch"
     | "notSupported"
+    | "rateLimited"
     | "satisfies"
     | "satisfiesLatest"
     | "unresolved"

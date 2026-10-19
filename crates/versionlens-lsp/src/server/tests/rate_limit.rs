@@ -165,7 +165,13 @@ fn an_exhausted_rate_limit_warns_once_and_stops_requests_until_the_reset() -> Re
         "{\"dependencies\":{\"example\":\"1.0.0\"}}",
     )?;
     let mut seen = Seen::default();
-    drain(&client, Duration::from_secs(2), &mut seen)?;
+    // Wait for the warning, which follows the first request, then let any
+    // stray request show up before counting.
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while seen.warnings.is_empty() && Instant::now() < deadline {
+        drain(&client, Duration::from_millis(100), &mut seen)?;
+    }
+    drain(&client, Duration::from_millis(300), &mut seen)?;
     assert_eq!(registry.requests(), 1);
 
     // Another edit and another document, before the reset.

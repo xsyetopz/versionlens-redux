@@ -56,7 +56,10 @@ impl VersionLensSession {
             let Some((suggestion, deadline)) = cache.get_with_expiry(&key) else {
                 return Some(Duration::ZERO);
             };
-            let failed = suggestion.status == SuggestionStatus::Error;
+            let failed = matches!(
+                suggestion.status,
+                SuggestionStatus::Error | SuggestionStatus::RateLimited
+            );
             let deadline = if failed {
                 deadline
             } else {
