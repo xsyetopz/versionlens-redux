@@ -70,13 +70,55 @@ use super::ManifestFormat::{Custom, Json, Toml, Xml, Yaml};
 use super::ManifestParser::{Direct as ParserDirect, WithPaths as ParserWithPaths};
 use super::Rule::{Content, Extension, Language, Name, Uri};
 use super::Stage::{Content as ContentStage, Early, Editor, Late, Pubspec, Python, Workflow};
-use super::default_paths;
 use super::patterns::{
     is_cargo_config_uri, is_docker_compose_uri, is_dockerfile_uri, is_dotnet_xml_uri,
     is_github_actions_uri, is_julia_versioned_manifest_uri, is_package_json_content,
     is_requirements_txt_uri, is_unity_project_manifest_uri,
 };
 use super::{ManifestFormat, ManifestKind, ManifestParser, ManifestRow, Pattern, Rule, Stage};
+
+const NPM_PATHS: &[&str] = &[
+    "packageManager",
+    "devEngines.packageManager",
+    "engines",
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+    "bundledDependencies",
+    "bundleDependencies",
+    "trustedDependencies",
+    "resolutions",
+    "overrides",
+    "overrides.*",
+    "jspm.dependencies",
+    "jspm.devDependencies",
+    "jspm.peerDependencies",
+    "jspm.optionalDependencies",
+    "pnpm.overrides",
+    "pnpm.overrides.*",
+    "pnpm.packageExtensions.*.dependencies",
+    "pnpm.packageExtensions.*.devDependencies",
+    "pnpm.packageExtensions.*.peerDependencies",
+    "pnpm.packageExtensions.*.optionalDependencies",
+    "catalog",
+    "catalogs.*",
+    "workspaces.catalog",
+    "workspaces.catalogs.*",
+];
+const PNPM_PATHS: &[&str] = &[
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+    "catalog",
+    "catalogs.*.*",
+    "overrides",
+    "packageExtensions.*.dependencies",
+    "packageExtensions.*.devDependencies",
+    "packageExtensions.*.peerDependencies",
+    "packageExtensions.*.optionalDependencies",
+];
 
 const fn at(stage: Stage, rule: Rule) -> Pattern {
     Pattern { stage, rule }
@@ -97,6 +139,7 @@ const fn row(
         format,
         patterns,
         parser,
+        dependency_paths: &[],
         own_version: &[],
     }
 }
@@ -149,49 +192,84 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "cargo",
         Toml,
         &[at(Early, Name("Cargo.toml"))],
-        ParserWithPaths(parse_cargo_toml_with_paths, default_paths::CARGO),
+        ParserWithPaths(parse_cargo_toml_with_paths),
     )
-    .own_version(default_paths::CARGO_OWN_VERSION),
+    .dependency_paths(&[
+        "package",
+        "dependencies",
+        "dependencies.*",
+        "dev-dependencies",
+        "dev-dependencies.*",
+        "build-dependencies",
+        "build-dependencies.*",
+        "target.*.dependencies",
+        "target.*.dependencies.*",
+        "target.*.dev-dependencies",
+        "target.*.dev-dependencies.*",
+        "target.*.build-dependencies",
+        "target.*.build-dependencies.*",
+        "workspace.dependencies",
+        "workspace.dependencies.*",
+        "patch.*",
+        "patch.*.*",
+    ])
+    .own_version(&[
+        "package.version",
+        "package.version.workspace",
+        "workspace.package.version",
+    ]),
     row(
         CargoConfigToml,
         Ecosystem::Cargo,
         "cargo",
         Toml,
         &[at(Early, Uri(is_cargo_config_uri))],
-        ParserWithPaths(parse_cargo_toml_with_paths, default_paths::CARGO_CONFIG),
-    ),
+        ParserWithPaths(parse_cargo_toml_with_paths),
+    )
+    .dependency_paths(&["patch.*", "patch.*.*"]),
     row(
         ComposerJson,
         Ecosystem::Composer,
         "composer",
         Json,
         &[at(Early, Name("composer.json"))],
-        ParserWithPaths(parse_composer_json_with_paths, default_paths::COMPOSER),
-    ),
+        ParserWithPaths(parse_composer_json_with_paths),
+    )
+    .dependency_paths(&[
+        "version",
+        "require",
+        "require-dev",
+        "conflict",
+        "replace",
+        "provide",
+    ]),
     row(
         DenoJson,
         Ecosystem::Deno,
         "deno",
         Json,
         &[at(Early, Name("deno.json")), at(Early, Name("deno.jsonc"))],
-        ParserWithPaths(parse_deno_json_with_paths, default_paths::DENO),
-    ),
+        ParserWithPaths(parse_deno_json_with_paths),
+    )
+    .dependency_paths(&["version", "imports", "scopes"]),
     row(
         DenoImportMapJson,
         Ecosystem::Deno,
         "deno",
         Json,
         &[at(Early, Name("import_map.json"))],
-        ParserWithPaths(parse_deno_json_with_paths, default_paths::DENO),
-    ),
+        ParserWithPaths(parse_deno_json_with_paths),
+    )
+    .dependency_paths(&["version", "imports", "scopes"]),
     row(
         JsrJson,
         Ecosystem::Deno,
         "deno",
         Json,
         &[at(Early, Name("jsr.json")), at(Early, Name("jsr.jsonc"))],
-        ParserWithPaths(parse_jsr_json_with_paths, default_paths::JSR),
-    ),
+        ParserWithPaths(parse_jsr_json_with_paths),
+    )
+    .dependency_paths(&["version"]),
     row(
         DotnetXml,
         Ecosystem::Dotnet,
@@ -201,8 +279,20 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("packages.config")),
             at(Early, Uri(is_dotnet_xml_uri)),
         ],
-        ParserWithPaths(parse_dotnet_xml_with_paths, default_paths::DOTNET_XML),
-    ),
+        ParserWithPaths(parse_dotnet_xml_with_paths),
+    )
+    .dependency_paths(&[
+        "Project.Sdk",
+        "Project.PropertyGroup.Version",
+        "Project.PropertyGroup.AssemblyVersion",
+        "Project.ItemGroup.GlobalPackageReference",
+        "Project.ItemGroup.PackageReference",
+        "Project.ItemGroup.PackageVersion",
+        "Project.ItemGroup.DotNetCliToolReference",
+        "packages.package",
+        "paket.dependencies",
+        "paket.references",
+    ]),
     row(
         PaketDependencies,
         Ecosystem::Dotnet,
@@ -225,22 +315,22 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "dotnet",
         Json,
         &[at(Early, Name("project.json"))],
-        ParserWithPaths(
-            parse_dotnet_project_json_with_paths,
-            default_paths::DOTNET_PROJECT_JSON,
-        ),
-    ),
+        ParserWithPaths(parse_dotnet_project_json_with_paths),
+    )
+    .dependency_paths(&[
+        "dependencies",
+        "frameworks.*.dependencies",
+        "runtimes.*.dependencies",
+    ]),
     row(
         DotnetToolsJson,
         Ecosystem::Dotnet,
         "dotnet",
         Json,
         &[at(Early, Name("dotnet-tools.json"))],
-        ParserWithPaths(
-            parse_dotnet_project_json_with_paths,
-            default_paths::DOTNET_TOOLS,
-        ),
-    ),
+        ParserWithPaths(parse_dotnet_project_json_with_paths),
+    )
+    .dependency_paths(&["tools"]),
     row(
         GradleVersionCatalogToml,
         Ecosystem::Maven,
@@ -301,8 +391,20 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "maven",
         Xml,
         &[at(Early, Name("pom.xml"))],
-        ParserWithPaths(parse_maven_xml_with_paths, default_paths::MAVEN),
-    ),
+        ParserWithPaths(parse_maven_xml_with_paths),
+    )
+    .dependency_paths(&[
+        "project.version",
+        "project.dependencies.dependency",
+        "project.dependencyManagement.dependencies.dependency",
+        "project.parent",
+        "project.build.plugins.plugin",
+        "project.build.pluginManagement.plugins.plugin",
+        "project.profiles.profile.dependencies.dependency",
+        "project.profiles.profile.dependencyManagement.dependencies.dependency",
+        "project.profiles.profile.build.plugins.plugin",
+        "project.profiles.profile.build.pluginManagement.plugins.plugin",
+    ]),
     row(
         MixExs,
         Ecosystem::Hex,
@@ -424,8 +526,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "vcpkg",
         Json,
         &[at(Early, Name("vcpkg.json"))],
-        ParserWithPaths(parse_vcpkg_json_with_paths, default_paths::VCPKG),
-    ),
+        ParserWithPaths(parse_vcpkg_json_with_paths),
+    )
+    .dependency_paths(&["dependencies", "features.*.dependencies", "overrides"]),
     row(
         Cmake,
         Ecosystem::Cpp,
@@ -521,8 +624,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "haxelib",
         Json,
         &[at(Early, Name("haxelib.json"))],
-        ParserWithPaths(parse_haxelib_json_with_paths, default_paths::HAXELIB),
-    ),
+        ParserWithPaths(parse_haxelib_json_with_paths),
+    )
+    .dependency_paths(&["dependencies"]),
     row(
         TerraformTf,
         Ecosystem::Terraform,
@@ -537,7 +641,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "helm",
         Yaml,
         &[at(Early, Name("Chart.yaml"))],
-        ParserWithPaths(parse_helm_chart_yaml_with_paths, default_paths::NONE),
+        ParserWithPaths(parse_helm_chart_yaml_with_paths),
     ),
     row(
         AnsibleGalaxyRequirementsYaml,
@@ -548,10 +652,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("requirements.yml")),
             at(Early, Name("requirements.yaml")),
         ],
-        ParserWithPaths(
-            parse_ansible_galaxy_requirements_yaml_with_paths,
-            default_paths::NONE,
-        ),
+        ParserWithPaths(parse_ansible_galaxy_requirements_yaml_with_paths),
     ),
     row(
         BazelModule,
@@ -559,7 +660,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "bazel",
         Custom,
         &[at(Early, Name("MODULE.bazel"))],
-        ParserWithPaths(parse_bazel_module_with_paths, default_paths::NONE),
+        ParserWithPaths(parse_bazel_module_with_paths),
     ),
     row(
         NixFlake,
@@ -567,7 +668,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "nix",
         Custom,
         &[at(Early, Name("flake.nix"))],
-        ParserWithPaths(parse_nix_flake_with_paths, default_paths::NONE),
+        ParserWithPaths(parse_nix_flake_with_paths),
     ),
     row(
         KustomizationYaml,
@@ -579,7 +680,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("kustomization.yml")),
             at(Early, Name("Kustomization")),
         ],
-        ParserWithPaths(parse_kustomization_yaml_with_paths, default_paths::NONE),
+        ParserWithPaths(parse_kustomization_yaml_with_paths),
     ),
     row(
         CocoaPodsPodfile,
@@ -595,10 +696,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "unity",
         Json,
         &[at(Early, Uri(is_unity_project_manifest_uri))],
-        ParserWithPaths(
-            parse_unity_project_manifest_json_with_paths,
-            default_paths::NONE,
-        ),
+        ParserWithPaths(parse_unity_project_manifest_json_with_paths),
     ),
     row(
         RubyGemspec,
@@ -619,8 +717,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name(".yarnrc.yml")),
             at(Early, Name(".yarnrc.yaml")),
         ],
-        ParserWithPaths(parse_pnpm_yaml_with_paths, default_paths::PNPM),
-    ),
+        ParserWithPaths(parse_pnpm_yaml_with_paths),
+    )
+    .dependency_paths(PNPM_PATHS),
     row(
         DockerComposeYaml,
         Ecosystem::Docker,
@@ -660,8 +759,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Late, Name("dub.json")),
             at(Late, Name("dub.selections.json")),
         ],
-        ParserWithPaths(parse_dub_json_with_paths, default_paths::DUB),
-    ),
+        ParserWithPaths(parse_dub_json_with_paths),
+    )
+    .dependency_paths(&["dependencies", "versions", "configurations.*.dependencies"]),
     row(
         DubSdl,
         Ecosystem::Dub,
@@ -695,18 +795,20 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Late, Name("package.json")),
             at(ContentStage, Content(is_package_json_content)),
         ],
-        ParserWithPaths(parse_package_json_with_paths, default_paths::NPM),
+        ParserWithPaths(parse_package_json_with_paths),
     )
-    .own_version(default_paths::NPM_OWN_VERSION),
+    .dependency_paths(NPM_PATHS)
+    .own_version(&["version"]),
     row(
         NpmPackageJson5,
         Ecosystem::Npm,
         "npm",
         Json,
         &[at(Late, Name("package.json5"))],
-        ParserWithPaths(parse_package_json_with_paths, default_paths::NPM),
+        ParserWithPaths(parse_package_json_with_paths),
     )
-    .own_version(default_paths::NPM_OWN_VERSION),
+    .dependency_paths(NPM_PATHS)
+    .own_version(&["version"]),
     row(
         NpmPackageYaml,
         Ecosystem::Npm,
@@ -716,8 +818,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Late, Name("package.yaml")),
             at(Late, Name("package.yml")),
         ],
-        ParserWithPaths(parse_pnpm_yaml_with_paths, default_paths::PNPM),
-    ),
+        ParserWithPaths(parse_pnpm_yaml_with_paths),
+    )
+    .dependency_paths(PNPM_PATHS),
     row(
         PythonRequirementsTxt,
         Ecosystem::Python,
@@ -735,27 +838,47 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "pypi",
         Toml,
         &[at(Python, Name("Pipfile"))],
-        ParserWithPaths(parse_pipfile_with_paths, default_paths::PYPI),
-    ),
+        ParserWithPaths(parse_pipfile_with_paths),
+    )
+    .dependency_paths(&[
+        "project",
+        "packages",
+        "dev-packages",
+        "tool.poetry.dependencies",
+        "tool.poetry.dev-dependencies",
+        "tool.poetry.group.*.dependencies",
+        "project.optional-dependencies",
+        "dependency-groups",
+        "tool.uv.sources",
+    ]),
     row(
         PythonPyprojectToml,
         Ecosystem::Python,
         "pypi",
         Toml,
         &[at(Python, Name("pyproject.toml"))],
-        ParserWithPaths(parse_pyproject_toml_with_paths, default_paths::PYPI),
-    ),
+        ParserWithPaths(parse_pyproject_toml_with_paths),
+    )
+    .dependency_paths(&[
+        "project",
+        "packages",
+        "dev-packages",
+        "tool.poetry.dependencies",
+        "tool.poetry.dev-dependencies",
+        "tool.poetry.group.*.dependencies",
+        "project.optional-dependencies",
+        "dependency-groups",
+        "tool.uv.sources",
+    ]),
     row(
         PubspecOverridesYaml,
         Ecosystem::Pub,
         "pub",
         Yaml,
         &[at(Pubspec, Name("pubspec_overrides.yaml"))],
-        ParserWithPaths(
-            parse_pubspec_yaml_with_paths,
-            default_paths::PUBSPEC_OVERRIDES,
-        ),
-    ),
+        ParserWithPaths(parse_pubspec_yaml_with_paths),
+    )
+    .dependency_paths(&["dependency_overrides"]),
     row(
         PubspecYaml,
         Ecosystem::Pub,
@@ -765,6 +888,13 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Pubspec, Name("pubspec.yaml")),
             at(Pubspec, Name("pubspec.yml")),
         ],
-        ParserWithPaths(parse_pubspec_yaml_with_paths, default_paths::PUBSPEC),
-    ),
+        ParserWithPaths(parse_pubspec_yaml_with_paths),
+    )
+    .dependency_paths(&[
+        "version",
+        "workspace",
+        "dependencies",
+        "dev_dependencies",
+        "dependency_overrides",
+    ]),
 ];
