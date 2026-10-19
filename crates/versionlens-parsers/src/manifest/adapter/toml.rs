@@ -100,6 +100,14 @@ impl<'a> TomlNode<'a> {
         self.value()?.span()
     }
 
+    /// The span of a `[table]` or `[[array of tables]]` entry, header included.
+    pub(crate) fn table_span(&self) -> Option<Range<usize>> {
+        match self.kind {
+            Kind::Table(table) => table.span(),
+            _ => None,
+        }
+    }
+
     /// Whether the node is a value, such as a string or an inline table,
     /// rather than a `[table]` or `[[array of tables]]`.
     pub(crate) fn is_value(&self) -> bool {
