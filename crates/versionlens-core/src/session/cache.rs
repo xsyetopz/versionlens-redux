@@ -148,7 +148,11 @@ impl VersionLensSession {
     ) -> HttpConfig {
         let auth_headers = context.auth_headers_for_url(ecosystem, url);
         let base = self.http_config_with_headers(ecosystem, context.manifest_kind(), &auth_headers);
-        context.http_config_for_request(ecosystem, url, base)
+        let mut config = context.http_config_for_request(ecosystem, url, base);
+        if let Some(credential) = self.request_state.credentials.resolve(url) {
+            versionlens_fetch::apply_credential(&mut config.auth_headers, &credential);
+        }
+        config
     }
 
     fn request_context_identity(&self, config: &HttpConfig) -> u128 {

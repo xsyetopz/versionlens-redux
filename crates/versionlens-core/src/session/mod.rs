@@ -72,6 +72,7 @@ pub(crate) struct SessionRequests {
     pub(crate) request_locks: Arc<Mutex<HashMap<CacheKey, Weak<tokio::sync::Mutex<()>>>>>,
     pub(crate) request_context_hashers: [RandomState; 2],
     pub(crate) dotnet_registry_sources: Arc<Mutex<Option<Vec<String>>>>,
+    pub(crate) credentials: versionlens_fetch::CredentialChain,
 }
 
 #[derive(Debug, Clone)]
@@ -83,6 +84,12 @@ pub(crate) struct SessionResults {
 }
 
 impl VersionLensSession {
+    /// The session's credential sources. A server fills in the client-supplied
+    /// credential here.
+    pub fn credentials(&self) -> &versionlens_fetch::CredentialChain {
+        &self.request_state.credentials
+    }
+
     pub fn cancel_pending_resolutions(&self) {
         self.storage_state
             .cache_epoch
@@ -134,6 +141,7 @@ pub fn version_lens_session(config: SessionConfig) -> VersionLensSession {
             request_locks: Arc::new(crate::mutex(crate::default())),
             request_context_hashers: [<RandomState>::new(), <RandomState>::new()],
             dotnet_registry_sources: Arc::new(crate::mutex(None)),
+            credentials: versionlens_fetch::CredentialChain::new(),
         },
         result_state: SessionResults {
             parsed_dependencies: Arc::new(crate::mutex(

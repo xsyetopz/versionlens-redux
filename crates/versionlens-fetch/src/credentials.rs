@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::io::Read;
 use std::process::{Command, Stdio};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, OnceLock, RwLock};
 use std::time::{Duration, Instant};
 
 use reqwest::Url;
@@ -84,8 +84,8 @@ pub struct CredentialChain {
     client: Arc<RwLock<HashMap<String, Credential>>>,
     env: Arc<EnvReader>,
     gh: Arc<GhRunner>,
-    /// `None` until `gh` has run; then its result, including "no token".
-    gh_result: Arc<Mutex<Option<Option<Credential>>>>,
+    /// Unset until `gh` has run; then its result, including "no token".
+    gh_result: Arc<OnceLock<Option<Credential>>>,
 }
 
 impl fmt::Debug for CredentialChain {
@@ -139,12 +139,8 @@ impl CredentialChain {
     pub fn resolve(&self, url: &str) -> Option<Credential> {
         let host = host_of(url)?;
         self.preset_credential(&host).or_else(|| {
-            let result = self
-                .gh_result
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if host == GITHUB_API_HOST {
-                result.clone().flatten()
+                self.gh_result.get().cloned().flatten()
             } else {
                 None
             }
@@ -164,9 +160,7 @@ impl CredentialChain {
             return None;
         }
         self.gh_result
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get_or_insert_with(|| {
+            .get_or_init(|| {
                 (self.gh)()
                     .map(|token| token.trim().to_owned())
                     .filter(|token| !token.is_empty())

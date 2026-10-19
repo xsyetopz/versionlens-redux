@@ -3,6 +3,8 @@ use std::time::{Duration, Instant};
 use versionlens_fetch::{ACCEPT_GITHUB_V3, ACCEPT_NPM_INSTALL_V1};
 
 use super::{accept_header_for_request, retry_policy_for_request};
+use crate::VersionLensSession;
+use crate::registry::RegistryContext;
 use versionlens_model::Ecosystem::*;
 
 #[test]
@@ -54,6 +56,30 @@ fn npm_github_api_requests_keep_request_light_retry_behavior() {
 
     assert_eq!(policy.max_retries(), 0);
     assert!(!policy.should_retry_status("GET", 429));
+}
+
+#[test]
+fn client_credential_replaces_config_authorization_for_github_requests() {
+    let session = VersionLensSession::new(crate::support::tests::session_config(
+        crate::default(),
+        false,
+    ));
+    session.credentials().set_client_credential(
+        "api.github.com",
+        versionlens_fetch::Credential::new("Bearer", "client-token"),
+    );
+    let url = "https://api.github.com/repos/acme/repo/tags";
+
+    let config = session.effective_http_config(url, Npm, &RegistryContext::default());
+
+    let values: Vec<_> = config
+        .auth_headers
+        .iter()
+        .filter(|header| header.name.eq_ignore_ascii_case("authorization"))
+        .map(|header| header.value.as_str())
+        .collect();
+    assert_eq!(values, ["Bearer client-token"]);
+    assert!(!format!("{config:?}").contains("client-token"));
 }
 
 #[tokio::test]
