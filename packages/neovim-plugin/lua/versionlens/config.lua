@@ -1,6 +1,7 @@
 local M = {}
 
 M.defaults = {
+  auto_download = true,
   autostart = true,
   cmd = nil,
   codelens = {
@@ -27,6 +28,7 @@ M.defaults = {
     "rust-toolchain",
     "rust-toolchain.toml",
   },
+  settings = {},
 }
 
 function M.resolve(opts)

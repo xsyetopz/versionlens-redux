@@ -19,8 +19,9 @@ shared Rust `versionlens-lsp` server in supported manifest files.
 Requirements:
 
 - Neovim 0.10 or newer.
-- `versionlens-lsp` bundled with a release archive, installed on $PATH,
-selected through $VERSIONLENS_LSP, or supplied with `cmd`.
+- `versionlens-lsp`: bundled with a release archive, selected through
+  $VERSIONLENS_LSP, supplied with `cmd`, installed on $PATH, or downloaded
+  automatically (see |versionlens-download|).
 
 ==============================================================================
 INSTALLATION                                                 *versionlens-install*
@@ -68,6 +69,7 @@ CONFIGURATION                                                   *versionlens-con
 
 >lua
     require("versionlens").setup({
+      auto_download = true,
       autostart = true,
       cmd = nil,
       codelens = {
@@ -81,6 +83,7 @@ CONFIGURATION                                                   *versionlens-con
       notify = true,
       on_attach = nil,
       root_dir = nil,
+      settings = {},
       root_markers = {
         ".git",
         ".nvmrc",
@@ -97,13 +100,36 @@ CONFIGURATION                                                   *versionlens-con
     })
 <
 
-`cmd` accepts an executable string or argv-style list. Resolution order when
-it is nil: $VERSIONLENS_LSP, bundled platform binary, repository debug binary,
-then `versionlens-lsp` on $PATH.
+`cmd` accepts an executable string or argv-style list. Resolution order:
+`cmd`, $VERSIONLENS_LSP, bundled platform binary, repository debug binary,
+previously downloaded binary, then `versionlens-lsp` on $PATH.
+
+`settings` is the `versionlens` configuration section. It is sent to the server
+in `vim.lsp.start` and returned for the server's `workspace/configuration`
+requests, so Neovim answers them without extra handlers. For example:
+
+>lua
+    require("versionlens").setup({ settings = { ... } })
+<
+
+See the VersionLens settings reference for the available keys.
+
+                                                             *versionlens-download*
+`auto_download` (default true) downloads the server when no other step finds
+one. It fetches the release asset `versionlens-lsp-<version>-<target>` (tar.gz,
+zip on Windows) and `SHA256SUMS` for the plugin's version from GitHub with
+`curl`, verifies the archive with `sha256sum`, `shasum`, or `certutil`
+(whichever exists), extracts it with `tar`, and installs it into
+stdpath("data")/versionlens/<version>/. Other version directories there are
+removed. On a checksum mismatch the download is deleted, the server is not
+started, and the error names the expected and actual sums. With
+`auto_download = false` no network request is made and an error explains how
+to install the server.
 
 ==============================================================================
 HEALTH                                                         *versionlens-health*
 
 Run `:checkhealth versionlens` to verify Neovim and language-server discovery.
+The report shows which resolution step found the server.
 
 vim:tw=78:ts=8:noet:ft=help:norl:

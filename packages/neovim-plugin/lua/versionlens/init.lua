@@ -8,6 +8,7 @@ local M = {
 local group_name = "VersionLensRedux"
 local client_name = "versionlens"
 local active_keymaps = {}
+local downloading = false
 
 local function notify(message, level)
   if M.config.notify then
@@ -35,6 +36,24 @@ local function refresh_client_lenses(_error, _result, context)
   return vim.NIL
 end
 
+-- Downloads the matching server release once, then starts it for bufnr.
+function M.download(bufnr)
+  if downloading then
+    return
+  end
+  downloading = true
+  local version = require("versionlens.version")
+  notify("Downloading versionlens-lsp " .. version)
+  require("versionlens.download").install(version, function(err)
+    downloading = false
+    if err then
+      notify("Could not install versionlens-lsp: " .. err, vim.log.levels.ERROR)
+    elseif vim.api.nvim_buf_is_valid(bufnr) then
+      M.start(bufnr)
+    end
+  end)
+end
+
 function M.start(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local path = vim.api.nvim_buf_get_name(bufnr)
@@ -43,10 +62,15 @@ function M.start(bufnr)
   end
   local cmd = support.resolve_cmd(M.config)
   if not cmd then
-    notify(
-      "Could not find versionlens-lsp. Install it on PATH, set VERSIONLENS_LSP, or configure cmd.",
-      vim.log.levels.ERROR
-    )
+    if M.config.auto_download then
+      M.download(bufnr)
+    else
+      notify(
+        "Could not find versionlens-lsp. Install it on PATH, set VERSIONLENS_LSP, "
+          .. "configure cmd, or enable auto_download.",
+        vim.log.levels.ERROR
+      )
+    end
     return nil
   end
 
@@ -60,6 +84,7 @@ function M.start(bufnr)
     capabilities = capabilities,
     handlers = { ["workspace/codeLens/refresh"] = refresh_client_lenses },
     root_dir = support.root_dir(bufnr, M.config),
+    settings = { versionlens = M.config.settings },
     on_attach = function(client, attached_bufnr)
       M.refresh(attached_bufnr)
       if user_on_attach then
@@ -90,9 +115,9 @@ function M.restart(bufnr)
 end
 
 function M.info()
-  local cmd = support.resolve_cmd(M.config)
+  local cmd, source = support.resolve_cmd(M.config)
   if cmd then
-    notify("Language server: " .. table.concat(cmd, " "))
+    notify(("Language server (%s): %s"):format(source, table.concat(cmd, " ")))
   else
     notify("Language server not found", vim.log.levels.WARN)
   end

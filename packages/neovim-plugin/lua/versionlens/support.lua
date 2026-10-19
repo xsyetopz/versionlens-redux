@@ -197,17 +197,20 @@ local function executable(path)
   return type(path) == "string" and path ~= "" and vim.fn.executable(path) == 1
 end
 
+-- Returns the server argv and where it came from: "cmd", "env", "bundled",
+-- "repository", "downloaded", or "path". Order: cmd, $VERSIONLENS_LSP, bundled,
+-- downloaded, PATH.
 function M.resolve_cmd(config)
   if type(config.cmd) == "string" and config.cmd ~= "" then
-    return { config.cmd }
+    return { config.cmd }, "cmd"
   end
   if type(config.cmd) == "table" and #config.cmd > 0 then
-    return vim.deepcopy(config.cmd)
+    return vim.deepcopy(config.cmd), "cmd"
   end
 
   local environment = vim.env.VERSIONLENS_LSP
   if executable(environment) then
-    return { environment }
+    return { environment }, "env"
   end
 
   local executable_name = M.executable_name()
@@ -215,19 +218,24 @@ function M.resolve_cmd(config)
   if target then
     local bundled = vim.fs.joinpath(M.plugin_root(), "bin", target, executable_name)
     if executable(bundled) then
-      return { bundled }
+      return { bundled }, "bundled"
     end
   end
 
   local repository =
     vim.fs.joinpath(M.plugin_root(), "..", "..", "target", "debug", executable_name)
   if executable(repository) then
-    return { repository }
+    return { repository }, "repository"
+  end
+
+  local downloaded = require("versionlens.download").binary_path(require("versionlens.version"))
+  if executable(downloaded) then
+    return { downloaded }, "downloaded"
   end
 
   local path = vim.fn.exepath(executable_name)
   if path ~= "" then
-    return { path }
+    return { path }, "path"
   end
   return nil
 end

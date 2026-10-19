@@ -80,4 +80,17 @@ describe("setup", function()
     assert.are.equal("", vim.fn.maparg("<leader>vr", "n"))
     assert.are_not.equal("", vim.fn.maparg("<leader>vR", "n"))
   end)
+
+  it("passes settings to the client under the versionlens section", function()
+    vim.api.nvim_buf_set_name(bufnr, ("/tmp/versionlens-test/%d/package.json"):format(bufnr))
+    local settings = { diagnostics = { enabled = false } }
+    versionlens.setup({ autostart = false, cmd = { "versionlens-lsp" }, settings = settings })
+    local captured
+    vim.lsp.start = function(configuration)
+      captured = configuration
+      return 1
+    end
+    versionlens.start(bufnr)
+    assert.are.same({ versionlens = settings }, captured.settings)
+  end)
 end)

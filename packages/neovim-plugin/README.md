@@ -19,6 +19,8 @@ tar -xzf versionlens-redux-neovim-plugin-linux-x64.tar.gz -C "$install_dir"
 
 The archive is already rooted like a Neovim plugin and includes the matching `versionlens-lsp` binary. When developing from this monorepo, add `packages/neovim-plugin` to `runtimepath` instead.
 
+Without a bundled binary, the plugin downloads the matching `versionlens-lsp` release into `stdpath("data")/versionlens/<version>/` and verifies it against `SHA256SUMS` (set `auto_download = false` to disable). Pass server settings with `setup({ settings = { ... } })`. See `:help versionlens`.
+
 ## Setup
 
 ```lua
