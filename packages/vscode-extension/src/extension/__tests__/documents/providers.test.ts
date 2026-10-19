@@ -1,5 +1,9 @@
 import { expect, it } from "../runtime.ts";
-import { defaultFilePatternEntries, defaultFilePatterns } from "./patterns.ts";
+import {
+  defaultFilePatternByKey,
+  defaultFilePatternEntries,
+  defaultFilePatterns,
+} from "./patterns.ts";
 import { codeLensProviders, configured, testDocument } from "./support.ts";
 
 const cachedLensOutput = {
@@ -145,25 +149,27 @@ it("documentSelectors filters file-backed providers using enabledProviders like 
   configured.enabledProviders = ["npm"];
   configured["npm.files"] = undefined;
   const selectors = documentSelectors();
+  const npmPattern = defaultFilePatternByKey.get("npm.files") ?? "";
+  const cargoPattern = defaultFilePatternByKey.get("cargo.files") ?? "";
 
   expect(selectors).toContainEqual({
     language: "json",
-    pattern: "**/{package.json,package.json5,package.yaml,package.yml}",
+    pattern: npmPattern,
     scheme: "file",
   });
   expect(selectors).toContainEqual({
     language: "jsonc",
-    pattern: "**/{package.json,package.json5,package.yaml,package.yml}",
+    pattern: npmPattern,
     scheme: "file",
   });
   expect(selectors).toContainEqual({
     language: "yaml",
-    pattern: "**/{package.json,package.json5,package.yaml,package.yml}",
+    pattern: npmPattern,
     scheme: "file",
   });
   expect(selectors).not.toContainEqual({
     language: "toml",
-    pattern: "**/Cargo.toml",
+    pattern: cargoPattern,
     scheme: "file",
   });
 

@@ -1,5 +1,9 @@
 const defaultFilePatternEntries = [
-  ["cargo.files", "**/Cargo.toml", ["toml"]],
+  [
+    "cargo.files",
+    "**/{rust-toolchain,rust-toolchain.toml,Cargo.toml,.cargo/config.toml,.cargo/config}",
+    ["plaintext", "toml"],
+  ],
   ["composer.files", "**/composer.json", ["json", "jsonc"]],
   [
     "deno.files",
@@ -8,59 +12,59 @@ const defaultFilePatternEntries = [
   ],
   [
     "docker.files",
-    "**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml}",
-    ["dockerfile", "dockercompose", "yaml"],
+    "**/{compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml,dockerfile,*.dockerfile,Dockerfile,*.Dockerfile}",
+    ["dockercompose", "yaml", "dockerfile", "plaintext"],
   ],
   [
     "dotnet.files",
-    "**/{*.csproj,*.fsproj,*.vbproj,project.json,dotnet-tools.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
-    ["xml", "json", "jsonc", "plaintext"],
+    "**/{packages.config,*.csproj,*.fsproj,*.vbproj,*.targets,*.props,paket.dependencies,paket.references,project.json,dotnet-tools.json}",
+    ["xml", "plaintext", "json", "jsonc"],
   ],
   [
     "dub.files",
     "**/{dub.json,dub.selections.json,dub.sdl}",
     ["json", "jsonc", "plaintext"],
   ],
-  ["golang.files", "**/{go.mod,go.work}", ["go.mod"]],
+  ["golang.files", "**/{go.mod,go.work}", ["go.mod", "plaintext"]],
   [
     "maven.files",
-    "**/{pom.xml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,gradle/libs.versions.toml,build.sbt,deps.edn,project.clj}",
-    ["xml", "groovy", "kotlin", "toml", "scala", "clojure"],
+    "**/{gradle/libs.versions.toml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,build.sbt,deps.edn,project.clj,pom.xml}",
+    ["toml", "groovy", "kotlin", "plaintext", "scala", "clojure", "xml"],
   ],
   [
     "npm.files",
-    "**/{package.json,package.json5,package.yaml,package.yml}",
-    ["json", "jsonc", "json5", "yaml"],
+    "**/{.nvmrc,.node-version,.bun-version,package.json,package.json5,package.yaml,package.yml}",
+    ["plaintext", "json", "jsonc", "json5", "yaml"],
   ],
   [
     "pnpm.files",
-    "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yaml,.yarnrc.yml}",
+    "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yml,.yarnrc.yaml}",
     ["yaml"],
   ],
   [
     "pypi.files",
-    "**/{Pipfile,pyproject.toml,*requirements*.txt,*constraints*.txt}",
-    ["toml", "pip-requirements", "plaintext"],
+    "**/{*requirements*.txt,*constraints*.txt,Pipfile,pyproject.toml}",
+    ["plaintext", "pip-requirements", "toml"],
   ],
   [
     "pub.files",
-    "**/{pubspec.yaml,pubspec.yml,pubspec_overrides.yaml}",
+    "**/{pubspec_overrides.yaml,pubspec.yaml,pubspec.yml}",
     ["yaml"],
   ],
-  ["ruby.files", "**/Gemfile", ["ruby", "plaintext"]],
+  ["ruby.files", "**/{*.gemspec,Gemfile}", ["ruby", "plaintext"]],
   [
     "hex.files",
     "**/{mix.exs,rebar.config,gleam.toml}",
-    ["elixir", "erlang", "toml", "plaintext"],
+    ["elixir", "plaintext", "erlang", "toml"],
   ],
   ["opam.files", "**/{opam,*.opam,dune-project}", ["plaintext"]],
   [
     "hackage.files",
-    "**/{*.cabal,cabal.project,stack.yaml,stack.yml}",
-    ["plaintext", "yaml"],
+    "**/{cabal.project,*.cabal,stack.yaml,stack.yml}",
+    ["properties", "plaintext", "yaml"],
   ],
   ["julia.files", "**/{Project.toml,Manifest.toml,Manifest-v*.toml}", ["toml"]],
-  ["cran.files", "**/{DESCRIPTION,renv.lock}", ["plaintext", "json"]],
+  ["cran.files", "**/{DESCRIPTION,renv.lock}", ["plaintext", "json", "jsonc"]],
 ] as const;
 const defaultFilePatternByKey = new Map<string, string>(
   defaultFilePatternEntries.map(([key, pattern]) => [key, pattern]),

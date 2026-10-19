@@ -14,6 +14,22 @@ const JETBRAINS_SUPPORT =
   "packages/jetbrains-plugin/src/main/kotlin/com/versionlens/jetbrains/VersionLensLspServerSupportProvider.kt";
 const ZED_EXTENSION = "packages/zed-extension/extension.toml";
 const CONFIG_KEYS = "packages/vscode-extension/src/extension/config/keys.ts";
+const TEST_PATTERNS =
+  "packages/vscode-extension/src/extension/__tests__/documents/patterns.ts";
+const SUPPORT_MATRIX = "tests/fixtures/manifest-support-matrix.json";
+
+const NEOVIM_VARIABLES = [
+  "supported_file_names",
+  "supported_extensions",
+  "supported_path_suffixes",
+  "supported_name_patterns",
+];
+const JETBRAINS_VARIABLES = [
+  "supportedFileNames",
+  "supportedExtensions",
+  "supportedPathSuffixes",
+  "supportedNamePatterns",
+];
 
 /** Extensions that a data format implies for editor pre-filters. */
 const FORMAT_EXTENSIONS = {
@@ -68,7 +84,15 @@ export function readManifestTable() {
     ? [binary, ["--print-manifest-table"]]
     : [
         "cargo",
-        ["run", "-q", "-p", "versionlens-lsp", "--", "--print-manifest-table"],
+        [
+          "run",
+          "--locked",
+          "-q",
+          "-p",
+          "versionlens-lsp",
+          "--",
+          "--print-manifest-table",
+        ],
       ];
   const result = spawnSync(command, args, {
     cwd: ROOT,
@@ -77,7 +101,7 @@ export function readManifestTable() {
   });
   if (result.status !== 0) {
     throw new Error(
-      `${command} --print-manifest-table failed: ${result.stderr || result.error}`,
+      `${command} --print-manifest-table failed: ${result.stderr || result.error?.message}`,
     );
   }
   return JSON.parse(result.stdout).manifests;
@@ -221,6 +245,9 @@ function patchDefault(text, key, value) {
 function patchActivationEvents(text, manifests) {
   const marker = '"activationEvents": [';
   const start = text.indexOf(marker);
+  if (start < 0) {
+    throw new Error(`${PACKAGE_JSON} lacks activationEvents`);
+  }
   const end = text.indexOf("]", start);
   const existing = JSON.parse(text.slice(start + marker.length - 1, end + 1));
   const languages = new Set(languageIds(manifests));
@@ -359,17 +386,23 @@ export function generateConfigKeys(text, manifests) {
   }
   let block = text.slice(start, end);
   for (const [provider, languages] of perProvider(manifests, "languages")) {
+    if (languages.length === 0) {
+      continue;
+    }
     const pattern = new RegExp(
       `(\\[\\s*"${provider}",\\s*"${provider}\\.files",\\s*)\\[[^\\]]*\\]`,
       "u",
     );
-    if (languages.length > 0 && pattern.test(block)) {
-      block = block.replace(
-        pattern,
-        (_, open) =>
-          `${open}[${languages.map((l) => JSON.stringify(l)).join(", ")}]`,
+    if (!pattern.test(block)) {
+      throw new Error(
+        `${CONFIG_KEYS} has no filePatternKeys row for ${provider}`,
       );
     }
+    block = block.replace(
+      pattern,
+      (_, open) =>
+        `${open}[${languages.map((l) => JSON.stringify(l)).join(", ")}]`,
+    );
   }
   return formatWithBiome(
     CONFIG_KEYS,
@@ -377,39 +410,279 @@ export function generateConfigKeys(text, manifests) {
   );
 }
 
-/** Formats generated TypeScript as the repository formatter would. */
+const TEST_PATTERN_ROW =
+  /\[\s*"(\w+)\.files",\s*"([^"]*)",\s*(\[[^\]]*\]),?\s*\]/gu;
+
+/** The test fixture rows of the default `files` patterns and languages. */
+export function generateTestPatterns(text, manifests) {
+  const languages = perProvider(manifests, "languages");
+  const globs = perProvider(manifests, "files");
+  const marker = "const defaultFilePatternEntries = [";
+  const start = text.indexOf(marker);
+  const end = text.indexOf("] as const;", start);
+  if (start < 0 || end < 0) {
+    throw new Error(`${TEST_PATTERNS} lacks defaultFilePatternEntries`);
+  }
+  const body = text
+    .slice(start + marker.length, end)
+    .replace(TEST_PATTERN_ROW, (_row, provider) => {
+      const files = globs.get(provider);
+      if (!files?.length) {
+        throw new Error(
+          `${TEST_PATTERNS}: the table has no files for ${provider}`,
+        );
+      }
+      const ids = JSON.stringify(languages.get(provider) ?? []);
+      return `["${provider}.files", ${JSON.stringify(filesDefault(files))}, ${ids}]`;
+    });
+  return formatWithBiome(
+    TEST_PATTERNS,
+    text.slice(0, start + marker.length) + body + text.slice(end),
+  );
+}
+
+/** The `defaultGlob` and `languages` of each provider in the support matrix. */
+export function generateSupportMatrix(text, manifests) {
+  const languages = perProvider(manifests, "languages");
+  const globs = perProvider(manifests, "files");
+  const matrix = JSON.parse(text);
+  const listed = new Set(matrix.entries.map((entry) => entry.provider));
+  for (const [provider, files] of globs) {
+    if (files.length > 0 && !listed.has(provider)) {
+      throw new Error(
+        `${SUPPORT_MATRIX}: no entry for ${provider}; add it by hand, then rerun`,
+      );
+    }
+  }
+  for (const entry of matrix.entries) {
+    for (const manifest of entry.manifests) {
+      const provider = entry.provider;
+      if (!(globs.get(provider)?.length && languages.has(provider))) {
+        throw new Error(
+          `${SUPPORT_MATRIX}: the table has no row for ${provider}`,
+        );
+      }
+      manifest.defaultGlob = filesDefault(globs.get(provider));
+      manifest.languages = languages.get(provider);
+    }
+  }
+  return formatWithBiome(
+    SUPPORT_MATRIX,
+    `${JSON.stringify(matrix, null, 2)}\n`,
+  );
+}
+
+/** Formats generated text as the repository formatter would. */
 function formatWithBiome(path, text) {
+  const biome = join(ROOT, "node_modules", "@biomejs", "biome", "bin", "biome");
   const result = spawnSync(
-    join(ROOT, "node_modules", ".bin", "biome"),
-    ["format", `--stdin-file-path=${path}`],
+    process.execPath,
+    [biome, "format", `--stdin-file-path=${path}`],
     { cwd: ROOT, encoding: "utf8", input: text },
   );
   if (result.status !== 0) {
-    throw new Error(`biome could not format ${path}: ${result.stderr}`);
+    throw new Error(
+      `biome could not format ${path}: ${result.error?.message ?? result.stderr}`,
+    );
   }
   return result.stdout;
 }
 
+// The glob alternatives of a `files` default, without the leading globstar.
+function globsOf(value) {
+  if (typeof value !== "string") {
+    return [JSON.stringify(value)];
+  }
+  const bare = value.replace(/^\*\*\//u, "");
+  const braced = /^\{(.*)\}$/u.exec(bare);
+  return braced ? braced[1].split(",") : [bare];
+}
+
+/** The named lists of each generated file, read back out of its text. */
+
+function packageJsonEntries(text, manifests) {
+  const json = JSON.parse(text);
+  const properties = json.contributes.configuration.properties;
+  const entries = new Map();
+  for (const key of derivedSettings(manifests).keys()) {
+    const value = properties[key]?.default;
+    entries.set(
+      `${key} default`,
+      Array.isArray(value) ? value.map(String) : globsOf(value),
+    );
+  }
+  entries.set(
+    "activationEvents onLanguage:*",
+    json.activationEvents.filter((event) => event.startsWith("onLanguage:")),
+  );
+  return entries;
+}
+
+function configKeysEntries(text, manifests) {
+  const entries = new Map();
+  for (const provider of perProvider(manifests, "languages").keys()) {
+    const row = new RegExp(
+      `\\[\\s*"${provider}",\\s*"${provider}\\.files",\\s*(\\[[^\\]]*\\])`,
+      "u",
+    ).exec(text);
+    entries.set(`${provider} languages`, row ? JSON.parse(row[1]) : []);
+  }
+  return entries;
+}
+
+function testPatternsEntries(text) {
+  const entries = new Map();
+  for (const [, provider, glob, languages] of text.matchAll(TEST_PATTERN_ROW)) {
+    entries.set(`${provider}.files default`, globsOf(glob));
+    entries.set(`${provider}.files languages`, JSON.parse(languages));
+  }
+  return entries;
+}
+
+function supportMatrixEntries(text) {
+  const entries = new Map();
+  for (const { provider, manifests } of JSON.parse(text).entries) {
+    for (const [index, manifest] of manifests.entries()) {
+      const key = `${provider} manifests[${index}]`;
+      entries.set(`${key} defaultGlob`, globsOf(manifest.defaultGlob));
+      entries.set(`${key} languages`, manifest.languages);
+    }
+  }
+  return entries;
+}
+
+function blockEntries(text, variables, pattern) {
+  const entries = new Map();
+  for (const variable of variables) {
+    const match = pattern(variable).exec(text);
+    entries.set(
+      variable,
+      match
+        ? match[1]
+            .split("\n")
+            .map((line) => line.trim().replace(/,$/u, ""))
+            .filter(Boolean)
+        : [],
+    );
+  }
+  return entries;
+}
+
+const neovimEntries = (text) =>
+  blockEntries(
+    text,
+    NEOVIM_VARIABLES,
+    (variable) =>
+      new RegExp(`local ${variable} = \\{\\n((?: {2}.*\\n)*)\\}\\n`, "u"),
+  );
+
+const jetbrainsEntries = (text) =>
+  blockEntries(
+    text,
+    JETBRAINS_VARIABLES,
+    (variable) =>
+      new RegExp(
+        `private val ${variable} = (?:setOf|listOf<[^(]*>)\\(\\n((?: {12}.*\\n)*) {8}\\)`,
+        "u",
+      ),
+  );
+
+function zedEntries(text) {
+  const languages = /languages = \[\n([\s\S]*?)\n\]/u.exec(text);
+  const ids =
+    /\[language_servers\.versionlens\.language_ids\]\n([\s\S]*)$/u.exec(text);
+  const lines = (block) =>
+    block
+      ? block
+          .split("\n")
+          .map((line) => line.trim().replace(/,$/u, ""))
+          .filter(Boolean)
+      : [];
+  return new Map([
+    ["languages", lines(languages?.[1])],
+    ["language_servers.versionlens.language_ids", lines(ids?.[1])],
+  ]);
+}
+
 export function generateAll(manifests) {
   const targets = [
-    [PACKAGE_JSON, generatePackageJson],
-    [NEOVIM_SUPPORT, generateNeovim],
-    [JETBRAINS_SUPPORT, generateJetBrains],
-    [ZED_EXTENSION, generateZed],
-    [CONFIG_KEYS, generateConfigKeys],
+    [PACKAGE_JSON, generatePackageJson, packageJsonEntries],
+    [NEOVIM_SUPPORT, generateNeovim, neovimEntries],
+    [JETBRAINS_SUPPORT, generateJetBrains, jetbrainsEntries],
+    [ZED_EXTENSION, generateZed, zedEntries],
+    [CONFIG_KEYS, generateConfigKeys, configKeysEntries],
+    [TEST_PATTERNS, generateTestPatterns, testPatternsEntries],
+    [SUPPORT_MATRIX, generateSupportMatrix, supportMatrixEntries],
   ];
-  return targets.map(([path, generate]) => {
+  return targets.map(([path, generate, entriesOf]) => {
     const current = readFileSync(join(ROOT, path), "utf8");
-    return { path, current, next: generate(current, manifests) };
+    return {
+      path,
+      current,
+      next: generate(current, manifests),
+      entriesOf: (text) => entriesOf(text, manifests),
+    };
   });
 }
 
+const preview = (items) =>
+  items.length > 6 ? `${items.slice(0, 6).join(", ")}, ...` : items.join(", ");
+
+/** One message per generated entry that differs from the committed one. */
+export function findDrift({ path, current, next, entriesOf }) {
+  const expected = entriesOf(next);
+  const actual = entriesOf(current);
+  const drift = [];
+  for (const [name, want] of expected) {
+    const have = actual.get(name) ?? [];
+    if (JSON.stringify(want) === JSON.stringify(have)) {
+      continue;
+    }
+    const missing = want.filter((item) => !have.includes(item));
+    const extra = have.filter((item) => !want.includes(item));
+    const detail = [
+      missing.length > 0 && `missing: ${preview(missing)}`,
+      extra.length > 0 && `unexpected: ${preview(extra)}`,
+      missing.length + extra.length === 0 && "order differs",
+    ]
+      .filter(Boolean)
+      .join("; ");
+    drift.push(
+      `${path}: ${name}\n    ${detail}\n    expected: ${preview(want)}\n    actual:   ${preview(have)}`,
+    );
+  }
+  if (drift.length === 0 && next !== current) {
+    drift.push(`${path}: formatting differs from the generated output`);
+  }
+  return drift;
+}
+
 if (import.meta.main) {
-  const manifests = readManifestTable();
-  for (const { path, current, next } of generateAll(manifests)) {
-    if (next !== current) {
-      writeFileSync(join(ROOT, path), next);
-      console.log(`updated ${path}`);
+  const check = process.argv.includes("--check");
+  let results;
+  try {
+    results = generateAll(readManifestTable());
+  } catch (error) {
+    console.error(`manifests: ${error.message}`);
+    process.exit(1);
+  }
+  if (check) {
+    const drift = results.flatMap(findDrift);
+    if (drift.length > 0) {
+      console.error(
+        `generated lists drifted from the manifest table:\n${drift.join("\n")}\nrun \`bun scripts/generate/manifests.mjs\` to regenerate`,
+      );
+      process.exit(1);
+    }
+    console.log(
+      `manifests: ${results.length} generated files match the manifest table`,
+    );
+  } else {
+    for (const { path, current, next } of results) {
+      if (next !== current) {
+        writeFileSync(join(ROOT, path), next);
+        console.log(`updated ${path}`);
+      }
     }
   }
 }
