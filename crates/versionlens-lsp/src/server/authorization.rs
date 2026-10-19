@@ -96,8 +96,8 @@ impl AuthorizationBroker {
     }
 
     /// Applies the client's answer to the question it belongs to. Returns the
-    /// credential when no resolution was waiting for it, so the caller can
-    /// give it to the sessions and check again.
+    /// credential, so the caller can give it to every session and check the
+    /// refused dependencies again.
     pub(super) fn answer(&self, response: Response) -> Option<LateCredential> {
         let credential = response
             .response_result
@@ -110,12 +110,11 @@ impl AuthorizationBroker {
             .map(|credential| Credential::new(credential.scheme, credential.token));
         let mut asked = self.lock();
         if let Some((host, answer)) = asked.open.remove(&response.id) {
-            // The stored receiver is one; any other is a waiting resolution.
-            let late = answer.receiver_count() <= 1;
+            // Waiting resolutions take the answer themselves. Others may have
+            // given up at their own deadline, so every credential is also
+            // returned, once per host, to check the refused dependencies again.
             let _ = answer.send(Some(credential.clone()));
-            return credential
-                .filter(|_| late)
-                .map(|credential| LateCredential { host, credential });
+            return credential.map(|credential| LateCredential { host, credential });
         }
         let host = asked.expired.remove(&response.id)?;
         let credential = credential?;
