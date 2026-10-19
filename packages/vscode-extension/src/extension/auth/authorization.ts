@@ -82,23 +82,16 @@ function isSuppressed(state: ExtensionState, host: string): boolean {
 }
 
 /**
- * Basic credentials are stored as the base64 pair. A custom value is the
- * whole header value, so its first word is the scheme. A bare token has an
- * empty scheme, which the server sends as the whole header value.
+ * Sends the stored value as 0.4.4 did. Basic is `Basic <base64>`. A custom
+ * value is the whole header value, byte for byte, so it goes out with an
+ * empty scheme, which the server sends as the token alone.
  */
 function credential(
   entry: UrlAuthenticationData,
   token: string,
-): AuthorizationCredential | null {
+): AuthorizationCredential {
   if (entry.scheme === basicScheme) {
     return { scheme: basicScheme, token };
-  }
-  const separator = token.indexOf(" ");
-  if (separator > 0) {
-    return {
-      scheme: token.slice(0, separator),
-      token: token.slice(separator + 1).trim(),
-    };
   }
   return { scheme: "", token };
 }

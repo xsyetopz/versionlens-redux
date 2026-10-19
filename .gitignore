@@ -18,3 +18,6 @@ __pycache__/
 # env files
 *.env
 !*.env.example
+
+# VS Code test downloads
+.vscode-test/

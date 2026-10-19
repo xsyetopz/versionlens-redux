@@ -29,6 +29,7 @@
     "package:editors": "bun scripts/package/editors.mjs",
     "test": "bun run test:extension && bun run test:napi",
     "test:extension": "bun scripts/test/extension.mjs",
+    "test:e2e": "cargo build -p versionlens-lsp && bun run build && bun scripts/test/e2e.mjs",
     "test:release": "bun test scripts/release",
     "test:napi": "bun run native:build && bun test tests/napi",
     "typecheck": "bun check --cwd packages/vscode-extension",
@@ -40,6 +41,7 @@
     "@types/bun": "1.4.3",
     "@types/node": "26.6.5",
     "@types/vscode": "1.91.0",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "4.0.0",
     "lefthook": "2.2.2"
   },

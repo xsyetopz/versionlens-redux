@@ -171,6 +171,7 @@ async function start(state: ExtensionState): Promise<void> {
   state.client = client;
   try {
     await client.start();
+    state.ui.outputChannel?.info(`language server started (${serverPath})`);
   } catch (error) {
     state.client = undefined;
     await disposeClient(state, client);

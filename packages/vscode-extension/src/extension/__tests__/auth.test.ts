@@ -260,29 +260,47 @@ it("answers the server by host name, whatever the stored port and case", async (
   const { answerAuthorization } = await import("../auth/authorization.ts");
   const url = "https://Registry.Example.com:8443/npm";
   const context = extensionContext({
-    [url]: {
-      protocol: "https:",
-      scheme: "Custom",
-      status: "NoStatus",
-      url,
-    },
+    [url]: { protocol: "https:", scheme: "Custom", status: "NoStatus", url },
   });
-  context.secrets.values.set(`/storage__${url}`, "ApiKey abc");
+  context.secrets.values.set(`/storage__${url}`, "Bearer abc");
 
   expect(
     await answerAuthorization(
       { context, promptedHosts: new Set<string>() } as never,
       { host: "registry.example.com", status: 401 },
     ),
-  ).toEqual({ scheme: "ApiKey", token: "abc" });
+  ).toEqual({ scheme: "", token: "Bearer abc" });
+});
 
-  context.secrets.values.set(`/storage__${url}`, "rawtoken");
-  expect(
-    await answerAuthorization(
+it("sends credentials as the header value 0.4.4 sent", async (): Promise<void> => {
+  const { answerAuthorization } = await import("../auth/authorization.ts");
+  const url = "https://registry.example.com";
+  const header = async (
+    scheme: string,
+    secret: string,
+  ): Promise<string | undefined> => {
+    const context = extensionContext({
+      [url]: { protocol: "https:", scheme, status: "NoStatus", url },
+    });
+    context.secrets.values.set(`/storage__${url}`, secret);
+    const answer = await answerAuthorization(
       { context, promptedHosts: new Set<string>() } as never,
       { host: "registry.example.com", status: 401 },
-    ),
-  ).toEqual({ scheme: "", token: "rawtoken" });
+    );
+    if (!answer) {
+      return;
+    }
+    // What the server does with the answer.
+    return answer.scheme ? `${answer.scheme} ${answer.token}` : answer.token;
+  };
+
+  expect(await header("Basic", "dTpw")).toBe("Basic dTpw");
+  expect(await header("Custom", "Bearer abc")).toBe("Bearer abc");
+  expect(await header("Custom", "Token a b")).toBe("Token a b");
+  expect(await header("Custom", "xyz")).toBe("xyz");
+  expect(await header("Custom", "Bearer  two  spaces ")).toBe(
+    "Bearer  two  spaces ",
+  );
 });
 
 function extensionContext(
