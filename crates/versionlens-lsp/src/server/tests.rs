@@ -458,3 +458,5 @@ mod diagnostics;
 
 #[cfg(test)]
 mod commands;
+
+mod authorization;
