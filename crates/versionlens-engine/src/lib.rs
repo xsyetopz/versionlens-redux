@@ -25,43 +25,39 @@ mod view;
 mod vulnerability;
 mod workspace;
 
-pub use config::{
-    DependencyPropertyConfig, EnabledProviderConfig, FilePatternConfig, PrereleaseTagConfig,
-    ProviderCacheConfig, ProviderHttpConfig, ProviderSettings, RegistryUrlConfig, SessionConfig,
-    Settings, SuggestionIndicators, UpdateSeverity, dependency_property_config_from_name,
-    dependency_property_manifest_kind_from_name, enabled_provider_config_from_name,
-    file_pattern_config_from_name, file_pattern_manifest_kind_from_name,
-    prerelease_tag_config_from_name, provider_cache_config_from_name,
-    provider_http_config_from_name, provider_settings_manifest_kind_from_name,
-    registry_url_config_from_name, standard_suggestion_indicators,
-};
+pub use config::{SessionConfig, Settings, UpdateSeverity};
 pub use contract::validate_workspace_edit_plan;
-pub use contract::{
-    AnalyzeDocumentOutput, AuthorizationRequestPayload, RegistryResponseInput,
-    ResolveDocumentOutput,
-};
-pub use dependency::dependency_view;
-pub use dotnet_sources::dotnet_registry_source_urls;
+pub use contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
 pub use session::{
-    ApplyCommandRequest, AuthorizationFuture, AuthorizationSource, CHECKING_CANCELLED, SessionTask,
-    VersionLensSession, WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking,
-    WorkspaceCheckingOptions, WorkspaceDiscovery, WorkspaceDiscoveryCancellation,
-    WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize,
-    WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions,
-    WorkspaceProviderExclusion, version_lens_session, workspace_exclusion_matches,
-    workspace_exclusion_path,
+    AuthorizationFuture, AuthorizationSource, CHECKING_CANCELLED, SessionTask, VersionLensSession,
+    WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions,
+    WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryOptions,
+    version_lens_session, workspace_exclusion_matches, workspace_exclusion_path,
 };
+pub use versionlens_fetch::{Credential, application_cache_directory};
+pub use view::{
+    Action, BumpActionView, DependencyView, DiagnosticView, LensView, Severity, UPDATE_AVAILABLE,
+    UpdateMode,
+};
+pub use workspace::{workspace_file_uri, workspace_path};
+
+pub(crate) use config::{
+    DependencyPropertyConfig, ProviderCacheConfig, RegistryUrlConfig, SuggestionIndicators,
+};
+pub(crate) use session::WorkspaceDiscovery;
 pub(crate) use support::{
     anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, path, recover_poison,
     string_from_utf8,
 };
-pub use versionlens_fetch::{Credential, application_cache_directory};
 pub(crate) use versionlens_model::parse_semver;
-pub use versionlens_update::{Bump, BumpKind, Plan, PlanStatus};
-pub use versionlens_update::{Suggestion, SuggestionStatus};
-pub use view::{
-    Action, BumpActionView, DependencyView, DiagnosticView, LensKind, LensView, Severity,
-    StatusView, SuggestionView, UPDATE_AVAILABLE, UpdateMode,
-};
+pub(crate) use versionlens_update::{Suggestion, SuggestionStatus};
 
-pub use workspace::{workspace_file_uri, workspace_path};
+#[cfg(test)]
+pub(crate) use config::{
+    EnabledProviderConfig, FilePatternConfig, PrereleaseTagConfig, ProviderHttpConfig,
+    ProviderSettings, enabled_provider_config_from_name, standard_suggestion_indicators,
+};
+#[cfg(test)]
+pub(crate) use session::{ApplyCommandRequest, WorkspaceDiscoveryFileSize};
+#[cfg(test)]
+pub(crate) use view::SuggestionView;

@@ -3,7 +3,7 @@ use versionlens_parsers::parse_dotnet_enabled_sources;
 use crate::config::RegistryUrlConfig;
 use versionlens_model::Ecosystem::Dotnet;
 
-pub fn dotnet_registry_source_urls(
+pub(crate) fn dotnet_registry_source_urls(
     configured: &[RegistryUrlConfig],
     dotnet_sources: Option<&str>,
 ) -> Vec<String> {

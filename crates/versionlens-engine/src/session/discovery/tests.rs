@@ -124,7 +124,7 @@ fn disabled_provider_is_rejected_before_the_file_size_or_read_gate() {
     }];
     let session = VersionLensSession::new(config);
     let mut request = options(&workspace);
-    request.limits.max_file_size = 8;
+    request.limits.file_size = 8;
 
     let results = session
         .discover_workspace_documents(request)
@@ -319,7 +319,7 @@ fn invalid_utf8_and_oversize_failures_do_not_hide_later_documents() {
     workspace.write("large/Cargo.toml", vec![b'x'; 64]);
     workspace.write("good/.nvmrc", "22");
     let mut request = options(&workspace);
-    request.limits.max_file_size = 16;
+    request.limits.file_size = 16;
 
     let results = session()
         .discover_workspace_documents(request)
@@ -347,10 +347,10 @@ fn depth_and_file_count_bounds_are_explicit() {
     workspace.write("deep/nested/package.json", "{}");
     let mut depth_request = options(&workspace);
     depth_request.limits = WorkspaceDiscoveryLimits {
-        max_files: 10,
-        max_visited_entries: 100,
-        max_depth: 1,
-        max_file_size: 1024,
+        files: 10,
+        visited_entries: 100,
+        depth: 1,
+        file_size: 1024,
     };
 
     let depth_results = session()
@@ -363,7 +363,7 @@ fn depth_and_file_count_bounds_are_explicit() {
             if matches!(failure.kind, WorkspaceDiscoveryFailureKind::DepthLimitExceeded { limit: 1 })
     )));
     let mut count_request = options(&workspace);
-    count_request.limits.max_files = 1;
+    count_request.limits.files = 1;
     let count_results = session()
         .discover_workspace_documents(count_request)
         .collect::<Vec<_>>();
@@ -382,7 +382,7 @@ fn sparse_trees_stop_at_the_visited_entry_bound() {
     workspace.write("b.txt", "unsupported");
     workspace.write("c/package.json", "{}");
     let mut request = options(&workspace);
-    request.limits.max_visited_entries = 1;
+    request.limits.visited_entries = 1;
 
     let results = session()
         .discover_workspace_documents(request)

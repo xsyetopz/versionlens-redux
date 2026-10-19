@@ -9,7 +9,7 @@ pub(crate) fn into_dependency_views(dependencies: Vec<Dependency>) -> Vec<Depend
     dependencies.into_iter().map(dependency_view).collect()
 }
 
-pub fn dependency_view(dependency: Dependency) -> DependencyView {
+pub(crate) fn dependency_view(dependency: Dependency) -> DependencyView {
     let ecosystem = ecosystem_config_namespace(dependency.ecosystem).to_owned();
     DependencyView {
         name: dependency.name,

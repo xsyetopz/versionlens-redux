@@ -102,21 +102,21 @@ fn manifest_kind_matches(candidate: ManifestKind, kind: ManifestKind) -> bool {
             ))
 }
 
-pub fn enabled_provider_config_from_name(provider: &str) -> Option<EnabledProviderConfig> {
+pub(crate) fn enabled_provider_config_from_name(provider: &str) -> Option<EnabledProviderConfig> {
     Some(EnabledProviderConfig {
         ecosystem: ecosystem_from_config_name(provider)?,
         manifest_kind: dependency_property_manifest_kind_from_name(provider),
     })
 }
 
-pub fn dependency_property_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
+pub(crate) fn dependency_property_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
         "npm" | "bun" => Some(ManifestKind::NpmPackageJson),
         _ => provider_settings_manifest_kind_from_name(provider),
     }
 }
 
-pub fn dependency_property_config_from_name(
+pub(crate) fn dependency_property_config_from_name(
     ecosystem: &str,
     provider: Option<&str>,
     properties: Vec<String>,
@@ -129,7 +129,7 @@ pub fn dependency_property_config_from_name(
     })
 }
 
-pub fn provider_settings_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
+pub(crate) fn provider_settings_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
         "pnpm" => Some(ManifestKind::PnpmYaml),
         "kustomize" => Some(ManifestKind::KustomizationYaml),
@@ -140,7 +140,7 @@ pub fn provider_settings_manifest_kind_from_name(provider: &str) -> Option<Manif
     }
 }
 
-pub fn file_pattern_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
+pub(crate) fn file_pattern_manifest_kind_from_name(provider: &str) -> Option<ManifestKind> {
     match provider {
         "cargo" => Some(ManifestKind::CargoToml),
         "composer" => Some(ManifestKind::ComposerJson),
@@ -199,7 +199,7 @@ pub fn file_pattern_manifest_kind_from_name(provider: &str) -> Option<ManifestKi
     }
 }
 
-pub fn file_pattern_config_from_name(
+pub(crate) fn file_pattern_config_from_name(
     ecosystem: &str,
     pattern: String,
 ) -> Option<FilePatternConfig> {
@@ -214,7 +214,10 @@ pub fn file_pattern_config_from_name(
     })
 }
 
-pub fn registry_url_config_from_name(ecosystem: &str, url: String) -> Option<RegistryUrlConfig> {
+pub(crate) fn registry_url_config_from_name(
+    ecosystem: &str,
+    url: String,
+) -> Option<RegistryUrlConfig> {
     let url = url.trim();
     if url.is_empty() {
         return None;
@@ -226,7 +229,7 @@ pub fn registry_url_config_from_name(ecosystem: &str, url: String) -> Option<Reg
     })
 }
 
-pub fn prerelease_tag_config_from_name(
+pub(crate) fn prerelease_tag_config_from_name(
     ecosystem: &str,
     tags: Vec<String>,
 ) -> Option<PrereleaseTagConfig> {
@@ -259,7 +262,7 @@ impl ProviderCacheConfig {
     }
 }
 
-pub fn provider_cache_config_from_name(
+pub(crate) fn provider_cache_config_from_name(
     ecosystem: &str,
     cache_duration_minutes: Option<f64>,
 ) -> Option<ProviderCacheConfig> {
@@ -271,7 +274,7 @@ pub fn provider_cache_config_from_name(
     })
 }
 
-pub fn provider_http_config_from_name(
+pub(crate) fn provider_http_config_from_name(
     ecosystem: &str,
     strict_ssl: Option<bool>,
 ) -> Option<ProviderHttpConfig> {

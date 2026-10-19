@@ -60,11 +60,11 @@ impl WorkspaceDiscovery {
             return Ok(None);
         }
         let size = u64::try_from(input.text.len()).unwrap_or(u64::MAX);
-        if size > self.limits.max_file_size {
+        if size > self.limits.file_size {
             return Err(WorkspaceDiscoveryFailure::file_too_large(
                 path,
                 size,
-                self.limits.max_file_size,
+                self.limits.file_size,
             ));
         }
         Ok(Some((input, path)))

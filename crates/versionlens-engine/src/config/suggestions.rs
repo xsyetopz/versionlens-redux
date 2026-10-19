@@ -47,7 +47,7 @@ fn indicator_or_default(value: String, default: String) -> String {
         .unwrap_or(default)
 }
 
-pub fn standard_suggestion_indicators() -> SuggestionIndicators {
+pub(crate) fn standard_suggestion_indicators() -> SuggestionIndicators {
     SuggestionIndicators {
         latest: "\u{1F7E2}".to_owned(),
         satisfies_latest: "\u{1F7E2}".to_owned(),

@@ -40,11 +40,12 @@ pub use authorization::{AuthorizationFuture, AuthorizationSource};
 pub use checking::{
     WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions,
 };
-pub use commands::ApplyCommandRequest;
+pub(crate) use commands::ApplyCommandRequest;
+pub(crate) use discovery::WorkspaceDiscovery;
+#[cfg(test)]
+pub(crate) use discovery::WorkspaceDiscoveryFileSize;
 pub use discovery::{
-    WorkspaceDiscovery, WorkspaceDiscoveryCancellation, WorkspaceDiscoveryFailure,
-    WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize, WorkspaceDiscoveryIoOperation,
-    WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions, WorkspaceProviderExclusion,
+    WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryOptions,
     workspace_exclusion_matches, workspace_exclusion_path,
 };
 pub use tasks::{CHECKING_CANCELLED, SessionTask};

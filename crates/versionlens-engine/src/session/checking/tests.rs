@@ -242,7 +242,7 @@ fn discovery_retries_preserve_failed_overlay_precedence() {
     let shadow = path.with_file_name("shadow.yml");
     std::fs::write(&shadow, "jobs: {check: {steps: [{uses: './disk'}]}}\n").unwrap();
     let mut request = options(&root);
-    request.discovery.limits.max_file_size = 64;
+    request.discovery.limits.file_size = 64;
     request
         .discovery
         .overlays

@@ -14,9 +14,9 @@ mod options;
 mod overlays;
 mod support;
 
-pub use options::{
-    WorkspaceDiscoveryCancellation, WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions,
-    WorkspaceProviderExclusion,
+pub use options::WorkspaceDiscoveryOptions;
+pub(crate) use options::{
+    WorkspaceDiscoveryCancellation, WorkspaceDiscoveryLimits, WorkspaceProviderExclusion,
 };
 
 use support::ReadFailure;
@@ -308,12 +308,12 @@ impl WorkspaceDiscovery {
         input: DocumentInput,
         path: PathBuf,
     ) -> Result<DocumentInput, WorkspaceDiscoveryFailure> {
-        if self.traversal.yielded_files >= self.limits.max_files {
+        if self.traversal.yielded_files >= self.limits.files {
             self.traversal.stopped = true;
             return Err(WorkspaceDiscoveryFailure::at(
                 path,
                 WorkspaceDiscoveryFailureKind::FileLimitExceeded {
-                    limit: self.limits.max_files,
+                    limit: self.limits.files,
                 },
             ));
         }
@@ -322,12 +322,12 @@ impl WorkspaceDiscovery {
     }
 
     fn visit_entry(&mut self, path: PathBuf) -> Result<(), WorkspaceDiscoveryFailure> {
-        if self.traversal.visited_entries >= self.limits.max_visited_entries {
+        if self.traversal.visited_entries >= self.limits.visited_entries {
             self.traversal.stopped = true;
             return Err(WorkspaceDiscoveryFailure::at(
                 path,
                 WorkspaceDiscoveryFailureKind::EntryLimitExceeded {
-                    limit: self.limits.max_visited_entries,
+                    limit: self.limits.visited_entries,
                 },
             ));
         }
@@ -487,11 +487,11 @@ impl WorkspaceDiscovery {
         if self.excluded(entry.root_index, &entry.path, true) || entry.symlink {
             return None;
         }
-        if entry.depth >= self.limits.max_depth {
+        if entry.depth >= self.limits.depth {
             return Some(Err(WorkspaceDiscoveryFailure::at(
                 entry.path,
                 WorkspaceDiscoveryFailureKind::DepthLimitExceeded {
-                    limit: self.limits.max_depth,
+                    limit: self.limits.depth,
                 },
             )));
         }
@@ -543,14 +543,14 @@ impl WorkspaceDiscovery {
         if !self.supported(&probe, true) {
             return None;
         }
-        if entry.metadata.len() > self.limits.max_file_size {
+        if entry.metadata.len() > self.limits.file_size {
             return Some(Err(WorkspaceDiscoveryFailure::file_too_large(
                 entry.path,
                 entry.metadata.len(),
-                self.limits.max_file_size,
+                self.limits.file_size,
             )));
         }
-        let text = match read_bounded_utf8(&entry.path, self.limits.max_file_size) {
+        let text = match read_bounded_utf8(&entry.path, self.limits.file_size) {
             Ok(text) => text,
             Err(ReadFailure::Io(error)) => {
                 return Some(Err(WorkspaceDiscoveryFailure::io(
@@ -563,7 +563,7 @@ impl WorkspaceDiscovery {
                 return Some(Err(WorkspaceDiscoveryFailure::file_too_large(
                     entry.path,
                     size,
-                    self.limits.max_file_size,
+                    self.limits.file_size,
                 )));
             }
             Err(ReadFailure::InvalidUtf8) => {

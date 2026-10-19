@@ -55,7 +55,7 @@ fn standalone_discovery_applies_provider_enablement_and_size_limits() {
             .is_some()
     );
     let mut oversized = options();
-    oversized.limits.max_file_size = 1;
+    oversized.limits.file_size = 1;
     let expected_size = u64::try_from(oversized.overlays[0].text.len()).unwrap();
     let failure = session
         .discover_workspace_documents(oversized)
