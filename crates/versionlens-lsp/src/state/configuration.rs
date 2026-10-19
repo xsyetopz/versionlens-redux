@@ -2,7 +2,7 @@ use std::io;
 use std::path::Path;
 
 use serde_json::Value;
-use versionlens_core::{workspace_exclusion_matches, workspace_exclusion_path};
+use versionlens_engine::{workspace_exclusion_matches, workspace_exclusion_path};
 
 use super::VersionLensLspState;
 
@@ -102,7 +102,7 @@ impl VersionLensLspState {
     }
 
     pub(crate) fn watched_file_is_relevant(&self, uri: &str) -> bool {
-        let Some(path) = versionlens_core::workspace_path(uri) else {
+        let Some(path) = versionlens_engine::workspace_path(uri) else {
             return false;
         };
         let Some((root, relative)) = self
@@ -131,7 +131,7 @@ impl VersionLensLspState {
                     uri.to_owned(),
                     "".to_owned(),
                     "".to_owned(),
-                    versionlens_core::workspace_file_uri(root),
+                    versionlens_engine::workspace_file_uri(root),
                 ))
     }
 

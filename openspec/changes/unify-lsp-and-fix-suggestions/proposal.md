@@ -54,7 +54,7 @@ None. `openspec/specs/` is empty. This change establishes the first specs.
   - All crates under `crates/`.
   - `versionlens-napi` and `versionlens-vscode-model` are deleted.
   - Crates are merged as listed above.
-  - Most changes are in `versionlens-core` and `versionlens-lsp`.
+  - Most changes are in `versionlens-engine` and `versionlens-lsp`.
 - **VS Code extension (`packages/vscode-extension`):**
   - Rewritten as an LSP client.
   - New dependency: `vscode-languageclient@8.1.x`, bundled by `scripts/package/extension.mjs`.

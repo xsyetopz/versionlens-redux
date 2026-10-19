@@ -1,0 +1,67 @@
+use crate::{ProviderHttpConfig, ProviderSettings, SessionConfig};
+use versionlens_model::Ecosystem::*;
+use versionlens_model::ManifestKind::{NpmPackageJson, PnpmYaml};
+
+#[test]
+fn provider_http_overrides_global_strict_ssl() {
+    let session = session_with_provider_http(vec![
+        ProviderHttpConfig {
+            ecosystem: Npm,
+            manifest_kind: None,
+            strict_ssl: Some(false),
+        },
+        ProviderHttpConfig {
+            ecosystem: Npm,
+            manifest_kind: None,
+            strict_ssl: Some(true),
+        },
+    ]);
+
+    assert!(session.http_config(Npm).strict_ssl);
+    assert!(session.http_config(Cargo).strict_ssl);
+}
+
+#[test]
+fn manifest_scoped_provider_http_does_not_override_package_json_npm() {
+    let session = session_with_provider_http(vec![
+        ProviderHttpConfig {
+            ecosystem: Npm,
+            manifest_kind: None,
+            strict_ssl: Some(false),
+        },
+        ProviderHttpConfig {
+            ecosystem: Npm,
+            manifest_kind: Some(PnpmYaml),
+            strict_ssl: Some(true),
+        },
+    ]);
+
+    assert!(!session.http_config(Npm).strict_ssl);
+    assert!(
+        session
+            .http_config_for_manifest(Npm, Some(PnpmYaml))
+            .strict_ssl
+    );
+    assert!(
+        !session
+            .http_config_for_manifest(Npm, Some(NpmPackageJson))
+            .strict_ssl
+    );
+}
+
+fn session_with_provider_http(provider_http: Vec<ProviderHttpConfig>) -> crate::VersionLensSession {
+    crate::version_lens_session(SessionConfig {
+        update_severity: Some(crate::Severity::Information),
+        cache_ttl_ms: 300_000,
+        enabled_providers: vec![],
+        providers: ProviderSettings {
+            provider_http,
+            ..Default::default()
+        },
+        suggestion_indicators: crate::standard_suggestion_indicators(),
+        show_vulnerabilities: true,
+        show_suggestion_stats: false,
+        show_prereleases: false,
+        http: versionlens_fetch::standard_http_config(),
+    })
+}

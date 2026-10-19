@@ -134,8 +134,8 @@ fn publishes_unversioned_results_for_unopened_workspace_documents() -> Result<()
     std::fs::create_dir_all(&workflow_directory)?;
     let workflow = workflow_directory.join("ci.yml");
     std::fs::write(&workflow, "jobs: {check: {steps: [{uses: './missing'}]}}\n")?;
-    let root_uri = versionlens_core::workspace_file_uri(&root).context("missing root URI")?;
-    let workflow_uri = versionlens_core::workspace_file_uri(&workflow.canonicalize()?)
+    let root_uri = versionlens_engine::workspace_file_uri(&root).context("missing root URI")?;
+    let workflow_uri = versionlens_engine::workspace_file_uri(&workflow.canonicalize()?)
         .context("missing workflow URI")?;
     let (client, server_thread) = start_configured_server(
         json!({"rootUri": root_uri, "capabilities": {}}),
@@ -168,7 +168,7 @@ fn publishes_unversioned_results_for_unopened_workspace_documents() -> Result<()
 fn discovery_failures_are_logged_once_and_never_published() -> Result<()> {
     let root = versionlens_test_support::temporary_directory("versionlens-lsp-retry")?;
     std::fs::remove_dir_all(&root)?;
-    let root_uri = versionlens_core::workspace_file_uri(&root).context("missing root URI")?;
+    let root_uri = versionlens_engine::workspace_file_uri(&root).context("missing root URI")?;
     let (client, server_thread) =
         start_workspace_server(json!({"rootUri": root_uri, "capabilities": {}}))?;
 
@@ -428,7 +428,7 @@ fn assert_diagnostics(message: Message, expected_uri: &str, empty: bool) -> Resu
     let params = serde_json::from_value::<PublishDiagnosticsParams>(notification.params)?;
     assert_eq!(params.uri.as_str(), expected_uri);
     let update = Some(NumberOrString::String(
-        versionlens_core::UPDATE_AVAILABLE.to_owned(),
+        versionlens_engine::UPDATE_AVAILABLE.to_owned(),
     ));
     let noise = params
         .diagnostics

@@ -10,7 +10,7 @@ use lsp_types::notification::Notification as _;
 use lsp_types::{CodeLens, Diagnostic, MessageType};
 use serde_json::Value;
 use tokio::runtime::Handle;
-use versionlens_core::{
+use versionlens_engine::{
     AnalyzeDocumentOutput, CHECKING_CANCELLED, VersionLensSession, WorkspaceCheckEvent,
     WorkspaceCheckResult, WorkspaceChecking,
 };

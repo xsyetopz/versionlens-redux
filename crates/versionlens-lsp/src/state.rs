@@ -7,7 +7,7 @@ use lsp_types::{
     WorkspaceFolder,
 };
 use serde::{Deserialize, Serialize};
-use versionlens_core::{WorkspaceCheckingOptions, WorkspaceDiscoveryOptions};
+use versionlens_engine::{WorkspaceCheckingOptions, WorkspaceDiscoveryOptions};
 use versionlens_model::DocumentInput;
 
 /// Updates one dependency: `{ uri, dependency, level?, version? }`.
@@ -54,7 +54,7 @@ impl WorkspaceRoot {
         });
         let input_root = normalized
             .as_deref()
-            .and_then(versionlens_core::workspace_file_uri);
+            .and_then(versionlens_engine::workspace_file_uri);
         let path = normalized.and_then(|path| path.into_os_string().into_string().ok());
         Self {
             uri,
@@ -88,7 +88,7 @@ impl WorkspaceRoot {
 }
 
 fn normalized_file_path(uri: &str) -> Option<std::path::PathBuf> {
-    let path = versionlens_core::workspace_path(uri)?;
+    let path = versionlens_engine::workspace_path(uri)?;
     Some(path.canonicalize().unwrap_or_else(|_| {
         path.parent()
             .and_then(|parent| parent.canonicalize().ok())
@@ -172,7 +172,7 @@ impl VersionLensLspState {
     }
 
     #[cfg(test)]
-    pub(crate) fn with_config(self, config: versionlens_core::SessionConfig) -> Self {
+    pub(crate) fn with_config(self, config: versionlens_engine::SessionConfig) -> Self {
         self.with_settings(FolderSettings {
             config,
             ..FolderSettings::default()

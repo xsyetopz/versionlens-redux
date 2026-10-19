@@ -17,7 +17,7 @@ use lsp_server::{Message, Request, RequestId, Response};
 use lsp_types::request::Request as _;
 use tokio::runtime::Handle;
 use tokio::sync::watch;
-use versionlens_core::{AuthorizationFuture, AuthorizationSource, Credential};
+use versionlens_engine::{AuthorizationFuture, AuthorizationSource, Credential};
 
 use super::rate_limit::RateLimitNotices;
 use crate::protocol::{AuthorizationCredential, AuthorizationParams, AuthorizationRequest};
