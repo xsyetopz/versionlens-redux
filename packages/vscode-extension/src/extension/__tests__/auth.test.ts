@@ -256,6 +256,27 @@ it("removes selected auth metadata and non-empty secrets", async (): Promise<voi
   ).toBe("should-remain");
 });
 
+it("answers the server by host name, whatever the stored port and case", async (): Promise<void> => {
+  const { answerAuthorization } = await import("../auth/authorization.ts");
+  const url = "https://Registry.Example.com:8443/npm";
+  const context = extensionContext({
+    [url]: {
+      protocol: "https:",
+      scheme: "Custom",
+      status: "NoStatus",
+      url,
+    },
+  });
+  context.secrets.values.set(`/storage__${url}`, "ApiKey abc");
+
+  expect(
+    await answerAuthorization(
+      { context, promptedHosts: new Set<string>() } as never,
+      { host: "registry.example.com", status: 401 },
+    ),
+  ).toEqual({ scheme: "ApiKey", token: "abc" });
+});
+
 function extensionContext(
   initialAuth: AuthCollection = {},
 ): TestExtensionContext {

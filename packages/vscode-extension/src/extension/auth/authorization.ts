@@ -1,9 +1,10 @@
 import type { ExtensionState } from "../state.ts";
-import { addAuthHeader, isAuthHeaderSuppressed } from "./set.ts";
+import { addAuthHeader } from "./set.ts";
 import {
   authSecretKey,
   basicScheme,
   noStatus,
+  notSetScheme,
   type UrlAuthenticationData,
   urlAuthenticationEntries,
 } from "./store.ts";
@@ -35,11 +36,12 @@ async function answerAuthorization(
     return stored;
   }
   state.promptedHosts.add(host);
-  const authUrl = `https://${host}`;
-  if (isAuthHeaderSuppressed(state, { authUrl })) {
+  if (isSuppressed(state, host)) {
     return null;
   }
-  if (!(await addAuthHeader(state, { authUrl }))) {
+  // The server names the host only, so the user confirms the full URL
+  // (scheme, port and path) in the prompt.
+  if (!(await addAuthHeader(state, { authUrl: `https://${host}` }))) {
     return null;
   }
   return await storedCredential(state, host);
@@ -66,8 +68,19 @@ async function storedCredential(
   return null;
 }
 
+/** The server keys hosts lower-case and without a port. */
 function isHost(entry: UrlAuthenticationData, host: string): boolean {
-  return URL.canParse(entry.url) && new URL(entry.url).host === host;
+  return (
+    URL.canParse(entry.url) &&
+    new URL(entry.url).hostname.toLowerCase() === host.toLowerCase()
+  );
+}
+
+/** Whether the user already declined to give credentials for the host. */
+function isSuppressed(state: ExtensionState, host: string): boolean {
+  return urlAuthenticationEntries(state.context).some(
+    (entry): boolean => entry.scheme === notSetScheme && isHost(entry, host),
+  );
 }
 
 /**
