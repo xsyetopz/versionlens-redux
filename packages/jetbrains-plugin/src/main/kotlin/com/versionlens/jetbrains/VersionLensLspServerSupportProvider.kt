@@ -133,81 +133,128 @@ internal class VersionLensLspServerDescriptor(
         }
 
         private val supportedFileNames = setOf(
-            ".nvmrc",
-            ".node-version",
             ".bun-version",
-            "rust-toolchain",
-            "rust-toolchain.toml",
-            "WORKSPACE",
-            "MODULE.bazel",
-            "BUILD.bazel",
-            "BUILD",
+            ".node-version",
+            ".nvmrc",
+            ".yarnrc.yaml",
+            ".yarnrc.yml",
+            "CMakeLists.txt",
+            "Cargo.toml",
+            "Cartfile",
+            "Cartfile.private",
+            "Chart.yaml",
+            "DESCRIPTION",
             "Dockerfile",
             "Gemfile",
-            "Podfile",
-            "cpanfile",
+            "Kustomization",
+            "MODULE.bazel",
+            "Manifest.toml",
+            "Package.swift",
             "Pipfile",
-            "requirements.txt",
-            "paket.dependencies",
-            "paket.references",
-            "rebar.config",
-            "stack.yaml",
-            "pubspec.yaml",
-            "pubspec_overrides.yaml",
+            "Podfile",
+            "Project.toml",
+            "WORKSPACE",
+            "WORKSPACE.bazel",
+            "build.gradle",
+            "build.gradle.kts",
+            "build.sbt",
+            "build.zig.zon",
+            "cabal.project",
+            "compose.yaml",
+            "compose.yml",
+            "composer.json",
+            "conanfile.py",
+            "conanfile.txt",
+            "cpanfile",
             "deno.json",
             "deno.jsonc",
+            "deps.edn",
+            "docker-compose.yaml",
+            "docker-compose.yml",
+            "dockerfile",
+            "dotnet-tools.json",
+            "dub.json",
+            "dub.sdl",
+            "dub.selections.json",
+            "dune-project",
+            "flake.nix",
+            "gleam.toml",
+            "go.mod",
+            "go.work",
+            "haxelib.json",
             "import_map.json",
-            "composer.json",
+            "jsr.json",
+            "jsr.jsonc",
+            "kustomization.yaml",
+            "kustomization.yml",
+            "libs.versions.toml",
+            "mix.exs",
+            "opam",
             "package.json",
             "package.json5",
             "package.yaml",
+            "package.yml",
+            "packages.config",
+            "paket.dependencies",
+            "paket.references",
             "pnpm-workspace.yaml",
-            "Cargo.toml",
-            "Package.swift",
-            "go.mod",
+            "pnpm-workspace.yml",
+            "pom.xml",
+            "project.clj",
+            "project.json",
+            "pubspec.yaml",
+            "pubspec.yml",
+            "pubspec_overrides.yaml",
             "pyproject.toml",
-            "gleam.toml",
-            "haxelib.json",
-            "dub.json",
-            "dub.sdl",
-            "dune-project",
-            "mix.exs",
-            "flake.nix",
-            "opam",
-            "build.sbt",
-            "xmake.lua",
-            "build.zig.zon",
+            "rebar.config",
+            "renv.lock",
+            "requirements.txt",
+            "requirements.yaml",
+            "requirements.yml",
+            "rust-toolchain",
+            "rust-toolchain.toml",
+            "settings.gradle",
+            "settings.gradle.kts",
+            "stack.yaml",
+            "stack.yml",
             "vcpkg.json",
-            "conanfile.txt",
-            "conanfile.py",
-            "CMakeLists.txt",
+            "xmake.lua",
         )
         private val supportedExtensions = setOf(
+            "cabal",
+            "cmake",
             "csproj",
+            "dockerfile",
             "fsproj",
-            "vbproj",
-            "props",
-            "targets",
-            "gradle",
-            "kts",
-            "pom",
-            "xml",
+            "gemspec",
             "json",
-            "json5",
+            "nimble",
+            "opam",
+            "props",
+            "rockspec",
+            "targets",
+            "tf",
+            "tofu",
+            "toml",
+            "vbproj",
+            "wrap",
+            "xml",
             "yaml",
             "yml",
-            "toml",
-            "lock",
-            "gemspec",
-            "rockspec",
-            "nimble",
-            "tf",
-            "tfvars",
-            "wrap",
-            "cabal",
         )
 
-        internal fun supportsFileName(name: String, extension: String?): Boolean {
+        private val supportedPathSuffixes = setOf(
+            ".cargo/config",
+            ".cargo/config.toml",
+            "Packages/manifest.json",
+            "gradle/libs.versions.toml",
+        )
+        private val supportedNamePatterns = listOf<Pair<String, String>>(
+            "constraints" to "txt",
+            "requirements" to "txt",
+        )
+
+        internal fun supportsFileName(name: String, extension: String?, path: String? = null): Boolean {
             if (name in supportedFileNames) {
                 return true
             }
@@ -215,11 +262,24 @@ internal class VersionLensLspServerDescriptor(
             if (lowerName == "dockerfile" || lowerName.startsWith("dockerfile.")) {
                 return true
             }
-            return extension?.lowercase(Locale.ROOT) in supportedExtensions
+            val normalized = path?.replace('\\', '/')
+            if (normalized != null &&
+                supportedPathSuffixes.any { normalized == it || normalized.endsWith("/$it") }
+            ) {
+                return true
+            }
+            val lowerExtension = extension?.lowercase(Locale.ROOT)
+            if (supportedNamePatterns.any { (contains, patternExtension) ->
+                    lowerExtension == patternExtension && lowerName.contains(contains)
+                }
+            ) {
+                return true
+            }
+            return lowerExtension in supportedExtensions
         }
 
         fun supports(file: VirtualFile): Boolean {
-            return supportsFileName(file.name, file.extension)
+            return supportsFileName(file.name, file.extension, file.path)
         }
     }
 }

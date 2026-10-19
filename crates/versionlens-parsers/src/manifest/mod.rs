@@ -3,10 +3,12 @@
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 
 pub(crate) mod adapter;
+mod export;
 pub(crate) mod path_query;
 mod patterns;
 mod table;
 
+pub use export::{ManifestTable, ManifestTableEntry, manifest_table};
 pub use table::MANIFESTS;
 
 type ParsedDependencies = Vec<Dependency>;
@@ -90,11 +92,68 @@ pub struct ManifestRow {
     /// of a `package.json`. Dependency parsing leaves them out, even when the
     /// user configures them, and `parse_own_version` reads them.
     pub(crate) own_version: &'static [&'static str],
+    /// File globs for the patterns that a name or an extension cannot express,
+    /// such as a URI test. Generated editor lists read them.
+    pub globs: &'static [&'static str],
+    /// Editor language IDs that host the file type, when its format does not
+    /// imply them.
+    pub languages: &'static [&'static str],
+    /// The globs that the `versionlens.<provider>.files` setting lists for this
+    /// row, when they differ from the names, extensions and `globs`.
+    pub file_globs: &'static [&'static str],
+    /// Exact file names that editors with a name and extension filter accept
+    /// for patterns that only a glob can express.
+    pub editor_names: &'static [&'static str],
+    /// What the row adds to `versionlens.<provider>.dependencyProperties`.
+    pub settings: SettingsDefault,
+}
+
+/// The entries that a row adds to its provider's `dependencyProperties`
+/// default. The setting is a contract with users, so it is listed apart from
+/// the internal path queries when the two differ.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsDefault {
+    /// The row adds nothing.
+    Hidden,
+    /// The row adds its `dependency_paths`.
+    Paths,
+    /// The row adds exactly these entries.
+    Listed(&'static [&'static str]),
 }
 
 impl ManifestRow {
     pub(crate) const fn dependency_paths(mut self, paths: &'static [&'static str]) -> Self {
         self.dependency_paths = paths;
+        self
+    }
+
+    pub(crate) const fn globs(mut self, globs: &'static [&'static str]) -> Self {
+        self.globs = globs;
+        self
+    }
+
+    pub(crate) const fn languages(mut self, languages: &'static [&'static str]) -> Self {
+        self.languages = languages;
+        self
+    }
+
+    pub(crate) const fn file_globs(mut self, globs: &'static [&'static str]) -> Self {
+        self.file_globs = globs;
+        self
+    }
+
+    pub(crate) const fn editor_names(mut self, names: &'static [&'static str]) -> Self {
+        self.editor_names = names;
+        self
+    }
+
+    pub(crate) const fn settings_from_paths(mut self) -> Self {
+        self.settings = SettingsDefault::Paths;
+        self
+    }
+
+    pub(crate) const fn settings(mut self, entries: &'static [&'static str]) -> Self {
+        self.settings = SettingsDefault::Listed(entries);
         self
     }
 

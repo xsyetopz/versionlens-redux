@@ -4,76 +4,124 @@ local supported_file_names = {
   [".bun-version"] = true,
   [".node-version"] = true,
   [".nvmrc"] = true,
-  ["BUILD"] = true,
-  ["BUILD.bazel"] = true,
+  [".yarnrc.yaml"] = true,
+  [".yarnrc.yml"] = true,
   ["CMakeLists.txt"] = true,
   ["Cargo.toml"] = true,
+  ["Cartfile"] = true,
+  ["Cartfile.private"] = true,
+  ["Chart.yaml"] = true,
+  ["DESCRIPTION"] = true,
   ["Dockerfile"] = true,
   ["Gemfile"] = true,
+  ["Kustomization"] = true,
   ["MODULE.bazel"] = true,
+  ["Manifest.toml"] = true,
   ["Package.swift"] = true,
   ["Pipfile"] = true,
   ["Podfile"] = true,
+  ["Project.toml"] = true,
   ["WORKSPACE"] = true,
+  ["WORKSPACE.bazel"] = true,
+  ["build.gradle"] = true,
+  ["build.gradle.kts"] = true,
   ["build.sbt"] = true,
   ["build.zig.zon"] = true,
+  ["cabal.project"] = true,
+  ["compose.yaml"] = true,
+  ["compose.yml"] = true,
   ["composer.json"] = true,
   ["conanfile.py"] = true,
   ["conanfile.txt"] = true,
   ["cpanfile"] = true,
   ["deno.json"] = true,
   ["deno.jsonc"] = true,
+  ["deps.edn"] = true,
+  ["docker-compose.yaml"] = true,
+  ["docker-compose.yml"] = true,
+  ["dockerfile"] = true,
+  ["dotnet-tools.json"] = true,
   ["dub.json"] = true,
   ["dub.sdl"] = true,
+  ["dub.selections.json"] = true,
   ["dune-project"] = true,
   ["flake.nix"] = true,
   ["gleam.toml"] = true,
   ["go.mod"] = true,
+  ["go.work"] = true,
   ["haxelib.json"] = true,
   ["import_map.json"] = true,
+  ["jsr.json"] = true,
+  ["jsr.jsonc"] = true,
+  ["kustomization.yaml"] = true,
+  ["kustomization.yml"] = true,
+  ["libs.versions.toml"] = true,
   ["mix.exs"] = true,
   ["opam"] = true,
   ["package.json"] = true,
   ["package.json5"] = true,
   ["package.yaml"] = true,
+  ["package.yml"] = true,
+  ["packages.config"] = true,
   ["paket.dependencies"] = true,
   ["paket.references"] = true,
   ["pnpm-workspace.yaml"] = true,
+  ["pnpm-workspace.yml"] = true,
+  ["pom.xml"] = true,
+  ["project.clj"] = true,
+  ["project.json"] = true,
   ["pubspec.yaml"] = true,
+  ["pubspec.yml"] = true,
   ["pubspec_overrides.yaml"] = true,
   ["pyproject.toml"] = true,
   ["rebar.config"] = true,
+  ["renv.lock"] = true,
   ["requirements.txt"] = true,
+  ["requirements.yaml"] = true,
+  ["requirements.yml"] = true,
   ["rust-toolchain"] = true,
   ["rust-toolchain.toml"] = true,
+  ["settings.gradle"] = true,
+  ["settings.gradle.kts"] = true,
   ["stack.yaml"] = true,
+  ["stack.yml"] = true,
   ["vcpkg.json"] = true,
   ["xmake.lua"] = true,
 }
 
 local supported_extensions = {
   cabal = true,
+  cmake = true,
   csproj = true,
+  dockerfile = true,
   fsproj = true,
   gemspec = true,
-  gradle = true,
   json = true,
-  json5 = true,
-  kts = true,
-  lock = true,
   nimble = true,
-  pom = true,
+  opam = true,
   props = true,
   rockspec = true,
   targets = true,
   tf = true,
-  tfvars = true,
+  tofu = true,
   toml = true,
   vbproj = true,
   wrap = true,
   xml = true,
   yaml = true,
   yml = true,
+}
+
+local supported_path_suffixes = {
+  ".cargo/config",
+  ".cargo/config.toml",
+  "Packages/manifest.json",
+  "gradle/libs.versions.toml",
+}
+
+local supported_name_patterns = {
+  { contains = "constraints", extension = "txt" },
+  { contains = "requirements", extension = "txt" },
 }
 
 local function basename(path)
@@ -92,7 +140,18 @@ function M.supports(path)
   if lower_name == "dockerfile" or lower_name:match("^dockerfile%.") then
     return true
   end
+  local normalized = path:gsub("\\", "/")
+  for _, suffix in ipairs(supported_path_suffixes) do
+    if normalized == suffix or normalized:sub(-(#suffix + 1)) == "/" .. suffix then
+      return true
+    end
+  end
   local extension = lower_name:match("%.([^.]*)$")
+  for _, pattern in ipairs(supported_name_patterns) do
+    if extension == pattern.extension and lower_name:find(pattern.contains, 1, true) then
+      return true
+    end
+  end
   return extension ~= nil and supported_extensions[extension] == true
 end
 

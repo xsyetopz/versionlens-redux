@@ -7,7 +7,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.cargo.files",
-          "defaultGlob": "**/{Cargo.toml,.cargo/config.toml,.cargo/config,rust-toolchain,rust-toolchain.toml}",
+          "defaultGlob": "**/{rust-toolchain,rust-toolchain.toml,Cargo.toml,.cargo/config.toml,.cargo/config}",
           "fileForms": [
             "Cargo.toml",
             ".cargo/config.toml",
@@ -110,7 +110,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.docker.files",
-          "defaultGlob": "**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml}",
+          "defaultGlob": "**/{compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml,dockerfile,*.dockerfile,Dockerfile,*.Dockerfile}",
           "fileForms": [
             "dockerfile",
             "*.dockerfile",
@@ -140,7 +140,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.dotnet.files",
-          "defaultGlob": "**/{*.csproj,*.fsproj,*.vbproj,project.json,dotnet-tools.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
+          "defaultGlob": "**/{packages.config,*.csproj,*.fsproj,*.vbproj,*.targets,*.props,paket.dependencies,paket.references,project.json,dotnet-tools.json}",
           "fileForms": [
             "*.csproj",
             "*.fsproj",
@@ -258,7 +258,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.maven.files",
-          "defaultGlob": "**/{pom.xml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,gradle/libs.versions.toml,build.sbt,deps.edn,project.clj}",
+          "defaultGlob": "**/{gradle/libs.versions.toml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,build.sbt,deps.edn,project.clj,pom.xml}",
           "fileForms": [
             "pom.xml",
             "build.gradle",
@@ -314,7 +314,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.npm.files",
-          "defaultGlob": "**/{package.json,package.json5,package.yaml,package.yml,.nvmrc,.node-version,.bun-version}",
+          "defaultGlob": "**/{.nvmrc,.node-version,.bun-version,package.json,package.json5,package.yaml,package.yml}",
           "fileForms": [
             "package.json",
             "package.json5",
@@ -353,7 +353,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.pnpm.files",
-          "defaultGlob": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yaml,.yarnrc.yml}",
+          "defaultGlob": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yml,.yarnrc.yaml}",
           "fileForms": [
             "pnpm-workspace.yaml",
             "pnpm-workspace.yml",
@@ -385,7 +385,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.pub.files",
-          "defaultGlob": "**/{pubspec.yaml,pubspec.yml,pubspec_overrides.yaml}",
+          "defaultGlob": "**/{pubspec_overrides.yaml,pubspec.yaml,pubspec.yml}",
           "fileForms": [
             "pubspec.yaml",
             "pubspec.yml",
@@ -417,7 +417,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.pypi.files",
-          "defaultGlob": "**/{Pipfile,pyproject.toml,*requirements*.txt,*constraints*.txt}",
+          "defaultGlob": "**/{*requirements*.txt,*constraints*.txt,Pipfile,pyproject.toml}",
           "fileForms": [
             "Pipfile",
             "pyproject.toml",
@@ -459,7 +459,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.ruby.files",
-          "defaultGlob": "**/{Gemfile,*.gemspec}",
+          "defaultGlob": "**/{*.gemspec,Gemfile}",
           "fileForms": ["Gemfile", "*.gemspec"],
           "languages": ["ruby", "plaintext"],
           "manifestKinds": ["Gemfile", "RubyGemspec"],
@@ -500,7 +500,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.hackage.files",
-          "defaultGlob": "**/{*.cabal,cabal.project,stack.yaml,stack.yml}",
+          "defaultGlob": "**/{cabal.project,*.cabal,stack.yaml,stack.yml}",
           "fileForms": ["*.cabal", "cabal.project", "stack.yaml", "stack.yml"],
           "languages": ["plaintext", "yaml"],
           "manifestKinds": ["Cabal", "CabalProject", "StackYaml"],
@@ -819,7 +819,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.terraform.files",
-          "defaultGlob": "**/*.{tf,tofu}",
+          "defaultGlob": "**/{*.tf,*.tofu}",
           "fileForms": ["*.tf", "*.tofu"],
           "languages": ["terraform", "hcl", "plaintext"],
           "manifestKinds": ["TerraformTf"],
@@ -857,7 +857,7 @@
       "manifests": [
         {
           "defaultSettingKey": "versionlens.ansible.files",
-          "defaultGlob": "**/requirements.{yml,yaml}",
+          "defaultGlob": "**/{requirements.yml,requirements.yaml}",
           "fileForms": ["requirements.yml", "requirements.yaml"],
           "languages": ["yaml"],
           "manifestKinds": ["AnsibleGalaxyRequirementsYaml"],

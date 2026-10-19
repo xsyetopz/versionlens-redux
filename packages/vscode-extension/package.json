@@ -51,7 +51,6 @@
     "onLanguage:json5",
     "onLanguage:elixir",
     "onLanguage:erlang",
-    "onLanguage:python",
     "onLanguage:swift",
     "onLanguage:zig",
     "onLanguage:nim",
@@ -64,6 +63,7 @@
     "onLanguage:cmake",
     "onLanguage:meson",
     "onLanguage:ini",
+    "onLanguage:python",
     "onFileSystem:versionlens"
   ],
   "contributes": {
@@ -292,7 +292,7 @@
         },
         "versionlens.cargo.files": {
           "type": "string",
-          "default": "**/{Cargo.toml,.cargo/config.toml,.cargo/config,rust-toolchain,rust-toolchain.toml}",
+          "default": "**/{rust-toolchain,rust-toolchain.toml,Cargo.toml,.cargo/config.toml,.cargo/config}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.composer.files": {
@@ -307,12 +307,12 @@
         },
         "versionlens.docker.files": {
           "type": "string",
-          "default": "**/{dockerfile,*.dockerfile,Dockerfile,*.Dockerfile,compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml}",
+          "default": "**/{compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml,dockerfile,*.dockerfile,Dockerfile,*.Dockerfile}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.dotnet.files": {
           "type": "string",
-          "default": "**/{*.csproj,*.fsproj,*.vbproj,project.json,dotnet-tools.json,packages.config,paket.dependencies,paket.references,*.targets,*.props}",
+          "default": "**/{packages.config,*.csproj,*.fsproj,*.vbproj,*.targets,*.props,paket.dependencies,paket.references,project.json,dotnet-tools.json}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.dub.files": {
@@ -327,32 +327,32 @@
         },
         "versionlens.maven.files": {
           "type": "string",
-          "default": "**/{pom.xml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,gradle/libs.versions.toml,build.sbt,deps.edn,project.clj}",
+          "default": "**/{gradle/libs.versions.toml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,build.sbt,deps.edn,project.clj,pom.xml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.npm.files": {
           "type": "string",
-          "default": "**/{package.json,package.json5,package.yaml,package.yml,.nvmrc,.node-version,.bun-version}",
+          "default": "**/{.nvmrc,.node-version,.bun-version,package.json,package.json5,package.yaml,package.yml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.pnpm.files": {
           "type": "string",
-          "default": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yaml,.yarnrc.yml}",
+          "default": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yml,.yarnrc.yaml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.pypi.files": {
           "type": "string",
-          "default": "**/{Pipfile,pyproject.toml,*requirements*.txt,*constraints*.txt}",
+          "default": "**/{*requirements*.txt,*constraints*.txt,Pipfile,pyproject.toml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.pub.files": {
           "type": "string",
-          "default": "**/{pubspec.yaml,pubspec.yml,pubspec_overrides.yaml}",
+          "default": "**/{pubspec_overrides.yaml,pubspec.yaml,pubspec.yml}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.ruby.files": {
           "type": "string",
-          "default": "**/{Gemfile,*.gemspec}",
+          "default": "**/{*.gemspec,Gemfile}",
           "description": "Specifies which files to register with version lenses. You can use [micromatch](https://github.com/micromatch/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.hex.files": {
@@ -1173,7 +1173,7 @@
         },
         "versionlens.hackage.files": {
           "type": "string",
-          "default": "**/{*.cabal,cabal.project,stack.yaml,stack.yml}",
+          "default": "**/{cabal.project,*.cabal,stack.yaml,stack.yml}",
           "description": "Specifies which Haskell Cabal and Stack files to register with version lenses. You can use [micromatch](https://github.com/micromatch) expressions to match file names. You will need to restart vscode when changing this setting."
         },
         "versionlens.hackage.prereleaseTagFilter": {
@@ -1770,7 +1770,7 @@
         },
         "versionlens.terraform.files": {
           "type": "string",
-          "default": "**/*.{tf,tofu}",
+          "default": "**/{*.tf,*.tofu}",
           "description": "Terraform and OpenTofu HCL manifests to scan."
         },
         "versionlens.terraform.prereleaseTagFilter": {
@@ -1872,7 +1872,7 @@
         },
         "versionlens.ansible.files": {
           "type": "string",
-          "default": "**/requirements.{yml,yaml}",
+          "default": "**/{requirements.yml,requirements.yaml}",
           "description": "Ansible Galaxy requirements manifests to scan."
         },
         "versionlens.ansible.prereleaseTagFilter": {
