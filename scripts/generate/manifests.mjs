@@ -542,9 +542,10 @@ function testPatternsEntries(text) {
 function supportMatrixEntries(text) {
   const entries = new Map();
   for (const { provider, manifests } of JSON.parse(text).entries) {
-    for (const manifest of manifests) {
-      entries.set(`${provider} defaultGlob`, globsOf(manifest.defaultGlob));
-      entries.set(`${provider} languages`, manifest.languages);
+    for (const [index, manifest] of manifests.entries()) {
+      const key = `${provider} manifests[${index}]`;
+      entries.set(`${key} defaultGlob`, globsOf(manifest.defaultGlob));
+      entries.set(`${key} languages`, manifest.languages);
     }
   }
   return entries;
