@@ -19,15 +19,15 @@ macro_rules! define_http_config {
 }
 
 define_http_config!(HttpConfig,
-    #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+    #[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")],
     u64, bool, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Vec<HttpHeader>);
 
 define_http_config!(HttpConfigInput,
-    #[derive(Debug, PartialEq, Eq)],
+    #[derive(PartialEq, Eq)],
     Option<u64>, Option<bool>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<Vec<HttpHeaderInput>>);
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HttpHeader {
     pub name: String,
@@ -35,7 +35,7 @@ pub struct HttpHeader {
     pub url: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct HttpHeaderInput {
     pub name: String,
     pub value: String,
@@ -130,6 +130,47 @@ fn trim_optional(value: Option<String>) -> Option<String> {
 
 #[cfg(test)]
 mod tests;
+
+const REDACTED: &str = "[redacted]";
+
+/// Debug output that cannot leak a secret: header values, the private key and
+/// proxy credentials print as `[redacted]`.
+macro_rules! redacted_debug {
+    ($header:ident, header) => {
+        impl std::fmt::Debug for $header {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_struct(stringify!($header))
+                    .field("name", &self.name)
+                    .field("value", &REDACTED)
+                    .field("url", &self.url)
+                    .finish()
+            }
+        }
+    };
+    ($config:ident, config) => {
+        impl std::fmt::Debug for $config {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_struct(stringify!($config))
+                    .field("timeout_ms", &self.timeout_ms)
+                    .field("strict_ssl", &self.strict_ssl)
+                    .field("proxy", &self.proxy.as_ref().map(|_| REDACTED))
+                    .field("ca_file", &self.ca_file)
+                    .field("ca", &self.ca)
+                    .field("cert_file", &self.cert_file)
+                    .field("key_file", &self.key_file)
+                    .field("cert", &self.cert)
+                    .field("key", &self.key.as_ref().map(|_| REDACTED))
+                    .field("auth_headers", &self.auth_headers)
+                    .finish()
+            }
+        }
+    };
+}
+
+redacted_debug!(HttpHeader, header);
+redacted_debug!(HttpHeaderInput, header);
+redacted_debug!(HttpConfig, config);
+redacted_debug!(HttpConfigInput, config);
 
 pub fn http_config_from_input(input: HttpConfigInput) -> HttpConfig {
     input.into()
