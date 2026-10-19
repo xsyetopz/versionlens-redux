@@ -5,6 +5,9 @@ tag has no golden files). The working folder is recaptured from the engine
 whenever a golden change is approved, so it already contains the differences
 below. Everything not listed here is byte-identical to the baseline.
 
+The comparison is on engine output rendered by the golden renderer
+(`view/legacy.rs`, which applies the 0.4.4 range offset), not on raw LSP JSON.
+
 Reproduce:
 
 ```sh
@@ -14,8 +17,9 @@ cargo test -p versionlens-engine golden
 
 `engine_output_matches_the_golden_folder` checks the engine against the working
 folder. `golden_differences_with_the_baseline_are_documented` fails when a
-0.4.4 file differs from the baseline and has no `###` heading below (skipped
-when git or the commit is unavailable). Spec paths are under
+0.4.4 file differs from the baseline without a `###` heading below, when a
+heading is stale (file identical or missing), or when the folder has a file the
+baseline lacks. Without git history it is skipped locally and fails under `CI`. Spec paths are under
 `openspec/changes/unify-lsp-and-fix-suggestions/specs/`.
 
 ## Changed files
@@ -33,9 +37,12 @@ when git or the commit is unavailable). Spec paths are under
 - Change: the `demo` status lens ("unresolved") no longer carries the
   `versionlens.suggestion.onUpdateDependency` command or arguments (empty
   command), and its no-op `update` action with empty edits is gone.
+  The lens title still shows; only the empty-edit update command is gone.
 - Cause: commit `2ae8a837`. A lens that applies no text change is no longer
   given an update command.
-- Spec: `version-suggestions/spec.md`, "No suggestion without a text change".
+- Spec: `version-suggestions/spec.md`, "No suggestion without a text change"
+  (scenario "Status lens without an update has no update command"), and
+  tasks.md 4.8 (update always resolves, so a no-op command is not offered).
 
 ## Added files (not in the baseline)
 
