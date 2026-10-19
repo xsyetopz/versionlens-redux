@@ -80,8 +80,8 @@ jobs:
             echo "Expected one JetBrains plugin archive, found ${#artifacts[@]}" >&2
             exit 1
           fi
-          version=${artifacts[0]##*-}
-          version=${version%.zip}
+          version=$(basename -- "${artifacts[0]}" .zip)
+          version=${version#versionlens-jetbrains-plugin-}
           mv -- "${artifacts[0]}" "packages/jetbrains-plugin/build/distributions/versionlens-redux-jetbrains-plugin-$version.zip"
 
       - name: Upload JetBrains artifact
