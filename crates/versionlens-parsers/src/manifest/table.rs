@@ -97,6 +97,7 @@ const fn row(
         format,
         patterns,
         parser,
+        own_version: &[],
     }
 }
 
@@ -149,7 +150,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Toml,
         &[at(Early, Name("Cargo.toml"))],
         ParserWithPaths(parse_cargo_toml_with_paths, default_paths::CARGO),
-    ),
+    )
+    .own_version(default_paths::CARGO_OWN_VERSION),
     row(
         CargoConfigToml,
         Ecosystem::Cargo,
@@ -694,7 +696,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(ContentStage, Content(is_package_json_content)),
         ],
         ParserWithPaths(parse_package_json_with_paths, default_paths::NPM),
-    ),
+    )
+    .own_version(default_paths::NPM_OWN_VERSION),
     row(
         NpmPackageJson5,
         Ecosystem::Npm,
@@ -702,7 +705,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Json,
         &[at(Late, Name("package.json5"))],
         ParserWithPaths(parse_package_json_with_paths, default_paths::NPM),
-    ),
+    )
+    .own_version(default_paths::NPM_OWN_VERSION),
     row(
         NpmPackageYaml,
         Ecosystem::Npm,

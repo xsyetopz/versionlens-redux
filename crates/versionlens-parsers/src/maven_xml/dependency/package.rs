@@ -1,8 +1,8 @@
 use crate::positions::offset_range;
 use versionlens_model::Dependency;
 
-use super::super::nodes::{XmlNode, child_named, direct_children, text_range};
 use super::{MavenParseContext, resolve_property};
+use crate::manifest::adapter::xml::{XmlNode, child_named, direct_children, text_range};
 use versionlens_model::Ecosystem::Maven;
 
 pub(super) fn package_dependency(

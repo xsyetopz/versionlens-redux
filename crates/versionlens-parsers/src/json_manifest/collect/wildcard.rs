@@ -11,12 +11,12 @@ type JsonManifestDependencies = Vec<Dependency>;
 type JsonObject<'a> = &'a Object<'a>;
 
 use super::JsonManifestContext;
-use super::node::JsonNode;
 use super::path::object_at_path;
 use crate::json_manifest::dependency::{
     JsonDependencyRanges, JsonDependencySource, collect_dependency_object,
     json_manifest_dependency, property_name_range, string_content_end, string_content_start,
 };
+use crate::manifest::adapter::json::JsonNode;
 
 pub(super) fn collect_terminal_wildcard_path(
     context: &JsonManifestContext<'_>,

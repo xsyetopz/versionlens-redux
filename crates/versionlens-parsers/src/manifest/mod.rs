@@ -2,6 +2,7 @@
 
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 
+pub(crate) mod adapter;
 mod default_paths;
 pub(crate) mod path_query;
 mod patterns;
@@ -98,9 +99,39 @@ pub struct ManifestRow {
     pub format: ManifestFormat,
     pub patterns: &'static [Pattern],
     pub(crate) parser: ManifestParser,
+    /// Path queries for the file's own version fields, such as the `version`
+    /// of a `package.json`. Dependency parsing leaves them out, even when the
+    /// user configures them, and `parse_own_version` reads them.
+    pub(crate) own_version: &'static [&'static str],
 }
 
 impl ManifestRow {
+    pub(crate) const fn own_version(mut self, paths: &'static [&'static str]) -> Self {
+        self.own_version = paths;
+        self
+    }
+
+    /// The dependencies of `text`, without the file's own version fields.
+    pub(crate) fn parse(&self, text: &str, paths: &[&str]) -> ParsedDependencies {
+        let paths = paths
+            .iter()
+            .copied()
+            .filter(|path| !self.own_version.contains(path))
+            .collect::<Vec<_>>();
+        self.parser.parse(text, &paths)
+    }
+
+    /// The file's own version fields, which only project-version commands edit.
+    pub(crate) fn parse_own_version(&self, text: &str) -> ParsedDependencies {
+        if self.own_version.is_empty() {
+            return Vec::new();
+        }
+        match self.parser {
+            ManifestParser::Direct(_) => Vec::new(),
+            ManifestParser::WithPaths(parser, _) => parser(text, self.own_version),
+        }
+    }
+
     /// The dependency paths used when the user configures none.
     pub fn default_dependency_paths(&self) -> &'static [&'static str] {
         match self.parser {

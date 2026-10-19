@@ -2,7 +2,6 @@ use versionlens_model::Dependency;
 
 mod dependency;
 mod metadata;
-mod nodes;
 mod repositories;
 mod settings;
 
@@ -18,8 +17,8 @@ pub use settings::{
     parse_maven_settings_repository_urls,
 };
 
+use crate::manifest::adapter::xml::collect_nodes;
 use dependency::collect_maven_dependencies;
-use nodes::collect_nodes;
 
 pub(crate) fn parse_maven_xml_with_paths(text: &str, dependency_paths: &[&str]) -> Vec<Dependency> {
     let Some(nodes) = collect_nodes(text) else {

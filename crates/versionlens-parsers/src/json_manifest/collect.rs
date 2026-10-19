@@ -3,7 +3,6 @@ use versionlens_model::Ecosystem;
 
 use versionlens_model::Dependency;
 
-mod node;
 mod path;
 mod path_target;
 mod wildcard;

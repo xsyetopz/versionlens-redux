@@ -121,7 +121,7 @@ fn local_reusable_workflow_suggestion(
             format!("local reusable workflow `{display_path}` is unavailable"),
         );
     };
-    if reusable_workflow_is_valid(&text) {
+    if versionlens_parsers::reusable_workflow_is_valid(&text) {
         fixed(dependency, display_path.to_owned())
     } else {
         error(
@@ -145,7 +145,7 @@ fn local_action_manifest_suggestion(
         })
         .collect::<Vec<_>>();
     match manifests.as_slice() {
-        [manifest] if action_manifest_is_valid(manifest) => {
+        [manifest] if versionlens_parsers::action_manifest_is_valid(manifest) => {
             fixed(dependency, display_path.to_owned())
         }
         [_] => error(
@@ -176,43 +176,4 @@ fn workspace_file_text<'a>(
         return None;
     }
     fs::read_to_string(canonical).ok().map(Cow::Owned)
-}
-
-fn action_manifest_is_valid(text: &str) -> bool {
-    let Ok(document) = marked_yaml::parse_yaml(0, text) else {
-        return false;
-    };
-    document
-        .as_mapping()
-        .and_then(|root| root.get_mapping("runs"))
-        .and_then(|runs| runs.get_scalar("using"))
-        .is_some_and(|using| !using.as_str().trim().is_empty())
-}
-
-fn reusable_workflow_is_valid(text: &str) -> bool {
-    let Ok(document) = marked_yaml::parse_yaml(0, text) else {
-        return false;
-    };
-    let Some(root) = document.as_mapping() else {
-        return false;
-    };
-    if root
-        .get_scalar("on")
-        .is_some_and(|event| event.as_str() == "workflow_call")
-    {
-        return true;
-    }
-    if root
-        .get_mapping("on")
-        .is_some_and(|events| events.get_node("workflow_call").is_some())
-    {
-        return true;
-    }
-    root.get_sequence("on").is_some_and(|events| {
-        events.iter().any(|event| {
-            event
-                .as_scalar()
-                .is_some_and(|event| event.as_str() == "workflow_call")
-        })
-    })
 }

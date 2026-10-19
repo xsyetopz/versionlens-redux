@@ -1585,7 +1585,6 @@ version = "0.4.4"
 dependencies = [
  "anyhow",
  "ignore",
- "marked-yaml",
  "regex-automata",
  "regex-syntax",
  "semver",
@@ -1593,7 +1592,6 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
- "toml_edit",
  "versionlens-fetch",
  "versionlens-model",
  "versionlens-parsers",

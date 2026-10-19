@@ -48,8 +48,6 @@ fn scalar_dependency_parts<'a>(
 ) -> Option<ScalarDependencyParts<'a>> {
     match source.group {
         "packageManager" if source.ecosystem == Npm => package_manager_parts(raw, value_end),
-        // npm's own `version` is the project version, never a dependency.
-        "version" if source.ecosystem == Npm => None,
         "version" | "engines" => Some(ScalarDependencyParts {
             name: raw,
             requirement: raw,

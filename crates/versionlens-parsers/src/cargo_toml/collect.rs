@@ -1,5 +1,7 @@
 mod table;
 
+use super::project_version::cargo_project_version;
+
 use toml_edit::{Key, Value as TomlValue};
 
 use versionlens_model::Dependency;
@@ -19,6 +21,11 @@ pub(super) fn collect_toml_value(
     out: &mut Vec<Dependency>,
 ) {
     if keys.len() < 2 {
+        return;
+    }
+
+    if let Some(version) = cargo_project_version(context, keys, value) {
+        out.push(version);
         return;
     }
 

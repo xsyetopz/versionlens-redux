@@ -2,10 +2,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
-use marked_yaml::parse_yaml;
-use marked_yaml::types::Node::{Scalar as YamlScalar, Sequence as YamlSequence};
 use serde_json::Value as JsonValue;
-use toml_edit::{DocumentMut as TomlDocument, Item as TomlItem};
 
 use self::pattern::WorkspacePattern;
 
@@ -163,50 +160,21 @@ fn string_json_values(values: &[JsonValue]) -> Vec<String> {
 }
 
 fn pnpm_patterns(text: &str) -> Option<Patterns> {
-    let document = parse_yaml(0, text).ok()?;
-    let root = document.as_mapping()?;
-    let YamlSequence(values) = root.get_node("packages")? else {
-        return None;
-    };
-    let values = values
-        .iter()
-        .filter_map(|value| {
-            let YamlScalar(value) = value else {
-                return None;
-            };
-            Some(value.as_str().to_owned())
-        })
-        .collect::<Vec<_>>();
-    Some(Patterns::from_signed(values))
+    versionlens_parsers::parse_pnpm_workspace_packages(text).map(Patterns::from_signed)
 }
 
 fn cargo_patterns(text: &str) -> Option<Patterns> {
-    let document = text.parse::<TomlDocument>().ok()?;
-    let workspace = document.get("workspace")?.as_table_like()?;
-    let include = toml_strings(workspace.get("members"));
-    let exclude = toml_strings(workspace.get("exclude"));
+    let workspace = versionlens_parsers::parse_cargo_workspace_members(text)?;
+    let patterns = |values: Vec<String>| {
+        values
+            .iter()
+            .filter_map(|value| WorkspacePattern::parse(value))
+            .collect()
+    };
     Some(Patterns {
-        include: include
-            .iter()
-            .filter_map(|value| WorkspacePattern::parse(value))
-            .collect(),
-        exclude: exclude
-            .iter()
-            .filter_map(|value| WorkspacePattern::parse(value))
-            .collect(),
+        include: patterns(workspace.members),
+        exclude: patterns(workspace.exclude),
     })
-}
-
-fn toml_strings(item: Option<&TomlItem>) -> Vec<String> {
-    item.and_then(TomlItem::as_array)
-        .map(|values| {
-            values
-                .iter()
-                .filter_map(toml_edit::Value::as_str)
-                .map(str::to_owned)
-                .collect()
-        })
-        .unwrap_or_default()
 }
 
 fn expand(

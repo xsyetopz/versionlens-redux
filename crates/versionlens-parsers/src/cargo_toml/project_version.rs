@@ -2,42 +2,34 @@ use toml_edit::{Key, Value as TomlValue};
 
 use versionlens_model::Dependency;
 
+use super::collect::CargoCollectContext;
 use super::dependency::{CargoTomlDependencyInput, toml_dependency};
+use crate::manifest::path_query::selects;
 
-/// The version of a Cargo project: `[package] version`, its inherited form
-/// `version.workspace = true`, or `[workspace.package] version`.
+/// The version of a Cargo project, when the configured paths select it: the
+/// leaf at `keys` is named by a path. The dependency is named `version`; the
+/// key that holds the value is the leaf, and the name is the `version` key
+/// above it, which is the same key unless the value is `version.workspace`.
 pub(super) fn cargo_project_version(
-    text: &str,
+    context: &CargoCollectContext<'_>,
     keys: &[&Key],
     value: &TomlValue,
 ) -> Option<Dependency> {
-    let (name_key, value_key) = match keys {
-        [package, version] if package.get() == "package" && version.get() == "version" => {
-            (keys[1], keys[1])
-        }
-        [package, version, workspace]
-            if package.get() == "package"
-                && version.get() == "version"
-                && workspace.get() == "workspace" =>
-        {
-            (keys[1], keys[2])
-        }
-        [workspace, package, version]
-            if workspace.get() == "workspace"
-                && package.get() == "package"
-                && version.get() == "version" =>
-        {
-            (keys[2], keys[2])
-        }
-        _ => return None,
-    };
+    let names = keys.iter().map(|key| key.get()).collect::<Vec<_>>();
+    if !context.dependency_paths.iter().any(|path| {
+        let segments = path.split('.').collect::<Vec<_>>();
+        segments.len() == names.len() && selects(&segments, &names)
+    }) {
+        return None;
+    }
+    let name_key = keys.iter().rev().find(|key| key.get() == "version")?;
 
     toml_dependency(CargoTomlDependencyInput {
-        text,
+        text: context.text,
         group: "package",
         name: "version",
         value,
         name_key,
-        value_key,
+        value_key: keys.last()?,
     })
 }

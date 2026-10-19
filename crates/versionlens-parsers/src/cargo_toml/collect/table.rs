@@ -1,5 +1,5 @@
 use crate::cargo_toml::dependency::{CargoTomlDependencyInput, toml_dependency};
-use crate::manifest_support::toml_walk::selected_dependency_path;
+use crate::manifest::adapter::toml::selected_dependency_path;
 use toml_edit::{Key, Value as TomlValue};
 use versionlens_model::Dependency;
 

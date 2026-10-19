@@ -31,6 +31,15 @@ pub(super) const NPM: &[&str] = &[
     "workspaces.catalog",
     "workspaces.catalogs.*",
 ];
+/// The npm `version` is the project's own, never a dependency.
+pub(super) const NPM_OWN_VERSION: &[&str] = &["version"];
+/// The Cargo package version, its inherited `version.workspace = true` form,
+/// and the workspace's shared package version.
+pub(super) const CARGO_OWN_VERSION: &[&str] = &[
+    "package.version",
+    "package.version.workspace",
+    "workspace.package.version",
+];
 pub(super) const COMPOSER: &[&str] = &[
     "version",
     "require",
