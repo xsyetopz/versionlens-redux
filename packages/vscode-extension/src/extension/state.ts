@@ -6,6 +6,8 @@ export type DocumentActivity = "busy" | "error";
 export interface ExtensionState {
   context: ExtensionContext | undefined;
   client: LanguageClient | undefined;
+  /** Tail of the chain that serializes server start, stop and restart. */
+  lifecycle: Promise<void>;
   /** Serialized document selector the running client was created with. */
   selectorKey: string | undefined;
   ui: {
@@ -32,6 +34,7 @@ export function createExtensionState(): ExtensionState {
   return {
     context: undefined,
     client: undefined,
+    lifecycle: Promise.resolve(),
     selectorKey: undefined,
     ui: {
       outputChannel: undefined,

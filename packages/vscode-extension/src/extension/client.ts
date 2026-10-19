@@ -2,7 +2,11 @@ import type {
   Executable,
   LanguageClientOptions,
 } from "vscode-languageclient/node";
-import { LanguageClient, TransportKind } from "vscode-languageclient/node";
+import {
+  ExecuteCommandRequest,
+  LanguageClient,
+  TransportKind,
+} from "vscode-languageclient/node";
 import { window } from "#vscode-host";
 import {
   type AuthorizationParams,
@@ -11,7 +15,7 @@ import {
 import { reportError } from "./commands/error.ts";
 import { documentSelectors } from "./documents.ts";
 import { clearManifestInfo } from "./manifest.ts";
-import { resolveServerPath } from "./server.ts";
+import { resolveServerPath, SERVER_ENVIRONMENT_VARIABLE } from "./server.ts";
 import {
   applyStatus,
   resetProviderState,
@@ -35,6 +39,9 @@ function createLanguageClient(
     command: serverPath,
     transport: TransportKind.stdio,
   };
+  const clientRef: { current: LanguageClient | undefined } = {
+    current: undefined,
+  };
   const clientOptions: LanguageClientOptions = {
     documentSelector: documentSelectors(),
     middleware: {
@@ -44,10 +51,14 @@ function createLanguageClient(
         }
         return next(document, token);
       },
-      // The command fails with a message from the server, so show it.
-      executeCommand: async (command, args, next) => {
+      // The default handler turns a failure into a generic notification, so
+      // send the request here and show the server's message once.
+      executeCommand: async (command, args) => {
         try {
-          return await next(command, args);
+          return await clientRef.current?.sendRequest(
+            ExecuteCommandRequest.type,
+            { arguments: args, command },
+          );
         } catch (error) {
           await reportError(state, `${command} failed`, error);
           return;
@@ -79,6 +90,7 @@ function createLanguageClient(
     serverOptions,
     clientOptions,
   );
+  clientRef.current = client;
   client.onNotification(STATUS_METHOD, (params: StatusParams): void => {
     applyStatus(state, params).catch((error: unknown): void => {
       state.ui.outputChannel?.error(String(error));
@@ -102,10 +114,45 @@ function withToggles(state: ExtensionState, value: unknown): unknown {
   return settings;
 }
 
-async function startClient(state: ExtensionState): Promise<void> {
+/**
+ * Start, stop and restart run one after another on one chain. A client that
+ * is still starting cannot be shut down, so a stop waits for its start.
+ */
+function enqueue(
+  state: ExtensionState,
+  step: () => Promise<void>,
+): Promise<void> {
+  const run = state.lifecycle.then(step);
+  state.lifecycle = run.catch((): void => undefined);
+  return run;
+}
+
+function startClient(state: ExtensionState): Promise<void> {
+  return enqueue(state, (): Promise<void> => start(state));
+}
+
+function stopClient(state: ExtensionState): Promise<void> {
+  return enqueue(state, (): Promise<void> => stop(state));
+}
+
+function restartClient(state: ExtensionState): Promise<void> {
+  return enqueue(state, async (): Promise<void> => {
+    try {
+      await stop(state);
+    } finally {
+      await start(state);
+    }
+  });
+}
+
+/**
+ * Starts the server. A server that cannot start is reported, and the
+ * commands that do not need it keep working.
+ */
+async function start(state: ExtensionState): Promise<void> {
   const extensionPath = state.context?.extensionPath;
   if (!extensionPath) {
-    throw new Error("The extension is not activated.");
+    return;
   }
   const serverPath = resolveServerPath(extensionPath);
   state.selectorKey = JSON.stringify(documentSelectors());
@@ -115,27 +162,35 @@ async function startClient(state: ExtensionState): Promise<void> {
     await client.start();
   } catch (error) {
     state.client = undefined;
-    const message = `VersionLens Redux could not start its language server (${serverPath}).`;
+    await disposeClient(state, client);
+    const message = `VersionLens Redux could not start its language server (${serverPath}). Install the extension for your platform, or set ${SERVER_ENVIRONMENT_VARIABLE} to a versionlens-lsp binary.`;
     state.ui.outputChannel?.error(`${message} ${String(error)}`);
     await window.showErrorMessage(message);
-    throw error;
   }
 }
 
-async function stopClient(state: ExtensionState): Promise<void> {
+async function stop(state: ExtensionState): Promise<void> {
   const { client } = state;
   state.client = undefined;
   clearManifestInfo();
   state.promptedHosts.clear();
   await resetProviderState(state);
   if (client) {
-    await client.dispose();
+    await disposeClient(state, client);
   }
 }
 
-async function restartClient(state: ExtensionState): Promise<void> {
-  await stopClient(state);
-  await startClient(state);
+async function disposeClient(
+  state: ExtensionState,
+  client: LanguageClient,
+): Promise<void> {
+  try {
+    await client.dispose();
+  } catch (error) {
+    state.ui.outputChannel?.error(
+      `could not stop the server: ${String(error)}`,
+    );
+  }
 }
 
 /** Asks the editor to ask the server for lenses again. */
