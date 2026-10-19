@@ -1,5 +1,5 @@
 import { DidChangeConfigurationNotification } from "vscode-languageclient/node";
-import { refreshCodeLenses } from "../client.ts";
+import { applyDiagnosticsVisibility, refreshCodeLenses } from "../client.ts";
 import type { ExtensionState } from "../state.ts";
 import { updateContexts } from "./contexts.ts";
 
@@ -8,8 +8,10 @@ export async function toggleVersionLenses(
   next: boolean,
 ): Promise<void> {
   state.flags.showVersionLenses = next;
+  state.flags.diagnosticsHidden = !next;
   await updateContexts(state);
   refreshCodeLenses(state);
+  applyDiagnosticsVisibility(state);
 }
 
 /**

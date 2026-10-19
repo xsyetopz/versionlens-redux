@@ -1,5 +1,10 @@
 import type { LanguageClient } from "vscode-languageclient/node";
-import type { ExtensionContext, LogOutputChannel } from "#vscode-host";
+import type {
+  Diagnostic,
+  ExtensionContext,
+  LogOutputChannel,
+  Uri,
+} from "#vscode-host";
 
 export type DocumentActivity = "busy" | "error";
 
@@ -14,6 +19,8 @@ export interface ExtensionState {
     outputChannel: LogOutputChannel | undefined;
   };
   flags: {
+    /** Set by the hide command, not by starting with lenses off. */
+    diagnosticsHidden: boolean;
     showVersionLenses: boolean;
     showOutdated: boolean;
     showPrereleases: boolean;
@@ -22,6 +29,8 @@ export interface ExtensionState {
   };
   /** Busy and error documents reported by `versionlens/status`. */
   activity: Map<string, DocumentActivity>;
+  /** The diagnostics last published by the server, by document. */
+  diagnostics: Map<string, { diagnostics: Diagnostic[]; uri: Uri }>;
   /** Hosts the user was already asked about in this session. */
   promptedHosts: Set<string>;
   snapshots: {
@@ -40,6 +49,7 @@ export function createExtensionState(): ExtensionState {
       outputChannel: undefined,
     },
     flags: {
+      diagnosticsHidden: false,
       showVersionLenses: true,
       showOutdated: false,
       showPrereleases: false,
@@ -47,6 +57,7 @@ export function createExtensionState(): ExtensionState {
       providerError: false,
     },
     activity: new Map(),
+    diagnostics: new Map(),
     promptedHosts: new Set(),
     snapshots: {
       savedDependencies: new Map(),

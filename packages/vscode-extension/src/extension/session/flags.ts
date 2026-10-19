@@ -8,6 +8,7 @@ function reloadConfigurationState(state: ExtensionState): void {
     "suggestions.showOnStartup",
     false,
   );
+  state.flags.diagnosticsHidden = false;
   state.flags.showPrereleases = prereleasesOnStartup();
 }
 

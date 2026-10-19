@@ -45,6 +45,17 @@ function createLanguageClient(
   const clientOptions: LanguageClientOptions = {
     documentSelector: documentSelectors(),
     middleware: {
+      // Choosing "hide" hides the diagnostics too, as in 0.4.4. The last
+      // ones are kept so showing them again needs no new server work.
+      handleDiagnostics: (uri, diagnostics, next) => {
+        const key = uri.toString();
+        if (diagnostics.length > 0) {
+          state.diagnostics.set(key, { diagnostics, uri });
+        } else {
+          state.diagnostics.delete(key);
+        }
+        next(uri, state.flags.diagnosticsHidden ? [] : diagnostics);
+      },
       provideCodeLenses: (document, token, next) => {
         if (!state.flags.showVersionLenses) {
           return [];
@@ -173,6 +184,7 @@ async function stop(state: ExtensionState): Promise<void> {
   const { client } = state;
   state.client = undefined;
   clearManifestInfo();
+  state.diagnostics.clear();
   state.promptedHosts.clear();
   await resetProviderState(state);
   if (client) {
@@ -193,6 +205,14 @@ async function disposeClient(
   }
 }
 
+/** Shows or hides the diagnostics the server published. */
+function applyDiagnosticsVisibility(state: ExtensionState): void {
+  const collection = state.client?.diagnostics;
+  for (const { diagnostics, uri } of state.diagnostics.values()) {
+    collection?.set(uri, state.flags.showVersionLenses ? diagnostics : []);
+  }
+}
+
 /** Asks the editor to ask the server for lenses again. */
 function refreshCodeLenses(state: ExtensionState): void {
   const feature = state.client?.getFeature("textDocument/codeLens");
@@ -206,6 +226,7 @@ function refreshCodeLenses(state: ExtensionState): void {
 }
 
 export {
+  applyDiagnosticsVisibility,
   createLanguageClient,
   refreshCodeLenses,
   restartClient,
