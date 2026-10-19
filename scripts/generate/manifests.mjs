@@ -349,6 +349,29 @@ const neovimTargetEntries = (text) =>
     () => /local triples = \{\n((?: {2}.*\n)*)\}\n/u,
   );
 
+/** Editor targets the JetBrains plugin bundles, from scripts/package/targets.json. */
+export function generateJetBrainsTargets(text) {
+  const pattern =
+    /(private val releaseTargets = setOf\(\n)(?: {12}.*\n)* {8}\)/u;
+  if (!pattern.test(text)) {
+    throw new Error(`${JETBRAINS_SUPPORT} lacks releaseTargets`);
+  }
+  const lines = releaseTargets().map(
+    ({ vscode }) => `            ${JSON.stringify(vscode)},`,
+  );
+  return text.replace(
+    pattern,
+    (_, open) => `${open}${lines.join("\n")}\n        )`,
+  );
+}
+
+const jetbrainsTargetEntries = (text) =>
+  blockEntries(
+    text,
+    ["releaseTargets"],
+    () => /private val releaseTargets = setOf\(\n((?: {12}.*\n)*) {8}\)/u,
+  );
+
 export function generateJetBrains(text, manifests) {
   const { names, extensions, suffixes, patterns } = editorSupport(manifests);
   const replace = (source, variable, values) => {
@@ -592,7 +615,13 @@ export function generateAll(manifests) {
     [PACKAGE_JSON, generatePackageJson, packageJsonEntries],
     [NEOVIM_SUPPORT, generateNeovim, neovimEntries],
     [NEOVIM_DOWNLOAD, generateNeovimTargets, neovimTargetEntries],
-    [JETBRAINS_SUPPORT, generateJetBrains, jetbrainsEntries],
+    [
+      JETBRAINS_SUPPORT,
+      (text, manifests) =>
+        generateJetBrainsTargets(generateJetBrains(text, manifests)),
+      (text) =>
+        new Map([...jetbrainsEntries(text), ...jetbrainsTargetEntries(text)]),
+    ],
     [ZED_EXTENSION, generateZed, zedEntries],
     [CONFIG_KEYS, generateConfigKeys, configKeysEntries],
     [SUPPORT_MATRIX, generateSupportMatrix, supportMatrixEntries],

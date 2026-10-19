@@ -19,74 +19,40 @@ From the repository root:
 cargo build -p versionlens-lsp
 ```
 
-The packaged plugin builds and embeds a release version of the server. Release artifacts are platform-specific for Linux x64/ARM64, macOS x64/ARM64, and Windows x64/ARM64. The plugin resolves the server in this order:
+The plugin does not compile the server. It bundles the prebuilt release binaries of every target in [`scripts/package/targets.json`](../../scripts/package/targets.json) as `bin/<target>/versionlens-lsp[.exe]` (for example `bin/darwin-arm64/`), and picks the one for the running OS and architecture (`alpine-*` on musl Linux, `linux-armhf` on ARMv7). The plugin resolves the server in this order:
 
 1. `versionlens.lsp.path` Java system property.
 2. `VERSIONLENS_LSP` environment variable.
-3. Packaged `bin/versionlens-lsp` beside the installed plugin libraries.
-4. A legacy JAR-embedded binary extracted to the IDE system directory.
+3. Packaged `bin/<target>/versionlens-lsp` beside the installed plugin libraries.
+4. A JAR-embedded `/bin/<target>/versionlens-lsp` extracted to the IDE system directory.
 5. Repository-local debug binary at `target/debug/versionlens-lsp`.
 6. `versionlens-lsp` on `PATH`.
 
 ## Build the plugin
 
+Stage the release binaries as `<dir>/<rust-target>/versionlens-lsp[.exe]` from the build-lsp archives, then build. The default directory is `build/lsp-binaries`; override it with `-PversionlensBinariesDir=<dir>`.
+
 ```bash
+for rust_target in $(jq -r '.targets[].rust' scripts/package/targets.json); do
+  bun scripts/package/stage-lsp.mjs <archives-dir> "$rust_target" "packages/jetbrains-plugin/build/lsp-binaries/$rust_target"
+done
 packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin buildPlugin --no-daemon
 ```
 
-The built plugin artifact is written under `packages/jetbrains-plugin/build/distributions/`.
+`buildPlugin` fails and lists every missing binary when a target is not staged. For local experiments, `-PversionlensAllowPartialTargets` bundles only the staged targets. The plugin archive is written under `packages/jetbrains-plugin/build/distributions/`. It is one archive for all platforms; no OS or architecture dependency is declared.
 
-The Gradle build embeds the platform-specific native LSP launcher selected by `versionlensRustTarget`.
+## Settings
 
-## Native variant archives
+The server asks the IDE for its settings with `workspace/configuration`. The plugin answers the `versionlens` section from a JSON object stored in `versionlens-redux.xml` in the IDE config directory (`settingsJson`, default `{}`), using the same keys as the VS Code `versionlens` settings. There is no settings page yet.
 
-IntelliJ Platform 2026.1.4 (`sinceBuild` `261.26222.65`) selects native compatibility through explicit
-OS/architecture module dependencies. Each native build is a separate Marketplace-selectable
-plugin variant. The archive keeps
-`bin/<executable>` beside `lib/`, rather than embedding the server in the plugin JAR.
+## Publishing
 
-The six supported target triples are:
-
-```text
-linux-x86_64    linux-arm64    mac-x86_64
-mac-arm64       windows-x86_64 windows-arm64
-```
-
-Build one target, for example the current macOS ARM64 host. `buildPlugin` derives the variant
-from the host when the property is omitted:
-
-```bash
-packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin \
-  buildPlugin --no-daemon
-# packages/jetbrains-plugin/build/distributions/
-#   versionlens-jetbrains-plugin-0.4.3-mac-arm64.zip
-```
-
-On the corresponding native runner, provide the Rust target triple explicitly:
-
-```bash
-packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin \
-  -PversionlensRustTarget=x86_64-unknown-linux-gnu buildPlugin --no-daemon
-```
-
-The output is `build/distributions/versionlens-jetbrains-plugin-0.4.3-<os>-<arch>.zip`.
-Run `buildPlugin` once per target to produce all six archives:
-
-```text
-x86_64-unknown-linux-gnu  -> ...-linux-x86_64.zip
-aarch64-unknown-linux-gnu -> ...-linux-arm64.zip
-x86_64-apple-darwin       -> ...-mac-x86_64.zip
-aarch64-apple-darwin     -> ...-mac-arm64.zip
-x86_64-pc-windows-msvc    -> ...-windows-x86_64.zip
-aarch64-pc-windows-msvc   -> ...-windows-arm64.zip
-```
-
-The manually dispatched Marketplace workflow builds, signs, and uploads every variant from its matching native runner. Run `bun run marketplaces:configure` once to store `JB_CERTIFICATE_CHAIN`, `JB_PRIVATE_KEY`, `JB_PRIVATE_KEY_PASSWORD`, and `JETBRAINS_MARKETPLACE_TOKEN` in the approval-gated GitHub environment. JetBrains requires the first plugin version to be uploaded manually before later versions can use automated publishing.
+The release workflow builds the archive once. `publish-marketplaces.yml` downloads it from the GitHub release and runs `publishPlugin -x buildPlugin -PversionlensReleasePlugin=<zip>`, which signs that archive and uploads it without rebuilding. Run `bun run marketplaces:configure` once to store `JB_CERTIFICATE_CHAIN`, `JB_PRIVATE_KEY`, `JB_PRIVATE_KEY_PASSWORD`, and `JETBRAINS_MARKETPLACE_TOKEN` in the approval-gated GitHub environment. JetBrains requires the first plugin version to be uploaded manually before later versions can use automated publishing.
 
 ## Development checks
 
 ```bash
-packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin buildPlugin --no-daemon
+packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin test --no-daemon
 cargo test -p versionlens-lsp
 ```
 
