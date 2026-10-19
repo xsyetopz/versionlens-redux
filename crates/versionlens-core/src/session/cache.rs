@@ -210,7 +210,11 @@ impl VersionLensSession {
                     scope.suggestion_key(&suggestion.dependency),
                     self.persistent_suggestion_key(&suggestion.dependency, scope),
                     suggestion.to_owned(),
-                    if suggestion.status == versionlens_update::SuggestionStatus::Error {
+                    if matches!(
+                        suggestion.status,
+                        versionlens_update::SuggestionStatus::Error
+                            | versionlens_update::SuggestionStatus::RateLimited
+                    ) {
                         self.cache_ttl(suggestion.dependency.ecosystem, manifest_kind)
                             .min(Duration::from_secs(30))
                     } else {

@@ -80,6 +80,12 @@ impl VersionLensSession {
         if matches!(error, HttpError::DeadlineExceeded) {
             return FetchError::OperationTimeout;
         }
+        if let HttpError::RateLimited { host, reset, .. } = error {
+            if let Some(source) = self.request_state.authorization.get() {
+                source.rate_limited(&host, reset);
+            }
+            return FetchError::RateLimited { host, reset };
+        }
         if let Some(status) = error.status_code()
             && let Some(message) = http_status_message_from_code(status)
         {

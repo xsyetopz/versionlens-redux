@@ -5,9 +5,11 @@ use versionlens_providers::RegistryErrorStatus::{
     InvalidWithLatest as RegistryStatusInvalidWithLatest, NoMatch as RegistryStatusNoMatch,
     NotSupported as RegistryStatusNotSupported,
 };
-use versionlens_providers::{RegistryErrorStatus, npm_error_status_from_response};
+use versionlens_providers::{
+    RegistryErrorStatus, http_status_message_from_code, npm_error_status_from_response,
+};
 use versionlens_update::{
-    Suggestion, UpdateChoice, error, invalid, no_match_with_message, not_supported,
+    Suggestion, UpdateChoice, error, invalid, no_match_with_message, not_supported, rate_limited,
 };
 
 use crate::RegistryResponseInput;
@@ -24,6 +26,15 @@ impl VersionLensSession {
         }
 
         match registry_error_status_for_dependency(&dependency, responses) {
+            // The registry body says 429 but not when it resets.
+            Some(RegistryStatusError(message))
+                if Some(message.as_str()) == http_status_message_from_code(429) =>
+            {
+                Err(crate::boxed(rate_limited(
+                    dependency,
+                    "rate limited".to_owned(),
+                )))
+            }
             Some(RegistryStatusError(message)) => Err(crate::boxed(error(dependency, message))),
             Some(RegistryStatusInvalid(message)) => Err(crate::boxed(invalid(dependency, message))),
             Some(RegistryStatusInvalidWithLatest(message)) => {

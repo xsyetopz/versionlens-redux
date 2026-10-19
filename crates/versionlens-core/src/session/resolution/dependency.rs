@@ -180,7 +180,7 @@ impl VersionLensSession {
         let lookup = self.resolve_latest_for_request(&request).await;
         let dependency = request.dependency;
         if let Some(message) = lookup.fetch_error {
-            return error(dependency, message.to_string());
+            return message.into_suggestion(dependency);
         }
 
         let mut suggestion = no_match(dependency);
@@ -199,7 +199,7 @@ impl VersionLensSession {
             ..
         } = request;
         if let Some(message) = lookup.fetch_error {
-            return error(dependency, message.to_string());
+            return message.into_suggestion(dependency);
         }
 
         if docker_empty_requirement_resolves_to_non_numeric_latest(

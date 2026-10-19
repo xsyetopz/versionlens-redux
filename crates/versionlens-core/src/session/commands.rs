@@ -7,8 +7,8 @@ use versionlens_update::Suggestion;
 use versionlens_update::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
     DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Fixed as StatusFixed,
-    NotSupported as StatusNotSupported, Unresolved as StatusUnresolved,
-    UpdateAvailable as StatusUpdateAvailable,
+    NotSupported as StatusNotSupported, RateLimited as StatusRateLimited,
+    Unresolved as StatusUnresolved, UpdateAvailable as StatusUpdateAvailable,
 };
 use versionlens_update::bulk_update_edits;
 use versionlens_update::sort_dependency_edits;
@@ -379,6 +379,7 @@ fn force_selected_version(suggestions: &mut [Suggestion], version: &str) {
                 | StatusDirectory
                 | StatusDirectoryNotFound
                 | StatusError
+                | StatusRateLimited
                 | StatusUnresolved
         ) {
             continue;

@@ -67,7 +67,7 @@ async fn hex_error_registry_response_creates_error_suggestion() {
 }
 
 #[tokio::test]
-async fn hex_rate_limited_registry_response_creates_error_suggestion() {
+async fn hex_rate_limited_registry_response_creates_rate_limited_suggestion() {
     let session = session_without_vulnerabilities();
 
     let output = session
@@ -88,10 +88,10 @@ async fn hex_rate_limited_registry_response_creates_error_suggestion() {
         )
         .await;
 
-    assert_eq!(output.suggestions[0].status, "error");
+    assert_eq!(output.suggestions[0].status, "rateLimited");
     assert_eq!(
         output.suggestions[0].latest.as_deref(),
-        Some("too many requests")
+        Some("rate limited")
     );
     assert!(output.edits.is_empty());
 }

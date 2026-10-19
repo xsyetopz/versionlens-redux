@@ -353,7 +353,8 @@ impl VersionLensSession {
         }
         let now = timestamp_ms();
         let records = entries.filter_map(|(key, suggestion, ttl)| {
-            if key.is_empty() {
+            // The host's reset ends a rate limit, so it is not kept across runs.
+            if key.is_empty() || suggestion.status == SuggestionStatus::RateLimited {
                 return None;
             }
             let value = serde_json::to_value(CachedSuggestion::from_suggestion(suggestion)).ok()?;

@@ -460,3 +460,5 @@ mod diagnostics;
 mod commands;
 
 mod authorization;
+
+mod rate_limit;
