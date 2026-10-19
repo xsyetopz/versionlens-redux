@@ -1,6 +1,9 @@
 package com.versionlens.jetbrains
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -11,6 +14,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import org.eclipse.lsp4j.ConfigurationItem
 import java.util.Locale
 
 internal class VersionLensLspServerSupportProvider : LspIntegrationProvider {
@@ -31,6 +35,12 @@ internal class VersionLensLspServerDescriptor(
     override fun isSupportedFile(file: VirtualFile): Boolean = supports(file)
 
     override fun createCommandLine(): GeneralCommandLine = GeneralCommandLine(resolveServerPath())
+
+    override fun getWorkspaceConfiguration(item: ConfigurationItem): Any? {
+        val settings = ApplicationManager.getApplication()
+            .getService(VersionLensSettings::class.java)?.state?.settingsJson ?: "{}"
+        return workspaceConfiguration(item.section, settings)
+    }
 
     private fun resolveServerPath(): String {
         val propertyPath = System.getProperty("versionlens.lsp.path")
@@ -63,7 +73,8 @@ internal class VersionLensLspServerDescriptor(
         return try {
             val location = Path.of(codeSource.toURI())
             val pluginDirectory = pluginDirectoryForCodeSource(location) ?: return null
-            val binary = pluginDirectory.resolve("bin").resolve(SERVER_BINARY)
+            val binary = pluginDirectory.resolve("bin").resolve(currentTarget() ?: return null)
+                .resolve(SERVER_BINARY)
             if (!Files.isRegularFile(binary)) {
                 null
             } else if (isWindows || Files.isExecutable(binary)) {
@@ -86,14 +97,66 @@ internal class VersionLensLspServerDescriptor(
                 "versionlens-lsp"
             }
 
+        // Generated from scripts/package/targets.json by scripts/generate/manifests.mjs.
+        private val releaseTargets = setOf(
+            "win32-x64",
+            "win32-arm64",
+            "linux-x64",
+            "linux-arm64",
+            "linux-armhf",
+            "alpine-x64",
+            "alpine-arm64",
+            "darwin-x64",
+            "darwin-arm64",
+        )
+
+        /** The release target for this machine, or null on unsupported platforms. */
+        internal fun currentTarget(
+            osName: String = System.getProperty("os.name"),
+            osArch: String = System.getProperty("os.arch"),
+            isMusl: Boolean = Files.exists(Path.of("/etc/alpine-release")),
+        ): String? {
+            val os = when {
+                osName.startsWith("Windows", ignoreCase = true) -> "win32"
+                osName.startsWith("Mac", ignoreCase = true) -> "darwin"
+                osName.startsWith("Linux", ignoreCase = true) -> "linux"
+                else -> return null
+            }
+            val architecture = when (osArch.lowercase(Locale.ROOT)) {
+                "amd64", "x86_64" -> "x64"
+                "aarch64", "arm64" -> "arm64"
+                "arm", "armv7l", "armv7" -> "armhf"
+                else -> return null
+            }
+            val family = if (os == "linux" && isMusl) "alpine" else os
+            val target = "$family-$architecture"
+            return target.takeIf { it in releaseTargets }
+        }
+
+        /** The answer to one `workspace/configuration` item. */
+        internal fun workspaceConfiguration(section: String?, settingsJson: String): Any? =
+            when (section) {
+                "versionlens" -> parseSettings(settingsJson)
+                "files.exclude" -> JsonObject()
+                else -> null
+            }
+
+        private fun parseSettings(json: String): JsonObject =
+            try {
+                JsonParser.parseString(json).takeIf { it.isJsonObject }?.asJsonObject ?: JsonObject()
+            } catch (_: RuntimeException) {
+                JsonObject()
+            }
+
         internal fun pluginDirectoryForCodeSource(location: Path): Path? {
             val container = if (Files.isDirectory(location)) location else location.parent
             return if (container?.fileName?.toString() == "lib") container.parent else container
         }
 
         private fun bundledServerPath(): String? {
+            val target = currentTarget() ?: return null
             val resource = VersionLensLspServerSupportProvider::class.java
-                .getResourceAsStream("/bin/$SERVER_BINARY") ?: return null
+                .getResourceAsStream("/bin/$target/$SERVER_BINARY") ?: return null
             return resource.use(::materializeServer)
         }
 

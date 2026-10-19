@@ -160,7 +160,7 @@ jobs:
           [[ "$lsp_targets" -eq 9 ]] || { echo "Expected 9 targets in targets.json, found $lsp_targets" >&2; exit 1; }
           require_count 9 'versionlens-redux-*-*.vsix'
           require_count 6 'versionlens-redux-neovim-plugin-*.tar.gz'
-          require_count 6 'versionlens-redux-jetbrains-plugin-*.zip'
+          require_count 1 'versionlens-redux-jetbrains-plugin-*.zip'
           require_count 1 "$CHECKSUMS_FILE"
 
           archives=$(find release-assets -maxdepth 1 -type f \( -name 'versionlens-lsp-*.tar.gz' -o -name 'versionlens-lsp-*.zip' \) | wc -l | tr -d ' ')

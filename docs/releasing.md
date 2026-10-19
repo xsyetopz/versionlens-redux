@@ -58,7 +58,7 @@ Wait for successful `master` runs of all four editor workflows for the release c
 Dispatch `.github/workflows/publish-marketplaces.yml` with the released version. Each destination can be selected independently:
 
 - VS Code publishes the nine released platform VSIX files with Microsoft Entra authentication.
-- JetBrains rebuilds, signs, and publishes six Marketplace-selectable native variants sequentially on their matching runners.
+- JetBrains signs and publishes the released plugin archive, which already bundles every native language server, without rebuilding it.
 - Zed creates or updates a single-extension pull request in `zed-industries/extensions`; registry publication occurs after Zed maintainers merge it.
 - Neovim publishes the Lua adapter to LuaRocks. GitHub release archives remain the installation route that bundles a native language server.
 

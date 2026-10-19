@@ -6,7 +6,6 @@
     Dependency hints, diagnostics, and code lenses for supported project files through the shared VersionLens language server.
   ]]></description>
   <idea-version since-build="261.26222.65" />
-  <!-- native-variant-dependencies -->
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lsp</depends>

@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.bundling.Zip
+import org.jetbrains.intellij.platform.gradle.tasks.SignPluginTask
 
 plugins {
     id("java")
@@ -32,59 +33,44 @@ kotlin {
 
 
 val repositoryRoot = layout.projectDirectory.dir("../..")
-val lspRustTarget = providers.gradleProperty("versionlensRustTarget").orNull
-val hostArchitecture = System.getProperty("os.arch").lowercase()
-val hostRustTarget =
-    when {
-        System.getProperty("os.name").startsWith("Windows", ignoreCase = true) &&
-            hostArchitecture in setOf("amd64", "x86_64") -> "x86_64-pc-windows-msvc"
-        System.getProperty("os.name").startsWith("Windows", ignoreCase = true) &&
-            hostArchitecture in setOf("arm64", "aarch64") -> "aarch64-pc-windows-msvc"
-        System.getProperty("os.name").startsWith("Mac", ignoreCase = true) &&
-            hostArchitecture in setOf("x86_64", "amd64") -> "x86_64-apple-darwin"
-        System.getProperty("os.name").startsWith("Mac", ignoreCase = true) &&
-            hostArchitecture in setOf("arm64", "aarch64") -> "aarch64-apple-darwin"
-        System.getProperty("os.name").startsWith("Linux", ignoreCase = true) &&
-            hostArchitecture in setOf("x86_64", "amd64") -> "x86_64-unknown-linux-gnu"
-        System.getProperty("os.name").startsWith("Linux", ignoreCase = true) &&
-            hostArchitecture in setOf("arm64", "aarch64") -> "aarch64-unknown-linux-gnu"
-        else -> null
-    }
-val nativeTargets = mapOf(
-    "x86_64-unknown-linux-gnu" to ("linux" to "x86_64"),
-    "aarch64-unknown-linux-gnu" to ("linux" to "arm64"),
-    "x86_64-apple-darwin" to ("mac" to "x86_64"),
-    "aarch64-apple-darwin" to ("mac" to "arm64"),
-    "x86_64-pc-windows-msvc" to ("windows" to "x86_64"),
-    "aarch64-pc-windows-msvc" to ("windows" to "arm64"),
-)
-val selectedRustTarget = lspRustTarget ?: hostRustTarget
-requireNotNull(selectedRustTarget) {
-    "Unable to determine a supported native target from the host or versionlensRustTarget"
+
+// One plugin bundles every release target from scripts/package/targets.json. The
+// binaries are staged beforehand as <versionlensBinariesDir>/<rust-target>/versionlens-lsp[.exe],
+// for example with scripts/package/stage-lsp.mjs from the build-lsp archives.
+data class ReleaseTarget(val editor: String, val rust: String) {
+    val executable = if (rust.contains("windows")) "versionlens-lsp.exe" else "versionlens-lsp"
 }
-val selectedNativeTarget = requireNotNull(nativeTargets[selectedRustTarget]) {
-    "Unsupported versionlensRustTarget=$selectedRustTarget; expected one of ${nativeTargets.keys}"
-}
-val (selectedOs, selectedArchitecture) = selectedNativeTarget
-val variantVersion = "${project.version}-$selectedOs-$selectedArchitecture"
-version = variantVersion
-val lspExecutableName = if (selectedOs == "windows") "versionlens-lsp.exe" else "versionlens-lsp"
-val lspOutputDirectory =
-    if (lspRustTarget == null) {
-        "target/release"
-    } else {
-        "target/$lspRustTarget/release"
-    }
-val lspBinary = repositoryRoot.file("$lspOutputDirectory/$lspExecutableName")
-val buildVersionLensLsp =
-    tasks.register<Exec>("buildVersionLensLsp") {
-        workingDir(repositoryRoot)
-        val cargoArguments =
-            mutableListOf("cargo", "build", "-p", "versionlens-lsp", "--release", "--locked")
-        if (lspRustTarget != null) {
-            cargoArguments.addAll(listOf("--target", lspRustTarget))
+
+val releaseTargets: List<ReleaseTarget> =
+    @Suppress("UNCHECKED_CAST")
+    (groovy.json.JsonSlurper().parse(repositoryRoot.file("scripts/package/targets.json").asFile)
+        as Map<String, List<Map<String, String>>>)
+        .getValue("targets")
+        .map { ReleaseTarget(it.getValue("vscode"), it.getValue("rust")) }
+val binariesDirectory =
+    layout.projectDirectory.dir(
+        providers.gradleProperty("versionlensBinariesDir").orElse("build/lsp-binaries").get(),
+    )
+// Local escape hatch: bundle only the staged targets instead of failing on missing ones.
+val allowPartialTargets = providers.gradleProperty("versionlensAllowPartialTargets").isPresent
+
+fun stagedBinary(target: ReleaseTarget) =
+    binariesDirectory.dir(target.rust).file(target.executable).asFile
+
+val verifyVersionLensBinaries =
+    tasks.register("verifyVersionLensBinaries") {
+        val directory = binariesDirectory
+        inputs.property("allowPartialTargets", allowPartialTargets)
+        doLast {
+            val missing = releaseTargets.filterNot { stagedBinary(it).isFile }
+            if (missing.isNotEmpty() && (!allowPartialTargets || missing.size == releaseTargets.size)) {
+                throw GradleException(
+                    "Missing language server binaries in ${directory.asFile}: " +
+                        missing.joinToString { "${it.rust}/${it.executable}" } +
+                        ". Stage them with scripts/package/stage-lsp.mjs or set -PversionlensBinariesDir.",
+                )
+            }
         }
-        commandLine(cargoArguments)
     }
 
 dependencies {
@@ -107,7 +93,6 @@ intellijPlatform {
     pluginConfiguration {
         id = "com.versionlens.jetbrains"
         name = "VersionLens Redux"
-        version = variantVersion
         description = "VersionLens Redux dependency hints, diagnostics, and code lenses through the shared VersionLens language server."
         changeNotes = "Added whole-workspace checking, persistent caches, runtime version checks, and functional language-server updates. Requires IDE build 261.26222.65 or newer."
         ideaVersion {
@@ -146,28 +131,25 @@ tasks.processResources {
         val pluginIcon = layout.buildDirectory.file("resources/main/META-INF/pluginIcon.svg").get().asFile
         pluginIcon.parentFile.mkdirs()
         repositoryRoot.file("assets/versionlens/logo-redux.svg").asFile.copyTo(pluginIcon, overwrite = true)
-
-        val descriptor = layout.buildDirectory.file("resources/main/META-INF/plugin.xml").get().asFile
-        val marker = "<!-- native-variant-dependencies -->"
-        val contents = descriptor.readText()
-        require(contents.indexOf(marker) == contents.lastIndexOf(marker) && marker in contents) {
-            "Expected exactly one native variant dependency marker in ${descriptor.path}"
-        }
-        descriptor.writeText(
-            contents.replace(
-                marker,
-                "<depends>com.intellij.modules.os.$selectedOs</depends>\n  <depends>com.intellij.modules.arch.$selectedArchitecture</depends>",
-            ),
-        )
     }
 }
 
 tasks.named<Zip>("buildPlugin").configure {
-    dependsOn(buildVersionLensLsp)
-    from(lspBinary) {
-        into("bin")
-        filePermissions {
-            unix("rwxr-xr-x")
+    dependsOn(verifyVersionLensBinaries)
+    releaseTargets.forEach { target ->
+        from(binariesDirectory.dir(target.rust)) {
+            include(target.executable)
+            into("bin/${target.editor}")
+            filePermissions {
+                unix("rwxr-xr-x")
+            }
         }
+    }
+}
+
+// Publishing signs and uploads an already released plugin archive instead of rebuilding it.
+providers.gradleProperty("versionlensReleasePlugin").orNull?.let { released ->
+    tasks.named<SignPluginTask>("signPlugin").configure {
+        archiveFile.set(layout.projectDirectory.file(released))
     }
 }

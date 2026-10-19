@@ -35,4 +35,28 @@ class VersionLensFileSupportTest {
             VersionLensLspServerDescriptor.pluginDirectoryForCodeSource(library) == pluginRoot,
         )
     }
+
+    @Test
+    fun picksTheReleaseTargetForThisMachine() {
+        val target = VersionLensLspServerDescriptor::currentTarget
+        assertTrue(target("Mac OS X", "aarch64", false) == "darwin-arm64")
+        assertTrue(target("Windows 11", "amd64", false) == "win32-x64")
+        assertTrue(target("Linux", "amd64", false) == "linux-x64")
+        assertTrue(target("Linux", "amd64", true) == "alpine-x64")
+        assertTrue(target("Linux", "aarch64", true) == "alpine-arm64")
+        assertTrue(target("Linux", "arm", false) == "linux-armhf")
+        assertTrue(target("Linux", "riscv64", false) == null)
+        assertTrue(target("Mac OS X", "arm", false) == null)
+    }
+
+    @Test
+    fun answersWorkspaceConfigurationWithAnObject() {
+        val answer = VersionLensLspServerDescriptor::workspaceConfiguration
+        assertTrue(answer("versionlens", "{}").toString() == "{}")
+        assertTrue(answer("versionlens", "").toString() == "{}")
+        assertTrue(answer("versionlens", "[1]").toString() == "{}")
+        assertTrue(answer("versionlens", """{"a":1}""").toString() == """{"a":1}""")
+        assertTrue(answer("files.exclude", "{}").toString() == "{}")
+        assertTrue(answer("other", "{}") == null)
+    }
 }
