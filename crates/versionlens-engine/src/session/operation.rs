@@ -1,3 +1,4 @@
+use std::sync::PoisonError;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -17,7 +18,7 @@ pub(crate) struct OperationContext {
 impl OperationContext {
     pub(crate) fn with_timeout(timeout: Duration) -> Self {
         Self {
-            authorization_requests: Arc::new(crate::mutex(vec![])),
+            authorization_requests: Arc::new(Mutex::new(vec![])),
             deadline: Instant::now().checked_add(timeout),
             attempted_at_ms: timestamp_ms(),
             generation: None,
@@ -106,7 +107,7 @@ impl OperationContext {
         let mut requests = self
             .authorization_requests
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned));
         if requests
             .iter()
             .any(|request| request.auth_url == auth_url && request.request_url == request_url)
@@ -122,7 +123,7 @@ impl OperationContext {
     pub(crate) fn take_authorization_requests(&self) -> Vec<AuthorizationRequestPayload> {
         self.authorization_requests
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
             .drain(..)
             .collect()
     }
@@ -131,7 +132,7 @@ impl OperationContext {
 impl Default for OperationContext {
     fn default() -> Self {
         Self {
-            authorization_requests: Arc::new(crate::mutex(vec![])),
+            authorization_requests: Arc::new(Mutex::new(vec![])),
             deadline: None,
             attempted_at_ms: timestamp_ms(),
             generation: None,

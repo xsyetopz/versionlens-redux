@@ -1,3 +1,4 @@
+use crate::ProviderSettings;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -65,8 +66,8 @@ fn npm_github_api_requests_keep_request_light_retry_behavior() {
 
 #[test]
 fn client_credential_replaces_config_authorization_for_github_requests() {
-    let session = VersionLensSession::new(crate::support::tests::session_config(
-        crate::default(),
+    let session = VersionLensSession::new(crate::test_support::session_config(
+        ProviderSettings::default(),
         false,
     ));
     session.credentials().set_client_credential(
@@ -129,7 +130,7 @@ async fn serve_github(
 }
 
 fn session_with_gh(gh_token: &str) -> (VersionLensSession, Arc<AtomicUsize>) {
-    let mut session = crate::support::tests::test_session(false);
+    let mut session = crate::test_support::test_session(false);
     let calls = Arc::new(AtomicUsize::new(0));
     let counter = Arc::clone(&calls);
     let gh_token = gh_token.to_owned();

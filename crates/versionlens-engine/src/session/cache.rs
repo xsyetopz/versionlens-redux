@@ -1,4 +1,5 @@
 use std::hash::{BuildHasher, Hash, Hasher};
+use std::sync::PoisonError;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, MutexGuard};
 use std::time::Duration;
@@ -30,7 +31,7 @@ impl VersionLensSession {
         self.result_state
             .parsed_dependencies
             .lock()
-            .unwrap_or_else(crate::recover_poison)
+            .unwrap_or_else(PoisonError::into_inner)
             .purge_expired();
         self.cache().purge_expired();
         self.request_body_cache().purge_expired();
@@ -47,7 +48,7 @@ impl VersionLensSession {
             .storage_state
             .observed_persistent_epoch
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         self.storage_state
             .cache_epoch
             .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
@@ -70,21 +71,21 @@ impl VersionLensSession {
         self.result_state
             .parsed_dependencies
             .lock()
-            .unwrap_or_else(crate::recover_poison)
+            .unwrap_or_else(PoisonError::into_inner)
             .clear();
         self.cache().clear();
         self.request_body_cache().clear();
         self.request_state
             .request_locks
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
             .clear();
         self.suggestion_cache().clear();
         self.vulnerability_cache().clear();
         self.request_state
             .dotnet_registry_sources
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
             .take();
     }
 
@@ -92,14 +93,14 @@ impl VersionLensSession {
         self.result_state
             .latest
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
     }
 
     pub(crate) fn request_body_cache(&self) -> MutexGuard<'_, MemoryCache<Arc<str>>> {
         self.request_state
             .request_body_cache
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
     }
 
     pub(crate) fn cached_request_body(&self, key: &CacheKey) -> Option<Arc<str>> {
@@ -111,7 +112,7 @@ impl VersionLensSession {
             .request_state
             .request_locks
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned));
         locks.retain(|_, lock| lock.strong_count() > 0);
         if let Some(lock) = locks.get(key).and_then(std::sync::Weak::upgrade) {
             return lock;
@@ -169,7 +170,7 @@ impl VersionLensSession {
         self.result_state
             .suggestions
             .lock()
-            .unwrap_or_else(|poisoned| crate::recover_poison(poisoned))
+            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
     }
 
     pub(crate) fn cached_resolved_suggestion(
@@ -279,8 +280,8 @@ fn provider_cache_ttl(
     provider_cache
         .iter()
         .rfind(|config| config.ecosystem == ecosystem && config.applies_to_manifest(manifest_kind))
-        .map(|config| crate::duration_from_millis(config.cache_ttl_ms))
-        .unwrap_or_else(|| crate::duration_from_millis(default_ttl_ms))
+        .map(|config| Duration::from_millis(config.cache_ttl_ms))
+        .unwrap_or_else(|| Duration::from_millis(default_ttl_ms))
 }
 
 pub(super) mod weights;

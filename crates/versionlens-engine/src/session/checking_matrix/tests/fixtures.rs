@@ -58,14 +58,14 @@ fn offline_session() -> VersionLensSession {
         ecosystem,
         url: "http://127.0.0.1:9/".to_owned(),
     };
-    crate::support::tests::session_with_provider_settings(
+    crate::test_support::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![
                 unreachable(Ecosystem::GitHub),
                 unreachable(Ecosystem::Npm),
                 unreachable(Ecosystem::Dotnet),
             ],
-            ..crate::default()
+            ..Default::default()
         },
         false,
     )

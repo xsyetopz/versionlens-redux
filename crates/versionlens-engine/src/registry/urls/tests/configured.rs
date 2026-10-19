@@ -1,6 +1,6 @@
 #[test]
 fn clojure_deps_edn_mvn_repos_are_used_after_builtin_repositories() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new("file:///deps.edn".to_owned(), "clojure".to_owned(), package_file_fixture(
             "clojure-deps-edn-mvn-repos-are-used-after-builtin-repositories.edn",
         ), None);
@@ -11,7 +11,7 @@ fn clojure_deps_edn_mvn_repos_are_used_after_builtin_repositories() {
 
 #[test]
 fn leiningen_project_clj_repositories_are_used_after_builtin_repositories() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new("file:///project.clj".to_owned(), "clojure".to_owned(), package_file_fixture(
             "leiningen-project-clj-repositories-are-used-after-builtin-repositories.clj",
         ), None);
@@ -29,7 +29,7 @@ fn leiningen_project_clj_repositories_are_used_after_builtin_repositories() {
 
 #[test]
 fn mix_hex_project_api_url_overrides_default_hex_registry_url() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new("file:///mix.exs".to_owned(), "elixir".to_owned(), package_file_fixture(
             "mix-hex-project-api-url-overrides-default-hex-registry-url.exs",
         ), None);
@@ -43,7 +43,7 @@ fn mix_hex_env_api_url_takes_precedence_over_project_api_url() {
         "HEX_API_URL=https://hex.env.example.test/api\n",
     );
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", root.join("mix.exs").display()), "elixir".to_owned(), package_file_fixture("mix-hex-env-api-url-takes-precedence-over-project-api-url.txt"), Some(root.to_string_lossy().into_owned()));
     assert_first_registry_urls(&session, &input, &["https://hex.env.example.test/api/packages/plug"]);
 
@@ -57,7 +57,7 @@ fn hex_env_api_url_configures_rebar_and_gleam_registry_urls() {
         "HEX_API_URL=https://hex.env.example.test/api\n",
     );
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let rebar_input = DocumentInput::new(format!("file://{}", root.join("rebar.config").display()), "erlang".to_owned(), package_file_fixture("hex-env-api-url-configures-rebar-and-gleam-registry-urls.txt"), Some(root.to_string_lossy().into_owned()));
     let gleam_input = DocumentInput::new(format!("file://{}", root.join("gleam.toml").display()), "toml".to_owned(), package_file_fixture(
             "hex-env-api-url-configures-rebar-and-gleam-registry-urls-2.txt",
@@ -86,7 +86,7 @@ fn rebar_hex_cdn_env_configures_registry_url() {
     create_dir_all(&root).unwrap();
     write(root.join(".env"), "HEX_CDN=https://repo.example.test\n").unwrap();
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", root.join("rebar.config").display()), "erlang".to_owned(), package_file_fixture("rebar-hex-cdn-env-configures-registry-url.txt"), Some(root.to_string_lossy().into_owned()));
     assert_first_registry_urls(&session, &input, &["https://repo.example.test/api/packages/cowboy"]);
 
@@ -95,14 +95,14 @@ fn rebar_hex_cdn_env_configures_registry_url() {
 
 #[test]
 fn rebar_packages_cdn_configures_registry_url() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = registry_input("file:///rebar.config", "erlang", "rebar-packages-cdn-configures-registry-url.config");
     assert_first_registry_urls(&session, &input, &["https://repo.project.example.test/api/packages/cowboy"]);
 }
 
 #[test]
 fn deno_jsr_import_aliases_use_specifier_package_for_registry_urls() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new("file:///deno.json".to_owned(), "jsonc".to_owned(), package_file_fixture(
             "deno-jsr-import-aliases-use-specifier-package-for-registry-urls.json",
         ), None);

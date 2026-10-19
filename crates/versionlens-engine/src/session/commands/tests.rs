@@ -7,7 +7,7 @@ use crate::{
 };
 
 fn standard_session() -> VersionLensSession {
-    crate::support::tests::test_session(true)
+    crate::test_support::test_session(true)
 }
 
 fn session_with_vulnerability_visibility(show_vulnerabilities: bool) -> VersionLensSession {
@@ -33,7 +33,7 @@ fn session_with_dependency_properties(
                     .map(|property| (*property).to_owned())
                     .collect(),
             }],
-            ..crate::default()
+            ..Default::default()
         },
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,

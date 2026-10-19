@@ -125,7 +125,7 @@ pub fn version_lens_session(config: SessionConfig) -> VersionLensSession {
             .with_standard_indicators_for_blanks(),
         ..config
     };
-    let cache_ttl = crate::duration_from_millis(config.cache_ttl_ms);
+    let cache_ttl = Duration::from_millis(config.cache_ttl_ms);
     VersionLensSession {
         config,
         storage_state: SessionStorage {
@@ -138,32 +138,32 @@ pub fn version_lens_session(config: SessionConfig) -> VersionLensSession {
             workspace: Arc::new(Mutex::new(workspace::WorkspaceState::default())),
         },
         request_state: SessionRequests {
-            request_body_cache: Arc::new(crate::mutex(
-                crate::memory_cache(cache_ttl)
+            request_body_cache: Arc::new(Mutex::new(
+                MemoryCache::new(cache_ttl)
                     .with_byte_capacity(32 * 1024 * 1024, |body: &Arc<str>| body.len()),
             )),
-            request_locks: Arc::new(crate::mutex(crate::default())),
+            request_locks: Arc::new(Mutex::new(HashMap::default())),
             request_context_hashers: [<RandomState>::new(), <RandomState>::new()],
-            dotnet_registry_sources: Arc::new(crate::mutex(None)),
+            dotnet_registry_sources: Arc::new(Mutex::new(None)),
             credentials: versionlens_fetch::CredentialChain::new(),
             authorization: authorization::AuthorizationHook::default(),
         },
         result_state: SessionResults {
-            parsed_dependencies: Arc::new(crate::mutex(
-                crate::memory_cache(Duration::from_secs(300))
+            parsed_dependencies: Arc::new(Mutex::new(
+                MemoryCache::new(Duration::from_secs(300))
                     .with_capacity(64)
                     .with_byte_capacity(16 * 1024 * 1024, cache::weights::dependencies),
             )),
-            latest: Arc::new(crate::mutex(
-                crate::memory_cache(cache_ttl)
+            latest: Arc::new(Mutex::new(
+                MemoryCache::new(cache_ttl)
                     .with_byte_capacity(16 * 1024 * 1024, cache::weights::latest),
             )),
-            suggestions: Arc::new(crate::mutex(
-                crate::memory_cache(cache_ttl)
+            suggestions: Arc::new(Mutex::new(
+                MemoryCache::new(cache_ttl)
                     .with_byte_capacity(8 * 1024 * 1024, cache::weights::suggestion),
             )),
-            vulnerabilities: Arc::new(crate::mutex(
-                crate::memory_cache(cache_ttl)
+            vulnerabilities: Arc::new(Mutex::new(
+                MemoryCache::new(cache_ttl)
                     .with_byte_capacity(8 * 1024 * 1024, cache::weights::vulnerability),
             )),
         },

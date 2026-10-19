@@ -18,7 +18,7 @@ fn session_with_property_configs(configs: &[(Ecosystem, &[&str])]) -> VersionLen
 fn session_with_scoped_property_configs(
     configs: &[(Ecosystem, Option<ManifestKind>, &[&str])],
 ) -> VersionLensSession {
-    crate::version_lens_session(crate::support::tests::session_config(
+    crate::version_lens_session(crate::test_support::session_config(
         ProviderSettings {
             dependency_properties: configs
                 .iter()
@@ -33,14 +33,14 @@ fn session_with_scoped_property_configs(
                     },
                 )
                 .collect(),
-            ..crate::default()
+            ..Default::default()
         },
         true,
     ))
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/dependency-properties", name)
+    crate::test_support::fixture("tests/fixtures/dependency-properties", name)
 }
 
 mod cargo;

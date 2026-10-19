@@ -1,3 +1,4 @@
+use std::sync::PoisonError;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
@@ -114,7 +115,7 @@ impl WorkspaceChecking {
             .shared
             .pending
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         if self.shared.closed.load(Ordering::Acquire) {
             return Err("workspace checking is stopped");
         }
@@ -146,7 +147,7 @@ impl WorkspaceChecking {
             .shared
             .pending
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         if self.shared.closed.load(Ordering::Acquire) {
             return Err("workspace checking is stopped");
         }

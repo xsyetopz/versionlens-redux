@@ -1,5 +1,6 @@
 use crate::VersionLensSession;
 use crate::dotnet_sources::runtime_dotnet_registry_source_urls;
+use std::sync::PoisonError;
 
 impl VersionLensSession {
     pub(in crate::registry::urls) fn dotnet_registry_urls(&self) -> Vec<String> {
@@ -8,7 +9,7 @@ impl VersionLensSession {
                 .request_state
                 .dotnet_registry_sources
                 .lock()
-                .unwrap_or_else(|poisoned| crate::recover_poison(poisoned));
+                .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned));
             source_cache
                 .get_or_insert_with(|| {
                     runtime_dotnet_registry_source_urls(&self.config.providers.registry_urls)

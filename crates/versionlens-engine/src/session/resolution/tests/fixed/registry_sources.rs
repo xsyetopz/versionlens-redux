@@ -256,7 +256,7 @@ async fn podfile_external_and_latest_dependencies_resolve_as_fixed_without_regis
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture(
+    crate::test_support::fixture(
         "tests/fixtures/session/resolution/tests/fixed/registry_sources",
         name,
     )

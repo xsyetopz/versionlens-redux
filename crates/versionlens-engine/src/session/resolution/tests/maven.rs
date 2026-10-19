@@ -2,7 +2,7 @@ use super::*;
 
 #[tokio::test]
 async fn maven_registry_urls_preserve_configured_fallback_order() {
-    let session = crate::support::tests::session_with_provider_settings(
+    let session = crate::test_support::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![
                 RegistryUrlConfig {
@@ -14,7 +14,7 @@ async fn maven_registry_urls_preserve_configured_fallback_order() {
                     url: "https://repo.maven.apache.org/maven2".to_owned(),
                 },
             ],
-            ..crate::default()
+            ..Default::default()
         },
         false,
     );
@@ -49,7 +49,8 @@ async fn maven_registry_urls_preserve_configured_fallback_order() {
 
 #[test]
 fn maven_registry_urls_include_pom_repositories_before_central() {
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = DocumentInput::new(
         "file:///pom.xml".to_owned(),
         "xml".to_owned(),
@@ -57,7 +58,7 @@ fn maven_registry_urls_include_pom_repositories_before_central() {
         None,
     );
     let (context, dependencies) =
-        crate::support::tests::registry_context_and_dependencies(&session, &input);
+        crate::test_support::registry_context_and_dependencies(&session, &input);
 
     assert_maven_urls(
         &session,
@@ -73,7 +74,8 @@ fn maven_registry_urls_include_pom_repositories_before_central() {
 
 #[test]
 fn maven_registry_urls_include_pom_plugin_repositories_before_central() {
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = DocumentInput::new(
         "file:///pom.xml".to_owned(),
         "xml".to_owned(),
@@ -81,7 +83,7 @@ fn maven_registry_urls_include_pom_plugin_repositories_before_central() {
         None,
     );
     let (context, dependencies) =
-        crate::support::tests::registry_context_and_dependencies(&session, &input);
+        crate::test_support::registry_context_and_dependencies(&session, &input);
 
     assert_maven_urls(
         &session,
@@ -96,11 +98,12 @@ fn maven_registry_urls_include_pom_plugin_repositories_before_central() {
 
 #[test]
 fn maven_registry_urls_resolve_project_and_parent_interpolation_properties() {
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = DocumentInput::new(
         "file:///pom.xml".to_owned(),
         "xml".to_owned(),
-        crate::support::tests::fixture(
+        crate::test_support::fixture(
             "tests/fixtures/versionlens-parsers/src/maven_xml/tests",
             "resolves-maven-project-and-parent-interpolation-properties.xml",
         ),
@@ -185,13 +188,14 @@ fn maven_documents_use_workspace_settings_plugin_repositories_and_auth() {
     )
     .unwrap();
 
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = workspace_pom_input(
         &root,
         "maven-documents-use-workspace-settings-plugin-repositories-and-auth.txt",
     );
     let (context, dependencies) =
-        crate::support::tests::registry_context_and_dependencies(&session, &input);
+        crate::test_support::registry_context_and_dependencies(&session, &input);
 
     assert_maven_urls(
         &session,
@@ -250,13 +254,14 @@ fn maven_documents_use_only_active_workspace_settings_profile_repositories() {
     )
     .unwrap();
 
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = workspace_pom_input(
         &root,
         "maven-documents-use-only-active-workspace-settings-profile-repositories.txt",
     );
     let (context, dependencies) =
-        crate::support::tests::registry_context_and_dependencies(&session, &input);
+        crate::test_support::registry_context_and_dependencies(&session, &input);
 
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
@@ -289,14 +294,15 @@ async fn maven_local_repository_metadata_resolves_before_remote_registries() {
     )
     .unwrap();
 
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = workspace_pom_input(
         &root,
         "maven-local-repository-metadata-resolves-before-remote-registries.txt",
     );
     let output = session.resolve_document(input).await;
 
-    crate::support::tests::assert_suggestion(&output, 0, "updateAvailable", Some("1.1.0"));
+    crate::test_support::assert_suggestion(&output, 0, "updateAvailable", Some("1.1.0"));
     assert_eq!(output.edits[0].new_text, "1.1.0");
 
     remove_dir_all(root).unwrap();
@@ -374,13 +380,14 @@ fn maven_settings_exact_mirror_replaces_matching_repository_only() {
     )
     .unwrap();
 
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = workspace_pom_input(
         &root,
         "maven-settings-exact-mirror-replaces-matching-repository-only.txt",
     );
     let (context, dependencies) =
-        crate::support::tests::registry_context_and_dependencies(&session, &input);
+        crate::test_support::registry_context_and_dependencies(&session, &input);
 
     assert_eq!(
         session.registry_urls_with_context(&dependencies[0], &context),
@@ -414,10 +421,11 @@ fn workspace_dependencies(
     root: &std::path::Path,
     fixture: &str,
 ) -> (VersionLensSession, RegistryContext, Vec<Dependency>) {
-    let session = crate::support::tests::session_with_provider_settings(crate::default(), false);
+    let session =
+        crate::test_support::session_with_provider_settings(ProviderSettings::default(), false);
     let input = workspace_pom_input(root, fixture);
     let (context, dependencies) =
-        crate::support::tests::registry_context_and_dependencies(&session, &input);
+        crate::test_support::registry_context_and_dependencies(&session, &input);
     (session, context, dependencies)
 }
 
@@ -448,6 +456,6 @@ fn settings_with_private_repository(prefix: &str) -> String {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/maven", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/maven", name)
 }
 use super::assert_update;

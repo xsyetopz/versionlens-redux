@@ -1,6 +1,7 @@
 use crate::RegistryResponseInput;
 use crate::{ProviderCacheConfig, ProviderSettings, SessionConfig};
 use std::thread::sleep;
+use std::time::Duration;
 
 use versionlens_model::DocumentInput;
 
@@ -21,7 +22,7 @@ fn session_with_manifest_cache(
                 manifest_kind,
                 cache_ttl_ms: 1,
             }],
-            ..crate::default()
+            ..Default::default()
         },
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
@@ -33,7 +34,7 @@ fn session_with_manifest_cache(
 
 #[test]
 fn request_cache_identity_separates_effective_security_context_without_exposing_secrets() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let mut first = versionlens_fetch::standard_http_config();
     first.auth_headers.push(HttpHeader {
         name: "authorization".to_owned(),
@@ -78,7 +79,7 @@ fn request_cache_identity_separates_effective_security_context_without_exposing_
 
 #[test]
 fn completed_request_lock_keys_are_pruned_during_subsequent_requests() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let http = versionlens_fetch::standard_http_config();
 
     for index in 0..100 {
@@ -111,7 +112,7 @@ async fn provider_cache_overrides_global_cache_ttl() {
     session
         .resolve_document_with_responses(input.clone(), &responses)
         .await;
-    sleep(crate::duration_from_millis(5));
+    sleep(Duration::from_millis(5));
 
     assert!(session.analyze_document(input).code_lenses.is_empty());
 }
@@ -122,11 +123,11 @@ fn manifest_scoped_provider_cache_does_not_override_package_json_npm() {
 
     assert_eq!(
         session.cache_ttl(Npm, Some(NpmPackageJson)),
-        crate::duration_from_millis(300_000)
+        Duration::from_millis(300_000)
     );
     assert_eq!(
         session.cache_ttl(Npm, Some(PnpmYaml)),
-        crate::duration_from_millis(1)
+        Duration::from_millis(1)
     );
 }
 
@@ -140,10 +141,10 @@ async fn manifest_scoped_provider_cache_controls_cached_suggestions() {
         None,
     );
 
-    crate::support::tests::analyze_with_responses(
+    crate::test_support::analyze_with_responses(
         &session,
         &input,
-        &[crate::support::tests::npm_latest_response(
+        &[crate::test_support::npm_latest_response(
             "left-pad", "1.1.0",
         )],
     )
@@ -153,14 +154,14 @@ async fn manifest_scoped_provider_cache_controls_cached_suggestions() {
         "↑  latest 1.1.0"
     );
 
-    sleep(crate::duration_from_millis(5));
+    sleep(Duration::from_millis(5));
 
     assert!(session.analyze_document(input).code_lenses.is_empty());
 }
 
 #[tokio::test]
 async fn registry_responses_override_cached_latest_version() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
         "json".to_owned(),
@@ -171,7 +172,7 @@ async fn registry_responses_override_cached_latest_version() {
     session
         .resolve_document_with_responses(
             input.clone(),
-            &[crate::support::tests::npm_latest_response(
+            &[crate::test_support::npm_latest_response(
                 "left-pad", "1.1.0",
             )],
         )
@@ -179,7 +180,7 @@ async fn registry_responses_override_cached_latest_version() {
     let refreshed = session
         .resolve_document_with_responses(
             input,
-            &[crate::support::tests::npm_latest_response(
+            &[crate::test_support::npm_latest_response(
                 "left-pad", "1.2.0",
             )],
         )
@@ -190,7 +191,7 @@ async fn registry_responses_override_cached_latest_version() {
 
 #[tokio::test]
 async fn caches_latest_version_and_clear_cache_removes_it() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
         "json".to_owned(),
@@ -201,7 +202,7 @@ async fn caches_latest_version_and_clear_cache_removes_it() {
     let first = session
         .resolve_document_with_responses(
             input.clone(),
-            &[crate::support::tests::npm_latest_response(
+            &[crate::test_support::npm_latest_response(
                 "left-pad", "1.1.0",
             )],
         )
@@ -220,7 +221,7 @@ async fn caches_latest_version_and_clear_cache_removes_it() {
 
 #[tokio::test]
 async fn cached_latest_preserves_registry_build_aliases() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
         "json".to_owned(),
@@ -242,7 +243,7 @@ async fn cached_latest_preserves_registry_build_aliases() {
 
 #[test]
 fn clear_cache_removes_dotnet_registry_sources() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
 
     *session
         .request_state
@@ -264,7 +265,7 @@ fn clear_cache_removes_dotnet_registry_sources() {
 
 #[tokio::test]
 async fn analyze_document_uses_cached_latest_for_code_lens_title() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
     let input = DocumentInput::new(
         "file:///package.json".to_owned(),
         "json".to_owned(),
@@ -275,7 +276,7 @@ async fn analyze_document_uses_cached_latest_for_code_lens_title() {
     session
         .resolve_document_with_responses(
             input.clone(),
-            &[crate::support::tests::npm_latest_response(
+            &[crate::test_support::npm_latest_response(
                 "left-pad", "1.1.0",
             )],
         )
@@ -292,7 +293,7 @@ async fn analyze_document_uses_cached_latest_for_code_lens_title() {
 
 #[tokio::test]
 async fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let fixed_input = DocumentInput::new(
         "file:///package.json".to_owned(),
         "json".to_owned(),
@@ -335,7 +336,7 @@ async fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() 
         .iter()
         .map(|lens| lens.title.as_str())
         .collect::<Vec<_>>();
-    let arguments = crate::support::tests::all_code_lens_arguments(&analysis);
+    let arguments = crate::test_support::all_code_lens_arguments(&analysis);
 
     assert_eq!(cached_range.suggestions[0].status, "satisfies");
     assert_eq!(
@@ -353,12 +354,12 @@ async fn cached_latest_is_scoped_to_dependency_requirement_for_update_choices() 
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/cache", name)
+    crate::test_support::fixture("tests/fixtures/session/cache", name)
 }
 
 #[test]
 fn clearing_shared_session_invalidates_inflight_cache_writes() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let operation = crate::session::operation::OperationContext::default()
         .with_generation(&session.storage_state.cache_epoch, None);
     let key = session.request_cache_key("https://example.test/package", &session.config.http);

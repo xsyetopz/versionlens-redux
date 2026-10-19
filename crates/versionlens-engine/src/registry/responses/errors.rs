@@ -30,13 +30,13 @@ impl VersionLensSession {
             Some(RegistryStatusError(message))
                 if Some(message.as_str()) == http_status_message_from_code(429) =>
             {
-                Err(crate::boxed(rate_limited(
+                Err(Box::new(rate_limited(
                     dependency,
                     "rate limited".to_owned(),
                 )))
             }
-            Some(RegistryStatusError(message)) => Err(crate::boxed(error(dependency, message))),
-            Some(RegistryStatusInvalid(message)) => Err(crate::boxed(invalid(dependency, message))),
+            Some(RegistryStatusError(message)) => Err(Box::new(error(dependency, message))),
+            Some(RegistryStatusInvalid(message)) => Err(Box::new(invalid(dependency, message))),
             Some(RegistryStatusInvalidWithLatest(message)) => {
                 let mut suggestion = invalid(dependency, message);
                 suggestion.choices.push(UpdateChoice {
@@ -45,13 +45,12 @@ impl VersionLensSession {
                     command: "update".to_owned(),
                     replacement: None,
                 });
-                Err(crate::boxed(suggestion))
+                Err(Box::new(suggestion))
             }
-            Some(RegistryStatusNoMatch(message)) => Err(crate::boxed(no_match_with_message(
-                dependency,
-                Some(message),
-            ))),
-            Some(RegistryStatusNotSupported) => Err(crate::boxed(not_supported(dependency))),
+            Some(RegistryStatusNoMatch(message)) => {
+                Err(Box::new(no_match_with_message(dependency, Some(message))))
+            }
+            Some(RegistryStatusNotSupported) => Err(Box::new(not_supported(dependency))),
             None => Ok(dependency),
         }
     }

@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::PoisonError;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::{Duration, Instant};
@@ -138,7 +139,7 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
                 .shared
                 .pending
                 .lock()
-                .unwrap_or_else(crate::recover_poison);
+                .unwrap_or_else(PoisonError::into_inner);
             (
                 self.shared.generation.load(Ordering::Acquire),
                 std::mem::take(&mut *pending),
@@ -466,13 +467,13 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             .shared
             .pending
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         if pending.is_empty() && !self.shared.closed.load(Ordering::Acquire) {
             drop(
                 self.shared
                     .ready
                     .wait_timeout(pending, Duration::from_millis(100))
-                    .unwrap_or_else(crate::recover_poison),
+                    .unwrap_or_else(PoisonError::into_inner),
             );
         }
     }

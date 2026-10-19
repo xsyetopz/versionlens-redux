@@ -24,7 +24,7 @@ pub(super) fn dotnet_context(
     input: &DocumentInput,
     files: &impl RegistryFileRead,
 ) -> DotnetContext {
-    let mut context: DotnetContext = crate::default();
+    let mut context: DotnetContext = DotnetContext::default();
     for url in parse_paket_source_urls(&input.text) {
         context.has_source_configuration = true;
         push_unique_source(
@@ -169,7 +169,7 @@ fn merge_dotnet_config(context: &mut DotnetContext, config_path: &Path, config: 
 }
 
 fn resolve_nuget_source_url(config_path: &Path, url: &str) -> String {
-    if remote_url(url) || url.starts_with("file://") || crate::path(url).is_absolute() {
+    if remote_url(url) || url.starts_with("file://") || Path::new(url).is_absolute() {
         return url.to_owned();
     }
 

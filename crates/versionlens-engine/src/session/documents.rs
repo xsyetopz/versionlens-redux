@@ -102,7 +102,7 @@ impl VersionLensSession {
             .iter()
             .flat_map(|dependency| self.code_lenses_for_dependency(dependency, &scope))
             .collect();
-        let mut diagnostic_ranges: HashSet<(u32, u32, u32, u32)> = crate::default();
+        let mut diagnostic_ranges: HashSet<(u32, u32, u32, u32)> = HashSet::default();
         let mut diagnostics: Vec<DiagnosticView> = dependencies
             .iter()
             .filter(|dependency| {
@@ -123,7 +123,7 @@ impl VersionLensSession {
             &suggestions,
             self.config.show_suggestion_stats,
         );
-        let mut update_ranges: HashSet<(u32, u32, u32, u32)> = crate::default();
+        let mut update_ranges: HashSet<(u32, u32, u32, u32)> = HashSet::default();
         diagnostics.extend(
             suggestions
                 .iter()

@@ -114,7 +114,7 @@ async fn assert_prerelease_project_version_update(
         ),
         command,
         selected_version,
-        &[crate::support::tests::npm_latest_response("left-pad", "2.0.0")],
+        &[crate::test_support::npm_latest_response("left-pad", "2.0.0")],
     ).await;
     assert_project_edit(&output, expected);
 }

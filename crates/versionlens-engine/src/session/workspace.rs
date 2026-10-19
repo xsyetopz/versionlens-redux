@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::PoisonError;
 use std::sync::{Arc, atomic::Ordering};
 
 use versionlens_model::{DocumentInput, ManifestKind, document_text_hash};
@@ -71,7 +72,7 @@ impl VersionLensSession {
             .storage_state
             .workspace
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         if state.documents.as_ref() == &workspace_documents
             && state.registry_documents.as_ref() == &registry_documents
         {
@@ -93,7 +94,7 @@ impl VersionLensSession {
             .storage_state
             .workspace
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         invalidate_state(self, &mut state);
         self.suggestion_cache().clear();
         drop(state);
@@ -104,7 +105,7 @@ impl VersionLensSession {
             .storage_state
             .workspace
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         state.generation = state.generation.wrapping_add(1);
         state.graphs.clear();
         state.registry_files = RegistryFileSnapshot::new(state.registry_documents.clone());
@@ -116,7 +117,7 @@ impl VersionLensSession {
         self.storage_state
             .workspace
             .lock()
-            .unwrap_or_else(crate::recover_poison)
+            .unwrap_or_else(PoisonError::into_inner)
             .generation
     }
 
@@ -124,7 +125,7 @@ impl VersionLensSession {
         self.storage_state
             .workspace
             .lock()
-            .unwrap_or_else(crate::recover_poison)
+            .unwrap_or_else(PoisonError::into_inner)
             .documents
             .clone()
     }
@@ -138,7 +139,7 @@ impl VersionLensSession {
                 .storage_state
                 .workspace
                 .lock()
-                .unwrap_or_else(crate::recover_poison);
+                .unwrap_or_else(PoisonError::into_inner);
             (
                 state.generation,
                 state.documents.clone(),
@@ -154,7 +155,7 @@ impl VersionLensSession {
                 .storage_state
                 .workspace
                 .lock()
-                .unwrap_or_else(crate::recover_poison);
+                .unwrap_or_else(PoisonError::into_inner);
             let graph = if state.generation == generation {
                 state.graphs.entry(root.clone()).or_insert(graph).clone()
             } else {
@@ -185,7 +186,7 @@ impl VersionLensSession {
                 .storage_state
                 .workspace
                 .lock()
-                .unwrap_or_else(crate::recover_poison);
+                .unwrap_or_else(PoisonError::into_inner);
             if let Some(context) = state.registry_contexts.get(&key) {
                 return context.clone();
             }
@@ -197,7 +198,7 @@ impl VersionLensSession {
             .storage_state
             .workspace
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         if state.generation != generation {
             return context;
         }

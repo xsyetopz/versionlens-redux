@@ -1,4 +1,5 @@
 use crate::dependency::properties::is_enabled;
+use std::sync::PoisonError;
 use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
 use versionlens_parsers::ecosystem_for_manifest;
 use versionlens_parsers::parse_document_as_manifest_with_dependency_paths;
@@ -31,7 +32,7 @@ impl VersionLensSession {
             .result_state
             .parsed_dependencies
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         if let Some(key) = &key
             && let Some(dependencies) = cache.get(key)
         {

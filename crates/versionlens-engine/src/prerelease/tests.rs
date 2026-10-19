@@ -6,7 +6,7 @@ use versionlens_model::Ecosystem::*;
 
 fn assert_prerelease_update_arguments(output: &crate::AnalyzeDocumentOutput) {
     assert_eq!(
-        crate::support::tests::update_code_lens_arguments(output),
+        crate::test_support::update_code_lens_arguments(output),
         [vec!["update", "6.0.3"], vec!["update", "7.0.0-beta.1"]]
     );
 }
@@ -33,7 +33,7 @@ async fn show_prereleases_allows_prerelease_updates() {
         .await;
     let analysis = session.analyze_document(input);
     let update_arguments =
-        crate::support::tests::code_lens_arguments_for_title(&analysis, "↑  beta 14.0.0-beta.1");
+        crate::test_support::code_lens_arguments_for_title(&analysis, "↑  beta 14.0.0-beta.1");
 
     assert_eq!(output.suggestions[0].status, "noMatch");
     assert!(output.edits.is_empty());
@@ -141,7 +141,7 @@ async fn show_prereleases_keeps_npm_prerelease_choice_when_fixed_version_is_late
         .iter()
         .map(|lens| lens.title.as_str())
         .collect::<Vec<_>>();
-    let arguments = crate::support::tests::code_lens_arguments(&output);
+    let arguments = crate::test_support::code_lens_arguments(&output);
 
     assert_eq!(resolved.suggestions[0].status, "current");
     assert_eq!(resolved.suggestions[0].latest.as_deref(), Some("3.0.0"));
@@ -161,7 +161,7 @@ async fn prerelease_tag_filters_apply_to_responses() {
                 ecosystem: Npm,
                 tags: vec!["beta".to_owned()],
             }],
-            ..crate::default()
+            ..Default::default()
         },
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
@@ -188,7 +188,7 @@ async fn prerelease_tag_filters_apply_to_responses() {
 
 #[tokio::test]
 async fn prerelease_ranges_can_resolve_prerelease_versions_when_hidden() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
 
     let output = session
         .resolve_document_with_responses(
@@ -237,7 +237,7 @@ fn prerelease_session() -> crate::VersionLensSession {
         update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
@@ -247,5 +247,5 @@ fn prerelease_session() -> crate::VersionLensSession {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/core-scenarios/prerelease/tests", name)
+    crate::test_support::fixture("tests/fixtures/core-scenarios/prerelease/tests", name)
 }

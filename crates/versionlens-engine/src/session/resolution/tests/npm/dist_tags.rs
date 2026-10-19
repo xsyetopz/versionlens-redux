@@ -37,7 +37,7 @@ async fn npm_latest_dist_tag_caps_stable_update_choices() {
         .map(|lens| lens.title.as_str())
         .collect::<Vec<_>>();
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "current", Some("7.0.0"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "current", Some("7.0.0"));
     assert_eq!(titles, ["🟢 latest 7.0.0"]);
 }
 
@@ -83,7 +83,7 @@ async fn missing_npm_dist_tag_requirement_resolves_no_match() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture(
+    crate::test_support::fixture(
         "tests/fixtures/session/resolution/tests/npm/dist_tags",
         name,
     )

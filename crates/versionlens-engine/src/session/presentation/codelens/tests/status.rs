@@ -3,7 +3,7 @@ async fn code_lens_title_uses_satisfies_latest_indicator() {
     let session = standard_session();
     let input = package_document("left-pad-caret-1.0.0.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{"dist-tags":{"latest":"1.1.0"}}"#.to_owned())],
@@ -17,7 +17,7 @@ async fn code_lens_title_uses_latest_indicator_for_current_dependencies() {
     let session = standard_session();
     let input = package_document("typescript-latest.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new("typescript".to_owned(), Npm, r#"{"dist-tags":{"latest":"6.0.3"}}"#.to_owned())],

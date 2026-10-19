@@ -1,7 +1,7 @@
 use super::{DocumentInput, standard_session};
 use crate::RegistryResponseInput;
-use crate::support::tests::{assert_no_edits, assert_suggestion};
-use crate::support::tests::{file_uri, local_test_root};
+use crate::test_support::{assert_no_edits, assert_suggestion};
+use crate::test_support::{file_uri, local_test_root};
 use std::env::temp_dir;
 use std::fs::create_dir_all;
 use std::fs::remove_dir_all;
@@ -15,7 +15,7 @@ mod npm;
 mod registry_sources;
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/fixed", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/fixed", name)
 }
 
 async fn assert_ruby_path_dependency_fixture(fixture: &str, package: &str, root_name: &str) {

@@ -24,7 +24,7 @@ async fn dotnet_local_nuget_source_does_not_resolve_versions_from_package_folder
     )
     .await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "unresolved", None);
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "unresolved", None);
 
     remove_dir_all(root).unwrap();
 }
@@ -51,13 +51,13 @@ async fn dotnet_local_nuget_source_does_not_resolve_flat_nupkg_files() {
     )
     .await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "unresolved", None);
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "unresolved", None);
 
     remove_dir_all(root).unwrap();
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/dotnet", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/dotnet", name)
 }
 
 async fn resolve_local_source(root: &std::path::Path, fixture: &str) -> ResolveDocumentOutput {

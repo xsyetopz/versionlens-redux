@@ -1,5 +1,5 @@
 use super::*;
-use crate::support::tests::{file_uri, local_test_root};
+use crate::test_support::{file_uri, local_test_root};
 use std::fs::create_dir_all;
 use std::fs::remove_dir_all;
 use std::fs::write;
@@ -21,7 +21,7 @@ fn project_version_code_lenses_offer_stable_bumps() {
 
     let output = session.analyze_document(input);
     let titles = lens_titles(&output);
-    let commands = crate::support::tests::code_lens_commands(&output);
+    let commands = crate::test_support::code_lens_commands(&output);
 
     assert_eq!(titles, ["U major 2.0.0", "U minor 1.3.0", "U patch 1.2.4"]);
     assert_eq!(commands, ["updateMajor", "updateMinor", "updatePatch"]);
@@ -34,7 +34,7 @@ fn project_version_code_lenses_offer_prerelease_bumps() {
 
     let output = session.analyze_document(input);
     let titles = lens_titles(&output);
-    let commands = crate::support::tests::code_lens_commands(&output);
+    let commands = crate::test_support::code_lens_commands(&output);
 
     assert_eq!(titles, ["U release 1.2.3", "U prerelease 1.2.3-beta.5"]);
     assert_eq!(commands, ["updateRelease", "updatePrerelease"]);
@@ -124,10 +124,10 @@ async fn build_code_lens_uses_latest_build_when_variant_list_is_missing() {
     let session = standard_session();
     let input = package_document("left-pad-1.0.0-build.1.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
-        &[crate::support::tests::npm_latest_response(
+        &[crate::test_support::npm_latest_response(
             "left-pad",
             "1.0.0+build.2",
         )],

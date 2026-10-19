@@ -87,7 +87,7 @@ fn changed_disk_member_invalidates_persistent_local_suggestion_freshness() {
     let (workspace, consumer) = local_member_workspace("persistent-local-member");
     let cache =
         versionlens_test_support::temporary_directory("versionlens-workspace-cache").unwrap();
-    let first = crate::support::tests::test_session(false)
+    let first = crate::test_support::test_session(false)
         .with_persistent_cache(&cache)
         .unwrap();
     let local_dependency = local_dependency(&first, &consumer);
@@ -116,7 +116,7 @@ fn changed_disk_member_invalidates_persistent_local_suggestion_freshness() {
         "packages/local/package.json",
         r#"{"name":"local-package","version":"2.0.0"}"#,
     );
-    let restarted = crate::support::tests::test_session(false)
+    let restarted = crate::test_support::test_session(false)
         .with_persistent_cache(&cache)
         .unwrap();
     assert!(!restarted.document_is_fresh(&consumer));

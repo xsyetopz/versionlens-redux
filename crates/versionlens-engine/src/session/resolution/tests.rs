@@ -13,11 +13,11 @@ use std::fs::{create_dir_all, remove_dir_all, write};
 use std::process::id;
 
 fn standard_session() -> VersionLensSession {
-    crate::support::tests::test_session(true)
+    crate::test_support::test_session(true)
 }
 
 fn session_without_vulnerabilities() -> VersionLensSession {
-    crate::support::tests::test_session(false)
+    crate::test_support::test_session(false)
 }
 
 mod dotnet;
@@ -44,12 +44,12 @@ fn lens_titles_and_arguments(
 ) -> (Vec<&str>, Vec<Vec<String>>) {
     (
         lens_titles(output),
-        crate::support::tests::code_lens_arguments(output),
+        crate::test_support::code_lens_arguments(output),
     )
 }
 
 fn registry_case(input: &DocumentInput) -> (VersionLensSession, RegistryContext, Vec<Dependency>) {
-    crate::support::tests::registry_case(input)
+    crate::test_support::registry_case(input)
 }
 
 pub(super) fn registry_case_with_expected_urls(

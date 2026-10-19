@@ -100,7 +100,7 @@ impl VersionLensSession {
             };
         }
         let kind = http_error_kind(&error);
-        crate::anyhow_error(error)
+        anyhow::Error::from(error)
             .context(format!("failed to fetch {source} URL {url}: {kind}"))
             .into()
     }

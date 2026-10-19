@@ -168,10 +168,10 @@ impl RegistryContext {
                 .into_iter()
                 .map(|url| RegistryUrlConfig { ecosystem: Go, url })
                 .collect(),
-            composer: crate::default(),
-            npm: crate::default(),
-            dotnet: crate::default(),
-            maven: crate::default(),
+            composer: ComposerContext::default(),
+            npm: NpmContext::default(),
+            dotnet: DotnetContext::default(),
+            maven: MavenContext::default(),
             cargo_registries: vec![],
             python_sources: vec![],
             go: GoContext {
@@ -212,9 +212,9 @@ impl RegistryContext {
                     url,
                 })
                 .collect(),
-            composer: crate::default(),
-            npm: crate::default(),
-            dotnet: crate::default(),
+            composer: ComposerContext::default(),
+            npm: NpmContext::default(),
+            dotnet: DotnetContext::default(),
             maven: MavenContext {
                 plugin_urls: parse_gradle_plugin_registry_urls(input, kind, files),
                 auth_entries: maven_auth_entries(input, files),
@@ -463,13 +463,13 @@ impl RegistryContext {
             manifest_kind: None,
             failure: None,
             urls: python_registry_url_configs(input, files),
-            composer: crate::default(),
-            npm: crate::default(),
-            dotnet: crate::default(),
-            maven: crate::default(),
+            composer: ComposerContext::default(),
+            npm: NpmContext::default(),
+            dotnet: DotnetContext::default(),
+            maven: MavenContext::default(),
             cargo_registries: vec![],
             python_sources: parse_poetry_sources(&input.text),
-            go: crate::default(),
+            go: GoContext::default(),
         }
     }
 
@@ -504,13 +504,13 @@ impl RegistryContext {
             manifest_kind: None,
             failure: None,
             urls: vec![],
-            composer: crate::default(),
+            composer: ComposerContext::default(),
             npm: npm_context(&npmrc_texts, &yarnrc_texts, &bunfig_texts, &env),
-            dotnet: crate::default(),
-            maven: crate::default(),
+            dotnet: DotnetContext::default(),
+            maven: MavenContext::default(),
             cargo_registries: vec![],
             python_sources: vec![],
-            go: crate::default(),
+            go: GoContext::default(),
         }
     }
 }

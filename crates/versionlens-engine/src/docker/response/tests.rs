@@ -4,13 +4,13 @@ use versionlens_model::DocumentInput;
 use versionlens_model::Ecosystem::Docker;
 
 fn assert_node_same_digest(output: &crate::contract::ResolveDocumentOutput) {
-    crate::support::tests::assert_suggestion(output, 0, "current", Some("23.11.0"));
+    crate::test_support::assert_suggestion(output, 0, "current", Some("23.11.0"));
     assert_eq!(output.suggestions[0].builds, node_same_digest_builds());
 }
 
 #[tokio::test]
 async fn docker_registry_response_missing_requested_tag_creates_no_match() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
     let output = session
         .resolve_document_with_responses(
             DocumentInput::new(
@@ -36,7 +36,7 @@ async fn docker_registry_response_missing_requested_tag_creates_no_match() {
 
 #[tokio::test]
 async fn docker_same_digest_aliases_keep_current_status_and_create_build_suggestions() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///Dockerfile".to_owned(), "dockerfile".to_owned(), package_file_fixture("docker-same-digest-aliases-keep-current-status-and-create-build-suggestionsDockerfile"), None),
         &[RegistryResponseInput::new("node".to_owned(), Docker, r#"{"results":[{"name":"latest","tag_status":"active","digest":"sha256-23"},{"name":"current-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"current","tag_status":"active","digest":"sha256-23"},{"name":"bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11.0","tag_status":"active","digest":"sha256-23"},{"name":"23.11-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23.11","tag_status":"active","digest":"sha256-23"},{"name":"23-bookworm","tag_status":"active","digest":"sha256-23"},{"name":"23","tag_status":"active","digest":"sha256-23"}]}"#
@@ -63,7 +63,7 @@ async fn docker_same_digest_aliases_keep_current_status_and_create_build_suggest
 
 #[tokio::test]
 async fn docker_untagged_image_uses_latest_alias_as_current() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
     let output = session
         .resolve_document_with_responses(
             DocumentInput::new(
@@ -83,7 +83,7 @@ async fn docker_untagged_image_uses_latest_alias_as_current() {
 
 #[tokio::test]
 async fn docker_untagged_image_with_non_version_latest_is_no_match() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
     let output = session
         .resolve_document_with_responses(
             DocumentInput::new(
@@ -98,13 +98,13 @@ async fn docker_untagged_image_with_non_version_latest_is_no_match() {
         )
         .await;
 
-    crate::support::tests::assert_suggestion(&output, 0, "noMatch", None);
+    crate::test_support::assert_suggestion(&output, 0, "noMatch", None);
     assert!(output.suggestions[0].builds.is_empty());
 }
 
 #[tokio::test]
 async fn docker_explicit_latest_non_version_alias_keeps_latest_as_current() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
     let output = session
         .resolve_document_with_responses(
             DocumentInput::new(
@@ -119,7 +119,7 @@ async fn docker_explicit_latest_non_version_alias_keeps_latest_as_current() {
         )
         .await;
 
-    crate::support::tests::assert_suggestion(&output, 0, "current", Some("latest"));
+    crate::test_support::assert_suggestion(&output, 0, "current", Some("latest"));
     assert_eq!(
         output.suggestions[0].builds,
         [
@@ -135,7 +135,7 @@ async fn docker_explicit_latest_non_version_alias_keeps_latest_as_current() {
 
 #[tokio::test]
 async fn docker_same_digest_short_alias_keeps_current_status_and_build_suggestions() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
     let output = session.resolve_document_with_responses(
         DocumentInput::new("file:///Dockerfile".to_owned(), "dockerfile".to_owned(), package_file_fixture("docker-same-digest-short-alias-keeps-current-status-and-build-suggestionsDockerfile"), None),
         &[node_same_digest_response()],
@@ -148,7 +148,7 @@ fn node_same_digest_response() -> RegistryResponseInput {
     RegistryResponseInput::new(
         "node".to_owned(),
         Docker,
-        crate::support::tests::fixture("tests/fixtures/shared/docker", "node-same-digest.json"),
+        crate::test_support::fixture("tests/fixtures/shared/docker", "node-same-digest.json"),
     )
 }
 
@@ -158,7 +158,7 @@ fn mssql_latest_response() -> RegistryResponseInput {
 }
 
 fn node_same_digest_builds() -> Vec<String> {
-    serde_json::from_str(&crate::support::tests::fixture(
+    serde_json::from_str(&crate::test_support::fixture(
         "tests/fixtures/shared/docker",
         "node-same-digest-builds.json",
     ))
@@ -166,5 +166,5 @@ fn node_same_digest_builds() -> Vec<String> {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/core-scenarios/docker/response/tests", name)
+    crate::test_support::fixture("tests/fixtures/core-scenarios/docker/response/tests", name)
 }

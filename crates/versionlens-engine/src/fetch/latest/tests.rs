@@ -10,13 +10,13 @@ use versionlens_model::Ecosystem::*;
 
 #[tokio::test]
 async fn invalid_registry_url_creates_contextual_error_suggestion() {
-    let session = crate::support::tests::session_with_provider_settings(
+    let session = crate::test_support::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![RegistryUrlConfig {
                 ecosystem: Npm,
                 url: "not a url".to_owned(),
             }],
-            ..crate::default()
+            ..Default::default()
         },
         false,
     );
@@ -179,5 +179,5 @@ fn empty_range() -> Range {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/core-scenarios/fetch/latest/tests", name)
+    crate::test_support::fixture("tests/fixtures/core-scenarios/fetch/latest/tests", name)
 }

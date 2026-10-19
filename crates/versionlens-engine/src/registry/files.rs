@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::PoisonError;
 use std::sync::{Arc, Mutex};
 
 use versionlens_model::DocumentInput;
@@ -50,7 +51,7 @@ impl RegistryFileSnapshot {
     pub(crate) fn new(documents: Arc<WorkspaceDocuments>) -> Self {
         Self {
             documents,
-            disk: crate::default(),
+            disk: RegistryDiskSnapshot::default(),
         }
     }
 
@@ -113,7 +114,7 @@ impl RegistryFileRead for RegistryFileReader<'_> {
     fn failure(&self) -> Option<RegistryFileFailure> {
         self.failure
             .lock()
-            .unwrap_or_else(crate::recover_poison)
+            .unwrap_or_else(PoisonError::into_inner)
             .clone()
     }
 }
@@ -150,7 +151,7 @@ impl RegistryFileReader<'_> {
     fn fail(&self, failure: RegistryFileFailure) {
         self.failure
             .lock()
-            .unwrap_or_else(crate::recover_poison)
+            .unwrap_or_else(PoisonError::into_inner)
             .get_or_insert(failure);
     }
 
@@ -174,7 +175,7 @@ struct RegistryDiskSnapshot {
 
 impl RegistryDiskSnapshot {
     fn read(&self, path: &Path) -> RegistryDiskEntry {
-        let mut state = self.state.lock().unwrap_or_else(crate::recover_poison);
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(value) = state.files.get(path) {
             return value.clone();
         }

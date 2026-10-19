@@ -1,3 +1,4 @@
+use crate::ProviderSettings;
 use crate::cache::vulnerability_cache_key;
 use crate::{ApplyCommandRequest, RegistryResponseInput, RegistryUrlConfig, VersionLensSession};
 use std::time::Duration;
@@ -15,7 +16,7 @@ fn configured_session(
     registry_url: &str,
     cache_ttl_ms: Option<u64>,
 ) -> VersionLensSession {
-    let mut config = crate::support::tests::session_config(crate::default(), false);
+    let mut config = crate::test_support::session_config(ProviderSettings::default(), false);
     config.providers.registry_urls = vec![RegistryUrlConfig {
         ecosystem: Npm,
         url: registry_url.to_owned(),
@@ -38,7 +39,7 @@ fn configured_session(
 }
 
 fn dotnet_session(directory: &std::path::Path) -> VersionLensSession {
-    let mut config = crate::support::tests::session_config(crate::default(), false);
+    let mut config = crate::test_support::session_config(ProviderSettings::default(), false);
     config.providers.registry_urls = vec![RegistryUrlConfig {
         ecosystem: Dotnet,
         url: "http://127.0.0.1:1".to_owned(),

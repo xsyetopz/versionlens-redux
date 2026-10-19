@@ -39,7 +39,7 @@ async fn missing_local_dependencies_return_directory_not_found_without_registry_
         &[RegistryResponseInput::new("local".to_owned(), Npm, r#"{"dist-tags":{"latest":"9.9.9"}}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "directoryNotFound", Some("../local"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "directoryNotFound", Some("../local"));
 }
 
 #[tokio::test]
@@ -81,7 +81,7 @@ async fn terraform_builtin_provider_resolves_as_fixed_without_registry_updates()
         &[RegistryResponseInput::new("terraform.io/builtin/terraform".to_owned(), Terraform, r#"{"versions":[{"version":"9.9.9"}]}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_fixed_suggestion(&output, "built-in provider");
+    crate::test_support::assert_fixed_suggestion(&output, "built-in provider");
 }
 
 #[tokio::test]
@@ -94,7 +94,7 @@ async fn helm_local_and_repository_alias_dependencies_resolve_as_fixed_without_r
     ).await;
 
     assert_eq!(output.suggestions.len(), 2);
-    crate::support::tests::assert_suggestion(&output, 0, "fixed", Some("local chart"));
+    crate::test_support::assert_suggestion(&output, 0, "fixed", Some("local chart"));
     assert_eq!(output.suggestions[1].status, "fixed");
     assert_eq!(
         output.suggestions[1].latest.as_deref(),
@@ -115,7 +115,7 @@ async fn ansible_git_role_dependencies_resolve_as_fixed_without_registry_updates
     ).await;
 
     assert_eq!(output.suggestions.len(), 1);
-    crate::support::tests::assert_fixed_git_repository(&output);
+    crate::test_support::assert_fixed_git_repository(&output);
 }
 
 #[tokio::test]
@@ -149,7 +149,7 @@ async fn nix_local_inputs_resolve_as_fixed_without_registry_updates() {
     ).await;
 
     assert_eq!(output.suggestions.len(), 1);
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "fixed", Some("local flake"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "fixed", Some("local flake"));
 }
 
 #[tokio::test]
@@ -201,7 +201,7 @@ async fn go_replace_local_dependencies_resolve_as_directories() {
         &[RegistryResponseInput::new("example.test/local".to_owned(), Go, "v9.9.9\n".to_owned())],
     ).await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "directory", Some("../local"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "directory", Some("../local"));
     remove_dir_all(root).unwrap();
 }
 

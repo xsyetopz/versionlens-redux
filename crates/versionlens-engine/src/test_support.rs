@@ -29,7 +29,7 @@ pub(crate) fn fixture(base: &str, name: &str) -> String {
 }
 
 pub(crate) fn test_session(show_vulnerabilities: bool) -> VersionLensSession {
-    session_with_provider_settings(crate::default(), show_vulnerabilities)
+    session_with_provider_settings(ProviderSettings::default(), show_vulnerabilities)
 }
 
 pub(crate) fn session_config(

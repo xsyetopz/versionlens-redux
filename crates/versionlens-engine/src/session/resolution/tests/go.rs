@@ -22,7 +22,7 @@ async fn go_mod_exclude_versions_are_fixed_without_registry_updates() {
         )
         .await;
 
-    crate::support::tests::assert_fixed_suggestion(&output, "excluded version");
+    crate::test_support::assert_fixed_suggestion(&output, "excluded version");
 }
 
 fn assert_go_proxy_configuration(env: &str, fixture: &str, expected_urls: &[&str]) {
@@ -103,5 +103,5 @@ fn go_mod_goproxy_off_in_list_disables_later_proxy_urls() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/go", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/go", name)
 }

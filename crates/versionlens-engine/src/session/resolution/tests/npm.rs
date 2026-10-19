@@ -17,7 +17,7 @@ async fn resolves_update_from_registry_response_body() {
                 package_file_fixture("update-from-registry-response-body.json"),
                 None,
             ),
-            &[crate::support::tests::npm_latest_response(
+            &[crate::test_support::npm_latest_response(
                 "left-pad", "1.1.0",
             )],
         )
@@ -186,7 +186,7 @@ async fn resolves_invalid_empty_ranges_as_invalid_range_with_latest_update() {
                 ),
                 None,
             ),
-            &[crate::support::tests::npm_latest_response(
+            &[crate::test_support::npm_latest_response(
                 "left-pad", "5.0.0",
             )],
         )
@@ -236,7 +236,7 @@ async fn assert_npm_resolution_choices(case: NpmResolutionCase<'_>) {
         case.expected_titles
     );
     assert_eq!(
-        crate::support::tests::code_lens_arguments(&analysis),
+        crate::test_support::code_lens_arguments(&analysis),
         case.expected_arguments
             .iter()
             .map(|(command, version)| vec![(*command).to_owned(), (*version).to_owned()])
@@ -306,6 +306,6 @@ async fn fixed_npm_release_resolves_fixed_with_release_update_choices() {
 include!("npm/workspaces.rs");
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/npm", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/npm", name)
 }
 use super::assert_update;

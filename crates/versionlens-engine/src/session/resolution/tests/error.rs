@@ -40,7 +40,7 @@ async fn npm_error_registry_response_creates_error_suggestion() {
         )
         .await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "error", Some("not found"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "error", Some("not found"));
 }
 
 #[tokio::test]
@@ -63,7 +63,7 @@ async fn hex_error_registry_response_creates_error_suggestion() {
         )
         .await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "error", Some("not found"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "error", Some("not found"));
 }
 
 #[tokio::test]
@@ -130,33 +130,32 @@ async fn registry_responses_try_next_matching_body_when_first_has_no_latest() {
 
 #[tokio::test]
 async fn unauthorized_registry_response_reports_auth_request_urls() {
-    let (output, base_url) =
-        crate::support::tests::with_unauthorized_server(|base_url| async move {
-            let session = crate::support::tests::session_with_provider_settings(
-                ProviderSettings {
-                    registry_urls: vec![RegistryUrlConfig {
-                        ecosystem: Npm,
-                        url: base_url.clone(),
-                    }],
-                    ..crate::default()
-                },
-                false,
-            );
-            (
-                session
-                    .resolve_document(DocumentInput::new(
-                        "file:///package.json".to_owned(),
-                        "json".to_owned(),
-                        package_file_fixture(
-                            "unauthorized-registry-response-reports-auth-request-urls.json",
-                        ),
-                        None,
-                    ))
-                    .await,
-                base_url,
-            )
-        })
-        .await;
+    let (output, base_url) = crate::test_support::with_unauthorized_server(|base_url| async move {
+        let session = crate::test_support::session_with_provider_settings(
+            ProviderSettings {
+                registry_urls: vec![RegistryUrlConfig {
+                    ecosystem: Npm,
+                    url: base_url.clone(),
+                }],
+                ..Default::default()
+            },
+            false,
+        );
+        (
+            session
+                .resolve_document(DocumentInput::new(
+                    "file:///package.json".to_owned(),
+                    "json".to_owned(),
+                    package_file_fixture(
+                        "unauthorized-registry-response-reports-auth-request-urls.json",
+                    ),
+                    None,
+                ))
+                .await,
+            base_url,
+        )
+    })
+    .await;
 
     assert_eq!(output.authorization_required_count, 1);
     assert_eq!(output.authorization_required_requests.len(), 1);
@@ -176,13 +175,13 @@ async fn registry_http_status_error_names_the_status_and_host() {
         .next()
         .unwrap()
         .to_owned();
-    let session = crate::support::tests::session_with_provider_settings(
+    let session = crate::test_support::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![RegistryUrlConfig {
                 ecosystem: Npm,
                 url: base_url.clone(),
             }],
-            ..crate::default()
+            ..Default::default()
         },
         false,
     );
@@ -198,7 +197,7 @@ async fn registry_http_status_error_names_the_status_and_host() {
 
     assert_eq!(server.join().unwrap(), ["/repos/left-pad"]);
     let expected = format!("not found (404 {host})");
-    crate::support::tests::assert_suggestion_without_edits(
+    crate::test_support::assert_suggestion_without_edits(
         &output,
         0,
         "error",
@@ -207,6 +206,6 @@ async fn registry_http_status_error_names_the_status_and_host() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/error", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/error", name)
 }
 use super::assert_update;

@@ -5,6 +5,7 @@ use super::{
     provider_cache_config_from_name, provider_http_config_from_name,
     provider_settings_manifest_kind_from_name, registry_url_config_from_name,
 };
+use crate::ProviderSettings;
 use versionlens_model::Ecosystem::*;
 use versionlens_model::ManifestKind::{
     Cabal, DenoImportMapJson, DenoJson, GitHubActions, JsrJson, MixExs, NpmPackageJson,
@@ -276,7 +277,7 @@ fn direct_session_config_preserves_nonblank_custom_indicators() {
         update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 1,
         enabled_providers: vec![],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: indicators.clone(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,

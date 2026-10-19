@@ -5,7 +5,7 @@ use versionlens_model::Ecosystem::Dub;
 
 #[tokio::test]
 async fn resolves_repo_versions_as_current_when_registry_matches() {
-    let session = crate::support::tests::test_session(true);
+    let session = crate::test_support::test_session(true);
 
     let output = session
         .resolve_document_with_responses(
@@ -33,7 +33,7 @@ async fn resolves_repo_versions_as_current_when_registry_matches() {
 
 #[tokio::test]
 async fn pub_hosted_git_dependencies_are_fixed_without_git_suffix() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let output = session
         .resolve_document(DocumentInput::new(
             "file:///pubspec.yaml".to_owned(),
@@ -53,7 +53,7 @@ async fn pub_hosted_git_dependencies_are_fixed_without_git_suffix() {
 
 #[tokio::test]
 async fn pub_git_tag_pattern_dependencies_are_fixed_without_pub_registry_lookup() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let output = session
         .resolve_document(DocumentInput::new(
             "file:///pubspec.yaml".to_owned(),
@@ -70,9 +70,9 @@ async fn pub_git_tag_pattern_dependencies_are_fixed_without_pub_registry_lookup(
         output.suggestions[0].dependency.requirement,
         "git@github.com:munificent/kittens.git"
     );
-    crate::support::tests::assert_fixed_git_repository(&output);
+    crate::test_support::assert_fixed_git_repository(&output);
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/dependency/tests", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/dependency/tests", name)
 }

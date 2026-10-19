@@ -60,8 +60,8 @@ fn collect_hierarchical_versions(
     };
 
     for entry in entries {
-        let entry = entry.map_err(crate::anyhow_error)?;
-        if entry.file_type().map_err(crate::anyhow_error)?.is_dir()
+        let entry = entry.map_err(anyhow::Error::from)?;
+        if entry.file_type().map_err(anyhow::Error::from)?.is_dir()
             && let Some(version) = entry.file_name().to_str()
         {
             push_unique_version(versions, version);
@@ -81,7 +81,7 @@ fn collect_flat_package_versions(
     let prefix = format!("{}.", name.to_lowercase());
 
     for entry in entries {
-        let entry = entry.map_err(crate::anyhow_error)?;
+        let entry = entry.map_err(anyhow::Error::from)?;
         let file_name = entry.file_name();
         let Some(file_name) = file_name.to_str() else {
             continue;
@@ -101,7 +101,7 @@ fn read_local_entries(path: &Path, description: &str) -> Result<Option<ReadDir>,
     match read_dir(path) {
         Ok(entries) => Ok(Some(entries)),
         Err(error) if error.kind() == IoNotFound => Ok(None),
-        Err(error) => Err(crate::anyhow_error(error)
+        Err(error) => Err(anyhow::Error::from(error)
             .context(format!("failed to read {description} {}", path.display()))
             .into()),
     }

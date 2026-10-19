@@ -1,4 +1,5 @@
 use super::*;
+use std::sync::PoisonError;
 
 #[test]
 fn registry_context_reads_new_npm_yarn_nuget_and_gradle_overlays() {
@@ -241,7 +242,7 @@ fn parsed_registry_context_cache_evicts_old_input_snapshots() {
         .storage_state
         .workspace
         .lock()
-        .unwrap_or_else(crate::recover_poison);
+        .unwrap_or_else(PoisonError::into_inner);
     assert_eq!(state.registry_contexts.len(), MAX_REGISTRY_CONTEXTS);
 }
 
@@ -270,7 +271,7 @@ async fn registry_failure_does_not_replace_an_unrelated_cached_context() {
     workspace.write("healthy/.npmrc", "registry=https://cached.test/");
     let mut input = npm_input(&workspace, "healthy/package.json");
     input.uri = crate::workspace_file_uri(&workspace.root.join("healthy/package.json")).unwrap();
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let successful = session
         .resolve_document_with_responses(
             input.clone(),
@@ -316,7 +317,7 @@ async fn local_dependency_stays_fresh_when_registry_configuration_fails() {
     let (workspace, consumer) = local_member_workspace("local-registry-failure");
     let config = std::fs::File::create(workspace.root.join(".npmrc")).unwrap();
     config.set_len(1024 * 1024 + 1).unwrap();
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let local_dependency = local_dependency(&session, &consumer);
     assert_eq!(local_dependency.name, "local-package");
     assert_eq!(local_dependency.requirement, "^1.0.0");

@@ -16,13 +16,13 @@ const DISABLED_NUGET_SOURCE_POLICY: &str = "  <disabledPackageSources>\n    <add
 const MAPPED_NUGET_SOURCE_POLICY: &str = "  <packageSourceMapping>\n    <packageSource key=\"nuget.org\">\n      <package pattern=\"Newtonsoft.*\" />\n    </packageSource>\n    <packageSource key=\"private\">\n      <package pattern=\"Contoso.*\" />\n    </packageSource>\n  </packageSourceMapping>";
 #[test]
 fn dotnet_sources_are_service_indexes_not_package_urls() {
-    let session = crate::support::tests::session_with_provider_settings(
+    let session = crate::test_support::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![RegistryUrlConfig {
                 ecosystem: Dotnet,
                 url: "https://nuget.example.test/v3/index.json".to_owned(),
             }],
-            ..crate::default()
+            ..Default::default()
         },
         false,
     );
@@ -42,7 +42,7 @@ fn dotnet_documents_use_workspace_nuget_config_sources() {
     let root = temp_dir().join(format!("versionlens-nuget-config-{}", id()));
     write_nuget_config(&root, DISABLED_NUGET_SOURCE_POLICY);
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", root.join("app.csproj").display()), "xml".to_owned(), package_file_fixture("dotnet-documents-use-workspace-nuget-config-sources.txt"), Some(root.to_string_lossy().into_owned()));
     assert_first_registry_urls(&session, &input, &["https://nuget.example.test/v3/index.json"]);
 
@@ -51,7 +51,7 @@ fn dotnet_documents_use_workspace_nuget_config_sources() {
 
 #[test]
 fn paket_dependencies_use_declared_source_urls() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = registry_input("file:///paket.dependencies", "plaintext", "paket-dependencies-use-declared-source-urls.dependencies");
     assert_first_registry_urls(&session, &input, &["https://nuget.example.test/v3/index.json"]);
 }
@@ -72,7 +72,7 @@ fn dotnet_child_nuget_config_clear_removes_workspace_sources() {
     )
     .unwrap();
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", app.join("app.csproj").display()), "xml".to_owned(), package_file_fixture("dotnet-child-nuget-config-clear-removes-workspace-sources.txt"), Some(root.to_string_lossy().into_owned()));
     assert_first_registry_urls(&session, &input, &["https://child.example.test/v3/index.json"]);
 
@@ -95,7 +95,7 @@ fn dotnet_child_nuget_config_remove_does_not_delete_inherited_cli_sources() {
     )
     .unwrap();
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", app.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-child-nuget-config-remove-does-not-delete-inherited-cli-sources.txt",
         ), Some(root.to_string_lossy().into_owned()));
@@ -127,7 +127,7 @@ fn dotnet_nuget_config_reads_intermediate_ancestors_nearest_first() {
     )
     .unwrap();
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", app.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-nuget-config-reads-intermediate-ancestors-nearest-first.txt",
         ), Some(root.to_string_lossy().into_owned()));
@@ -148,7 +148,7 @@ fn dotnet_nuget_config_ignores_local_file_sources_for_suggestions() {
     )
     .unwrap();
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", root.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-nuget-config-ignores-local-file-sources-for-suggestions.txt",
         ), Some(root.to_string_lossy().into_owned()));
@@ -210,7 +210,7 @@ fn dotnet_nuget_config_package_source_mapping_filters_sources() {
     let root = temp_dir().join(format!("versionlens-nuget-config-mapping-{}", id()));
     write_nuget_config(&root, MAPPED_NUGET_SOURCE_POLICY);
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(format!("file://{}", root.join("app.csproj").display()), "xml".to_owned(), package_file_fixture(
             "dotnet-nuget-config-package-source-mapping-filters-sources.txt",
         ), Some(root.to_string_lossy().into_owned()));

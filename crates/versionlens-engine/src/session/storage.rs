@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::PoisonError;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -214,7 +215,7 @@ impl VersionLensSession {
             .storage_state
             .observed_persistent_epoch
             .lock()
-            .unwrap_or_else(crate::recover_poison);
+            .unwrap_or_else(PoisonError::into_inner);
         let epoch = cache.epoch().ok()?;
         if *observed != Some(epoch) {
             self.storage_state

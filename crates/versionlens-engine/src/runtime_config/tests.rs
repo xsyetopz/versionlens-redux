@@ -56,7 +56,7 @@ fn session_with_provider_http(provider_http: Vec<ProviderHttpConfig>) -> crate::
         enabled_providers: vec![],
         providers: ProviderSettings {
             provider_http,
-            ..crate::default()
+            ..Default::default()
         },
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,

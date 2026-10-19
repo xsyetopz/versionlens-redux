@@ -5,7 +5,7 @@ async fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions
     let session = standard_session();
     let input = package_document("left-pad-4.0.0.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new(
@@ -25,7 +25,7 @@ async fn code_lenses_label_latest_dist_tag_prerelease_for_missing_fixed_versions
     )
     .await;
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::code_lens_arguments(&output);
+    let arguments = crate::test_support::code_lens_arguments(&output);
 
     assert_eq!(titles, ["N no match",]);
     assert!(arguments.is_empty());
@@ -49,7 +49,7 @@ async fn npm_invalid_tag_name_error_offers_latest_dist_tag_update() {
     let output = session.analyze_document(input);
     let titles = lens_titles(&output);
     let commands = lens_commands(&output);
-    let arguments = crate::support::tests::code_lens_arguments(&output);
+    let arguments = crate::test_support::code_lens_arguments(&output);
 
     assert_eq!(resolved.suggestions[0].status, "invalid");
     assert_eq!(titles, ["E invalid version", "U latest latest"]);

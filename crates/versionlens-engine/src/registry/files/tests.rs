@@ -1,8 +1,9 @@
 use super::*;
 use crate::workspace::tests::support::TestWorkspace;
+use std::sync::PoisonError;
 
 fn new_snapshot() -> RegistryFileSnapshot {
-    RegistryFileSnapshot::new(std::sync::Arc::new(crate::default()))
+    RegistryFileSnapshot::new(std::sync::Arc::new(BTreeMap::default()))
 }
 
 fn assert_reader_failure_is_scoped(
@@ -51,7 +52,7 @@ fn snapshot_bounds_accumulated_hits_and_misses_without_eviction() {
         .disk
         .state
         .lock()
-        .unwrap_or_else(crate::recover_poison);
+        .unwrap_or_else(PoisonError::into_inner);
     assert_eq!(state.files.len(), MAX_REGISTRY_SNAPSHOT_ENTRIES);
     assert_eq!(
         state.bytes,
@@ -101,7 +102,7 @@ fn snapshot_bounds_accumulated_content_bytes() {
         .disk
         .state
         .lock()
-        .unwrap_or_else(crate::recover_poison);
+        .unwrap_or_else(PoisonError::into_inner);
     assert_eq!(state.files.len(), accepted);
     assert!(state.bytes <= MAX_REGISTRY_SNAPSHOT_BYTES);
     assert_eq!(

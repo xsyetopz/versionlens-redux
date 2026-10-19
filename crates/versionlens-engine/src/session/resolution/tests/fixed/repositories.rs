@@ -9,7 +9,7 @@ async fn composer_inline_alias_dependencies_are_fixed_without_registry_updates()
         &[RegistryResponseInput::new("acme/pkg".to_owned(), Composer, r#"{"packages":{"acme/pkg":[{"version":"1.1.0"}]}}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_fixed_suggestion(&output, "dev-bugfix as 1.0.x-dev");
+    crate::test_support::assert_fixed_suggestion(&output, "dev-bugfix as 1.0.x-dev");
 }
 
 #[tokio::test]
@@ -24,7 +24,7 @@ async fn composer_inline_package_repository_resolves_without_registry_response()
     ).await;
 
     assert_eq!(output.suggestions.len(), 1);
-    crate::support::tests::assert_suggestion(&output, 0, "updateAvailable", Some("3.1.7"));
+    crate::test_support::assert_suggestion(&output, 0, "updateAvailable", Some("3.1.7"));
     assert_eq!(output.edits.len(), 1);
     assert_eq!(output.edits[0].new_text, "3.1.7");
 }
@@ -76,7 +76,7 @@ async fn explicit_docker_registries_return_no_match_from_mcr_shaped_responses() 
         &[RegistryResponseInput::new("team/app".to_owned(), Docker, r#"{"results":[{"name":"2.0.0","images":[{"digest":"sha256:abc"}]}]}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "noMatch", None);
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "noMatch", None);
 }
 
 #[tokio::test]
@@ -129,5 +129,5 @@ async fn unity_local_and_git_dependencies_resolve_as_fixed_without_registry_upda
         ), None)).await;
 
     assert_eq!(output.suggestions.len(), 2);
-    crate::support::tests::assert_all_fixed_without_edits(&output);
+    crate::test_support::assert_all_fixed_without_edits(&output);
 }

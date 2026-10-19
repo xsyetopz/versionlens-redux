@@ -1,3 +1,4 @@
+use crate::ProviderSettings;
 use crate::RegistryResponseInput;
 use versionlens_model::DocumentInput;
 
@@ -99,7 +100,7 @@ fn session_with_indicators(
         update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: indicators,
         show_vulnerabilities,
         show_suggestion_stats: false,
@@ -141,7 +142,7 @@ async fn analyze_npm_fixture_with_response(
     response: &str,
 ) -> AnalyzeDocumentOutput {
     let input = package_document(fixture);
-    crate::support::tests::analyze_with_responses(
+    crate::test_support::analyze_with_responses(
         session,
         &input,
         &[crate::RegistryResponseInput::new(
@@ -170,5 +171,5 @@ fn lens_commands(output: &AnalyzeDocumentOutput) -> Vec<&str> {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/presentation/codelens", name)
+    crate::test_support::fixture("tests/fixtures/session/presentation/codelens", name)
 }

@@ -1,3 +1,4 @@
+use crate::ProviderSettings;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
@@ -199,7 +200,7 @@ async fn disabled_provider_is_excluded_from_discovery_and_analysis() {
     let workspace = crate::workspace::tests::support::TestWorkspace::new("disabled-coverage");
     workspace.write("package.json", r#"{"dependencies":{"foo":"1.0.0"}}"#);
     workspace.write("Cargo.toml", "[dependencies]\nfoo = \"1.0.0\"\n");
-    let mut config = crate::support::tests::session_config(crate::default(), false);
+    let mut config = crate::test_support::session_config(ProviderSettings::default(), false);
     config.enabled_providers = vec![EnabledProviderConfig {
         ecosystem: Ecosystem::Cargo,
         manifest_kind: None,

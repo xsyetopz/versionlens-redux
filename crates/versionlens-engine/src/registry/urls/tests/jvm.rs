@@ -1,6 +1,6 @@
 #[test]
 fn sbt_resolvers_are_used_before_maven_central() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = registry_input("file:///build.sbt", "scala", "sbt-resolvers-are-used-before-maven-central.sbt");
     let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 
@@ -16,7 +16,7 @@ fn sbt_resolvers_are_used_before_maven_central() {
 
 #[test]
 fn clojure_deps_edn_uses_maven_central_then_clojars() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = registry_input("file:///deps.edn", "clojure", "clojure-deps-edn-uses-maven-central-then-clojars.edn");
     let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 
@@ -32,7 +32,7 @@ fn clojure_deps_edn_uses_maven_central_then_clojars() {
 
 #[test]
 fn leiningen_project_clj_uses_maven_central_then_clojars() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = registry_input("file:///project.clj", "clojure", "leiningen-project-clj-uses-maven-central-then-clojars.clj");
     let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 

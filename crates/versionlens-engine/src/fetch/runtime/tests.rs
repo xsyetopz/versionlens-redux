@@ -5,7 +5,7 @@ use versionlens_model::{Position, Range};
 
 #[tokio::test]
 async fn update_choices_are_suppressed_only_for_equal_exact_runtime_pins() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let responses = [RegistryResponseInput::new(
         "bun",
         Ecosystem::Npm,

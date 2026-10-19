@@ -9,7 +9,7 @@ include!("update/platforms.rs");
 include!("update/security.rs");
 include!("update/selection.rs");
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/commands/update", name)
+    crate::test_support::fixture("tests/fixtures/session/commands/update", name)
 }
 
 fn assert_single_edit(output: &ResolveDocumentOutput, expected: &str) {

@@ -1,3 +1,4 @@
+use crate::ProviderSettings;
 use std::cmp::Reverse;
 use std::collections::BTreeSet;
 
@@ -5,7 +6,7 @@ use versionlens_model::{Position, TextEdit};
 
 use super::super::VersionLensSession;
 use super::{CategoryCase, ManifestCase};
-use crate::support::tests::session_config;
+use crate::test_support::session_config;
 
 pub(super) fn response_body(case: &ManifestCase) -> String {
     match case.dependency.ecosystem.as_str() {
@@ -132,7 +133,7 @@ fn position_offset(text: &str, position: Position) -> usize {
 }
 
 pub(super) fn test_session() -> VersionLensSession {
-    VersionLensSession::new(session_config(crate::default(), false))
+    VersionLensSession::new(session_config(ProviderSettings::default(), false))
 }
 
 /// Each manifest table row carries its parser, so the rows are the dispatch set.

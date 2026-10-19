@@ -1,3 +1,4 @@
+use crate::ProviderSettings;
 use crate::{DependencyPropertyConfig, RegistryResponseInput, SessionConfig, VersionLensSession};
 use serde_json::to_value;
 
@@ -67,7 +68,7 @@ fn reports_sort_capability_only_for_supported_documents() {
     let maven = session.analyze_document(input(
         "file:///pom.xml",
         "xml",
-        crate::support::tests::fixture(
+        crate::test_support::fixture(
             "tests/fixtures/session/commands/sort",
             "dependencies-unsorted.xml",
         )
@@ -340,7 +341,7 @@ async fn analyze_document_reports_cached_errors_and_no_matches_in_status() {
     let session = standard_session(true);
     let input = package_json_input(package_file_fixture("missing-and-errored.json").as_str());
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[
@@ -430,7 +431,7 @@ fn analyze_document_does_not_offer_install_task_for_pnpm_yaml() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/documents", name)
+    crate::test_support::fixture("tests/fixtures/session/documents", name)
 }
 
 fn standard_session(show_suggestion_stats: bool) -> VersionLensSession {
@@ -442,7 +443,7 @@ fn standard_config(show_suggestion_stats: bool) -> SessionConfig {
         update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats,

@@ -131,7 +131,7 @@ impl VersionLensSession {
                 return Ok(None);
             };
             let entries = serde_json::from_str::<Vec<serde_json::Value>>(&body)
-                .map_err(|error| FetchError::from(crate::anyhow_error(error)))?;
+                .map_err(|error| FetchError::from(anyhow::Error::from(error)))?;
             let has_next = entries.len() == 30;
             tags.extend(entries);
             if !has_next {
@@ -265,7 +265,7 @@ fn local_maven_metadata_body(dependency: &Dependency, url: &str) -> RegistryBody
     match read_to_string(url) {
         Ok(body) => Ok(Some(Arc::from(body))),
         Err(error) if error.kind() == IoNotFound => Ok(None),
-        Err(error) => Err(crate::anyhow_error(error)
+        Err(error) => Err(anyhow::Error::from(error)
             .context(format!("failed to read Maven metadata file {url}"))
             .into()),
     }

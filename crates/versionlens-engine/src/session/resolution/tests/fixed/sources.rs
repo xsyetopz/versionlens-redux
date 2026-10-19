@@ -16,7 +16,7 @@ async fn git_dependencies_are_fixed() {
         &[RegistryResponseInput::new("remote".to_owned(), Cargo, r#"{"crate":{"max_version":"9.9.9"}}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_fixed_git_repository(&output);
+    crate::test_support::assert_fixed_git_repository(&output);
 }
 
 #[test]

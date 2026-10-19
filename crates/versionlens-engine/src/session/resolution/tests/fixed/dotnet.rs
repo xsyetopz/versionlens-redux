@@ -27,7 +27,7 @@ async fn dotnet_nuget_versions_return_registry_suggestions() {
         "Microsoft.Extensions.Logging"
     );
     assert_eq!(output.suggestions[0].dependency.requirement, "5.0.0");
-    crate::support::tests::assert_suggestion(&output, 0, "fixed", Some("5.0.0"));
+    crate::test_support::assert_suggestion(&output, 0, "fixed", Some("5.0.0"));
 }
 
 #[tokio::test]
@@ -89,5 +89,5 @@ async fn dotnet_invalid_versions_return_no_match_from_registry() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/fixed/dotnet", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/fixed/dotnet", name)
 }

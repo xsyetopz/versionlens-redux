@@ -375,7 +375,7 @@ fn assert_registry_urls(
     expected: &[&[&str]],
 ) {
     for (dependency, urls) in dependencies.iter().zip(expected) {
-        crate::support::tests::assert_registry_urls(session, context, dependency, urls);
+        crate::test_support::assert_registry_urls(session, context, dependency, urls);
     }
 }
 

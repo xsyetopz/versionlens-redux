@@ -9,7 +9,7 @@ fn disabled_providers_are_filtered_in_rust() {
             ecosystem: Cargo,
             manifest_kind: None,
         }],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,

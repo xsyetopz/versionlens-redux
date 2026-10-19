@@ -33,6 +33,6 @@ async fn resolves_mix_hex_alias_dependencies_against_target_package() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/hex", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/hex", name)
 }
 use super::assert_update;

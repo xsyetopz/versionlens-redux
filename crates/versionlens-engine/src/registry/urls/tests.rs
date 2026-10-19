@@ -1,3 +1,4 @@
+use crate::registry::RegistryContext;
 use std::env::temp_dir;
 use std::fs::create_dir_all;
 use std::fs::remove_dir_all;
@@ -20,7 +21,7 @@ include!("tests/jvm.rs");
 include!("tests/configured.rs");
 include!("tests/dotnet.rs");
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/core-scenarios/registry/urls/tests", name)
+    crate::test_support::fixture("tests/fixtures/core-scenarios/registry/urls/tests", name)
 }
 
 fn registry_input(uri: &str, language: &str, fixture: &str) -> DocumentInput {
@@ -39,7 +40,7 @@ fn registry_context_and_dependencies(
     crate::registry::RegistryContext,
     Vec<versionlens_model::Dependency>,
 ) {
-    crate::support::tests::registry_context_and_dependencies(session, input)
+    crate::test_support::registry_context_and_dependencies(session, input)
 }
 
 fn assert_first_registry_urls(
@@ -48,7 +49,7 @@ fn assert_first_registry_urls(
     expected: &[&str],
 ) {
     let (context, dependencies) = registry_context_and_dependencies(session, input);
-    crate::support::tests::assert_registry_urls(session, &context, &dependencies[0], expected);
+    crate::test_support::assert_registry_urls(session, &context, &dependencies[0], expected);
 }
 
 fn assert_registry_urls_for_fixture(
@@ -58,7 +59,7 @@ fn assert_registry_urls_for_fixture(
     dependency_name: &str,
     expected_urls: &[&str],
 ) {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(
         uri.to_owned(),
         language.to_owned(),
@@ -68,12 +69,7 @@ fn assert_registry_urls_for_fixture(
     let (context, dependencies) = registry_context_and_dependencies(&session, &input);
 
     assert_eq!(dependencies[0].name, dependency_name);
-    crate::support::tests::assert_registry_urls(
-        &session,
-        &context,
-        &dependencies[0],
-        expected_urls,
-    );
+    crate::test_support::assert_registry_urls(&session, &context, &dependencies[0], expected_urls);
 }
 
 struct WorkspaceRegistryCase<'a> {
@@ -94,7 +90,7 @@ fn assert_workspace_registry_urls(case: WorkspaceRegistryCase<'_>) {
     }
     write(root.join("settings.gradle"), case.settings).unwrap();
 
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = DocumentInput::new(
         format!("file://{}", document.display()),
         case.language.to_owned(),
@@ -117,7 +113,7 @@ fn assert_workspace_registry_urls(case: WorkspaceRegistryCase<'_>) {
 
 impl crate::VersionLensSession {
     pub(crate) fn registry_urls(&self, dependency: &versionlens_model::Dependency) -> Vec<String> {
-        self.registry_urls_with_context(dependency, &crate::default())
+        self.registry_urls_with_context(dependency, &RegistryContext::default())
     }
 
     pub(crate) fn registry_urls_with_context(

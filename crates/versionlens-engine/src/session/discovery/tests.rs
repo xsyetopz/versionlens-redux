@@ -46,7 +46,7 @@ impl Drop for TestWorkspace {
 }
 
 fn session() -> VersionLensSession {
-    crate::support::tests::test_session(false)
+    crate::test_support::test_session(false)
 }
 
 fn options(workspace: &TestWorkspace) -> WorkspaceDiscoveryOptions {
@@ -117,7 +117,7 @@ fn disabled_provider_is_rejected_before_the_file_size_or_read_gate() {
     let workspace = TestWorkspace::new("disabled");
     workspace.write("Cargo.toml", vec![b'x'; 512]);
     workspace.write("package.json", "{}");
-    let mut config = crate::support::tests::session_config(crate::default(), false);
+    let mut config = crate::test_support::session_config(ProviderSettings::default(), false);
     config.enabled_providers = vec![EnabledProviderConfig {
         ecosystem: Ecosystem::Npm,
         manifest_kind: Some(ManifestKind::NpmPackageJson),
@@ -264,13 +264,13 @@ fn dirty_and_new_overlays_replace_disk_and_preserve_versions() {
 fn configured_patterns_use_escaped_workspace_file_uris() {
     let workspace = TestWorkspace::new("escaped uri");
     let path = workspace.write("ci files/dépendances #1.custom", "{}");
-    let config = crate::support::tests::session_config(
+    let config = crate::test_support::session_config(
         ProviderSettings {
             file_patterns: vec![FilePatternConfig {
                 manifest_kind: ManifestKind::NpmPackageJson,
                 pattern: "ci files/dépendances #?.custom".to_owned(),
             }],
-            ..crate::default()
+            ..Default::default()
         },
         false,
     );

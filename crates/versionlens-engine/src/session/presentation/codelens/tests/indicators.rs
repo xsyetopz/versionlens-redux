@@ -1,3 +1,4 @@
+
 #[tokio::test]
 async fn code_lens_title_uses_configured_indicators() {
     let session = standard_session();
@@ -20,7 +21,7 @@ async fn direct_blank_indicators_use_standard_glyphs_for_status_and_update_lense
         update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: SuggestionIndicators {
             latest: "".to_owned(),
             satisfies_latest: " \t\n\u{2003} ".to_owned(),
@@ -67,7 +68,7 @@ async fn code_lenses_offer_release_update_choices_for_fixed_versions() {
     let session = standard_session();
     let input = package_document("left-pad-1.0.0.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[npm_versions_response(
@@ -77,7 +78,7 @@ async fn code_lenses_offer_release_update_choices_for_fixed_versions() {
     ).await;
 
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::code_lens_arguments(&output);
+    let arguments = crate::test_support::code_lens_arguments(&output);
 
     assert_eq!(
         titles,
@@ -103,7 +104,7 @@ async fn code_lenses_carry_their_order_and_the_dependency_range() {
     let session = session_with_indicators(test_indicators(), false);
     let input = package_document("left-pad-1.0.0.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[npm_versions_response(
@@ -136,7 +137,7 @@ async fn multiline_package_json_code_lenses_stay_on_dependency_lines() {
     let session = session_with_indicators(test_indicators(), false);
     let input = package_document("dev-dependencies.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[

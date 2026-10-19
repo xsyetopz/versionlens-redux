@@ -7,7 +7,7 @@ async fn pub_path_dependencies_resolve_as_directories() {
         &[RegistryResponseInput::new("http_parser".to_owned(), Pub, r#"{"latest":{"version":"9.9.9"}}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "directory", Some("../../"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "directory", Some("../../"));
 }
 
 #[tokio::test]
@@ -21,7 +21,7 @@ async fn pub_sdk_dependencies_resolve_as_fixed_without_registry_lookup() {
         &[RegistryResponseInput::new("flutter".to_owned(), Pub, r#"{"latest":{"version":"9.9.9"}}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "fixed", Some("sdk:flutter"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "fixed", Some("sdk:flutter"));
 }
 
 #[tokio::test]
@@ -78,7 +78,7 @@ async fn dub_json_path_dependencies_resolve_as_directories() {
         &[RegistryResponseInput::new("localdep".to_owned(), Dub, r#"{"versions":[{"version":"9.9.9"}]}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "directory", Some("./localdep"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "directory", Some("./localdep"));
     remove_dir_all(root).unwrap();
 }
 
@@ -105,15 +105,15 @@ async fn gleam_path_dependencies_resolve_as_directories() {
 #[tokio::test]
 async fn gleam_git_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
-    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/gleam.toml", language_id: "toml", fixture_name: "gleam-git-dependencies-are-fixed-without-registry-updates.toml", package: "my_library", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
+    let output = crate::test_support::resolve_fixture_with_response(crate::test_support::FixtureResolutionCase { session: &session, uri: "file:///repo/gleam.toml", language_id: "toml", fixture_name: "gleam-git-dependencies-are-fixed-without-registry-updates.toml", package: "my_library", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
 
-    crate::support::tests::assert_fixed_git_repository(&output);
+    crate::test_support::assert_fixed_git_repository(&output);
 }
 
 #[tokio::test]
 async fn mix_umbrella_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
-    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/mix.exs", language_id: "elixir", fixture_name: "mix-umbrella-dependencies-are-fixed-without-registry-updates.exs", package: "shared_app", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
+    let output = crate::test_support::resolve_fixture_with_response(crate::test_support::FixtureResolutionCase { session: &session, uri: "file:///repo/mix.exs", language_id: "elixir", fixture_name: "mix-umbrella-dependencies-are-fixed-without-registry-updates.exs", package: "shared_app", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
 
     assert_fixed_without_edits(&output, "umbrella dependency");
 }
@@ -121,15 +121,15 @@ async fn mix_umbrella_dependencies_are_fixed_without_registry_updates() {
 #[tokio::test]
 async fn rebar_git_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
-    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/rebar.config", language_id: "erlang", fixture_name: "rebar-git-dependencies-are-fixed-without-registry-updates.config", package: "gettext", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
+    let output = crate::test_support::resolve_fixture_with_response(crate::test_support::FixtureResolutionCase { session: &session, uri: "file:///repo/rebar.config", language_id: "erlang", fixture_name: "rebar-git-dependencies-are-fixed-without-registry-updates.config", package: "gettext", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
 
-    crate::support::tests::assert_fixed_git_repository(&output);
+    crate::test_support::assert_fixed_git_repository(&output);
 }
 
 #[tokio::test]
 async fn rebar_mercurial_dependencies_are_fixed_without_registry_updates() {
     let session = standard_session();
-    let output = crate::support::tests::resolve_fixture_with_response(crate::support::tests::FixtureResolutionCase { session: &session, uri: "file:///repo/rebar.config", language_id: "erlang", fixture_name: "rebar-mercurial-dependencies-are-fixed-without-registry-updates.config", package: "legacy", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
+    let output = crate::test_support::resolve_fixture_with_response(crate::test_support::FixtureResolutionCase { session: &session, uri: "file:///repo/rebar.config", language_id: "erlang", fixture_name: "rebar-mercurial-dependencies-are-fixed-without-registry-updates.config", package: "legacy", ecosystem: Hex, response: r#"{"releases":[{"version":"9.9.9"}]}"# }).await;
 
     assert_fixed_without_edits(&output, "hg repository");
 }
@@ -217,7 +217,7 @@ async fn npm_workspace_and_catalog_dependencies_are_surfaced_without_registry_lo
     ).await;
 
     assert_eq!(output.suggestions.len(), 2);
-    crate::support::tests::assert_all_fixed_without_edits(&output);
+    crate::test_support::assert_all_fixed_without_edits(&output);
 }
 
 #[tokio::test]

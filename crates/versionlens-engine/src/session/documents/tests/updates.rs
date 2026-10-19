@@ -15,7 +15,7 @@ async fn analyze(
     let session = crate::version_lens_session(config);
     let input = package_json_input(manifest);
     let responses = [RegistryResponseInput::new(package, Npm, body)];
-    crate::support::tests::analyze_with_responses(&session, &input, &responses).await
+    crate::test_support::analyze_with_responses(&session, &input, &responses).await
 }
 
 fn update_diagnostics(output: &AnalyzeDocumentOutput) -> Vec<&crate::DiagnosticView> {
@@ -88,7 +88,7 @@ async fn a_vulnerable_outdated_dependency_gets_both_diagnostics() {
 
     let output = session.analyze_document_with_responses(
         input,
-        &[crate::support::tests::npm_vulnerability_range_response(
+        &[crate::test_support::npm_vulnerability_range_response(
             "left-pad",
             "OSV-1",
             "prototype issue",

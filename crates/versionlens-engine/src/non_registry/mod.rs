@@ -1,3 +1,4 @@
+use std::path::Path;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, CocoaPods, Composer, Cran, Deno, Docker, Dotnet, Go, Haxelib, Helm,
@@ -25,7 +26,7 @@ pub(crate) fn known_non_registry_suggestion(
     document_uri: Option<&str>,
 ) -> Result<Suggestion, Box<Dependency>> {
     if dependency.is_runtime_version() {
-        return Err(crate::boxed(dependency));
+        return Err(Box::new(dependency));
     }
     if is_npm_name_only_metadata(&dependency) {
         let label = if dependency.group == "trustedDependencies" {
@@ -215,7 +216,7 @@ pub(crate) fn known_non_registry_suggestion(
         &dependency.name,
         &dependency.requirement,
     ) {
-        return Err(crate::boxed(dependency));
+        return Err(Box::new(dependency));
     }
     if is_npm_bare_local_path(&dependency) {
         return Ok(error(dependency, "invalid version".to_owned()));
@@ -245,7 +246,7 @@ pub(crate) fn known_non_registry_suggestion(
         return Ok(fixed(dependency, requirement));
     }
 
-    Err(crate::boxed(dependency))
+    Err(Box::new(dependency))
 }
 
 pub(crate) fn deno_import_has_no_suggestions(dependency: &Dependency) -> bool {
@@ -258,7 +259,7 @@ pub(crate) fn deno_import_has_no_suggestions(dependency: &Dependency) -> bool {
 
 fn local_directory_suggestion(dependency: Dependency, path: LocalDependencyPath) -> Suggestion {
     let LocalDependencyPath { display, resolved } = path;
-    if crate::path(&resolved).exists() {
+    if Path::new(&resolved).exists() {
         return directory(dependency, display, resolved);
     }
     directory_not_found(dependency, display)

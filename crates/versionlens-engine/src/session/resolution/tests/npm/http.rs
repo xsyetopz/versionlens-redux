@@ -311,7 +311,7 @@ fn http_config(input: &DocumentInput, url: &str) -> versionlens_fetch::HttpConfi
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/npm/http", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/npm/http", name)
 }
 
 fn http_fixture_input(root: &std::path::Path, fixture: &str) -> DocumentInput {

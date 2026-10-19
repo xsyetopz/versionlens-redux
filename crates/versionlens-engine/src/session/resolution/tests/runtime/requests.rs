@@ -23,10 +23,10 @@ async fn runtime_release_requests_use_configured_source_providers() {
         ),
     ] {
         let (url, server) = super::super::github::github_api_server(vec![(200, body)]);
-        let session = crate::support::tests::session_with_provider_settings(
+        let session = crate::test_support::session_with_provider_settings(
             ProviderSettings {
                 registry_urls: vec![RegistryUrlConfig { ecosystem, url }],
-                ..crate::default()
+                ..Default::default()
             },
             false,
         );

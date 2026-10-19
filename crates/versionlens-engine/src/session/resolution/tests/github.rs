@@ -9,7 +9,7 @@ use support::{assert_no_action_update, resolve_github_fixture};
 pub(super) fn github_api_server<T: AsRef<str> + Send + 'static>(
     responses: Vec<(u16, T)>,
 ) -> (String, JoinHandle<Vec<String>>) {
-    let listener = crate::support::tests::tcp_listener_bind("127.0.0.1:0").unwrap();
+    let listener = crate::test_support::tcp_listener_bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let base_url = format!("http://{}/repos/", listener.local_addr().unwrap());
     let server = spawn(move || {
@@ -603,7 +603,7 @@ async fn routes_ruby_github_ref_dependencies_to_commits() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/github", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/github", name)
 }
 
 fn assert_commit_ref_update(output: &crate::contract::ResolveDocumentOutput) {
@@ -615,13 +615,13 @@ use super::assert_update;
 mod checking;
 
 fn github_session(base_url: String) -> VersionLensSession {
-    crate::support::tests::session_with_provider_settings(
+    crate::test_support::session_with_provider_settings(
         ProviderSettings {
             registry_urls: vec![RegistryUrlConfig {
                 ecosystem: GitHub,
                 url: base_url,
             }],
-            ..crate::default()
+            ..Default::default()
         },
         false,
     )

@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::thread::current;
 use std::thread::sleep;
 use std::thread::spawn;
+use std::time::Duration;
 
 #[tokio::test]
 async fn registry_context_resolution_reuses_cached_response_body_by_url() {
@@ -30,7 +31,7 @@ async fn registry_context_resolution_reuses_cached_response_body_by_url() {
     let first = session
         .resolve_document_with_responses(
             input.clone(),
-            &[crate::support::tests::npm_latest_response(
+            &[crate::test_support::npm_latest_response(
                 "left-pad", "1.1.0",
             )],
         )
@@ -48,23 +49,23 @@ async fn concurrent_registry_resolution_deduplicates_inflight_request_body_fetch
     use std::io::{Read, Write};
     use std::sync::atomic::Ordering::SeqCst;
 
-    let listener = crate::support::tests::tcp_listener_bind("127.0.0.1:0").unwrap();
+    let listener = crate::test_support::tcp_listener_bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let registry_url = format!("http://{}/", listener.local_addr().unwrap());
     let request_count = Arc::new(<AtomicUsize>::default());
     let stop = Arc::new(<AtomicBool>::default());
-    let server_request_count = crate::support::tests::clone_arc(&request_count);
-    let server_stop = crate::support::tests::clone_arc(&stop);
+    let server_request_count = crate::test_support::clone_arc(&request_count);
+    let server_stop = crate::test_support::clone_arc(&stop);
     let server = spawn(move || {
         while !server_stop.load(SeqCst) {
             let Ok((mut stream, _)) = listener.accept() else {
-                sleep(crate::duration_from_millis(5));
+                sleep(Duration::from_millis(5));
                 continue;
             };
             server_request_count.fetch_add(1, SeqCst);
             let mut buffer = [0_u8; 1024];
             let _ = stream.read(&mut buffer);
-            sleep(crate::duration_from_millis(75));
+            sleep(Duration::from_millis(75));
             let body = r#"{"dist-tags":{"latest":"1.1.0"}}"#;
             let response = format!(
                 "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
@@ -94,7 +95,7 @@ async fn concurrent_registry_resolution_deduplicates_inflight_request_body_fetch
     );
     let barrier = Arc::new(tokio::sync::Barrier::new(3));
     let first_session = session.clone();
-    let first_barrier = crate::support::tests::clone_arc(&barrier);
+    let first_barrier = crate::test_support::clone_arc(&barrier);
     let first_input = input.clone();
     let first = tokio::spawn(async move {
         first_barrier.wait().await;
@@ -103,7 +104,7 @@ async fn concurrent_registry_resolution_deduplicates_inflight_request_body_fetch
             .await
     });
     let second_session = session.clone();
-    let second_barrier = crate::support::tests::clone_arc(&barrier);
+    let second_barrier = crate::test_support::clone_arc(&barrier);
     let second = tokio::spawn(async move {
         second_barrier.wait().await;
         second_session
@@ -123,7 +124,7 @@ async fn concurrent_registry_resolution_deduplicates_inflight_request_body_fetch
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture(
+    crate::test_support::fixture(
         "tests/fixtures/session/resolution/tests/npm_request_cache",
         name,
     )
@@ -137,18 +138,18 @@ async fn background_resolution_runs_twelve_registry_requests_and_preserves_order
     use std::time::Duration;
 
     const UNIQUE_REQUESTS: usize = 12;
-    let listener = crate::support::tests::tcp_listener_bind("127.0.0.1:0").unwrap();
+    let listener = crate::test_support::tcp_listener_bind("127.0.0.1:0").unwrap();
     let registry_url = format!("http://{}/", listener.local_addr().unwrap());
     let in_flight = Arc::new((Mutex::new(0_usize), Condvar::new()));
     let request_count = Arc::new(AtomicUsize::new(0));
-    let server_in_flight = crate::support::tests::clone_arc(&in_flight);
-    let server_request_count = crate::support::tests::clone_arc(&request_count);
+    let server_in_flight = crate::test_support::clone_arc(&in_flight);
+    let server_request_count = crate::test_support::clone_arc(&request_count);
     let server = spawn(move || {
         let mut workers = Vec::new();
         for _ in 0..UNIQUE_REQUESTS {
             let (mut stream, _) = listener.accept().unwrap();
-            let worker_in_flight = crate::support::tests::clone_arc(&server_in_flight);
-            let worker_request_count = crate::support::tests::clone_arc(&server_request_count);
+            let worker_in_flight = crate::test_support::clone_arc(&server_in_flight);
+            let worker_request_count = crate::test_support::clone_arc(&server_request_count);
             workers.push(spawn(move || {
                 let mut buffer = [0_u8; 1024];
                 assert!(stream.read(&mut buffer).unwrap() > 0);
@@ -186,7 +187,7 @@ async fn background_resolution_runs_twelve_registry_requests_and_preserves_order
         .chain(std::iter::once(r#""alias":"npm:pkg0@1.0.0""#.to_owned()))
         .collect::<Vec<_>>()
         .join(",");
-    let mut config = crate::support::tests::session_config(crate::default(), false);
+    let mut config = crate::test_support::session_config(ProviderSettings::default(), false);
     config.providers.registry_urls = vec![RegistryUrlConfig {
         ecosystem: Npm,
         url: registry_url,

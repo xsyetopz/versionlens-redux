@@ -9,7 +9,7 @@ fn hosted_dependencies_use_hosted_registry_url() {
                 ecosystem: Pub,
                 url: "https://pub.dev/api/packages".to_owned(),
             }],
-            ..crate::default()
+            ..Default::default()
         },
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
@@ -37,7 +37,7 @@ fn hosted_dependencies_use_hosted_registry_url() {
 
 #[test]
 fn docker_compose_explicit_registry_uses_oci_registry_url() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let input = registry_input("file:///compose.yaml", "yaml", "docker-compose-explicit-registry-uses-oci-registry-url.yaml");
     let dependencies = session.dependencies(&input);
     let output = session.analyze_document(input);
@@ -55,7 +55,7 @@ fn docker_compose_explicit_registry_uses_oci_registry_url() {
 
 #[test]
 fn github_actions_use_repository_identity_with_default_github_api_base() {
-    let session = github_actions_session(crate::default());
+    let session = github_actions_session(ProviderSettings::default());
     let input = github_actions_input();
     let dependencies = session.dependencies(&input);
 
@@ -77,7 +77,7 @@ fn github_actions_use_repository_identity_with_custom_github_api_base() {
             ecosystem: GitHub,
             url: "https://github.example.test/api/repos/".to_owned(),
         }],
-        ..crate::default()
+        ..Default::default()
     });
     let input = github_actions_input();
     let dependencies = session.dependencies(&input);

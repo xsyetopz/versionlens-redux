@@ -1,3 +1,4 @@
+use crate::ProviderSettings;
 use crate::RegistryResponseInput;
 use crate::SessionConfig;
 use versionlens_model::DocumentInput;
@@ -33,7 +34,7 @@ fn batched_fixture_responses() -> Vec<RegistryResponseInput> {
 
 #[tokio::test]
 async fn batched_resolution_preserves_dependency_order() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let responses = batched_fixture_responses();
     let names = responses
         .iter()
@@ -60,7 +61,7 @@ async fn expired_operation_returns_errors_without_resolving_dependencies() {
         update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: false,
         show_suggestion_stats: false,
@@ -89,5 +90,5 @@ async fn expired_operation_returns_errors_without_resolving_dependencies() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/parallel/tests", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/parallel/tests", name)
 }

@@ -151,7 +151,7 @@ async fn apply_command_does_not_update_sbt_url_artifact_dependency() {
     }).await;
 
     assert_eq!(output.suggestions.len(), 1);
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "fixed", Some("package URL"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "fixed", Some("package URL"));
 }
 
 #[tokio::test]

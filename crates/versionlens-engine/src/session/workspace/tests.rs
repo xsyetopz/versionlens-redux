@@ -1,4 +1,6 @@
 use super::*;
+use crate::ProviderSettings;
+use std::sync::PoisonError;
 use versionlens_model::{Dependency, Ecosystem, ManifestKind};
 
 use crate::workspace::tests::support::{TestWorkspace, dependency};
@@ -12,8 +14,8 @@ const LOCAL_CONSUMER_TEXT: &str = r#"{
 }"#;
 
 fn session() -> VersionLensSession {
-    VersionLensSession::new(crate::support::tests::session_config(
-        crate::default(),
+    VersionLensSession::new(crate::test_support::session_config(
+        ProviderSettings::default(),
         false,
     ))
 }
@@ -23,7 +25,7 @@ fn cached_graphs(session: &VersionLensSession) -> usize {
         .storage_state
         .workspace
         .lock()
-        .unwrap_or_else(crate::recover_poison)
+        .unwrap_or_else(PoisonError::into_inner)
         .graphs
         .len()
 }

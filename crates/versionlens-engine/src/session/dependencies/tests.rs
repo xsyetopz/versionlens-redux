@@ -15,7 +15,7 @@ include!("tests/patterns.rs");
 
 #[test]
 fn changed_snapshot_reconstructs_requirements_and_unicode_ranges() {
-    let session = crate::support::tests::test_session(false);
+    let session = crate::test_support::test_session(false);
     let initial = DocumentInput::new(
         "file:///package.json",
         "json",
@@ -63,7 +63,7 @@ fn session_with_enabled_provider(provider: EnabledProviderConfig) -> VersionLens
         update_severity: Some(crate::Severity::Information),
         cache_ttl_ms: 300_000,
         enabled_providers: vec![provider],
-        providers: crate::default(),
+        providers: ProviderSettings::default(),
         suggestion_indicators: crate::standard_suggestion_indicators(),
         show_vulnerabilities: true,
         show_suggestion_stats: false,
@@ -73,15 +73,15 @@ fn session_with_enabled_provider(provider: EnabledProviderConfig) -> VersionLens
 }
 
 fn session_with_file_pattern(file_pattern: FilePatternConfig) -> VersionLensSession {
-    crate::version_lens_session(crate::support::tests::session_config(
+    crate::version_lens_session(crate::test_support::session_config(
         ProviderSettings {
             file_patterns: vec![file_pattern],
-            ..crate::default()
+            ..Default::default()
         },
         true,
     ))
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/dependencies", name)
+    crate::test_support::fixture("tests/fixtures/session/dependencies", name)
 }

@@ -7,7 +7,7 @@ async fn composer_platform_dependencies_are_fixed() {
         &[RegistryResponseInput::new("phpunit/phpunit".to_owned(), Composer, r#"{"packages":{"phpunit/phpunit":[{"version":"10.5.0"}]}}"#.to_owned())],
     ).await;
 
-    crate::support::tests::assert_suggestion(&output, 0, "fixed", Some("^8.3"));
+    crate::test_support::assert_suggestion(&output, 0, "fixed", Some("^8.3"));
     assert_eq!(output.suggestions[1].status, "fixed");
     assert_eq!(output.suggestions[1].latest.as_deref(), Some("*"));
     assert_eq!(output.suggestions[2].latest.as_deref(), Some("10.5.0"));
@@ -59,7 +59,7 @@ async fn fixed_composer_release_resolves_fixed_with_release_update_choices() {
 
     let (titles, arguments) = analyze_composer(&session, input);
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "fixed", Some("1.1.1"));
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "fixed", Some("1.1.1"));
     assert_eq!(
         titles,
         [
@@ -90,7 +90,7 @@ async fn missing_fixed_composer_registry_version_resolves_no_match_with_update_c
 
     let (titles, arguments) = analyze_composer(&session, input);
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "noMatch", None);
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "noMatch", None);
     assert_eq!(
         titles,
         [

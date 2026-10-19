@@ -5,7 +5,7 @@ async fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
     let session = standard_session();
     let input = package_document("left-pad-tilde-1.1.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new(
@@ -42,7 +42,7 @@ async fn code_lenses_offer_minor_update_choices_for_tilde_ranges() {
         output.code_lenses
     );
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::all_code_lens_arguments(&output);
+    let arguments = crate::test_support::all_code_lens_arguments(&output);
 
     assert_eq!(
         titles,

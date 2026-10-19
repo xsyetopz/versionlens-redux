@@ -24,7 +24,7 @@ async fn docker_output(fixture: &str) -> crate::AnalyzeDocumentOutput {
         package_file_fixture(fixture),
         None,
     );
-    crate::support::tests::analyze_with_responses(
+    crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new(
@@ -69,13 +69,13 @@ async fn docker_code_lenses_offer_same_suffix_update_choices() {
         None,
     );
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new("node".to_owned(), Docker, r#"{"results":[{"name":"20.19.1-bookworm","tag_status":"active","digest":"sha256-20-bookworm"},{"name":"21.0.0-alpine","tag_status":"active","digest":"sha256-21-alpine"},{"name":"23.11.0-bookworm","tag_status":"active","digest":"sha256-23-bookworm"}]}"#
                 .to_owned())],
     ).await;
-    let arguments = crate::support::tests::update_code_lens_arguments(&output);
+    let arguments = crate::test_support::update_code_lens_arguments(&output);
 
     assert_eq!(arguments, [vec!["update", "23.11.0-bookworm"]]);
 }
@@ -83,7 +83,7 @@ async fn docker_code_lenses_offer_same_suffix_update_choices() {
 #[tokio::test]
 async fn docker_code_lenses_map_latest_update_choice_to_matching_tag_shape() {
     let output = docker_output("Dockerfile-node-22-bookworm").await;
-    let arguments = crate::support::tests::update_code_lens_arguments(&output);
+    let arguments = crate::test_support::update_code_lens_arguments(&output);
     assert_eq!(arguments, [vec!["update", "23-bookworm"]]);
     assert_eq!(
         output
@@ -100,7 +100,7 @@ async fn docker_code_lenses_map_latest_update_choice_to_matching_tag_shape() {
 async fn docker_code_lenses_offer_update_choices_for_missing_numeric_tag() {
     let output = docker_output("Dockerfile-node-21").await;
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::code_lens_arguments(&output);
+    let arguments = crate::test_support::code_lens_arguments(&output);
 
     assert_eq!(titles, ["N no match", "U latest 23", "U major 22"]);
     assert_eq!(arguments, [vec!["update", "23"], vec!["updateMajor", "22"]]);
@@ -116,14 +116,14 @@ async fn docker_code_lenses_offer_latest_for_untagged_non_version_latest() {
         None,
     );
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new("mssql/server".to_owned(), Docker, r#"{"results":[{"name":"2022-RTM-CU2-ubuntu-20.04","tag_status":"active","digest":"sha256-a"},{"name":"2022-RTM-GDR1-ubuntu-20.04","tag_status":"active","digest":"sha256-b"},{"name":"2022-RTM-ubuntu-20.04","tag_status":"active","digest":"sha256-c"},{"name":"2022-latest","tag_status":"active","digest":"sha256-latest"},{"name":"2022-preview-ubuntu-22.04","tag_status":"active","digest":"sha256-d"},{"name":"latest","tag_status":"active","digest":"sha256-latest"},{"name":"latest-ubuntu","tag_status":"active","digest":"sha256-e"}]}"#
                 .to_owned())],
     ).await;
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::code_lens_arguments(&output);
+    let arguments = crate::test_support::code_lens_arguments(&output);
 
     assert_eq!(titles, ["N no match", "U latest latest"]);
     assert_eq!(arguments, [vec!["update", "latest"]]);

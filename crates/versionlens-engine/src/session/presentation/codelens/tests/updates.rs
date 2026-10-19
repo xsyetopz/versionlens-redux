@@ -9,7 +9,7 @@ async fn code_lenses_offer_bump_update_choices_for_ranges() {
         ],
     ).await;
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::all_code_lens_arguments(&output);
+    let arguments = crate::test_support::all_code_lens_arguments(&output);
 
     assert_eq!(
         titles,
@@ -37,7 +37,7 @@ async fn code_lenses_keep_latest_update_choice_for_invalid_ranges() {
         &["1.0.0", "2.0.0", "5.0.0"],
     ).await;
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::all_code_lens_arguments(&output);
+    let arguments = crate::test_support::all_code_lens_arguments(&output);
 
     assert_eq!(titles, ["E invalid version range", "U latest 5.0.0"]);
     assert_eq!(arguments, [Vec::<&str>::new(), vec!["update", "5.0.0"]]);
@@ -55,7 +55,7 @@ async fn code_lenses_omit_latest_update_choice_for_ranges_satisfying_latest() {
         ["S satisfies latest 3.0.0",]
     );
     assert_eq!(
-        crate::support::tests::all_code_lens_arguments(&output),
+        crate::test_support::all_code_lens_arguments(&output),
         [Vec::<&str>::new()]
     );
 }
@@ -68,7 +68,7 @@ async fn code_lenses_keep_satisfies_status_for_ranges_with_in_range_updates() {
         &["1.0.0", "2.0.0", "2.1.0", "3.0.0"],
     ).await;
     let titles = lens_titles(&output);
-    let arguments = crate::support::tests::all_code_lens_arguments(&output);
+    let arguments = crate::test_support::all_code_lens_arguments(&output);
 
     assert_eq!(
         titles,
@@ -119,7 +119,7 @@ async fn github_current_release_omits_noop_latest_and_older_choices() {
         ["L latest v7.0.1",]
     );
     assert_eq!(
-        crate::support::tests::all_code_lens_arguments(&output),
+        crate::test_support::all_code_lens_arguments(&output),
         [Vec::<&str>::new()]
     );
 }
@@ -129,7 +129,7 @@ async fn code_lenses_offer_prerelease_update_choices_by_tag() {
     let session = standard_session();
     let input = package_document("left-pad-prerelease-range.json");
 
-    let output = crate::support::tests::analyze_with_responses(
+    let output = crate::test_support::analyze_with_responses(
         &session,
         &input,
         &[RegistryResponseInput::new("left-pad".to_owned(), Npm, r#"{

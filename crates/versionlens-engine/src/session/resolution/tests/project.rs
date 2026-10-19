@@ -86,7 +86,7 @@ fn analyzes_project_version_code_lens_without_registry_response() {
         .iter()
         .map(|lens| lens.title.as_str())
         .collect::<Vec<_>>();
-    let commands = crate::support::tests::code_lens_commands(&output);
+    let commands = crate::test_support::code_lens_commands(&output);
 
     assert_eq!(titles.len(), 3);
     assert!(titles.iter().any(|title| title.contains("major 2.0.0")));
@@ -167,5 +167,5 @@ fn composer_auth_json_supplies_request_scoped_auth_headers() {
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/project", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/project", name)
 }

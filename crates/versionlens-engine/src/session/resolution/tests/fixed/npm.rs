@@ -50,7 +50,7 @@ async fn npm_github_url_without_ref_is_fixed_git_dependency() {
         )
         .await;
 
-    crate::support::tests::assert_fixed_git_repository(&output);
+    crate::test_support::assert_fixed_git_repository(&output);
 }
 
 #[tokio::test]
@@ -105,7 +105,7 @@ async fn npm_portal_dependencies_resolve_as_local_paths_without_registry_updates
         )
         .await;
 
-    crate::support::tests::assert_suggestion_without_edits(
+    crate::test_support::assert_suggestion_without_edits(
         &output,
         0,
         "directoryNotFound",
@@ -133,7 +133,7 @@ async fn npm_exec_dependencies_are_not_registry_updates() {
         )
         .await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "notSupported", None);
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "notSupported", None);
 }
 
 #[tokio::test]
@@ -156,9 +156,9 @@ async fn npm_patch_dependencies_are_not_registry_updates() {
         )
         .await;
 
-    crate::support::tests::assert_suggestion_without_edits(&output, 0, "notSupported", None);
+    crate::test_support::assert_suggestion_without_edits(&output, 0, "notSupported", None);
 }
 
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/resolution/tests/fixed/npm", name)
+    crate::test_support::fixture("tests/fixtures/session/resolution/tests/fixed/npm", name)
 }

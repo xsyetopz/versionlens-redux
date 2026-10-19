@@ -1,7 +1,7 @@
 use super::{FIXTURE_ROOT, runtime_responses};
 use crate::ApplyCommandRequest;
 use crate::session::checking_matrix::{WorkspaceDiscoveryOptions, apply_edits, test_session};
-use crate::support::tests::fixture;
+use crate::test_support::fixture;
 use crate::workspace::tests::support::TestWorkspace;
 
 #[tokio::test]

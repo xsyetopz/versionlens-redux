@@ -20,7 +20,8 @@ mod session;
 mod snapshot;
 mod status;
 mod suggestion;
-mod support;
+#[cfg(test)]
+mod test_support;
 mod view;
 mod vulnerability;
 mod workspace;
@@ -45,10 +46,6 @@ pub(crate) use config::{
     DependencyPropertyConfig, ProviderCacheConfig, RegistryUrlConfig, SuggestionIndicators,
 };
 pub(crate) use session::WorkspaceDiscovery;
-pub(crate) use support::{
-    anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, path, recover_poison,
-    string_from_utf8,
-};
 pub(crate) use versionlens_model::parse_semver;
 pub(crate) use versionlens_update::{Suggestion, SuggestionStatus};
 

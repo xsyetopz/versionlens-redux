@@ -40,7 +40,7 @@ fn assert_sort_output(output: &ResolveDocumentOutput, expected: &[&str]) {
 include!("sort/manifests.rs");
 include!("sort/ecosystems.rs");
 fn package_file_fixture(name: &str) -> String {
-    crate::support::tests::fixture("tests/fixtures/session/commands/sort", name)
+    crate::test_support::fixture("tests/fixtures/session/commands/sort", name)
 }
 
 include!("sort/exclusions.rs");

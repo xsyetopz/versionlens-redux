@@ -4,8 +4,8 @@ use std::time::Duration;
 use std::time::Instant;
 
 const DOTNET_SOURCE_ARGS: &[&str] = &["nuget", "list", "source", "--format", "short"];
-const DOTNET_SOURCE_TIMEOUT: Duration = crate::duration_from_millis(750);
-const DOTNET_SOURCE_POLL_INTERVAL: Duration = crate::duration_from_millis(25);
+const DOTNET_SOURCE_TIMEOUT: Duration = Duration::from_millis(750);
+const DOTNET_SOURCE_POLL_INTERVAL: Duration = Duration::from_millis(25);
 
 pub(super) fn dotnet_source_listing() -> Option<String> {
     let started = Instant::now();
@@ -36,7 +36,7 @@ fn source_listing_from_output(output: Output) -> Option<String> {
         return None;
     }
 
-    crate::string_from_utf8(output.stdout)
+    String::from_utf8(output.stdout)
         .ok()
         .filter(|listing| !listing.trim().is_empty())
 }
