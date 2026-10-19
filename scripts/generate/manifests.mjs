@@ -84,7 +84,15 @@ export function readManifestTable() {
     ? [binary, ["--print-manifest-table"]]
     : [
         "cargo",
-        ["run", "-q", "-p", "versionlens-lsp", "--", "--print-manifest-table"],
+        [
+          "run",
+          "--locked",
+          "-q",
+          "-p",
+          "versionlens-lsp",
+          "--",
+          "--print-manifest-table",
+        ],
       ];
   const result = spawnSync(command, args, {
     cwd: ROOT,
@@ -403,7 +411,7 @@ export function generateConfigKeys(text, manifests) {
 }
 
 const TEST_PATTERN_ROW =
-  /\[\s*"(\w+)\.files",\s*"([^"]*)",\s*(\[[^\]]*\])\s*\]/gu;
+  /\[\s*"(\w+)\.files",\s*"([^"]*)",\s*(\[[^\]]*\]),?\s*\]/gu;
 
 /** The test fixture rows of the default `files` patterns and languages. */
 export function generateTestPatterns(text, manifests) {
@@ -438,6 +446,14 @@ export function generateSupportMatrix(text, manifests) {
   const languages = perProvider(manifests, "languages");
   const globs = perProvider(manifests, "files");
   const matrix = JSON.parse(text);
+  const listed = new Set(matrix.entries.map((entry) => entry.provider));
+  for (const [provider, files] of globs) {
+    if (files.length > 0 && !listed.has(provider)) {
+      throw new Error(
+        `${SUPPORT_MATRIX}: no entry for ${provider}; add it by hand, then rerun`,
+      );
+    }
+  }
   for (const entry of matrix.entries) {
     for (const manifest of entry.manifests) {
       const provider = entry.provider;
@@ -458,18 +474,12 @@ export function generateSupportMatrix(text, manifests) {
 
 /** Formats generated text as the repository formatter would. */
 function formatWithBiome(path, text) {
-  const bin = join(
-    ROOT,
-    "node_modules",
-    ".bin",
-    process.platform === "win32" ? "biome.cmd" : "biome",
+  const biome = join(ROOT, "node_modules", "@biomejs", "biome", "bin", "biome");
+  const result = spawnSync(
+    process.execPath,
+    [biome, "format", `--stdin-file-path=${path}`],
+    { cwd: ROOT, encoding: "utf8", input: text },
   );
-  const result = spawnSync(bin, ["format", `--stdin-file-path=${path}`], {
-    cwd: ROOT,
-    encoding: "utf8",
-    input: text,
-    shell: process.platform === "win32",
-  });
   if (result.status !== 0) {
     throw new Error(
       `biome could not format ${path}: ${result.error?.message ?? result.stderr}`,
@@ -648,7 +658,13 @@ export function findDrift({ path, current, next, entriesOf }) {
 
 if (import.meta.main) {
   const check = process.argv.includes("--check");
-  const results = generateAll(readManifestTable());
+  let results;
+  try {
+    results = generateAll(readManifestTable());
+  } catch (error) {
+    console.error(`manifests: ${error.message}`);
+    process.exit(1);
+  }
   if (check) {
     const drift = results.flatMap(findDrift);
     if (drift.length > 0) {
