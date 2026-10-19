@@ -75,7 +75,10 @@ use super::patterns::{
     is_github_actions_uri, is_julia_versioned_manifest_uri, is_package_json_content,
     is_requirements_txt_uri, is_unity_project_manifest_uri,
 };
-use super::{ManifestFormat, ManifestKind, ManifestParser, ManifestRow, Pattern, Rule, Stage};
+use super::{
+    ManifestFormat, ManifestKind, ManifestParser, ManifestRow, Pattern, Rule, SettingsDefault,
+    Stage,
+};
 
 const NPM_PATHS: &[&str] = &[
     "packageManager",
@@ -141,6 +144,11 @@ const fn row(
         parser,
         dependency_paths: &[],
         own_version: &[],
+        globs: &[],
+        file_globs: &[],
+        editor_names: &[],
+        settings: SettingsDefault::Hidden,
+        languages: &[],
     }
 }
 
@@ -153,7 +161,37 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name(".nvmrc"))],
         ParserDirect(parse_nvmrc),
-    ),
+    )
+    .languages(&["plaintext"])
+    .settings(&[
+        "version",
+        "packageManager",
+        "devEngines.packageManager",
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionalDependencies",
+        "bundledDependencies",
+        "bundleDependencies",
+        "trustedDependencies",
+        "resolutions",
+        "overrides",
+        "overrides.*",
+        "jspm.dependencies",
+        "jspm.devDependencies",
+        "jspm.peerDependencies",
+        "jspm.optionalDependencies",
+        "pnpm.overrides",
+        "pnpm.overrides.*",
+        "pnpm.packageExtensions.*.dependencies",
+        "pnpm.packageExtensions.*.devDependencies",
+        "pnpm.packageExtensions.*.peerDependencies",
+        "pnpm.packageExtensions.*.optionalDependencies",
+        "catalog",
+        "catalogs.*",
+        "workspaces.catalog",
+        "workspaces.catalogs.*",
+    ]),
     row(
         NodeVersion,
         Ecosystem::Npm,
@@ -161,7 +199,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name(".node-version"))],
         ParserDirect(parse_node_version),
-    ),
+    )
+    .languages(&["plaintext"]),
     row(
         BunVersion,
         Ecosystem::Npm,
@@ -169,7 +208,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name(".bun-version"))],
         ParserDirect(parse_bun_version),
-    ),
+    )
+    .languages(&["plaintext"]),
     row(
         RustToolchain,
         Ecosystem::Cargo,
@@ -177,7 +217,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("rust-toolchain"))],
         ParserDirect(parse_rust_toolchain),
-    ),
+    )
+    .languages(&["plaintext"]),
     row(
         RustToolchainToml,
         Ecosystem::Cargo,
@@ -213,7 +254,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "patch.*",
         "patch.*.*",
     ])
-    .own_version(OWN_VERSION_PATHS),
+    .own_version(OWN_VERSION_PATHS)
+    .settings_from_paths(),
     row(
         CargoConfigToml,
         Ecosystem::Cargo,
@@ -222,7 +264,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Uri(is_cargo_config_uri))],
         ParserWithPaths(parse_cargo_toml_with_paths),
     )
-    .dependency_paths(&["patch.*", "patch.*.*"]),
+    .dependency_paths(&["patch.*", "patch.*.*"])
+    .globs(&[".cargo/config.toml", ".cargo/config"])
+    .settings_from_paths(),
     row(
         ComposerJson,
         Ecosystem::Composer,
@@ -238,7 +282,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "conflict",
         "replace",
         "provide",
-    ]),
+    ])
+    .settings_from_paths(),
     row(
         DenoJson,
         Ecosystem::Deno,
@@ -247,7 +292,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Name("deno.json")), at(Early, Name("deno.jsonc"))],
         ParserWithPaths(parse_deno_json_with_paths),
     )
-    .dependency_paths(&["version", "imports", "scopes"]),
+    .dependency_paths(&["version", "imports", "scopes"])
+    .settings_from_paths(),
     row(
         DenoImportMapJson,
         Ecosystem::Deno,
@@ -256,7 +302,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Name("import_map.json"))],
         ParserWithPaths(parse_deno_json_with_paths),
     )
-    .dependency_paths(&["version", "imports", "scopes"]),
+    .dependency_paths(&["version", "imports", "scopes"])
+    .settings_from_paths(),
     row(
         JsrJson,
         Ecosystem::Deno,
@@ -265,7 +312,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Name("jsr.json")), at(Early, Name("jsr.jsonc"))],
         ParserWithPaths(parse_jsr_json_with_paths),
     )
-    .dependency_paths(&["version"]),
+    .dependency_paths(&["version"])
+    .settings_from_paths(),
     row(
         DotnetXml,
         Ecosystem::Dotnet,
@@ -288,6 +336,19 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "packages.package",
         "paket.dependencies",
         "paket.references",
+    ])
+    .globs(&["*.csproj", "*.fsproj", "*.vbproj", "*.targets", "*.props"])
+    .settings(&[
+        "Project.Sdk",
+        "Project.PropertyGroup.Version",
+        "Project.PropertyGroup.AssemblyVersion",
+        "Project.ItemGroup.GlobalPackageReference",
+        "Project.ItemGroup.PackageReference",
+        "Project.ItemGroup.PackageVersion",
+        "Project.ItemGroup.DotNetCliToolReference",
+        "packages.package",
+        "paket.dependencies",
+        "paket.references",
     ]),
     row(
         PaketDependencies,
@@ -296,7 +357,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("paket.dependencies"))],
         ParserDirect(parse_paket_dependencies),
-    ),
+    )
+    .languages(&["plaintext"]),
     row(
         PaketReferences,
         Ecosystem::Dotnet,
@@ -304,7 +366,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("paket.references"))],
         ParserDirect(parse_paket_references),
-    ),
+    )
+    .languages(&["plaintext"]),
     row(
         DotnetProjectJson,
         Ecosystem::Dotnet,
@@ -334,7 +397,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Toml,
         &[at(Early, Name("libs.versions.toml"))],
         ParserDirect(parse_gradle_version_catalog_toml),
-    ),
+    )
+    .file_globs(&["gradle/libs.versions.toml"]),
     row(
         GradleBuild,
         Ecosystem::Maven,
@@ -345,7 +409,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("build.gradle.kts")),
         ],
         ParserDirect(parse_gradle_build),
-    ),
+    )
+    .languages(&["groovy", "kotlin"]),
     row(
         GradleSettings,
         Ecosystem::Maven,
@@ -356,7 +421,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("settings.gradle.kts")),
         ],
         ParserDirect(parse_gradle_settings),
-    ),
+    )
+    .languages(&["groovy", "kotlin"]),
     row(
         SbtBuild,
         Ecosystem::Maven,
@@ -364,7 +430,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("build.sbt"))],
         ParserDirect(parse_sbt_build),
-    ),
+    )
+    .languages(&["scala"]),
     row(
         ClojureDepsEdn,
         Ecosystem::Maven,
@@ -372,7 +439,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("deps.edn"))],
         ParserDirect(parse_clojure_deps_edn),
-    ),
+    )
+    .languages(&["clojure"]),
     row(
         LeiningenProjectClj,
         Ecosystem::Maven,
@@ -380,7 +448,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("project.clj"))],
         ParserDirect(parse_leiningen_project_clj),
-    ),
+    )
+    .languages(&["clojure"]),
     row(
         MavenPomXml,
         Ecosystem::Maven,
@@ -400,7 +469,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "project.profiles.profile.dependencyManagement.dependencies.dependency",
         "project.profiles.profile.build.plugins.plugin",
         "project.profiles.profile.build.pluginManagement.plugins.plugin",
-    ]),
+    ])
+    .settings_from_paths(),
     row(
         MixExs,
         Ecosystem::Hex,
@@ -408,7 +478,17 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("mix.exs"))],
         ParserDirect(parse_mix_exs),
-    ),
+    )
+    .languages(&["elixir"])
+    .settings(&[
+        "version",
+        "deps",
+        "plugins",
+        "project_plugins",
+        "dependencies",
+        "dev-dependencies",
+        "dev_dependencies",
+    ]),
     row(
         RebarConfig,
         Ecosystem::Hex,
@@ -416,7 +496,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("rebar.config"))],
         ParserDirect(parse_rebar_config),
-    ),
+    )
+    .languages(&["erlang"]),
     row(
         GleamToml,
         Ecosystem::Hex,
@@ -432,7 +513,15 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("opam")), at(Early, Extension("opam"))],
         ParserDirect(parse_opam),
-    ),
+    )
+    .settings(&[
+        "version",
+        "depends",
+        "depopts",
+        "conflicts",
+        "package.version",
+        "package.depends",
+    ]),
     row(
         DuneProject,
         Ecosystem::Opam,
@@ -448,7 +537,17 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("cabal.project"))],
         ParserDirect(parse_cabal_project),
-    ),
+    )
+    .languages(&["properties"])
+    .settings(&[
+        "version",
+        "build-depends",
+        "setup-depends",
+        "build-tool-depends",
+        "constraints",
+        "resolver",
+        "extra-deps",
+    ]),
     row(
         Cabal,
         Ecosystem::Hackage,
@@ -456,7 +555,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Extension("cabal"))],
         ParserDirect(parse_cabal),
-    ),
+    )
+    .languages(&["properties"]),
     row(
         StackYaml,
         Ecosystem::Hackage,
@@ -472,7 +572,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Toml,
         &[at(Early, Name("Project.toml"))],
         ParserDirect(parse_julia_project),
-    ),
+    )
+    .settings(&["version", "deps", "compat", "sources"]),
     row(
         JuliaManifestToml,
         Ecosystem::Julia,
@@ -483,7 +584,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Uri(is_julia_versioned_manifest_uri)),
         ],
         ParserDirect(parse_julia_manifest),
-    ),
+    )
+    .globs(&["Manifest-v*.toml"]),
     row(
         RDescription,
         Ecosystem::Cran,
@@ -491,7 +593,16 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("DESCRIPTION"))],
         ParserDirect(parse_r_description),
-    ),
+    )
+    .settings(&[
+        "Version",
+        "Depends",
+        "Imports",
+        "Suggests",
+        "Enhances",
+        "LinkingTo",
+        "Packages",
+    ]),
     row(
         RenvLock,
         Ecosystem::Cran,
@@ -507,7 +618,14 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("conanfile.txt"))],
         ParserDirect(parse_conanfile_txt),
-    ),
+    )
+    .settings(&[
+        "requires",
+        "tool_requires",
+        "build_requires",
+        "test_requires",
+        "python_requires",
+    ]),
     row(
         ConanfilePy,
         Ecosystem::Conan,
@@ -515,7 +633,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("conanfile.py"))],
         ParserDirect(parse_conanfile_py),
-    ),
+    )
+    .languages(&["python"]),
     row(
         VcpkgJson,
         Ecosystem::Vcpkg,
@@ -524,7 +643,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Name("vcpkg.json"))],
         ParserWithPaths(parse_vcpkg_json_with_paths),
     )
-    .dependency_paths(&["dependencies", "features.*.dependencies", "overrides"]),
+    .dependency_paths(&["dependencies", "features.*.dependencies", "overrides"])
+    .settings_from_paths(),
     row(
         Cmake,
         Ecosystem::Cpp,
@@ -535,7 +655,16 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Extension("cmake")),
         ],
         ParserDirect(parse_cmake),
-    ),
+    )
+    .languages(&["cmake"])
+    .settings(&[
+        "add_requires",
+        "FetchContent_Declare",
+        "ExternalProject_Add",
+        "CPMAddPackage",
+        "meson.wrap",
+        "http_archive",
+    ]),
     row(
         XmakeLua,
         Ecosystem::Cpp,
@@ -543,7 +672,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("xmake.lua"))],
         ParserDirect(parse_xmake_lua),
-    ),
+    )
+    .languages(&["lua"]),
     row(
         MesonWrap,
         Ecosystem::Cpp,
@@ -551,7 +681,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Extension("wrap"))],
         ParserDirect(parse_meson_wrap),
-    ),
+    )
+    .languages(&["meson", "ini"])
+    .file_globs(&["subprojects/*.wrap"]),
     row(
         BazelWorkspace,
         Ecosystem::Cpp,
@@ -562,7 +694,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("WORKSPACE.bazel")),
         ],
         ParserDirect(parse_bazel_workspace),
-    ),
+    )
+    .languages(&["starlark"]),
     row(
         SwiftPackage,
         Ecosystem::Swift,
@@ -570,7 +703,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("Package.swift"))],
         ParserDirect(parse_swift_package),
-    ),
+    )
+    .languages(&["swift"])
+    .settings(&["dependencies"]),
     row(
         Cartfile,
         Ecosystem::Swift,
@@ -581,7 +716,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("Cartfile.private")),
         ],
         ParserDirect(parse_cartfile),
-    ),
+    )
+    .languages(&["plaintext"]),
     row(
         ZigBuildZon,
         Ecosystem::Zig,
@@ -589,7 +725,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("build.zig.zon"))],
         ParserDirect(parse_zig_build_zon),
-    ),
+    )
+    .languages(&["zig"])
+    .settings(&["dependencies"]),
     row(
         Nimble,
         Ecosystem::Nim,
@@ -597,7 +735,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Extension("nimble"))],
         ParserDirect(parse_nimble),
-    ),
+    )
+    .languages(&["nim"])
+    .settings(&["requires", "dev.requires", "feature.*.requires"]),
     row(
         LuaRockspec,
         Ecosystem::LuaRocks,
@@ -605,7 +745,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Extension("rockspec"))],
         ParserDirect(parse_luarocks_rockspec),
-    ),
+    )
+    .languages(&["lua"])
+    .settings(&["dependencies", "build_dependencies", "test_dependencies"]),
     row(
         Cpanfile,
         Ecosystem::Cpan,
@@ -613,7 +755,22 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("cpanfile"))],
         ParserDirect(parse_cpanfile),
-    ),
+    )
+    .languages(&["perl"])
+    .settings(&[
+        "requires",
+        "recommends",
+        "suggests",
+        "conflicts",
+        "configure.requires",
+        "build.requires",
+        "test.requires",
+        "develop.requires",
+        "feature.*.requires",
+        "feature.*.recommends",
+        "feature.*.suggests",
+        "feature.*.conflicts",
+    ]),
     row(
         HaxelibJson,
         Ecosystem::Haxelib,
@@ -622,7 +779,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Name("haxelib.json"))],
         ParserWithPaths(parse_haxelib_json_with_paths),
     )
-    .dependency_paths(&["dependencies"]),
+    .dependency_paths(&["dependencies"])
+    .settings_from_paths(),
     row(
         TerraformTf,
         Ecosystem::Terraform,
@@ -630,7 +788,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Extension("tf")), at(Early, Extension("tofu"))],
         ParserDirect(parse_terraform_hcl),
-    ),
+    )
+    .languages(&["terraform", "hcl"])
+    .settings(&["required_providers"]),
     row(
         HelmChartYaml,
         Ecosystem::Helm,
@@ -638,7 +798,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Yaml,
         &[at(Early, Name("Chart.yaml"))],
         ParserWithPaths(parse_helm_chart_yaml_with_paths),
-    ),
+    )
+    .settings(&["dependencies"]),
     row(
         AnsibleGalaxyRequirementsYaml,
         Ecosystem::AnsibleGalaxy,
@@ -649,7 +810,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("requirements.yaml")),
         ],
         ParserWithPaths(parse_ansible_galaxy_requirements_yaml_with_paths),
-    ),
+    )
+    .settings(&["roles", "collections"]),
     row(
         BazelModule,
         Ecosystem::Bazel,
@@ -657,7 +819,13 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("MODULE.bazel"))],
         ParserWithPaths(parse_bazel_module_with_paths),
-    ),
+    )
+    .languages(&["starlark"])
+    .settings(&[
+        "bazel_dep",
+        "single_version_override",
+        "multiple_version_override",
+    ]),
     row(
         NixFlake,
         Ecosystem::Nix,
@@ -665,7 +833,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("flake.nix"))],
         ParserWithPaths(parse_nix_flake_with_paths),
-    ),
+    )
+    .languages(&["nix"])
+    .settings(&["inputs"]),
     row(
         KustomizationYaml,
         Ecosystem::Docker,
@@ -677,7 +847,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Early, Name("Kustomization")),
         ],
         ParserWithPaths(parse_kustomization_yaml_with_paths),
-    ),
+    )
+    .settings(&["images"]),
     row(
         CocoaPodsPodfile,
         Ecosystem::CocoaPods,
@@ -685,7 +856,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Name("Podfile"))],
         ParserDirect(parse_cocoapods_podfile),
-    ),
+    )
+    .settings(&["pod"]),
     row(
         UnityProjectManifestJson,
         Ecosystem::Unity,
@@ -693,7 +865,9 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Json,
         &[at(Early, Uri(is_unity_project_manifest_uri))],
         ParserWithPaths(parse_unity_project_manifest_json_with_paths),
-    ),
+    )
+    .globs(&["Packages/manifest.json"])
+    .settings(&["dependencies"]),
     row(
         RubyGemspec,
         Ecosystem::Ruby,
@@ -701,7 +875,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Early, Extension("gemspec"))],
         ParserDirect(parse_gemspec),
-    ),
+    )
+    .languages(&["ruby"]),
     row(
         PnpmYaml,
         Ecosystem::Npm,
@@ -715,7 +890,16 @@ pub static MANIFESTS: &[ManifestRow] = &[
         ],
         ParserWithPaths(parse_pnpm_yaml_with_paths),
     )
-    .dependency_paths(PNPM_PATHS),
+    .dependency_paths(PNPM_PATHS)
+    .settings(&[
+        "catalog",
+        "catalogs.*.*",
+        "overrides",
+        "packageExtensions.*.dependencies",
+        "packageExtensions.*.devDependencies",
+        "packageExtensions.*.peerDependencies",
+        "packageExtensions.*.optionalDependencies",
+    ]),
     row(
         DockerComposeYaml,
         Ecosystem::Docker,
@@ -726,7 +910,19 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Editor, Language("dockercompose")),
         ],
         ParserDirect(parse_docker_compose_yaml),
-    ),
+    )
+    .globs(&[
+        "compose.yaml",
+        "compose.yml",
+        "*.compose.yaml",
+        "*.compose.yml",
+        "compose.*.yaml",
+        "compose.*.yml",
+        "docker-compose.yaml",
+        "docker-compose.yml",
+        "docker-compose.*.yaml",
+        "docker-compose.*.yml",
+    ]),
     row(
         Dockerfile,
         Ecosystem::Docker,
@@ -737,7 +933,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Editor, Uri(is_dockerfile_uri)),
         ],
         ParserDirect(parse_dockerfile),
-    ),
+    )
+    .globs(&["dockerfile", "*.dockerfile", "Dockerfile", "*.Dockerfile"]),
     row(
         GitHubActions,
         Ecosystem::GitHub,
@@ -745,7 +942,20 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Yaml,
         &[at(Workflow, Uri(is_github_actions_uri))],
         ParserDirect(parse_github_actions),
-    ),
+    )
+    .globs(&[".github/{workflows,actions}/**/*.{yml,yaml}"])
+    .settings(&[
+        "uses",
+        "with.node-version",
+        "with.bun-version",
+        "with.go-version",
+        "with.deno-version",
+        "with.python-version",
+        "with.java-version",
+        "with.dotnet-version",
+        "with.ruby-version",
+        "with.toolchain",
+    ]),
     row(
         DubJson,
         Ecosystem::Dub,
@@ -757,7 +967,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         ],
         ParserWithPaths(parse_dub_json_with_paths),
     )
-    .dependency_paths(&["dependencies", "versions", "configurations.*.dependencies"]),
+    .dependency_paths(&["dependencies", "versions", "configurations.*.dependencies"])
+    .settings_from_paths(),
     row(
         DubSdl,
         Ecosystem::Dub,
@@ -773,7 +984,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Late, Name("Gemfile"))],
         ParserDirect(parse_gemfile),
-    ),
+    )
+    .languages(&["ruby"]),
     row(
         GoMod,
         Ecosystem::Go,
@@ -781,7 +993,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         Custom,
         &[at(Late, Name("go.mod")), at(Late, Name("go.work"))],
         ParserDirect(parse_go_mod),
-    ),
+    )
+    .languages(&["go.mod"]),
     row(
         NpmPackageJson,
         Ecosystem::Npm,
@@ -804,7 +1017,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         ParserWithPaths(parse_package_json_with_paths),
     )
     .dependency_paths(NPM_PATHS)
-    .own_version(&["version"]),
+    .own_version(&["version"])
+    .languages(&["json5"]),
     row(
         NpmPackageYaml,
         Ecosystem::Npm,
@@ -827,7 +1041,10 @@ pub static MANIFESTS: &[ManifestRow] = &[
             at(Python, Uri(is_requirements_txt_uri)),
         ],
         ParserDirect(parse_requirements_txt),
-    ),
+    )
+    .globs(&["*requirements*.txt", "*constraints*.txt"])
+    .editor_names(&["requirements.txt"])
+    .languages(&["plaintext"]),
     row(
         PythonPipfile,
         Ecosystem::Python,
@@ -846,7 +1063,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "project.optional-dependencies",
         "dependency-groups",
         "tool.uv.sources",
-    ]),
+    ])
+    .settings_from_paths(),
     row(
         PythonPyprojectToml,
         Ecosystem::Python,
@@ -865,7 +1083,8 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "project.optional-dependencies",
         "dependency-groups",
         "tool.uv.sources",
-    ]),
+    ])
+    .settings_from_paths(),
     row(
         PubspecOverridesYaml,
         Ecosystem::Pub,
@@ -874,7 +1093,14 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Pubspec, Name("pubspec_overrides.yaml"))],
         ParserWithPaths(parse_pubspec_yaml_with_paths),
     )
-    .dependency_paths(&["dependency_overrides"]),
+    .dependency_paths(&["dependency_overrides"])
+    .settings(&[
+        "version",
+        "workspace",
+        "dependencies",
+        "dev_dependencies",
+        "dependency_overrides",
+    ]),
     row(
         PubspecYaml,
         Ecosystem::Pub,

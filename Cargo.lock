@@ -1628,6 +1628,7 @@ dependencies = [
  "tokio",
  "versionlens-core",
  "versionlens-model",
+ "versionlens-parsers",
  "versionlens-test-support",
 ]
 

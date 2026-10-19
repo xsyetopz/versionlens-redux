@@ -1,3 +1,7 @@
+# 0.5.0
+
+- Grew these defaults for new manifest support. A setting you have set yourself does not gain the new entries, so add them by hand: `versionlens.cargo.files` (`**/.cargo/config.toml`, `**/.cargo/config`), `versionlens.dotnet.files` (`**/dotnet-tools.json`), `versionlens.swift.files` (`**/Cartfile`, `**/Cartfile.private`) and `versionlens.cargo.dependencyProperties` (`patch.*`, `patch.*.*`).
+
 # 0.4.4
 
 - Made cold dependency checks substantially faster across providers with concurrent reusable HTTP connections, shared bodies, coalesced work, a compressed CRAN catalog, shared LuaRocks catalog requests, and smaller official npm responses while preserving complete release-history semantics.

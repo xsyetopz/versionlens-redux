@@ -4,6 +4,17 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - Unreleased
+
+### Changed
+
+- Grew these `versionlens.*` defaults for the manifest support added in 0.5.0. A setting you have set yourself keeps its value and does not gain the new entries, so add them by hand to get the new files:
+  - `versionlens.cargo.files` gained `**/.cargo/config.toml` and `**/.cargo/config`.
+  - `versionlens.dotnet.files` gained `**/dotnet-tools.json`.
+  - `versionlens.swift.files` gained `**/Cartfile` and `**/Cartfile.private`.
+  - `versionlens.cargo.dependencyProperties` gained `patch.*` and `patch.*.*`.
+- Generated the editor file lists (VS Code selectors and per-ecosystem settings, JetBrains, Neovim, Zed) from the manifest table with `bun scripts/generate/manifests.mjs`. Every 0.4.4 setting key and type is preserved. The Neovim and JetBrains file filters no longer accept `BUILD`, `BUILD.bazel`, and arbitrary `*.gradle`, `*.kts`, `*.lock`, `*.pom` and `*.tfvars` files, which no parser reads.
+
 ## [0.4.4] - 2026-09-15
 
 ### Fixed

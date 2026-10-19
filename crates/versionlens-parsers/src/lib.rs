@@ -99,8 +99,9 @@ pub use jvm_manifests::clojure_deps::parse_clojure_maven_repositories;
 pub use jvm_manifests::leiningen_project::parse_leiningen_maven_repositories;
 pub use jvm_scripts::sbt_build::parse_sbt_maven_repositories;
 pub use manifest::{
-    MANIFESTS, ManifestFormat, ManifestRow, Pattern, Rule, Stage, ecosystem_for_manifest,
-    manifest_row, provider_name_for_manifest,
+    MANIFESTS, ManifestFormat, ManifestRow, ManifestTable, ManifestTableEntry, Pattern, Rule,
+    SettingsDefault, Stage, ecosystem_for_manifest, manifest_row, manifest_table,
+    provider_name_for_manifest,
 };
 pub use maven_xml::{
     MavenAuthEntry, MavenMirror, MavenNamedRepository, MavenRepository,
