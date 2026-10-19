@@ -10,12 +10,12 @@ import { ROOT } from "./manifests.mjs";
 const BASELINE_TAG = "v0.4.4";
 const PACKAGE_JSON = "packages/vscode-extension/package.json";
 
-/** Defaults that may gain entries: settings whose manifest support grew. */
-const GROWN_DEFAULTS = new Set([
-  "versionlens.dotnet.files",
-  "versionlens.cargo.files",
-  "versionlens.swift.files",
-  "versionlens.cargo.dependencyProperties",
+/** The exact entries that each grown default gains over 0.4.4. */
+const GROWN_DEFAULTS = new Map([
+  ["versionlens.dotnet.files", ["**/dotnet-tools.json"]],
+  ["versionlens.cargo.files", ["**/.cargo/config.toml", "**/.cargo/config"]],
+  ["versionlens.swift.files", ["**/Cartfile", "**/Cartfile.private"]],
+  ["versionlens.cargo.dependencyProperties", ["patch.*", "patch.*.*"]],
 ]);
 
 function settingsOf(text) {
@@ -83,10 +83,18 @@ export function compareSettings(baseline, current) {
     if (added.length === 0) {
       continue;
     }
-    if (GROWN_DEFAULTS.has(key)) {
+    const expected = GROWN_DEFAULTS.get(key);
+    if (expected && [...expected].sort().join() === [...added].sort().join()) {
       grown.push({ key, added });
     } else {
-      problems.push(`unexpected new default entries for ${key}: ${added}`);
+      problems.push(
+        `unexpected new default entries for ${key}: ${added.join(", ")}`,
+      );
+    }
+  }
+  for (const key of GROWN_DEFAULTS.keys()) {
+    if (!grown.some((item) => item.key === key)) {
+      problems.push(`expected ${key} to grow, but it did not`);
     }
   }
   return { problems, grown, preserved };

@@ -243,7 +243,18 @@ internal class VersionLensLspServerDescriptor(
             "yml",
         )
 
-        internal fun supportsFileName(name: String, extension: String?): Boolean {
+        private val supportedPathSuffixes = setOf(
+            ".cargo/config",
+            ".cargo/config.toml",
+            "Packages/manifest.json",
+            "gradle/libs.versions.toml",
+        )
+        private val supportedNamePatterns = listOf<Pair<String, String>>(
+            "constraints" to "txt",
+            "requirements" to "txt",
+        )
+
+        internal fun supportsFileName(name: String, extension: String?, path: String? = null): Boolean {
             if (name in supportedFileNames) {
                 return true
             }
@@ -251,11 +262,24 @@ internal class VersionLensLspServerDescriptor(
             if (lowerName == "dockerfile" || lowerName.startsWith("dockerfile.")) {
                 return true
             }
-            return extension?.lowercase(Locale.ROOT) in supportedExtensions
+            val normalized = path?.replace('\\', '/')
+            if (normalized != null &&
+                supportedPathSuffixes.any { normalized == it || normalized.endsWith("/$it") }
+            ) {
+                return true
+            }
+            val lowerExtension = extension?.lowercase(Locale.ROOT)
+            if (supportedNamePatterns.any { (contains, patternExtension) ->
+                    lowerExtension == patternExtension && lowerName.contains(contains)
+                }
+            ) {
+                return true
+            }
+            return lowerExtension in supportedExtensions
         }
 
         fun supports(file: VirtualFile): Boolean {
-            return supportsFileName(file.name, file.extension)
+            return supportsFileName(file.name, file.extension, file.path)
         }
     }
 }

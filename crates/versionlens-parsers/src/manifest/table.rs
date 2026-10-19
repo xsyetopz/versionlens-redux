@@ -162,36 +162,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Name(".nvmrc"))],
         ParserDirect(parse_nvmrc),
     )
-    .languages(&["plaintext"])
-    .settings(&[
-        "version",
-        "packageManager",
-        "devEngines.packageManager",
-        "dependencies",
-        "devDependencies",
-        "peerDependencies",
-        "optionalDependencies",
-        "bundledDependencies",
-        "bundleDependencies",
-        "trustedDependencies",
-        "resolutions",
-        "overrides",
-        "overrides.*",
-        "jspm.dependencies",
-        "jspm.devDependencies",
-        "jspm.peerDependencies",
-        "jspm.optionalDependencies",
-        "pnpm.overrides",
-        "pnpm.overrides.*",
-        "pnpm.packageExtensions.*.dependencies",
-        "pnpm.packageExtensions.*.devDependencies",
-        "pnpm.packageExtensions.*.peerDependencies",
-        "pnpm.packageExtensions.*.optionalDependencies",
-        "catalog",
-        "catalogs.*",
-        "workspaces.catalog",
-        "workspaces.catalogs.*",
-    ]),
+    .languages(&["plaintext"]),
     row(
         NodeVersion,
         Ecosystem::Npm,
@@ -338,18 +309,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "paket.references",
     ])
     .globs(&["*.csproj", "*.fsproj", "*.vbproj", "*.targets", "*.props"])
-    .settings(&[
-        "Project.Sdk",
-        "Project.PropertyGroup.Version",
-        "Project.PropertyGroup.AssemblyVersion",
-        "Project.ItemGroup.GlobalPackageReference",
-        "Project.ItemGroup.PackageReference",
-        "Project.ItemGroup.PackageVersion",
-        "Project.ItemGroup.DotNetCliToolReference",
-        "packages.package",
-        "paket.dependencies",
-        "paket.references",
-    ]),
+    .settings_from_paths(),
     row(
         PaketDependencies,
         Ecosystem::Dotnet,
@@ -857,6 +817,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Early, Name("Podfile"))],
         ParserDirect(parse_cocoapods_podfile),
     )
+    .languages(&["ruby"])
     .settings(&["pod"]),
     row(
         UnityProjectManifestJson,
@@ -1007,7 +968,38 @@ pub static MANIFESTS: &[ManifestRow] = &[
         ParserWithPaths(parse_package_json_with_paths),
     )
     .dependency_paths(NPM_PATHS)
-    .own_version(&["version"]),
+    .own_version(&["version"])
+    // The 0.4.4 default lists `version` and leaves out `engines`, unlike
+    // NPM_PATHS, and users rely on it.
+    .settings(&[
+        "version",
+        "packageManager",
+        "devEngines.packageManager",
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionalDependencies",
+        "bundledDependencies",
+        "bundleDependencies",
+        "trustedDependencies",
+        "resolutions",
+        "overrides",
+        "overrides.*",
+        "jspm.dependencies",
+        "jspm.devDependencies",
+        "jspm.peerDependencies",
+        "jspm.optionalDependencies",
+        "pnpm.overrides",
+        "pnpm.overrides.*",
+        "pnpm.packageExtensions.*.dependencies",
+        "pnpm.packageExtensions.*.devDependencies",
+        "pnpm.packageExtensions.*.peerDependencies",
+        "pnpm.packageExtensions.*.optionalDependencies",
+        "catalog",
+        "catalogs.*",
+        "workspaces.catalog",
+        "workspaces.catalogs.*",
+    ]),
     row(
         NpmPackageJson5,
         Ecosystem::Npm,
@@ -1093,14 +1085,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         &[at(Pubspec, Name("pubspec_overrides.yaml"))],
         ParserWithPaths(parse_pubspec_yaml_with_paths),
     )
-    .dependency_paths(&["dependency_overrides"])
-    .settings(&[
-        "version",
-        "workspace",
-        "dependencies",
-        "dev_dependencies",
-        "dependency_overrides",
-    ]),
+    .dependency_paths(&["dependency_overrides"]),
     row(
         PubspecYaml,
         Ecosystem::Pub,
@@ -1118,5 +1103,6 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "dependencies",
         "dev_dependencies",
         "dependency_overrides",
-    ]),
+    ])
+    .settings_from_paths(),
 ];

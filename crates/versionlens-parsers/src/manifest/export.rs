@@ -107,14 +107,15 @@ fn format_name(format: ManifestFormat) -> &'static str {
     }
 }
 
-/// The editor languages that a data format implies.
+/// The editor languages that a format implies. Files of a custom format have
+/// no language of their own, so editors open them as plain text.
 fn default_languages(format: ManifestFormat) -> &'static [&'static str] {
     match format {
         ManifestFormat::Json => &["json", "jsonc"],
         ManifestFormat::Toml => &["toml"],
         ManifestFormat::Yaml => &["yaml"],
         ManifestFormat::Xml => &["xml"],
-        ManifestFormat::Custom => &[],
+        ManifestFormat::Custom => &["plaintext"],
     }
 }
 

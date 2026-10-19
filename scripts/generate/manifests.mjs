@@ -13,6 +13,7 @@ const NEOVIM_SUPPORT = "packages/neovim-plugin/lua/versionlens/support.lua";
 const JETBRAINS_SUPPORT =
   "packages/jetbrains-plugin/src/main/kotlin/com/versionlens/jetbrains/VersionLensLspServerSupportProvider.kt";
 const ZED_EXTENSION = "packages/zed-extension/extension.toml";
+const CONFIG_KEYS = "packages/vscode-extension/src/extension/config/keys.ts";
 
 /** Extensions that a data format implies for editor pre-filters. */
 const FORMAT_EXTENSIONS = {
@@ -136,6 +137,8 @@ function isPlainName(glob) {
 function editorSupport(manifests) {
   const names = [];
   const extensions = [];
+  const suffixes = [];
+  const patterns = [];
   for (const row of manifests) {
     names.push(
       ...row.names,
@@ -147,6 +150,15 @@ function editorSupport(manifests) {
       ...FORMAT_EXTENSIONS[row.format],
     );
     for (const glob of [...row.globs, ...row.files]) {
+      if (/^[^*{}?]+\/[^*{}?]+$/u.test(glob)) {
+        suffixes.push(glob);
+      }
+      const pattern = /^\*([^*/{}]+)\*\.([A-Za-z0-9]+)$/u.exec(glob);
+      if (pattern) {
+        patterns.push(
+          `${pattern[1].toLowerCase()}.${pattern[2].toLowerCase()}`,
+        );
+      }
       const match = /^\*\.([A-Za-z0-9]+)$/u.exec(glob);
       if (match) {
         extensions.push(match[1].toLowerCase());
@@ -156,6 +168,13 @@ function editorSupport(manifests) {
   return {
     names: unique(names).sort(ascii),
     extensions: unique(extensions).sort(ascii),
+    suffixes: unique(suffixes).sort(ascii),
+    patterns: unique(patterns)
+      .sort(ascii)
+      .map((pattern) => {
+        const dot = pattern.lastIndexOf(".");
+        return [pattern.slice(0, dot), pattern.slice(dot + 1)];
+      }),
   };
 }
 
@@ -241,10 +260,10 @@ export function generatePackageJson(text, manifests) {
 }
 
 export function generateNeovim(text, manifests) {
-  const { names, extensions } = editorSupport(manifests);
+  const { names, extensions, suffixes, patterns } = editorSupport(manifests);
   const replace = (source, variable, lines) => {
     const pattern = new RegExp(
-      `(local ${variable} = \\{\\n)[\\s\\S]*?(\\n\\}\\n)`,
+      `(local ${variable} = \\{\\n)(?: {2}.*\\n)*\\}\\n`,
       "u",
     );
     if (!pattern.test(source)) {
@@ -252,25 +271,39 @@ export function generateNeovim(text, manifests) {
     }
     return source.replace(
       pattern,
-      (_, open, close) => `${open}${lines.join("\n")}${close}`,
+      (_, open) => `${open}${lines.join("\n")}\n}\n`,
     );
   };
-  return replace(
-    replace(
-      text,
-      "supported_file_names",
-      names.map((name) => `  [${JSON.stringify(name)}] = true,`),
-    ),
+  let result = replace(
+    text,
+    "supported_file_names",
+    names.map((name) => `  [${JSON.stringify(name)}] = true,`),
+  );
+  result = replace(
+    result,
     "supported_extensions",
     extensions.map((extension) => `  ${extension} = true,`),
+  );
+  result = replace(
+    result,
+    "supported_path_suffixes",
+    suffixes.map((suffix) => `  ${JSON.stringify(suffix)},`),
+  );
+  return replace(
+    result,
+    "supported_name_patterns",
+    patterns.map(
+      ([contains, extension]) =>
+        `  { contains = ${JSON.stringify(contains)}, extension = ${JSON.stringify(extension)} },`,
+    ),
   );
 }
 
 export function generateJetBrains(text, manifests) {
-  const { names, extensions } = editorSupport(manifests);
+  const { names, extensions, suffixes, patterns } = editorSupport(manifests);
   const replace = (source, variable, values) => {
     const pattern = new RegExp(
-      `(private val ${variable} = setOf\\(\\n)[\\s\\S]*?(\\n {8}\\))`,
+      `(private val ${variable} = (?:setOf|listOf<[^(]*>)\\(\\n)(?: {12}.*\\n)* {8}\\)`,
       "u",
     );
     if (!pattern.test(source)) {
@@ -278,14 +311,21 @@ export function generateJetBrains(text, manifests) {
     }
     return source.replace(
       pattern,
-      (_, open, close) =>
-        `${open}${values.map((value) => `            ${JSON.stringify(value)},`).join("\n")}${close}`,
+      (_, open) =>
+        `${open}${values.map((value) => `            ${value},`).join("\n")}\n        )`,
     );
   };
+  const quoted = (values) => values.map((value) => JSON.stringify(value));
+  let result = replace(text, "supportedFileNames", quoted(names));
+  result = replace(result, "supportedExtensions", quoted(extensions));
+  result = replace(result, "supportedPathSuffixes", quoted(suffixes));
   return replace(
-    replace(text, "supportedFileNames", names),
-    "supportedExtensions",
-    extensions,
+    result,
+    "supportedNamePatterns",
+    patterns.map(
+      ([contains, extension]) =>
+        `${JSON.stringify(contains)} to ${JSON.stringify(extension)}`,
+    ),
   );
 }
 
@@ -310,12 +350,53 @@ export function generateZed(text, manifests) {
     .replace(idsPattern, (_, header) => `${header}${languageIdLines}\n`);
 }
 
+/** The CodeLens document selector languages of each provider. */
+export function generateConfigKeys(text, manifests) {
+  const start = text.indexOf("const filePatternKeys");
+  const end = text.indexOf("function enabledFilePatternKeys");
+  if (start < 0 || end < start) {
+    throw new Error(`${CONFIG_KEYS} lacks the filePatternKeys table`);
+  }
+  let block = text.slice(start, end);
+  for (const [provider, languages] of perProvider(manifests, "languages")) {
+    const pattern = new RegExp(
+      `(\\[\\s*"${provider}",\\s*"${provider}\\.files",\\s*)\\[[^\\]]*\\]`,
+      "u",
+    );
+    if (languages.length > 0 && pattern.test(block)) {
+      block = block.replace(
+        pattern,
+        (_, open) =>
+          `${open}[${languages.map((l) => JSON.stringify(l)).join(", ")}]`,
+      );
+    }
+  }
+  return formatWithBiome(
+    CONFIG_KEYS,
+    text.slice(0, start) + block + text.slice(end),
+  );
+}
+
+/** Formats generated TypeScript as the repository formatter would. */
+function formatWithBiome(path, text) {
+  const result = spawnSync(
+    join(ROOT, "node_modules", ".bin", "biome"),
+    ["format", `--stdin-file-path=${path}`],
+    { cwd: ROOT, encoding: "utf8", input: text },
+  );
+  if (result.status !== 0) {
+    throw new Error(`biome could not format ${path}: ${result.stderr}`);
+  }
+  return result.stdout;
+}
+
 export function generateAll(manifests) {
   const targets = [
     [PACKAGE_JSON, generatePackageJson],
     [NEOVIM_SUPPORT, generateNeovim],
     [JETBRAINS_SUPPORT, generateJetBrains],
     [ZED_EXTENSION, generateZed],
+    [CONFIG_KEYS, generateConfigKeys],
   ];
   return targets.map(([path, generate]) => {
     const current = readFileSync(join(ROOT, path), "utf8");

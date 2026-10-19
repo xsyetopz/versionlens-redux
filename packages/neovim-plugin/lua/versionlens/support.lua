@@ -112,6 +112,18 @@ local supported_extensions = {
   yml = true,
 }
 
+local supported_path_suffixes = {
+  ".cargo/config",
+  ".cargo/config.toml",
+  "Packages/manifest.json",
+  "gradle/libs.versions.toml",
+}
+
+local supported_name_patterns = {
+  { contains = "constraints", extension = "txt" },
+  { contains = "requirements", extension = "txt" },
+}
+
 local function basename(path)
   return path:gsub("\\", "/"):match("([^/]+)$") or path
 end
@@ -128,7 +140,18 @@ function M.supports(path)
   if lower_name == "dockerfile" or lower_name:match("^dockerfile%.") then
     return true
   end
+  local normalized = path:gsub("\\", "/")
+  for _, suffix in ipairs(supported_path_suffixes) do
+    if normalized == suffix or normalized:sub(-(#suffix + 1)) == "/" .. suffix then
+      return true
+    end
+  end
   local extension = lower_name:match("%.([^.]*)$")
+  for _, pattern in ipairs(supported_name_patterns) do
+    if extension == pattern.extension and lower_name:find(pattern.contains, 1, true) then
+      return true
+    end
+  end
   return extension ~= nil and supported_extensions[extension] == true
 end
 

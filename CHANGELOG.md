@@ -13,7 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - `versionlens.dotnet.files` gained `**/dotnet-tools.json`.
   - `versionlens.swift.files` gained `**/Cartfile` and `**/Cartfile.private`.
   - `versionlens.cargo.dependencyProperties` gained `patch.*` and `patch.*.*`.
-- Generated the editor file lists (VS Code selectors and per-ecosystem settings, JetBrains, Neovim, Zed) from the manifest table with `bun scripts/generate/manifests.mjs`. Every 0.4.4 setting key and type is preserved. The Neovim and JetBrains file filters no longer accept `BUILD`, `BUILD.bazel`, and arbitrary `*.gradle`, `*.kts`, `*.lock`, `*.pom` and `*.tfvars` files, which no parser reads.
+- Generated the editor file lists (VS Code selectors and per-ecosystem settings, JetBrains, Neovim, Zed) from the manifest table with `bun scripts/generate/manifests.mjs`. Every 0.4.4 setting key and type is preserved. The Neovim and JetBrains file filters no longer accept `BUILD`, `BUILD.bazel`, and arbitrary `*.gradle`, `*.json5`, `*.kts`, `*.lock`, `*.pom` and `*.tfvars` files, which no parser reads.
 
 ## [0.4.4] - 2026-09-15
 
