@@ -14,6 +14,8 @@ pub enum SuggestionStatus {
     InvalidRange,
     NoMatch,
     NotSupported,
+    /// The host refused the request until its rate limit resets.
+    RateLimited,
     Satisfies,
     SatisfiesLatest,
     Unresolved,

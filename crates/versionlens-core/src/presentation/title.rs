@@ -6,8 +6,8 @@ mod formatters;
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
     StatusFixed, StatusInvalid, StatusInvalidRange, StatusNoMatch, StatusNotSupported,
-    StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved, StatusUpdateAvailable,
-    SuggestionStatus,
+    StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved,
+    StatusUpdateAvailable, SuggestionStatus,
 };
 use formatters::{
     build_title_text, current_title_text, directory_not_found_title_text, directory_title_text,
@@ -30,6 +30,7 @@ const TITLE_FORMATTERS: &[(SuggestionStatus, TitleFormatter)] = &[
     (StatusInvalid, invalid_title_text),
     (StatusInvalidRange, invalid_range_title_text),
     (StatusError, error_title_text),
+    (StatusRateLimited, error_title_text),
     (StatusNoMatch, no_match_title_text),
     (StatusNotSupported, not_supported_title_text),
     (StatusUnresolved, unresolved_title_text),

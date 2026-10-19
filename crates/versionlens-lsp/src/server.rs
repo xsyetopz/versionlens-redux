@@ -37,6 +37,7 @@ struct InitializeWorkspaceParams {
 
 mod authorization;
 mod checking;
+mod rate_limit;
 mod settings;
 mod work;
 use authorization::AuthorizationBroker;

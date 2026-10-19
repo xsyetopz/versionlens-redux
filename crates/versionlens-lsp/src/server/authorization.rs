@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use crossbeam_channel::Sender;
 use lsp_server::{Message, Request, RequestId, Response};
@@ -19,6 +19,7 @@ use tokio::runtime::Handle;
 use tokio::sync::watch;
 use versionlens_core::{AuthorizationFuture, AuthorizationSource, Credential};
 
+use super::rate_limit::RateLimitNotices;
 use crate::protocol::{AuthorizationCredential, AuthorizationParams, AuthorizationRequest};
 
 const REQUEST_PREFIX: &str = "versionlens/authorization/";
@@ -49,6 +50,7 @@ pub(super) struct AuthorizationBroker {
     runtime: Handle,
     timeout: Duration,
     asked: Mutex<Asked>,
+    notices: RateLimitNotices,
 }
 
 /// A credential that arrived after nobody was waiting for it.
@@ -65,6 +67,7 @@ impl AuthorizationBroker {
             runtime,
             timeout,
             asked: Mutex::default(),
+            notices: RateLimitNotices::default(),
         })
     }
 
@@ -178,6 +181,17 @@ impl AuthorizationSource for AuthorizationBroker {
                 .map(|answer| answer.clone());
             answer.flatten().flatten()
         })
+    }
+
+    fn rate_limited(&self, host: &str, reset: SystemTime) {
+        let sender = self
+            .sender
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        if let Some(sender) = sender {
+            self.notices.report(&sender, host, reset);
+        }
     }
 }
 

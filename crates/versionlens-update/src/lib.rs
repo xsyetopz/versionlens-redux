@@ -14,7 +14,7 @@ pub use choices::{
 };
 pub use constructors::{
     directory, directory_not_found, error, fixed, invalid, no_match, no_match_with_message,
-    not_supported, resolve_with_latest, unresolved,
+    not_supported, rate_limited, resolve_with_latest, unresolved,
 };
 pub use resolve::{resolve_dependency, version_dialect};
 pub use sort::{can_sort_dependencies, sort_dependency_edits};

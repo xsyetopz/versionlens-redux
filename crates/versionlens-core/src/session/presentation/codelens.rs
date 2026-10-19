@@ -5,7 +5,8 @@ use versionlens_update::Suggestion;
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
     StatusFixed, StatusInvalid, StatusInvalidRange, StatusNoMatch, StatusNotSupported,
-    StatusSatisfies, StatusSatisfiesLatest, StatusUpdateAvailable, SuggestionStatus,
+    StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUpdateAvailable,
+    SuggestionStatus,
 };
 use crate::presentation::{
     code_lens_title, project_version_code_lens_view, suggested_code_lens_view,
@@ -291,8 +292,12 @@ fn status_only_suggestion(
         return Some(status_suggestion(dependency, Some(latest), StatusFixed));
     }
 
-    if suggestion.status == StatusError {
-        return Some(status_suggestion(dependency, Some(latest), StatusError));
+    if matches!(suggestion.status, StatusError | StatusRateLimited) {
+        return Some(status_suggestion(
+            dependency,
+            Some(latest),
+            suggestion.status,
+        ));
     }
 
     if suggestion.status != StatusUpdateAvailable

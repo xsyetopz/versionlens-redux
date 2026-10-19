@@ -2,8 +2,8 @@ use crate::SuggestionIndicators;
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
     StatusFixed, StatusInvalid, StatusInvalidRange, StatusNoMatch, StatusNotSupported,
-    StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved, StatusUpdateAvailable,
-    SuggestionStatus,
+    StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved,
+    StatusUpdateAvailable, SuggestionStatus,
 };
 
 pub(super) fn stable_indicator(
@@ -16,9 +16,11 @@ pub(super) fn stable_indicator(
         StatusDirectory => &indicators.directory,
         StatusBuildAvailable => &indicators.build,
         StatusFixed | StatusSatisfies => &indicators.matched,
-        StatusDirectoryNotFound | StatusError | StatusInvalid | StatusInvalidRange => {
-            &indicators.error
-        }
+        StatusDirectoryNotFound
+        | StatusError
+        | StatusRateLimited
+        | StatusInvalid
+        | StatusInvalidRange => &indicators.error,
         StatusNoMatch | StatusNotSupported | StatusUnresolved => &indicators.no_match,
         StatusUpdateAvailable => &indicators.updateable,
     }

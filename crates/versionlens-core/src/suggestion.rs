@@ -4,8 +4,8 @@ use crate::dependency::dependency_view;
 use crate::presentation::statuses::{
     StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
     StatusFixed, StatusInvalid, StatusInvalidRange, StatusNoMatch, StatusNotSupported,
-    StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved, StatusUpdateAvailable,
-    SuggestionStatus,
+    StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved,
+    StatusUpdateAvailable, SuggestionStatus,
 };
 use crate::view::SuggestionView;
 
@@ -35,6 +35,7 @@ fn suggestion_status_name(status: SuggestionStatus) -> &'static str {
         StatusInvalidRange => "invalidRange",
         StatusNoMatch => "noMatch",
         StatusNotSupported => "notSupported",
+        StatusRateLimited => "rateLimited",
         StatusSatisfies => "satisfies",
         StatusSatisfiesLatest => "satisfiesLatest",
         StatusUnresolved => "unresolved",

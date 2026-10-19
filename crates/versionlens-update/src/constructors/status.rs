@@ -1,7 +1,7 @@
 use crate::suggestion::SuggestionStatus::{
     Directory as StatusDirectory, DirectoryNotFound as StatusDirectoryNotFound,
     Error as StatusError, Fixed as StatusFixed, Invalid as StatusInvalid, NoMatch as StatusNoMatch,
-    NotSupported as StatusNotSupported,
+    NotSupported as StatusNotSupported, RateLimited as StatusRateLimited,
 };
 use versionlens_model::Dependency;
 
@@ -76,6 +76,19 @@ pub fn error(dependency: Dependency, message: String) -> Suggestion {
         latest: Some(message),
         resolved: None,
         status: StatusError,
+        builds: vec![],
+        choices: vec![],
+    }
+}
+
+/// A dependency the registry would not answer for until its rate limit
+/// resets. `message` is the reset time, shown where an error would be.
+pub fn rate_limited(dependency: Dependency, message: String) -> Suggestion {
+    Suggestion {
+        dependency,
+        latest: Some(message),
+        resolved: None,
+        status: StatusRateLimited,
         builds: vec![],
         choices: vec![],
     }

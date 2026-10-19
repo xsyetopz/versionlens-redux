@@ -18,6 +18,11 @@ pub type AuthorizationFuture = Pin<Box<dyn Future<Output = Option<Credential>> +
 /// and should ask at most once per host.
 pub trait AuthorizationSource: Send + Sync {
     fn authorize(&self, host: &str, status: u16) -> AuthorizationFuture;
+
+    /// Told that `host` refused requests until `reset` because its rate
+    /// limit is exhausted. Called for every request the limit stops, so
+    /// implementations that report it should do so once per reset.
+    fn rate_limited(&self, _host: &str, _reset: std::time::SystemTime) {}
 }
 
 /// The source shared by a session and its clones.

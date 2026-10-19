@@ -17,7 +17,7 @@ impl VersionLensSession {
         };
         let lookup = self.resolve_latest(request).await;
         if let Some(error_message) = lookup.fetch_error {
-            return error(dependency, error_message.to_string());
+            return error_message.into_suggestion(dependency);
         }
         let Some(latest) = lookup.latest else {
             return error(
