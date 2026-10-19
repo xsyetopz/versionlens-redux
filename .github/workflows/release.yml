@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Create tag and release
+  validate:
+    name: Validate release ref and version
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -58,37 +58,102 @@ jobs:
             exit 1
           fi
 
-      - name: Download successful editor artifacts
+  lsp:
+    name: Build language server
+    needs: validate
+    uses: ./.github/workflows/build-lsp.yml
+    with:
+      artifact-name: versionlens-lsp
+
+  vscode:
+    name: VS Code
+    needs: lsp
+    uses: ./.github/workflows/vscode.yml
+    with:
+      lsp-artifact: ${{ needs.lsp.outputs.archives-artifact }}
+
+  zed:
+    name: Zed
+    needs: lsp
+    uses: ./.github/workflows/zed.yml
+    with:
+      lsp-artifact: ${{ needs.lsp.outputs.archives-artifact }}
+
+  neovim:
+    name: Neovim
+    needs: lsp
+    uses: ./.github/workflows/neovim.yml
+    with:
+      lsp-artifact: ${{ needs.lsp.outputs.archives-artifact }}
+
+  jetbrains:
+    name: JetBrains
+    needs: lsp
+    uses: ./.github/workflows/jetbrains.yml
+    with:
+      lsp-artifact: ${{ needs.lsp.outputs.archives-artifact }}
+
+  release:
+    name: Create tag and release
+    needs: [validate, lsp, vscode, zed, neovim, jetbrains]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Download VSIX packages
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: versionlens-redux-vsix
+          path: release-assets
+
+      - name: Download Zed packages
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: versionlens-redux-zed-extension-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Download Neovim packages
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: versionlens-redux-neovim-plugin-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Download JetBrains packages
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: versionlens-redux-jetbrains-plugin-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Download language server archives and checksums
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: ${{ needs.lsp.outputs.archives-artifact }}
+          path: release-assets
+
+      - name: Assert release assets and version sync
         env:
-          GH_TOKEN: ${{ github.token }}
+          LSP_VERSION: ${{ needs.lsp.outputs.version }}
+          CHECKSUMS_FILE: ${{ needs.lsp.outputs.checksums-file }}
+          VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p release-assets
+          find release-assets -type f -print | sort
 
-          download_artifact() {
-            local workflow=$1
-            local artifact=$2
-            local run_id
-
-            run_id=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=master&event=push&status=success&head_sha=$GITHUB_SHA&per_page=1" --jq '.workflow_runs[0].id')
-
-            if [[ -z "$run_id" ]]; then
-              echo "No successful $workflow push run found for $GITHUB_SHA" >&2
-              exit 1
-            fi
-
-            gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$artifact" --dir release-assets
-          }
-
-          download_artifact vscode.yml versionlens-redux-vsix
-          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 win32-x64 win32-arm64; do
-            download_artifact zed.yml "versionlens-redux-zed-extension-$target"
-            download_artifact neovim.yml "versionlens-redux-neovim-plugin-$target"
-            download_artifact jetbrains.yml "versionlens-redux-jetbrains-plugin-$target"
-          done
-
-          find release-assets -type f -print
+          bun scripts/release/version.mjs "$VERSION" --check
+          if [[ "$LSP_VERSION" != "$VERSION" ]]; then
+            echo "build-lsp built $LSP_VERSION but the release is $VERSION" >&2
+            exit 1
+          fi
 
           require_count() {
             local expected=$1
@@ -101,10 +166,29 @@ jobs:
             fi
           }
 
+          lsp_targets=$(jq -r '.targets | length' scripts/package/targets.json)
+          [[ "$lsp_targets" -eq 9 ]] || { echo "Expected 9 targets in targets.json, found $lsp_targets" >&2; exit 1; }
           require_count 9 'versionlens-redux-*-*.vsix'
           require_count 6 'versionlens-redux-zed-extension-*.tar.gz'
           require_count 6 'versionlens-redux-neovim-plugin-*.tar.gz'
           require_count 6 'versionlens-redux-jetbrains-plugin-*.zip'
+          require_count 1 "$CHECKSUMS_FILE"
+
+          archives=$(find release-assets -maxdepth 1 -type f \( -name 'versionlens-lsp-*.tar.gz' -o -name 'versionlens-lsp-*.zip' \) | wc -l | tr -d ' ')
+          if [[ "$archives" -ne "$lsp_targets" ]]; then
+            echo "Expected $lsp_targets language server archives, found $archives" >&2
+            exit 1
+          fi
+          for rust_target in $(jq -r '.targets[].rust' scripts/package/targets.json); do
+            case "$rust_target" in
+              *-windows-*) ext=zip ;;
+              *) ext=tar.gz ;;
+            esac
+            file="versionlens-lsp-${VERSION}-${rust_target}.${ext}"
+            [[ -f "release-assets/$file" ]] || { echo "Missing archive $file" >&2; exit 1; }
+          done
+          (cd release-assets && sha256sum --check --strict "$CHECKSUMS_FILE")
+          test "$(wc -l < "release-assets/$CHECKSUMS_FILE" | tr -d ' ')" = "$lsp_targets"
 
       - name: Create GitHub tag and release
         env:

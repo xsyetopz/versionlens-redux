@@ -1,9 +1,12 @@
 name: Package LSP editor adapter
-description: Build the native language server and package one editor target.
+description: Stage the prebuilt build-lsp binary and package one editor target.
 
 inputs:
   arch:
     description: Editor architecture name.
+    required: true
+  lsp-artifact:
+    description: Artifact produced by build-lsp holding the archives and SHA256SUMS.
     required: true
   package-script:
     description: Repository-relative Bun packaging script.
@@ -12,30 +15,26 @@ inputs:
     description: Editor platform name.
     required: true
   rust-target:
-    description: Rust target triple for the native language server.
-    required: true
-  scope:
-    description: Cargo cache scope.
+    description: Rust target triple of the prebuilt language server.
     required: true
 
 runs:
   using: composite
   steps:
-    - name: Setup Bun and Rust target
-      uses: ./.github/actions/setup-target
-      with:
-        target: ${{ inputs.rust-target }}
+    - name: Setup Bun
+      uses: ./.github/actions/setup-bun
 
-    - name: Cache Cargo registry and target
-      uses: ./.github/actions/cache-cargo-target
+    - name: Download language server archives
+      uses: actions/download-artifact@v8.0.2
       with:
-        scope: ${{ inputs.scope }}
+        name: ${{ inputs.lsp-artifact }}
+        path: lsp-archives
 
-    - name: Build native language server
+    - name: Stage language server binary
       shell: bash
       env:
         RUST_TARGET: ${{ inputs.rust-target }}
-      run: cargo build -p versionlens-lsp --release --locked --target "$RUST_TARGET"
+      run: bun scripts/package/stage-lsp.mjs lsp-archives "$RUST_TARGET" "target/$RUST_TARGET/release"
 
     - name: Package editor adapter
       shell: bash

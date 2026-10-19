@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
+import { rustTargetFor, stageLspBinary } from "./stage-lsp.mjs";
+
 function run(command, options = {}) {
   const result = Bun.spawnSync(command, {
     ...options,
@@ -14,33 +16,18 @@ function run(command, options = {}) {
   }
 }
 
-const [, , vscodeTarget, rustTarget] = Bun.argv;
-if (!(vscodeTarget && rustTarget)) {
+const [, , vscodeTarget, archivesDir] = Bun.argv;
+if (!(vscodeTarget && archivesDir)) {
   throw new Error(
-    "usage: bun scripts/package/vscode.mjs <vscode-target> <rust-target>",
+    "usage: bun scripts/package/vscode.mjs <vscode-target> <build-lsp-archives-dir>",
   );
 }
-const targetTriples = new Map([
-  ["win32-x64", "x86_64-pc-windows-msvc"],
-  ["win32-arm64", "aarch64-pc-windows-msvc"],
-  ["linux-x64", "x86_64-unknown-linux-gnu"],
-  ["linux-arm64", "aarch64-unknown-linux-gnu"],
-  ["linux-armhf", "armv7-unknown-linux-gnueabihf"],
-  ["alpine-x64", "x86_64-unknown-linux-musl"],
-  ["alpine-arm64", "aarch64-unknown-linux-musl"],
-  ["darwin-x64", "x86_64-apple-darwin"],
-  ["darwin-arm64", "aarch64-apple-darwin"],
-]);
-const expectedRustTarget = targetTriples.get(vscodeTarget);
-if (!expectedRustTarget) {
-  throw new Error(`unsupported VS Code target: ${vscodeTarget}`);
-}
-if (rustTarget !== expectedRustTarget) {
-  throw new Error(
-    `VS Code target ${vscodeTarget} requires Rust target ${expectedRustTarget}, not ${rustTarget}`,
-  );
-}
-run(["bun", "scripts/package/native.mjs", "--release", "--target", rustTarget]);
+const serverDirectory = join("packages", "vscode-extension", "server");
+const server = stageLspBinary(
+  archivesDir,
+  rustTargetFor(vscodeTarget),
+  serverDirectory,
+);
 run(["bun", "scripts/package/extension.mjs"]);
 const { version } = JSON.parse(readFileSync("package.json", "utf8"));
 const output = `versionlens-redux-${version}-${vscodeTarget}.vsix`;
@@ -57,27 +44,11 @@ run(
   ],
   { cwd: "packages/vscode-extension" },
 );
-let nativeExtension = "so";
-if (rustTarget.includes("windows")) {
-  nativeExtension = "dll";
-} else if (rustTarget.includes("darwin")) {
-  nativeExtension = "dylib";
-}
-let nativeLibraryName = `libversionlens_napi.${nativeExtension}`;
-if (rustTarget.includes("windows")) {
-  nativeLibraryName = "versionlens_napi.dll";
-}
-const nativeLibrary = join(
-  Bun.env.CARGO_TARGET_DIR ?? "target",
-  rustTarget,
-  "release",
-  nativeLibraryName,
-);
 run([
   "bun",
   "scripts/package/vsix.mjs",
   `packages/vscode-extension/${output}`,
-  nativeLibrary,
+  server,
   vscodeTarget,
 ]);
 console.log(`Packaged packages/vscode-extension/${output}`);

@@ -3,11 +3,12 @@ import { constants as bufferConstants } from "node:buffer";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 
-const [, , vsixPath, nativePath, target] = Bun.argv;
-if (!(vsixPath && nativePath && target)) {
+const [, , vsixPath, serverPath, target] = Bun.argv;
+if (!(vsixPath && serverPath && target)) {
   throw new Error(
-    "usage: bun scripts/package/vsix.mjs <vsix> <native-library> <vscode-target>",
+    "usage: bun scripts/package/vsix.mjs <vsix> <server-binary> <vscode-target>",
   );
 }
 
@@ -15,15 +16,12 @@ function digest(buffer) {
   return createHash("sha256").update(buffer).digest("hex");
 }
 
-const packagedNative = execFileSync(
-  "unzip",
-  ["-p", vsixPath, "extension/native/versionlens_napi.node"],
-  { maxBuffer: bufferConstants.MAX_LENGTH },
-);
-if (digest(packagedNative) !== digest(readFileSync(nativePath))) {
-  throw new Error(
-    `${vsixPath} native/versionlens_napi.node does not match ${nativePath}`,
-  );
+const serverEntry = `extension/server/${basename(serverPath)}`;
+const packagedServer = execFileSync("unzip", ["-p", vsixPath, serverEntry], {
+  maxBuffer: bufferConstants.MAX_LENGTH,
+});
+if (digest(packagedServer) !== digest(readFileSync(serverPath))) {
+  throw new Error(`${vsixPath} ${serverEntry} does not match ${serverPath}`);
 }
 const manifest = execFileSync(
   "unzip",
