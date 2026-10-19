@@ -1,5 +1,9 @@
 const defaultFilePatternEntries = [
-  ["cargo.files", "**/Cargo.toml", ["toml"]],
+  [
+    "cargo.files",
+    "**/{rust-toolchain,rust-toolchain.toml,Cargo.toml,.cargo/config.toml,.cargo/config}",
+    ["plaintext", "toml"],
+  ],
   ["composer.files", "**/composer.json", ["json", "jsonc"]],
   [
     "deno.files",
@@ -21,7 +25,7 @@ const defaultFilePatternEntries = [
     "**/{dub.json,dub.selections.json,dub.sdl}",
     ["json", "jsonc", "plaintext"],
   ],
-  ["golang.files", "**/{go.mod,go.work}", ["go.mod"]],
+  ["golang.files", "**/{go.mod,go.work}", ["go.mod", "plaintext"]],
   [
     "maven.files",
     "**/{pom.xml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,gradle/libs.versions.toml,build.sbt,deps.edn,project.clj}",
@@ -47,7 +51,7 @@ const defaultFilePatternEntries = [
     "**/{pubspec.yaml,pubspec.yml,pubspec_overrides.yaml}",
     ["yaml"],
   ],
-  ["ruby.files", "**/Gemfile", ["ruby", "plaintext"]],
+  ["ruby.files", "**/{*.gemspec,Gemfile}", ["ruby", "plaintext"]],
   [
     "hex.files",
     "**/{mix.exs,rebar.config,gleam.toml}",
@@ -60,7 +64,7 @@ const defaultFilePatternEntries = [
     ["plaintext", "yaml"],
   ],
   ["julia.files", "**/{Project.toml,Manifest.toml,Manifest-v*.toml}", ["toml"]],
-  ["cran.files", "**/{DESCRIPTION,renv.lock}", ["plaintext", "json"]],
+  ["cran.files", "**/{DESCRIPTION,renv.lock}", ["plaintext", "json", "jsonc"]],
 ] as const;
 const defaultFilePatternByKey = new Map<string, string>(
   defaultFilePatternEntries.map(([key, pattern]) => [key, pattern]),
