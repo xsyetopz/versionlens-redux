@@ -86,6 +86,7 @@ pub struct CredentialChain {
     gh: Arc<GhRunner>,
     /// Unset until `gh` has run; then its result, including "no token".
     gh_result: Arc<OnceLock<Option<Credential>>>,
+    github_host: String,
 }
 
 impl fmt::Debug for CredentialChain {
@@ -121,7 +122,16 @@ impl CredentialChain {
             env: Arc::new(env),
             gh: Arc::new(gh),
             gh_result: Arc::default(),
+            github_host: GITHUB_API_HOST.to_owned(),
         }
+    }
+
+    /// Treats `host` as the GitHub API host, for a test server or an
+    /// Enterprise instance.
+    #[must_use]
+    pub fn with_github_host(mut self, host: &str) -> Self {
+        self.github_host = host.to_ascii_lowercase();
+        self
     }
 
     /// Records the credential a client supplied for `host`, used for the rest
@@ -139,7 +149,7 @@ impl CredentialChain {
     pub fn resolve(&self, url: &str) -> Option<Credential> {
         let host = host_of(url)?;
         self.preset_credential(&host).or_else(|| {
-            if host == GITHUB_API_HOST {
+            if host == self.github_host {
                 self.gh_result.get().cloned().flatten()
             } else {
                 None
@@ -154,7 +164,7 @@ impl CredentialChain {
     pub fn resolve_after_denied(&self, url: &str, status: u16) -> Option<Credential> {
         let host = host_of(url)?;
         if !matches!(status, 401 | 403 | 429)
-            || host != GITHUB_API_HOST
+            || host != self.github_host
             || self.preset_credential(&host).is_some()
         {
             return None;
@@ -178,7 +188,7 @@ impl CredentialChain {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(host)
             .cloned();
-        if supplied.is_some() || host != GITHUB_API_HOST {
+        if supplied.is_some() || host != self.github_host {
             return supplied;
         }
         ["GITHUB_TOKEN", "GH_TOKEN"]
@@ -229,7 +239,12 @@ fn run_for_output(program: &str, args: &[&str], timeout: Duration) -> Option<Str
         .ok()?;
     let deadline = Instant::now() + timeout;
     let status = loop {
-        match child.try_wait().ok()? {
+        let Ok(polled) = child.try_wait() else {
+            let _ = child.kill();
+            let _ = child.wait();
+            return None;
+        };
+        match polled {
             Some(status) => break status,
             None if Instant::now() >= deadline => {
                 let _ = child.kill();

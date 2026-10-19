@@ -52,19 +52,11 @@ impl VersionLensSession {
 
         let accept = accept_header_for_request(ecosystem, url);
         let retry_policy = retry_policy_for_request(ecosystem, url);
-        let mut response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
-        let mut http_config = http_config;
-        if let Err(error) = &response
-            && let Some(status) = error.status_code()
-            && let Some(credential) = self.credential_after_denied(url, status).await
-            && !http_config
-                .auth_headers
-                .contains(&credential.authorization_header())
-        {
-            // GitHub refused the request and `gh` supplied a token: retry once.
-            versionlens_fetch::apply_credential(&mut http_config.auth_headers, &credential);
-            response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
-        }
+        let (response, http_config) = self
+            .fetch_text_with_gh_retry(url, http_config, accept, retry_policy, operation)
+            .await;
+        // A retry carries another credential, so its body belongs to another key.
+        let cache_key = self.request_cache_key(url, &http_config);
 
         match response {
             Ok(body) => {
@@ -153,15 +145,49 @@ fn retry_policy_for_request(ecosystem: Ecosystem, url: &str) -> RetryPolicy {
 }
 
 impl VersionLensSession {
+    /// Fetches `url`; when GitHub refuses it and `gh auth token` supplies a
+    /// token not yet sent, retries once with it. Returns the config used last.
+    async fn fetch_text_with_gh_retry(
+        &self,
+        url: &str,
+        mut http_config: HttpConfig,
+        accept: Option<&str>,
+        retry_policy: RetryPolicy,
+        operation: &OperationContext,
+    ) -> (Result<String, HttpError>, HttpConfig) {
+        let mut response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+        if let Err(error) = &response
+            && let Some(status) = error.status_code()
+            && let Some(credential) = self.credential_after_denied(url, status, operation).await
+            && !http_config
+                .auth_headers
+                .contains(&credential.authorization_header())
+        {
+            versionlens_fetch::apply_credential(&mut http_config.auth_headers, &credential);
+            response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+        }
+        (response, http_config)
+    }
+
     /// The `gh auth token` credential, when GitHub refused `url` with `status`
-    /// and no earlier source applies. Runs `gh` on a blocking thread.
-    async fn credential_after_denied(&self, url: &str, status: u16) -> Option<Credential> {
+    /// and no earlier source applies. Runs `gh` on a blocking thread and waits
+    /// no longer than the operation deadline.
+    async fn credential_after_denied(
+        &self,
+        url: &str,
+        status: u16,
+        operation: &OperationContext,
+    ) -> Option<Credential> {
         let credentials = self.request_state.credentials.clone();
         let url = url.to_owned();
-        tokio::task::spawn_blocking(move || credentials.resolve_after_denied(&url, status))
-            .await
-            .ok()
-            .flatten()
+        let task =
+            tokio::task::spawn_blocking(move || credentials.resolve_after_denied(&url, status));
+        match operation.remaining_duration() {
+            Some(remaining) => tokio::time::timeout(remaining, task).await.ok()?,
+            None => task.await,
+        }
+        .ok()
+        .flatten()
     }
 
     pub(crate) fn authorization_url_for_request(&self, request_url: &str) -> String {

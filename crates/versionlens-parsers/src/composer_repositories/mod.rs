@@ -10,6 +10,8 @@ type ComposerJsonObject<'a> = Object<'a>;
 type ComposerJsonValue<'a> = Value<'a>;
 type ComposerAuthEntries = Vec<ComposerAuthEntry>;
 
+// The Debug output carries raw tokens and feeds cache-scope hashing, so it must
+// stay as is and must never be logged.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComposerAuthEntry {
     pub registry: String,

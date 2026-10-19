@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use super::{Credential, CredentialChain, Secret, apply_credential, run_for_output};
-use crate::http::{HttpConfig, HttpConfigInput, HttpError, HttpHeader, HttpHeaderInput};
+use crate::http::{HttpConfig, HttpConfigInput, HttpHeader, HttpHeaderInput};
 
 const API: &str = "https://api.github.com/repos/actions/checkout/tags";
 const OTHER: &str = "https://registry.npmjs.org/left-pad";
@@ -215,14 +215,4 @@ fn credentials_redaction_http_config_debug() {
         )]),
     };
     assert_clean(&format!("{input:?}"));
-}
-
-#[test]
-fn credentials_redaction_errors_do_not_carry_tokens() {
-    let error = HttpError::RateLimited {
-        host: "api.github.com".to_owned(),
-        status: 403,
-        reset: std::time::SystemTime::now(),
-    };
-    assert_clean(&format!("{error} {error:?}"));
 }

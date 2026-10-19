@@ -38,6 +38,8 @@ use npm::{
     npm_generic_proxy_for_request, npm_no_proxy_matches, npm_registry_entry_applies,
 };
 
+// The Debug output carries raw tokens and feeds cache-scope hashing, so it must
+// stay as is and must never be logged.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct RegistryContext {
     manifest_kind: Option<ManifestKind>,
