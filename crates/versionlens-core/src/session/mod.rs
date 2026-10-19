@@ -18,6 +18,7 @@ use crate::contract::{
 use crate::suggestion::into_suggestion_views;
 use cache::CachedLatest;
 
+mod authorization;
 mod cache;
 mod checking;
 #[cfg(test)]
@@ -35,6 +36,7 @@ mod storage;
 mod tasks;
 mod workspace;
 
+pub use authorization::{AuthorizationFuture, AuthorizationSource};
 pub use checking::{
     WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions,
 };
@@ -73,6 +75,7 @@ pub(crate) struct SessionRequests {
     pub(crate) request_context_hashers: [RandomState; 2],
     pub(crate) dotnet_registry_sources: Arc<Mutex<Option<Vec<String>>>>,
     pub(crate) credentials: versionlens_fetch::CredentialChain,
+    pub(crate) authorization: authorization::AuthorizationHook,
 }
 
 #[derive(Debug, Clone)]
@@ -142,6 +145,7 @@ pub fn version_lens_session(config: SessionConfig) -> VersionLensSession {
             request_context_hashers: [<RandomState>::new(), <RandomState>::new()],
             dotnet_registry_sources: Arc::new(crate::mutex(None)),
             credentials: versionlens_fetch::CredentialChain::new(),
+            authorization: authorization::AuthorizationHook::default(),
         },
         result_state: SessionResults {
             parsed_dependencies: Arc::new(crate::mutex(

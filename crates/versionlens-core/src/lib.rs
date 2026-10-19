@@ -47,18 +47,19 @@ pub use contract::{
 pub use dependency::dependency_view;
 pub use dotnet_sources::dotnet_registry_source_urls;
 pub use session::{
-    ApplyCommandRequest, CHECKING_CANCELLED, SessionTask, VersionLensSession, WorkspaceCheckEvent,
-    WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions, WorkspaceDiscovery,
-    WorkspaceDiscoveryCancellation, WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind,
-    WorkspaceDiscoveryFileSize, WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits,
-    WorkspaceDiscoveryOptions, WorkspaceProviderExclusion, version_lens_session,
-    workspace_exclusion_matches, workspace_exclusion_path,
+    ApplyCommandRequest, AuthorizationFuture, AuthorizationSource, CHECKING_CANCELLED, SessionTask,
+    VersionLensSession, WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking,
+    WorkspaceCheckingOptions, WorkspaceDiscovery, WorkspaceDiscoveryCancellation,
+    WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryFileSize,
+    WorkspaceDiscoveryIoOperation, WorkspaceDiscoveryLimits, WorkspaceDiscoveryOptions,
+    WorkspaceProviderExclusion, version_lens_session, workspace_exclusion_matches,
+    workspace_exclusion_path,
 };
 pub(crate) use support::{
     anyhow_error, boxed, default, duration_from_millis, memory_cache, mutex, path, recover_poison,
     string_from_utf8,
 };
-pub use versionlens_fetch::application_cache_directory;
+pub use versionlens_fetch::{Credential, application_cache_directory};
 pub(crate) use versionlens_model::parse_semver;
 pub use versionlens_update::{Bump, BumpKind, Plan, PlanStatus};
 pub use versionlens_update::{Suggestion, SuggestionStatus};

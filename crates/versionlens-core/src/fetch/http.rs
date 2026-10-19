@@ -158,13 +158,21 @@ impl VersionLensSession {
         let mut response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
         if let Err(error) = &response
             && let Some(status) = error.status_code()
-            && let Some(credential) = self.credential_after_denied(url, status, operation).await
-            && !http_config
-                .auth_headers
-                .contains(&credential.authorization_header())
         {
-            versionlens_fetch::apply_credential(&mut http_config.auth_headers, &credential);
-            response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+            let mut credential = self.credential_after_denied(url, status, operation).await;
+            if credential
+                .as_ref()
+                .is_none_or(|credential| sent_with(&http_config, credential))
+                && is_authorization_denial(error, status)
+            {
+                credential = self.credential_from_client(url, status, operation).await;
+            }
+            if let Some(credential) = credential
+                && !sent_with(&http_config, &credential)
+            {
+                versionlens_fetch::apply_credential(&mut http_config.auth_headers, &credential);
+                response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+            }
         }
         (response, http_config)
     }
@@ -190,6 +198,28 @@ impl VersionLensSession {
         .flatten()
     }
 
+    /// Asks the session's authorization source (the editor) for a credential
+    /// for the host of `url` and keeps an answer for the session. Waits no
+    /// longer than the operation deadline, and never blocks a thread.
+    async fn credential_from_client(
+        &self,
+        url: &str,
+        status: u16,
+        operation: &OperationContext,
+    ) -> Option<Credential> {
+        let source = self.request_state.authorization.get()?;
+        let host = versionlens_fetch::host_of(url)?;
+        let answer = source.authorize(&host, status);
+        let credential = match operation.remaining_duration() {
+            Some(remaining) => tokio::time::timeout(remaining, answer).await.ok()?,
+            None => answer.await,
+        }?;
+        self.request_state
+            .credentials
+            .set_client_credential(&host, credential.clone());
+        Some(credential)
+    }
+
     pub(crate) fn authorization_url_for_request(&self, request_url: &str) -> String {
         self.config
             .http
@@ -203,6 +233,18 @@ impl VersionLensSession {
             .or_else(|| url_origin(request_url))
             .unwrap_or_else(|| request_url.to_owned())
     }
+}
+
+/// Whether the host refused the request for lack of a credential. A rate
+/// limit also answers 403, but it is its own error and no credential helps.
+fn is_authorization_denial(error: &HttpError, status: u16) -> bool {
+    matches!(error, HttpError::Client(_)) && matches!(status, 401 | 403)
+}
+
+fn sent_with(config: &HttpConfig, credential: &Credential) -> bool {
+    config
+        .auth_headers
+        .contains(&credential.authorization_header())
 }
 
 /// The kind of a transport failure, for error lenses and logs.

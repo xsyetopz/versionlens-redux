@@ -219,7 +219,9 @@ pub fn apply_credential(headers: &mut Vec<HttpHeader>, credential: &Credential) 
     headers.push(credential.authorization_header());
 }
 
-fn host_of(url: &str) -> Option<String> {
+/// The lower-case host of `url` without its port, which is how credentials
+/// are keyed.
+pub fn host_of(url: &str) -> Option<String> {
     Some(Url::parse(url).ok()?.host_str()?.to_ascii_lowercase())
 }
 

@@ -116,6 +116,8 @@ struct StateModes {
     /// Where sessions store results across restarts. `None` keeps them in
     /// memory only.
     cache_directory: Option<std::path::PathBuf>,
+    /// Asked for a credential when a registry refuses a request.
+    authorization: groups::AuthorizationSlot,
     controller_managed: bool,
 }
 

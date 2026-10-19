@@ -35,9 +35,11 @@ struct InitializeWorkspaceParams {
     _remaining: HashMap<String, Value>,
 }
 
+mod authorization;
 mod checking;
 mod settings;
 mod work;
+use authorization::AuthorizationBroker;
 use checking::{WorkspaceController, log_message};
 use settings::SettingsRequests;
 use work::WorkQueue;
@@ -122,12 +124,15 @@ fn run_message_loop(
     let runtime = Runtime::new().context("failed to create LSP async runtime")?;
     let mut work = WorkQueue::new(runtime.handle().clone());
     state.use_workspace_controller();
+    let authorization = AuthorizationBroker::new(connection.sender.clone());
+    state.use_authorization_source(authorization.clone());
     let mut checking = WorkspaceController::start(state, runtime.handle().clone())?;
     let mut parts = LoopParts {
         state,
         work: &mut work,
         checking: &mut checking,
         settings: &mut settings,
+        authorization: &authorization,
     };
     let mut stopped = false;
     for message in queued {
@@ -183,6 +188,7 @@ struct LoopParts<'a> {
     work: &'a mut WorkQueue,
     checking: &'a mut WorkspaceController,
     settings: &'a mut SettingsRequests,
+    authorization: &'a AuthorizationBroker,
 }
 
 /// Handles one client message. Returns `true` when the server must stop.
@@ -196,6 +202,7 @@ fn handle_message(
         work,
         checking,
         settings,
+        authorization,
     } = parts;
     match message {
         Message::Request(request) => {
@@ -233,6 +240,9 @@ fn handle_message(
         Message::Response(response) if settings::is_answer(&response.id) => {
             settings.answer(connection, state, Some(checking), response)?;
             work.invalidate(state, connection)?;
+        }
+        Message::Response(response) if authorization::is_answer(&response.id) => {
+            authorization.answer(response);
         }
         Message::Response(response) => work.applied(connection, response)?,
     }

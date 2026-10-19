@@ -2,13 +2,26 @@
 //! session, so folders with the same settings share resolution and caches,
 //! and folders with different settings are resolved apart.
 
+use std::fmt;
 use std::io;
+use std::sync::Arc;
 
 use versionlens_core::{
-    SessionConfig, SessionConfigInput, VersionLensSession, version_lens_session,
+    AuthorizationSource, SessionConfig, SessionConfigInput, VersionLensSession,
+    version_lens_session,
 };
 
 use super::{VersionLensLspState, WorkspaceRoot, configuration::default_workspace_exclusions};
+
+/// The source of credentials given to every session.
+#[derive(Default)]
+pub(super) struct AuthorizationSlot(Option<Arc<dyn AuthorizationSource>>);
+
+impl fmt::Debug for AuthorizationSlot {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("AuthorizationSlot")
+    }
+}
 
 /// The settings of one workspace folder.
 #[derive(Debug, Clone, PartialEq)]
@@ -125,6 +138,9 @@ impl VersionLensLspState {
 
     fn new_session(&self, config: SessionConfig) -> io::Result<VersionLensSession> {
         let session = version_lens_session(config);
+        if let Some(source) = &self.modes.authorization.0 {
+            session.set_authorization_source(Arc::clone(source));
+        }
         match &self.modes.cache_directory {
             Some(directory) => session.with_persistent_cache(directory),
             None => Ok(session),
@@ -181,6 +197,15 @@ impl VersionLensLspState {
         }
         self.modes.cache_directory = Some(directory.to_owned());
         Ok(())
+    }
+
+    /// Lets every session, now and later, ask `source` for a credential
+    /// after a registry refuses a request.
+    pub(crate) fn use_authorization_source(&mut self, source: Arc<dyn AuthorizationSource>) {
+        for group in &self.groups {
+            group.session.set_authorization_source(Arc::clone(&source));
+        }
+        self.modes.authorization = AuthorizationSlot(Some(source));
     }
 
     pub(crate) fn cancel_pending_resolutions(&self) {
