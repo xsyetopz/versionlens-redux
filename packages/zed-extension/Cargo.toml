@@ -12,6 +12,6 @@ flate2 = { version = "1", default-features = false, features = ["rust_backend"] 
 sha2 = "0.10"
 tar = { version = "0.4", default-features = false }
 zed_extension_api = "0.7.0"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "2", default-features = false, features = ["deflate-flate2", "flate2"] }
 
 [workspace]

@@ -110,7 +110,7 @@ fn extract_binary(archive: &str, bytes: &[u8], binary_name: &str) -> Result<Vec<
         for entry in tar.entries().map_err(|e| e.to_string())? {
             let mut entry = entry.map_err(|e| e.to_string())?;
             let path = entry.path().map_err(|e| e.to_string())?;
-            if path.as_ref() == Path::new(binary_name) {
+            if path.file_name().is_some_and(|name| name == binary_name) {
                 entry.read_to_end(&mut out).map_err(|e| e.to_string())?;
                 return Ok(out);
             }
@@ -180,16 +180,18 @@ impl VersionLensExtension {
             verify_checksum(&archive, &bytes, &sums)?;
             let executable = extract_binary(&archive, &bytes, Self::server_binary())?;
             fs::create_dir_all(&install_directory).map_err(|e| e.to_string())?;
-            fs::write(&binary, executable).map_err(|e| e.to_string())
+            let partial = format!("{binary}.part");
+            fs::write(&partial, executable).map_err(|e| e.to_string())?;
+            if os != Os::Windows {
+                zed::make_file_executable(&partial)?;
+            }
+            fs::rename(&partial, &binary).map_err(|e| e.to_string())
         })();
         let _ = fs::remove_file(&archive_path);
         let _ = fs::remove_file(&sums_path);
         if let Err(error) = result {
             let _ = fs::remove_dir_all(&install_directory);
             return Err(error);
-        }
-        if os != Os::Windows {
-            zed::make_file_executable(&binary)?;
         }
         remove_stale(&install_directory);
         Ok(binary)
@@ -314,6 +316,24 @@ mod tests {
         assert_eq!(
             extract_binary("x.tar.gz", &bytes, "versionlens-lsp").unwrap(),
             b"bin"
+        );
+    }
+
+    #[test]
+    fn extracts_binary_from_zip() {
+        use std::io::Write;
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        writer
+            .start_file(
+                "versionlens-lsp.exe",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+        writer.write_all(b"exe").unwrap();
+        let bytes = writer.finish().unwrap().into_inner();
+        assert_eq!(
+            extract_binary("x.zip", &bytes, "versionlens-lsp.exe").unwrap(),
+            b"exe"
         );
     }
 
