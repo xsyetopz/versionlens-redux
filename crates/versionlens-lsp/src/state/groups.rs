@@ -6,7 +6,7 @@ use std::fmt;
 use std::io;
 use std::sync::Arc;
 
-use versionlens_core::{
+use versionlens_engine::{
     AuthorizationSource, SessionConfig, VersionLensSession, version_lens_session,
 };
 
@@ -211,7 +211,7 @@ impl VersionLensLspState {
     pub(crate) fn set_client_credential(
         &self,
         host: &str,
-        credential: &versionlens_core::Credential,
+        credential: &versionlens_engine::Credential,
     ) {
         for group in &self.groups {
             group

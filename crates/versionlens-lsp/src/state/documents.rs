@@ -1,5 +1,5 @@
 use lsp_types::{CodeLens, Diagnostic, PublishDiagnosticsParams, Uri};
-use versionlens_core::AnalyzeDocumentOutput;
+use versionlens_engine::AnalyzeDocumentOutput;
 use versionlens_model::{DocumentInput, document_text_hash};
 
 use super::presentation::{into_lsp_code_lenses, into_lsp_diagnostic};
@@ -26,7 +26,7 @@ impl VersionLensLspState {
         let path = normalized_file_path(&document.uri);
         let core_uri = path
             .as_deref()
-            .and_then(versionlens_core::workspace_file_uri)
+            .and_then(versionlens_engine::workspace_file_uri)
             .unwrap_or_else(|| document.uri.clone());
         self.revisions.insert(
             document.uri.clone(),
@@ -93,7 +93,7 @@ impl VersionLensLspState {
     }
 
     pub(crate) fn checked_document(&self, input: &DocumentInput) -> Option<CheckedDocument> {
-        let event_path = versionlens_core::workspace_path(&input.uri);
+        let event_path = versionlens_engine::workspace_path(&input.uri);
         let open_uri = self.documents.keys().find(|uri| {
             if uri.as_str() == input.uri {
                 return true;
@@ -182,7 +182,7 @@ impl VersionLensLspState {
     fn analyze_document(
         &self,
         document: &VersionLensTextDocument,
-    ) -> versionlens_core::AnalyzeDocumentOutput {
+    ) -> versionlens_engine::AnalyzeDocumentOutput {
         let input = self.document_work(&document.uri).map_or_else(
             || document_input(document, &document.uri),
             |work| work.input,
@@ -210,9 +210,9 @@ pub(crate) fn resolved_document(analysis: AnalyzeDocumentOutput, uri: &str) -> R
 
 fn normalized_workspace_root(root: Option<String>) -> Option<String> {
     let root = root?;
-    let normalized = versionlens_core::workspace_path(&root)
+    let normalized = versionlens_engine::workspace_path(&root)
         .and_then(|path| path.canonicalize().ok())
-        .and_then(|path| versionlens_core::workspace_file_uri(&path));
+        .and_then(|path| versionlens_engine::workspace_file_uri(&path));
     Some(normalized.unwrap_or(root))
 }
 

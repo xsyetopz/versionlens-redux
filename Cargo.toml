@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  "crates/versionlens-core",
+  "crates/versionlens-engine",
   "crates/versionlens-fetch",
   "crates/versionlens-lsp",
   "crates/versionlens-model",
@@ -62,7 +62,7 @@ tokio = { version = "1.53.3", features = [
   "sync",
   "time",
 ] }
-versionlens-core = { path = "crates/versionlens-core" }
+versionlens-engine = { path = "crates/versionlens-engine" }
 versionlens-fetch = { path = "crates/versionlens-fetch" }
 versionlens-lsp = { path = "crates/versionlens-lsp" }
 versionlens-model = { path = "crates/versionlens-model" }

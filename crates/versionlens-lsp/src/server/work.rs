@@ -9,7 +9,7 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
-use versionlens_core::{
+use versionlens_engine::{
     AnalyzeDocumentOutput, BumpActionView, ResolveDocumentOutput, SessionTask, UpdateMode,
 };
 

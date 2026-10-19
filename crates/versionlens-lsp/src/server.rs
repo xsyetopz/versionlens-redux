@@ -49,7 +49,7 @@ pub fn run_stdio_server() -> Result<()> {
     let (connection, io_threads) = Connection::stdio();
     run_connection(
         &connection,
-        Some(versionlens_core::application_cache_directory()),
+        Some(versionlens_engine::application_cache_directory()),
     )?;
     drop(connection);
     io_threads.join()?;

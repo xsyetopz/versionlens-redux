@@ -1,7 +1,7 @@
 use lsp_types::{
     CodeLens, Command, Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range, Uri,
 };
-use versionlens_core::{
+use versionlens_engine::{
     Action, BumpActionView, DependencyView, DiagnosticView, LensView, Severity, UpdateMode,
 };
 use versionlens_model::{Position as ModelPosition, Range as ModelRange};

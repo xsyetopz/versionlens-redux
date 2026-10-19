@@ -1,5 +1,5 @@
 [package]
-name = "versionlens-core"
+name = "versionlens-engine"
 description = "Version Lens orchestration contracts and domain model."
 edition.workspace = true
 rust-version.workspace = true

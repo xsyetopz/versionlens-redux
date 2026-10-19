@@ -1,6 +1,6 @@
 use anyhow::Result;
 use lsp_server::{Connection, Message};
-use versionlens_core::{WorkspaceCheckEvent, WorkspaceCheckResult};
+use versionlens_engine::{WorkspaceCheckEvent, WorkspaceCheckResult};
 use versionlens_model::DocumentInput;
 
 use super::{Analyzed, WorkspaceController};
@@ -144,7 +144,7 @@ fn a_cancelled_check_publishes_nothing() -> Result<()> {
                 generation,
                 result: WorkspaceCheckResult::Document {
                     input: Box::new(input),
-                    result: Err(versionlens_core::CHECKING_CANCELLED.to_owned()),
+                    result: Err(versionlens_engine::CHECKING_CANCELLED.to_owned()),
                 },
             },
         ),
@@ -202,9 +202,9 @@ fn snapshot_limits_and_discovery_failures_are_logged_not_published() -> Result<(
             uri: OPEN.to_owned(),
             limit: 1,
         },
-        WorkspaceCheckResult::DiscoveryFailure(versionlens_core::WorkspaceDiscoveryFailure {
+        WorkspaceCheckResult::DiscoveryFailure(versionlens_engine::WorkspaceDiscoveryFailure {
             path: Some(root.join("package.json")),
-            kind: versionlens_core::WorkspaceDiscoveryFailureKind::InvalidUtf8,
+            kind: versionlens_engine::WorkspaceDiscoveryFailureKind::InvalidUtf8,
         }),
     ] {
         controller.handle(

@@ -1423,7 +1423,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
-name = "versionlens-core"
+name = "versionlens-engine"
 version = "0.4.4"
 dependencies = [
  "anyhow",
@@ -1469,7 +1469,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "versionlens-core",
+ "versionlens-engine",
  "versionlens-model",
  "versionlens-parsers",
  "versionlens-test-support",

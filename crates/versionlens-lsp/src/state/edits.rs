@@ -15,8 +15,8 @@ impl VersionLensLspState {
                 if let Some(work) = self.document_work(uri) {
                     (work.uri, work.version, work.input.version, work.input.text)
                 } else {
-                    let path =
-                        versionlens_core::workspace_path(uri).ok_or("unsupported document URI")?;
+                    let path = versionlens_engine::workspace_path(uri)
+                        .ok_or("unsupported document URI")?;
                     let text = fs::read_to_string(path)
                         .map_err(|error| format!("cannot validate {uri}: {error}"))?;
                     (uri.clone(), None, None, text)
@@ -26,7 +26,7 @@ impl VersionLensLspState {
                 json!({"textDocument":{"uri":edit_uri,"version":version},"edits":document.edits}),
             );
         }
-        versionlens_core::validate_workspace_edit_plan(plan, &current).map_err(str::to_owned)?;
+        versionlens_engine::validate_workspace_edit_plan(plan, &current).map_err(str::to_owned)?;
         Ok(json!({"documentChanges":changes}))
     }
 }

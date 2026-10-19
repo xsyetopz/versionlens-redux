@@ -9,7 +9,7 @@ async fn cargo_path_dependencies_resolve_existing_relative_directories() {
         DocumentInput::new(file_uri(&root.join("Cargo.toml")), "toml".to_owned(), r#"
 [dependencies]
 versionlens-cache = { path = "crates/versionlens-cache" }
-versionlens-core = { version = "0.1.0", path = "crates/versionlens-cache" }
+versionlens-engine = { version = "0.1.0", path = "crates/versionlens-cache" }
 "#
             .to_owned(), Some(root.to_string_lossy().into_owned())),
         &[RegistryResponseInput::new("versionlens-cache".to_owned(), versionlens_model::Ecosystem::Cargo, r#"{"versions":[{"num":"9.9.9","yanked":false}]}"#.to_owned())],

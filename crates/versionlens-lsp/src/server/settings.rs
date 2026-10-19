@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Context, Result};
 use lsp_server::{Connection, Message, Request, RequestId, Response};
 use serde_json::Value;
-use versionlens_core::Settings;
+use versionlens_engine::Settings;
 
 use super::checking::WorkspaceController;
 use super::show_configuration_error;

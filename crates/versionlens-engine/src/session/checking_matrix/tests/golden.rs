@@ -12,7 +12,7 @@ use crate::{Action, DiagnosticView, LensView, RegistryResponseInput, Severity, U
 /// Writes the lens, diagnostic and edit output of every manifest case to
 /// `tests/golden/<release>/`, where the release is the case's `since`, or
 /// 0.4.4 for kinds that release supported. Run with
-/// `cargo test -p versionlens-core capture_golden_output -- --ignored`.
+/// `cargo test -p versionlens-engine capture_golden_output -- --ignored`.
 #[tokio::test]
 #[ignore = "writes tests/golden"]
 async fn capture_golden_output() {

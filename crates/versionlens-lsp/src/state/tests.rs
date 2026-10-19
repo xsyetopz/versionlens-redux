@@ -77,7 +77,7 @@ fn workspace_roots_match_canonical_document_uris_and_new_files() -> FileTestResu
     let work = state.document_work(&document_uri).unwrap();
     assert_eq!(
         work.input.workspace_root.as_deref(),
-        versionlens_core::workspace_file_uri(&real).as_deref()
+        versionlens_engine::workspace_file_uri(&real).as_deref()
     );
     assert_eq!(work.input.uri, canonical_uri);
     assert_eq!(
@@ -135,9 +135,10 @@ fn existing_file_workspace_root_uses_its_parent_directory() -> FileTestResult {
         .canonicalize()?;
     let manifest = directory.join("package.json");
     std::fs::write(&manifest, "{}")?;
-    let manifest_uri = versionlens_core::workspace_file_uri(&manifest).ok_or("missing file URI")?;
+    let manifest_uri =
+        versionlens_engine::workspace_file_uri(&manifest).ok_or("missing file URI")?;
     let directory_uri =
-        versionlens_core::workspace_file_uri(&directory).ok_or("missing directory URI")?;
+        versionlens_engine::workspace_file_uri(&directory).ok_or("missing directory URI")?;
     let mut state = VersionLensLspState::with_workspace(Some(uri(&manifest_uri)?), Vec::new());
 
     state.open_document(document(&manifest_uri, None));
@@ -226,7 +227,7 @@ async fn dependency_lenses_share_the_meaningful_source_range() {
         .session_for(uri)
         .resolve_document_with_responses(
             work.input,
-            &[versionlens_core::RegistryResponseInput::new(
+            &[versionlens_engine::RegistryResponseInput::new(
                 "example",
                 versionlens_model::Ecosystem::Npm,
                 r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"2.0.0":{}}}"#,
@@ -281,7 +282,7 @@ fn configuration_changes_invalidate_document_work_and_preserve_versions() -> Res
     state.open_document(document(uri, None));
     state.set_document_version(uri, 9);
     let work = state.document_work(uri).ok_or("missing document")?;
-    let config = versionlens_core::Settings::from_value(
+    let config = versionlens_engine::Settings::from_value(
         serde_json::json!({"suggestions":{"showVulnerabilities":false}}),
     )?
     .session_config();
@@ -364,7 +365,7 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     let root = std::env::temp_dir()
         .canonicalize()
         .map_err(|error| error.to_string())?;
-    let root_uri = versionlens_core::workspace_file_uri(&root).ok_or("missing root URI")?;
+    let root_uri = versionlens_engine::workspace_file_uri(&root).ok_or("missing root URI")?;
     let state = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
         .with_workspace_exclusions(super::workspace_exclusions(&serde_json::json!({
             "**/{generated,cache}/**": true
@@ -376,7 +377,7 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
     let generated = root.join("generated/package.json");
     let cache = root.join("cache/package.json");
     let file_uri = |path: &std::path::Path| {
-        versionlens_core::workspace_file_uri(path).ok_or_else(|| "missing file URI".to_owned())
+        versionlens_engine::workspace_file_uri(path).ok_or_else(|| "missing file URI".to_owned())
     };
 
     assert!(state.watched_file_is_relevant(&file_uri(&included)?));
@@ -394,7 +395,7 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
 
     let cargo_only = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
         .with_config(
-            versionlens_core::Settings::from_value(serde_json::json!({
+            versionlens_engine::Settings::from_value(serde_json::json!({
                 "enabledProviders": ["cargo"]
             }))?
             .session_config(),
@@ -404,7 +405,7 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
 
     let configured_npm = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
         .with_config(
-            versionlens_core::Settings::from_value(serde_json::json!({
+            versionlens_engine::Settings::from_value(serde_json::json!({
                 "enabledProviders": ["npm"],
                 "npm": {"files": "**/deps.custom"}
             }))?
@@ -455,7 +456,7 @@ fn code_actions_use_plain_changes_for_clients_without_document_changes() {
             character: 2,
         },
     };
-    let action = versionlens_core::BumpActionView {
+    let action = versionlens_engine::BumpActionView {
         title: "Bump to ^2.0.0".to_owned(),
         edit: versionlens_model::TextEdit {
             range,
