@@ -78,14 +78,14 @@ impl VersionLensSession {
         self.request_state
             .request_locks
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
+            .unwrap_or_else(PoisonError::into_inner)
             .clear();
         self.suggestion_cache().clear();
         self.vulnerability_cache().clear();
         self.request_state
             .dotnet_registry_sources
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
+            .unwrap_or_else(PoisonError::into_inner)
             .take();
     }
 
@@ -93,14 +93,14 @@ impl VersionLensSession {
         self.result_state
             .latest
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     pub(crate) fn request_body_cache(&self) -> MutexGuard<'_, MemoryCache<Arc<str>>> {
         self.request_state
             .request_body_cache
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     pub(crate) fn cached_request_body(&self, key: &CacheKey) -> Option<Arc<str>> {
@@ -112,7 +112,7 @@ impl VersionLensSession {
             .request_state
             .request_locks
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned));
+            .unwrap_or_else(PoisonError::into_inner);
         locks.retain(|_, lock| lock.strong_count() > 0);
         if let Some(lock) = locks.get(key).and_then(std::sync::Weak::upgrade) {
             return lock;
@@ -170,7 +170,7 @@ impl VersionLensSession {
         self.result_state
             .suggestions
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     pub(crate) fn cached_resolved_suggestion(

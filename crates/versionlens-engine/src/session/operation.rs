@@ -107,7 +107,7 @@ impl OperationContext {
         let mut requests = self
             .authorization_requests
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned));
+            .unwrap_or_else(PoisonError::into_inner);
         if requests
             .iter()
             .any(|request| request.auth_url == auth_url && request.request_url == request_url)
@@ -123,7 +123,7 @@ impl OperationContext {
     pub(crate) fn take_authorization_requests(&self) -> Vec<AuthorizationRequestPayload> {
         self.authorization_requests
             .lock()
-            .unwrap_or_else(|poisoned| PoisonError::into_inner(poisoned))
+            .unwrap_or_else(PoisonError::into_inner)
             .drain(..)
             .collect()
     }

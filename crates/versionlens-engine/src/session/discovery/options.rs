@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use versionlens_model::{DocumentInput, Ecosystem};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct WorkspaceDiscoveryLimits {
+pub(crate) struct WorkspaceDiscoveryLimits {
     pub files: usize,
     pub visited_entries: usize,
     pub depth: usize,
@@ -43,7 +43,7 @@ pub struct WorkspaceDiscoveryOptions {
     pub exclusions: Vec<String>,
     pub provider_exclusions: Vec<WorkspaceProviderExclusion>,
     pub overlays: Vec<DocumentInput>,
-    pub limits: WorkspaceDiscoveryLimits,
+    pub(crate) limits: WorkspaceDiscoveryLimits,
     pub cancellation: WorkspaceDiscoveryCancellation,
 }
 
