@@ -48,6 +48,8 @@ The Neovim plugin SHALL resolve the server in this order:
 4. a previously downloaded binary
 5. `PATH`
 
+In a development checkout, the repository's `target/debug` binary is also tried after the bundled binary.
+
 If none is found and `auto_download` is enabled (the default), it SHALL download the matching release binary into Neovim's data directory and verify it against `SHA256SUMS`.
 
 #### Scenario: LuaRocks install

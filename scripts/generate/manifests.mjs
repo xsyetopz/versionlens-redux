@@ -10,6 +10,8 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const PACKAGE_JSON = "packages/vscode-extension/package.json";
 const NEOVIM_SUPPORT = "packages/neovim-plugin/lua/versionlens/support.lua";
+const NEOVIM_DOWNLOAD = "packages/neovim-plugin/lua/versionlens/download.lua";
+const TARGETS = "scripts/package/targets.json";
 const JETBRAINS_SUPPORT =
   "packages/jetbrains-plugin/src/main/kotlin/com/versionlens/jetbrains/VersionLensLspServerSupportProvider.kt";
 const ZED_EXTENSION = "packages/zed-extension/extension.toml";
@@ -324,6 +326,29 @@ export function generateNeovim(text, manifests) {
   );
 }
 
+const releaseTargets = () =>
+  JSON.parse(readFileSync(join(ROOT, TARGETS), "utf8")).targets;
+
+/** Release target triple per editor target, from scripts/package/targets.json. */
+export function generateNeovimTargets(text) {
+  const pattern = /(local triples = \{\n)(?: {2}.*\n)*\}\n/u;
+  if (!pattern.test(text)) {
+    throw new Error(`${NEOVIM_DOWNLOAD} lacks triples`);
+  }
+  const lines = releaseTargets().map(
+    ({ vscode, rust }) =>
+      `  [${JSON.stringify(vscode)}] = ${JSON.stringify(rust)},`,
+  );
+  return text.replace(pattern, (_, open) => `${open}${lines.join("\n")}\n}\n`);
+}
+
+const neovimTargetEntries = (text) =>
+  blockEntries(
+    text,
+    ["triples"],
+    () => /local triples = \{\n((?: {2}.*\n)*)\}\n/u,
+  );
+
 export function generateJetBrains(text, manifests) {
   const { names, extensions, suffixes, patterns } = editorSupport(manifests);
   const replace = (source, variable, values) => {
@@ -566,6 +591,7 @@ export function generateAll(manifests) {
   const targets = [
     [PACKAGE_JSON, generatePackageJson, packageJsonEntries],
     [NEOVIM_SUPPORT, generateNeovim, neovimEntries],
+    [NEOVIM_DOWNLOAD, generateNeovimTargets, neovimTargetEntries],
     [JETBRAINS_SUPPORT, generateJetBrains, jetbrainsEntries],
     [ZED_EXTENSION, generateZed, zedEntries],
     [CONFIG_KEYS, generateConfigKeys, configKeysEntries],

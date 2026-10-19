@@ -105,7 +105,7 @@ The server pulls the `versionlens` section for each workspace folder and caches 
   - **VS Code:** builds one VSIX per target.
   - **JetBrains:** bundles all binaries in one plugin.
   - **Zed:** downloads and verifies the archive.
-  - **Neovim:** resolves `cmd`, then `$VERSIONLENS_LSP`, then a bundled binary, then a downloaded one, then `PATH`. If none is found and `auto_download` is on, it downloads into `stdpath("data")/versionlens/<version>/` and verifies against `SHA256SUMS`, using `curl` and `sha256sum`/`shasum`/`certutil`, whichever is present.
+  - **Neovim:** resolves `cmd`, then `$VERSIONLENS_LSP`, then a bundled binary, then (development checkouts only) the repository's `target/debug` binary, then a downloaded one, then `PATH`. If none is found and `auto_download` is on, it downloads into `stdpath("data")/versionlens/<version>/` and verifies against `SHA256SUMS`, using `curl`, `tar` (Windows: `System32\tar.exe`) and `sha256sum`/`shasum`/`certutil`, whichever is present. The download is asynchronous with a per-process scratch directory, buffers opened meanwhile start when it finishes, and a failure is remembered until restart. The target-to-triple map in `download.lua` is generated from `targets.json` by `scripts/generate/manifests.mjs`; Alpine is detected through `/etc/alpine-release` and gets the musl build.
 - **Release:** `release.yml` asserts 9 archives plus `SHA256SUMS`, pins the Bun version from `package.json` `packageManager`, and fails on version drift between crates and editor packages.
 
 ### D11. Bun tooling
