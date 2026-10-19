@@ -7,8 +7,7 @@ use std::io;
 use std::sync::Arc;
 
 use versionlens_core::{
-    AuthorizationSource, SessionConfig, SessionConfigInput, VersionLensSession,
-    version_lens_session,
+    AuthorizationSource, SessionConfig, VersionLensSession, version_lens_session,
 };
 
 use super::{VersionLensLspState, WorkspaceRoot, configuration::default_workspace_exclusions};
@@ -33,7 +32,7 @@ pub(crate) struct FolderSettings {
 impl Default for FolderSettings {
     fn default() -> Self {
         Self {
-            config: SessionConfigInput::default().into(),
+            config: SessionConfig::default(),
             exclusions: default_workspace_exclusions(),
         }
     }

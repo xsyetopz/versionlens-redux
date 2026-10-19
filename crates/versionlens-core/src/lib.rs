@@ -26,18 +26,14 @@ mod vulnerability;
 mod workspace;
 
 pub use config::{
-    DependencyPropertyConfig, DependencyPropertyConfigInput, EnabledProviderConfig,
-    FilePatternConfig, FilePatternConfigInput, PrereleaseTagConfig, PrereleaseTagConfigInput,
-    ProviderCacheConfig, ProviderCacheConfigInput, ProviderHttpConfig, ProviderHttpConfigInput,
-    ProviderSettings, ProviderSettingsInput, RegistryUrlConfig, RegistryUrlConfigInput,
-    SessionConfig, SessionConfigInput, Settings, SuggestionIndicators, SuggestionIndicatorsInput,
-    UpdateSeverity, dependency_property_config_from_name,
+    DependencyPropertyConfig, EnabledProviderConfig, FilePatternConfig, PrereleaseTagConfig,
+    ProviderCacheConfig, ProviderHttpConfig, ProviderSettings, RegistryUrlConfig, SessionConfig,
+    Settings, SuggestionIndicators, UpdateSeverity, dependency_property_config_from_name,
     dependency_property_manifest_kind_from_name, enabled_provider_config_from_name,
     file_pattern_config_from_name, file_pattern_manifest_kind_from_name,
-    prerelease_tag_config_from_name, provider_cache_config_from_input,
-    provider_cache_config_from_name, provider_http_config_from_name,
-    provider_settings_manifest_kind_from_name, registry_url_config_from_name,
-    standard_suggestion_indicators,
+    prerelease_tag_config_from_name, provider_cache_config_from_name,
+    provider_http_config_from_name, provider_settings_manifest_kind_from_name,
+    registry_url_config_from_name, standard_suggestion_indicators,
 };
 pub use contract::validate_workspace_edit_plan;
 pub use contract::{

@@ -91,4 +91,4 @@ Co-authored-by: Codex <noreply@openai.com>
 - Keep unrelated formatting and cleanup out of behavior changes.
 - Preserve command IDs, settings keys, and extension contribution points unless the change requires a migration.
 - Prefer source-backed parity with upstream VersionLens behavior when changing user-visible behavior.
-- Do not commit generated VSIX files, `target/`, `dist/`, `node_modules/`, native `.node` outputs, or TypeScript build info.
+- Do not commit generated VSIX files, `target/`, `dist/`, `node_modules/`, staged server binaries, or TypeScript build info.

@@ -16,8 +16,8 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 
 | Path | Purpose |
 | --- | --- |
-| `crates/` | Rust workspace crates for parsing, provider selection, version semantics, suggestions, text edits, HTTP, N-API, and LSP. |
-| `packages/vscode-extension/` | VS Code extension package, manifest, TypeScript adapter, native module packaging, and marketplace README. |
+| `crates/` | Rust workspace crates for parsing, provider selection, version semantics, suggestions, text edits, HTTP, and the LSP server. |
+| `packages/vscode-extension/` | VS Code extension package, manifest, TypeScript LSP client, bundled server packaging, and marketplace README. |
 | `packages/zed-extension/` | Zed extension that starts the shared `versionlens-lsp` server. |
 | `packages/neovim-plugin/` | Neovim plugin that starts the shared `versionlens-lsp` server. |
 | `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
@@ -29,7 +29,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 
 | Package | README | Runtime boundary |
 | --- | --- | --- |
-| VS Code | [`packages/vscode-extension/README.md`](packages/vscode-extension/README.md) | TypeScript adapter + `versionlens-napi` native module |
+| VS Code | [`packages/vscode-extension/README.md`](packages/vscode-extension/README.md) | TypeScript LSP client + shared `versionlens-lsp` binary |
 | Zed | [`packages/zed-extension/README.md`](packages/zed-extension/README.md) | Shared `versionlens-lsp` binary |
 | Neovim | [`packages/neovim-plugin/README.md`](packages/neovim-plugin/README.md) | Lua adapter + shared `versionlens-lsp` binary |
 | JetBrains | [`packages/jetbrains-plugin/README.md`](packages/jetbrains-plugin/README.md) | Shared `versionlens-lsp` binary through the IntelliJ Platform LSP API |
@@ -51,7 +51,6 @@ bun install --frozen-lockfile
 
 ```bash
 bun run build                 # build the VS Code extension bundle
-bun run native:build          # build the Rust N-API module used by VS Code
 cargo build -p versionlens-lsp # build the shared LSP server
 bun run typecheck             # TypeScript checks
 cargo test --workspace        # Rust tests
@@ -61,7 +60,7 @@ bun run marketplaces:configure # securely configure publishing secrets in GitHub
 bun run verify                # full repository validation
 ```
 
-`bun run verify` covers formatting, lints, Rust, TypeScript, extension and native tests, and editor packaging. Use targeted scripts while iterating, then run the full check before committing broad changes.
+`bun run verify` covers formatting, lints, Rust, TypeScript, extension tests, and editor packaging. Use targeted scripts while iterating, then run the full check before committing broad changes.
 
 The release and Marketplace publication procedure is documented in [`docs/releasing.md`](docs/releasing.md). Publication is a separate, manually dispatched, approval-gated workflow and never runs for pull requests.
 

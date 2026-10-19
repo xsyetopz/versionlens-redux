@@ -4,7 +4,7 @@ use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
 use super::{WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceCheckingOptions};
-use crate::{SessionConfigInput, WorkspaceDiscoveryOptions, version_lens_session};
+use crate::{SessionConfig, WorkspaceDiscoveryOptions, version_lens_session};
 
 fn options(root: &Path) -> WorkspaceCheckingOptions {
     WorkspaceCheckingOptions::new(WorkspaceDiscoveryOptions::new(vec![root.to_path_buf()]))
@@ -45,9 +45,11 @@ fn workflow(root: &Path) -> std::path::PathBuf {
 fn unopened_files_retry_after_expiry_without_adapter_requests() {
     let root = versionlens_test_support::temporary_directory("versionlens-checking-retry").unwrap();
     workflow(&root);
-    let mut config = crate::SessionConfig::from_input(SessionConfigInput::default());
-    config.show_vulnerabilities = false;
-    config.cache_ttl_ms = 5;
+    let config = SessionConfig {
+        show_vulnerabilities: false,
+        cache_ttl_ms: 5,
+        ..SessionConfig::default()
+    };
     let session = version_lens_session(config);
     let (sender, receiver) = channel();
     let checking = session
@@ -80,13 +82,10 @@ fn replacement_uses_the_new_unsaved_snapshot_and_generation() {
     let root =
         versionlens_test_support::temporary_directory("versionlens-checking-overlay").unwrap();
     let path = workflow(&root);
-    let session = version_lens_session(
-        SessionConfigInput {
-            show_vulnerabilities: Some(false),
-            ..SessionConfigInput::default()
-        }
-        .into(),
-    );
+    let session = version_lens_session(SessionConfig {
+        show_vulnerabilities: false,
+        ..SessionConfig::default()
+    });
     let (sender, receiver) = channel();
     let (release, blocked) = channel();
     let checking = session
@@ -137,7 +136,7 @@ fn snapshot_budget_produces_a_specific_result_and_settles() {
     let root =
         versionlens_test_support::temporary_directory("versionlens-checking-budget").unwrap();
     workflow(&root);
-    let session = version_lens_session(SessionConfigInput::default().into());
+    let session = version_lens_session(SessionConfig::default());
     let mut input = options(&root);
     input.max_snapshot_bytes = 0;
     let (sender, receiver) = channel();
@@ -166,13 +165,10 @@ fn snapshot_budget_produces_a_specific_result_and_settles() {
 fn cache_invalidation_triggers_checking_and_stop_releases_the_listener() {
     let root = versionlens_test_support::temporary_directory("versionlens-checking-clear").unwrap();
     workflow(&root);
-    let session = version_lens_session(
-        SessionConfigInput {
-            show_vulnerabilities: Some(false),
-            ..SessionConfigInput::default()
-        }
-        .into(),
-    );
+    let session = version_lens_session(SessionConfig {
+        show_vulnerabilities: false,
+        ..SessionConfig::default()
+    });
     let (sender, receiver) = channel();
     let operation = session.operation_context();
     let checking = session
@@ -212,13 +208,10 @@ fn discovery_failures_recover_without_an_adapter_request() {
             std::fs::create_dir_all(&root).unwrap();
             std::fs::write(workflow(&root), [0xff]).unwrap();
         }
-        let session = version_lens_session(
-            SessionConfigInput {
-                show_vulnerabilities: Some(false),
-                ..SessionConfigInput::default()
-            }
-            .into(),
-        );
+        let session = version_lens_session(SessionConfig {
+            show_vulnerabilities: false,
+            ..SessionConfig::default()
+        });
         let (sender, receiver) = channel();
         let checking = session
             .start_workspace_checking(options(&root), runtime(), move |event| {
@@ -259,13 +252,10 @@ fn discovery_retries_preserve_failed_overlay_precedence() {
             "x".repeat(128),
             Some(crate::workspace_file_uri(&root).unwrap()),
         ));
-    let session = version_lens_session(
-        SessionConfigInput {
-            show_vulnerabilities: Some(false),
-            ..SessionConfigInput::default()
-        }
-        .into(),
-    );
+    let session = version_lens_session(SessionConfig {
+        show_vulnerabilities: false,
+        ..SessionConfig::default()
+    });
     let (sender, receiver) = channel();
     let checking = session
         .start_workspace_checking(request, runtime(), move |event| {
@@ -300,13 +290,10 @@ fn document_updates_recheck_only_the_edited_document_without_rediscovery() {
     let path = workflow(&root);
     let other = root.join(".github/workflows/other.yml");
     std::fs::write(&other, "jobs: {check: {steps: [{uses: './other'}]}}\n").unwrap();
-    let session = version_lens_session(
-        SessionConfigInput {
-            show_vulnerabilities: Some(false),
-            ..SessionConfigInput::default()
-        }
-        .into(),
-    );
+    let session = version_lens_session(SessionConfig {
+        show_vulnerabilities: false,
+        ..SessionConfig::default()
+    });
     let (sender, receiver) = channel();
     let checking = session
         .start_workspace_checking(options(&root), runtime(), move |event| {

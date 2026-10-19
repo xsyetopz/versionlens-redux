@@ -2,7 +2,7 @@
 src/**
 !src/schema/
 !src/schema/multi-registries.json
-dist/*.node
+tests/**
 *.vsix
 *.tsbuildinfo
 tsconfig.json

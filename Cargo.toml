@@ -2,14 +2,12 @@
 members = [
   "crates/versionlens-core",
   "crates/versionlens-fetch",
-  "crates/versionlens-napi",
   "crates/versionlens-lsp",
   "crates/versionlens-model",
   "crates/versionlens-parsers",
   "crates/versionlens-providers",
   "crates/versionlens-test-support",
   "crates/versionlens-update",
-  "crates/versionlens-vscode-model",
 ]
 resolver = "3"
 
@@ -35,9 +33,6 @@ sha2 = "0.11.1"
 crossbeam-channel = "0.5.17"
 base64 = "0.23.1"
 anyhow = "1.0.104"
-napi = "3.14.2"
-napi-build = "2.6.0"
-napi-derive = "3.6.12"
 jsonc-parser = "0.34.0"
 lsp-server = "0.10.0"
 lsp-types = "0.97.0"
@@ -75,7 +70,6 @@ versionlens-parsers = { path = "crates/versionlens-parsers" }
 versionlens-providers = { path = "crates/versionlens-providers" }
 versionlens-test-support = { path = "crates/versionlens-test-support" }
 versionlens-update = { path = "crates/versionlens-update" }
-versionlens-vscode-model = { path = "crates/versionlens-vscode-model" }
 
 [workspace.lints.rust]
 warnings = { level = "deny", priority = -10 }
