@@ -180,10 +180,24 @@ jobs:
     steps:
       - *checkout_release
 
-      - name: Setup Rust target
-        uses: ./.github/actions/setup-rust
-        with:
-          target: ${{ matrix.rust_target }}
+      - *setup_bun
+
+      - name: Download released language server archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lsp-archives
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'versionlens-lsp-*' --pattern SHA256SUMS --dir lsp-archives
+
+      - name: Stage released language server binary
+        shell: bash
+        env:
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: bun scripts/package/stage-lsp.mjs lsp-archives "$RUST_TARGET" "target/$RUST_TARGET/release"
 
       - name: Setup Java
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
@@ -194,11 +208,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@67621b124fd2e251c5e8a0e6e3b91318f2287669 # v6.3.0
 
-      - name: Build, sign, and publish native variant
+      - name: Sign and publish native variant
         shell: bash
         env:
           RUST_TARGET: ${{ matrix.rust_target }}
-        run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin publishPlugin --no-daemon --stacktrace -PversionlensRustTarget="$RUST_TARGET"
+        run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin publishPlugin -x buildVersionLensLsp --no-daemon --stacktrace -PversionlensRustTarget="$RUST_TARGET"
 
   zed:
     name: Zed extension registry PR

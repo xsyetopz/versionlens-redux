@@ -6,6 +6,12 @@ on:
     branches:
       - master
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      lsp-artifact:
+        description: Artifact from an earlier build-lsp run. Empty builds the language server in this run.
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -82,12 +88,19 @@ jobs:
         shell: bash
         run: echo 'matrix={"include":[{"editor_target":"linux-x64","rust_target":"x86_64-unknown-linux-gnu","platform":"linux","arch":"x64","runner":"ubuntu-latest"},{"editor_target":"linux-arm64","rust_target":"aarch64-unknown-linux-gnu","platform":"linux","arch":"arm64","runner":"ubuntu-24.04-arm"},{"editor_target":"darwin-x64","rust_target":"x86_64-apple-darwin","platform":"darwin","arch":"x64","runner":"macos-15-intel"},{"editor_target":"darwin-arm64","rust_target":"aarch64-apple-darwin","platform":"darwin","arch":"arm64","runner":"macos-15"},{"editor_target":"win32-x64","rust_target":"x86_64-pc-windows-msvc","platform":"win32","arch":"x64","runner":"windows-latest"},{"editor_target":"win32-arm64","rust_target":"aarch64-pc-windows-msvc","platform":"win32","arch":"arm64","runner":"windows-11-arm"}]}' >> "$GITHUB_OUTPUT"
 
+  lsp:
+    name: Build language server
+    if: ${{ !inputs.lsp-artifact }}
+    uses: ./.github/workflows/build-lsp.yml
+
   package:
     name: Neovim package (${{ matrix.editor_target }})
     needs:
       - lint
       - test
       - targets
+      - lsp
+    if: ${{ !cancelled() && needs.lint.result == 'success' && needs.test.result == 'success' && needs.targets.result == 'success' && (needs.lsp.result == 'success' || needs.lsp.result == 'skipped') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
@@ -105,7 +118,7 @@ jobs:
           package-script: scripts/package/neovim.mjs
           platform: ${{ matrix.platform }}
           rust-target: ${{ matrix.rust_target }}
-          scope: neovim
+          lsp-artifact: ${{ inputs.lsp-artifact || 'versionlens-lsp' }}
 
       - name: Upload Neovim artifact
         uses: actions/upload-artifact@v7.0.2

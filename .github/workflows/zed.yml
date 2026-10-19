@@ -6,6 +6,12 @@ on:
     branches:
       - master
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      lsp-artifact:
+        description: Artifact from an earlier build-lsp run. Empty builds the language server in this run.
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -50,12 +56,15 @@ jobs:
       - name: Test Zed extension
         run: cargo test --manifest-path packages/zed-extension/Cargo.toml --locked
 
-      - name: Build Zed extension
-        run: cargo build --manifest-path packages/zed-extension/Cargo.toml --target wasm32-wasip2 --release --locked
+  lsp:
+    name: Build language server
+    if: ${{ !inputs.lsp-artifact }}
+    uses: ./.github/workflows/build-lsp.yml
 
   package:
     name: Zed package (${{ matrix.editor_target }})
-    needs: check
+    needs: [check, lsp]
+    if: ${{ !cancelled() && needs.check.result == 'success' && (needs.lsp.result == 'success' || needs.lsp.result == 'skipped') }}
     strategy:
       fail-fast: false
       matrix:
@@ -104,7 +113,7 @@ jobs:
           package-script: scripts/package/zed.mjs
           platform: ${{ matrix.platform }}
           rust-target: ${{ matrix.rust_target }}
-          scope: zed
+          lsp-artifact: ${{ inputs.lsp-artifact || 'versionlens-lsp' }}
 
       - name: Upload Zed artifact
         uses: actions/upload-artifact@v7.0.2

@@ -21,3 +21,4 @@ __pycache__/
 
 # VS Code test downloads
 .vscode-test/
+packages/vscode-extension/server/
