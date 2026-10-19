@@ -1,8 +1,6 @@
 name: Build LSP
 
 on:
-  push:
-    branches: [feat/6.4-build-lsp] # TEMP: dry run, drop before merge
   workflow_call:
     inputs:
       artifact-name:
