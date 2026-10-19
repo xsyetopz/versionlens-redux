@@ -2,6 +2,11 @@ name: Build LSP
 
 on:
   workflow_call:
+    inputs:
+      artifact-name:
+        description: Name of the combined artifact; per-target artifacts derive from it.
+        type: string
+        default: versionlens-lsp
     outputs:
       version:
         description: versionlens-lsp crate version used in the archive names.
@@ -13,6 +18,11 @@ on:
         description: Name of the checksum file inside the release artifact.
         value: ${{ jobs.checksums.outputs.checksums-file }}
   workflow_dispatch:
+    inputs:
+      artifact-name:
+        description: Name of the combined artifact; per-target artifacts derive from it.
+        type: string
+        default: versionlens-lsp
 
 permissions:
   contents: read
@@ -73,9 +83,9 @@ jobs:
         with:
           target: ${{ matrix.rust_target }}
 
-      # Cross-compiled Linux targets (armhf, musl) use zig as the C linker.
+      # All Linux targets build with zig: musl, and gnu with a glibc 2.28 floor.
       - name: Setup Zig cross-compilation
-        if: contains(matrix.rust_target, 'musl') || contains(matrix.rust_target, 'gnueabihf')
+        if: contains(matrix.rust_target, 'linux')
         shell: bash
         run: |
           python3 -m pip install ziglang==0.15.2
@@ -90,12 +100,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # musl executables are fully static (+crt-static) so one binary runs on any Linux.
-          if [[ "$RUST_TARGET" == *-musl ]]; then
+          # Static executables: musl, and MSVC (no VCRUNTIME140.dll dependency).
+          if [[ "$RUST_TARGET" == *-musl || "$RUST_TARGET" == *-windows-msvc ]]; then
             export RUSTFLAGS="-C target-feature=+crt-static"
           fi
-          if [[ "$RUST_TARGET" == *-musl || "$RUST_TARGET" == *gnueabihf ]]; then
-            cargo zigbuild -p versionlens-lsp --bin versionlens-lsp --release --locked --target "$RUST_TARGET"
+          if [[ "$RUST_TARGET" == *-linux-* ]]; then
+            # gnu targets get a glibc 2.28 floor; output still lands in target/<triple>/.
+            zig_target="$RUST_TARGET"
+            if [[ "$RUST_TARGET" == *-gnu || "$RUST_TARGET" == *-gnueabihf ]]; then
+              zig_target="${RUST_TARGET}.2.28"
+            fi
+            cargo zigbuild -p versionlens-lsp --bin versionlens-lsp --release --locked --target "$zig_target"
           else
             cargo build -p versionlens-lsp --bin versionlens-lsp --release --locked --target "$RUST_TARGET"
           fi
@@ -110,7 +125,15 @@ jobs:
           mkdir -p dist
           if [[ "$RUST_TARGET" == *-windows-* ]]; then
             file="${name}.zip"
-            (cd "$release_dir" && 7z a -tzip "$GITHUB_WORKSPACE/dist/$file" versionlens-lsp.exe)
+            if command -v 7z >/dev/null 2>&1; then
+              (cd "$release_dir" && 7z a -tzip "$GITHUB_WORKSPACE/dist/$file" versionlens-lsp.exe)
+            else
+              /c/Windows/System32/tar.exe -a -cf "dist/$file" -C "$release_dir" versionlens-lsp.exe
+            fi
+          elif [[ "$RUST_TARGET" == *-apple-darwin ]]; then
+            file="${name}.tar.gz"
+            # Avoid AppleDouble (._*) entries and xattrs from bsdtar.
+            COPYFILE_DISABLE=1 tar --no-xattrs -C "$release_dir" -czf "dist/$file" versionlens-lsp
           else
             file="${name}.tar.gz"
             tar -C "$release_dir" -czf "dist/$file" versionlens-lsp
@@ -120,7 +143,7 @@ jobs:
       - name: Upload archive
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: versionlens-lsp-archive-${{ matrix.rust_target }}
+          name: ${{ inputs.artifact-name }}-archive-${{ matrix.rust_target }}
           path: dist/${{ steps.archive.outputs.file }}
           if-no-files-found: error
 
@@ -131,7 +154,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       version: ${{ needs.setup.outputs.version }}
-      release-artifact: versionlens-lsp
+      release-artifact: ${{ inputs.artifact-name }}
       checksums-file: SHA256SUMS
     steps:
       - name: Checkout
@@ -140,7 +163,7 @@ jobs:
       - name: Download archives
         uses: actions/download-artifact@v8.0.2
         with:
-          pattern: versionlens-lsp-archive-*
+          pattern: ${{ inputs.artifact-name }}-archive-*
           path: dist
           merge-multiple: true
 
@@ -173,7 +196,7 @@ jobs:
       - name: Upload archives and SHA256SUMS
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: versionlens-lsp
+          name: ${{ inputs.artifact-name }}
           path: |
             dist/*.tar.gz
             dist/*.zip

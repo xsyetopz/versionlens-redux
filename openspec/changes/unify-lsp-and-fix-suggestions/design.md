@@ -99,7 +99,7 @@ The server pulls the `versionlens` section for each workspace folder and caches 
 - **Drift check:** `bun scripts/generate/manifests.mjs --check` compares the generated output with the committed files and names each stale entry. The glob matching uses `globset` instead of the 486-line in-house matcher.
 
 ### D10. Distribution
-- **Build workflow:** a reusable `.github/workflows/build-lsp.yml` (`workflow_call`) builds the 9 targets with cargo-zigbuild 0.23.0 and ziglang 0.15.2. Alpine uses `-crt-static`. It uploads `versionlens-lsp-<version>-<target>.{tar.gz,zip}` and `SHA256SUMS`.
+- **Build workflow:** a reusable `.github/workflows/build-lsp.yml` (`workflow_call`) builds the 9 targets with cargo-zigbuild 0.23.0 and ziglang 0.15.2. Musl and MSVC targets build static executables (`+crt-static`), and gnu targets build with a glibc 2.28 floor. It uploads `versionlens-lsp-<version>-<target>.{tar.gz,zip}` and `SHA256SUMS`.
 - **Targets:** one target map, `scripts/package/targets.json`, read by the scripts, Gradle, Zed (via `build.rs` include) and Neovim (generated).
 - **Editors:**
   - **VS Code:** builds one VSIX per target.
