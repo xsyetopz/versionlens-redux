@@ -16,8 +16,8 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 
 | Path | Purpose |
 | --- | --- |
-| `crates/` | Rust workspace crates for parsing, provider selection, version semantics, suggestions, text edits, HTTP, N-API, and LSP. |
-| `packages/vscode-extension/` | VS Code extension package, manifest, TypeScript adapter, native module packaging, and marketplace README. |
+| `crates/` | Rust workspace crates for parsing, provider selection, version semantics, suggestions, text edits, HTTP, and the LSP server. |
+| `packages/vscode-extension/` | VS Code extension package, manifest, TypeScript LSP client, bundled server packaging, and marketplace README. |
 | `packages/zed-extension/` | Zed extension that starts the shared `versionlens-lsp` server. |
 | `packages/neovim-plugin/` | Neovim plugin that starts the shared `versionlens-lsp` server. |
 | `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
@@ -60,7 +60,7 @@ bun run marketplaces:configure # securely configure publishing secrets in GitHub
 bun run verify                # full repository validation
 ```
 
-`bun run verify` covers formatting, lints, Rust, TypeScript, extension and native tests, and editor packaging. Use targeted scripts while iterating, then run the full check before committing broad changes.
+`bun run verify` covers formatting, lints, Rust, TypeScript, extension tests, and editor packaging. Use targeted scripts while iterating, then run the full check before committing broad changes.
 
 The release and Marketplace publication procedure is documented in [`docs/releasing.md`](docs/releasing.md). Publication is a separate, manually dispatched, approval-gated workflow and never runs for pull requests.
 
