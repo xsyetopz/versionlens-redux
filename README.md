@@ -23,7 +23,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 | `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
 | `assets/versionlens/` | Shared icons, logo, and README media reused by editor packages. |
 | `scripts/` | Build, packaging, release, test, and benchmark scripts. |
-| `tests/` | Repo-level boundary, parser fixture, N-API, and e2e tests; VS Code unit tests live beside adapter source under `packages/vscode-extension/src/extension/__tests__/`. |
+| `tests/` | Repo-level boundary, parser fixture, golden, and e2e tests; VS Code unit tests live beside adapter source under `packages/vscode-extension/src/extension/__tests__/`. |
 
 ## Editor packages
 
