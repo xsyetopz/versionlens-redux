@@ -14,8 +14,6 @@ const JETBRAINS_SUPPORT =
   "packages/jetbrains-plugin/src/main/kotlin/com/versionlens/jetbrains/VersionLensLspServerSupportProvider.kt";
 const ZED_EXTENSION = "packages/zed-extension/extension.toml";
 const CONFIG_KEYS = "packages/vscode-extension/src/extension/config/keys.ts";
-const TEST_PATTERNS =
-  "packages/vscode-extension/src/extension/__tests__/documents/patterns.ts";
 const SUPPORT_MATRIX = "tests/fixtures/manifest-support-matrix.json";
 
 const NEOVIM_VARIABLES = [
@@ -410,37 +408,6 @@ export function generateConfigKeys(text, manifests) {
   );
 }
 
-const TEST_PATTERN_ROW =
-  /\[\s*"(\w+)\.files",\s*"([^"]*)",\s*(\[[^\]]*\]),?\s*\]/gu;
-
-/** The test fixture rows of the default `files` patterns and languages. */
-export function generateTestPatterns(text, manifests) {
-  const languages = perProvider(manifests, "languages");
-  const globs = perProvider(manifests, "files");
-  const marker = "const defaultFilePatternEntries = [";
-  const start = text.indexOf(marker);
-  const end = text.indexOf("] as const;", start);
-  if (start < 0 || end < 0) {
-    throw new Error(`${TEST_PATTERNS} lacks defaultFilePatternEntries`);
-  }
-  const body = text
-    .slice(start + marker.length, end)
-    .replace(TEST_PATTERN_ROW, (_row, provider) => {
-      const files = globs.get(provider);
-      if (!files?.length) {
-        throw new Error(
-          `${TEST_PATTERNS}: the table has no files for ${provider}`,
-        );
-      }
-      const ids = JSON.stringify(languages.get(provider) ?? []);
-      return `["${provider}.files", ${JSON.stringify(filesDefault(files))}, ${ids}]`;
-    });
-  return formatWithBiome(
-    TEST_PATTERNS,
-    text.slice(0, start + marker.length) + body + text.slice(end),
-  );
-}
-
 /** The `defaultGlob` and `languages` of each provider in the support matrix. */
 export function generateSupportMatrix(text, manifests) {
   const languages = perProvider(manifests, "languages");
@@ -530,15 +497,6 @@ function configKeysEntries(text, manifests) {
   return entries;
 }
 
-function testPatternsEntries(text) {
-  const entries = new Map();
-  for (const [, provider, glob, languages] of text.matchAll(TEST_PATTERN_ROW)) {
-    entries.set(`${provider}.files default`, globsOf(glob));
-    entries.set(`${provider}.files languages`, JSON.parse(languages));
-  }
-  return entries;
-}
-
 function supportMatrixEntries(text) {
   const entries = new Map();
   for (const { provider, manifests } of JSON.parse(text).entries) {
@@ -611,7 +569,6 @@ export function generateAll(manifests) {
     [JETBRAINS_SUPPORT, generateJetBrains, jetbrainsEntries],
     [ZED_EXTENSION, generateZed, zedEntries],
     [CONFIG_KEYS, generateConfigKeys, configKeysEntries],
-    [TEST_PATTERNS, generateTestPatterns, testPatternsEntries],
     [SUPPORT_MATRIX, generateSupportMatrix, supportMatrixEntries],
   ];
   return targets.map(([path, generate, entriesOf]) => {
