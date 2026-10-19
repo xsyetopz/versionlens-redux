@@ -115,10 +115,10 @@ impl ManifestRow {
             ManifestParser::Direct(parser) => parser(text),
             ManifestParser::WithPaths(parser) => parser(
                 text,
-                if !configured {
-                    self.dependency_paths
-                } else {
+                if configured {
                     &paths
+                } else {
+                    self.dependency_paths
                 },
             ),
         }
