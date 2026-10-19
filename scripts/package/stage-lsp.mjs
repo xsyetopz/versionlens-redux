@@ -10,7 +10,6 @@ import {
   renameSync,
   rmSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 
@@ -93,14 +92,15 @@ function stageLspBinary(archivesDir, rustTarget, destination) {
   }
   verifyChecksum(archivesDir, archiveName);
   const executableName = executableNameFor(rustTarget);
-  const scratch = mkdtempSync(join(tmpdir(), "versionlens-lsp-"));
+  // Scratch lives under the destination so the rename never crosses volumes.
+  mkdirSync(destination, { recursive: true });
+  const scratch = mkdtempSync(join(destination, ".extract-"));
   try {
     extract(join(archivesDir, archiveName), scratch);
     const extracted = join(scratch, executableName);
     if (!existsSync(extracted)) {
       throw new Error(`${archiveName} does not contain ${executableName}`);
     }
-    mkdirSync(destination, { recursive: true });
     const staged = join(destination, executableName);
     rmSync(staged, { force: true });
     renameSync(extracted, staged);
