@@ -1,5 +1,5 @@
 import { type Disposable, workspace } from "#vscode-host";
-import { restartClient } from "../client.ts";
+import { applyDiagnosticsVisibility, restartClient } from "../client.ts";
 import { documentSelectors } from "../documents.ts";
 import { clearManifestInfo } from "../manifest.ts";
 import { reloadConfigurationState } from "../session/flags.ts";
@@ -23,6 +23,7 @@ export function registerConfigurationHandler(
     }
     if (event.affectsConfiguration("versionlens")) {
       reloadConfigurationState(state);
+      applyDiagnosticsVisibility(state);
     }
     return synchronizeServer(state);
   });

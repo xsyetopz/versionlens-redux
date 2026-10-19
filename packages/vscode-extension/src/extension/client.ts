@@ -170,7 +170,8 @@ async function start(state: ExtensionState): Promise<void> {
   if (!existsSync(serverPath)) {
     const message = `VersionLens Redux could not find its language server (${serverPath}). Install the extension for your platform, or set ${SERVER_ENVIRONMENT_VARIABLE} to a versionlens-lsp binary.`;
     state.ui.outputChannel?.error(message);
-    await window.showErrorMessage(message);
+    // Not awaited: the promise settles only when the user closes the message.
+    void window.showErrorMessage(message);
     return;
   }
   state.selectorKey = JSON.stringify(documentSelectors());
@@ -218,7 +219,7 @@ async function disposeClient(
 function applyDiagnosticsVisibility(state: ExtensionState): void {
   const collection = state.client?.diagnostics;
   for (const { diagnostics, uri } of state.diagnostics.values()) {
-    collection?.set(uri, state.flags.showVersionLenses ? diagnostics : []);
+    collection?.set(uri, state.flags.diagnosticsHidden ? [] : diagnostics);
   }
 }
 

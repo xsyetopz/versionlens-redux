@@ -22,5 +22,6 @@ export async function reportError(
     detail = error.message;
   }
   state.ui.outputChannel?.error(`${title}: ${detail}`);
-  await window.showErrorMessage(`VersionLens: ${title}: ${detail}`);
+  // Not awaited: the promise settles only when the user closes the message.
+  void window.showErrorMessage(`VersionLens: ${title}: ${detail}`);
 }
