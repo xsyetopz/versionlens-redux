@@ -1,4 +1,3 @@
-import process from "node:process";
 import {
   commands,
   type ExtensionContext,
@@ -6,13 +5,14 @@ import {
   window,
   workspace,
 } from "#vscode-host";
+import { startClient } from "../client.ts";
 import { updateContexts } from "../commands/contexts.ts";
-import { refreshActiveDiagnostics } from "../diagnostics/refresh.ts";
 import { reloadConfigurationState } from "../session/flags.ts";
-import { recreateSessions } from "../session/registry.ts";
 import type { ExtensionState } from "../state.ts";
-import { initializePackageFileWatching } from "./package-watchers.ts";
-import { registerExtensionSubscriptions } from "./subscriptions.ts";
+import {
+  registerExtensionSubscriptions,
+  trackDocument,
+} from "./subscriptions.ts";
 import { initializeUi } from "./ui.ts";
 
 async function activateExtension(
@@ -26,22 +26,13 @@ async function activateExtension(
   warnWhenCodeLensesDisabled(state);
   registerExtensionSubscriptions(state, context);
 
-  try {
-    await recreateSessions(state);
-  } catch (error) {
-    let detail = String(error);
-    if (error instanceof Error) {
-      detail = error.message;
-    }
-    const runtime = [process.platform, process.arch].join("-");
-    const message = `VersionLens Redux could not load its native runtime for ${runtime}. Install the matching platform package.`;
-    state.ui.outputChannel?.appendLine([message, detail].join(" "));
-    await window.showErrorMessage(message);
-    throw error;
-  }
+  await startClient(state);
+  await Promise.all(
+    workspace.textDocuments.map(
+      (document): Promise<void> => trackDocument(state, document),
+    ),
+  );
   await updateContexts(state);
-  await initializePackageFileWatching(state);
-  await refreshActiveDiagnostics(state);
 }
 
 async function warnWhenOriginalVersionLensInstalled(

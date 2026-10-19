@@ -1,6 +1,6 @@
 import { commands, window } from "#vscode-host";
-import { analyzeDocument } from "../diagnostics/analyze.ts";
 import { fileDocument } from "../documents.ts";
+import { manifestInfo } from "../manifest.ts";
 import type { ExtensionState } from "../state.ts";
 import { customInstallTaskLabel } from "../tasks/custom-install.ts";
 
@@ -8,32 +8,32 @@ export async function updateContexts(
   state: ExtensionState,
 ): Promise<string | false> {
   const activeDocument = fileDocument(window.activeTextEditor?.document);
-  let activeOutput: ReturnType<typeof analyzeDocument>;
+  let info: Awaited<ReturnType<typeof manifestInfo>>;
   if (activeDocument) {
-    activeOutput = analyzeDocument(state, activeDocument);
+    info = await manifestInfo(state, activeDocument);
   }
-  const providerActive = activeOutput?.activeProviderName ?? false;
+  const providerActive = (info?.supported && info.provider) || false;
+  await setContexts(state, {
+    "versionlens.providerActive": providerActive,
+    "versionlens.show": state.flags.showVersionLenses,
+    "versionlens.showCustomInstall":
+      providerActive &&
+      Boolean(await customInstallTaskLabel(state, activeDocument)),
+    "versionlens.showOutdated": state.flags.showOutdated,
+    "versionlens.showPrereleases": state.flags.showPrereleases,
+    "versionlens.showSortAlphabetically":
+      providerActive && (info?.canSortDependencies ?? false),
+  });
+  return providerActive;
+}
 
-  await commands.executeCommand(
-    "setContext",
-    "versionlens.show",
-    state.flags.showVersionLenses,
-  );
-  await commands.executeCommand(
-    "setContext",
-    "versionlens.showPrereleases",
-    state.flags.showPrereleases,
-  );
-  await commands.executeCommand(
-    "setContext",
-    "versionlens.showOutdated",
-    state.flags.showOutdated,
-  );
-  await commands.executeCommand(
-    "setContext",
-    "versionlens.providerActive",
-    providerActive,
-  );
+async function setContexts(
+  state: ExtensionState,
+  contexts: Record<string, boolean | string>,
+): Promise<void> {
+  for (const [key, value] of Object.entries(contexts)) {
+    await commands.executeCommand("setContext", key, value);
+  }
   await commands.executeCommand(
     "setContext",
     "versionlens.providerBusy",
@@ -44,16 +44,4 @@ export async function updateContexts(
     "versionlens.providerError",
     state.flags.providerError,
   );
-  await commands.executeCommand(
-    "setContext",
-    "versionlens.showCustomInstall",
-    providerActive && Boolean(customInstallTaskLabel(state, activeDocument)),
-  );
-  await commands.executeCommand(
-    "setContext",
-    "versionlens.showSortAlphabetically",
-    providerActive && (activeOutput?.canSortDependencies ?? false),
-  );
-
-  return providerActive;
 }

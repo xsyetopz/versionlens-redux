@@ -1,19 +1,9 @@
 type MockModule = Record<string, unknown>;
 
 const vscodeRuntimeExports = [
-  "CodeLens",
-  "Diagnostic",
-  "EventEmitter",
-  "FileType",
-  "Range",
-  "RelativePattern",
   "TextDocumentChangeReason",
-  "Uri",
-  "WorkspaceEdit",
   "commands",
-  "env",
   "extensions",
-  "languages",
   "tasks",
   "window",
   "workspace",

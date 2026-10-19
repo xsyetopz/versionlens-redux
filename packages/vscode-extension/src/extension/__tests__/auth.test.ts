@@ -54,7 +54,7 @@ mockVscodeHost(
 );
 
 it("stores basic auth metadata in workspace state and secret storage", async (): Promise<void> => {
-  const { authHeaders } = await import("../auth/headers.ts");
+  const { answerAuthorization } = await import("../auth/authorization.ts");
   const { addAuthHeader } = await import("../auth/set.ts");
   const context = extensionContext();
   inputValues = ["https://registry.example.com///", "alice", "s3cret"];
@@ -76,13 +76,15 @@ it("stores basic auth metadata in workspace state and secret storage", async ():
   expect(
     context.secrets.values.get("/storage__https://registry.example.com"),
   ).toBe(Buffer.from("alice:s3cret").toString("base64"));
-  expect(await authHeaders({ context } as never)).toEqual([
-    {
-      name: "Authorization",
-      url: "https://registry.example.com",
-      value: `Basic ${Buffer.from("alice:s3cret").toString("base64")}`,
-    },
-  ]);
+  expect(
+    await answerAuthorization(
+      { context, promptedHosts: new Set<string>() } as never,
+      { host: "registry.example.com", status: 401 },
+    ),
+  ).toEqual({
+    scheme: "Basic",
+    token: Buffer.from("alice:s3cret").toString("base64"),
+  });
 });
 
 it("stores a custom authorization value after a successful prompt", async (): Promise<void> => {

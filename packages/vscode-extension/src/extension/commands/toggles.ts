@@ -1,7 +1,6 @@
-import { refreshActiveDiagnostics } from "../diagnostics/refresh.ts";
-import { recreateSessions } from "../session/registry.ts";
+import { DidChangeConfigurationNotification } from "vscode-languageclient/node";
+import { refreshCodeLenses } from "../client.ts";
 import type { ExtensionState } from "../state.ts";
-import { refreshCodeLenses } from "./codelens.ts";
 import { updateContexts } from "./contexts.ts";
 
 export async function toggleVersionLenses(
@@ -11,21 +10,28 @@ export async function toggleVersionLenses(
   state.flags.showVersionLenses = next;
   await updateContexts(state);
   refreshCodeLenses(state);
-  if (next) {
-    await refreshActiveDiagnostics(state);
-  } else {
-    state.ui.diagnostics?.clear();
-  }
 }
 
+/**
+ * The server reads `showPrereleasesOnStartup` from the settings it pulls
+ * (see `client.ts`), so the toggle asks it to pull them again.
+ */
 export async function togglePrereleases(
   state: ExtensionState,
   next: boolean,
 ): Promise<void> {
   state.flags.showPrereleases = next;
-  if (!(await recreateSessions(state))) {
-    return;
-  }
+  await notifyConfigurationChanged(state);
   await updateContexts(state);
-  refreshCodeLenses(state);
+}
+
+export async function notifyConfigurationChanged(
+  state: ExtensionState,
+): Promise<void> {
+  if (state.client?.isRunning()) {
+    await state.client.sendNotification(
+      DidChangeConfigurationNotification.type,
+      { settings: null },
+    );
+  }
 }

@@ -498,6 +498,7 @@ impl WorkQueue {
                     "canSortDependencies": analysis.can_sort_dependencies,
                     "installTaskConfigKey": analysis.install_task_config_key,
                     "dependencyCount": analysis.dependencies.len(),
+                    "dependencySignature": analysis.dependency_signature,
                 }),
             ),
             _ => respond_error(

@@ -1,7 +1,6 @@
 import type { TextDocument } from "#vscode-host";
-import { analyzeDocument } from "./diagnostics/analyze.ts";
-import { refreshDiagnostics } from "./diagnostics/refresh.ts";
 import { fileDocument } from "./documents.ts";
+import { manifestInfo } from "./manifest.ts";
 import type { ExtensionState } from "./state.ts";
 import { runInstallTaskIfDependenciesChanged } from "./tasks/save.ts";
 
@@ -14,13 +13,10 @@ export async function handleDidSaveTextDocument(
     return;
   }
 
-  const output = analyzeDocument(state, file);
-  if (!output?.isSupportedManifest) {
+  const info = await manifestInfo(state, file);
+  if (!info?.supported) {
     return;
   }
 
-  const saved = await runInstallTaskIfDependenciesChanged(state, file);
-  if (saved) {
-    await refreshDiagnostics(state, file);
-  }
+  await runInstallTaskIfDependenciesChanged(state, file);
 }

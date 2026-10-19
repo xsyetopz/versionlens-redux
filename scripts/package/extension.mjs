@@ -9,19 +9,9 @@ const checkOnly = process.argv.includes("--check");
 const vscodeHostImport = /^#vscode-host$/u;
 const virtualModule = /.*/u;
 const vscodeRuntimeExports = [
-  "CodeLens",
-  "Diagnostic",
-  "EventEmitter",
-  "FileType",
-  "Range",
-  "RelativePattern",
   "TextDocumentChangeReason",
-  "Uri",
-  "WorkspaceEdit",
   "commands",
-  "env",
   "extensions",
-  "languages",
   "tasks",
   "window",
   "workspace",
