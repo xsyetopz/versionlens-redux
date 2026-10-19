@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import type {
   Executable,
   LanguageClientOptions,
@@ -166,6 +167,12 @@ async function start(state: ExtensionState): Promise<void> {
     return;
   }
   const serverPath = resolveServerPath(extensionPath);
+  if (!existsSync(serverPath)) {
+    const message = `VersionLens Redux could not find its language server (${serverPath}). Install the extension for your platform, or set ${SERVER_ENVIRONMENT_VARIABLE} to a versionlens-lsp binary.`;
+    state.ui.outputChannel?.error(message);
+    await window.showErrorMessage(message);
+    return;
+  }
   state.selectorKey = JSON.stringify(documentSelectors());
   const client = createLanguageClient(state, serverPath);
   state.client = client;
@@ -173,11 +180,12 @@ async function start(state: ExtensionState): Promise<void> {
     await client.start();
     state.ui.outputChannel?.info(`language server started (${serverPath})`);
   } catch (error) {
+    // The client already told the user that it could not connect.
     state.client = undefined;
     await disposeClient(state, client);
-    const message = `VersionLens Redux could not start its language server (${serverPath}). Install the extension for your platform, or set ${SERVER_ENVIRONMENT_VARIABLE} to a versionlens-lsp binary.`;
-    state.ui.outputChannel?.error(`${message} ${String(error)}`);
-    await window.showErrorMessage(message);
+    state.ui.outputChannel?.error(
+      `could not start the language server (${serverPath}): ${String(error)}`,
+    );
   }
 }
 
