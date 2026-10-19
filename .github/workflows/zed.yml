@@ -7,11 +7,6 @@ on:
       - master
   workflow_dispatch:
   workflow_call:
-    inputs:
-      lsp-artifact:
-        description: Artifact from an earlier build-lsp run. Empty builds the language server in this run.
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -55,69 +50,3 @@ jobs:
 
       - name: Test Zed extension
         run: cargo test --manifest-path packages/zed-extension/Cargo.toml --locked
-
-  lsp:
-    name: Build language server
-    if: ${{ !inputs.lsp-artifact }}
-    uses: ./.github/workflows/build-lsp.yml
-
-  package:
-    name: Zed package (${{ matrix.editor_target }})
-    needs: [check, lsp]
-    if: ${{ !cancelled() && needs.check.result == 'success' && (needs.lsp.result == 'success' || needs.lsp.result == 'skipped') }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - editor_target: linux-x64
-            rust_target: x86_64-unknown-linux-gnu
-            platform: linux
-            arch: x64
-            runner: ubuntu-latest
-          - editor_target: linux-arm64
-            rust_target: aarch64-unknown-linux-gnu
-            platform: linux
-            arch: arm64
-            runner: ubuntu-24.04-arm
-          - editor_target: darwin-x64
-            rust_target: x86_64-apple-darwin
-            platform: darwin
-            arch: x64
-            runner: macos-15-intel
-          - editor_target: darwin-arm64
-            rust_target: aarch64-apple-darwin
-            platform: darwin
-            arch: arm64
-            runner: macos-15
-          - editor_target: win32-x64
-            rust_target: x86_64-pc-windows-msvc
-            platform: win32
-            arch: x64
-            runner: windows-latest
-          - editor_target: win32-arm64
-            rust_target: aarch64-pc-windows-msvc
-            platform: win32
-            arch: arm64
-            runner: windows-11-arm
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-
-      - name: Build and package Zed extension
-        uses: ./.github/actions/package-lsp-editor
-        with:
-          arch: ${{ matrix.arch }}
-          package-script: scripts/package/zed.mjs
-          platform: ${{ matrix.platform }}
-          rust-target: ${{ matrix.rust_target }}
-          lsp-artifact: ${{ inputs.lsp-artifact || 'versionlens-lsp' }}
-
-      - name: Upload Zed artifact
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: versionlens-redux-zed-extension-${{ matrix.editor_target }}
-          path: dist/versionlens-redux-zed-extension-${{ matrix.editor_target }}.tar.gz
-          if-no-files-found: error

@@ -17,13 +17,13 @@ From the repository root:
 cargo build -p versionlens-lsp
 ```
 
-Direct-distribution packages are platform-specific and embed the matching release server binary. CI produces Linux x64/ARM64, macOS x64/ARM64, and Windows x64/ARM64 archives. The registry extension resolves the server in this order:
+The extension does not bundle the server. It resolves it in this order:
 
 1. `lsp.versionlens.binary.path` in Zed settings.
 2. `versionlens-lsp` on `PATH`.
-3. The matching archive from the GitHub release whose tag equals the extension version.
+3. The release archive for the extension version (`versionlens-lsp-<version>-<target>`), downloaded from GitHub, checked against the release `SHA256SUMS`, and extracted into the extension directory. Older `versionlens-lsp-*` installs are removed. Targets come from `scripts/package/targets.json` at build time (`build.rs`). Zed grants the extension narrowly scoped permission to download only VersionLens Redux GitHub release assets.
 
-The direct archive carries the native server selected by its platform and architecture arguments. The registry package itself does not bundle the server; Zed grants it narrowly scoped permission to download only VersionLens Redux GitHub release assets.
+The `lsp.versionlens.settings` object is returned to the server as its `versionlens` workspace configuration.
 
 ## Zed verification
 
