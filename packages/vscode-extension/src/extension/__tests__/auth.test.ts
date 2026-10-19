@@ -54,7 +54,7 @@ mockVscodeHost(
 );
 
 it("stores basic auth metadata in workspace state and secret storage", async (): Promise<void> => {
-  const { authHeaders } = await import("../auth/headers.ts");
+  const { answerAuthorization } = await import("../auth/authorization.ts");
   const { addAuthHeader } = await import("../auth/set.ts");
   const context = extensionContext();
   inputValues = ["https://registry.example.com///", "alice", "s3cret"];
@@ -76,13 +76,15 @@ it("stores basic auth metadata in workspace state and secret storage", async ():
   expect(
     context.secrets.values.get("/storage__https://registry.example.com"),
   ).toBe(Buffer.from("alice:s3cret").toString("base64"));
-  expect(await authHeaders({ context } as never)).toEqual([
-    {
-      name: "Authorization",
-      url: "https://registry.example.com",
-      value: `Basic ${Buffer.from("alice:s3cret").toString("base64")}`,
-    },
-  ]);
+  expect(
+    await answerAuthorization(
+      { context, promptedHosts: new Set<string>() } as never,
+      { host: "registry.example.com", status: 401 },
+    ),
+  ).toEqual({
+    scheme: "Basic",
+    token: Buffer.from("alice:s3cret").toString("base64"),
+  });
 });
 
 it("stores a custom authorization value after a successful prompt", async (): Promise<void> => {
@@ -252,6 +254,53 @@ it("removes selected auth metadata and non-empty secrets", async (): Promise<voi
   expect(
     context.secrets.values.get("/storage__https://cancelled.example.com"),
   ).toBe("should-remain");
+});
+
+it("answers the server by host name, whatever the stored port and case", async (): Promise<void> => {
+  const { answerAuthorization } = await import("../auth/authorization.ts");
+  const url = "https://Registry.Example.com:8443/npm";
+  const context = extensionContext({
+    [url]: { protocol: "https:", scheme: "Custom", status: "NoStatus", url },
+  });
+  context.secrets.values.set(`/storage__${url}`, "Bearer abc");
+
+  expect(
+    await answerAuthorization(
+      { context, promptedHosts: new Set<string>() } as never,
+      { host: "registry.example.com", status: 401 },
+    ),
+  ).toEqual({ scheme: "", token: "Bearer abc" });
+});
+
+it("sends credentials as the header value 0.4.4 sent", async (): Promise<void> => {
+  const { answerAuthorization } = await import("../auth/authorization.ts");
+  const url = "https://registry.example.com";
+  const header = async (
+    scheme: string,
+    secret: string,
+  ): Promise<string | undefined> => {
+    const context = extensionContext({
+      [url]: { protocol: "https:", scheme, status: "NoStatus", url },
+    });
+    context.secrets.values.set(`/storage__${url}`, secret);
+    const answer = await answerAuthorization(
+      { context, promptedHosts: new Set<string>() } as never,
+      { host: "registry.example.com", status: 401 },
+    );
+    if (!answer) {
+      return;
+    }
+    // What the server does with the answer.
+    return answer.scheme ? `${answer.scheme} ${answer.token}` : answer.token;
+  };
+
+  expect(await header("Basic", "dTpw")).toBe("Basic dTpw");
+  expect(await header("Custom", "Bearer abc")).toBe("Bearer abc");
+  expect(await header("Custom", "Token a b")).toBe("Token a b");
+  expect(await header("Custom", "xyz")).toBe("xyz");
+  expect(await header("Custom", "Bearer  two  spaces ")).toBe(
+    "Bearer  two  spaces ",
+  );
 });
 
 function extensionContext(

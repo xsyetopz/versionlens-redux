@@ -1,76 +1,67 @@
+import type { LanguageClient } from "vscode-languageclient/node";
 import type {
-  DiagnosticCollection,
-  Disposable,
-  EventEmitter,
+  Diagnostic,
   ExtensionContext,
-  OutputChannel,
+  LogOutputChannel,
   Uri,
 } from "#vscode-host";
-import type { NativeSession } from "./native.ts";
 
-export interface ResourceSession {
-  resource: Uri | undefined;
-  session: NativeSession;
-}
+export type DocumentActivity = "busy" | "error";
 
 export interface ExtensionState {
   context: ExtensionContext | undefined;
-  sessions: Map<string, ResourceSession>;
+  client: LanguageClient | undefined;
+  /** Tail of the chain that serializes server start, stop and restart. */
+  lifecycle: Promise<void>;
+  /** Serialized document selector the running client was created with. */
+  selectorKey: string | undefined;
   ui: {
-    diagnostics: DiagnosticCollection | undefined;
-    outputChannel: OutputChannel | undefined;
-    codeLensProvider: Disposable | undefined;
-    codeLensRefresh: EventEmitter<void> | undefined;
-    resetCodeLensResolutions: (() => void) | undefined;
+    outputChannel: LogOutputChannel | undefined;
   };
   flags: {
+    /** Set by the hide command, not by starting with lenses off. */
+    diagnosticsHidden: boolean;
     showVersionLenses: boolean;
     showOutdated: boolean;
     showPrereleases: boolean;
-    showSuggestionStats: boolean;
     providerBusy: number;
     providerError: boolean;
-    codeLensReplace: boolean;
   };
+  /** Busy and error documents reported by `versionlens/status`. */
+  activity: Map<string, DocumentActivity>;
+  /** The diagnostics last published by the server, by document. */
+  diagnostics: Map<string, { diagnostics: Diagnostic[]; uri: Uri }>;
+  /** Hosts the user was already asked about in this session. */
+  promptedHosts: Set<string>;
   snapshots: {
     savedDependencies: Map<string, string>;
     editedDependencies: Map<string, string>;
-  };
-  lifecycle: {
-    packageFileWatchers: Disposable[];
-    externalPackageFileWatchers: Map<string, Disposable[]>;
-    sessionGenerations: Map<string, number>;
   };
 }
 
 export function createExtensionState(): ExtensionState {
   return {
     context: undefined,
-    sessions: new Map(),
+    client: undefined,
+    lifecycle: Promise.resolve(),
+    selectorKey: undefined,
     ui: {
-      diagnostics: undefined,
       outputChannel: undefined,
-      codeLensProvider: undefined,
-      codeLensRefresh: undefined,
-      resetCodeLensResolutions: undefined,
     },
     flags: {
+      diagnosticsHidden: false,
       showVersionLenses: true,
       showOutdated: false,
       showPrereleases: false,
-      showSuggestionStats: false,
       providerBusy: 0,
       providerError: false,
-      codeLensReplace: true,
     },
+    activity: new Map(),
+    diagnostics: new Map(),
+    promptedHosts: new Set(),
     snapshots: {
       savedDependencies: new Map(),
       editedDependencies: new Map(),
-    },
-    lifecycle: {
-      packageFileWatchers: [],
-      externalPackageFileWatchers: new Map(),
-      sessionGenerations: new Map(),
     },
   };
 }

@@ -11,6 +11,7 @@
       "**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc}",
       "!!**/.agents",
       "!!**/node_modules",
+      "!!**/.vscode-test",
       "!!**/dist",
       "!!tests/golden",
       "!!**/*.generated.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"

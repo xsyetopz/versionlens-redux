@@ -109,7 +109,7 @@ impl AuthorizationBroker {
                 serde_json::from_value::<Option<AuthorizationCredential>>(result).ok()
             })
             .flatten()
-            .filter(|credential| !credential.scheme.is_empty() && !credential.token.is_empty())
+            .filter(|credential| !credential.token.is_empty())
             .map(|credential| Credential::new(credential.scheme, credential.token));
         let mut asked = self.lock();
         if let Some((host, answer)) = asked.open.remove(&response.id) {

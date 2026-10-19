@@ -1,12 +1,12 @@
 import type { TextDocument } from "#vscode-host";
+import { manifestInfo } from "../manifest.ts";
 import type { ExtensionState } from "../state.ts";
-import { analyzeDocument } from "./analyze.ts";
 
-export function dependencySnapshot(
+export async function dependencySnapshot(
   state: ExtensionState,
   document: TextDocument,
-): string {
-  return analyzeDocument(state, document)?.dependencySignature ?? "";
+): Promise<string> {
+  return (await manifestInfo(state, document))?.dependencySignature ?? "";
 }
 
 export function rememberDependencySnapshot(

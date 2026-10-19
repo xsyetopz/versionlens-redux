@@ -65,11 +65,17 @@ impl Credential {
         Self::new("Bearer", token)
     }
 
-    /// The `Authorization` header that carries this credential.
+    /// The `Authorization` header that carries this credential. An empty
+    /// scheme sends the token as the whole value.
     pub fn authorization_header(&self) -> HttpHeader {
+        let value = if self.scheme.is_empty() {
+            self.token.expose().to_owned()
+        } else {
+            format!("{} {}", self.scheme, self.token.expose())
+        };
         HttpHeader {
             name: "Authorization".to_owned(),
-            value: format!("{} {}", self.scheme, self.token.expose()),
+            value,
             url: None,
         }
     }

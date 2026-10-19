@@ -1,8 +1,8 @@
 import { type TextDocument, workspace } from "#vscode-host";
-import { dependencySnapshot } from "../diagnostics/snapshot.ts";
 import type { ExtensionState } from "../state.ts";
 import { customInstallTaskLabel } from "./custom-install.ts";
 import { runTask } from "./runner.ts";
+import { dependencySnapshot } from "./snapshot.ts";
 
 async function runInstallTaskIfDependenciesChanged(
   state: ExtensionState,
@@ -12,14 +12,14 @@ async function runInstallTaskIfDependenciesChanged(
   const previous = state.snapshots.savedDependencies.get(key);
   const current =
     state.snapshots.editedDependencies.get(key) ??
-    dependencySnapshot(state, document);
+    (await dependencySnapshot(state, document));
 
   if (previous === undefined || previous === current) {
     rememberSavedDependencies(state, key, current);
     return true;
   }
 
-  const label = customInstallTaskLabel(state, document);
+  const label = await customInstallTaskLabel(state, document);
   if (!label) {
     rememberSavedDependencies(state, key, current);
     return true;

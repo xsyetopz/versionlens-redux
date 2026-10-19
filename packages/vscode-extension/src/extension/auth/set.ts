@@ -188,18 +188,6 @@ function authHeaderLabelForScheme(
   return "Custom Value";
 }
 
-function isAuthHeaderSuppressed(
-  state: ExtensionState,
-  options: AddAuthHeaderOptions | undefined,
-): boolean {
-  const authUrl = options?.authUrl;
-  const { context } = state;
-  if (!(authUrl && context)) {
-    return false;
-  }
-  return getUrlAuthentication(context, authUrl)?.scheme === notSetScheme;
-}
-
 async function promptAuthorizationUrl(
   options: AddAuthHeaderOptions,
   suggestedUrl = options.authUrl,
@@ -258,4 +246,4 @@ async function writeUrlAuthentication(
 }
 
 export type { AddAuthHeaderOptions };
-export { addAuthHeader, isAuthHeaderSuppressed };
+export { addAuthHeader };

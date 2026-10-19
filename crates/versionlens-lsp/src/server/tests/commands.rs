@@ -267,6 +267,11 @@ fn manifest_info_describes_the_document() -> Result<()> {
     assert_eq!(info["canSortDependencies"], true);
     assert_eq!(info["installTaskConfigKey"], "npm.onSaveChanges");
     assert_eq!(info["dependencyCount"], 2);
+    assert!(
+        info["dependencySignature"]
+            .as_str()
+            .is_some_and(|signature| !signature.is_empty())
+    );
     session.shutdown(3)
 }
 

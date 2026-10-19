@@ -59,6 +59,12 @@ fn credentials_environment_token_becomes_a_bearer_header() {
 }
 
 #[test]
+fn credentials_empty_scheme_sends_the_token_alone() {
+    let header = Credential::new("", "raw-token").authorization_header();
+    assert_eq!(header.value, "raw-token");
+}
+
+#[test]
 fn credentials_environment_tokens_are_only_for_github() {
     let (chain, _) = chain(&[("GITHUB_TOKEN", "env")], Some("gh"));
     assert_eq!(chain.resolve(OTHER), None);

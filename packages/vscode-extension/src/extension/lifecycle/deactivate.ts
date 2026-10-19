@@ -1,11 +1,11 @@
-import { disposeSessions } from "../session/registry.ts";
+import { stopClient } from "../client.ts";
 import type { ExtensionState } from "../state.ts";
-import { disposePackageFileWatchers } from "./package-watchers.ts";
 import { disposeUi } from "./ui.ts";
 
-export function deactivateExtension(state: ExtensionState): void {
-  disposeSessions(state);
-  disposePackageFileWatchers(state);
+export async function deactivateExtension(
+  state: ExtensionState,
+): Promise<void> {
+  await stopClient(state);
   disposeUi(state);
   for (const subscription of state.context?.subscriptions ?? []) {
     subscription.dispose();

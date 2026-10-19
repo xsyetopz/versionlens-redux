@@ -1,14 +1,10 @@
 import {
   type DocumentFilter,
-  type DocumentSelector,
-  Range,
   type TextDocument,
   type Uri,
   workspace,
 } from "#vscode-host";
 import { enabledFilePatternKeys } from "./config/keys.ts";
-import { optionalProperty } from "./config/optional.ts";
-import type { NativeDocumentInput, NativeRange } from "./native.ts";
 
 function fileDocument(
   document: TextDocument | undefined,
@@ -20,60 +16,26 @@ function fileDocument(
   return file;
 }
 
-function documentInput(document: TextDocument): NativeDocumentInput {
-  const workspaceRoot = workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
-
-  return {
-    uri: document.uri.toString(),
-    languageId: document.languageId,
-    text: document.getText(),
-    version: document.version,
-    ...optionalProperty("workspaceRoot", workspaceRoot),
-  };
-}
-
-function documentTextHash(text: string): string {
-  let hash = 0xcbf29ce484222325n;
-  for (const byte of new TextEncoder().encode(text)) {
-    hash ^= BigInt(byte);
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-  }
-  return hash.toString(16).padStart(16, "0");
-}
-
-function toRange(range: NativeRange): Range {
-  return new Range(
-    range.start.line,
-    range.start.character,
-    range.end.line,
-    range.end.character,
-  );
-}
-
 type FileDocumentSelectors = Array<{
   language: string;
   pattern: string;
   scheme: string;
 }>;
 
-function documentSelectors(): DocumentSelector {
+/** The documents the server is told about, from the enabled providers. */
+function documentSelectors(): FileDocumentSelectors {
   const selectors = [
     undefined,
     ...(workspace.workspaceFolders ?? []).map(({ uri }): Uri => uri),
   ].flatMap(
-    (resource): Array<{ language: string; pattern: string; scheme: string }> =>
-      selectorsForResource(resource),
+    (resource): FileDocumentSelectors => selectorsForResource(resource),
   );
   return [
     ...new Map(
-      selectors.map(
-        (
-          selector,
-        ): [string, { language: string; pattern: string; scheme: string }] => [
-          selectorKey(selector),
-          selector,
-        ],
-      ),
+      selectors.map((selector): [string, FileDocumentSelectors[number]] => [
+        selectorKey(selector),
+        selector,
+      ]),
     ).values(),
   ];
 }
@@ -84,32 +46,18 @@ function selectorsForResource(
   const config = workspace.getConfiguration("versionlens", resource);
   return enabledFilePatternKeys(
     config.get<string[]>("enabledProviders"),
-  ).flatMap(
-    ([, key, languages]): Array<{
-      language: string;
-      pattern: string;
-      scheme: string;
-    }> => {
-      const pattern = config.get<string>(key) ?? "**/*";
-      return languages.map(
-        (language): { language: string; pattern: string; scheme: string } => ({
-          language,
-          pattern,
-          scheme: "file",
-        }),
-      );
-    },
-  );
+  ).flatMap(([, key, languages]): FileDocumentSelectors => {
+    const pattern = config.get<string>(key) ?? "**/*";
+    return languages.map((language): FileDocumentSelectors[number] => ({
+      language,
+      pattern,
+      scheme: "file",
+    }));
+  });
 }
 
 function selectorKey(selector: DocumentFilter): string {
   return `${selector.scheme}\0${selector.language}\0${String(selector.pattern)}`;
 }
 
-export {
-  documentInput,
-  documentSelectors,
-  documentTextHash,
-  fileDocument,
-  toRange,
-};
+export { documentSelectors, fileDocument };

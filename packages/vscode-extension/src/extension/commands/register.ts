@@ -1,214 +1,104 @@
 import { commands, type Disposable } from "#vscode-host";
 import { removeAuthHeader } from "../auth/remove.ts";
 import { addAuthHeader } from "../auth/set.ts";
-import { refreshActiveDiagnostics } from "../diagnostics/refresh.ts";
-import type { NativeApplyCommand } from "../native.ts";
-import { recreateSessions } from "../session/registry.ts";
+import { restartClient } from "../client.ts";
 import type { ExtensionState } from "../state.ts";
 import { runCustomInstall } from "../tasks/custom-install.ts";
-import { applyRustEdits, registerApplyCommands } from "./apply.ts";
-import { chooseBuild } from "./build.ts";
-import {
-  nativeCodeLensArguments,
-  refreshCodeLenses,
-  registerCodeLensProvider,
-} from "./codelens.ts";
-import {
-  registerConfigurationHandler,
-  registerWorkspaceFolderHandler,
-} from "./configuration.ts";
 import { updateContexts } from "./contexts.ts";
-import { showProviderError } from "./error.ts";
-import { openDependency } from "./open.ts";
+import { reportError, showProviderError } from "./error.ts";
+import {
+  runDocumentCommand,
+  runServerCommand,
+  SERVER_COMMANDS,
+  type UpdateLevel,
+} from "./server.ts";
 import { togglePrereleases, toggleVersionLenses } from "./toggles.ts";
 
-const nativeBuildArgumentStart = 3;
+type Handler = () => Promise<void> | undefined;
 
-interface UpdateDependencyRequest {
-  codeLensOrName?: unknown;
-  command?: NativeApplyCommand | undefined;
-  selectedVersion?: string | undefined;
-  selector?: string | undefined;
+/**
+ * Registers a command that shows its failures to the user. Commands the
+ * server implements are forwarded with `workspace/executeCommand`. The
+ * others (toggles, authentication, tasks) run in the extension.
+ */
+function registerCommand(
+  state: ExtensionState,
+  id: string,
+  handler: Handler,
+): Disposable {
+  return commands.registerCommand(id, async (): Promise<void> => {
+    try {
+      await handler();
+    } catch (error) {
+      await reportError(state, `${id} failed`, error);
+    }
+  });
 }
 
 function registerCommands(state: ExtensionState): Disposable[] {
-  return [
-    ...registerSuggestionCommands(state),
-    ...registerDisplayCommands(state),
-    ...registerApplyCommands(state, [
-      ["versionlens.editor.onSortDependencies", "sort"],
-      ["versionlens.editor.onUpdateDependenciesLatest", "update"],
-      ["versionlens.editor.onUpdateDependenciesMajor", "updateMajor"],
-      ["versionlens.editor.onUpdateDependenciesMinor", "updateMinor"],
-      ["versionlens.editor.onUpdateDependenciesPatch", "updatePatch"],
-    ]),
-    ...registerAuthenticationCommands(state),
-    registerConfigurationHandler(state),
-    registerWorkspaceFolderHandler(state),
-    registerCodeLensProvider(state),
-  ];
-}
+  const register = (id: string, handler: Handler): Disposable =>
+    registerCommand(state, id, handler);
+  const updateAll = (level: UpdateLevel) => (): Promise<unknown> =>
+    runDocumentCommand(state, SERVER_COMMANDS.updateAll, { level });
 
-function registerSuggestionCommands(state: ExtensionState): Disposable[] {
   return [
-    commands.registerCommand("versionlens.suggestion.onClearCache", () =>
-      clearCache(state),
-    ),
-    commands.registerCommand(
-      "versionlens.suggestion.onUpdateDependency",
-      (
-        codeLensOrName?: unknown,
-        selector?: string,
-        command?: NativeApplyCommand,
-        selectedVersion?: string,
-      ): Promise<void> =>
-        updateDependency(state, {
-          codeLensOrName,
-          command,
-          selectedVersion,
-          selector,
-        }),
-    ),
-    commands.registerCommand(
-      "versionlens.suggestion.onFileLink",
-      (codeLensOrPath?: unknown): Promise<void> => {
-        const nativeArguments = nativeCodeLensArguments(codeLensOrPath);
-        const path = nativeArguments?.[0] ?? codeLensOrPath;
-        return openDependency(stringValue(path));
-      },
-    ),
-    commands.registerCommand(
-      "versionlens.suggestion.onChooseBuild",
-      (codeLensOrSelector?: unknown, ...builds: string[]): Promise<void> =>
-        chooseDependencyBuild(state, codeLensOrSelector, builds),
-    ),
-  ];
-}
-
-function registerDisplayCommands(state: ExtensionState): Disposable[] {
-  return [
-    commands.registerCommand("versionlens.editor.onShowVersionLenses", () =>
+    register("versionlens.editor.onShowVersionLenses", () =>
       toggleVersionLenses(state, true),
     ),
-    commands.registerCommand("versionlens.editor.onHideVersionLenses", () =>
+    register("versionlens.editor.onHideVersionLenses", () =>
       toggleVersionLenses(state, false),
     ),
-    commands.registerCommand("versionlens.editor.onShowError", () =>
-      showProviderError(state),
+    register("versionlens.editor.onShowError", () => showProviderError(state)),
+    register("versionlens.icons.showingProgress", () => undefined),
+    register("versionlens.editor.onShowPrereleaseVersions", () =>
+      togglePrereleases(state, true),
     ),
-    commands.registerCommand(
-      "versionlens.icons.showingProgress",
-      (): undefined => undefined,
+    register("versionlens.editor.onHidePrereleaseVersions", () =>
+      togglePrereleases(state, false),
     ),
-    commands.registerCommand(
-      "versionlens.editor.onShowPrereleaseVersions",
-      () => togglePrereleases(state, true),
-    ),
-    commands.registerCommand(
-      "versionlens.editor.onHidePrereleaseVersions",
-      () => togglePrereleases(state, false),
-    ),
-  ];
-}
-
-function registerAuthenticationCommands(state: ExtensionState): Disposable[] {
-  return [
-    commands.registerCommand("versionlens.editor.onAddUrlAuthentication", () =>
-      addAuthHeaderAndReload(state),
-    ),
-    commands.registerCommand(
-      "versionlens.editor.onRemoveUrlAuthentication",
-      () => removeAuthHeaderAndReload(state),
-    ),
-    commands.registerCommand("versionlens.editor.onCustomInstall", () =>
+    register("versionlens.suggestion.onClearCache", async () => {
+      state.snapshots.savedDependencies.clear();
+      state.snapshots.editedDependencies.clear();
+      await runServerCommand(state, SERVER_COMMANDS.clearCache);
+    }),
+    register("versionlens.editor.onSortDependencies", async () => {
+      await runDocumentCommand(state, SERVER_COMMANDS.sort);
+    }),
+    register("versionlens.editor.onUpdateDependenciesLatest", async () => {
+      await updateAll("latest")();
+    }),
+    register("versionlens.editor.onUpdateDependenciesMajor", async () => {
+      await updateAll("major")();
+    }),
+    register("versionlens.editor.onUpdateDependenciesMinor", async () => {
+      await updateAll("minor")();
+    }),
+    register("versionlens.editor.onUpdateDependenciesPatch", async () => {
+      await updateAll("patch")();
+    }),
+    register("versionlens.editor.onAddUrlAuthentication", async () => {
+      if (await addAuthHeader(state)) {
+        await reloadCredentials(state);
+      }
+    }),
+    register("versionlens.editor.onRemoveUrlAuthentication", async () => {
+      if (await removeAuthHeader(state)) {
+        await reloadCredentials(state);
+      }
+    }),
+    register("versionlens.editor.onCustomInstall", () =>
       runCustomInstall(state),
     ),
   ];
 }
 
-async function clearCache(state: ExtensionState): Promise<void> {
-  for (const { session } of state.sessions.values()) {
-    session.clearCache();
-  }
-  state.snapshots.savedDependencies.clear();
-  state.snapshots.editedDependencies.clear();
-  state.ui.diagnostics?.clear();
-  refreshCodeLenses(state);
-  await refreshActiveDiagnostics(state);
-}
-
-function updateDependency(
-  state: ExtensionState,
-  request: UpdateDependencyRequest,
-): Promise<void> {
-  const { codeLensOrName, command, selectedVersion, selector } = request;
-  const nativeArguments = nativeCodeLensArguments(codeLensOrName);
-  if (nativeArguments) {
-    return applyRustEdits(
-      state,
-      nativeArguments[1] ?? nativeArguments[0],
-      nativeArguments[2] as NativeApplyCommand | undefined,
-      { selectedVersion: nativeArguments[3] },
-    );
-  }
-  return applyRustEdits(
-    state,
-    selector ?? stringValue(codeLensOrName),
-    command,
-    { selectedVersion },
-  );
-}
-
-function chooseDependencyBuild(
-  state: ExtensionState,
-  codeLensOrSelector: unknown,
-  builds: string[],
-): Promise<void> {
-  const nativeArguments = nativeCodeLensArguments(codeLensOrSelector);
-  if (nativeArguments) {
-    return chooseBuild(state, nativeArguments[0], {
-      builds: nativeArguments.slice(nativeBuildArgumentStart),
-      currentVersion: nativeArguments[2],
-      packageName: nativeArguments[1],
-    });
-  }
-  return chooseBuild(state, stringValue(codeLensOrSelector), {
-    builds: builds.slice(2),
-    currentVersion: builds[1],
-    packageName: builds[0],
-  });
-}
-
-async function addAuthHeaderAndReload(state: ExtensionState): Promise<void> {
-  if (await addAuthHeader(state)) {
-    await reloadAuthBackedSession(state);
-  }
-}
-
-async function removeAuthHeaderAndReload(state: ExtensionState): Promise<void> {
-  if (await removeAuthHeader(state)) {
-    await reloadAuthBackedSession(state);
-  }
-}
-
-async function reloadAuthBackedSession(state: ExtensionState): Promise<void> {
-  for (const { session } of state.sessions.values()) {
-    session.clearCache();
-  }
-  if (state.context?.extensionPath && !(await recreateSessions(state))) {
-    return;
-  }
+/**
+ * The server asks for a credential once per host and session, so a new
+ * session is how it learns about a changed one.
+ */
+async function reloadCredentials(state: ExtensionState): Promise<void> {
+  await restartClient(state);
   await updateContexts(state);
-  refreshCodeLenses(state);
-  await refreshActiveDiagnostics(state);
-}
-
-function stringValue(value: unknown): string | undefined {
-  let string: string | undefined;
-  if (typeof value === "string") {
-    string = value;
-  }
-  return string;
 }
 
 export { registerCommands };

@@ -1,65 +1,58 @@
 import { type Disposable, workspace } from "#vscode-host";
-import { refreshActiveDiagnostics } from "../diagnostics/refresh.ts";
-import {
-  disposePackageFileWatchers,
-  initializePackageFileWatching,
-  registerPackageFileWatchers,
-} from "../lifecycle/package-watchers.ts";
+import { applyDiagnosticsVisibility, restartClient } from "../client.ts";
+import { documentSelectors } from "../documents.ts";
+import { clearManifestInfo } from "../manifest.ts";
 import { reloadConfigurationState } from "../session/flags.ts";
-import {
-  recreateAffectedSessions,
-  synchronizeWorkspaceSessions,
-} from "../session/registry.ts";
 import type { ExtensionState } from "../state.ts";
-import { refreshCodeLenses, registerCodeLensProvider } from "./codelens.ts";
 import { updateContexts } from "./contexts.ts";
+import { reportError } from "./error.ts";
+import { notifyConfigurationChanged } from "./toggles.ts";
 
 export function registerConfigurationHandler(
   state: ExtensionState,
 ): Disposable {
-  return workspace.onDidChangeConfiguration(async (event): Promise<void> => {
+  return workspace.onDidChangeConfiguration((event): Promise<void> => {
     if (
-      event.affectsConfiguration("versionlens") ||
-      event.affectsConfiguration("http")
+      !(
+        event.affectsConfiguration("versionlens") ||
+        event.affectsConfiguration("http") ||
+        event.affectsConfiguration("files.exclude")
+      )
     ) {
-      if (event.affectsConfiguration("versionlens")) {
-        reloadConfigurationState(state);
-      }
-      state.snapshots.savedDependencies.clear();
-      state.snapshots.editedDependencies.clear();
-      if (!(await recreateAffectedSessions(state, event))) {
-        return;
-      }
-      if (event.affectsConfiguration("versionlens")) {
-        state.context?.subscriptions.push(registerCodeLensProvider(state));
-        disposePackageFileWatchers(state);
-        state.context?.subscriptions.push(
-          ...registerPackageFileWatchers(state),
-        );
-        await initializePackageFileWatching(state);
-      }
-      await updateContexts(state);
-      refreshCodeLenses(state);
-      await refreshActiveDiagnostics(state);
+      return Promise.resolve();
     }
+    if (event.affectsConfiguration("versionlens")) {
+      reloadConfigurationState(state);
+      applyDiagnosticsVisibility(state);
+    }
+    return synchronizeServer(state);
   });
 }
 
 export function registerWorkspaceFolderHandler(
   state: ExtensionState,
 ): Disposable {
-  return workspace.onDidChangeWorkspaceFolders(async (): Promise<void> => {
+  return workspace.onDidChangeWorkspaceFolders(
+    (): Promise<void> => synchronizeServer(state),
+  );
+}
+
+/**
+ * Tells the server to pull the settings again. The documents it is told
+ * about come from the settings, so the client starts over when they change.
+ */
+async function synchronizeServer(state: ExtensionState): Promise<void> {
+  try {
     state.snapshots.savedDependencies.clear();
     state.snapshots.editedDependencies.clear();
-    if (!(await synchronizeWorkspaceSessions(state))) {
-      return;
+    clearManifestInfo();
+    if (state.selectorKey === JSON.stringify(documentSelectors())) {
+      await notifyConfigurationChanged(state);
+    } else {
+      await restartClient(state);
     }
-    state.context?.subscriptions.push(registerCodeLensProvider(state));
-    disposePackageFileWatchers(state);
-    state.context?.subscriptions.push(...registerPackageFileWatchers(state));
-    await initializePackageFileWatching(state);
     await updateContexts(state);
-    refreshCodeLenses(state);
-    await refreshActiveDiagnostics(state);
-  });
+  } catch (error) {
+    await reportError(state, "could not apply the settings", error);
+  }
 }
