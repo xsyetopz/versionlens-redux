@@ -105,6 +105,7 @@ impl ManifestRow {
 
     /// The dependencies of `text`, without the file's own version fields.
     pub(crate) fn parse(&self, text: &str, paths: &[&str]) -> ParsedDependencies {
+        let configured = !paths.is_empty();
         let paths = paths
             .iter()
             .copied()
@@ -114,7 +115,7 @@ impl ManifestRow {
             ManifestParser::Direct(parser) => parser(text),
             ManifestParser::WithPaths(parser) => parser(
                 text,
-                if paths.is_empty() {
+                if !configured {
                     self.dependency_paths
                 } else {
                     &paths

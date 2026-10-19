@@ -1,6 +1,6 @@
 use crate::ansible_galaxy::parse_ansible_galaxy_requirements_yaml_with_paths;
 use crate::bazel_module::parse_bazel_module_with_paths;
-use crate::cargo_toml::parse_cargo_toml_with_paths;
+use crate::cargo_toml::{OWN_VERSION_PATHS, parse_cargo_toml_with_paths};
 use crate::cartfile::parse_cartfile;
 use crate::clojure_deps::parse_clojure_deps_edn;
 use crate::cocoapods_podfile::parse_cocoapods_podfile;
@@ -213,11 +213,7 @@ pub static MANIFESTS: &[ManifestRow] = &[
         "patch.*",
         "patch.*.*",
     ])
-    .own_version(&[
-        "package.version",
-        "package.version.workspace",
-        "workspace.package.version",
-    ]),
+    .own_version(OWN_VERSION_PATHS),
     row(
         CargoConfigToml,
         Ecosystem::Cargo,
