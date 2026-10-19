@@ -9,6 +9,23 @@ local group_name = "VersionLensRedux"
 local client_name = "versionlens"
 local active_keymaps = {}
 local downloading = false
+local pending = {}
+local download_error = nil
+
+-- Empty tables would encode as JSON arrays; the server expects objects.
+local function as_objects(value)
+  if type(value) ~= "table" then
+    return value
+  end
+  if next(value) == nil then
+    return vim.empty_dict()
+  end
+  local copy = {}
+  for key, item in pairs(value) do
+    copy[key] = as_objects(item)
+  end
+  return copy
+end
 
 local function notify(message, level)
   if M.config.notify then
@@ -36,8 +53,10 @@ local function refresh_client_lenses(_error, _result, context)
   return vim.NIL
 end
 
--- Downloads the matching server release once, then starts it for bufnr.
+-- Downloads the matching server release once, then starts every buffer that waited for it.
+-- A failure is remembered until :VersionLensStart or :VersionLensRestart.
 function M.download(bufnr)
+  pending[bufnr] = true
   if downloading then
     return
   end
@@ -46,10 +65,17 @@ function M.download(bufnr)
   notify("Downloading versionlens-lsp " .. version)
   require("versionlens.download").install(version, function(err)
     downloading = false
+    local waiting = vim.tbl_keys(pending)
+    pending = {}
     if err then
+      download_error = err
       notify("Could not install versionlens-lsp: " .. err, vim.log.levels.ERROR)
-    elseif vim.api.nvim_buf_is_valid(bufnr) then
-      M.start(bufnr)
+      return
+    end
+    for _, buffer in ipairs(waiting) do
+      if vim.api.nvim_buf_is_valid(buffer) then
+        M.start(buffer)
+      end
     end
   end)
 end
@@ -63,7 +89,9 @@ function M.start(bufnr)
   local cmd = support.resolve_cmd(M.config)
   if not cmd then
     if M.config.auto_download then
-      M.download(bufnr)
+      if not download_error then
+        M.download(bufnr)
+      end
     else
       notify(
         "Could not find versionlens-lsp. Install it on PATH, set VERSIONLENS_LSP, "
@@ -84,7 +112,7 @@ function M.start(bufnr)
     capabilities = capabilities,
     handlers = { ["workspace/codeLens/refresh"] = refresh_client_lenses },
     root_dir = support.root_dir(bufnr, M.config),
-    settings = { versionlens = M.config.settings },
+    settings = { versionlens = as_objects(M.config.settings) },
     on_attach = function(client, attached_bufnr)
       M.refresh(attached_bufnr)
       if user_on_attach then
@@ -107,6 +135,7 @@ function M.stop(bufnr)
 end
 
 function M.restart(bufnr)
+  download_error = nil
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   M.stop(bufnr)
   vim.schedule(function()
@@ -125,6 +154,7 @@ end
 
 local function register_commands()
   vim.api.nvim_create_user_command("VersionLensStart", function()
+    download_error = nil
     M.start()
   end, { desc = "Start VersionLens Redux for the current buffer", force = true })
   vim.api.nvim_create_user_command("VersionLensStop", function()
@@ -184,6 +214,7 @@ end
 
 function M.setup(opts)
   M.config = config.resolve(opts)
+  download_error = nil
   register_commands()
   register_keymaps()
   register_autocommands()

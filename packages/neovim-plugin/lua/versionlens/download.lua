@@ -4,19 +4,29 @@ local M = {}
 
 M.repository = "xsyetopz/versionlens-redux"
 
--- Rust target triples for the editor targets Neovim supports. Keep in sync with
--- scripts/package/targets.json (Linux uses the gnu build, as in the Zed extension).
+-- Generated from scripts/package/targets.json by scripts/generate/manifests.mjs.
 local triples = {
-  ["darwin-arm64"] = "aarch64-apple-darwin",
-  ["darwin-x64"] = "x86_64-apple-darwin",
-  ["linux-arm64"] = "aarch64-unknown-linux-gnu",
-  ["linux-x64"] = "x86_64-unknown-linux-gnu",
-  ["win32-arm64"] = "aarch64-pc-windows-msvc",
   ["win32-x64"] = "x86_64-pc-windows-msvc",
+  ["win32-arm64"] = "aarch64-pc-windows-msvc",
+  ["linux-x64"] = "x86_64-unknown-linux-gnu",
+  ["linux-arm64"] = "aarch64-unknown-linux-gnu",
+  ["linux-armhf"] = "armv7-unknown-linux-gnueabihf",
+  ["alpine-x64"] = "x86_64-unknown-linux-musl",
+  ["alpine-arm64"] = "aarch64-unknown-linux-musl",
+  ["darwin-x64"] = "x86_64-apple-darwin",
+  ["darwin-arm64"] = "aarch64-apple-darwin",
 }
 
+local function is_musl()
+  return vim.uv.fs_stat("/etc/alpine-release") ~= nil
+end
+
+-- Release triple for this machine, or nil on unsupported platforms.
 function M.triple()
   local target = support.editor_target()
+  if target and target:match("^linux%-") and is_musl() then
+    target = target:gsub("^linux", "alpine")
+  end
   return target and triples[target] or nil
 end
 
@@ -75,6 +85,19 @@ local function hash_command(path)
   return nil
 end
 
+function M.has_hash_tool()
+  return hash_command("") ~= nil
+end
+
+-- bsdtar reads tar.gz and zip. On Windows use the system one, not whichever tar is on PATH.
+function M.tar_command()
+  local root = vim.env.SystemRoot
+  if vim.fn.has("win32") == 1 and root and root ~= "" then
+    return vim.fs.joinpath(root, "System32", "tar.exe")
+  end
+  return "tar"
+end
+
 function M.sha256(path, callback)
   local argv, style = hash_command(path)
   if not argv then
@@ -111,21 +134,27 @@ end
 function M.install(version, callback)
   local triple = M.triple()
   if not triple then
-    return callback("no versionlens-lsp release is available for this platform")
+    local uname = vim.uv.os_uname()
+    return callback(
+      ("no versionlens-lsp release is available for %s %s"):format(uname.sysname, uname.machine)
+    )
   end
   if vim.fn.executable("curl") ~= 1 then
     return callback("curl is required to download versionlens-lsp")
   end
   local directory = M.install_dir(version)
   local binary = M.binary_path(version)
-  local scratch = vim.fs.joinpath(directory, ".download")
+  -- Per process, so concurrent Neovim instances never share or delete each other's files.
+  local scratch = vim.fs.joinpath(directory, (".download-%d"):format(vim.uv.os_getpid()))
   local archive = M.archive_name(version, triple)
   local archive_path = vim.fs.joinpath(scratch, archive)
   local sums_path = vim.fs.joinpath(scratch, "SHA256SUMS")
   local extract_path = vim.fs.joinpath(scratch, "extract")
 
   local function fail(message)
-    vim.fn.delete(directory, "rf")
+    vim.fn.delete(scratch, "rf")
+    vim.fn.delete(binary .. ".part")
+    vim.uv.fs_rmdir(directory) -- only succeeds when empty
     callback(message)
   end
 
@@ -163,8 +192,7 @@ function M.install(version, callback)
         return fail(("%s checksum mismatch: expected %s, got %s"):format(archive, expected, actual))
       end
       vim.fn.mkdir(extract_path, "p")
-      -- bsdtar (Windows 10+, macOS) and GNU tar read tar.gz; bsdtar also reads zip.
-      M.run({ "tar", "-xf", archive_path, "-C", extract_path }, function(result)
+      M.run({ M.tar_command(), "-xf", archive_path, "-C", extract_path }, function(result)
         if result.code ~= 0 then
           return fail("could not extract " .. archive .. ": " .. (result.stderr or ""))
         end

@@ -179,6 +179,19 @@ describe("download", function()
     )
   end)
 
+  it("uses the system bsdtar on Windows", function()
+    local original_has = vim.fn.has
+    local original_root = vim.env.SystemRoot
+    vim.env.SystemRoot = "C:\\Windows"
+    vim.fn.has = function(feature)
+      return feature == "win32" and 1 or original_has(feature)
+    end
+    local command = download.tar_command()
+    vim.fn.has = original_has
+    vim.env.SystemRoot = original_root
+    assert.is_truthy(command:find("System32", 1, true))
+  end)
+
   it("deletes the download and names both sums on mismatch", function()
     hash_output = ("b"):rep(64)
     local err, path
@@ -243,6 +256,56 @@ describe("download", function()
       assert.is_nil(versionlens.start(bufnr))
       assert.are.equal(0, installs)
       assert.are.equal(0, #calls)
+      local run_calls = 0
+      download.run = function()
+        run_calls = run_calls + 1
+      end
+      versionlens.start(bufnr)
+      assert.are.equal(0, run_calls)
+    end)
+
+    it("starts the server after a successful download and remembers failures", function()
+      versionlens.setup({ autostart = false, notify = false })
+      local started = {}
+      local resolved = false
+      support.resolve_cmd = function()
+        return resolved and { "versionlens-lsp" } or nil
+      end
+      vim.lsp.start = function(configuration, opts)
+        table.insert(started, opts.bufnr)
+        return configuration and 1
+      end
+      local other = vim.api.nvim_create_buf(true, false)
+      vim.api.nvim_buf_set_name(other, ("/tmp/versionlens-test/%d/package.json"):format(other))
+      local finish
+      local installs = 0
+      download.install = function(_, callback)
+        installs = installs + 1
+        finish = callback
+      end
+      versionlens.start(bufnr)
+      versionlens.start(other)
+      assert.are.equal(1, installs)
+      resolved = true
+      finish(nil, "path")
+      table.sort(started)
+      assert.are.same({ bufnr, other }, started)
+
+      -- A failed download is not retried until restart.
+      resolved = false
+      started = {}
+      versionlens.setup({ autostart = false, notify = false })
+      versionlens.start(bufnr)
+      finish("boom")
+      versionlens.start(bufnr)
+      assert.are.equal(2, installs)
+      versionlens.restart(bufnr)
+      vim.wait(100, function()
+        return installs == 3
+      end)
+      assert.are.equal(3, installs)
+      finish("done")
+      vim.api.nvim_buf_delete(other, { force = true })
     end)
 
     it("downloads when nothing is found and auto_download is on", function()

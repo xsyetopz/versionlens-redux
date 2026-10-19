@@ -93,4 +93,20 @@ describe("setup", function()
     versionlens.start(bufnr)
     assert.are.same({ versionlens = settings }, captured.settings)
   end)
+
+  it("encodes default and nested empty settings as JSON objects", function()
+    vim.api.nvim_buf_set_name(bufnr, ("/tmp/versionlens-test/%d/package.json"):format(bufnr))
+    versionlens.setup({ autostart = false, cmd = { "versionlens-lsp" } })
+    local captured
+    vim.lsp.start = function(configuration)
+      captured = configuration
+      return 1
+    end
+    versionlens.start(bufnr)
+    assert.are.equal('{"versionlens":{}}', vim.json.encode(captured.settings))
+
+    versionlens.setup({ autostart = false, cmd = { "versionlens-lsp" }, settings = { a = {} } })
+    versionlens.start(bufnr)
+    assert.are.equal('{"versionlens":{"a":{}}}', vim.json.encode(captured.settings))
+  end)
 end)

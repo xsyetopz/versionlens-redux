@@ -53,6 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         neovim:
+          - v0.10.4
           - stable
           - nightly
 
