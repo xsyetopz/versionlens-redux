@@ -61,10 +61,26 @@ fn run_connection(
     connection: &Connection,
     cache_directory: Option<std::io::Result<PathBuf>>,
 ) -> Result<()> {
+    run_connection_with(connection, cache_directory, authorization::ANSWER_TIMEOUT)
+}
+
+/// [`run_connection`] with the time the client has to answer
+/// `versionlens/authorization`.
+fn run_connection_with(
+    connection: &Connection,
+    cache_directory: Option<std::io::Result<PathBuf>>,
+    authorization_timeout: std::time::Duration,
+) -> Result<()> {
     let mut state = initialize(connection, cache_directory)?;
     let mut settings = SettingsRequests::default();
     let queued = settings.first(connection, &mut state)?;
-    run_message_loop(connection, &mut state, settings, queued)
+    run_message_loop(
+        connection,
+        &mut state,
+        settings,
+        queued,
+        authorization_timeout,
+    )
 }
 
 fn initialize(
@@ -115,16 +131,32 @@ fn initialize(
     }
 }
 
+/// Answers the open authorization questions when the loop ends, however it
+/// ends.
+struct CloseOnDrop(std::sync::Arc<AuthorizationBroker>);
+
+impl Drop for CloseOnDrop {
+    fn drop(&mut self) {
+        self.0.close();
+    }
+}
+
 fn run_message_loop(
     connection: &Connection,
     state: &mut VersionLensLspState,
     mut settings: SettingsRequests,
     queued: Vec<Message>,
+    authorization_timeout: std::time::Duration,
 ) -> Result<()> {
     let runtime = Runtime::new().context("failed to create LSP async runtime")?;
     let mut work = WorkQueue::new(runtime.handle().clone());
     state.use_workspace_controller();
-    let authorization = AuthorizationBroker::new(connection.sender.clone());
+    let authorization = AuthorizationBroker::new(
+        connection.sender.clone(),
+        runtime.handle().clone(),
+        authorization_timeout,
+    );
+    let _closing = CloseOnDrop(authorization.clone());
     state.use_authorization_source(authorization.clone());
     let mut checking = WorkspaceController::start(state, runtime.handle().clone())?;
     let mut parts = LoopParts {
@@ -242,7 +274,20 @@ fn handle_message(
             work.invalidate(state, connection)?;
         }
         Message::Response(response) if authorization::is_answer(&response.id) => {
-            authorization.answer(response);
+            if let Some(late) = authorization.answer(response) {
+                // Nothing was waiting, so the dependencies that were refused
+                // are checked again with the credential.
+                state.set_client_credential(&late.host, &late.credential);
+                if let Err(error) = state.clear_caches() {
+                    log_message(
+                        connection,
+                        MessageType::WARNING,
+                        format!("VersionLens could not clear its cache: {error}"),
+                    )?;
+                }
+                work.invalidate(state, connection)?;
+                checking.restart(state)?;
+            }
         }
         Message::Response(response) => work.applied(connection, response)?,
     }

@@ -9,11 +9,13 @@
 //! the method answers with an error, which counts as none.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError, Weak};
+use std::time::Duration;
 
 use crossbeam_channel::Sender;
 use lsp_server::{Message, Request, RequestId, Response};
 use lsp_types::request::Request as _;
+use tokio::runtime::Handle;
 use tokio::sync::watch;
 use versionlens_core::{AuthorizationFuture, AuthorizationSource, Credential};
 
@@ -24,39 +26,79 @@ const REQUEST_PREFIX: &str = "versionlens/authorization/";
 /// Nothing until the client answers, then its credential or none.
 type Answer = Option<Option<Credential>>;
 
+/// How long the client has to answer before the question counts as
+/// unanswered. A late answer is still used.
+pub(super) const ANSWER_TIMEOUT: Duration = Duration::from_secs(60);
+
 #[derive(Default)]
 struct Asked {
     next: u64,
     /// The answer, or the open question, of each host.
     hosts: HashMap<String, watch::Receiver<Answer>>,
-    /// Open questions by request ID.
-    open: HashMap<RequestId, watch::Sender<Answer>>,
+    /// Open questions by request ID, with the host they ask about.
+    open: HashMap<RequestId, (String, watch::Sender<Answer>)>,
+    /// Questions given up on, which a late answer can still settle.
+    expired: HashMap<RequestId, String>,
 }
 
 pub(super) struct AuthorizationBroker {
-    sender: Sender<Message>,
+    me: Weak<Self>,
+    /// Dropped by [`Self::close`], so the broker does not keep the
+    /// connection open after the server stops.
+    sender: Mutex<Option<Sender<Message>>>,
+    runtime: Handle,
+    timeout: Duration,
     asked: Mutex<Asked>,
 }
 
+/// A credential that arrived after nobody was waiting for it.
+pub(super) struct LateCredential {
+    pub(super) host: String,
+    pub(super) credential: Credential,
+}
+
 impl AuthorizationBroker {
-    pub(super) fn new(sender: Sender<Message>) -> Arc<Self> {
-        Arc::new(Self {
-            sender,
+    pub(super) fn new(sender: Sender<Message>, runtime: Handle, timeout: Duration) -> Arc<Self> {
+        Arc::new_cyclic(|me| Self {
+            me: me.clone(),
+            sender: Mutex::new(Some(sender)),
+            runtime,
+            timeout,
             asked: Mutex::default(),
         })
     }
 
-    /// Applies the client's answer to the question it belongs to.
-    pub(super) fn answer(&self, response: Response) {
-        let sender = self
-            .asked
+    fn lock(&self) -> std::sync::MutexGuard<'_, Asked> {
+        self.asked.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Answers every open question with no credential and stops sending.
+    pub(super) fn close(&self) {
+        self.sender
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .open
-            .remove(&response.id);
-        let Some(sender) = sender else {
-            return;
-        };
+            .take();
+        let mut asked = self.lock();
+        for (_, (_, answer)) in asked.open.drain() {
+            let _ = answer.send(Some(None));
+        }
+        asked.expired.clear();
+    }
+
+    /// Gives up on a question the client has not answered. Waiters get no
+    /// credential; an answer that comes later is still used.
+    fn expire(&self, id: &RequestId) {
+        let mut asked = self.lock();
+        if let Some((host, answer)) = asked.open.remove(id) {
+            let _ = answer.send(Some(None));
+            asked.expired.insert(id.clone(), host);
+        }
+    }
+
+    /// Applies the client's answer to the question it belongs to. Returns the
+    /// credential when no resolution was waiting for it, so the caller can
+    /// give it to the sessions and check again.
+    pub(super) fn answer(&self, response: Response) -> Option<LateCredential> {
         let credential = response
             .response_result
             .ok()
@@ -66,11 +108,24 @@ impl AuthorizationBroker {
             .flatten()
             .filter(|credential| !credential.scheme.is_empty() && !credential.token.is_empty())
             .map(|credential| Credential::new(credential.scheme, credential.token));
-        let _ = sender.send(Some(credential));
+        let mut asked = self.lock();
+        if let Some((host, answer)) = asked.open.remove(&response.id) {
+            // The stored receiver is one; any other is a waiting resolution.
+            let late = answer.receiver_count() <= 1;
+            let _ = answer.send(Some(credential.clone()));
+            return credential
+                .filter(|_| late)
+                .map(|credential| LateCredential { host, credential });
+        }
+        let host = asked.expired.remove(&response.id)?;
+        let credential = credential?;
+        let (answer, receiver) = watch::channel(Some(Some(credential.clone())));
+        drop(answer);
+        asked.hosts.insert(host.clone(), receiver);
+        drop(asked);
+        Some(LateCredential { host, credential })
     }
-}
 
-impl AuthorizationBroker {
     /// Sends the question about `host` and records it as open.
     fn ask(&self, asked: &mut Asked, host: &str, status: u16) -> watch::Receiver<Answer> {
         let (answer, receiver) = watch::channel(None);
@@ -85,8 +140,21 @@ impl AuthorizationBroker {
             })
             .unwrap_or_default(),
         });
-        if self.sender.send(request).is_ok() {
-            asked.open.insert(id, answer);
+        let sent = self
+            .sender
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .as_ref()
+            .is_some_and(|sender| sender.send(request).is_ok());
+        if sent {
+            asked.open.insert(id.clone(), (host.to_owned(), answer));
+            let (broker, timeout) = (self.me.clone(), self.timeout);
+            self.runtime.spawn(async move {
+                tokio::time::sleep(timeout).await;
+                if let Some(broker) = broker.upgrade() {
+                    broker.expire(&id);
+                }
+            });
         } else {
             let _ = answer.send(Some(None));
         }
@@ -97,7 +165,7 @@ impl AuthorizationBroker {
 
 impl AuthorizationSource for AuthorizationBroker {
     fn authorize(&self, host: &str, status: u16) -> AuthorizationFuture {
-        let mut asked = self.asked.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut asked = self.lock();
         let mut receiver = match asked.hosts.get(host) {
             Some(receiver) => receiver.clone(),
             None => self.ask(&mut asked, host, status),

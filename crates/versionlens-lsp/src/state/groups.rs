@@ -208,6 +208,20 @@ impl VersionLensLspState {
         self.modes.authorization = AuthorizationSlot(Some(source));
     }
 
+    /// Keeps a credential the client supplied late, in every session.
+    pub(crate) fn set_client_credential(
+        &self,
+        host: &str,
+        credential: &versionlens_core::Credential,
+    ) {
+        for group in &self.groups {
+            group
+                .session
+                .credentials()
+                .set_client_credential(host, credential.clone());
+        }
+    }
+
     pub(crate) fn cancel_pending_resolutions(&self) {
         for group in &self.groups {
             group.session.cancel_pending_resolutions();

@@ -44,12 +44,6 @@ impl VersionLensSession {
         if operation.is_expired() {
             return Err(FetchError::OperationTimeout);
         }
-        let Some((_request, _background)) =
-            acquire_registry_permits(self.storage_state.task_priority, operation).await
-        else {
-            return Err(FetchError::OperationTimeout);
-        };
-
         let accept = accept_header_for_request(ecosystem, url);
         let retry_policy = retry_policy_for_request(ecosystem, url);
         let (response, http_config) = self
@@ -155,7 +149,9 @@ impl VersionLensSession {
         retry_policy: RetryPolicy,
         operation: &OperationContext,
     ) -> (Result<String, HttpError>, HttpConfig) {
-        let mut response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+        let mut response = self
+            .fetch_text_permitted(url, &http_config, accept, retry_policy, operation)
+            .await;
         if let Err(error) = &response
             && let Some(status) = error.status_code()
         {
@@ -171,10 +167,31 @@ impl VersionLensSession {
                 && !sent_with(&http_config, &credential)
             {
                 versionlens_fetch::apply_credential(&mut http_config.auth_headers, &credential);
-                response = fetch_text(url, &http_config, accept, retry_policy, operation).await;
+                response = self
+                    .fetch_text_permitted(url, &http_config, accept, retry_policy, operation)
+                    .await;
             }
         }
         (response, http_config)
+    }
+
+    /// One request under the registry permits. The permits are held only for
+    /// the request, never while a credential is being asked for, so a host
+    /// that waits for the editor cannot starve the others.
+    async fn fetch_text_permitted(
+        &self,
+        url: &str,
+        http_config: &HttpConfig,
+        accept: Option<&str>,
+        retry_policy: RetryPolicy,
+        operation: &OperationContext,
+    ) -> Result<String, HttpError> {
+        let Some(_permits) =
+            acquire_registry_permits(self.storage_state.task_priority, operation).await
+        else {
+            return Err(HttpError::DeadlineExceeded);
+        };
+        fetch_text(url, http_config, accept, retry_policy, operation).await
     }
 
     /// The `gh auth token` credential, when GitHub refused `url` with `status`
@@ -210,10 +227,7 @@ impl VersionLensSession {
         let source = self.request_state.authorization.get()?;
         let host = versionlens_fetch::host_of(url)?;
         let answer = source.authorize(&host, status);
-        let credential = match operation.remaining_duration() {
-            Some(remaining) => tokio::time::timeout(remaining, answer).await.ok()?,
-            None => answer.await,
-        }?;
+        let credential = wait_while_current(answer, operation).await??;
         self.request_state
             .credentials
             .set_client_credential(&host, credential.clone());
@@ -232,6 +246,29 @@ impl VersionLensSession {
             .map(|value| value.to_owned())
             .or_else(|| url_origin(request_url))
             .unwrap_or_else(|| request_url.to_owned())
+    }
+}
+
+/// Awaits `future` until it finishes, the operation deadline passes or the
+/// operation is cancelled. `None` means it did not finish.
+async fn wait_while_current<F: std::future::Future>(
+    future: F,
+    operation: &OperationContext,
+) -> Option<F::Output> {
+    let cancelled = async {
+        while operation.is_current() {
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+    };
+    let bounded = async {
+        match operation.remaining_duration() {
+            Some(remaining) => tokio::time::timeout(remaining, future).await.ok(),
+            None => Some(future.await),
+        }
+    };
+    tokio::select! {
+        output = bounded => output,
+        () = cancelled => None,
     }
 }
 
