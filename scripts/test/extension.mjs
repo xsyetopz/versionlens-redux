@@ -22,6 +22,20 @@ function collectTestFiles(directory) {
   return files;
 }
 
+// The server tests drive the real binary, so build it from the workspace.
+if (!process.env.VERSIONLENS_LSP) {
+  const build = spawnSync(
+    "cargo",
+    ["build", "-p", "versionlens-lsp", "--locked"],
+    {
+      stdio: "inherit",
+    },
+  );
+  if (build.status !== 0) {
+    process.exit(build.status ?? 1);
+  }
+}
+
 const testFiles = testRoots
   .filter((testRoot) => existsSync(testRoot))
   .flatMap((testRoot) => collectTestFiles(testRoot));

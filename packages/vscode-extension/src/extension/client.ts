@@ -14,6 +14,7 @@ import {
   answerAuthorization,
 } from "./auth/authorization.ts";
 import { reportError } from "./commands/error.ts";
+import { withToggles } from "./config/toggles.ts";
 import { documentSelectors } from "./documents.ts";
 import { clearManifestInfo } from "./manifest.ts";
 import { resolveServerPath, SERVER_ENVIRONMENT_VARIABLE } from "./server.ts";
@@ -112,18 +113,6 @@ function createLanguageClient(
     answerAuthorization(state, params),
   );
   return client;
-}
-
-/** The toggles of the editor win over the settings file. */
-function withToggles(state: ExtensionState, value: unknown): unknown {
-  const settings = JSON.parse(JSON.stringify(value ?? {})) as {
-    suggestions?: Record<string, unknown>;
-  };
-  settings.suggestions = {
-    ...settings.suggestions,
-    showPrereleasesOnStartup: state.flags.showPrereleases,
-  };
-  return settings;
 }
 
 /**
