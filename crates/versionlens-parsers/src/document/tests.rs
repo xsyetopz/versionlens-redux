@@ -651,6 +651,7 @@ fn parses_gradle_plugin_maven_repositories_separately() {
     );
 }
 
+include!("tests/adapters.rs");
 include!("tests/cpp.rs");
 include!("tests/github_actions.rs");
 include!("tests/jvm.rs");
