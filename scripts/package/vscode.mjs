@@ -1,7 +1,18 @@
 #!/usr/bin/env bun
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { run } from "../package.mjs";
+import process from "node:process";
+
+function run(command, options = {}) {
+  const result = Bun.spawnSync(command, {
+    ...options,
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  if (result.exitCode !== 0) {
+    process.exit(result.exitCode);
+  }
+}
 
 const [, , vscodeTarget, rustTarget] = Bun.argv;
 if (!(vscodeTarget && rustTarget)) {
