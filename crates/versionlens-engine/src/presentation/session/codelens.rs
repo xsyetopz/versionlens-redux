@@ -69,18 +69,18 @@ impl VersionLensSession {
         .into_iter()
         .collect::<Vec<_>>();
 
+        let build_lens = build_choice_code_lens_view(
+            dependency,
+            &suggestion,
+            &self.config.suggestion_indicators,
+            build_has_cached_vulnerabilities(self, dependency, &suggestion),
+        );
+
         if suggestion.status == StatusCurrent
             && dependency.ecosystem != Docker
             && suggestion.choices.is_empty()
         {
-            if let Some(build_lens) = build_choice_code_lens_view(
-                dependency,
-                &suggestion,
-                &self.config.suggestion_indicators,
-                build_has_cached_vulnerabilities(self, dependency, &suggestion),
-            ) {
-                lenses.push(build_lens);
-            }
+            lenses.extend(build_lens);
             return ordered_code_lenses(lenses);
         }
 
@@ -93,23 +93,11 @@ impl VersionLensSession {
                     choice_has_cached_vulnerabilities(self, dependency, choice.version.as_str()),
                 )
             }));
-            if let Some(build_lens) = build_choice_code_lens_view(
-                dependency,
-                &suggestion,
-                &self.config.suggestion_indicators,
-                build_has_cached_vulnerabilities(self, dependency, &suggestion),
-            ) {
-                lenses.push(build_lens);
-            }
+            lenses.extend(build_lens);
             return ordered_code_lenses(lenses);
         }
 
-        if let Some(build_lens) = build_choice_code_lens_view(
-            dependency,
-            &suggestion,
-            &self.config.suggestion_indicators,
-            build_has_cached_vulnerabilities(self, dependency, &suggestion),
-        ) {
+        if let Some(build_lens) = build_lens {
             lenses.push(build_lens);
             return ordered_code_lenses(lenses);
         }
