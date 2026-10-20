@@ -23,7 +23,32 @@ The extension does not bundle the server. It resolves it in this order:
 2. `versionlens-lsp` on `PATH`.
 3. The release archive for the extension version (`versionlens-lsp-<version>-<target>`), downloaded from GitHub, checked against the release `SHA256SUMS`, and extracted into the extension directory. Older `versionlens-lsp-*` installs are removed. Targets come from `scripts/package/targets.json` at build time (`build.rs`). Zed grants the extension narrowly scoped permission to download only VersionLens Redux GitHub release assets.
 
-The `lsp.versionlens.settings` object is returned to the server as its `versionlens` workspace configuration.
+## Settings
+
+The `lsp.versionlens.settings` object is returned to the server as its `versionlens` workspace configuration (`workspace/configuration`). Use the same keys as the VS Code `versionlens` settings (see `contributes.configuration` in [`../vscode-extension/package.json`](../vscode-extension/package.json)):
+
+```json
+{
+  "lsp": {
+    "versionlens": {
+      "settings": {
+        "diagnostics": { "updateSeverity": "warn" }
+      }
+    }
+  }
+}
+```
+
+`diagnostics.updateSeverity` sets the severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected.
+
+## Private registries
+
+Zed does not implement the `versionlens/authorization` request, so the server uses its other credential sources:
+
+- For `api.github.com`: `GITHUB_TOKEN`, then `GH_TOKEN`, then the output of `gh auth token`, which is only tried after GitHub answers 401, 403, or 429.
+- Registry configuration files such as `.npmrc`, `.yarnrc.yml`, and `NuGet.config`.
+
+Start Zed with the variables set. Tokens are never written to logs, diagnostics, or the cache.
 
 ## Zed verification
 

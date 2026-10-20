@@ -20,7 +20,10 @@ existing terminal behavior.
 
 ## Exhaustive `ManifestKind` coverage
 
-The following is the complete parser enum inventory. `A` is workspace-aware
+The following is the complete `ManifestKind` inventory (defined in
+`crates/versionlens-model/src/manifest.rs`; the file-type table is
+`crates/versionlens-parsers/src/manifest/table.rs`; the workspace graph lives in
+`crates/versionlens-engine/src/workspace/`). `A` is workspace-aware
 or local graph behavior, `B` is local/path terminal behavior, and `C` is an
 explicit safe terminal disposition (the existing parser/provider remains the
 owner):
@@ -29,7 +32,7 @@ owner):
 | --- | --- |
 | A | `NpmPackageJson`, `NpmPackageJson5`, `NpmPackageYaml`, `PnpmYaml`, `CargoToml` |
 | B | `PubspecOverridesYaml`, `PubspecYaml`, `GoMod`, `SwiftPackage`, `UnityProjectManifestJson`, `RubyGemspec`, `Gemfile`, `PaketReferences`, `CocoaPodsPodfile`, `DuneProject` |
-| C | `ComposerJson`, `DenoJson`, `DenoImportMapJson`, `JsrJson`, `DotnetProjectJson`, `DotnetXml`, `PaketDependencies`, `DockerComposeYaml`, `Dockerfile`, `KustomizationYaml`, `DubJson`, `DubSdl`, `MavenPomXml`, `GradleBuild`, `GradleSettings`, `GradleVersionCatalogToml`, `SbtBuild`, `ClojureDepsEdn`, `LeiningenProjectClj`, `MixExs`, `RebarConfig`, `GleamToml`, `Opam`, `Cabal`, `CabalProject`, `StackYaml`, `JuliaProjectToml`, `JuliaManifestToml`, `RDescription`, `RenvLock`, `ConanfileTxt`, `ConanfilePy`, `VcpkgJson`, `Cmake`, `XmakeLua`, `MesonWrap`, `BazelWorkspace`, `ZigBuildZon`, `Nimble`, `LuaRockspec`, `Cpanfile`, `HaxelibJson`, `TerraformTf`, `HelmChartYaml`, `AnsibleGalaxyRequirementsYaml`, `BazelModule`, `NixFlake`, `GitHubActions`, `VersionLensMultiRegistries`, `Unknown` |
+| C | `ComposerJson`, `DenoJson`, `DenoImportMapJson`, `JsrJson`, `DotnetProjectJson`, `DotnetXml`, `PaketDependencies`, `DockerComposeYaml`, `Dockerfile`, `KustomizationYaml`, `DubJson`, `DubSdl`, `MavenPomXml`, `GradleBuild`, `GradleSettings`, `GradleVersionCatalogToml`, `SbtBuild`, `ClojureDepsEdn`, `LeiningenProjectClj`, `MixExs`, `RebarConfig`, `GleamToml`, `Opam`, `Cabal`, `CabalProject`, `StackYaml`, `JuliaProjectToml`, `JuliaManifestToml`, `RDescription`, `RenvLock`, `ConanfileTxt`, `ConanfilePy`, `VcpkgJson`, `Cmake`, `XmakeLua`, `MesonWrap`, `BazelWorkspace`, `ZigBuildZon`, `Nimble`, `LuaRockspec`, `Cpanfile`, `HaxelibJson`, `TerraformTf`, `HelmChartYaml`, `AnsibleGalaxyRequirementsYaml`, `BazelModule`, `NixFlake`, `GitHubActions`, `CargoConfigToml`, `DotnetToolsJson`, `Cartfile`, `PythonPipfile`, `PythonPyprojectToml`, `PythonRequirementsTxt`, `Nvmrc`, `NodeVersion`, `BunVersion`, `RustToolchain`, `RustToolchainToml`, `VersionLensMultiRegistries`, `Unknown` |
 
 ## Authoritative specifications consulted
 

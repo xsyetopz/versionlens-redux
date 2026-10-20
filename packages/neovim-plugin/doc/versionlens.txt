@@ -117,10 +117,18 @@ object. For example:
 
 See the VersionLens settings reference for the available keys.
 
+To change the severity of update diagnostics, set
+`settings = { diagnostics = { updateSeverity = "warn" } }`. Values are
+"error", "warn", "info", "hint", and "off"; the default is "info".
+
+Neovim does not answer `versionlens/authorization`. The server reads
+credentials from the environment (GITHUB_TOKEN, GH_TOKEN) and from registry
+config files (.npmrc, .yarnrc.yml, NuGet.config).
+
                                                              *versionlens-download*
 `auto_download` (default true) downloads the server when no other step finds
-one. It fetches the release asset `versionlens-lsp-<version>-<target>` (tar.gz,
-zip on Windows) and `SHA256SUMS` for the plugin's version from GitHub with
+one. It fetches the release asset `versionlens-lsp-<version>-<rust-triple>`
+(for example x86_64-apple-darwin; tar.gz, zip on Windows) and `SHA256SUMS` for the plugin's version from GitHub with
 `curl`, verifies the archive with `sha256sum`, `shasum`, or `certutil`
 (whichever exists), extracts it with `tar` (Windows: System32\tar.exe), and installs it into
 stdpath("data")/versionlens/<version>/. Other version directories there are

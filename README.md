@@ -1,6 +1,6 @@
 # VersionLens Redux
 
-VersionLens Redux shows dependency version information in editor manifests using a Rust core shared by VS Code, Zed, Neovim, and JetBrains adapters.
+VersionLens Redux shows dependency version information in editor manifests using one Rust LSP server, `versionlens-lsp`, shared by the VS Code, Zed, Neovim, and JetBrains adapters.
 
 [![VS Code CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/vscode.yml)
 [![Zed CI/CD](https://github.com/xsyetopz/versionlens-redux/actions/workflows/zed.yml/badge.svg)](https://github.com/xsyetopz/versionlens-redux/actions/workflows/zed.yml)
@@ -16,13 +16,13 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 
 | Path | Purpose |
 | --- | --- |
-| `crates/` | Rust workspace crates for parsing, provider selection, version semantics, suggestions, text edits, HTTP, and the LSP server. |
+| `crates/` | Rust workspace crates: `versionlens-model` (editor-neutral shared data contracts), `-parsers` (manifest and document parsers), `-providers` (registry provider selection and request construction), `-fetch` (registry HTTP, proxy and TLS setup, caches), `-update` (version suggestions and text edits), `-engine` (orchestration contracts and domain model), `-lsp` (editor-neutral language server), and `-test-support` (test-only fixtures). |
 | `packages/vscode-extension/` | VS Code extension package, manifest, TypeScript LSP client, bundled server packaging, and marketplace README. |
 | `packages/zed-extension/` | Zed extension that starts the shared `versionlens-lsp` server. |
 | `packages/neovim-plugin/` | Neovim plugin that starts the shared `versionlens-lsp` server. |
 | `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
 | `assets/versionlens/` | Shared icons, logo, and README media reused by editor packages. |
-| `scripts/` | Build, packaging, release, test, and benchmark scripts. |
+| `scripts/` | Manifest generation, packaging, release, test, and benchmark scripts. |
 | `tests/` | Repo-level boundary, parser fixture, golden, and e2e tests; VS Code unit tests live beside adapter source under `packages/vscode-extension/src/extension/__tests__/`. |
 
 ## Editor packages
@@ -36,10 +36,10 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 
 ## Requirements
 
-- Bun for JavaScript and TypeScript scripts.
+- Bun 1.4.3 for JavaScript and TypeScript scripts.
 - Rust from [`rust-toolchain.toml`](rust-toolchain.toml).
 - Cargo workspace commands run from the repository root.
-- Gradle 9.6.1 for the JetBrains plugin package.
+- Gradle 9.6.1 and Java 21 for the JetBrains plugin package.
 
 ## Setup
 
@@ -52,7 +52,8 @@ bun install --frozen-lockfile
 ```bash
 bun run build                 # build the VS Code extension bundle
 cargo build -p versionlens-lsp # build the shared LSP server
-bun run typecheck             # TypeScript checks
+bun run typecheck             # `bun check --cwd packages/vscode-extension`
+bun run test:e2e              # build the server and extension, run e2e tests
 cargo test --workspace        # Rust tests
 bun run package               # build a local VSIX
 bun run package:editors       # build all editor packages with bundled runtimes
@@ -60,9 +61,15 @@ bun run marketplaces:configure # securely configure publishing secrets in GitHub
 bun run verify                # full repository validation
 ```
 
+Neovim tests run with `make test` in `packages/neovim-plugin`.
+
 `bun run verify` covers formatting, lints, Rust, TypeScript, extension tests, and editor packaging. Use targeted scripts while iterating, then run the full check before committing broad changes.
 
 The release and Marketplace publication procedure is documented in [`docs/releasing.md`](docs/releasing.md). Publication is a separate, manually dispatched, approval-gated workflow and never runs for pull requests.
+
+## Adding a file type
+
+Add one row to the manifest table in [`crates/versionlens-parsers/src/manifest/table.rs`](crates/versionlens-parsers/src/manifest/table.rs), with its `ManifestKind` variant in `crates/versionlens-model/src/manifest.rs` and a parser function (new or existing). Then run `bun run generate:manifests` to refresh the file lists of the VS Code manifest, Neovim, JetBrains, and Zed packages; `bun run check:manifests` verifies them.
 
 ## Crates
 

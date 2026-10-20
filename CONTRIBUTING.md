@@ -10,13 +10,13 @@ Thanks for working on VersionLens.
 
 ## Development setup
 
-Install Bun and the Rust toolchain declared in `rust-toolchain.toml`, then install dependencies:
+Install Bun 1.4.3 and the Rust toolchain declared in `rust-toolchain.toml`, then install dependencies:
 
 ```bash
 bun install --frozen-lockfile
 ```
 
-Build the extension:
+Build the VS Code extension bundle:
 
 ```bash
 bun run build
@@ -28,11 +28,15 @@ Package a local VSIX:
 bun run package
 ```
 
-Build all three editor packages and verify their bundled runtimes:
+Build all editor packages and verify their bundled runtimes:
 
 ```bash
 bun run package:editors
 ```
+
+## Adding a file type
+
+Add one row to the table in `crates/versionlens-parsers/src/manifest/table.rs` (with a `ManifestKind` variant in `crates/versionlens-model/src/manifest.rs` and a parser function, new or existing), then run `bun run generate:manifests`. `bun run check:manifests` fails when the generated editor file lists are stale.
 
 ## Release
 
@@ -52,9 +56,10 @@ The release workflow refuses stale commits, mismatched versions, existing tags, 
 Run the smallest check that covers your change. Common checks:
 
 ```bash
-bun run typecheck
+bun run typecheck   # bun check --cwd packages/vscode-extension
 cargo fmt --all -- --check
 cargo test --workspace
+bun run check:manifests
 ```
 
 Before a release or broad refactor, run:
@@ -63,7 +68,7 @@ Before a release or broad refactor, run:
 bun run verify
 ```
 
-`bun run verify` is intentionally broad and can be slow. Do not run it in the background unless someone explicitly asked for that.
+`bun run verify` is intentionally broad and can be slow, and the JetBrains build needs Java 21. Neovim tests run with `make test` in `packages/neovim-plugin`; e2e tests with `bun run test:e2e`. Do not run it in the background unless someone explicitly asked for that.
 
 ## Pull requests
 
