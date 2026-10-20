@@ -1,10 +1,14 @@
 mod bound;
-mod patch;
+
+use semver::Version;
 
 use crate::versions::parse::normalize_requirement;
 
 use bound::{ComparatorBound, comparator_bound, max_lower_bound, min_upper_bound};
-use patch::next_patch;
+
+fn next_patch(version: &Version) -> Version {
+    crate::versions::semver_version(version.major, version.minor, version.patch + 1)
+}
 
 pub fn requirement_has_empty_comparator_intersection(requirement: &str) -> bool {
     let mut lower: Option<ComparatorBound> = None;

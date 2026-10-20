@@ -1,12 +1,13 @@
+use semver::Version;
+
+use crate::versions::parse::parse_version;
 use crate::versions::policy::ProjectVersionBump;
 
 mod bump;
 mod component;
-mod parse;
 mod prerelease;
 
 use bump::{bumped_project_version, default_project_version_bump};
-use parse::project_version;
 
 pub fn next_project_version(raw: &str, bump: Option<ProjectVersionBump>) -> Option<String> {
     let version = project_version(raw);
@@ -16,6 +17,10 @@ pub fn next_project_version(raw: &str, bump: Option<ProjectVersionBump>) -> Opti
 
 pub fn is_prerelease_project_version(raw: &str) -> bool {
     !project_version(raw).pre.is_empty()
+}
+
+fn project_version(raw: &str) -> Version {
+    parse_version(raw).unwrap_or_else(|| crate::versions::semver_version(0, 0, 0))
 }
 
 #[cfg(test)]

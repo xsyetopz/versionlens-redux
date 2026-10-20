@@ -4,7 +4,6 @@ mod edit;
 mod github;
 mod manifest;
 mod position;
-mod range;
 mod versions;
 
 pub use document::{
@@ -20,8 +19,7 @@ pub use edit::{
 };
 pub use github::GithubRepository;
 pub use manifest::ManifestKind;
-pub use position::Position;
-pub use range::Range;
+pub use position::{Position, Range};
 pub use versions::{
     ProjectVersionBump, UpdateLevel, VersionDialect, build_variants, compare_numeric_segments,
     compare_numeric_text, compare_versions, compare_versions_for_dialect,
