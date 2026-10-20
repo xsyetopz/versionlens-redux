@@ -106,7 +106,7 @@ Owns: `packages/vscode-extension/src`, `packages/vscode-extension/test`, `packag
 
 ## 8. Tests and documentation (lead, serial)
 
-- [ ] 8.1 Run the full regression suite for every group 2.2 fixture across all four editors' paths (engine unit, LSP integration, VS Code e2e, Neovim headless). Verify: all pass, with the command output attached.
+- [x] 8.1 Run the full regression suite for every group 2.2 fixture across all four editors' paths (engine unit, LSP integration, VS Code e2e, Neovim headless). Verify: all pass, with the command output attached.
 - [ ] 8.2 Update `README.md`, `AGENTS.md`, `CONTRIBUTING.md` (Bun 1.4.3, `bun check`, `verify`, new crate names, how to add a file type with one table row), `docs/workspace-source-of-truth.md`, and the per-editor READMEs (credentials, `updateSeverity`, Neovim download). Verify: `markdownlint` passes and every documented command runs.
 - [ ] 8.3 Write `CHANGELOG.md` 0.5.0: settings are read only through `workspace/configuration` per folder (`initializationOptions` and `didChangeConfiguration` payloads are ignored; `**/obj/**` now hides manifests of every ecosystem), unified server, update diagnostics, suggestion fixes, error handling, new file types, credentials, distribution, tooling. Verify: the changelog check in `scripts/release` passes.
 
