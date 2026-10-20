@@ -28,7 +28,7 @@ There are 168 product Rust files under 25 lines.
 
 ## Target
 
-- Rust: 40k or fewer by the `wc` method (about 18% down), stretch 37k. Do not chase 27k. The 27k goal was set before LSP parity work added about 1k lines to `lsp` and about 0.3k to `fetch`, and before the rate-limit circuit and HMAC cache were kept. The savings found below sum to about 7k to 10k, so 38k to 41k is what the code supports.
+- Rust: 40k or fewer by the `wc` method (about 18% down), stretch 37k. Do not chase 27k. The 27k figure was a speculative estimate, set before LSP parity work added about 1k lines to `lsp` and about 0.3k to `fetch`, and before the rate-limit circuit and HMAC cache were kept. The savings found below sum to about 7k to 10k, so 38k to 41k is what the code supports.
 - TypeScript: 1.8k or fewer, stretch 1.7k. The `extension/auth/` folder (about 740 lines) is SecretStorage UX kept on purpose, so only helper overlap is cut. 1.2k would need removing features.
 - Each step below must keep `cargo test --workspace --locked` and the golden and e2e tests green. A step that cannot cut lines without behavior change is dropped, not forced.
 
