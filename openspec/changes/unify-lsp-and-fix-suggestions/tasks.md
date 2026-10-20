@@ -114,7 +114,8 @@ Owns: `packages/vscode-extension/src`, `packages/vscode-extension/test`, `packag
 
 - [x] 9.1 Bump every version from 0.4.4 to 0.5.0: workspace crates, the VS Code `package.json`, JetBrains `gradle.properties`, Zed `extension.toml`/`Cargo.toml`, the Neovim rockspec, and `Cargo.lock`/`bun.lock`. Verify: the release version-sync check passes and `grep -rn "0\.4\.4" --exclude=CHANGELOG.md` finds no package version.
 - [x] 9.2 Run full validation. Verify: `bun run verify` passes, with output shown.
-- [ ] 9.3 Build release artifacts locally for the host target and package every editor. Verify: `bun run package` and the per-editor package commands succeed, and the host archive's checksum matches the generated `SHA256SUMS`.
+- [x] 9.3 Build release artifacts locally for the host target and package every editor. Verify: `bun run package` and the per-editor package commands succeed, and the host archive's checksum matches the generated `SHA256SUMS`.
+  - Local run: SHA256SUMS can only be self-generated locally (CI writes the real one after all 9 builds), so the match is a format check only. The darwin-arm64 VSIX binary matched the archive binary. Run build-lsp on CI and check its SHA256SUMS before tagging.
 - [ ] 9.4 Ask the user before tagging `v0.5.0`, pushing, or publishing to any marketplace.
 
 ## Workflow follow-up
