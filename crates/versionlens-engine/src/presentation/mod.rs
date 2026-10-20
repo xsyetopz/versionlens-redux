@@ -1,13 +1,10 @@
 use self::indicator::{code_lens_indicator, update_indicator, with_indicator};
 use self::title::{code_lens_title_text, prefixed_version};
 use versionlens_model::Dependency;
-use versionlens_update::SuggestionStatus::{
-    BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
-    UpdateAvailable as StatusUpdateAvailable,
-};
 use versionlens_update::{Suggestion, UpdateChoice};
 
 use crate::SuggestionIndicators;
+use crate::presentation::statuses::{StatusBuildAvailable, StatusDirectory, StatusUpdateAvailable};
 use crate::presentation::view::{Action, LensView, UpdateMode};
 use crate::project::ProjectVersionCodeLensSuggestion;
 use crate::selection::dependency_selector;

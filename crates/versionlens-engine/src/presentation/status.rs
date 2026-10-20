@@ -1,8 +1,3 @@
-use versionlens_update::SuggestionStatus::{
-    DirectoryNotFound as StatusDirectoryNotFound, Error as StatusError, Invalid as StatusInvalid,
-    InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
-    NotSupported as StatusNotSupported, UpdateAvailable as StatusUpdateAvailable,
-};
 use versionlens_update::{Suggestion, SuggestionStatus};
 
 use crate::presentation::view::{DiagnosticView, StatusView};
@@ -16,16 +11,22 @@ pub(crate) fn status_view(
     show_suggestion_stats: bool,
 ) -> StatusView {
     let dependency_count = to_u32(dependency_count);
-    let update_count = suggestions_with_status(suggestions, StatusUpdateAvailable);
-    let vulnerability_count = diagnostics.len();
-    let error_count = suggestions_with_status(suggestions, StatusError)
-        + suggestions_with_status(suggestions, StatusDirectoryNotFound)
-        + suggestions_with_status(suggestions, StatusInvalid)
-        + suggestions_with_status(suggestions, StatusInvalidRange);
-    let no_match_count = suggestions_with_status(suggestions, StatusNoMatch)
-        + suggestions_with_status(suggestions, StatusNotSupported);
+    let mut update_count = 0;
+    let mut error_count = 0;
+    let mut no_match_count = 0;
+    for suggestion in suggestions.iter().flatten() {
+        match suggestion.status {
+            SuggestionStatus::UpdateAvailable => update_count += 1,
+            SuggestionStatus::Error
+            | SuggestionStatus::DirectoryNotFound
+            | SuggestionStatus::Invalid
+            | SuggestionStatus::InvalidRange => error_count += 1,
+            SuggestionStatus::NoMatch | SuggestionStatus::NotSupported => no_match_count += 1,
+            _ => {}
+        }
+    }
     let update_count = to_u32(update_count);
-    let vulnerability_count = to_u32(vulnerability_count);
+    let vulnerability_count = to_u32(diagnostics.len());
     let error_count = to_u32(error_count);
     let no_match_count = to_u32(no_match_count);
 
@@ -49,20 +50,6 @@ pub(crate) fn status_view(
             "{update_count} updates, {vulnerability_count} vulnerabilities, {error_count} errors, {no_match_count} no matches across {dependency_count} dependencies"
         ),
     }
-}
-
-fn suggestions_with_status(
-    suggestions: OptionalSuggestions<'_>,
-    status: SuggestionStatus,
-) -> usize {
-    suggestions
-        .iter()
-        .filter(|suggestion| {
-            suggestion
-                .as_ref()
-                .is_some_and(|item| item.status == status)
-        })
-        .count()
 }
 
 pub(crate) fn to_u32(value: usize) -> u32 {
