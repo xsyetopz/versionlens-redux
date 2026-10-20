@@ -30,13 +30,13 @@
 - [x] 5.4 (139d4387 module merge, then dc8faf51..f70914d9: one title `match`, folded status branches, shared `status_suggestion`, one-pass status counts; about -240 lines, reviewed twice.) Unify `session/presentation`, `presentation` and `view` in `engine`. Verify: `cargo test -p versionlens-engine -p versionlens-lsp --locked`.
 - [x] 5.5 (Partly: only the dotted property matcher was an exact duplicate, now shared (311ac994). The other three matchers differ in syntax, such as braces, classes, extglobs and `**/`, so merging them would change matching.) Merge the three glob matchers into one (`globset` only if already in `Cargo.lock`). Verify: `cargo test -p versionlens-engine -p versionlens-parsers --locked`.
 - [x] 5.6 (Mostly skipped: `pyproject_toml`, `cargo_toml` and `maven_xml` already use the adapters; `dotnet_xml` and `nuget_config` need XML attributes the adapter lacks; `npmrc`, `gradle`, `cpp`, `hackage` and `rebar_config` have no adapter. Only a `json_manifest` wrapper was removed (cc8c302a).) Move bespoke parsers onto manifest adapters, one format per commit, largest first (`json_manifest`, `npmrc`, `nuget_config`, `gradle`, `pyproject_toml`, `cargo_toml`, `dotnet_xml`, `maven_xml`, then `cpp`, `hackage`, `rebar_config`). Verify per format: `cargo test -p versionlens-parsers --locked`, then `bun run check:manifests && bun run check:manifest-baseline` after the last one.
-- [x] 5.7 (providers, update, model, fetch, parsers: 16cc3798..c707a817, -542 lines, reviewed. engine and lsp not done.) Merge micro-files and `support.rs` wrappers into parent modules. Verify: `cargo fmt --all -- --check` and `cargo test --workspace --locked`.
+- [x] 5.7 (providers, update, model, fetch, parsers: 16cc3798..c707a817, -542; engine b6ea2590 -94; lsp 91339f0e -3; all reviewed.) Merge micro-files and `support.rs` wrappers into parent modules. Verify: `cargo fmt --all -- --check` and `cargo test --workspace --locked`.
 - [x] 5.8 (TS 2,120 to 1,981; 5b3650ac, plus 3ff3c821 keeping retry credentials under the original secret key, with a test.) Consolidate `extension/auth/` helpers and trim `client.ts`. Verify: `bun run typecheck` and `bun run test:extension`.
-- [ ] 5.9 Re-measure with the design.md commands. Target: Rust 40k or fewer, TS 1.8k or fewer. If short, record the numbers and the reason in the PR text. Verify: command output pasted in the PR.
+- [x] 5.9 (Rust 48,794 to 47,958: parsers 18,348, engine 13,949, providers 5,535, lsp 3,720, model 2,208, update 2,135, fetch 1,745, test-support 318. TS 2,120 to 1,992. Targets missed: most counted duplication differs in behavior, so 5.2, 5.3 and most of 5.5/5.6 were dropped; 27k/40k were estimates.) Re-measure with the design.md commands. Target: Rust 40k or fewer, TS 1.8k or fewer. If short, record the numbers and the reason in the PR text. Verify: command output pasted in the PR.
 
 ## 6. Final check
 
-- [ ] 6.1 Run `bun run verify` (needs Java 21 for JetBrains) and `bun run test:e2e`. Verify: both exit 0.
+- [x] 6.1 (2d472aa7: verify and test:e2e exit 0; also fixed a pre-existing flaky 1 ms cache TTL test.) Run `bun run verify` (needs Java 21 for JetBrains) and `bun run test:e2e`. Verify: both exit 0.
 
 ## 7. Release 0.5.1
 
