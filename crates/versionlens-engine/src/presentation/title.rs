@@ -1,41 +1,6 @@
 use versionlens_model::Dependency;
-use versionlens_update::Suggestion;
-
-mod formatters;
-
-use crate::presentation::statuses::{
-    StatusBuildAvailable, StatusCurrent, StatusDirectory, StatusDirectoryNotFound, StatusError,
-    StatusFixed, StatusInvalid, StatusInvalidRange, StatusNoMatch, StatusNotSupported,
-    StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved,
-    StatusUpdateAvailable, SuggestionStatus,
-};
-pub(in crate::presentation) use formatters::prefixed_version;
-use formatters::{
-    build_title_text, current_title_text, directory_not_found_title_text, directory_title_text,
-    error_title_text, fixed_title_text, invalid_range_title_text, invalid_title_text,
-    latest_title_text, no_match_title_text, not_supported_title_text, satisfies_latest_title_text,
-    satisfies_title_text, unresolved_title_text, update_title_text,
-};
-
-type TitleFormatter = fn(&Dependency, &Suggestion) -> String;
-
-const TITLE_FORMATTERS: &[(SuggestionStatus, TitleFormatter)] = &[
-    (StatusBuildAvailable, build_title_text),
-    (StatusUpdateAvailable, update_title_text),
-    (StatusCurrent, current_title_text),
-    (StatusSatisfiesLatest, satisfies_latest_title_text),
-    (StatusSatisfies, satisfies_title_text),
-    (StatusDirectory, directory_title_text),
-    (StatusDirectoryNotFound, directory_not_found_title_text),
-    (StatusFixed, fixed_title_text),
-    (StatusInvalid, invalid_title_text),
-    (StatusInvalidRange, invalid_range_title_text),
-    (StatusError, error_title_text),
-    (StatusRateLimited, error_title_text),
-    (StatusNoMatch, no_match_title_text),
-    (StatusNotSupported, not_supported_title_text),
-    (StatusUnresolved, unresolved_title_text),
-];
+use versionlens_model::Ecosystem::GitHub;
+use versionlens_update::{Suggestion, SuggestionStatus};
 
 pub(super) fn code_lens_title_text(
     dependency: &Dependency,
@@ -45,10 +10,53 @@ pub(super) fn code_lens_title_text(
         return "Version Lens".to_owned();
     };
 
-    TITLE_FORMATTERS
-        .iter()
-        .find_map(|(status, formatter)| {
-            (*status == suggestion.status).then(|| formatter(dependency, suggestion))
-        })
-        .unwrap_or_else(|| latest_title_text(dependency, suggestion))
+    let latest = suggestion.latest.as_deref().unwrap_or_default();
+    let latest_version = || prefixed_version(dependency, latest);
+    match suggestion.status {
+        SuggestionStatus::BuildAvailable => "change build".to_owned(),
+        SuggestionStatus::UpdateAvailable => title_with_version("latest", &latest_version()),
+        SuggestionStatus::Current => {
+            let label = if latest.contains('-') {
+                "latest prerelease"
+            } else {
+                "latest"
+            };
+            title_with_version(label, &latest_version())
+        }
+        SuggestionStatus::SatisfiesLatest => {
+            title_with_version("satisfies latest", &latest_version())
+        }
+        SuggestionStatus::Satisfies => title_with_version("satisfies", &latest_version()),
+        SuggestionStatus::Directory => format!("file://{latest}"),
+        SuggestionStatus::DirectoryNotFound => title_with_version("not found", latest),
+        SuggestionStatus::Fixed => title_with_version("fixed", &latest_version()),
+        SuggestionStatus::Invalid => "invalid version".to_owned(),
+        SuggestionStatus::InvalidRange => "invalid version range".to_owned(),
+        SuggestionStatus::Error | SuggestionStatus::RateLimited => latest.to_owned(),
+        SuggestionStatus::NoMatch => suggestion
+            .latest
+            .as_deref()
+            .unwrap_or("no match")
+            .to_owned(),
+        SuggestionStatus::NotSupported => "not supported".to_owned(),
+        SuggestionStatus::Unresolved => format!("{} unresolved", dependency.name),
+    }
+}
+
+/// A GitHub version shown with the requirement prefix it lacks, such as `v`.
+pub(super) fn prefixed_version(dependency: &Dependency, version: &str) -> String {
+    if dependency.ecosystem == GitHub
+        && !dependency.requirement_prefix.is_empty()
+        && !version.starts_with(&dependency.requirement_prefix)
+    {
+        return format!("{}{}", dependency.requirement_prefix, version);
+    }
+    version.to_owned()
+}
+
+fn title_with_version(label: &str, version: &str) -> String {
+    if version.is_empty() {
+        return label.to_owned();
+    }
+    format!("{label} {version}")
 }
