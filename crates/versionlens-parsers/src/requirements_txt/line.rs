@@ -55,7 +55,7 @@ fn requirements_txt_descriptor_version(raw: &str) -> String {
         let Some(after_operator) = raw.strip_prefix(operator) else {
             continue;
         };
-        let version = after_operator.trim_start_matches(crate::is_whitespace);
+        let version = after_operator.trim_start_matches(char::is_whitespace);
         if version.len() != after_operator.len() {
             return format!("{operator}{version}");
         }

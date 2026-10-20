@@ -8,7 +8,7 @@ use super::XmlNode;
 use event::xml_event_finished;
 
 pub(crate) fn collect_nodes(text: &str) -> Option<Vec<XmlNode>> {
-    let mut reader = crate::xml_reader(text);
+    let mut reader = quick_xml::Reader::from_str(text);
     let mut collector = crate::default();
 
     loop {

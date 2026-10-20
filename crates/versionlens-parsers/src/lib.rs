@@ -126,9 +126,7 @@ pub use python_registry::{
     parse_python_registry_urls, parse_uv_registry_urls,
 };
 pub use sbt_build::parse_sbt_maven_repositories;
-pub(crate) use support::{
-    default, is_whitespace, parse_toml_document, path, string_from_utf8_lossy, xml_reader,
-};
+pub(crate) use support::{default, parse_toml_document};
 pub use versionlens_model::{
     Dependency, DocumentInput, Ecosystem, ManifestKind, ecosystem_config_namespace,
     ecosystem_from_config_name,

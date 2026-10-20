@@ -29,7 +29,7 @@ fn parse_paket_dependency_line(line_index: usize, line: &str) -> Option<Dependen
     let after_keyword = trimmed.strip_prefix("nuget ")?;
     let name_start_in_trimmed = trimmed.len() - after_keyword.len();
     let name_end_in_after = after_keyword
-        .find(crate::is_whitespace)
+        .find(char::is_whitespace)
         .unwrap_or(after_keyword.len());
     let name = after_keyword[..name_end_in_after].trim();
     if name.is_empty() {

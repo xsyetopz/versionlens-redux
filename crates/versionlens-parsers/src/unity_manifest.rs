@@ -118,7 +118,7 @@ fn unity_hosted_url(
     }
     if requirement.starts_with("git+")
         || requirement.starts_with("git@")
-        || crate::path(requirement)
+        || std::path::Path::new(requirement)
             .extension()
             .is_some_and(|extension| extension.eq_ignore_ascii_case("git"))
         || requirement.contains(".git#")

@@ -201,7 +201,7 @@ impl Rule {
         match *self {
             Rule::Name(expected) => name.is_some_and(|name| name.eq_ignore_ascii_case(expected)),
             Rule::Extension(expected) => name.is_some_and(|name| {
-                crate::path(name)
+                std::path::Path::new(name)
                     .extension()
                     .is_some_and(|extension| extension.eq_ignore_ascii_case(expected))
             }),

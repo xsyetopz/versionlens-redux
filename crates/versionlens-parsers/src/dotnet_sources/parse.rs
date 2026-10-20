@@ -1,4 +1,3 @@
-use super::protocol::protocol_from_url;
 use super::schema::DotnetSource;
 
 pub fn parse_dotnet_sources(text: &str) -> Vec<DotnetSource> {
@@ -47,4 +46,19 @@ fn source_from_url(url: &str) -> DotnetSource {
         url: url.to_owned(),
         protocol,
     }
+}
+
+pub fn filter_dotnet_remote_sources(sources: Vec<DotnetSource>) -> Vec<DotnetSource> {
+    sources
+        .into_iter()
+        .filter(|source| matches!(source.protocol.as_str(), "http:" | "https:"))
+        .collect()
+}
+
+pub(super) fn protocol_from_url(url: &str) -> String {
+    url.find(':')
+        .map(|index| &url[..=index])
+        .filter(|protocol| matches!(*protocol, "http:" | "https:"))
+        .unwrap_or("file:")
+        .to_owned()
 }
