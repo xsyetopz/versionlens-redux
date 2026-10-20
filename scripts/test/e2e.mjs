@@ -6,6 +6,8 @@ import {
   cpSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
+  readFileSync,
   realpathSync,
   rmSync,
   writeFileSync,
@@ -74,6 +76,14 @@ try {
     launchArgs: [
       workspace,
       "--disable-extensions",
+      // Headless Linux CI: no GPU under Xvfb and no keyring on D-Bus.
+      "--disable-gpu",
+      "--disable-workspace-trust",
+      "--use-inmemory-secretstorage",
+      "--skip-welcome",
+      "--skip-release-notes",
+      "--logsPath",
+      join(scratch, "logs"),
       "--user-data-dir",
       join(scratch, "user-data"),
     ],
@@ -86,7 +96,25 @@ try {
   if (code === 0) {
     rmSync(scratch, { force: true, recursive: true });
   } else {
+    printLogs(join(scratch, "logs"));
     console.error(`Logs are kept in ${scratch}`);
   }
 }
 process.exit(code);
+
+// Print VS Code's main, renderer and extension host logs so CI failures
+// show the cause without downloading artifacts.
+function printLogs(directory) {
+  let entries;
+  try {
+    entries = readdirSync(directory, { recursive: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const name = String(entry);
+    if (!/(^|\/)(main|renderer\d*|exthost\d*)\.log$/.test(name)) continue;
+    console.error(`--- ${name} ---`);
+    console.error(readFileSync(join(directory, name), "utf8"));
+  }
+}
