@@ -20,7 +20,7 @@ fn session_with_manifest_cache(
             provider_cache: vec![ProviderCacheConfig {
                 ecosystem: Npm,
                 manifest_kind,
-                cache_ttl_ms: 1,
+                cache_ttl_ms: 200,
             }],
             ..Default::default()
         },
@@ -112,7 +112,7 @@ async fn provider_cache_overrides_global_cache_ttl() {
     session
         .resolve_document_with_responses(input.clone(), &responses)
         .await;
-    sleep(Duration::from_millis(5));
+    sleep(Duration::from_millis(400));
 
     assert!(session.analyze_document(input).code_lenses.is_empty());
 }
@@ -127,7 +127,7 @@ fn manifest_scoped_provider_cache_does_not_override_package_json_npm() {
     );
     assert_eq!(
         session.cache_ttl(Npm, Some(PnpmYaml)),
-        Duration::from_millis(1)
+        Duration::from_millis(200)
     );
 }
 
@@ -154,7 +154,7 @@ async fn manifest_scoped_provider_cache_controls_cached_suggestions() {
         "↑  latest 1.1.0"
     );
 
-    sleep(Duration::from_millis(5));
+    sleep(Duration::from_millis(400));
 
     assert!(session.analyze_document(input).code_lenses.is_empty());
 }
