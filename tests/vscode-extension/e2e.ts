@@ -13,7 +13,16 @@ async function waitFor<T>(
 ): Promise<T> {
   const deadline = Date.now() + TIMEOUT_MS;
   while (Date.now() < deadline) {
-    const value = await probe();
+    const value = await Promise.resolve()
+      .then(probe)
+      .catch((error: unknown) => {
+        // VS Code cancels a provider request when another extension (here the
+        // built-in JSON one) registers a provider mid-call; ask again.
+        if (isCancellation(error)) {
+          return undefined;
+        }
+        throw error;
+      });
     if (value !== undefined) {
       return value;
     }
@@ -21,6 +30,13 @@ async function waitFor<T>(
   }
   throw new Error(
     `timed out waiting for ${typeof description === "string" ? description : description()}`,
+  );
+}
+
+function isCancellation(error: unknown): boolean {
+  return (
+    error instanceof vscode.CancellationError ||
+    (error instanceof Error && error.message === "Canceled")
   );
 }
 
@@ -61,23 +77,28 @@ export async function run(): Promise<void> {
       .find((item) => item.code === "update-available"),
   );
 
-  const actions = await vscode.commands.executeCommand<
-    (vscode.CodeAction | vscode.Command)[]
-  >(
-    "vscode.executeCodeActionProvider",
-    document.uri,
-    diagnostic.range,
-    vscode.CodeActionKind.QuickFix.value,
-  );
-  const fix = actions.find(
-    (action): action is vscode.CodeAction =>
-      "edit" in action &&
-      Boolean(action.edit) &&
-      action.title.includes("2.0.0"),
-  );
-  assert.ok(
-    fix?.edit,
-    `a quick fix to 2.0.0: ${JSON.stringify(actions.map((a) => a.title))}`,
+  let titles: string[] = [];
+  const fix = await waitFor(
+    () => `a quick fix to 2.0.0 (last answer: ${JSON.stringify(titles)})`,
+    async () => {
+      const actions = await vscode.commands.executeCommand<
+        (vscode.CodeAction | vscode.Command)[]
+      >(
+        "vscode.executeCodeActionProvider",
+        document.uri,
+        diagnostic.range,
+        vscode.CodeActionKind.QuickFix.value,
+      );
+      titles = actions.map((action) => action.title);
+      return actions.find(
+        (
+          action,
+        ): action is vscode.CodeAction & { edit: vscode.WorkspaceEdit } =>
+          "edit" in action &&
+          Boolean(action.edit) &&
+          action.title.includes("2.0.0"),
+      );
+    },
   );
 
   assert.ok(await vscode.workspace.applyEdit(fix.edit), "the edit applies");
