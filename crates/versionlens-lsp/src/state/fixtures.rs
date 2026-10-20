@@ -31,20 +31,16 @@ impl Served {
             .collect()
     }
 
-    /// The versions the bump lenses offer, from their command arguments. The
-    /// server keeps the range operator when it applies one.
+    /// The versions the bump lenses offer, from their command arguments. These
+    /// are bare versions; the range operator is added when an update applies.
     fn bump_versions(&self) -> Vec<String> {
-        let mut versions = self
-            .lenses
+        self.lenses
             .iter()
             .filter_map(|lens| lens.command.as_ref())
             .filter(|command| command.title.starts_with('↑'))
             .filter_map(|command| command.arguments.as_ref()?.first()?.get("version"))
             .filter_map(|version| version.as_str().map(str::to_owned))
-            .collect::<Vec<_>>();
-        versions.sort();
-        versions.dedup();
-        versions
+            .collect()
     }
 
     /// A bump lens sits on the given line, where the edit lands.
@@ -76,8 +72,16 @@ impl Served {
         assert_eq!(self.bumps(), Vec::<&str>::new());
     }
 
-    /// No diagnostic other than an available update.
+    /// No error lens (an error shows as a lens, never as a diagnostic) and no
+    /// diagnostic other than an available update.
     fn assert_silent(&self) {
+        assert!(
+            self.titles()
+                .iter()
+                .all(|title| !title.starts_with('\u{1F534}')),
+            "error lens: {:?}",
+            self.titles()
+        );
         let noise = self
             .diagnostics
             .iter()
@@ -194,12 +198,15 @@ async fn install_action_branch_ref_is_fixed_without_a_lookup() {
 async fn engines_vscode_is_skipped_without_an_error() {
     let served = serve(&regression::vscode_engine_field(), true).await;
     served.assert_silent();
+    // The field is recognised and shown as unsupported, not looked up.
+    assert_eq!(served.titles(), ["⚪ not supported"]);
 }
 
 #[tokio::test]
 async fn setup_dotnet_unsupported_syntax_is_not_an_error() {
     let served = serve(&regression::unsupported_setup_dotnet(), true).await;
     served.assert_silent();
+    served.assert_status("not supported");
     served.assert_no_bump();
 }
 
@@ -217,6 +224,9 @@ async fn env_reference_resolves_the_runtime() {
 async fn steps_output_expression_is_skipped_silently() {
     let served = serve(&regression::step_output_expression(), true).await;
     served.assert_silent();
+    // Only the action itself is checked; the expression is not looked up.
+    assert_eq!(served.titles().len(), 1, "{:?}", served.titles());
+    served.assert_status("latest v4");
     served.assert_no_bump();
 }
 

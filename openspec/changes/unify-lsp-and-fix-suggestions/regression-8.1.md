@@ -33,7 +33,7 @@ test result: ok. 3 passed; 0 failed; 1 ignored
 ```
 versionlens_engine     747 passed; 0 failed; 1 ignored
 versionlens_fetch       85 passed
-versionlens_lsp         79 passed (src/lib.rs unit+integration, in-process); main.rs 0
+versionlens_lsp         79 passed (before the section 6 tests; now 93) (src/lib.rs unit+integration, in-process); main.rs 0
 versionlens_model       40 passed; tests/github.rs 2 passed
 versionlens_parsers    384 passed
 versionlens_providers  155 passed
@@ -43,7 +43,7 @@ doc-tests: 0 tests, all ok
 ```
 
 ## 3. LSP integration
-`cargo test -p versionlens-lsp` -> `test result: ok. 79 passed; 0 failed`
+`cargo test -p versionlens-lsp` -> `test result: ok. 79 passed; 0 failed` (before the section 6 tests; now 93)
 (There is no crates/versionlens-lsp/tests dir; LSP tests live in src/ via test_support.rs.)
 These cover the shared LSP path used by JetBrains, Zed and Neovim; none of them reference the 2.2 fixtures by content.
 
@@ -66,7 +66,7 @@ Note: stderr shows deprecation "vim.lsp.codelens.refresh({ bufnr }) is deprecate
 
 ## 6. LSP path: group 2.2 fixtures (branch test/8.1-lsp-fixtures)
 `cargo test -p versionlens-lsp fixtures`
-The LSP tests (`crates/versionlens-lsp/src/state/fixtures.rs`) open each 2.2 manifest in the server state, resolve it with the stubbed registry answers, and assert the LSP lens titles, bump versions (lens command arguments) and update diagnostics. Manifests and registry bodies are shared with the engine tests via `versionlens_test_support::regression`.
+The LSP tests (`crates/versionlens-lsp/src/state/fixtures.rs`) open each 2.2 manifest in the server state, resolve it with the stubbed registry answers, and assert the LSP lens titles (error lenses rejected, since an error is a lens title and never a diagnostic; the no-lookup cases assert exact titles), bump versions (lens command arguments) and update diagnostics. Manifests and registry bodies are shared with the engine tests via `versionlens_test_support::regression`.
 ```
 test result: ok. 14 passed; 0 failed; 0 ignored; 79 filtered out
 ```
