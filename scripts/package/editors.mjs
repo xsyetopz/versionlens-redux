@@ -1,10 +1,19 @@
 #!/usr/bin/env bun
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import process from "node:process";
 
 const REQUIRED_JAVA_MAJOR = 21;
+const HOST_PATTERN = /^host:\s*(?<triple>\S+)/mu;
 const JAVA_VERSION_PATTERN = /version\s+"(?<major>\d+)/u;
 
 function run(command, options = {}) {
@@ -112,6 +121,28 @@ function resolveJava21() {
   );
 }
 
+function stageHostBinary(destinationRoot) {
+  const targets = JSON.parse(
+    readFileSync(new URL("./targets.json", import.meta.url), "utf8"),
+  ).targets;
+  const host = commandOutput(["rustc", "-vV"]).match(HOST_PATTERN)?.groups
+    ?.triple;
+  if (!(host && targets.some(({ rust }) => rust === host))) {
+    throw new Error(
+      `Host Rust target ${host ?? "(unknown)"} is not listed in scripts/package/targets.json`,
+    );
+  }
+  const executable = host.includes("windows")
+    ? "versionlens-lsp.exe"
+    : "versionlens-lsp";
+  const targetDir = join(destinationRoot, host);
+  mkdirSync(targetDir, { recursive: true });
+  copyFileSync(
+    join(process.cwd(), "target", "release", executable),
+    join(targetDir, executable),
+  );
+}
+
 const javaRuntime = resolveJava21();
 console.log(`Using Java ${REQUIRED_JAVA_MAJOR} runtime: ${javaRuntime}`);
 const repositoryRoot = process.cwd();
@@ -133,6 +164,7 @@ const gradleHome = mkdtempSync(join(tmpdir(), "versionlens-gradle-"));
 if (gradleHome.startsWith(fixturesRoot)) {
   throw new Error(`Refusing Gradle user home inside fixtures: ${gradleHome}`);
 }
+const binariesDir = mkdtempSync(join(tmpdir(), "versionlens-lsp-binaries-"));
 const gradleEnvironment = {
   ...Bun.env,
 };
@@ -145,6 +177,7 @@ try {
   run(["cargo", "build", "-p", "versionlens-lsp", "--release", "--locked"], {
     env: gradleEnvironment,
   });
+  stageHostBinary(binariesDir);
   run(
     [
       "cargo",
@@ -164,11 +197,14 @@ try {
       "packages/jetbrains-plugin",
       "buildPlugin",
       "--no-daemon",
+      `-PversionlensBinariesDir=${binariesDir}`,
+      "-PversionlensAllowPartialTargets",
     ],
     { env: gradleEnvironment },
   );
 } finally {
   rmSync(gradleHome, { force: true, recursive: true });
+  rmSync(binariesDir, { force: true, recursive: true });
   rmSync(projectGradleState, { force: true, recursive: true });
   rmSync(projectBuildTemp, { force: true, recursive: true });
 }
