@@ -112,10 +112,16 @@ fn append_docker_hub_results(merged: &mut Value, page: &str) {
     let Ok(mut page) = from_str::<Value>(page) else {
         return;
     };
-    let Some(page_results) = page.get_mut("results").and_then(crate::json_array_mut) else {
+    let Some(page_results) = page
+        .get_mut("results")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
         return;
     };
-    let Some(merged_results) = merged.get_mut("results").and_then(crate::json_array_mut) else {
+    let Some(merged_results) = merged
+        .get_mut("results")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
         return;
     };
 

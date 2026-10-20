@@ -10,7 +10,7 @@ pub(super) fn python_release_is_yanked(value: &Value, version: &str) -> bool {
             !files.is_empty()
                 && files.iter().all(|file| {
                     file.get("yanked")
-                        .and_then(crate::json_bool)
+                        .and_then(serde_json::Value::as_bool)
                         .unwrap_or(false)
                 })
         })

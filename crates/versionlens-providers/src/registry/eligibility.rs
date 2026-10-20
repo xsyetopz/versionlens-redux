@@ -1,10 +1,8 @@
 use versionlens_model::Ecosystem;
 use versionlens_model::Ecosystem::{Composer, Cran, Docker, Pub, Ruby};
 
-mod docker;
 mod nuget;
 
-use docker::is_supported_docker_dependency;
 use nuget::contains_four_segment_nuget_version;
 
 pub fn is_unsupported_dotnet_requirement(requirement: &str) -> bool {
@@ -59,4 +57,8 @@ pub fn is_composer_platform_dependency(name: &str) -> bool {
         "php" | "composer" | "composer-plugin-api" | "composer-runtime-api"
     ) || name.starts_with("ext-")
         || name.starts_with("lib-")
+}
+
+fn is_supported_docker_dependency(name: &str) -> bool {
+    !name.contains('$')
 }

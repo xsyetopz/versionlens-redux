@@ -40,7 +40,7 @@ pub(crate) fn docker_build_versions(body: &str, requirement: &str) -> Vec<String
     };
 
     let mut has_latest = false;
-    let mut aliases: BTreeSet<&str> = crate::default();
+    let mut aliases: BTreeSet<&str> = BTreeSet::default();
     let fixed_cores = docker_fixed_cores(&entries);
     for entry in entries
         .iter()

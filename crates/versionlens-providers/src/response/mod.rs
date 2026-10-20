@@ -5,7 +5,6 @@ use versionlens_model::{Ecosystem, compare_versions};
 pub(crate) mod cargo;
 mod composer;
 mod conan;
-mod cpan;
 mod cpp;
 mod cran;
 mod deno;
@@ -34,7 +33,6 @@ mod swift;
 mod vcpkg;
 mod versions;
 mod xml;
-mod zig;
 
 pub(super) fn sort_versions(versions: &mut [String]) {
     versions.sort_by(|left, right| {

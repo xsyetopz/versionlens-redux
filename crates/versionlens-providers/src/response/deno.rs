@@ -58,6 +58,6 @@ fn deno_release_is_yanked(value: &Value, version: &str) -> bool {
 fn deno_version_is_yanked(entry: &Value) -> bool {
     entry
         .get("yanked")
-        .and_then(crate::json_bool)
+        .and_then(serde_json::Value::as_bool)
         .unwrap_or(false)
 }

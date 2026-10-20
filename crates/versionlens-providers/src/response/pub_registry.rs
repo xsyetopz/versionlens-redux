@@ -43,6 +43,6 @@ fn pub_version_entry(entry: &Value) -> Option<&str> {
 fn pub_version_is_retracted(entry: &Value) -> bool {
     entry
         .get("retracted")
-        .and_then(crate::json_bool)
+        .and_then(serde_json::Value::as_bool)
         .unwrap_or(false)
 }
