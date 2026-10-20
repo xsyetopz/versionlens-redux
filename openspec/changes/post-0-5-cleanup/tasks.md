@@ -5,16 +5,16 @@
 
 ## 2. Spec fix
 
-- [ ] 2.1 Confirm the delta in `specs/editor-distribution/spec.md` has each new requirement under 500 characters. Verify: `openspec validate post-0-5-cleanup --strict`.
+- [x] 2.1 Confirm the delta in `specs/editor-distribution/spec.md` has each new requirement under 500 characters. Verify: `openspec validate post-0-5-cleanup --strict`.
 - [ ] 2.2 After archiving, run `openspec validate --specs --strict`. Verify: 6 of 6 specs pass.
 
 ## 3. Test-server hazard
 
-- [ ] 3.1 Move `accept_within_deadline` from `crates/versionlens-fetch/src/http/client/tests.rs` into `crates/versionlens-test-support` and use it from the fetch tests. Verify: `cargo test -p versionlens-fetch --locked`.
-- [ ] 3.2 Use the helper at `fetch/src/http/client/tests/rate_limit.rs:101` and `engine/src/test_support.rs:177`. Verify: `cargo test -p versionlens-fetch -p versionlens-engine --locked`.
-- [ ] 3.3 Use the helper (or `tokio::time::timeout` for async) in engine `session/resolution/tests/npm/cache.rs` (:61, :150), `tests/github.rs:22` and `fetch/http/tests.rs:109`. Verify: `cargo test -p versionlens-engine --locked`.
-- [ ] 3.4 Use the helper in LSP `server/tests/updates.rs`, `responsiveness.rs`, `refresh.rs`, `authorization.rs` and `rate_limit.rs`. Verify: `cargo test -p versionlens-lsp --locked`.
-- [ ] 3.5 Prove the fix: temporarily make one test never connect and confirm it fails within the deadline, then revert. Verify: `grep -rn "\.accept()" crates --include='*.rs'` lists only the helper itself and justified loops.
+- [x] 3.1 Move `accept_within_deadline` from `crates/versionlens-fetch/src/http/client/tests.rs` into `crates/versionlens-test-support` and use it from the fetch tests. Verify: `cargo test -p versionlens-fetch --locked`.
+- [x] 3.2 Use the helper at `fetch/src/http/client/tests/rate_limit.rs:101` and `engine/src/test_support.rs:177`. Verify: `cargo test -p versionlens-fetch -p versionlens-engine --locked`.
+- [x] 3.3 Use the helper (or `tokio::time::timeout` for async) in engine `session/resolution/tests/npm/cache.rs` (:61, :150), `tests/github.rs:22` and `fetch/http/tests.rs:109`. Verify: `cargo test -p versionlens-engine --locked`.
+- [x] 3.4 Use the helper in LSP `server/tests/updates.rs`, `responsiveness.rs`, `refresh.rs`, `authorization.rs` and `rate_limit.rs`. Verify: `cargo test -p versionlens-lsp --locked`.
+- [x] 3.5 Prove the fix: temporarily make one test never connect and confirm it fails within the deadline, then revert. Verify: `grep -rn "\.accept()" crates --include='*.rs'` lists only the helper itself and justified loops.
 
 ## 4. CI
 

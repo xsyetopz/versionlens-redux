@@ -9,6 +9,7 @@ use crate::http::config::{HttpConfig, HttpHeader};
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use reqwest::RequestBuilder;
+use versionlens_test_support::accept_within_deadline;
 
 use crate::http::HttpError::{Client as HttpClientError, Io as HttpIoError};
 
@@ -454,29 +455,6 @@ async fn assert_response_too_large(response: HttpResponseBytes) {
         result,
         Err(crate::http::HttpError::ResponseTooLarge)
     ));
-}
-
-/// Accepts one connection, giving up after `ACCEPT_DEADLINE` so a client that
-/// never connects cannot hang the test through `JoinHandle::join`.
-fn accept_within_deadline(listener: &TcpListener) -> Option<std::net::TcpStream> {
-    const ACCEPT_DEADLINE: Duration = Duration::from_secs(5);
-    listener.set_nonblocking(true).unwrap();
-    let started = Instant::now();
-    loop {
-        match listener.accept() {
-            Ok((stream, _)) => {
-                stream.set_nonblocking(false).unwrap();
-                return Some(stream);
-            }
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                if started.elapsed() >= ACCEPT_DEADLINE {
-                    return None;
-                }
-                std::thread::sleep(Duration::from_millis(2));
-            }
-            Err(error) => panic!("accept failed: {error}"),
-        }
-    }
 }
 
 fn serve_once(response: impl Into<HttpResponseBytes>, delay: Duration) -> (String, JoinHandle<()>) {

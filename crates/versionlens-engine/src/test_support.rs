@@ -174,7 +174,9 @@ where
     let listener = tcp_listener_bind("127.0.0.1:0").expect("bind test server");
     let base_url = format!("http://{}", listener.local_addr().expect("server address"));
     let server = spawn(move || {
-        let (mut stream, _) = listener.accept().expect("accept request");
+        let Some(mut stream) = versionlens_test_support::accept_within_deadline(&listener) else {
+            return;
+        };
         let mut buffer = [0; 1024];
         let _ = stream.read(&mut buffer).expect("read request");
         stream

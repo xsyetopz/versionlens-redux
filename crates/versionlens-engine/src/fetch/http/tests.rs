@@ -106,7 +106,9 @@ async fn serve_github(
     let log = Arc::clone(&seen);
     let task = tokio::spawn(async move {
         loop {
-            let Ok((mut stream, _)) = listener.accept().await else {
+            let Ok(Ok((mut stream, _))) =
+                tokio::time::timeout(Duration::from_secs(5), listener.accept()).await
+            else {
                 return;
             };
             let mut buffer = vec![0_u8; 8192];

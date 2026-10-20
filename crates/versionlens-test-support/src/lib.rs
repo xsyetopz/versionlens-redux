@@ -6,8 +6,36 @@ use std::env::temp_dir;
 use std::fmt;
 use std::fs;
 use std::io;
+use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::process::id;
+use std::thread::sleep;
+use std::time::{Duration, Instant};
+
+/// Accepts one connection, or returns `None` after five seconds.
+///
+/// A client that never connects cannot hang a test through `JoinHandle::join`.
+/// Any accept error also yields `None`, so the caller's own assertions report it.
+pub fn accept_within_deadline(listener: &TcpListener) -> Option<TcpStream> {
+    const ACCEPT_DEADLINE: Duration = Duration::from_secs(5);
+    listener.set_nonblocking(true).ok()?;
+    let started = Instant::now();
+    loop {
+        match listener.accept() {
+            Ok((stream, _)) => {
+                stream.set_nonblocking(false).ok()?;
+                return Some(stream);
+            }
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                if started.elapsed() >= ACCEPT_DEADLINE {
+                    return None;
+                }
+                sleep(Duration::from_millis(2));
+            }
+            Err(_) => return None,
+        }
+    }
+}
 
 pub fn temporary_directory(prefix: &str) -> io::Result<PathBuf> {
     use std::sync::atomic::{AtomicU64, Ordering};

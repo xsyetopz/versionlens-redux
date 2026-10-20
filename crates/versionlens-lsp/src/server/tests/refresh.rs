@@ -7,7 +7,9 @@ fn opening_a_manifest_checks_versions_and_requests_a_refresh() -> Result<()> {
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
     let registry = thread::spawn(move || -> Result<()> {
-        let (mut socket, _) = listener.accept()?;
+        let Some(mut socket) = versionlens_test_support::accept_within_deadline(&listener) else {
+            anyhow::bail!("registry request never arrived");
+        };
         socket.set_read_timeout(Some(Duration::from_secs(3)))?;
         let mut buffer = [0; 4096];
         anyhow::ensure!(socket.read(&mut buffer)? > 0, "empty registry request");

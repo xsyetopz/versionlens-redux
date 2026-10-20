@@ -89,7 +89,9 @@ fn responsive_registry_request(cancel: bool) -> Result<()> {
     let (started, request_started) = std::sync::mpsc::channel();
     let (release, wait_release) = std::sync::mpsc::channel();
     let registry = thread::spawn(move || -> Result<()> {
-        let (mut socket, _) = listener.accept()?;
+        let Some(mut socket) = versionlens_test_support::accept_within_deadline(&listener) else {
+            anyhow::bail!("registry request never arrived");
+        };
         let mut buffer = [0; 4096];
         let received = socket.read(&mut buffer)?;
         anyhow::ensure!(received > 0, "registry request was empty");

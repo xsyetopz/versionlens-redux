@@ -147,7 +147,10 @@ async fn background_resolution_runs_twelve_registry_requests_and_preserves_order
     let server = spawn(move || {
         let mut workers = Vec::new();
         for _ in 0..UNIQUE_REQUESTS {
-            let (mut stream, _) = listener.accept().unwrap();
+            let Some(mut stream) = versionlens_test_support::accept_within_deadline(&listener)
+            else {
+                break;
+            };
             let worker_in_flight = crate::test_support::clone_arc(&server_in_flight);
             let worker_request_count = crate::test_support::clone_arc(&server_request_count);
             workers.push(spawn(move || {

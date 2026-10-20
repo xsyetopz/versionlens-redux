@@ -15,7 +15,9 @@ fn other_documents_and_shutdown_do_not_wait_for_a_delayed_registry() -> Result<(
     let (started, request_started) = mpsc::channel();
     // Detached on purpose: the delayed response is not part of what the test asserts.
     let _registry = thread::spawn(move || -> Result<()> {
-        let (mut socket, _) = listener.accept()?;
+        let Some(mut socket) = versionlens_test_support::accept_within_deadline(&listener) else {
+            anyhow::bail!("registry request never arrived");
+        };
         let mut buffer = [0; 4096];
         anyhow::ensure!(socket.read(&mut buffer)? > 0, "registry request was empty");
         started.send(())?;
