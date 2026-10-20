@@ -1,7 +1,6 @@
 mod auth;
 mod entries;
 mod profile;
-mod protocol;
 mod sources;
 mod xml;
 

@@ -370,7 +370,7 @@ fn decoded_npm_password(value: &str) -> Option<String> {
     BASE64_STANDARD
         .decode(value)
         .ok()
-        .map(|bytes| crate::string_from_utf8_lossy(&bytes))
+        .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
 }
 
 fn parse_bearer_auth(key: &str, value: &str, env: &[(String, String)]) -> NpmAuthResult {

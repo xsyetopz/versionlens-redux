@@ -15,7 +15,7 @@ type NugetXmlEvent<'a> = BytesStart<'a>;
 type NugetDisabledSources = HashSet<String>;
 type NugetCredentialsBySource = HashMap<String, NugetConfigCredentials>;
 
-use super::protocol::protocol_from_url;
+use super::parse::protocol_from_url;
 use super::schema::{DotnetAuthEntry, DotnetNamedSource, DotnetNugetConfig, DotnetSourceMapping};
 use std::str;
 
@@ -92,7 +92,7 @@ pub fn parse_nuget_config(text: &str) -> Option<DotnetNugetConfig> {
 }
 
 fn parse_nuget_config_state(text: &str) -> Option<NugetConfigState> {
-    let mut reader = crate::xml_reader(text);
+    let mut reader = quick_xml::Reader::from_str(text);
     let mut state = crate::default();
 
     loop {

@@ -1,23 +1,16 @@
 import { window } from "#vscode-host";
-import { normalizedRequiredInput } from "./input.ts";
-import { customScheme } from "./store.ts";
+import { normalizedRequiredInput } from "./authorization-url.ts";
+import { type AuthHeaderMetadata, customScheme } from "./store.ts";
 
-type AuthenticationScheme = "Basic" | "Custom";
 type AuthorizationValue =
   | { kind: "cancelled" }
   | { kind: "provided"; value: string };
-type AuthorizationPromptResult = Promise<AuthorizationValue>;
 
-const cancelledAuthorization = (): { kind: "cancelled" } => ({
-  kind: "cancelled",
-});
+const cancelled: AuthorizationValue = { kind: "cancelled" };
 
-const providedAuthorization = (
-  value: string,
-): { kind: "provided"; value: string } => ({
-  kind: "provided",
-  value,
-});
+function provided(value: string): AuthorizationValue {
+  return { kind: "provided", value };
+}
 
 async function confirmInsecureUrl(url: string): Promise<boolean> {
   if (url.startsWith("https:")) {
@@ -32,9 +25,9 @@ async function confirmInsecureUrl(url: string): Promise<boolean> {
 }
 
 async function authorizationValue(
-  scheme: AuthenticationScheme,
+  scheme: AuthHeaderMetadata["scheme"],
   url: string,
-): AuthorizationPromptResult {
+): Promise<AuthorizationValue> {
   if (scheme === customScheme) {
     const value = normalizedRequiredInput(
       await window.showInputBox({
@@ -45,14 +38,16 @@ async function authorizationValue(
       }),
     );
     if (value === undefined) {
-      return cancelledAuthorization();
+      return cancelled;
     }
-    return providedAuthorization(value);
+    return provided(value);
   }
   return await basicAuthorizationValue(url);
 }
 
-async function basicAuthorizationValue(url: string): AuthorizationPromptResult {
+async function basicAuthorizationValue(
+  url: string,
+): Promise<AuthorizationValue> {
   const username = await window.showInputBox({
     ignoreFocusOut: true,
     password: false,
@@ -60,7 +55,7 @@ async function basicAuthorizationValue(url: string): AuthorizationPromptResult {
     prompt: `Enter the basic auth username for ${url}`,
   });
   if (username === undefined) {
-    return cancelledAuthorization();
+    return cancelled;
   }
   if (username.includes(":")) {
     const retry = await window.showInformationMessage(
@@ -71,7 +66,7 @@ async function basicAuthorizationValue(url: string): AuthorizationPromptResult {
     if (retry) {
       return basicAuthorizationValue(url);
     }
-    return cancelledAuthorization();
+    return cancelled;
   }
   const password = await window.showInputBox({
     ignoreFocusOut: true,
@@ -80,16 +75,9 @@ async function basicAuthorizationValue(url: string): AuthorizationPromptResult {
     prompt: `Enter the basic auth password for ${url}`,
   });
   if (password === undefined) {
-    return cancelledAuthorization();
+    return cancelled;
   }
-  return providedAuthorization(
-    Buffer.from(`${username}:${password}`).toString("base64"),
-  );
+  return provided(Buffer.from(`${username}:${password}`).toString("base64"));
 }
 
-export type {
-  AuthenticationScheme,
-  AuthorizationPromptResult,
-  AuthorizationValue,
-};
 export { authorizationValue, confirmInsecureUrl };

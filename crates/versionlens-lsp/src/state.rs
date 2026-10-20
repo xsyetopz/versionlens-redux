@@ -320,7 +320,6 @@ pub(crate) use groups::FolderSettings;
 use groups::SessionGroup;
 mod documents;
 pub(crate) use documents::resolved_document;
-mod edits;
 mod presentation;
 pub(crate) use presentation::into_lsp_code_actions;
 pub use presentation::into_lsp_range;

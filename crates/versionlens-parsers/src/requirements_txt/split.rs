@@ -134,7 +134,7 @@ fn strip_comment(input: &str) -> &str {
     input
         .char_indices()
         .find_map(|(index, char)| {
-            (char == '#' && input[..index].ends_with(crate::is_whitespace))
+            (char == '#' && input[..index].ends_with(char::is_whitespace))
                 .then_some(&input[..index])
         })
         .unwrap_or(input)

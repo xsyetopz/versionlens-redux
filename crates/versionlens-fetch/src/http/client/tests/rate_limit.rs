@@ -98,7 +98,10 @@ fn serve_in_order(responses: Vec<Vec<u8>>) -> (String, std::thread::JoinHandle<(
     let url = format!("http://{}", listener.local_addr().unwrap());
     let server = std::thread::spawn(move || {
         for response in responses {
-            let (mut stream, _) = listener.accept().unwrap();
+            let Some(mut stream) = versionlens_test_support::accept_within_deadline(&listener)
+            else {
+                return;
+            };
             let mut buffer = [0_u8; 4096];
             assert!(stream.read(&mut buffer).unwrap() > 0);
             stream.write_all(&response).unwrap();

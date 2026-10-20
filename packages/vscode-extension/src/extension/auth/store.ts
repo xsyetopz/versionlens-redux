@@ -2,10 +2,8 @@ import { dirname } from "node:path";
 import { type ExtensionContext, window } from "#vscode-host";
 
 type AuthenticationScheme = "NotSet" | "Basic" | "Custom";
-type UrlAuthenticationStatus =
-  | "NoStatus"
-  | "User cancelled"
-  | "Credentials failed";
+type DeclinedStatus = "User cancelled" | "Credentials failed";
+type UrlAuthenticationStatus = "NoStatus" | DeclinedStatus;
 
 interface UrlAuthenticationData {
   label?: string;
@@ -20,12 +18,19 @@ interface AuthHeaderMetadata {
   scheme: Exclude<AuthenticationScheme, "NotSet">;
 }
 
-const urlAuthenticationStoreKey = "UrlAuthenticationStore";
-const authorizationHeaderName = "Authorization";
+const storeKey = "UrlAuthenticationStore";
 const noStatus = "NoStatus";
 const notSetScheme = "NotSet";
 const basicScheme = "Basic";
 const customScheme = "Custom";
+
+function storeEntries(context: ExtensionContext): [string, unknown][] {
+  const collection = context.workspaceState?.get<unknown>(storeKey, {});
+  if (typeof collection === "object" && collection !== null) {
+    return Object.entries(collection);
+  }
+  return [];
+}
 
 function urlAuthenticationEntries(
   context: ExtensionContext | undefined,
@@ -33,23 +38,18 @@ function urlAuthenticationEntries(
   if (!context) {
     return [];
   }
-  return collectionValues(context).filter(isUrlAuthenticationData);
+  return storeEntries(context)
+    .map((entry): unknown => entry[1])
+    .filter(isUrlAuthenticationData);
 }
 
 function getUrlAuthentication(
   context: ExtensionContext | undefined,
   url: string,
 ): UrlAuthenticationData | undefined {
-  let authentication: UrlAuthenticationData | undefined;
-  if (context) {
-    const entry = collectionEntries(context).find(
-      ([key]): boolean => key === url,
-    )?.[1];
-    if (isUrlAuthenticationData(entry)) {
-      authentication = entry;
-    }
-  }
-  return authentication;
+  return urlAuthenticationEntries(context).find(
+    (entry): boolean => entry.url === url,
+  );
 }
 
 async function updateUrlAuthentication(
@@ -57,11 +57,9 @@ async function updateUrlAuthentication(
   url: string,
   value: UrlAuthenticationData,
 ): Promise<void> {
-  const entries = collectionEntries(context).filter(
-    ([key]): boolean => key !== url,
-  );
+  const entries = storeEntries(context).filter(([key]): boolean => key !== url);
   await context.workspaceState.update(
-    urlAuthenticationStoreKey,
+    storeKey,
     Object.fromEntries([...entries, [url, value]]),
   );
 }
@@ -71,34 +69,27 @@ async function removeUrlAuthentication(
   url: string,
 ): Promise<void> {
   await context.workspaceState.update(
-    urlAuthenticationStoreKey,
+    storeKey,
     Object.fromEntries(
-      collectionEntries(context).filter(([key]): boolean => key !== url),
+      storeEntries(context).filter(([key]): boolean => key !== url),
     ),
   );
 }
 
+/** Stored data for a url: credentials for metadata, a decline for a status. */
 function createUrlAuthenticationData(
   url: string,
-  metadata: AuthHeaderMetadata,
+  metadata: AuthHeaderMetadata | DeclinedStatus,
 ): UrlAuthenticationData {
+  const { protocol } = new URL(url);
+  if (typeof metadata === "string") {
+    return { protocol, scheme: notSetScheme, status: metadata, url };
+  }
   return {
     label: metadata.label,
-    protocol: new URL(url).protocol,
+    protocol,
     scheme: metadata.scheme,
     status: noStatus,
-    url,
-  };
-}
-
-function createEmptyUrlAuthenticationData(
-  url: string,
-  status: Exclude<UrlAuthenticationStatus, "NoStatus"> = "User cancelled",
-): UrlAuthenticationData {
-  return {
-    protocol: new URL(url).protocol,
-    scheme: notSetScheme,
-    status,
     url,
   };
 }
@@ -107,43 +98,15 @@ function authSecretKey(
   context: ExtensionContext,
   url: string,
 ): string | undefined {
-  const resourceFolderPath = resourceFolderPathForAuth(context);
-  let secretKey: string | undefined;
-  if (resourceFolderPath) {
-    secretKey = `${resourceFolderPath}__${url}`;
+  let folder = context.storageUri?.path;
+  const activePath = window?.activeTextEditor?.document.uri.path;
+  if (!folder && activePath) {
+    folder = dirname(activePath);
   }
-  return secretKey;
-}
-
-function resourceFolderPathForAuth(
-  context: ExtensionContext,
-): string | undefined {
-  let resourcePath: string | undefined;
-  if (context.storageUri?.path) {
-    resourcePath = context.storageUri.path;
-  } else {
-    const activePath = window?.activeTextEditor?.document.uri.path;
-    if (activePath) {
-      resourcePath = dirname(activePath);
-    }
+  if (folder) {
+    return `${folder}__${url}`;
   }
-  return resourcePath;
-}
-
-function collectionEntries(context: ExtensionContext): [string, unknown][] {
-  const { workspaceState } = context;
-  if (!workspaceState) {
-    return [];
-  }
-  const collection = workspaceState.get<unknown>(urlAuthenticationStoreKey, {});
-  if (typeof collection === "object" && collection !== null) {
-    return Object.entries(collection);
-  }
-  return [];
-}
-
-function collectionValues(context: ExtensionContext): unknown[] {
-  return collectionEntries(context).map((entry): unknown => entry[1]);
+  return;
 }
 
 function isUrlAuthenticationData(
@@ -161,20 +124,21 @@ function isUrlAuthenticationData(
   );
 }
 
-export type { AuthHeaderMetadata, UrlAuthenticationData };
+export type {
+  AuthenticationScheme,
+  AuthHeaderMetadata,
+  DeclinedStatus,
+  UrlAuthenticationData,
+};
 export {
-  authorizationHeaderName,
   authSecretKey,
   basicScheme,
-  createEmptyUrlAuthenticationData,
   createUrlAuthenticationData,
   customScheme,
   getUrlAuthentication,
   noStatus,
   notSetScheme,
   removeUrlAuthentication,
-  resourceFolderPathForAuth,
   updateUrlAuthentication,
   urlAuthenticationEntries,
-  urlAuthenticationStoreKey,
 };

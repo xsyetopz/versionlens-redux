@@ -1,7 +1,8 @@
 use semver::Version;
 use versionlens_model::Dependency;
 use versionlens_providers::{
-    RegistryEndpoint, build_versions_from_response, release_versions_from_response_for_endpoint,
+    LatestVersionRequest, RegistryEndpoint, build_versions_from_response,
+    latest_version_from_response_for_endpoint, release_versions_from_response_for_endpoint,
     release_versions_from_response_for_package,
 };
 use versionlens_update::{UpdateChoice, release_update_choices_with_prereleases, version_dialect};
@@ -19,7 +20,6 @@ pub(crate) use github::{github_action_latest, github_current_ref_is_proven};
 
 mod body;
 mod local_dotnet;
-mod response;
 
 pub(crate) struct LatestFetch {
     pub(crate) latest: Option<String>,
@@ -258,6 +258,30 @@ fn stable_semver(version: &str) -> Option<Version> {
 
 fn semver_precedence_lte(version: &Version, latest: &Version) -> bool {
     (version.major, version.minor, version.patch) <= (latest.major, latest.minor, latest.patch)
+}
+
+impl VersionLensSession {
+    pub(in crate::fetch::latest) fn latest_from_fetched_body(
+        &self,
+        dependency: &Dependency,
+        endpoint: &RegistryEndpoint,
+        body: &str,
+    ) -> Option<String> {
+        latest_version_from_response_for_endpoint(
+            endpoint,
+            LatestVersionRequest {
+                ecosystem: dependency.ecosystem,
+                package: dependency
+                    .hosted_name
+                    .as_deref()
+                    .unwrap_or(&dependency.name),
+                requirement: &dependency.requirement,
+                body,
+                include_prereleases: self.includes_prereleases(dependency),
+                prerelease_tags: self.prerelease_tags(dependency.ecosystem),
+            },
+        )
+    }
 }
 
 #[cfg(test)]

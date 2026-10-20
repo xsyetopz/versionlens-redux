@@ -10,12 +10,12 @@ impl<T> CacheEntry<T> {
     pub fn new(value: T, ttl: Duration) -> Self {
         Self {
             value,
-            expires_at: crate::cache::now() + ttl,
+            expires_at: Instant::now() + ttl,
         }
     }
 
     pub fn get(&self) -> Option<&T> {
-        (crate::cache::now() < self.expires_at).then_some(&self.value)
+        (Instant::now() < self.expires_at).then_some(&self.value)
     }
 
     pub(crate) fn is_expired_at(&self, now: Instant) -> bool {
@@ -28,12 +28,5 @@ impl<T> CacheEntry<T> {
 
     pub(crate) fn expires_at(&self) -> Instant {
         self.expires_at
-    }
-}
-
-pub(crate) fn cache_entry<T>(value: T, ttl: Duration) -> CacheEntry<T> {
-    CacheEntry {
-        value,
-        expires_at: crate::cache::now() + ttl,
     }
 }

@@ -1,5 +1,4 @@
 use self::object::object_json_manifest_dependency;
-use self::scalar::scalar_json_manifest_dependency as scalar_json_manifest_dependency_impl;
 use self::string::string_json_manifest_dependency;
 use jsonc_parser::ast::Value::{Object as JsonValueObject, StringLit as JsonValueStringLit};
 use jsonc_parser::ast::{Object, ObjectProp, StringLit};
@@ -15,9 +14,9 @@ mod scalar;
 mod string;
 
 pub(super) use ranges::{property_name_range, string_content_end, string_content_start};
+pub(super) use scalar::scalar_json_manifest_dependency;
 
 type JsonObjectProp<'a> = &'a ObjectProp<'a>;
-type JsonStringLit<'a> = &'a StringLit<'a>;
 
 pub(super) struct JsonDependencySource<'a> {
     pub(super) text: &'a str,
@@ -60,14 +59,6 @@ pub(super) fn json_manifest_dependency_from_property(
         JsonValueObject(object) => object_json_manifest_dependency(source, prop, object),
         _ => None,
     }
-}
-
-pub(super) fn scalar_json_manifest_dependency(
-    source: &JsonDependencySource<'_>,
-    prop: JsonObjectProp<'_>,
-    value: JsonStringLit<'_>,
-) -> Option<Dependency> {
-    scalar_json_manifest_dependency_impl(source, prop, value)
 }
 
 pub(super) fn json_manifest_dependency(

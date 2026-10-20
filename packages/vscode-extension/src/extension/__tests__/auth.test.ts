@@ -4,6 +4,7 @@ type MockModule = Record<string, unknown>;
 
 let inputValues: (string | undefined)[] = [];
 let quickPickResult: unknown;
+let onInputBox: (() => void) | undefined;
 const quickPickCalls: unknown[] = [];
 const warningCalls: unknown[] = [];
 const informationCalls: unknown[] = [];
@@ -19,7 +20,7 @@ interface TestExtensionContext {
     get: (key: string) => string | undefined;
     store: (key: string, value: string) => void;
   };
-  storageUri: { path: string };
+  storageUri?: { path: string } | undefined;
   workspaceState: {
     value: AuthCollection;
     get: (_key: string, fallback: unknown) => AuthCollection;
@@ -36,6 +37,7 @@ mockVscodeHost(
         },
       },
       showInputBox(): string | undefined {
+        onInputBox?.();
         return inputValues.shift();
       },
       showQuickPick(items: unknown[], options?: unknown): unknown {
@@ -301,6 +303,45 @@ it("sends credentials as the header value 0.4.4 sent", async (): Promise<void> =
   expect(await header("Custom", "Bearer  two  spaces ")).toBe(
     "Bearer  two  spaces ",
   );
+});
+
+it("retry stores credentials under the original secret key when the active editor changes", async (): Promise<void> => {
+  const { addAuthHeader } = await import("../auth/set.ts");
+  const { window } = (await import("#vscode-host")) as unknown as {
+    window: { activeTextEditor: { document: { uri: { path: string } } } };
+  };
+  const context = extensionContext({
+    "https://registry.example.com": {
+      label: "Custom Value",
+      protocol: "https:",
+      scheme: "Custom",
+      status: "NoStatus",
+      url: "https://registry.example.com",
+    },
+  });
+  (context as { storageUri?: unknown }).storageUri = undefined;
+  context.secrets.values.set(
+    "/workspace__https://registry.example.com",
+    "Bearer old",
+  );
+  inputValues = ["Bearer new"];
+  onInputBox = (): void => {
+    window.activeTextEditor.document.uri.path = "/other/package.json";
+  };
+
+  try {
+    const added = await addAuthHeader({ context } as never, {
+      authUrl: "https://registry.example.com",
+    });
+
+    expect(added).toBe(true);
+    expect([...context.secrets.values.entries()]).toEqual([
+      ["/workspace__https://registry.example.com", "Bearer new"],
+    ]);
+  } finally {
+    onInputBox = undefined;
+    window.activeTextEditor.document.uri.path = "/workspace/package.json";
+  }
 });
 
 function extensionContext(

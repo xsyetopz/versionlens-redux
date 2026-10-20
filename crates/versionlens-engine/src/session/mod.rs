@@ -15,11 +15,12 @@ use crate::contract::{
     AuthorizationRequestPayload, ResolveDocumentOutput, ResolveDocumentOutputParts,
     resolve_document_output,
 };
-use crate::suggestion::into_suggestion_views;
+use crate::presentation::suggestion::into_suggestion_views;
 use cache::CachedLatest;
 
 mod authorization;
 mod cache;
+mod cached;
 mod checking;
 #[cfg(test)]
 #[path = "checking_matrix/tests.rs"]
@@ -30,7 +31,6 @@ mod dependencies;
 mod discovery;
 mod documents;
 pub(crate) mod operation;
-mod presentation;
 mod resolution;
 mod storage;
 mod tasks;
@@ -48,6 +48,7 @@ pub use discovery::{
     WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryOptions,
     workspace_exclusion_matches, workspace_exclusion_path,
 };
+pub(crate) use storage::CacheScope;
 pub use tasks::{CHECKING_CANCELLED, SessionTask};
 
 #[derive(Debug, Clone)]

@@ -9,11 +9,13 @@ pub(crate) fn file_name(uri: &str) -> Option<&str> {
 }
 
 fn has_extension(name: &str, extensions: &[&str]) -> bool {
-    crate::path(name).extension().is_some_and(|extension| {
-        extensions
-            .iter()
-            .any(|item| extension.eq_ignore_ascii_case(item))
-    })
+    std::path::Path::new(name)
+        .extension()
+        .is_some_and(|extension| {
+            extensions
+                .iter()
+                .any(|item| extension.eq_ignore_ascii_case(item))
+        })
 }
 
 fn starts_with_ignore_ascii_case(value: &str, prefix: &str) -> bool {

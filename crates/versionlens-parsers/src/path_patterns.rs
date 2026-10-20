@@ -22,7 +22,7 @@ pub(crate) fn path_or_member_enabled_exact(
     })
 }
 
-fn path_matches(pattern: &str, path: &str) -> bool {
+pub fn path_matches(pattern: &str, path: &str) -> bool {
     if pattern == path || path.starts_with(&format!("{pattern}.")) {
         return true;
     }

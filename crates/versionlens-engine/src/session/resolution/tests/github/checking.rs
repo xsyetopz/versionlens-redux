@@ -340,10 +340,7 @@ async fn cached_action_suggestions_use_the_current_document_ranges() {
     assert_eq!(cached.dependency.requirement_range.start.line, 2);
 }
 
-fn cache_scope(
-    session: &VersionLensSession,
-    input: &DocumentInput,
-) -> crate::session::storage::CacheScope {
+fn cache_scope(session: &VersionLensSession, input: &DocumentInput) -> crate::session::CacheScope {
     let context = session.registry_context(input, session.classify_document(input));
     session.document_cache_scope(&context, input)
 }

@@ -103,7 +103,7 @@ fn parse_dependency_string(
 ) -> Option<Dependency> {
     let trimmed_start = value.len() - value.trim_start().len();
     let trimmed = &value[trimmed_start..];
-    let name_len = trimmed.find(crate::is_whitespace).unwrap_or(trimmed.len());
+    let name_len = trimmed.find(char::is_whitespace).unwrap_or(trimmed.len());
     let name = &trimmed[..name_len];
     if name.is_empty() {
         return None;

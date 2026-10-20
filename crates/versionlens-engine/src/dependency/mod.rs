@@ -3,7 +3,7 @@ pub(crate) mod properties;
 use versionlens_model::Dependency;
 use versionlens_model::ecosystem_config_namespace;
 
-use crate::view::DependencyView;
+use crate::presentation::view::DependencyView;
 
 pub(crate) fn into_dependency_views(dependencies: Vec<Dependency>) -> Vec<DependencyView> {
     dependencies.into_iter().map(dependency_view).collect()

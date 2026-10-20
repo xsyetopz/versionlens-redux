@@ -7,7 +7,7 @@ use super::{LatestLookup, LatestResolutionRequest};
 use crate::session::cache::CachedLatest;
 
 impl VersionLensSession {
-    pub(in crate::session::resolution::latest) async fn resolve_cacheable_latest(
+    pub(in crate::session::resolution) async fn resolve_latest(
         &self,
         request: LatestResolutionRequest<'_>,
     ) -> LatestLookup {

@@ -9,7 +9,7 @@ use super::{
 };
 use versionlens_model::Ecosystem::Npm;
 
-pub(super) fn scalar_json_manifest_dependency(
+pub(in crate::json_manifest) fn scalar_json_manifest_dependency(
     source: &JsonDependencySource<'_>,
     prop: &ObjectProp<'_>,
     value: &StringLit<'_>,

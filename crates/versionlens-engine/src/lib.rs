@@ -18,17 +18,18 @@ mod schema;
 mod selection;
 mod session;
 mod snapshot;
-mod status;
-mod suggestion;
 #[cfg(test)]
 mod test_support;
-mod view;
 mod vulnerability;
 mod workspace;
 
 pub use config::{SessionConfig, Settings, UpdateSeverity};
 pub use contract::validate_workspace_edit_plan;
 pub use contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
+pub use presentation::view::{
+    Action, BumpActionView, DependencyView, DiagnosticView, LensView, Severity, UPDATE_AVAILABLE,
+    UpdateMode,
+};
 pub use session::{
     AuthorizationFuture, AuthorizationSource, CHECKING_CANCELLED, SessionTask, VersionLensSession,
     WorkspaceCheckEvent, WorkspaceCheckResult, WorkspaceChecking, WorkspaceCheckingOptions,
@@ -36,10 +37,6 @@ pub use session::{
     version_lens_session, workspace_exclusion_matches, workspace_exclusion_path,
 };
 pub use versionlens_fetch::{Credential, application_cache_directory};
-pub use view::{
-    Action, BumpActionView, DependencyView, DiagnosticView, LensView, Severity, UPDATE_AVAILABLE,
-    UpdateMode,
-};
 pub use workspace::{workspace_file_uri, workspace_path};
 
 pub(crate) use config::{
@@ -55,6 +52,6 @@ pub(crate) use config::{
     ProviderSettings, enabled_provider_config_from_name, standard_suggestion_indicators,
 };
 #[cfg(test)]
-pub(crate) use session::{ApplyCommandRequest, WorkspaceDiscoveryFileSize};
+pub(crate) use presentation::view::SuggestionView;
 #[cfg(test)]
-pub(crate) use view::SuggestionView;
+pub(crate) use session::{ApplyCommandRequest, WorkspaceDiscoveryFileSize};

@@ -6,10 +6,6 @@ use versionlens_model::Dependency;
 
 mod collect;
 mod dependency;
-mod nodes;
-mod paths;
-
-use paths::root_dependency_group;
 
 struct PnpmCollectContext<'a> {
     text: &'a str,
@@ -43,6 +39,14 @@ fn collect_configured_root_groups(
             continue;
         };
         collect_catalog(context, root, group, out);
+    }
+}
+
+fn root_dependency_group(path: &str) -> Option<&str> {
+    if path.split_once('.').is_some() || matches!(path, "catalog" | "overrides") {
+        None
+    } else {
+        Some(path)
     }
 }
 

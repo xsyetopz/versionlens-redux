@@ -2,7 +2,6 @@ use versionlens_model::Dependency;
 use versionlens_update::UpdateChoice;
 
 use crate::RegistryResponseInput;
-use crate::VersionLensSession;
 use crate::error::FetchError;
 use crate::registry::RegistryContext;
 use crate::session::operation::OperationContext;
@@ -25,13 +24,4 @@ pub(super) struct LatestResolutionRequest<'a> {
     pub(super) has_registry_response: bool,
     pub(super) context: &'a RegistryContext,
     pub(super) operation: &'a OperationContext,
-}
-
-impl VersionLensSession {
-    pub(super) async fn resolve_latest(
-        &self,
-        request: LatestResolutionRequest<'_>,
-    ) -> LatestLookup {
-        self.resolve_cacheable_latest(request).await
-    }
 }

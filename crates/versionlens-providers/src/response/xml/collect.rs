@@ -31,7 +31,7 @@ pub(super) fn collect_element_texts<F>(
 where
     F: FnMut(&str) -> Option<String>,
 {
-    let mut reader = crate::xml_reader(body);
+    let mut reader = quick_xml::Reader::from_str(body);
     let mut collector = element_text_collector(element_name, &mut map_text);
 
     loop {

@@ -12,7 +12,7 @@ pub(super) fn collect_dotnet_xml_dependencies<'a>(
     text: &str,
     dependency_paths: Vec<&'a str>,
 ) -> Vec<Dependency> {
-    let mut reader = crate::xml_reader(text);
+    let mut reader = quick_xml::Reader::from_str(text);
     let mut collector = dotnet_xml_collector(dependency_paths);
 
     loop {
