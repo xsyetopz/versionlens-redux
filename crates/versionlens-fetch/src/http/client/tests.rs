@@ -125,18 +125,25 @@ async fn request_timeout_is_capped_by_the_remaining_operation_budget() {
         b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
         SERVER_DELAY,
     );
+    let config = HttpConfig {
+        timeout_ms: 2_000,
+        ..crate::http::standard_http_config()
+    };
+    // Build and cache the client up front so the budget measures transport only.
+    super::agent::client(&config).unwrap();
     let started = Instant::now();
-    let result = get_text_with_accept_and_retry_timeout(
-        &url,
-        &HttpConfig {
-            timeout_ms: 2_000,
-            ..crate::http::standard_http_config()
-        },
-        Some(ACCEPT_JSON),
-        crate::http::disabled_retry_policy(),
-        BUDGET,
+    let result = tokio::time::timeout(
+        Duration::from_secs(5),
+        get_text_with_accept_and_retry_timeout(
+            &url,
+            &config,
+            Some(ACCEPT_JSON),
+            crate::http::disabled_retry_policy(),
+            BUDGET,
+        ),
     )
-    .await;
+    .await
+    .expect("request ignored its operation budget");
     let elapsed = started.elapsed();
     server.join().unwrap();
 
@@ -449,12 +456,37 @@ async fn assert_response_too_large(response: HttpResponseBytes) {
     ));
 }
 
+/// Accepts one connection, giving up after `ACCEPT_DEADLINE` so a client that
+/// never connects cannot hang the test through `JoinHandle::join`.
+fn accept_within_deadline(listener: &TcpListener) -> Option<std::net::TcpStream> {
+    const ACCEPT_DEADLINE: Duration = Duration::from_secs(5);
+    listener.set_nonblocking(true).unwrap();
+    let started = Instant::now();
+    loop {
+        match listener.accept() {
+            Ok((stream, _)) => {
+                stream.set_nonblocking(false).unwrap();
+                return Some(stream);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                if started.elapsed() >= ACCEPT_DEADLINE {
+                    return None;
+                }
+                std::thread::sleep(Duration::from_millis(2));
+            }
+            Err(error) => panic!("accept failed: {error}"),
+        }
+    }
+}
+
 fn serve_once(response: impl Into<HttpResponseBytes>, delay: Duration) -> (String, JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let url = format!("http://{}", listener.local_addr().unwrap());
     let response = response.into();
     let server = spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
+        let Some(mut stream) = accept_within_deadline(&listener) else {
+            return;
+        };
         let mut buffer = [0_u8; 1024];
         assert!(stream.read(&mut buffer).unwrap() > 0);
         std::thread::sleep(delay);
@@ -470,7 +502,9 @@ fn serve_once_with_request(
     let url = format!("http://{}", listener.local_addr().unwrap());
     let (request_tx, request_rx) = sync_channel(1);
     let server = spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
+        let Some(mut stream) = accept_within_deadline(&listener) else {
+            return;
+        };
         let mut request = [0_u8; 4096];
         let length = stream.read(&mut request).unwrap();
         request_tx.send(request[..length].to_vec()).unwrap();
