@@ -1,7 +1,7 @@
-use crate::session::storage::CacheScope;
 use versionlens_model::Dependency;
 use versionlens_update::{Suggestion, resolve_dependency};
 
+use super::storage::CacheScope;
 use crate::VersionLensSession;
 use crate::non_registry::{deno_import_has_no_suggestions, known_non_registry_suggestion};
 use crate::project::project_version_latest;

@@ -20,6 +20,7 @@ use cache::CachedLatest;
 
 mod authorization;
 mod cache;
+mod cached;
 mod checking;
 #[cfg(test)]
 #[path = "checking_matrix/tests.rs"]
@@ -31,7 +32,7 @@ mod discovery;
 mod documents;
 pub(crate) mod operation;
 mod resolution;
-pub(crate) mod storage;
+mod storage;
 mod tasks;
 mod workspace;
 
@@ -47,6 +48,7 @@ pub use discovery::{
     WorkspaceDiscoveryFailure, WorkspaceDiscoveryFailureKind, WorkspaceDiscoveryOptions,
     workspace_exclusion_matches, workspace_exclusion_path,
 };
+pub(crate) use storage::CacheScope;
 pub use tasks::{CHECKING_CANCELLED, SessionTask};
 
 #[derive(Debug, Clone)]

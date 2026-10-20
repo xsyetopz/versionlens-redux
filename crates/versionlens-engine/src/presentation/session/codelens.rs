@@ -1,4 +1,4 @@
-use crate::session::storage::CacheScope;
+use versionlens_model::Ecosystem::Docker;
 use versionlens_model::{Dependency, update_level};
 use versionlens_update::Suggestion;
 
@@ -14,8 +14,8 @@ use crate::presentation::{
     update_choice_code_lens_view,
 };
 use crate::project::project_version_code_lens_suggestions;
+use crate::session::CacheScope;
 use crate::{SuggestionIndicators, VersionLensSession};
-use versionlens_model::Ecosystem::Docker;
 
 type CodeLensViews = Vec<LensView>;
 
@@ -120,7 +120,7 @@ fn runtime_constraint_lens(
     suggestion: &Suggestion,
     indicators: &SuggestionIndicators,
 ) -> LensView {
-    let title = if suggestion.status == versionlens_update::SuggestionStatus::SatisfiesLatest {
+    let title = if suggestion.status == StatusSatisfiesLatest {
         format!(
             "checked {}; compatible {}",
             dependency.requirement,
