@@ -155,6 +155,8 @@ jobs:
   bundle:
     name: Bundle target VSIX packages
     needs: package
+    # lsp is skipped when release.yml passes archives in; keep the bundle running then.
+    if: ${{ !cancelled() && needs.package.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
