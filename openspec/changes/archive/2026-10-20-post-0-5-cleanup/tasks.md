@@ -1,12 +1,12 @@
 ## 1. Baseline and docs
 
 - [x] 1.1 Fix the heading and table header in `docs/workspace-source-of-truth.md` from "0.4.0" to the current layer name without a version (or "0.5.0"). Verify: `grep -n "0\.4\.0" docs/workspace-source-of-truth.md` prints nothing.
-- [ ] 1.2 Record the baseline counts from design.md in the final PR text, using the same `wc` commands. Verify: the totals match 48,794 Rust and 2,120 TS at the starting commit.
+- [x] 1.2 (In the PR #1 text.) Record the baseline counts from design.md in the final PR text, using the same `wc` commands. Verify: the totals match 48,794 Rust and 2,120 TS at the starting commit.
 
 ## 2. Spec fix
 
 - [x] 2.1 Confirm the delta in `specs/editor-distribution/spec.md` has each new requirement under 500 characters. Verify: `openspec validate post-0-5-cleanup --strict`.
-- [ ] 2.2 After archiving, run `openspec validate --specs --strict`. Verify: 6 of 6 specs pass.
+- [x] 2.2 (6 of 6 pass.) After archiving, run `openspec validate --specs --strict`. Verify: 6 of 6 specs pass.
 
 ## 3. Test-server hazard
 
@@ -20,7 +20,7 @@
 
 - [x] 4.1 Add `.github/workflows/ci.yml` with `checks`, `lsp`, `vscode`, `jetbrains`, `neovim`, `zed` and `e2e` jobs as described in design.md. `checks` runs `bun run check:manifests` and `bun run check:manifest-baseline`; `e2e` runs `bun run test:e2e`. Verify: `bun run check:manifests && bun run check:manifest-baseline` locally; `bun run test:e2e` locally.
 - [x] 4.2 Remove `pull_request` and `push` triggers from `vscode.yml`, `jetbrains.yml`, `neovim.yml` and `zed.yml`. Verify: `grep -n "pull_request\|push:" .github/workflows/{vscode,jetbrains,neovim,zed}.yml` prints nothing, and `bun run check:biome` passes.
-- [ ] 4.3 Open the PR and confirm one `build-lsp` run (9 targets) on the PR checks and on the merge to master. Verify: Actions run list on the PR; update required check names in repository settings.
+- [x] 4.3 (PR #1 run 39371523169 and master run 39372697565: one build-lsp, 9 targets; per-editor builds skipped. master has no branch protection, so no required checks to rename.) Open the PR and confirm one `build-lsp` run (9 targets) on the PR checks and on the merge to master. Verify: Actions run list on the PR; update required check names in repository settings.
 
 ## 5. Size reduction (one commit per step; no behavior change)
 
@@ -41,4 +41,4 @@
 ## 7. Release 0.5.1
 
 - [x] 7.1 Bump the version to 0.5.1 with `scripts/release/version.mjs` (all version files). Verify: `bun scripts/release/version.test.mjs` passes and `grep -rn '"version": "0.5.0"' package.json packages/*/package.json` prints nothing.
-- [ ] 7.2 Merge the PR, tag `v0.5.1` and publish VS Code, JetBrains and LuaRocks (never Zed), after the user confirms. Verify: release runs green.
+- [x] 7.2 (PR #1 merged 73ac29b1; release run 39374143392 tagged v0.5.1 with 26 assets; publish run 39375265801: VS Code, JetBrains, LuaRocks; Zed skipped.) Merge the PR, tag `v0.5.1` and publish VS Code, JetBrains and LuaRocks (never Zed), after the user confirms. Verify: release runs green.
