@@ -24,7 +24,7 @@
 
 ## 5. Size reduction (one commit per step; no behavior change)
 
-- [ ] 5.1 Dead code pass: remove unused items reported by `cargo clippy --workspace --all-targets` and unused `pub` items found by grep. Verify: `cargo clippy --workspace --all-targets` and `cargo test --workspace --locked`.
+- [x] 5.1 Dead code pass: remove unused items reported by `cargo clippy --workspace --all-targets` and unused `pub` items found by grep. Verify: `cargo clippy --workspace --all-targets` and `cargo test --workspace --locked`.
 - [ ] 5.2 Retire `update/src/choices.rs` and `resolve.rs`: route engine `fetch/latest.rs`, `docker.rs` and `resolution/latest/cache.rs` through `Plan`. Verify: `cargo test -p versionlens-update -p versionlens-engine --locked`.
 - [ ] 5.3 Merge `engine/src/fetch` into `versionlens-fetch` and remove duplicated client and retry code. Verify: `cargo test -p versionlens-fetch -p versionlens-engine --locked`.
 - [ ] 5.4 Unify `session/presentation`, `presentation` and `view` in `engine`. Verify: `cargo test -p versionlens-engine -p versionlens-lsp --locked`.
