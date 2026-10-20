@@ -256,26 +256,21 @@ fn status_only_suggestion(
     }
 
     let latest = suggestion.latest.as_deref()?;
-    if suggestion.status == StatusCurrent {
-        return Some(status_suggestion(dependency, Some(latest), StatusCurrent));
-    }
-
     if matches!(
         suggestion.status,
-        StatusDirectoryNotFound | StatusInvalid | StatusInvalidRange
+        StatusCurrent
+            | StatusDirectoryNotFound
+            | StatusInvalid
+            | StatusInvalidRange
+            | StatusSatisfiesLatest
+            | StatusFixed
+            | StatusError
+            | StatusRateLimited
     ) {
         return Some(status_suggestion(
             dependency,
             Some(latest),
             suggestion.status,
-        ));
-    }
-
-    if suggestion.status == StatusSatisfiesLatest {
-        return Some(status_suggestion(
-            dependency,
-            Some(latest),
-            StatusSatisfiesLatest,
         ));
     }
 
@@ -285,18 +280,6 @@ fn status_only_suggestion(
             dependency,
             Some(version),
             StatusSatisfies,
-        ));
-    }
-
-    if suggestion.status == StatusFixed {
-        return Some(status_suggestion(dependency, Some(latest), StatusFixed));
-    }
-
-    if matches!(suggestion.status, StatusError | StatusRateLimited) {
-        return Some(status_suggestion(
-            dependency,
-            Some(latest),
-            suggestion.status,
         ));
     }
 
