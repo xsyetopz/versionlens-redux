@@ -1,4 +1,4 @@
-# Workspace/source-of-truth layer (0.4.0)
+# Workspace/source-of-truth layer
 
 The graph is intentionally bounded to `DocumentInput.workspaceRoot`. It reads
 only explicit workspace declarations, rejects malformed/missing/duplicate
@@ -7,7 +7,7 @@ local identity must be proven before registry routing is bypassed.
 
 ## Supported-parser disposition
 
-| Family / manifests currently parsed | 0.4.0 disposition |
+| Family / manifests currently parsed | Disposition |
 | --- | --- |
 | npm/Bun/pnpm/Yarn `package.json`, `pnpm-workspace.yaml` | Workspace discovery and local resolution for package workspaces; `workspace:`, `catalog:`, `file:`, `link:`, and path references are local. Lerna fixed/independent policy is recognized as companion metadata. |
 | Cargo `Cargo.toml` | Explicit workspace member discovery and local package identity/version resolution. `workspace = true`, path dependencies, inherited `workspace.package.version`, and `rust-version` remain parser-owned distinctions; coordinated edits are conservative. |

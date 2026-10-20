@@ -1,6 +1,6 @@
 ## 1. Baseline and docs
 
-- [ ] 1.1 Fix the heading and table header in `docs/workspace-source-of-truth.md` from "0.4.0" to the current layer name without a version (or "0.5.0"). Verify: `grep -n "0\.4\.0" docs/workspace-source-of-truth.md` prints nothing.
+- [x] 1.1 Fix the heading and table header in `docs/workspace-source-of-truth.md` from "0.4.0" to the current layer name without a version (or "0.5.0"). Verify: `grep -n "0\.4\.0" docs/workspace-source-of-truth.md` prints nothing.
 - [ ] 1.2 Record the baseline counts from design.md in the final PR text, using the same `wc` commands. Verify: the totals match 48,794 Rust and 2,120 TS at the starting commit.
 
 ## 2. Spec fix
