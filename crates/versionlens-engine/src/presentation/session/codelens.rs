@@ -8,12 +8,12 @@ use crate::presentation::statuses::{
     StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUpdateAvailable,
     SuggestionStatus,
 };
+use crate::presentation::view::LensView;
 use crate::presentation::{
     code_lens_title, project_version_code_lens_view, suggested_code_lens_view,
     update_choice_code_lens_view,
 };
 use crate::project::project_version_code_lens_suggestions;
-use crate::view::LensView;
 use crate::{SuggestionIndicators, VersionLensSession};
 use versionlens_model::Ecosystem::Docker;
 

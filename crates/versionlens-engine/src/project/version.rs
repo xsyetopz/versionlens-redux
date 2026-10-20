@@ -3,7 +3,7 @@ use versionlens_model::{
     Dependency, ProjectVersionBump, is_prerelease_project_version, next_project_version,
 };
 
-use crate::view::UpdateMode;
+use crate::presentation::view::UpdateMode;
 
 mod predicate;
 

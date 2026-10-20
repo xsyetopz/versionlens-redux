@@ -5,7 +5,7 @@ use versionlens_update::SuggestionStatus::{
 };
 use versionlens_update::{Suggestion, SuggestionStatus};
 
-use crate::view::{DiagnosticView, StatusView};
+use crate::presentation::view::{DiagnosticView, StatusView};
 
 type OptionalSuggestions<'a> = &'a [Option<Suggestion>];
 

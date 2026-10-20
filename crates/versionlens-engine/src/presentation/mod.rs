@@ -1,7 +1,6 @@
 use self::indicator::{code_lens_indicator, update_indicator, with_indicator};
-use self::title::code_lens_title_text;
+use self::title::{code_lens_title_text, prefixed_version};
 use versionlens_model::Dependency;
-use versionlens_model::Ecosystem::GitHub;
 use versionlens_update::SuggestionStatus::{
     BuildAvailable as StatusBuildAvailable, Directory as StatusDirectory,
     UpdateAvailable as StatusUpdateAvailable,
@@ -9,29 +8,41 @@ use versionlens_update::SuggestionStatus::{
 use versionlens_update::{Suggestion, UpdateChoice};
 
 use crate::SuggestionIndicators;
+use crate::presentation::view::{Action, LensView, UpdateMode};
 use crate::project::ProjectVersionCodeLensSuggestion;
 use crate::selection::dependency_selector;
-use crate::view::{Action, LensView, UpdateMode};
 
-mod diagnostics;
 mod indicator;
+mod session;
+pub(crate) mod status;
 pub(crate) mod statuses;
+pub(crate) mod suggestion;
 mod title;
+pub(crate) mod view;
+mod vulnerability;
 
-pub(crate) use diagnostics::vulnerability_diagnostics;
+pub(crate) use vulnerability::vulnerability_diagnostics;
 
 type SuggestionRef<'a> = Option<&'a Suggestion>;
+
+fn update_action(
+    dependency: &Dependency,
+    mode: Option<UpdateMode>,
+    version: Option<String>,
+) -> Action {
+    Action::UpdateDependency {
+        name: dependency.name.as_str().to_owned(),
+        selector: dependency_selector(dependency),
+        mode,
+        version,
+    }
+}
 
 pub(crate) fn code_lens_view(dependency: &Dependency, title: String) -> LensView {
     LensView::new(
         dependency.range,
         title,
-        Some(Action::UpdateDependency {
-            name: dependency.name.as_str().to_owned(),
-            selector: dependency_selector(dependency),
-            mode: None,
-            version: None,
-        }),
+        Some(update_action(dependency, None, None)),
     )
 }
 
@@ -47,12 +58,7 @@ pub(crate) fn project_version_code_lens_view(
     LensView::new(
         dependency.range,
         title,
-        Some(Action::UpdateDependency {
-            name: dependency.name.as_str().to_owned(),
-            selector: dependency_selector(dependency),
-            mode: Some(suggestion.command),
-            version: None,
-        }),
+        Some(update_action(dependency, Some(suggestion.command), None)),
     )
 }
 
@@ -103,42 +109,22 @@ pub(crate) fn update_choice_code_lens_view(
     has_vulnerabilities: bool,
 ) -> LensView {
     let title = with_indicator(
-        choice_indicator(choice, indicators, has_vulnerabilities),
+        update_indicator(indicators, has_vulnerabilities),
         format!(
             "{} {}",
             choice.label.as_str(),
-            displayed_choice_version(dependency, choice)
+            prefixed_version(dependency, &choice.version)
         ),
     );
     // A stored choice whose command is not a known mode yields a display-only lens.
-    let action = UpdateMode::parse(choice.command.as_str()).map(|mode| Action::UpdateDependency {
-        name: dependency.name.as_str().to_owned(),
-        selector: dependency_selector(dependency),
-        mode: Some(mode),
-        version: Some(choice.version.as_str().to_owned()),
+    let action = UpdateMode::parse(choice.command.as_str()).map(|mode| {
+        update_action(
+            dependency,
+            Some(mode),
+            Some(choice.version.as_str().to_owned()),
+        )
     });
     LensView::new(dependency.range, title, action)
-}
-
-fn displayed_choice_version(dependency: &Dependency, choice: &UpdateChoice) -> String {
-    if dependency.ecosystem == GitHub
-        && !dependency.requirement_prefix.is_empty()
-        && !choice.version.starts_with(&dependency.requirement_prefix)
-    {
-        return format!("{}{}", dependency.requirement_prefix, choice.version);
-    }
-    choice.version.clone()
-}
-
-fn choice_indicator<'a>(
-    _choice: &UpdateChoice,
-    indicators: &'a SuggestionIndicators,
-    has_vulnerabilities: bool,
-) -> &'a str {
-    if has_vulnerabilities {
-        return update_indicator(indicators, true);
-    }
-    update_indicator(indicators, false)
 }
 
 pub(crate) fn code_lens_title(

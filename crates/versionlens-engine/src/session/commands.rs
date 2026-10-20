@@ -20,9 +20,9 @@ use crate::VersionLensSession;
 use crate::cache::vulnerability_cache_key;
 use crate::command::{filter_update_command, project_version_bump};
 use crate::contract::{RegistryResponseInput, ResolveDocumentOutput};
+use crate::presentation::status::to_u32;
 use crate::project::is_project_version_dependency;
 use crate::selection;
-use crate::status::to_u32;
 
 pub struct ApplyCommandRequest<'a> {
     pub input: DocumentInput,

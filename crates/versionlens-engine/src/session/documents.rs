@@ -15,11 +15,11 @@ use crate::VersionLensSession;
 use crate::command::install_task_config_key_for_manifest;
 use crate::contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
 use crate::dependency::into_dependency_views;
+use crate::presentation::status::{status_view, to_u32};
+use crate::presentation::view::DiagnosticView;
 use crate::project::is_project_version_dependency;
 use crate::schema::schema_output;
 use crate::snapshot::dependency_signature;
-use crate::status::{status_view, to_u32};
-use crate::view::DiagnosticView;
 pub(super) struct DependencySuggestionsRequest<'a> {
     pub(super) input: DocumentInput,
     pub(super) selector: &'a str,

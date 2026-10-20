@@ -1,7 +1,7 @@
 use versionlens_model::DocumentInput;
 
 use crate::AnalyzeDocumentOutput;
-use crate::status::status_view;
+use crate::presentation::status::status_view;
 
 pub(crate) fn schema_output(input: &DocumentInput) -> AnalyzeDocumentOutput {
     let _ = input;

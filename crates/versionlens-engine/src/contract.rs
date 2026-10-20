@@ -6,7 +6,9 @@ use versionlens_model::{
     document_text_hash,
 };
 
-use crate::view::{DependencyView, DiagnosticView, LensView, StatusView, SuggestionView};
+use crate::presentation::view::{
+    DependencyView, DiagnosticView, LensView, StatusView, SuggestionView,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

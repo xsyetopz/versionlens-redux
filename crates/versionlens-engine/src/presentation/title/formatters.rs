@@ -3,6 +3,7 @@ mod no_match;
 mod status;
 
 pub(super) use latest::latest_title_text;
+pub(in crate::presentation) use latest::prefixed_version;
 pub(super) use no_match::no_match_title_text;
 pub(super) use status::{
     build_title_text, current_title_text, directory_not_found_title_text, directory_title_text,

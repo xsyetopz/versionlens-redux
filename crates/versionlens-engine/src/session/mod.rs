@@ -15,7 +15,7 @@ use crate::contract::{
     AuthorizationRequestPayload, ResolveDocumentOutput, ResolveDocumentOutputParts,
     resolve_document_output,
 };
-use crate::suggestion::into_suggestion_views;
+use crate::presentation::suggestion::into_suggestion_views;
 use cache::CachedLatest;
 
 mod authorization;
@@ -30,9 +30,8 @@ mod dependencies;
 mod discovery;
 mod documents;
 pub(crate) mod operation;
-mod presentation;
 mod resolution;
-mod storage;
+pub(crate) mod storage;
 mod tasks;
 mod workspace;
 

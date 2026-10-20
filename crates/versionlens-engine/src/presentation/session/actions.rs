@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use versionlens_model::{DocumentInput, Range};
 
-use crate::view::BumpActionView;
+use crate::presentation::view::BumpActionView;
 use crate::{Suggestion, SuggestionStatus, VersionLensSession};
 
 impl VersionLensSession {

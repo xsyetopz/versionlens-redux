@@ -9,6 +9,7 @@ use crate::presentation::statuses::{
     StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved,
     StatusUpdateAvailable, SuggestionStatus,
 };
+pub(in crate::presentation) use formatters::prefixed_version;
 use formatters::{
     build_title_text, current_title_text, directory_not_found_title_text, directory_title_text,
     error_title_text, fixed_title_text, invalid_range_title_text, invalid_title_text,

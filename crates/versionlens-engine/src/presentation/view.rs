@@ -145,6 +145,26 @@ pub struct DiagnosticView {
     pub code_description_url: Option<String>,
 }
 
+impl DiagnosticView {
+    /// A diagnostic from the `VersionLens` source.
+    pub(crate) fn new(
+        range: Range,
+        message: String,
+        severity: Severity,
+        code: String,
+        code_description_url: Option<String>,
+    ) -> Self {
+        Self {
+            range,
+            message,
+            severity,
+            source: Some("VersionLens".to_owned()),
+            code: Some(code),
+            code_description_url,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StatusView {

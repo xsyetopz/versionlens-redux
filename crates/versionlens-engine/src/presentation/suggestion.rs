@@ -7,7 +7,7 @@ use crate::presentation::statuses::{
     StatusRateLimited, StatusSatisfies, StatusSatisfiesLatest, StatusUnresolved,
     StatusUpdateAvailable, SuggestionStatus,
 };
-use crate::view::SuggestionView;
+use crate::presentation::view::SuggestionView;
 
 pub(crate) fn into_suggestion_views(suggestions: Vec<Suggestion>) -> Vec<SuggestionView> {
     suggestions.into_iter().map(suggestion_view).collect()

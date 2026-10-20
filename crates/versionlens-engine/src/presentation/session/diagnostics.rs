@@ -2,8 +2,8 @@ use versionlens_model::Dependency;
 
 use crate::RegistryResponseInput;
 use crate::VersionLensSession;
+use crate::presentation::view::{DiagnosticView, Severity, UPDATE_AVAILABLE};
 use crate::presentation::vulnerability_diagnostics;
-use crate::view::{DiagnosticView, Severity, UPDATE_AVAILABLE};
 use crate::{Suggestion, SuggestionStatus};
 
 impl VersionLensSession {
@@ -13,14 +13,13 @@ impl VersionLensSession {
         responses: &[RegistryResponseInput],
     ) -> Vec<DiagnosticView> {
         if let Some(message) = self.vulnerability_check_failure(dependency) {
-            return vec![DiagnosticView {
-                range: dependency.requirement_range,
-                message: format!("Vulnerability check failed: {message}"),
-                severity: Severity::Information,
-                source: Some("VersionLens".to_owned()),
-                code: Some("vulnerability-check-failed".to_owned()),
-                code_description_url: None,
-            }];
+            return vec![DiagnosticView::new(
+                dependency.requirement_range,
+                format!("Vulnerability check failed: {message}"),
+                Severity::Information,
+                "vulnerability-check-failed".to_owned(),
+                None,
+            )];
         }
         vulnerability_diagnostics(
             dependency,
@@ -53,13 +52,14 @@ impl VersionLensSession {
         }
         let edit = versionlens_update::update_edit(suggestion)?;
         let requirement = suggestion.dependency.requirement.trim();
-        (edit.new_text != requirement).then(|| DiagnosticView {
-            range: suggestion.dependency.requirement_range,
-            message: format!("{requirement} → {}", edit.new_text),
-            severity,
-            source: Some("VersionLens".to_owned()),
-            code: Some(UPDATE_AVAILABLE.to_owned()),
-            code_description_url: None,
+        (edit.new_text != requirement).then(|| {
+            DiagnosticView::new(
+                suggestion.dependency.requirement_range,
+                format!("{requirement} → {}", edit.new_text),
+                severity,
+                UPDATE_AVAILABLE.to_owned(),
+                None,
+            )
         })
     }
 }
