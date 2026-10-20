@@ -119,6 +119,7 @@ pub use npmrc::{
     parse_npmrc_registry_entries, parse_npmrc_registry_entries_with_env,
 };
 pub use paket::parse_paket_source_urls;
+pub use path_patterns::path_matches;
 pub use python_registry::{
     PoetrySource, parse_pip_conf_registry_urls, parse_pip_env_registry_urls,
     parse_pipfile_source_urls, parse_poetry_source_urls, parse_poetry_sources,

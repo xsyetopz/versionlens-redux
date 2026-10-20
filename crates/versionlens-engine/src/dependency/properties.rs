@@ -3,10 +3,9 @@ use versionlens_model::{Dependency, Ecosystem};
 use crate::config::DependencyPropertyConfig;
 
 mod group;
-mod path;
 
 use group::dependency_property_group;
-use path::property_matches;
+use versionlens_parsers::path_matches as property_matches;
 
 pub(crate) fn is_enabled<'a>(
     dependency: &Dependency,
