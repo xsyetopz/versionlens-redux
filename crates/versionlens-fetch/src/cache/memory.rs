@@ -26,8 +26,8 @@ impl<T> MemoryCache<T> {
     pub fn new(ttl: Duration) -> Self {
         Self {
             ttl,
-            entries: crate::cache::default(),
-            access: crate::cache::default(),
+            entries: HashMap::default(),
+            access: HashMap::default(),
             sequence: 0,
             capacity: 10_000,
             bytes: 0,
@@ -58,8 +58,7 @@ impl<T> MemoryCache<T> {
                 weight,
             },
         );
-        self.entries
-            .insert(key, crate::cache::cache_entry(value, ttl));
+        self.entries.insert(key, CacheEntry::new(value, ttl));
         self.evict();
     }
 
@@ -68,7 +67,7 @@ impl<T> MemoryCache<T> {
     }
 
     pub fn get_with_expiry(&mut self, key: &CacheKey) -> Option<(&T, Instant)> {
-        let now = crate::cache::now();
+        let now = Instant::now();
         if self
             .entries
             .get(key)
@@ -156,7 +155,7 @@ impl<T> MemoryCache<T> {
     }
 
     fn prune(&mut self) {
-        let now = crate::cache::now();
+        let now = Instant::now();
         self.entries.retain(|_, entry| !entry.is_expired_at(now));
         self.access.retain(|key, _| self.entries.contains_key(key));
         self.recount();
