@@ -87,13 +87,14 @@ async function storeCredentials(
   context: AuthContext,
   url: string,
   metadata: AuthHeaderMetadata,
+  presetSecret?: string,
 ): Promise<boolean> {
   const value = await authorizationValue(metadata.scheme, url);
   if (value.kind === "cancelled") {
     await suppressAuthPrompt(context, url);
     return false;
   }
-  const secret = authSecretKey(context, url);
+  const secret = presetSecret ?? authSecretKey(context, url);
   if (!secret) {
     return false;
   }
@@ -135,15 +136,25 @@ async function retryExistingAuthHeader(
     return false;
   }
   if (header.scheme === basicScheme || previousValue.startsWith("Basic ")) {
-    return await storeCredentials(context, authUrl, {
-      label: header.label ?? "Basic Auth",
-      scheme: basicScheme,
-    });
+    return await storeCredentials(
+      context,
+      authUrl,
+      {
+        label: header.label ?? "Basic Auth",
+        scheme: basicScheme,
+      },
+      secret,
+    );
   }
-  return await storeCredentials(context, authUrl, {
-    label: header.label ?? "Custom Value",
-    scheme: customScheme,
-  });
+  return await storeCredentials(
+    context,
+    authUrl,
+    {
+      label: header.label ?? "Custom Value",
+      scheme: customScheme,
+    },
+    secret,
+  );
 }
 
 async function promptAuthorizationUrl(
