@@ -23,8 +23,9 @@ When the original VersionLens extension is installed, VersionLens Redux warns an
 - Update commands for latest, major, minor, and patch targets.
 - Manifest-aware dependency sorting where ordering is safe.
 - OSV.dev vulnerability diagnostics for ecosystems supported by OSV.
-- Registry, prerelease, file-pattern, HTTP, and authentication settings per provider.
-- Cache clearing and optional custom install command on save.
+- Update-available diagnostics with one-step `Bump to ...` quick fixes.
+- Registry, prerelease, file-pattern, and HTTP settings per provider.
+- Cache clearing and an optional install task after saving a changed manifest.
 
 ## Supported manifests
 
@@ -94,10 +95,29 @@ Useful settings:
 | `versionlens.suggestions.showOnStartup` | Shows release CodeLens entries when a supported file opens. |
 | `versionlens.suggestions.showPrereleasesOnStartup` | Includes prerelease suggestions at startup. |
 | `versionlens.suggestions.showVulnerabilities` | Enables OSV.dev vulnerability diagnostics. |
-| `versionlens.cacheTtlSeconds` | Controls registry result cache lifetime. |
-| `versionlens.customInstallCommand` | Runs a configured install task after package file saves. |
+| `versionlens.diagnostics.updateSeverity` | Severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected. |
+| `versionlens.caching.duration` | Minutes to cache registry results (default `3`; `0` disables caching). |
+| `versionlens.<provider>.onSaveChanges` | Task label from `tasks.json` to run when a manifest with dependency changes is saved. |
 
 ![Show prereleases](images/faq/show-prereleases.gif)
+
+Settings are read by the server through `workspace/configuration`, per workspace folder, so they can be set in user, workspace, or folder `settings.json`:
+
+```json
+{
+  "versionlens.diagnostics.updateSeverity": "warn"
+}
+```
+
+## Private registries
+
+The server finds credentials in this order:
+
+1. A credential the extension supplies. When a registry answers 401 or 403, the server sends the extension a `versionlens/authorization` request naming the host. The extension answers from VS Code SecretStorage; if nothing is stored for that host it prompts once per session. Manage entries with **VersionLens Redux: Add url authentication** and **Remove url authentication**.
+2. For `api.github.com`: `GITHUB_TOKEN`, then `GH_TOKEN`, then the output of `gh auth token`, which is only tried after GitHub answers 401, 403, or 429.
+3. Registry configuration files such as `.npmrc`, `.yarnrc.yml`, and `NuGet.config`.
+
+Tokens are never written to logs, diagnostics, or the cache. Requests honor `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `NO_PROXY`, the operating system certificate store, and `versionlens.http.strictSSL`.
 
 ## Install from VSIX
 
@@ -120,8 +140,8 @@ bun run package
 | --- | --- |
 | No CodeLens entries | Ensure `editor.codeLens` is enabled and the file matches a configured `versionlens.*.files` pattern. |
 | Toolbar icons are missing | Ensure `workbench.editor.editorActionsLocation` is not set to `hidden`. |
-| Results look stale | Run **VersionLens: Clear cache** from the Command Palette. |
-| Registry requests fail | Check provider API URL, proxy, strict SSL, and authentication settings. |
+| Results look stale | Run **VersionLens Redux: Clear cache** from the Command Palette. |
+| Registry requests fail | Check the provider API URL, proxy, `versionlens.http.strictSSL`, and the credentials described under Private registries. |
 | Need logs | Set the `VersionLens` output channel to debug through **Developer: Set Log Level**. |
 
 ![Extension host log](images/faq/ext-host-log.jpg)

@@ -43,7 +43,24 @@ packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin buildPlugin --no-
 
 ## Settings
 
-The server asks the IDE for its settings with `workspace/configuration`. The plugin answers the `versionlens` section from a JSON object stored in `versionlens-redux.xml` in the IDE config directory (`settingsJson`, default `{}`), using the same keys as the VS Code `versionlens` settings. There is no settings page yet.
+The server asks the IDE for its settings with `workspace/configuration`. The plugin answers the `versionlens` section from a JSON object stored in `versionlens-redux.xml` in the IDE config directory (`settingsJson`, default `{}`), using the same keys as the VS Code `versionlens` settings (see `contributes.configuration` in [`../vscode-extension/package.json`](../vscode-extension/package.json)). There is no settings page yet. Example `settingsJson`:
+
+```json
+{
+  "diagnostics": { "updateSeverity": "warn" }
+}
+```
+
+`diagnostics.updateSeverity` sets the severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected.
+
+## Private registries
+
+The plugin does not implement the `versionlens/authorization` request, so the server uses its other credential sources:
+
+- For `api.github.com`: `GITHUB_TOKEN`, then `GH_TOKEN`, then the output of `gh auth token`, which is only tried after GitHub answers 401, 403, or 429.
+- Registry configuration files such as `.npmrc`, `.yarnrc.yml`, and `NuGet.config`.
+
+Start the IDE with the variables set. Tokens are never written to logs, diagnostics, or the cache.
 
 ## Publishing
 
