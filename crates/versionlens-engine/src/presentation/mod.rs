@@ -147,13 +147,7 @@ fn directory_open_path(suggestion: SuggestionRef<'_>) -> Option<&str> {
 
 fn build_choices(suggestion: &Suggestion) -> Option<Vec<String>> {
     if !suggestion.builds.is_empty() {
-        return Some(
-            suggestion
-                .builds
-                .iter()
-                .map(|value| value.to_owned())
-                .collect(),
-        );
+        return Some(suggestion.builds.clone());
     }
 
     suggestion

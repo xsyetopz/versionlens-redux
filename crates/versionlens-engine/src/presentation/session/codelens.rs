@@ -153,14 +153,7 @@ fn choice_has_cached_vulnerabilities(
     dependency: &Dependency,
     version: &str,
 ) -> bool {
-    let suggestion = Suggestion {
-        dependency: dependency.to_owned(),
-        latest: Some(version.to_owned()),
-        resolved: None,
-        status: StatusUpdateAvailable,
-        builds: vec![],
-        choices: vec![],
-    };
+    let suggestion = status_suggestion(dependency, Some(version), StatusUpdateAvailable);
     session.target_update_has_cached_vulnerabilities(Some(&suggestion))
 }
 
@@ -196,16 +189,12 @@ fn build_choice_code_lens_view(
     }
 
     let build_suggestion = Suggestion {
-        dependency: dependency.to_owned(),
-        latest: suggestion.latest.as_deref().map(|value| value.to_owned()),
-        resolved: None,
-        status: StatusBuildAvailable,
-        builds: suggestion
-            .builds
-            .iter()
-            .map(|value| value.to_owned())
-            .collect(),
-        choices: vec![],
+        builds: suggestion.builds.clone(),
+        ..status_suggestion(
+            dependency,
+            suggestion.latest.as_deref(),
+            StatusBuildAvailable,
+        )
     };
     let title = code_lens_title(
         dependency,
@@ -277,14 +266,11 @@ fn status_only_suggestion(
         return None;
     }
 
-    Some(Suggestion {
-        dependency: dependency.to_owned(),
-        latest: Some(dependency.requirement.as_str().to_owned()),
-        resolved: None,
-        status: StatusFixed,
-        builds: vec![],
-        choices: vec![],
-    })
+    Some(status_suggestion(
+        dependency,
+        Some(dependency.requirement.as_str()),
+        StatusFixed,
+    ))
 }
 
 fn status_suggestion(
