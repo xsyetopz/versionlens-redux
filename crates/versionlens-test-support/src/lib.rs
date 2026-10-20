@@ -1,5 +1,7 @@
 //! Test-only repository fixture access shared by workspace crates.
 
+pub mod regression;
+
 use std::env::temp_dir;
 use std::fmt;
 use std::fs;
