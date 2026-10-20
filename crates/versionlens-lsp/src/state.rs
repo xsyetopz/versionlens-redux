@@ -326,4 +326,6 @@ pub(crate) use presentation::into_lsp_code_actions;
 pub use presentation::into_lsp_range;
 
 #[cfg(test)]
+mod fixtures;
+#[cfg(test)]
 mod tests;

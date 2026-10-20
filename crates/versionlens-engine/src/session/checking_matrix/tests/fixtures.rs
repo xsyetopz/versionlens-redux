@@ -2,6 +2,7 @@
 //! behavior its spec scenario requires.
 
 use versionlens_model::{DocumentInput, Ecosystem};
+use versionlens_test_support::regression;
 
 use super::super::{ApplyCommandRequest, VersionLensSession};
 use super::golden::lens_actions;
@@ -125,65 +126,37 @@ fn assert_silent(checked: &Checked) {
     );
 }
 
-fn npm_versions(versions: &[&str], latest: &str) -> String {
-    let versions = versions
+/// Checks a shared regression fixture, with the registry answers it names.
+async fn check_case(session: &VersionLensSession, case: &regression::Case) -> Checked {
+    let responses = case
+        .registry
         .iter()
-        .map(|version| format!(r#""{version}":{{}}"#))
-        .collect::<Vec<_>>()
-        .join(",");
-    format!(r#"{{"versions":{{{versions}}},"dist-tags":{{"latest":"{latest}"}}}}"#)
+        .map(|stub| {
+            let ecosystem = serde_json::from_value(serde_json::json!(stub.ecosystem))
+                .unwrap_or_else(|error| panic!("{}: {error}", stub.ecosystem));
+            RegistryResponseInput::new(stub.package, ecosystem, stub.body.clone())
+        })
+        .collect::<Vec<_>>();
+    check(session, case.uri, case.language, &case.text, &responses).await
 }
 
 #[tokio::test]
 async fn cargo_exact_pin_at_latest_is_current() {
-    let checked = check(
-        &test_session(),
-        "file:///work/Cargo.toml",
-        "toml",
-        "[dependencies]\nzed_extension_api = \"=0.7.0\"\n",
-        &[RegistryResponseInput::new(
-            "zed_extension_api",
-            Ecosystem::Cargo,
-            r#"{"versions":[{"num":"0.7.0","yanked":false},{"num":"0.6.0","yanked":false}]}"#,
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::cargo_exact_pin()).await;
     assert_status(&checked, "latest 0.7.0");
     assert_no_bump(&checked);
 }
 
 #[tokio::test]
 async fn python_exact_pin_at_latest_is_current() {
-    let checked = check(
-        &test_session(),
-        "file:///work/requirements.txt",
-        "pip-requirements",
-        "requests==2.34.2\n",
-        &[RegistryResponseInput::new(
-            "requests",
-            Ecosystem::Python,
-            r#"{"info":{"version":"2.34.2"},"releases":{"2.34.1":[{"yanked":false}],"2.34.2":[{"yanked":false}]}}"#,
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::python_exact_pin()).await;
     assert_status(&checked, "latest 2.34.2");
     assert_no_bump(&checked);
 }
 
 #[tokio::test]
 async fn caret_range_behind_latest_offers_a_floor_bump_without_a_diagnostic() {
-    let checked = check(
-        &test_session(),
-        "file:///work/package.json",
-        "json",
-        "{\"devDependencies\":{\"@biomejs/biome\":\"^2.5.8\"}}\n",
-        &[RegistryResponseInput::new(
-            "@biomejs/biome",
-            Ecosystem::Npm,
-            npm_versions(&["2.5.8", "2.5.9", "2.5.10", "2.5.14"], "2.5.14"),
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::caret_range_behind_latest()).await;
     assert_status(&checked, "satisfies latest 2.5.14");
     assert_eq!(checked.bumps, ["^2.5.14"]);
     assert_eq!(checked.analysis.diagnostics, vec![]);
@@ -191,27 +164,10 @@ async fn caret_range_behind_latest_offers_a_floor_bump_without_a_diagnostic() {
 
 #[tokio::test]
 async fn intermediate_releases_are_not_listed_individually() {
-    let checked = check(
-        &test_session(),
-        "file:///work/package.json",
-        "json",
-        "{\"dependencies\":{\"@astrojs/starlight\":\"^0.41.7\"}}\n",
-        &[RegistryResponseInput::new(
-            "@astrojs/starlight",
-            Ecosystem::Npm,
-            npm_versions(
-                &[
-                    "0.41.7", "0.41.11", "0.42.0", "0.42.1", "0.42.2", "0.42.3", "0.42.4",
-                    "0.42.5", "0.42.6",
-                ],
-                "0.42.6",
-            ),
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::intermediate_releases()).await;
     assert_status(&checked, "satisfies 0.41.11");
     assert_eq!(checked.bumps, ["^0.41.11", "^0.42.6"]);
-    for skipped in ["0.42.0", "0.42.1", "0.42.2", "0.42.3", "0.42.4", "0.42.5"] {
+    for skipped in regression::STARLIGHT_SKIPPED {
         assert!(
             titles(&checked)
                 .iter()
@@ -224,35 +180,14 @@ async fn intermediate_releases_are_not_listed_individually() {
 
 #[tokio::test]
 async fn sha_pinned_action_with_floating_and_exact_tags_is_current() {
-    let sha = "3a2844b7e9c422d3c10d287c895573f7108da1b3";
-    let checked = check(
-        &test_session(),
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        &format!("steps:\n  - uses: actions/github-script@{sha} # v9.0.0\n"),
-        &[RegistryResponseInput::new(
-            "actions/github-script",
-            Ecosystem::GitHub,
-            format!(
-                r#"[{{"name":"v9.0.0","commit":{{"sha":"{sha}"}}}},{{"name":"v9","commit":{{"sha":"{sha}"}}}},{{"name":"v8.0.0","commit":{{"sha":"8888888888888888888888888888888888888888"}}}}]"#
-            ),
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::sha_pinned_action()).await;
     assert_status(&checked, "latest v9.0.0");
     assert_no_bump(&checked);
 }
 
 #[tokio::test]
 async fn branch_action_ref_is_fixed_without_a_lookup() {
-    let checked = check(
-        &offline_session(),
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        "steps:\n  - uses: taiki-e/install-action@just\n",
-        &[],
-    )
-    .await;
+    let checked = check_case(&offline_session(), &regression::branch_action_ref()).await;
     assert_silent(&checked);
     assert_eq!(checked.resolved.suggestions[0].status, "fixed");
     assert_no_bump(&checked);
@@ -260,31 +195,13 @@ async fn branch_action_ref_is_fixed_without_a_lookup() {
 
 #[tokio::test]
 async fn vscode_engine_field_is_skipped_without_an_error() {
-    let checked = check(
-        &offline_session(),
-        "file:///work/package.json",
-        "json",
-        "{\"engines\":{\"vscode\":\"^1.75.0\"}}\n",
-        &[],
-    )
-    .await;
+    let checked = check_case(&offline_session(), &regression::vscode_engine_field()).await;
     assert_silent(&checked);
 }
 
 #[tokio::test]
 async fn unsupported_setup_dotnet_syntax_is_not_supported_rather_than_an_error() {
-    let checked = check(
-        &offline_session(),
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        "steps:\n  - uses: actions/setup-dotnet@v4\n    with:\n      dotnet-version: 8.0.100.1\n",
-        &[RegistryResponseInput::new(
-            "actions/setup-dotnet",
-            Ecosystem::GitHub,
-            r#"[{"name":"v4"}]"#,
-        )],
-    )
-    .await;
+    let checked = check_case(&offline_session(), &regression::unsupported_setup_dotnet()).await;
     assert_silent(&checked);
     let dotnet = checked
         .resolved
@@ -297,21 +214,7 @@ async fn unsupported_setup_dotnet_syntax_is_not_supported_rather_than_an_error()
 
 #[tokio::test]
 async fn workflow_env_reference_resolves_the_runtime() {
-    let checked = check(
-        &test_session(),
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        "env:\n  NODE_VERSION: \"20\"\njobs:\n  build:\n    steps:\n      - uses: actions/setup-node@v4\n        with:\n          node-version: ${{ env.NODE_VERSION }}\n",
-        &[
-            RegistryResponseInput::new("actions/setup-node", Ecosystem::GitHub, r#"[{"name":"v4"}]"#),
-            RegistryResponseInput::new(
-                "node",
-                Ecosystem::Npm,
-                r#"[{"version":"v20.0.0"},{"version":"v22.0.0"}]"#,
-            ),
-        ],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::workflow_env_reference()).await;
     assert_silent(&checked);
     let node = checked
         .resolved
@@ -324,18 +227,7 @@ async fn workflow_env_reference_resolves_the_runtime() {
 
 #[tokio::test]
 async fn unresolvable_step_output_expression_is_skipped_silently() {
-    let checked = check(
-        &offline_session(),
-        "file:///work/.github/workflows/ci.yml",
-        "yaml",
-        "steps:\n  - uses: actions/setup-dotnet@v4\n    with:\n      dotnet-version: ${{ steps.read.outputs.version }}\n",
-        &[RegistryResponseInput::new(
-            "actions/setup-dotnet",
-            Ecosystem::GitHub,
-            r#"[{"name":"v4"}]"#,
-        )],
-    )
-    .await;
+    let checked = check_case(&offline_session(), &regression::step_output_expression()).await;
     assert_silent(&checked);
     assert!(
         checked
@@ -350,18 +242,7 @@ async fn unresolvable_step_output_expression_is_skipped_silently() {
 
 #[tokio::test]
 async fn gradle_catalog_version_alias_resolves_through_its_library() {
-    let checked = check(
-        &test_session(),
-        "file:///work/gradle/libs.versions.toml",
-        "toml",
-        "[versions]\nkotlin = \"2.0.0\"\n\n[libraries]\nkotlin-stdlib = { module = \"org.jetbrains.kotlin:kotlin-stdlib\", version.ref = \"kotlin\" }\n",
-        &[RegistryResponseInput::new(
-            "org.jetbrains.kotlin:kotlin-stdlib",
-            Ecosystem::Maven,
-            "<metadata><versioning><versions><version>2.0.0</version><version>2.1.0</version></versions></versioning></metadata>",
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::gradle_version_alias()).await;
     assert_silent(&checked);
     let edit = checked
         .resolved
@@ -374,18 +255,7 @@ async fn gradle_catalog_version_alias_resolves_through_its_library() {
 
 #[tokio::test]
 async fn gradle_catalog_plugin_alias_uses_the_plugin_marker() {
-    let checked = check(
-        &test_session(),
-        "file:///work/gradle/libs.versions.toml",
-        "toml",
-        "[versions]\nksp = \"1.0.0\"\n\n[plugins]\nksp = { id = \"com.google.devtools.ksp\", version.ref = \"ksp\" }\n",
-        &[RegistryResponseInput::new(
-            "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin",
-            Ecosystem::Maven,
-            "<metadata><versioning><versions><version>1.0.0</version><version>2.0.0</version></versions></versioning></metadata>",
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::gradle_plugin_alias()).await;
     assert_silent(&checked);
     let edit = checked
         .resolved
@@ -398,37 +268,16 @@ async fn gradle_catalog_plugin_alias_uses_the_plugin_marker() {
 
 #[tokio::test]
 async fn cargo_bare_version_is_a_caret_requirement() {
-    let checked = check(
-        &test_session(),
-        "file:///work/Cargo.toml",
-        "toml",
-        "[dependencies]\nserde = \"1.0.200\"\n",
-        &[RegistryResponseInput::new(
-            "serde",
-            Ecosystem::Cargo,
-            r#"{"versions":[{"num":"1.0.229","yanked":false},{"num":"1.0.200","yanked":false}]}"#,
-        )],
-    )
-    .await;
+    let checked = check_case(&test_session(), &regression::cargo_bare_version()).await;
     assert_status(&checked, "satisfies latest 1.0.229");
     assert_eq!(checked.bumps, ["1.0.229"]);
 }
 
 #[tokio::test]
 async fn package_version_fields_are_not_dependencies() {
-    for (uri, language, text) in [
-        (
-            "file:///work/package.json",
-            "json",
-            "{\"name\":\"demo\",\"version\":\"0.4.4\"}\n",
-        ),
-        (
-            "file:///work/Cargo.toml",
-            "toml",
-            "[package]\nname = \"demo\"\nversion = \"0.4.4\"\n",
-        ),
-    ] {
-        let checked = check(&offline_session(), uri, language, text, &[]).await;
+    for case in regression::package_version_fields() {
+        let uri = case.uri;
+        let checked = check_case(&offline_session(), &case).await;
         assert_eq!(checked.analysis.dependencies, vec![], "{uri}");
         assert_eq!(titles(&checked), Vec::<&str>::new(), "{uri}");
         assert_eq!(checked.analysis.diagnostics, vec![], "{uri}");
