@@ -19,7 +19,7 @@ repository = "https://github.com/xsyetopz/versionlens-redux.git"
 readme = "README.md"
 keywords = ["versionlens", "vscode", "dependencies"]
 categories = ["development-tools"]
-version = "0.4.4"
+version = "0.5.0"
 
 [workspace.dependencies]
 ignore = "0.4.33"
