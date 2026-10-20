@@ -1,10 +1,7 @@
-use self::parallel::resolve_dependencies;
 use versionlens_model::{Dependency, DocumentInput, ProjectVersionBump};
-use versionlens_update::Suggestion;
 
 use super::operation::OperationContext;
 use crate::RegistryResponseInput;
-use crate::VersionLensSession;
 use crate::registry::RegistryContext;
 
 pub(crate) struct ResolutionRequest<'a> {
@@ -21,15 +18,6 @@ mod dependency;
 mod latest;
 mod parallel;
 mod runtime;
-
-impl VersionLensSession {
-    pub(crate) async fn resolve_dependencies(
-        &self,
-        request: ResolutionRequest<'_>,
-    ) -> Vec<Suggestion> {
-        resolve_dependencies(self, request).await
-    }
-}
 
 #[cfg(test)]
 mod tests;

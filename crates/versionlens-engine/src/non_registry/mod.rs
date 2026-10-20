@@ -9,11 +9,9 @@ use versionlens_providers::{
 };
 use versionlens_update::{Suggestion, directory, directory_not_found, error, fixed, not_supported};
 
-mod fixed_spec;
 mod git;
 mod local_path;
 
-use fixed_spec::is_fixed_spec;
 use git::{is_git_dependency_requirement, is_unsupported_npm_git_requirement};
 use local_path::{LocalDependencyPath, local_dependency_path};
 
@@ -340,4 +338,16 @@ fn is_docker_argument_reference(dependency: &Dependency) -> bool {
 
 fn is_unsupported_dotnet_version(dependency: &Dependency) -> bool {
     dependency.ecosystem == Dotnet && is_unsupported_dotnet_requirement(&dependency.requirement)
+}
+
+fn is_fixed_spec(requirement: &str) -> bool {
+    let requirement = requirement.trim();
+    requirement.starts_with("catalog:")
+        || requirement.starts_with("sdk:")
+        || requirement.starts_with("workspace:")
+        || is_direct_url_requirement(requirement)
+}
+
+fn is_direct_url_requirement(requirement: &str) -> bool {
+    requirement.contains("://")
 }

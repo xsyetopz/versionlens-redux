@@ -1,3 +1,19 @@
+use versionlens_model::Dependency;
+
+use crate::RegistryResponseInput;
+use crate::VersionLensSession;
+use crate::registry::registry_response_matches;
+
 mod errors;
 mod latest;
-mod presence;
+
+impl VersionLensSession {
+    pub(crate) fn has_registry_response(
+        dependency: &Dependency,
+        responses: &[RegistryResponseInput],
+    ) -> bool {
+        responses
+            .iter()
+            .any(|response| registry_response_matches(response, dependency))
+    }
+}
