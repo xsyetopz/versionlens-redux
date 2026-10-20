@@ -1,10 +1,6 @@
 name: Zed CI/CD
 
 on:
-  pull_request:
-  push:
-    branches:
-      - master
   workflow_dispatch:
   workflow_call:
 

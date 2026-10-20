@@ -18,8 +18,8 @@
 
 ## 4. CI
 
-- [ ] 4.1 Add `.github/workflows/ci.yml` with `checks`, `lsp`, `vscode`, `jetbrains`, `neovim`, `zed` and `e2e` jobs as described in design.md. `checks` runs `bun run check:manifests` and `bun run check:manifest-baseline`; `e2e` runs `bun run test:e2e`. Verify: `bun run check:manifests && bun run check:manifest-baseline` locally; `bun run test:e2e` locally.
-- [ ] 4.2 Remove `pull_request` and `push` triggers from `vscode.yml`, `jetbrains.yml`, `neovim.yml` and `zed.yml`. Verify: `grep -n "pull_request\|push:" .github/workflows/{vscode,jetbrains,neovim,zed}.yml` prints nothing, and `bun run check:biome` passes.
+- [x] 4.1 Add `.github/workflows/ci.yml` with `checks`, `lsp`, `vscode`, `jetbrains`, `neovim`, `zed` and `e2e` jobs as described in design.md. `checks` runs `bun run check:manifests` and `bun run check:manifest-baseline`; `e2e` runs `bun run test:e2e`. Verify: `bun run check:manifests && bun run check:manifest-baseline` locally; `bun run test:e2e` locally.
+- [x] 4.2 Remove `pull_request` and `push` triggers from `vscode.yml`, `jetbrains.yml`, `neovim.yml` and `zed.yml`. Verify: `grep -n "pull_request\|push:" .github/workflows/{vscode,jetbrains,neovim,zed}.yml` prints nothing, and `bun run check:biome` passes.
 - [ ] 4.3 Open the PR and confirm one `build-lsp` run (9 targets) on the PR checks and on the merge to master. Verify: Actions run list on the PR; update required check names in repository settings.
 
 ## 5. Size reduction (one commit per step; no behavior change)
