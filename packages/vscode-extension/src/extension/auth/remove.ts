@@ -1,8 +1,4 @@
-import {
-  type ExtensionContext,
-  type QuickPickItem,
-  window,
-} from "#vscode-host";
+import { type QuickPickItem, window } from "#vscode-host";
 import type { ExtensionState } from "../state.ts";
 import {
   authSecretKey,
@@ -19,59 +15,40 @@ type AuthHeaderQuickPick = QuickPickItem & {
 
 async function removeAuthHeader(state: ExtensionState): Promise<boolean> {
   const { context } = state;
-  const choices: AuthHeaderQuickPick[] = urlAuthenticationChoices(context);
+  const choices = urlAuthenticationEntries(context).map(
+    (entry): AuthHeaderQuickPick => ({
+      entry,
+      label: entry.url,
+      ...urlAuthenticationDetail(entry),
+    }),
+  );
   const picked = await window.showQuickPick<AuthHeaderQuickPick>(choices, {
     canPickMany: true,
     placeHolder: "Choose which urls to remove",
     title: "Clear url authentication",
   });
-  const pickedItems = picked ?? [];
-  if (!(context && pickedItems.length > 0)) {
+  if (!(context && picked && picked.length > 0)) {
     return false;
   }
 
   await Promise.all(
-    pickedItems.map(async (item): Promise<void> => {
-      await removeUrlAuthentication(context, item.entry.url);
-      if (item.entry.scheme !== notSetScheme) {
-        const secret = authSecretKey(context, item.entry.url);
-        if (secret) {
-          await context.secrets.delete(secret);
-        }
+    picked.map(async ({ entry }): Promise<void> => {
+      await removeUrlAuthentication(context, entry.url);
+      const secret = authSecretKey(context, entry.url);
+      if (entry.scheme !== notSetScheme && secret) {
+        await context.secrets.delete(secret);
       }
     }),
   );
   return true;
 }
 
-type AuthenticationDetail = { detail: string } | { detail?: never };
-
-function urlAuthenticationChoices(
-  context: ExtensionContext | undefined,
-): AuthHeaderQuickPick[] {
-  return urlAuthenticationEntries(context).map(
-    (
-      entry,
-    ):
-      | { detail: string; entry: UrlAuthenticationData; label: string }
-      | { detail?: never; entry: UrlAuthenticationData; label: string } => ({
-      entry,
-      label: entry.url,
-      ...urlAuthenticationDetail(entry),
-    }),
-  );
-}
-
 function urlAuthenticationDetail(
   entry: UrlAuthenticationData,
-): AuthenticationDetail {
+): { detail: string } | { detail?: never } {
   const detail: string[] = [];
   if (entry.scheme !== notSetScheme) {
-    if (entry.protocol === "http:") {
-      detail.push("Unsecured");
-    } else {
-      detail.push("Secure");
-    }
+    detail.push(entry.protocol === "http:" ? "Unsecured" : "Secure");
     if (entry.label) {
       detail.push(entry.label);
     }

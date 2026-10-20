@@ -1,13 +1,19 @@
 import { window } from "#vscode-host";
-import { normalizedRegistryUrl } from "./input.ts";
 
 const trailingSlashes = /\/+$/u;
+const registryUrlPrefix = /^https?:\/\//u;
+
+function normalizedRequiredInput(
+  value: string | undefined,
+): string | undefined {
+  return value?.trim() || undefined;
+}
 
 function normalizedAuthorizationUrl(
   value: string | undefined,
 ): string | undefined {
-  const url = normalizedRegistryUrl(value);
-  if (!(url && URL.canParse(url))) {
+  const url = normalizedRequiredInput(value);
+  if (!(url && registryUrlPrefix.test(url) && URL.canParse(url))) {
     return;
   }
   return url.replace(trailingSlashes, "");
@@ -67,20 +73,19 @@ function pathContains(authPath: string, requestPath: string): boolean {
 }
 
 async function retryOrCancel(message: string): Promise<false | undefined> {
-  let result: false | undefined;
-  if (await promptRetry(message)) {
-    result = false;
-  }
-  return result;
-}
-
-async function promptRetry(message: string): Promise<boolean> {
   const choice = await window.showInformationMessage(
     message,
     { modal: true, detail: "" },
     "Retry",
   );
-  return Boolean(choice);
+  if (choice) {
+    return false;
+  }
+  return;
 }
 
-export { normalizedAuthorizationUrl, validateAuthorizationUrl };
+export {
+  normalizedAuthorizationUrl,
+  normalizedRequiredInput,
+  validateAuthorizationUrl,
+};

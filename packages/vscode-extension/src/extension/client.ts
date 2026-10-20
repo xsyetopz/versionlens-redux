@@ -37,12 +37,10 @@ function createLanguageClient(
   state: ExtensionState,
   serverPath: string,
 ): LanguageClient {
+  let client: LanguageClient;
   const serverOptions: Executable = {
     command: serverPath,
     transport: TransportKind.stdio,
-  };
-  const clientRef: { current: LanguageClient | undefined } = {
-    current: undefined,
   };
   const clientOptions: LanguageClientOptions = {
     documentSelector: documentSelectors(),
@@ -68,10 +66,10 @@ function createLanguageClient(
       // send the request here and show the server's message once.
       executeCommand: async (command, args) => {
         try {
-          return await clientRef.current?.sendRequest(
-            ExecuteCommandRequest.type,
-            { arguments: args, command },
-          );
+          return await client.sendRequest(ExecuteCommandRequest.type, {
+            arguments: args,
+            command,
+          });
         } catch (error) {
           await reportError(state, `${command} failed`, error);
           return;
@@ -97,13 +95,12 @@ function createLanguageClient(
     clientOptions.outputChannel = state.ui.outputChannel;
   }
 
-  const client = new LanguageClient(
+  client = new LanguageClient(
     "versionlens",
     "VersionLens Redux",
     serverOptions,
     clientOptions,
   );
-  clientRef.current = client;
   client.onNotification(STATUS_METHOD, (params: StatusParams): void => {
     applyStatus(state, params).catch((error: unknown): void => {
       state.ui.outputChannel?.error(String(error));
