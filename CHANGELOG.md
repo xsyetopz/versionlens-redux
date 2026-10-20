@@ -12,9 +12,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added support for Carthage `Cartfile` and `Cartfile.private`, .NET `dotnet-tools.json` local tool manifests, and Cargo `[patch.*]` tables in `Cargo.toml` and `.cargo/config.toml`.
 - Added Gradle `libs.versions.toml` `[versions]` entries, resolved through the libraries and plugins that reference them, so an entry behind latest offers an update and joins update-all.
 - Added workflow `env` references (`${{ env.X }}`) to runtime resolution in GitHub Actions.
-- Added credential sourcing for registry requests: a credential supplied by the editor, then `GITHUB_TOKEN` or `GH_TOKEN`, then `gh auth token` (tried once after a GitHub 401, 403 or rate limit), then the existing registry configuration files. VS Code supplies its credentials from SecretStorage and asks at most once per host and session; other editors fall back to the other sources. Secrets are redacted from logs and errors.
+- Added credential sourcing for registry requests. For `api.github.com`, the server tries `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token` (run once per session after a 401, 403 or 429). For any host, a 401 or 403 asks the editor through `versionlens/authorization` (VS Code only), and its answer then wins for that host for the session. Registry configuration files rank below these. Secrets are redacted from logs and errors.
 - Added rate-limit handling: the server stops requesting a rate-limited host until its reset time and shows one warning per reset with how to authenticate, instead of an error on every dependency.
-- Added support for the standard proxy environment variables in registry requests, and a fall back to an in-memory cache with one warning when the cache directory is not writable.
+- Honored `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` (upper or lower case) in registry requests, and added a fallback to an in-memory cache that logs one warning when the cache directory is not writable.
 - Added a Neovim server resolver (`cmd`, `$VERSIONLENS_LSP`, bundled, downloaded, `PATH`) with an `auto_download` option and a SHA-256-verified download, plus a `settings` option that answers `workspace/configuration`.
 - Added a Zed download of the release archive for the extension's version, verified against `SHA256SUMS`, with older downloads removed.
 - Added SHA-256 checksums (`SHA256SUMS`) for every release binary.
@@ -22,18 +22,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Changed
 
 - **Breaking:** Read settings only through `workspace/configuration`, once per workspace folder. The server ignores `initializationOptions` and `didChangeConfiguration` payloads, so an editor that pushed `versionlens` settings through either must now answer the `workspace/configuration` request. A client that does not answer it gets the defaults.
-- **Breaking:** Moved the hard-coded `**/obj/**` exclusion into the default of the exclude setting. It now hides manifests of every ecosystem, not only .NET,.
+- **Breaking:** Added `**/obj/**` to the server's built-in workspace exclusions (next to `node_modules`, `target` and others), so it now hides manifests of every ecosystem, not only .NET. `files.exclude` can add to these exclusions but not remove them.
 - **Breaking:** Raised the VS Code engine floor from `>=1.75.0` to `^1.91.0`.
-- **Breaking:** Removed the N-API native module. VS Code now talks to the same `versionlens-lsp` binary as the other editors. Commands and settings keys are unchanged.
-- Made every editor an LSP client of the one `versionlens-lsp` server. VS Code ships one platform-specific VSIX per target with that binary, and the single JetBrains plugin bundles the prebuilt binary of every target and answers `workspace/configuration` from its settings.
+- **Breaking:** Removed the N-API native module and the 27-artifact native build matrix. VS Code now talks to the same `versionlens-lsp` binary as the other editors. Commands and settings keys are unchanged.
+- Made every editor an LSP client of the one `versionlens-lsp` server. VS Code ships one platform-specific VSIX per target with that binary, and the single JetBrains plugin bundles the prebuilt binary of every target and answers `workspace/configuration` from a `settingsJson` value (it has no settings page yet).
 - Built `versionlens-lsp` once per release for 9 targets in a reusable workflow, replacing 27 native builds, and pointed the editor workflows at it. Marketplace publishing no longer rebuilds the JetBrains plugin or the binaries.
-- Resolved each workspace folder with its own settings.
+- In a multi-root workspace, each folder now uses its own `versionlens` settings (VS Code; other editors send one set).
 - Made editing a manifest keep its resolved state and workspace discovery instead of discarding them, and ran heavy work off the server's main loop.
 - Pushed results to the editor when a manifest is opened or edited, without waiting for a lens request.
 - Offered a bounded set of bumps (patch, minor, major and latest) instead of one entry for every intermediate version.
-- Treated an `=x.y.z` or `==x.y.z` pin and a Cargo bare version as the requirement they are, and counted an exact pin at latest as current.
+- Treated an `=x.y.z` or `==x.y.z` pin and a Cargo bare version as a caret requirement, and counted an exact pin at latest as current.
 - Reported a failed check as a log entry with retry backoff instead of a diagnostic.
-- Made the VS Code client stop asking to re-enter credentials after a 401 or 403 and retry. A changed credential takes effect after the server restarts. A stored credential now applies to every request to the same hostname, whatever the path or port.
+- The VS Code client no longer offers to re-enter a credential after a 401 or 403. A changed credential takes effect after the server restarts. A stored credential now applies to every request to the same hostname, whatever the path or port.
 - Replaced `tsc` and the `typescript` dev dependency with `bun check` (Bun 1.4.3) and renamed the root `check` script to `verify`. Removed the custom architecture and code-quality audit scripts, `jscpd`, and unused scripts.
 - Grew these `versionlens.*` defaults for the manifest support added in 0.5.0. A setting you have set yourself keeps its value and does not gain the new entries, so add them by hand to get the new files:
   - `versionlens.cargo.files` gained `**/.cargo/config.toml` and `**/.cargo/config`.
@@ -44,7 +44,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Removed
 
-- Removed the `versionlens_napi.node` native module and the 27-artifact native build matrix.
 - Stopped reading npm and Cargo project `version` fields as dependencies, so a package's own version no longer gets a lens.
 - Removed the no-op update command from status lenses that apply no text change, such as an unresolved R `DESCRIPTION` dependency. The lens title still shows.
 
@@ -56,7 +55,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Skipped inputs that cannot be resolved without an error: GitHub Actions `${{ }}` expressions such as step outputs, unsupported `setup-dotnet` syntax, and runtimes with no release source such as `engines.vscode`.
 - Stopped publishing cancellations and internal failures as diagnostics, and named the cause of a remaining error.
 - Made a click on a bump in VS Code either apply the edit or report why it could not.
-- Kept an update lens working after it moved during an edit.
+- Kept an update lens working when an edit moved its dependency before lenses refreshed.
 - Hid update diagnostics together with the lenses in VS Code.
 - Reported a missing server binary once, and serialized server start, stop and restart in VS Code.
 - Sent a credential with an empty scheme as the whole header value.
