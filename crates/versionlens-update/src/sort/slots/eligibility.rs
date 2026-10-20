@@ -187,7 +187,7 @@ fn has_sortable_group<'a>(dependencies: impl Iterator<Item = &'a Dependency>) ->
 }
 
 fn dependency_lines_are_unique<'a>(dependencies: impl Iterator<Item = &'a Dependency>) -> bool {
-    let mut lines: BTreeSet<u32> = crate::default();
+    let mut lines: BTreeSet<u32> = BTreeSet::default();
     for dependency in dependencies {
         let line = dependency_start_line(dependency);
         if !lines.insert(line) {

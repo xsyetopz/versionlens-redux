@@ -7,7 +7,7 @@ use crate::suggestion::SuggestionStatus::{
 use versionlens_model::Ecosystem::{Deno, Docker, Dotnet, Nix, Npm, Python};
 use versionlens_model::{
     Dependency, VersionDialect, is_build_update, is_dotnet_requirement_parseable,
-    is_update_available_for_dialect, normalized_version_for_dialect,
+    is_npm_dist_tag_requirement, is_update_available_for_dialect, normalized_version_for_dialect,
     requirement_has_empty_comparator_intersection, requirement_is_parseable_for_dialect,
     requirement_satisfies_latest_for_dialect,
 };
@@ -16,10 +16,8 @@ use crate::constructors::no_match;
 use crate::suggestion::{Suggestion, SuggestionStatus};
 
 mod github;
-mod npm;
 
 use github::github_commit_status_for_dependency;
-use npm::is_npm_dist_tag_dependency;
 
 type NumericSegments = Vec<u64>;
 
@@ -175,6 +173,14 @@ fn docker_tag_update_available(dependency: &Dependency, latest: &str) -> bool {
 
 fn docker_numbers_are_newer(left: &[u64], right: &[u64]) -> bool {
     versionlens_model::compare_numeric_segments(left, right).is_gt()
+}
+
+fn is_npm_dist_tag_dependency(dependency: &Dependency, latest: &str) -> bool {
+    let requirement = dependency.requirement.trim();
+    dependency.ecosystem == Npm
+        && requirement != "latest"
+        && requirement != latest
+        && is_npm_dist_tag_requirement(requirement)
 }
 
 #[cfg(test)]

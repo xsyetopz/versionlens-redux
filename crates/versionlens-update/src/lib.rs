@@ -19,7 +19,6 @@ pub use constructors::{
 pub use resolve::{resolve_dependency, version_dialect};
 pub use sort::{can_sort_dependencies, sort_dependency_edits};
 pub use suggestion::{Suggestion, SuggestionStatus, UpdateChoice};
-pub(crate) use support::default;
 pub use update::{
     Bump, BumpKind, Plan, PlanStatus, bulk_update_edits, floor_crosses_minor, floor_reaches,
     has_a_floor, plan, update_edit, update_edits,
