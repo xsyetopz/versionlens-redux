@@ -40,5 +40,5 @@
 
 ## 7. Release 0.5.1
 
-- [ ] 7.1 Bump the version to 0.5.1 with `scripts/release/version.mjs` (all version files). Verify: `bun scripts/release/version.test.mjs` passes and `grep -rn '"version": "0.5.0"' package.json packages/*/package.json` prints nothing.
+- [x] 7.1 Bump the version to 0.5.1 with `scripts/release/version.mjs` (all version files). Verify: `bun scripts/release/version.test.mjs` passes and `grep -rn '"version": "0.5.0"' package.json packages/*/package.json` prints nothing.
 - [ ] 7.2 Merge the PR, tag `v0.5.1` and publish VS Code, JetBrains and LuaRocks (never Zed), after the user confirms. Verify: release runs green.

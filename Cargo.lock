@@ -1424,7 +1424,7 @@ checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
 name = "versionlens-engine"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "anyhow",
  "ignore",
@@ -1445,7 +1445,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-fetch"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "flate2",
  "reqwest",
@@ -1460,7 +1460,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-lsp"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "anyhow",
  "crossbeam-channel",
@@ -1477,7 +1477,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-model"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "semver",
  "serde",
@@ -1485,7 +1485,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-parsers"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "base64 0.23.1",
  "jsonc-parser",
@@ -1500,7 +1500,7 @@ dependencies = [
 
 [[package]]
 name = "versionlens-providers"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "base64 0.23.1",
  "quick-xml",
@@ -1515,11 +1515,11 @@ dependencies = [
 
 [[package]]
 name = "versionlens-test-support"
-version = "0.5.0"
+version = "0.5.1"
 
 [[package]]
 name = "versionlens-update"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "semver",
  "serde",

@@ -4,7 +4,20 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - Unreleased
+## [0.5.1] - Unreleased
+
+### Changed
+
+- Reduced internal code size with no change in behavior: merged the engine's presentation layers, replaced the CodeLens title formatter table with one match, and folded small modules and pass-through helpers into their parents. Product Rust went from 48,794 to 47,958 lines and VS Code TypeScript from 2,120 to 1,992.
+- Consolidated the VS Code extension's registry authentication helpers. Stored credentials keep the same keys, so existing entries are still found.
+- Ran CI from one `ci.yml` workflow that builds `versionlens-lsp` once per push or pull request and passes it to the VS Code, JetBrains, Neovim and Zed jobs, instead of three separate builds. CI now also runs `check:manifests`, `check:manifest-baseline` and the VS Code end-to-end test.
+
+### Fixed
+
+- Fixed test servers that could hang a test run when a client never connected; they now fail after a deadline.
+- Fixed a cache test that failed on a loaded machine because it relied on a 1 ms cache lifetime.
+
+## [0.5.0] - 2026-10-20
 
 ### Added
 
@@ -214,6 +227,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added Rust-backed dependency analysis across the supported manifest ecosystems, including C/C++ and JVM build files.
 - Preserved attribution to the original VersionLens authors.
 
+[0.5.1]: https://github.com/xsyetopz/versionlens-redux/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.4...v0.5.0
 [0.4.4]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.2...v0.4.3
 [0.4.1]: https://github.com/xsyetopz/versionlens-redux/compare/v0.4.0...v0.4.1
