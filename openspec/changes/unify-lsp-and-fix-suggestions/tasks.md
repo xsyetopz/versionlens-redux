@@ -116,7 +116,8 @@ Owns: `packages/vscode-extension/src`, `packages/vscode-extension/test`, `packag
 - [x] 9.2 Run full validation. Verify: `bun run verify` passes, with output shown.
 - [x] 9.3 Build release artifacts locally for the host target and package every editor. Verify: `bun run package` and the per-editor package commands succeed, and the host archive's checksum matches the generated `SHA256SUMS`.
   - Local run: SHA256SUMS can only be self-generated locally (CI writes the real one after all 9 builds), so the match is a format check only. The darwin-arm64 VSIX binary matched the archive binary. Run build-lsp on CI and check its SHA256SUMS before tagging.
-- [ ] 9.4 Ask the user before tagging `v0.5.0`, pushing, or publishing to any marketplace.
+- [x] 9.4 Ask the user before tagging `v0.5.0`, pushing, or publishing to any marketplace.
+  - User chose: CI build-lsp check first (SHA256SUMS verified, 9 targets), then merge + `release.yml` 0.5.0 (tag + GitHub Release, no marketplace publish). Fixes needed on the way: c41fbee7 (fetch budget test hang on CI), 08615a5f (vscode.yml bundle skipped under workflow_call). Released from 08615a5f.
 
 ## Workflow follow-up
 
