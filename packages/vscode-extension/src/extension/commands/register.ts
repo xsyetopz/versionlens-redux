@@ -1,7 +1,7 @@
 import { commands, type Disposable } from "#vscode-host";
 import { removeAuthHeader } from "../auth/remove.ts";
 import { addAuthHeader } from "../auth/set.ts";
-import { restartClient } from "../client.ts";
+import { restartClient, startClient } from "../client.ts";
 import type { ExtensionState } from "../state.ts";
 import { runCustomInstall } from "../tasks/custom-install.ts";
 import { updateContexts } from "./contexts.ts";
@@ -40,6 +40,10 @@ function registerCommands(state: ExtensionState): Disposable[] {
     registerCommand(state, id, handler);
   const updateAll = (level: UpdateLevel) => (): Promise<unknown> =>
     runDocumentCommand(state, SERVER_COMMANDS.updateAll, { level });
+  const updateWorkspace = (level: UpdateLevel) => async (): Promise<void> => {
+    await startClient(state, true);
+    await runServerCommand(state, SERVER_COMMANDS.updateWorkspace, { level });
+  };
 
   return [
     register("versionlens.editor.onShowVersionLenses", () =>
@@ -75,6 +79,32 @@ function registerCommands(state: ExtensionState): Disposable[] {
     }),
     register("versionlens.editor.onUpdateDependenciesPatch", async () => {
       await updateAll("patch")();
+    }),
+    register(
+      "versionlens.workspace.onUpdateDependenciesLatest",
+      updateWorkspace("latest"),
+    ),
+    register(
+      "versionlens.workspace.onUpdateDependenciesMajor",
+      updateWorkspace("major"),
+    ),
+    register(
+      "versionlens.workspace.onUpdateDependenciesMinor",
+      updateWorkspace("minor"),
+    ),
+    register(
+      "versionlens.workspace.onUpdateDependenciesPatch",
+      updateWorkspace("patch"),
+    ),
+    register("versionlens.server.onRestart", async () => {
+      await restartClient(state, true);
+      await updateContexts(state);
+    }),
+    register("versionlens.server.onShowOutput", async () => {
+      state.ui.outputChannel?.show();
+    }),
+    register("versionlens.onRestartExtensionHost", async () => {
+      await commands.executeCommand("workbench.action.restartExtensionHost");
     }),
     register("versionlens.editor.onAddUrlAuthentication", async () => {
       if (await addAuthHeader(state)) {

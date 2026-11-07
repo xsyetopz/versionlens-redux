@@ -12,6 +12,7 @@ const vscodeRuntimeExports = [
   "TextDocumentChangeReason",
   "commands",
   "extensions",
+  "languages",
   "tasks",
   "window",
   "workspace",

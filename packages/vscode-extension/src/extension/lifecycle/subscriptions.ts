@@ -6,6 +6,7 @@ import {
   window,
   workspace,
 } from "#vscode-host";
+import { startClient } from "../client.ts";
 import {
   registerConfigurationHandler,
   registerWorkspaceFolderHandler,
@@ -38,9 +39,10 @@ function registerExtensionSubscriptions(
     registerWorkspaceFolderHandler(state),
     workspace.onDidOpenTextDocument(
       (document): Promise<void> =>
-        guarded(state, "could not read the document", () =>
-          trackDocument(state, document),
-        ),
+        guarded(state, "could not read the document", async () => {
+          await startClient(state);
+          await trackDocument(state, document);
+        }),
     ),
     workspace.onDidChangeTextDocument(
       (event): Promise<void> =>

@@ -51,6 +51,20 @@ it("CocoaPods cache and save settings use shared configuration contracts", async
   );
 });
 
+it("enabledProviders offers every provider the client can select", async (): Promise<void> => {
+  const local = await packageJson("packages/vscode-extension/package.json");
+  const properties = local.contributes?.configuration?.properties ?? {};
+  const { filePatternKeys } = await import("../config/keys.ts");
+
+  expect(properties["versionlens.enabledProviders"]).toEqual(
+    expect.objectContaining({
+      items: expect.objectContaining({
+        enum: filePatternKeys.map(([provider]): string => provider),
+      }),
+    }),
+  );
+});
+
 async function packageJson(path: string): Promise<PackageManifest> {
   const packagePath = path;
   return (await Bun.file(resolve(packagePath)).json()) as PackageManifest;

@@ -8,7 +8,7 @@ import {
   LanguageClient,
   TransportKind,
 } from "vscode-languageclient/node";
-import { window } from "#vscode-host";
+import { languages, window, workspace } from "#vscode-host";
 import {
   type AuthorizationParams,
   answerAuthorization,
@@ -45,7 +45,7 @@ function createLanguageClient(
   const clientOptions: LanguageClientOptions = {
     documentSelector: documentSelectors(),
     middleware: {
-      // Choosing "hide" hides the diagnostics too, as in 0.4.4. The last
+      // Choosing "hide" hides the diagnostics too. The last
       // ones are kept so showing them again needs no new server work.
       handleDiagnostics: (uri, diagnostics, next) => {
         const key = uri.toString();
@@ -125,31 +125,54 @@ function enqueue(
   return run;
 }
 
-function startClient(state: ExtensionState): Promise<void> {
-  return enqueue(state, (): Promise<void> => start(state));
+/** `required` starts the server even when no manifest needs it. */
+function startClient(state: ExtensionState, required = false): Promise<void> {
+  return enqueue(state, (): Promise<void> => start(state, required));
 }
 
 function stopClient(state: ExtensionState): Promise<void> {
   return enqueue(state, (): Promise<void> => stop(state));
 }
 
-function restartClient(state: ExtensionState): Promise<void> {
+function restartClient(state: ExtensionState, required = false): Promise<void> {
   return enqueue(state, async (): Promise<void> => {
     try {
       await stop(state);
     } finally {
-      await start(state);
+      await start(state, required);
     }
   });
 }
 
 /**
- * Starts the server. A server that cannot start is reported, and the
- * commands that do not need it keep working.
+ * Whether a supported manifest is open, or a folder asks for the whole
+ * workspace to be checked. Until then the server is not started.
  */
-async function start(state: ExtensionState): Promise<void> {
+function serverNeeded(): boolean {
+  const selectors = documentSelectors();
+  const scopes = workspace.workspaceFolders?.map(({ uri }) => uri) ?? [
+    undefined,
+  ];
+  return (
+    workspace.textDocuments.some(
+      (document): boolean => languages.match(selectors, document) > 0,
+    ) ||
+    scopes.some(
+      (scope): boolean =>
+        workspace
+          .getConfiguration("versionlens", scope)
+          .get<string>("workspace.check") === "workspace",
+    )
+  );
+}
+
+/**
+ * Starts the server when it is needed and not running. A server that cannot
+ * start is reported, and the commands that do not need it keep working.
+ */
+async function start(state: ExtensionState, required: boolean): Promise<void> {
   const extensionPath = state.context?.extensionPath;
-  if (!extensionPath) {
+  if (!extensionPath || state.client || !(required || serverNeeded())) {
     return;
   }
   const serverPath = resolveServerPath(extensionPath);

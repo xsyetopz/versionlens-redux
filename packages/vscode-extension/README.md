@@ -20,7 +20,8 @@ When the original VersionLens extension is installed, VersionLens Redux warns an
 ## Features
 
 - CodeLens hints for installed, latest, constrained, fixed, and prerelease versions.
-- Update commands for latest, major, minor, and patch targets.
+- Update commands for latest, major, minor, and patch targets, for the active manifest or every manifest in the workspace.
+- Commands to restart the language server or the extension host, and to show the server output.
 - Manifest-aware dependency sorting where ordering is safe.
 - OSV.dev vulnerability diagnostics for ecosystems supported by OSV.
 - Update-available diagnostics with one-step `Bump to ...` quick fixes.
@@ -29,7 +30,7 @@ When the original VersionLens extension is installed, VersionLens Redux warns an
 
 ## Supported manifests
 
-VersionLens Redux scans dependency files across these ecosystems:
+VersionLens Redux reads dependency files across these ecosystems:
 
 | Area | Manifests and sources |
 | --- | --- |
@@ -96,6 +97,8 @@ Useful settings:
 | `versionlens.suggestions.showPrereleasesOnStartup` | Includes prerelease suggestions at startup. |
 | `versionlens.suggestions.showVulnerabilities` | Enables OSV.dev vulnerability diagnostics. |
 | `versionlens.diagnostics.updateSeverity` | Severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected. |
+| `versionlens.workspace.check` | `openFiles` (default) checks only open manifests, and the server starts when the first one opens. `workspace` also checks every manifest in the folder that `.gitignore`, `.ignore`, `.git/info/exclude`, the global gitignore and `files.exclude` do not hide. |
+| `versionlens.workspace.exclude` | Glob patterns, relative to the workspace folder, of manifests never to check, even when open. Example: `["fixtures/**", "examples/*/package.json"]`. |
 | `versionlens.caching.duration` | Minutes to cache registry results (default `3`; `0` disables caching). |
 | `versionlens.<provider>.onSaveChanges` | Task label from `tasks.json` to run when a manifest with dependency changes is saved. |
 
@@ -141,6 +144,7 @@ bun run package
 | No CodeLens entries | Ensure `editor.codeLens` is enabled and the file matches a configured `versionlens.*.files` pattern. |
 | Toolbar icons are missing | Ensure `workbench.editor.editorActionsLocation` is not set to `hidden`. |
 | Results look stale | Run **VersionLens Redux: Clear cache** from the Command Palette. |
+| Checks seem stuck | Run **VersionLens Redux: Restart language server**, or **Restart extension host**. **Show language server output** opens the log. |
 | Registry requests fail | Check the provider API URL, proxy, `versionlens.http.strictSSL`, and the credentials described under Private registries. |
 | Need logs | Set the `VersionLens` output channel to debug through **Developer: Set Log Level**. |
 
