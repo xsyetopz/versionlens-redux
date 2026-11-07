@@ -251,20 +251,23 @@ function M.root_dir(bufnr, config)
   end
   local root = vim.fs.root(bufnr, config.root_markers)
   if root then
-    -- Like the folder an editor opens: a project Neovim started in stays the
-    -- root of the files below it, so its ignore files cover nested checkouts
-    -- such as `.claude/worktrees/*`, which carry their own `.git`.
+    -- A checkout the started-in project ignores, such as
+    -- `.claude/worktrees/*` with its own `.git`, stays under that project so
+    -- its ignore files keep covering it. Every other root is the nearest one.
     local cwd = vim.uv.fs_realpath(vim.uv.cwd() or "")
     local real_root = vim.uv.fs_realpath(root)
     if cwd and real_root then
       cwd = vim.fs.normalize(cwd)
+      real_root = vim.fs.normalize(real_root)
       local marked = vim.fs.root(cwd, config.root_markers)
-      if
-        marked
-        and vim.fs.normalize(marked) == cwd
-        and vim.startswith(vim.fs.normalize(real_root) .. "/", cwd .. "/")
-      then
-        return cwd
+      if marked and vim.fs.normalize(marked) == cwd and vim.startswith(real_root, cwd .. "/") then
+        local ok, ignored = pcall(function()
+          return vim.system({ "git", "-C", cwd, "check-ignore", "-q", "--", real_root }):wait().code
+            == 0
+        end)
+        if ok and ignored then
+          return cwd
+        end
       end
     end
     return root
