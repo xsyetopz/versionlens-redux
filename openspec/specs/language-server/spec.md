@@ -28,6 +28,17 @@ Changing the content of an open document SHALL NOT clear cached registry results
 - **WHEN** a user changes one dependency's requirement in an open manifest
 - **THEN** only that dependency's presentation is recomputed and other dependencies keep their resolved state
 
+### Requirement: Checking scope
+By default the server SHALL check only open manifests. It SHALL scan workspace folders only when `versionlens.workspace.check` is `workspace`, and that scan SHALL skip files hidden by `.gitignore`, `.ignore`, `.git/info/exclude`, the global gitignore, `files.exclude` and the built-in exclusions. A manifest matching `versionlens.workspace.exclude` SHALL NOT be checked, even when open.
+
+#### Scenario: Unopened manifest in open-files mode
+- **WHEN** a workspace contains a `package.json` that is not open and `versionlens.workspace.check` is `openFiles`
+- **THEN** no registry request is made for it
+
+#### Scenario: Workspace update
+- **WHEN** a client runs `versionlens.server.updateWorkspace` with a level
+- **THEN** the server sends one `workspace/applyEdit` covering every manifest the workspace scan finds, whether open or not
+
 ### Requirement: Responsive protocol loop
 The server SHALL keep answering protocol messages while resolution, file I/O and network work run. The server SHALL NOT perform blocking file or network I/O on the thread that reads protocol messages.
 

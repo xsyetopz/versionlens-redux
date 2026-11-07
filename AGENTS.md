@@ -40,7 +40,7 @@ Package the VS Code extension:
 bun run package
 ```
 
-Full validation is expensive and chains `check:biome`, `check:rustfmt`, `check:manifests`, `check:manifest-baseline`, `test:release`, `check:clippy`, `typecheck`, `check:extension-build`, `cargo test --workspace --locked`, `test:extension`, and `package:editors`:
+Full validation is expensive and chains `check:biome`, `check:rustfmt`, `check:manifests`, `test:release`, `check:clippy`, `typecheck`, `check:extension-build`, `cargo test --workspace --locked`, `test:extension`, and `package:editors`:
 
 ```bash
 bun run verify

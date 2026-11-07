@@ -17,13 +17,6 @@ Each supported file type SHALL be declared once, in a single manifest table that
 - **WHEN** an editor file list or `package.json` selector differs from the table
 - **THEN** the repository check fails and names the mismatched entry
 
-### Requirement: Settings keys preserved
-Generating `package.json` settings from the manifest table SHALL keep every existing `versionlens.*` setting key, its type and its default.
-
-#### Scenario: Key set unchanged
-- **WHEN** the settings are regenerated
-- **THEN** the set of contributed setting keys equals the 0.4.4 set, plus only keys added by this change
-
 ### Requirement: Additional file types
 The server SHALL recognize:
 - `Cartfile`, as GitHub and Git dependencies

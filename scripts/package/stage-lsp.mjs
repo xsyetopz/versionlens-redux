@@ -25,6 +25,21 @@ function rustTargetFor(vscodeTarget) {
   return entry.rust;
 }
 
+/** The `targets.json` entry of the machine's own Rust target. */
+function hostTarget() {
+  const result = Bun.spawnSync(["rustc", "-vV"], { stdout: "pipe" });
+  const host = /^host:\s*(\S+)/mu.exec(
+    new TextDecoder().decode(result.stdout),
+  )?.[1];
+  const entry = targets.find(({ rust }) => rust === host);
+  if (!entry) {
+    throw new Error(
+      `Host Rust target ${host ?? "(unknown)"} is not listed in scripts/package/targets.json`,
+    );
+  }
+  return entry;
+}
+
 function executableNameFor(rustTarget) {
   return rustTarget.includes("windows")
     ? "versionlens-lsp.exe"
@@ -113,7 +128,7 @@ function stageLspBinary(archivesDir, rustTarget, destination) {
   }
 }
 
-export { executableNameFor, rustTargetFor, stageLspBinary };
+export { executableNameFor, hostTarget, rustTargetFor, stageLspBinary };
 
 if (import.meta.main) {
   const [, , archivesDir, rustTarget, destination] = Bun.argv;

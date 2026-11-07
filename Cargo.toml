@@ -19,7 +19,7 @@ repository = "https://github.com/xsyetopz/versionlens-redux.git"
 readme = "README.md"
 keywords = ["versionlens", "vscode", "dependencies"]
 categories = ["development-tools"]
-version = "0.5.1"
+version = "0.6.0"
 
 [workspace.dependencies]
 ignore = "0.4.33"
@@ -44,7 +44,9 @@ regex-automata = { version = "0.4.18", default-features = false, features = [
   "syntax",
   "unicode",
 ] }
-regex-syntax = { version = "0.8.11", default-features = false, features = ["std"] }
+regex-syntax = { version = "0.8.11", default-features = false, features = [
+  "std",
+] }
 semver = "1.0.28"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
@@ -55,7 +57,7 @@ reqwest = { version = "0.13.5", default-features = false, features = [
   "rustls-no-provider",
 ] }
 flate2 = "1.1.10"
-tokio = { version = "1.53.3", features = [
+tokio = { version = "1.54.1", features = [
   "macros",
   "rt",
   "rt-multi-thread",

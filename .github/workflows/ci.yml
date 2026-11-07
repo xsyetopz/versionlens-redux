@@ -36,9 +36,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Check generated manifests
-        run: |
-          bun run check:manifests
-          bun run check:manifest-baseline
+        run: bun run check:manifests
 
   lsp:
     name: Build language server

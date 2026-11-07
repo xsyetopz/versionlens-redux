@@ -8,7 +8,7 @@
     "#vscode-host": "./src/extension/platform/host.ts"
   },
   "preview": false,
-  "version": "0.5.1",
+  "version": "0.6.0",
   "main": "./dist/extension.js",
   "repository": {
     "type": "git",
@@ -155,6 +155,41 @@
         "command": "versionlens.editor.onUpdateDependenciesPatch",
         "title": "Update dependencies (patch-only)",
         "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.workspace.onUpdateDependenciesLatest",
+        "title": "Update dependencies in workspace to latest",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.workspace.onUpdateDependenciesMajor",
+        "title": "Update dependencies in workspace (major-only)",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.workspace.onUpdateDependenciesMinor",
+        "title": "Update dependencies in workspace (minor-only)",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.workspace.onUpdateDependenciesPatch",
+        "title": "Update dependencies in workspace (patch-only)",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.server.onRestart",
+        "title": "Restart language server",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.server.onShowOutput",
+        "title": "Show language server output",
+        "category": "VersionLens Redux"
+      },
+      {
+        "command": "versionlens.onRestartExtensionHost",
+        "title": "Restart extension host",
+        "category": "VersionLens Redux"
       }
     ],
     "menus": {
@@ -186,6 +221,10 @@
         {
           "command": "versionlens.editor.onSortDependencies",
           "when": "versionlens.showSortAlphabetically && versionlens.providerActive"
+        },
+        {
+          "command": "versionlens.icons.showingProgress",
+          "when": "false"
         }
       ],
       "editor/title": [
@@ -505,60 +544,56 @@
         "versionlens.suggestions.indicators": {
           "type": "object",
           "default": {
-            "Directory": "\ud83d\udcc1 ",
-            "Downgradeable": "\u2193 ",
-            "Error": "\ud83d\udd34",
-            "Latest": "\ud83d\udfe2",
-            "SatisfiesLatest": "\ud83d\udfe2",
-            "NoMatch": "\u26aa",
-            "Match": "\ud83d\udfe1",
-            "Updateable": "\u2191 ",
-            "UpdateableVulnerable": "\u26a0\ufe0f",
-            "Build": "\u224c "
+            "directory": "📁 ",
+            "error": "🔴",
+            "latest": "🟢",
+            "satisfiesLatest": "🟢",
+            "noMatch": "⚪",
+            "matched": "🟡",
+            "updateable": "↑ ",
+            "updateableVulnerable": "⚠️",
+            "build": "≌ "
           },
           "properties": {
-            "Build": {
+            "build": {
               "type": "string",
               "pattern": "\\S"
             },
-            "Directory": {
+            "directory": {
               "type": "string",
               "pattern": "\\S"
             },
-            "Downgradeable": {
+            "error": {
               "type": "string",
               "pattern": "\\S"
             },
-            "Error": {
+            "latest": {
               "type": "string",
               "pattern": "\\S"
             },
-            "Latest": {
+            "matched": {
               "type": "string",
               "pattern": "\\S"
             },
-            "Match": {
+            "noMatch": {
               "type": "string",
               "pattern": "\\S"
             },
-            "NoMatch": {
+            "satisfiesLatest": {
               "type": "string",
               "pattern": "\\S"
             },
-            "SatisfiesLatest": {
+            "updateable": {
               "type": "string",
               "pattern": "\\S"
             },
-            "Updateable": {
-              "type": "string",
-              "pattern": "\\S"
-            },
-            "UpdateableVulnerable": {
+            "updateableVulnerable": {
               "type": "string",
               "pattern": "\\S"
             }
           },
-          "description": "The indicators used when showing version suggestion statuses."
+          "description": "The indicators used when showing version suggestion statuses.",
+          "additionalProperties": false
         },
         "versionlens.npm.dependencyProperties": {
           "type": "array",
@@ -811,21 +846,62 @@
               "maven",
               "npm",
               "pnpm",
-              "pub",
               "pypi",
+              "pub",
               "ruby",
+              "hex",
+              "opam",
+              "hackage",
+              "julia",
+              "cran",
+              "conan",
+              "vcpkg",
+              "swift",
+              "zig",
+              "nim",
+              "luarocks",
+              "cpan",
+              "haxelib",
+              "terraform",
+              "helm",
+              "ansible",
+              "bazel",
+              "nix",
+              "kustomize",
+              "unity",
+              "cocoapods",
+              "cpp",
               "github"
             ]
           },
           "default": [],
-          "description": "Defines a list of providers to enable. If empty, all providers are enabled. You will need to restart vscode when changing this setting."
+          "description": "Defines a list of providers to enable. If empty, all providers are enabled."
+        },
+        "versionlens.workspace.check": {
+          "type": "string",
+          "enum": [
+            "openFiles",
+            "workspace"
+          ],
+          "enumDescriptions": [
+            "Check only the manifests open in the editor.",
+            "Also check every manifest in the workspace folders, in the background."
+          ],
+          "default": "openFiles",
+          "description": "Which manifests VersionLens checks. Files ignored by .gitignore, .ignore, .git/info/exclude, files.exclude or versionlens.workspace.exclude are never scanned."
+        },
+        "versionlens.workspace.exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Glob patterns, relative to the workspace folder, of manifests VersionLens never checks, even when open. For example \"**/fixtures/**\"."
         },
         "versionlens.caching.duration": {
-          "type": [
-            "null",
-            "number"
-          ],
+          "type": "number",
           "default": 3,
+          "minimum": 0,
           "description": "Specifies how long (in minutes) version suggestions will be cached. Setting the duration to 0 will disable caching."
         },
         "versionlens.cargo.caching.duration": {
@@ -2156,9 +2232,11 @@
           "description": "CocoaPods registry response cache duration in minutes."
         },
         "versionlens.cocoapods.http.strictSSL": {
-          "type": "boolean",
-          "default": true,
-          "description": "Require valid TLS certificates for CocoaPods registry requests."
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "Whether to require strict SSL for CocoaPods registry requests. Overrides 'versionlens.http.strictSSL'"
         },
         "versionlens.cocoapods.onSaveChanges": {
           "type": "string",
@@ -2281,6 +2359,6 @@
     }
   },
   "dependencies": {
-    "vscode-languageclient": "~10.1.2"
+    "vscode-languageclient": "~11.0.0"
   }
 }
