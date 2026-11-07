@@ -103,10 +103,10 @@ fn gem_github_value_dependency(
 ) -> Option<Dependency> {
     let (value, _, value_start, value_end) = attr_string_span(context.content, attr_name)?;
     let repo = github_repository(context.content)?;
-    let hosted_url = if attr_name == "ref" && is_commit_sha(&value) {
-        github_api_url(&repo, "commits")?
-    } else {
-        "branch".to_owned()
+    let hosted_url = match attr_name {
+        "ref" if is_commit_sha(&value) => github_api_url(&repo, "commits")?,
+        "ref" if is_version_tag(&value) => github_api_url(&repo, "tags")?,
+        _ => "branch".to_owned(),
     };
 
     Some(Dependency {
@@ -131,6 +131,15 @@ fn gem_github_value_dependency(
 
 fn is_commit_sha(value: &str) -> bool {
     matches!(value.len(), 7 | 40) && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn is_version_tag(value: &str) -> bool {
+    value
+        .strip_prefix(['v', 'V'])
+        .unwrap_or(value)
+        .bytes()
+        .next()
+        .is_some_and(|byte| byte.is_ascii_digit())
 }
 
 use std::borrow::Cow::{Borrowed as CowBorrowed, Owned as CowOwned};

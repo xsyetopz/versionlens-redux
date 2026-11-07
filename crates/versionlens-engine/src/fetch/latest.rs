@@ -93,6 +93,9 @@ impl VersionLensSession {
 
         let current_ref_is_proven = if github_current_ref_is_proven(dependency, &body) {
             true
+        } else if github::is_commit_pin(dependency) {
+            self.fetch_commit_pin_is_proven(dependency, endpoint, context, operation)
+                .await?
         } else {
             self.fetch_exact_github_action_ref_is_proven(dependency, endpoint, context, operation)
                 .await?

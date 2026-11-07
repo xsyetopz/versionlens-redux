@@ -411,7 +411,7 @@ async fn resolves_npm_github_commit_dependencies_from_commits() {
         "npm-github-commit-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -424,7 +424,7 @@ async fn resolves_npm_github_url_commit_dependencies_from_commits() {
         "npm-github-url-commit-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -437,7 +437,7 @@ async fn resolves_npm_github_git_ssh_dependencies_from_commits() {
         "npm-github-git-ssh-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -450,7 +450,7 @@ async fn resolves_npm_github_git_ssh_colon_dependencies_from_commits() {
         "npm-github-git-ssh-colon-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -463,7 +463,7 @@ async fn leaves_npm_github_dependencies_without_refs_fixed() {
         "npm-github-dependencies-without-refs-from-commits.json",
         "owner/bare",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -476,7 +476,7 @@ async fn leaves_npm_github_branch_dependencies_fixed() {
         "npm-github-branch-dependencies-fixed.json",
         "owner/branch",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -489,7 +489,7 @@ async fn keeps_full_length_for_npm_github_sha_pins() {
         "npm-github-full-sha-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890123456789012345678901234567890"}]"#,
     )
     .await;
 
@@ -551,7 +551,7 @@ async fn leaves_ruby_github_dependencies_without_ref_fixed() {
         "ruby-github-dependencies-without-ref-from-commitsGemfile",
         "heartcombo/devise",
         Ruby,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -564,7 +564,7 @@ async fn resolves_ruby_github_ref_dependencies_from_commits() {
         "ruby-github-ref-dependencies-from-commitsGemfile",
         "rspec/rspec-core",
         Ruby,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -577,7 +577,7 @@ async fn keeps_full_length_for_ruby_github_sha_pins() {
         "ruby-github-full-sha-ref-dependencies-from-commitsGemfile",
         "rspec/rspec-core",
         Ruby,
-        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890123456789012345678901234567890"}]"#,
     )
     .await;
 
@@ -622,11 +622,78 @@ async fn leaves_ruby_git_github_dependencies_without_ref_fixed() {
         "ruby-git-github-dependencies-without-ref-from-commitsGemfile",
         "rails/rails",
         Ruby,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
     crate::test_support::assert_fixed_suggestion(&output, "branch reference");
+}
+
+async fn resolve_inline(
+    uri: &str,
+    text: &str,
+    package: &str,
+    ecosystem: Ecosystem,
+    body: &str,
+) -> ResolveDocumentOutput {
+    let language = if uri.ends_with("Gemfile") {
+        "ruby"
+    } else {
+        "json"
+    };
+    standard_session()
+        .resolve_document_with_responses(
+            DocumentInput::new(uri.to_owned(), language.to_owned(), text.to_owned(), None),
+            &[RegistryResponseInput::new(
+                package.to_owned(),
+                ecosystem,
+                body.to_owned(),
+            )],
+        )
+        .await
+}
+
+#[tokio::test]
+async fn bumps_ruby_github_version_refs_to_tags() {
+    let output = resolve_inline(
+        "file:///Gemfile",
+        r#"gem "rspec-core", github: "rspec/rspec-core", ref: "v3.12.0""#,
+        "rspec/rspec-core",
+        Ruby,
+        r#"[{"name":"v3.13.0"},{"name":"v3.12.0"}]"#,
+    )
+    .await;
+
+    assert_update(&output, "v3.13.0");
+}
+
+#[tokio::test]
+async fn leaves_hex_named_refs_unbumped_when_no_listed_commit_matches() {
+    for (uri, text, package, ecosystem) in [
+        (
+            "file:///Gemfile",
+            r#"gem "rspec-core", github: "rspec/rspec-core", ref: "deadbee""#,
+            "rspec/rspec-core",
+            Ruby,
+        ),
+        (
+            "file:///package.json",
+            r#"{ "dependencies": { "commit": "github:owner/commit#deadbee" } }"#,
+            "owner/commit",
+            Npm,
+        ),
+    ] {
+        let output = resolve_inline(
+            uri,
+            text,
+            package,
+            ecosystem,
+            r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"}]"#,
+        )
+        .await;
+
+        assert_no_action_update(&output);
+    }
 }
 
 #[tokio::test]
