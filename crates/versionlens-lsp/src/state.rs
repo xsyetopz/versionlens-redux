@@ -293,21 +293,10 @@ impl VersionLensLspState {
         group: usize,
         scan: bool,
     ) -> WorkspaceCheckingOptions {
-        let settings = &self.groups[group].settings;
-        let roots = if scan {
-            self.group_roots(group)
-                .into_iter()
-                .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
-                .collect()
-        } else {
-            Vec::new()
-        };
-        let mut discovery = WorkspaceDiscoveryOptions::new(roots);
-        discovery.exclusions = [&settings.exclusions, &settings.workspace.exclude]
-            .into_iter()
-            .flatten()
-            .cloned()
-            .collect();
+        let mut discovery = self.workspace_scope(group);
+        if !scan {
+            discovery.roots.clear();
+        }
         let mut uris = self.document_uris();
         uris.sort();
         discovery.overlays = uris
@@ -316,6 +305,23 @@ impl VersionLensLspState {
             .filter_map(|uri| self.document_work(&uri).map(|work| work.input))
             .collect();
         WorkspaceCheckingOptions::new(discovery)
+    }
+
+    /// The folders and exclusions of one settings group, without documents.
+    pub(crate) fn workspace_scope(&self, group: usize) -> WorkspaceDiscoveryOptions {
+        let settings = &self.groups[group].settings;
+        let roots = self
+            .group_roots(group)
+            .into_iter()
+            .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
+            .collect();
+        let mut discovery = WorkspaceDiscoveryOptions::new(roots);
+        discovery.exclusions = [&settings.exclusions, &settings.workspace.exclude]
+            .into_iter()
+            .flatten()
+            .cloned()
+            .collect();
+        discovery
     }
 
     fn workspace_root(&self, document_uri: &str) -> Option<String> {

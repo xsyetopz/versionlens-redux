@@ -522,8 +522,7 @@ fn workspace_check() -> super::FolderSettings {
 }
 
 #[test]
-fn only_the_workspace_check_scans_folders_and_user_exclusions_hide_open_documents()
--> Result<(), String> {
+fn only_the_workspace_check_scans_folders() -> Result<(), String> {
     let mut state =
         VersionLensLspState::with_workspace(Some(uri("file:///workspace")?), Vec::new());
     assert!(
@@ -545,15 +544,54 @@ fn only_the_workspace_check_scans_folders_and_user_exclusions_hide_open_document
     let discovery = state.workspace_checking_options(0).discovery;
     assert_eq!(discovery.roots, [std::path::PathBuf::from("/workspace")]);
     assert!(discovery.exclusions.contains(&"fixtures/**".to_owned()));
-    for (path, checked) in [("fixtures/Cargo.toml", false), ("app/Cargo.toml", true)] {
-        let document = format!("file:///workspace/{path}");
-        state.open_document(super::VersionLensTextDocument {
-            uri: document.clone(),
-            language_id: "toml".to_owned(),
-            text: "[dependencies]\n".to_owned(),
-            workspace_root: None,
-        });
-        assert_eq!(state.document_work(&document).is_some(), checked, "{path}");
-    }
     Ok(())
+}
+
+#[test]
+fn open_documents_that_a_scan_skips_are_not_checked() -> Result<(), String> {
+    let root = versionlens_test_support::temporary_directory("versionlens-open-ignored")
+        .map_err(|error| error.to_string())?
+        .canonicalize()
+        .map_err(|error| error.to_string())?;
+    std::fs::write(root.join(".gitignore"), ".claude/worktrees/\n")
+        .map_err(|error| error.to_string())?;
+    let root_uri = versionlens_engine::workspace_file_uri(&root).ok_or("missing root URI")?;
+    let root_uri = uri(&root_uri)?;
+    let with_files_exclude = |mut settings: super::FolderSettings| {
+        settings.exclusions.push("**/generated/**".to_owned());
+        settings.exclusions.push("**/scratch".to_owned());
+        VersionLensLspState::with_workspace(Some(root_uri.clone()), Vec::new())
+            .with_settings(settings)
+    };
+    for (mut state, mode) in [
+        (
+            with_files_exclude(super::FolderSettings::default()),
+            "open files",
+        ),
+        (with_files_exclude(workspace_check()), "workspace"),
+    ] {
+        for (path, checked) in [
+            (".claude/worktrees/agent/launcher/Cargo.toml", false),
+            ("generated/Cargo.toml", false),
+            ("scratch/tool/Cargo.toml", false),
+            ("build/tool/Cargo.toml", true),
+            ("fixtures/Cargo.toml", mode == "open files"),
+            ("app/Cargo.toml", true),
+        ] {
+            let document = versionlens_engine::workspace_file_uri(&root.join(path))
+                .ok_or("missing document URI")?;
+            state.open_document(super::VersionLensTextDocument {
+                uri: document.clone(),
+                language_id: "toml".to_owned(),
+                text: "[dependencies]\n".to_owned(),
+                workspace_root: None,
+            });
+            assert_eq!(
+                state.document_work(&document).is_some(),
+                checked,
+                "{mode}: {path}"
+            );
+        }
+    }
+    std::fs::remove_dir_all(root).map_err(|error| error.to_string())
 }

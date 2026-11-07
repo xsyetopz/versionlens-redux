@@ -8,7 +8,7 @@
     "#vscode-host": "./src/extension/platform/host.ts"
   },
   "preview": false,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "main": "./dist/extension.js",
   "repository": {
     "type": "git",
@@ -888,7 +888,7 @@
             "Also check every manifest in the workspace folders, in the background."
           ],
           "default": "openFiles",
-          "description": "Which manifests VersionLens checks. Files ignored by .gitignore, .ignore, .git/info/exclude, files.exclude or versionlens.workspace.exclude are never scanned."
+          "description": "Which manifests VersionLens checks. Files ignored by .gitignore, .ignore, .git/info/exclude, files.exclude or versionlens.workspace.exclude are never checked, even when open."
         },
         "versionlens.workspace.exclude": {
           "type": "array",

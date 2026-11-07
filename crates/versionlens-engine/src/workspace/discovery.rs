@@ -16,11 +16,13 @@ const IGNORED_DIRECTORIES: &[&str] = &[".git", "node_modules", "target", "vendor
 ///
 /// `read` is the source of truth for file contents and may provide unsaved
 /// overlays. `overlays` lets a matching manifest participate before it exists
-/// on disk; paths outside `root` are always rejected.
+/// on disk; paths outside `root` are always rejected. A member path, file or
+/// directory, for which `skips` is true is not searched.
 pub(super) fn manifests(
     root: &Path,
     read: &impl Fn(&Path) -> Option<String>,
     overlays: &[PathBuf],
+    skips: &mut impl FnMut(&Path, bool) -> bool,
 ) -> Vec<PathBuf> {
     let mut result = BTreeSet::new();
 
@@ -28,7 +30,14 @@ pub(super) fn manifests(
         if let Some(text) = read(&package) {
             result.insert(package);
             if let Some(patterns) = package_patterns(&text) {
-                result.extend(expand(root, PACKAGE_MANIFEST, &patterns, read, overlays));
+                result.extend(expand(
+                    root,
+                    PACKAGE_MANIFEST,
+                    &patterns,
+                    read,
+                    overlays,
+                    skips,
+                ));
             }
         }
     }
@@ -37,7 +46,14 @@ pub(super) fn manifests(
         if let Some(text) = read(&pnpm)
             && let Some(patterns) = pnpm_patterns(&text)
         {
-            result.extend(expand(root, PACKAGE_MANIFEST, &patterns, read, overlays));
+            result.extend(expand(
+                root,
+                PACKAGE_MANIFEST,
+                &patterns,
+                read,
+                overlays,
+                skips,
+            ));
         }
     }
 
@@ -45,7 +61,14 @@ pub(super) fn manifests(
         if let Some(text) = read(&cargo) {
             result.insert(cargo);
             if let Some(patterns) = cargo_patterns(&text) {
-                result.extend(expand(root, CARGO_MANIFEST, &patterns, read, overlays));
+                result.extend(expand(
+                    root,
+                    CARGO_MANIFEST,
+                    &patterns,
+                    read,
+                    overlays,
+                    skips,
+                ));
             }
         }
     }
@@ -71,12 +94,18 @@ impl DiskCandidateSearch<'_> {
         IGNORED_DIRECTORIES.contains(&name) && !self.explicitly_named_ignored.contains(name)
     }
 
-    fn collect(&self, directory: &Path, result: &mut BTreeSet<PathBuf>) {
+    fn collect(
+        &self,
+        directory: &Path,
+        skips: &mut impl FnMut(&Path, bool) -> bool,
+        result: &mut BTreeSet<PathBuf>,
+    ) {
         let relative = directory.strip_prefix(self.root).unwrap_or(Path::new(""));
         if !relative.as_os_str().is_empty() && selected(self.patterns, relative) {
             let manifest = directory.join(self.manifest_name);
             if let Some(manifest) = bounded(self.root, &manifest)
                 && manifest.is_file()
+                && !skips(&manifest, false)
             {
                 result.insert(manifest);
             }
@@ -97,7 +126,7 @@ impl DiskCandidateSearch<'_> {
             let Some(name) = child.file_name().and_then(|name| name.to_str()) else {
                 continue;
             };
-            if self.ignores_directory(name) {
+            if self.ignores_directory(name) || skips(&child, true) {
                 continue;
             }
             let Ok(relative) = child.strip_prefix(self.root) else {
@@ -110,7 +139,7 @@ impl DiskCandidateSearch<'_> {
                 .iter()
                 .any(|pattern| pattern.could_match_descendant(&components))
             {
-                self.collect(&child, result);
+                self.collect(&child, skips, result);
             }
         }
     }
@@ -183,6 +212,7 @@ fn expand(
     patterns: &Patterns,
     read: &impl Fn(&Path) -> Option<String>,
     overlays: &[PathBuf],
+    skips: &mut impl FnMut(&Path, bool) -> bool,
 ) -> BTreeSet<PathBuf> {
     if patterns.include.is_empty() {
         return BTreeSet::new();
@@ -204,7 +234,7 @@ fn expand(
             .collect(),
     };
     let mut candidates = BTreeSet::new();
-    search.collect(root, &mut candidates);
+    search.collect(root, skips, &mut candidates);
     for overlay in overlays {
         if overlay.file_name().and_then(|name| name.to_str()) != Some(manifest_name) {
             continue;
@@ -225,7 +255,7 @@ fn expand(
         {
             continue;
         }
-        if selected(patterns, relative) && read(&path).is_some() {
+        if selected(patterns, relative) && !skips(&path, false) && read(&path).is_some() {
             candidates.insert(path);
         }
     }

@@ -184,19 +184,21 @@ impl WorkspaceController {
     }
 
     /// The open documents to check: the current text, or the last sent text
-    /// for documents still in their debounce.
+    /// for documents still in their debounce. A document a scan skips is not
+    /// checked, even in its debounce.
     fn overlays(&mut self, state: &VersionLensLspState) -> Vec<(String, DocumentInput)> {
         let mut uris = state.document_uris();
         uris.sort();
         uris.into_iter()
             .filter_map(|uri| {
+                let current = state.document_work(&uri)?.input;
                 let held = self
                     .pending
                     .due
                     .contains_key(&uri)
                     .then(|| self.pending.submitted.get(&uri).cloned())
                     .flatten();
-                let input = held.or_else(|| state.document_work(&uri).map(|work| work.input))?;
+                let input = held.unwrap_or(current);
                 self.pending.submitted.insert(uri.clone(), input.clone());
                 Some((uri, input))
             })
@@ -282,7 +284,7 @@ impl WorkspaceController {
         }
         self.update_documents(state)?;
         for uri in due {
-            if state.document_is_open(&uri) {
+            if state.document_work(&uri).is_some() {
                 self.set_status(connection, &uri, DocumentStatus::Busy)?;
             }
         }
@@ -447,7 +449,7 @@ impl WorkspaceController {
                 if let Some(group) = self.groups.get_mut(group) {
                     group.seen_documents.remove(&uri);
                 }
-                if state.document_is_open(&uri) || self.published.remove(&uri).is_none() {
+                if state.document_work(&uri).is_some() || self.published.remove(&uri).is_none() {
                     return Ok(());
                 }
                 publish_diagnostics(connection, uri.parse()?, Vec::new(), None)
@@ -548,7 +550,7 @@ impl WorkspaceController {
             .filter(|uri| {
                 state.group_of(uri) == group
                     && !checking.seen_documents.contains(*uri)
-                    && !state.document_is_open(uri)
+                    && state.document_work(uri).is_none()
             })
             .cloned()
             .collect::<Vec<_>>();

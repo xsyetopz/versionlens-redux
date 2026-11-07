@@ -78,8 +78,8 @@ impl VersionLensLspState {
     }
 
     pub(crate) fn analyzed_document(&self, uri: &str) -> Option<ResolvedDocument> {
-        let document = self.documents.get(uri)?;
-        let analysis = self.analyze_document(document);
+        let work = self.document_work(uri)?;
+        let analysis = self.session_for(uri).analyze_document(work.input);
         let dependency_ranges = &analysis.dependencies;
         Some(ResolvedDocument {
             code_lenses: analysis
@@ -142,10 +142,6 @@ impl VersionLensLspState {
             .is_some_and(|revision| revision.version.is_none_or(|previous| version > previous))
     }
 
-    pub(crate) fn document_is_open(&self, uri: &str) -> bool {
-        self.documents.contains_key(uri)
-    }
-
     pub(crate) fn set_document_version(&mut self, uri: &str, version: i32) {
         if let Some(revision) = self.revisions.get_mut(uri) {
             revision.version = Some(version);
@@ -153,33 +149,27 @@ impl VersionLensLspState {
         self.synchronize_workspace_documents();
     }
 
-    /// The work of an open document, unless `versionlens.workspace.exclude`
-    /// matches it.
+    /// The work of an open document, unless an ignore file, `files.exclude`,
+    /// or `versionlens.workspace.exclude` matches it. Every check, lens,
+    /// action, and command reads open documents through here.
     pub(crate) fn document_work(&self, uri: &str) -> Option<DocumentWork> {
         self.open_work(uri)
-            .filter(|work| !self.user_excluded(&work.input))
+            .filter(|work| !self.skipped(&work.input.uri))
     }
 
-    fn user_excluded(&self, input: &DocumentInput) -> bool {
-        let patterns = &self.groups()[self.group_of(&input.uri)]
-            .settings
-            .workspace
-            .exclude;
-        let Some(path) = versionlens_engine::workspace_path(&input.uri) else {
+    fn skipped(&self, uri: &str) -> bool {
+        let Some(path) = versionlens_engine::workspace_path(uri) else {
             return false;
         };
-        let root = input
-            .workspace_root
-            .as_deref()
-            .and_then(versionlens_engine::workspace_path);
-        let relative = versionlens_engine::workspace_exclusion_path(
-            root.as_deref()
-                .and_then(|root| path.strip_prefix(root).ok())
-                .unwrap_or(&path),
-        );
-        patterns.iter().any(|pattern| {
-            versionlens_engine::workspace_exclusion_matches(pattern, &relative, false)
-        })
+        let group = self.group_of(uri);
+        // The folders apply even when only open files are checked; the
+        // discovery is never iterated, so nothing is scanned.
+        let mut scope = self.workspace_scope(group);
+        scope.exclusions = self.groups()[group].settings.document_exclusions();
+        self.groups()[group]
+            .session
+            .discover_workspace_documents(scope)
+            .skips_file(&path)
     }
 
     fn open_work(&self, uri: &str) -> Option<DocumentWork> {
@@ -209,17 +199,6 @@ impl VersionLensLspState {
         self.revisions
             .get(&work.uri)
             .is_some_and(|revision| revision.generation == work.generation)
-    }
-
-    fn analyze_document(
-        &self,
-        document: &VersionLensTextDocument,
-    ) -> versionlens_engine::AnalyzeDocumentOutput {
-        let input = self.document_work(&document.uri).map_or_else(
-            || document_input(document, &document.uri),
-            |work| work.input,
-        );
-        self.session_for(&document.uri).analyze_document(input)
     }
 }
 

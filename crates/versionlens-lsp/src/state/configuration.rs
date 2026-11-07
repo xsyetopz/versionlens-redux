@@ -9,7 +9,7 @@ use super::VersionLensLspState;
 /// The settings sections read for each folder, in answer order.
 pub(crate) const SECTIONS: [&str; 2] = ["versionlens", "files.exclude"];
 
-const GENERATED_DIRECTORY_EXCLUSIONS: &[&str] = &[
+pub(super) const GENERATED_DIRECTORY_EXCLUSIONS: &[&str] = &[
     "**/.git/**",
     "**/.vscode/**",
     "**/bin/**",

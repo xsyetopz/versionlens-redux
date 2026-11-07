@@ -270,3 +270,31 @@ fn assert_snapshot(
     assert_eq!(document.document.version, Some(version));
     assert_eq!(document.document.text_hash, document_text_hash(text));
 }
+
+#[test]
+fn ignored_and_excluded_copies_are_not_members() {
+    let workspace = TestWorkspace::new("session-workspace");
+    let member = r#"{"name":"a","version":"1.0.0"}"#;
+    workspace.write_all(&[
+        (".gitignore", ".claude/worktrees/\n"),
+        ("package.json", r#"{"workspaces":["**"]}"#),
+        ("packages/a/package.json", member),
+        (".claude/worktrees/copy/packages/a/package.json", member),
+        ("generated/a/package.json", member),
+    ]);
+    let input = workspace.document("package.json", r#"{"workspaces":["**"]}"#, 1);
+    let session = session();
+
+    session.set_workspace_exclusions(vec!["**/generated".to_owned()]);
+    let graph = session.workspace_graph(&input);
+    assert_workspace_version(&graph, "a", "^1.0.0", "1.0.0");
+
+    session.set_workspace_exclusions(Vec::new());
+    assert_eq!(cached_graphs(&session), 0);
+    assert!(
+        session
+            .workspace_graph(&input)
+            .resolve(&dependency("a", "^1.0.0"))
+            .is_none()
+    );
+}

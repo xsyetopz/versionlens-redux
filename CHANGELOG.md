@@ -4,6 +4,16 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-11-07
+
+### Fixed
+
+- Open manifests that the workspace scan skips are no longer checked, so they get no diagnostics, lenses or code actions. This covers files under a path ignored by `.gitignore`, `.ignore`, `.git/info/exclude` or the global gitignore (such as `.claude/worktrees/`), and files matched by `files.exclude`, in both `openFiles` and `workspace` modes. Before, only `versionlens.workspace.exclude` applied to open manifests. The built-in folders the scan skips (`node_modules`, `build`, `dist`, `bin`, `target`, `vendor` and so on) still get checked when you open a manifest in them.
+- Ignored and excluded paths no longer become npm, pnpm or Cargo workspace members. Before, a copy of the repository under an ignored folder could be picked up by a broad workspace pattern, which made same-named packages ambiguous and let coordinated updates edit the copy.
+- A `files.exclude` or `versionlens.workspace.exclude` glob that names only a folder, such as `**/.claude`, now also skips the files inside it.
+- Diagnostics are cleared from an open manifest that becomes ignored or excluded, and a manifest that is waiting for its edit delay is not checked once it is ignored.
+- Neovim: a file inside the project Neovim started in now uses that project as its root, even when a nested checkout with its own `.git` lies in between. Before, a copy under `.claude/worktrees/` became its own project, so the project's `.gitignore` did not apply to it.
+
 ## [0.6.0] - 2026-11-07
 
 ### Added
