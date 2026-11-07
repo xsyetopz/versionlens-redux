@@ -10,7 +10,8 @@ use versionlens_engine::{
     AuthorizationSource, SessionConfig, VersionLensSession, WorkspaceSettings, version_lens_session,
 };
 
-use super::{VersionLensLspState, WorkspaceRoot, configuration::default_workspace_exclusions};
+use super::configuration::{GENERATED_DIRECTORY_EXCLUSIONS, default_workspace_exclusions};
+use super::{VersionLensLspState, WorkspaceRoot};
 
 /// The source of credentials given to every session.
 #[derive(Default)]
@@ -37,6 +38,21 @@ impl Default for FolderSettings {
             exclusions: default_workspace_exclusions(),
             workspace: WorkspaceSettings::default(),
         }
+    }
+}
+
+impl FolderSettings {
+    /// The globs that keep an open manifest from being checked and a path
+    /// from being a workspace member. The built-in folder list only keeps the
+    /// scan away from generated output, so a manifest the user opens there,
+    /// or a member declared there, still counts.
+    pub(crate) fn document_exclusions(&self) -> Vec<String> {
+        self.exclusions
+            .iter()
+            .filter(|pattern| !GENERATED_DIRECTORY_EXCLUSIONS.contains(&pattern.as_str()))
+            .chain(&self.workspace.exclude)
+            .cloned()
+            .collect()
     }
 }
 
@@ -122,6 +138,7 @@ impl VersionLensLspState {
                 Some(group) => group.session.clone(),
                 None => self.new_session(settings.config.clone())?,
             };
+            session.set_workspace_exclusions(settings.document_exclusions());
             groups.push(SessionGroup {
                 settings,
                 session,
