@@ -217,6 +217,10 @@ fn ignore_files_apply_without_a_git_repository() {
     assert!(discovery.skips_directory(&root.join("scratch")));
     assert!(!discovery.skips_directory(&root.join("app")));
     assert!(!discovery.skips_directory(&root));
+    assert!(discovery.skips_file(&root.join("worktrees/copy/package.json")));
+    assert!(discovery.skips_file(&root.join("scratch/package.json")));
+    assert!(!discovery.skips_file(&root.join("app/package.json")));
+    assert!(!discovery.skips_file(Path::new("/outside/worktrees/package.json")));
     let results = discovery.collect::<Vec<_>>();
 
     assert_eq!(
@@ -252,6 +256,21 @@ fn rescanned_paths_follow_the_scan_rules() {
             .rescan_path(Path::new("/elsewhere/package.json"))
             .is_none()
     );
+}
+
+#[test]
+fn a_glob_for_a_directory_skips_the_files_inside_it() {
+    let workspace = TestWorkspace::new("directory-glob");
+    let inside = workspace.write(".claude/worktrees/copy/package.json", "{}");
+    let kept = workspace.write("app/package.json", "{}");
+    let mut options = options(&workspace);
+    options.exclusions = vec!["**/.claude".to_owned()];
+    let mut discovery = session().discover_workspace_documents(options);
+
+    assert!(discovery.skips_file(&inside));
+    assert!(!discovery.skips_file(&kept));
+    assert!(discovery.rescan_path(&inside).unwrap().1.is_none());
+    assert!(discovery.rescan_path(&kept).unwrap().1.is_some());
 }
 
 #[cfg(unix)]

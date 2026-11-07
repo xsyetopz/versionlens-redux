@@ -177,6 +177,9 @@ impl WorkspaceDiscovery {
     pub(super) fn rescan_path(&mut self, path: &Path) -> Option<(String, Option<DiscoveryResult>)> {
         let (root_index, path) = self.root_for_path(path)?;
         let uri = crate::workspace_file_uri(&path)?;
+        if self.ancestor_excluded(root_index, &path) {
+            return Some((uri, None));
+        }
         let entry = fs::canonicalize(&path)
             .ok()
             .filter(|canonical| canonical.starts_with(&self.roots[root_index].path))
@@ -204,6 +207,25 @@ impl WorkspaceDiscovery {
         self.root_for_path(path).is_none_or(|(root_index, path)| {
             path != self.roots[root_index].path && self.excluded(root_index, &path, true)
         })
+    }
+
+    /// Whether a scan skips `path`, a file, because it is ignored or excluded
+    /// under its root. A file outside every root is not skipped.
+    pub fn skips_file(&mut self, path: &Path) -> bool {
+        self.root_for_path(path).is_some_and(|(root_index, path)| {
+            self.excluded(root_index, &path, false) || self.ancestor_excluded(root_index, &path)
+        })
+    }
+
+    /// Whether a directory between `path` and its root is ignored or excluded.
+    /// A scan never enters such a directory, but a glob that names only the
+    /// directory, such as `**/.claude`, does not match the files inside it.
+    fn ancestor_excluded(&mut self, root_index: usize, path: &Path) -> bool {
+        let root = self.roots[root_index].path.clone();
+        path.ancestors()
+            .skip(1)
+            .take_while(|ancestor| *ancestor != root)
+            .any(|ancestor| self.excluded(root_index, ancestor, true))
     }
 
     fn new(session: &VersionLensSession, options: WorkspaceDiscoveryOptions) -> Self {
