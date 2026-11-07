@@ -8,7 +8,7 @@ fn assert_manifests(
     overlays: &[PathBuf],
     expected: &[&str],
 ) {
-    let actual = manifests(&workspace.root, read, overlays)
+    let actual = manifests(&workspace.root, read, overlays, &mut |_, _| false)
         .into_iter()
         .map(|path| path.strip_prefix(&workspace.root).unwrap().to_path_buf())
         .collect::<Vec<_>>();
@@ -336,7 +336,7 @@ fn disk_member_bodies_are_not_read_during_enumeration() {
         fs::read_to_string(path).ok()
     };
 
-    let paths = manifests(&workspace.root, &read, &[]);
+    let paths = manifests(&workspace.root, &read, &[], &mut |_, _| false);
     assert!(paths.contains(&member));
     assert_eq!(
         reads

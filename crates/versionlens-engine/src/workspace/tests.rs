@@ -21,7 +21,7 @@ fn workspace_graph(input: &DocumentInput) -> WorkspaceGraph {
         .map(|current| (current, (input.text.clone(), input.version)))
         .into_iter()
         .collect::<WorkspaceDocuments>();
-    WorkspaceGraph::for_workspace(&root, &documents).bind_source(input)
+    WorkspaceGraph::for_workspace(&root, &documents, &mut |_, _| false).bind_source(input)
 }
 
 fn coordinated_plan(

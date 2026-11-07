@@ -1,17 +1,17 @@
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::PoisonError;
 use std::sync::{Arc, atomic::Ordering};
 
 use versionlens_model::{DocumentInput, ManifestKind, document_text_hash};
 
-use crate::VersionLensSession;
 use crate::registry::{
     RegistryContext, RegistryFileSnapshot, registry_context_from_document_kind_with_files,
 };
 use crate::workspace::{
     WorkspaceDocuments, WorkspaceGraph, document_path, workspace_path, workspace_root,
 };
+use crate::{VersionLensSession, WorkspaceDiscoveryOptions};
 
 const MAX_REGISTRY_CONTEXTS: usize = 256;
 
@@ -19,6 +19,7 @@ const MAX_REGISTRY_CONTEXTS: usize = 256;
 pub(crate) struct WorkspaceState {
     generation: u64,
     documents: Arc<WorkspaceDocuments>,
+    exclusions: Arc<[String]>,
     registry_documents: Arc<WorkspaceDocuments>,
     graphs: BTreeMap<PathBuf, WorkspaceGraph>,
     registry_files: RegistryFileSnapshot,
@@ -88,6 +89,21 @@ impl VersionLensSession {
         true
     }
 
+    /// Replaces the globs, relative to a workspace root, of the paths that
+    /// never become workspace members. Ignore files apply as well.
+    pub fn set_workspace_exclusions(&self, exclusions: Vec<String>) {
+        let mut state = self
+            .storage_state
+            .workspace
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if *state.exclusions != *exclusions {
+            state.exclusions = exclusions.into();
+            rebuild_graphs(&mut state);
+        }
+        drop(state);
+    }
+
     /// Signals that workspace files or workspace configuration changed on disk.
     pub fn invalidate_workspace(&self) {
         let mut state = self
@@ -134,7 +150,7 @@ impl VersionLensSession {
         let Some(root) = workspace_root(input) else {
             return WorkspaceGraph::default();
         };
-        let (generation, documents, cached) = {
+        let (generation, documents, exclusions, cached) = {
             let state = self
                 .storage_state
                 .workspace
@@ -143,14 +159,28 @@ impl VersionLensSession {
             (
                 state.generation,
                 state.documents.clone(),
+                state.exclusions.clone(),
                 state.graphs.get(&root).cloned(),
             )
         };
 
+        let mut discovery = None;
+        let mut skips = |path: &Path, directory: bool| {
+            let discovery = discovery.get_or_insert_with(|| {
+                let mut options = WorkspaceDiscoveryOptions::new(vec![root.clone()]);
+                options.exclusions = exclusions.to_vec();
+                self.discover_workspace_documents(options)
+            });
+            if directory {
+                discovery.skips_directory(path)
+            } else {
+                discovery.skips_file(path)
+            }
+        };
         let graph = if let Some(graph) = cached {
             graph
         } else {
-            let graph = WorkspaceGraph::for_workspace(&root, &documents);
+            let graph = WorkspaceGraph::for_workspace(&root, &documents, &mut skips);
             let mut state = self
                 .storage_state
                 .workspace
@@ -172,7 +202,7 @@ impl VersionLensSession {
         if let Some(current) = document_path(input) {
             documents.insert(current, (input.text.clone(), input.version));
         }
-        WorkspaceGraph::for_workspace(&root, &documents).bind_source(input)
+        WorkspaceGraph::for_workspace(&root, &documents, &mut skips).bind_source(input)
     }
 
     pub(crate) fn registry_context(

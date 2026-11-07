@@ -58,7 +58,12 @@ pub(crate) struct WorkspaceGraph {
 }
 
 impl WorkspaceGraph {
-    pub(crate) fn for_workspace(root: &Path, overlays: &WorkspaceDocuments) -> Self {
+    /// The members found below `root`, except those for which `skips` is true.
+    pub(crate) fn for_workspace(
+        root: &Path,
+        overlays: &WorkspaceDocuments,
+        skips: &mut impl FnMut(&Path, bool) -> bool,
+    ) -> Self {
         let read = |path: &Path| {
             overlays
                 .get(path)
@@ -80,7 +85,7 @@ impl WorkspaceGraph {
         let mut duplicates = BTreeSet::new();
         let mut documents = WorkspaceDocuments::new();
         let overlay_paths = overlays.keys().cloned().collect::<Vec<_>>();
-        let manifests = discovery::manifests(root, &read, &overlay_paths);
+        let manifests = discovery::manifests(root, &read, &overlay_paths, skips);
         for manifest in manifests {
             let Some(text) = read(&manifest) else {
                 continue;
