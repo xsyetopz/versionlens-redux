@@ -1,5 +1,9 @@
 import { type Disposable, workspace } from "#vscode-host";
-import { applyDiagnosticsVisibility, restartClient } from "../client.ts";
+import {
+  applyDiagnosticsVisibility,
+  restartClient,
+  startClient,
+} from "../client.ts";
 import { documentSelectors } from "../documents.ts";
 import { clearManifestInfo } from "../manifest.ts";
 import { reloadConfigurationState } from "../session/flags.ts";
@@ -46,7 +50,9 @@ async function synchronizeServer(state: ExtensionState): Promise<void> {
     state.snapshots.savedDependencies.clear();
     state.snapshots.editedDependencies.clear();
     clearManifestInfo();
-    if (state.selectorKey === JSON.stringify(documentSelectors())) {
+    if (!state.client) {
+      await startClient(state);
+    } else if (state.selectorKey === JSON.stringify(documentSelectors())) {
       await notifyConfigurationChanged(state);
     } else {
       await restartClient(state);

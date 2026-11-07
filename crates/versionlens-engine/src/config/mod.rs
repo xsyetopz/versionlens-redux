@@ -16,7 +16,7 @@ pub(crate) use providers::{
     provider_settings_manifest_kind_from_name,
 };
 pub use session::{SessionConfig, UpdateSeverity};
-pub use settings::Settings;
+pub use settings::{Settings, WorkspaceCheck, WorkspaceSettings};
 pub(crate) use suggestions::{SuggestionIndicators, standard_suggestion_indicators};
 
 #[cfg(test)]

@@ -23,9 +23,16 @@ pub(super) struct SettingsRequests {
     next: u64,
     /// The newest request. An older answer is out of date and is dropped.
     latest: Option<RequestId>,
+    /// Workspace updates that wait for the pending answer, so they scan
+    /// with the settings the user just set.
+    pub(super) held: Vec<Request>,
 }
 
 impl SettingsRequests {
+    pub(super) fn pending(&self) -> bool {
+        self.latest.is_some()
+    }
+
     /// Asks the client for the settings, if it can answer.
     pub(super) fn request(
         &mut self,
@@ -92,13 +99,15 @@ impl SettingsRequests {
         let mut settings = Vec::new();
         for folder in sections.chunks(state::SECTIONS.len()) {
             let versionlens = folder.first().cloned().unwrap_or(Value::Null);
-            let config = match Settings::from_value(versionlens) {
-                Ok(settings) => settings.session_config(),
+            let mut read = match Settings::from_value(versionlens) {
+                Ok(settings) => settings,
                 Err(message) => return show_configuration_error(connection, message),
             };
+            let workspace = std::mem::take(&mut read.workspace);
             settings.push(FolderSettings {
-                config,
+                config: read.session_config(),
                 exclusions: state::workspace_exclusions(folder.get(1).unwrap_or(&Value::Null)),
+                workspace,
             });
         }
         let changed = match state.replace_settings(settings) {

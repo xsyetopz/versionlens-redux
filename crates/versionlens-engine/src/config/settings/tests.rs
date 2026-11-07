@@ -26,7 +26,7 @@ fn vscode_keys_map_onto_the_session() {
             "showPrereleasesOnStartup": true,
             "showVulnerabilities": false,
             "showSuggestionsStats": true,
-            "indicators": {"Latest": "L", "noMatch": "N"}
+            "indicators": {"Latest": "ignored", "latest": "L", "noMatch": "N"}
         },
         "npm": {
             "apiUrl": "http://registry.test",
@@ -34,8 +34,7 @@ fn vscode_keys_map_onto_the_session() {
             "dependencyProperties": ["dependencies"],
             "files": "**/package.json",
             "caching": {"duration": 7},
-            "http": {"strictSSL": true},
-            "onSaveChanges": "npm install"
+            "http": {"strictSSL": true}
         },
         "dotnet": {"nuget": {"sources": ["http://nuget.test/v3/index.json"]}},
         "pnpm": {"dependencyProperties": ["catalog"]}
@@ -81,4 +80,30 @@ fn vscode_keys_map_onto_the_session() {
 fn a_wrongly_typed_value_is_an_error() {
     assert!(Settings::from_value(json!({"caching": {"duration": "soon"}})).is_err());
     assert!(Settings::from_value(json!({"npm": {"files": 3}})).is_err());
+}
+
+#[test]
+fn workspace_settings_are_not_an_ecosystem() {
+    let settings = Settings::from_value(json!({
+        "workspace": {"check": "workspace", "exclude": ["**/fixtures/**"]}
+    }))
+    .unwrap();
+    assert_eq!(settings.workspace.check, super::WorkspaceCheck::Workspace);
+    assert_eq!(settings.workspace.exclude, ["**/fixtures/**"]);
+    assert!(settings.ecosystems.is_empty());
+    assert_eq!(
+        Settings::default().workspace.check,
+        super::WorkspaceCheck::OpenFiles
+    );
+    assert!(Settings::from_value(json!({"workspace": {"check": "everything"}})).is_err());
+}
+
+#[test]
+fn null_caching_keeps_the_default_and_zero_turns_it_off() {
+    let default = SessionConfig::default().cache_ttl_ms;
+    assert_eq!(
+        config(json!({"caching": {"duration": null}})).cache_ttl_ms,
+        default
+    );
+    assert_eq!(config(json!({"caching": {"duration": 0}})).cache_ttl_ms, 0);
 }

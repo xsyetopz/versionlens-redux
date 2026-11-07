@@ -26,6 +26,7 @@ export type WorkspaceFolder = import("vscode").WorkspaceFolder;
 export declare const TextDocumentChangeReason: typeof import("vscode").TextDocumentChangeReason;
 export declare const commands: typeof import("vscode").commands;
 export declare const extensions: typeof import("vscode").extensions;
+export declare const languages: typeof import("vscode").languages;
 export declare const tasks: typeof import("vscode").tasks;
 export declare const window: typeof import("vscode").window;
 export declare const workspace: typeof import("vscode").workspace;

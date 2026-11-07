@@ -1,9 +1,14 @@
 #!/usr/bin/env bun
-import { readFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
-import { rustTargetFor, stageLspBinary } from "./stage-lsp.mjs";
+import {
+  executableNameFor,
+  hostTarget,
+  rustTargetFor,
+  stageLspBinary,
+} from "./stage-lsp.mjs";
 
 function run(command, options = {}) {
   const result = Bun.spawnSync(command, {
@@ -16,18 +21,33 @@ function run(command, options = {}) {
   }
 }
 
-const [, , vscodeTarget, archivesDir] = Bun.argv;
-if (!(vscodeTarget && archivesDir)) {
+// A VSIX without a target installs next to a targeted one of the same
+// version instead of replacing it, so every VSIX names its target. With no
+// arguments, the server is built for this machine.
+const [, , requestedTarget, archivesDir] = Bun.argv;
+if (Boolean(requestedTarget) !== Boolean(archivesDir)) {
   throw new Error(
-    "usage: bun scripts/package/vscode.mjs <vscode-target> <build-lsp-archives-dir>",
+    "usage: bun scripts/package/vscode.mjs [<vscode-target> <build-lsp-archives-dir>]",
   );
 }
 const serverDirectory = join("packages", "vscode-extension", "server");
-const server = stageLspBinary(
-  archivesDir,
-  rustTargetFor(vscodeTarget),
-  serverDirectory,
-);
+let vscodeTarget = requestedTarget;
+let server;
+if (archivesDir) {
+  server = stageLspBinary(
+    archivesDir,
+    rustTargetFor(vscodeTarget),
+    serverDirectory,
+  );
+} else {
+  const host = hostTarget();
+  vscodeTarget = host.vscode;
+  run(["cargo", "build", "-p", "versionlens-lsp", "--release", "--locked"]);
+  const executable = executableNameFor(host.rust);
+  mkdirSync(serverDirectory, { recursive: true });
+  server = join(serverDirectory, executable);
+  copyFileSync(join("target", "release", executable), server);
+}
 run(["bun", "scripts/package/extension.mjs"]);
 const { version } = JSON.parse(readFileSync("package.json", "utf8"));
 const output = `versionlens-redux-${version}-${vscodeTarget}.vsix`;

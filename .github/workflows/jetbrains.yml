@@ -8,6 +8,10 @@ on:
         description: Artifact from an earlier build-lsp run. Empty builds the language server in this run.
         type: string
         default: ""
+      verify-ides:
+        description: Run the IDE compatibility verifier, which downloads several IDEs.
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -49,21 +53,22 @@ jobs:
           done
 
       - name: Setup Java
-        uses: actions/setup-java@v6.1.0
+        uses: actions/setup-java@v6.2.0
         with:
           distribution: temurin
           java-version: "21"
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.4.0
+        uses: gradle/actions/setup-gradle@v6.4.1
 
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6.4.0
+        uses: gradle/actions/wrapper-validation@v6.4.1
 
       - name: Check and build JetBrains plugin
         run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin check verifyPluginProjectConfiguration verifyPluginStructure buildPlugin --no-daemon --stacktrace
 
       - name: Verify JetBrains IDE compatibility
+        if: ${{ inputs.verify-ides != false }}
         run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin verifyPlugin --no-daemon --stacktrace
 
       - name: Name plugin archive

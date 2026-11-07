@@ -353,3 +353,49 @@ fn retry_delays_double_from_one_second_up_to_five_minutes() {
     assert_eq!(delays, [1, 2, 4, 8, 16, 32, 64, 128, 256, 300, 300, 300]);
     assert_eq!(super::runner::retry_delay(u32::MAX).as_secs(), 300);
 }
+
+#[test]
+fn rescanned_files_are_checked_or_removed_without_rediscovery() {
+    let root =
+        versionlens_test_support::temporary_directory("versionlens-checking-rescan").unwrap();
+    let path = workflow(&root);
+    let session = version_lens_session(SessionConfig {
+        show_vulnerabilities: false,
+        ..SessionConfig::default()
+    });
+    let (sender, receiver) = channel();
+    let checking = session
+        .start_workspace_checking(options(&root), runtime(), move |event| {
+            let _ = sender.send(event);
+        })
+        .unwrap();
+    let generation = checking.generation();
+    next_document(&receiver, generation);
+
+    std::fs::write(&path, "jobs: {check: {steps: [{uses: './other'}]}}\n").unwrap();
+    checking.rescan_files(vec![path.clone()]).unwrap();
+    let WorkspaceCheckResult::Document { input, .. } = next_document(&receiver, generation) else {
+        unreachable!();
+    };
+    assert!(input.text.contains("./other"));
+
+    std::fs::remove_file(&path).unwrap();
+    checking.rescan_files(vec![path]).unwrap();
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let event = receiver
+            .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
+            .expect("removal before deadline");
+        assert_eq!(event.generation, generation);
+        assert!(!matches!(
+            event.result,
+            WorkspaceCheckResult::DiscoverySettled
+        ));
+        if let WorkspaceCheckResult::Removed { uri } = event.result {
+            assert_eq!(uri, input.uri);
+            break;
+        }
+    }
+    checking.stop();
+    std::fs::remove_dir_all(root).unwrap();
+}

@@ -181,3 +181,59 @@ fn empty_range() -> Range {
 fn package_file_fixture(name: &str) -> String {
     crate::test_support::fixture("tests/fixtures/core-scenarios/fetch/latest/tests", name)
 }
+
+fn serve_once(status: u16, body: &'static str) -> String {
+    use std::io::{Read, Write};
+    let listener = crate::test_support::tcp_listener_bind("127.0.0.1:0").unwrap();
+    let url = format!(
+        "http://{}/repos/owner/repo/commits",
+        listener.local_addr().unwrap()
+    );
+    std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = [0_u8; 2048];
+        let _ = stream.read(&mut request).unwrap();
+        let response = format!(
+            "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        stream.write_all(response.as_bytes()).unwrap();
+    });
+    url
+}
+
+#[tokio::test]
+async fn commit_pin_lookup_proves_only_a_matching_sha() {
+    let session = crate::test_support::test_session(false);
+    let mut dependency = update_choice_dependency("owner/repo", Ruby, "default");
+    dependency.requirement = "deadbee".to_owned();
+    for (status, body, proven) in [
+        (
+            200,
+            r#"{"sha":"deadbee000000000000000000000000000000000"}"#,
+            true,
+        ),
+        (
+            200,
+            r#"{"sha":"0123456789abcdef0123456789abcdef01234567"}"#,
+            false,
+        ),
+        (
+            404,
+            r#"{"message":"No commit found for SHA: deadbee"}"#,
+            false,
+        ),
+    ] {
+        let endpoint = versionlens_providers::RegistryEndpoint::ecosystem(serve_once(status, body));
+        let result = session
+            .fetch_commit_pin_is_proven(
+                &dependency,
+                &endpoint,
+                &crate::registry::RegistryContext::default(),
+                &crate::session::operation::OperationContext::default(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(result, proven, "{body}");
+    }
+}

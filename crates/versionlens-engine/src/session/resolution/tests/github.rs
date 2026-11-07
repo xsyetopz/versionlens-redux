@@ -411,7 +411,7 @@ async fn resolves_npm_github_commit_dependencies_from_commits() {
         "npm-github-commit-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -424,7 +424,7 @@ async fn resolves_npm_github_url_commit_dependencies_from_commits() {
         "npm-github-url-commit-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -437,7 +437,7 @@ async fn resolves_npm_github_git_ssh_dependencies_from_commits() {
         "npm-github-git-ssh-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -450,7 +450,7 @@ async fn resolves_npm_github_git_ssh_colon_dependencies_from_commits() {
         "npm-github-git-ssh-colon-dependencies-from-commits.json",
         "owner/commit",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
@@ -458,16 +458,45 @@ async fn resolves_npm_github_git_ssh_colon_dependencies_from_commits() {
 }
 
 #[tokio::test]
-async fn resolves_npm_github_dependencies_without_refs_from_commits() {
+async fn leaves_npm_github_dependencies_without_refs_fixed() {
     let output = resolve_github_fixture(
         "npm-github-dependencies-without-refs-from-commits.json",
         "owner/bare",
         Npm,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
-    assert_update(&output, "github:owner/bare#abcdef1");
+    crate::test_support::assert_fixed_suggestion(&output, "branch reference");
+}
+
+#[tokio::test]
+async fn leaves_npm_github_branch_dependencies_fixed() {
+    let output = resolve_github_fixture(
+        "npm-github-branch-dependencies-fixed.json",
+        "owner/branch",
+        Npm,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
+    )
+    .await;
+
+    crate::test_support::assert_fixed_suggestion(&output, "branch reference");
+}
+
+#[tokio::test]
+async fn keeps_full_length_for_npm_github_sha_pins() {
+    let output = resolve_github_fixture(
+        "npm-github-full-sha-dependencies-from-commits.json",
+        "owner/commit",
+        Npm,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890123456789012345678901234567890"}]"#,
+    )
+    .await;
+
+    assert_update(
+        &output,
+        "github:owner/commit#abcdef1234567890abcdef1234567890abcdef12",
+    );
 }
 
 #[tokio::test]
@@ -483,22 +512,6 @@ async fn routes_npm_github_tag_dependencies_to_tags() {
     assert_eq!(
         session.registry_urls(&dependencies[0]),
         vec!["https://api.github.com/repos/octokit/core.js/tags"]
-    );
-}
-
-#[tokio::test]
-async fn routes_npm_github_dependencies_without_refs_to_commits() {
-    let session = standard_session();
-    let dependencies = parse_document(&DocumentInput::new(
-        "file:///package.json".to_owned(),
-        "json".to_owned(),
-        package_file_fixture("npm-github-dependencies-without-refs-to-commits.json"),
-        None,
-    ));
-
-    assert_eq!(
-        session.registry_urls(&dependencies[0]),
-        vec!["https://api.github.com/repos/owner/bare/commits"]
     );
 }
 
@@ -533,16 +546,16 @@ async fn resolves_ruby_github_tag_dependencies_from_tags() {
 }
 
 #[tokio::test]
-async fn resolves_ruby_github_dependencies_without_ref_from_commits() {
+async fn leaves_ruby_github_dependencies_without_ref_fixed() {
     let output = resolve_github_fixture(
         "ruby-github-dependencies-without-ref-from-commitsGemfile",
         "heartcombo/devise",
         Ruby,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
-    assert_commit_ref_update(&output);
+    crate::test_support::assert_fixed_suggestion(&output, "branch reference");
 }
 
 #[tokio::test]
@@ -551,12 +564,42 @@ async fn resolves_ruby_github_ref_dependencies_from_commits() {
         "ruby-github-ref-dependencies-from-commitsGemfile",
         "rspec/rspec-core",
         Ruby,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
-    assert_eq!(output.suggestions[0].status, "updateAvailable");
-    assert_eq!(output.edits[0].new_text, r#"ref: "abcdef1""#);
+    assert_update(&output, "abcdef1");
+}
+
+#[tokio::test]
+async fn keeps_full_length_for_ruby_github_sha_pins() {
+    let output = resolve_github_fixture(
+        "ruby-github-full-sha-ref-dependencies-from-commitsGemfile",
+        "rspec/rspec-core",
+        Ruby,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890123456789012345678901234567890"}]"#,
+    )
+    .await;
+
+    assert_update(&output, "abcdef1234567890abcdef1234567890abcdef12");
+}
+
+#[tokio::test]
+async fn leaves_ruby_github_branch_and_named_refs_fixed() {
+    for fixture in [
+        "ruby-github-branch-dependencies-fixedGemfile",
+        "ruby-github-named-ref-dependencies-fixedGemfile",
+    ] {
+        let output = resolve_github_fixture(
+            fixture,
+            "rspec/rspec-core",
+            Ruby,
+            r#"[{"sha":"abcdef1234567890"}]"#,
+        )
+        .await;
+
+        crate::test_support::assert_fixed_suggestion(&output, "branch reference");
+    }
 }
 
 #[tokio::test]
@@ -574,16 +617,83 @@ async fn resolves_ruby_git_github_tag_dependencies_from_tags() {
 }
 
 #[tokio::test]
-async fn resolves_ruby_git_github_dependencies_without_ref_from_commits() {
+async fn leaves_ruby_git_github_dependencies_without_ref_fixed() {
     let output = resolve_github_fixture(
         "ruby-git-github-dependencies-without-ref-from-commitsGemfile",
         "rails/rails",
         Ruby,
-        r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
+        r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef1234567890abcdef12345678"}]"#,
     )
     .await;
 
-    assert_commit_ref_update(&output);
+    crate::test_support::assert_fixed_suggestion(&output, "branch reference");
+}
+
+async fn resolve_inline(
+    uri: &str,
+    text: &str,
+    package: &str,
+    ecosystem: Ecosystem,
+    body: &str,
+) -> ResolveDocumentOutput {
+    let language = if uri.ends_with("Gemfile") {
+        "ruby"
+    } else {
+        "json"
+    };
+    standard_session()
+        .resolve_document_with_responses(
+            DocumentInput::new(uri.to_owned(), language.to_owned(), text.to_owned(), None),
+            &[RegistryResponseInput::new(
+                package.to_owned(),
+                ecosystem,
+                body.to_owned(),
+            )],
+        )
+        .await
+}
+
+#[tokio::test]
+async fn bumps_ruby_github_version_refs_to_tags() {
+    let output = resolve_inline(
+        "file:///Gemfile",
+        r#"gem "rspec-core", github: "rspec/rspec-core", ref: "v3.12.0""#,
+        "rspec/rspec-core",
+        Ruby,
+        r#"[{"name":"v3.13.0"},{"name":"v3.12.0"}]"#,
+    )
+    .await;
+
+    assert_update(&output, "v3.13.0");
+}
+
+#[tokio::test]
+async fn leaves_hex_named_refs_unbumped_when_no_listed_commit_matches() {
+    for (uri, text, package, ecosystem) in [
+        (
+            "file:///Gemfile",
+            r#"gem "rspec-core", github: "rspec/rspec-core", ref: "deadbee""#,
+            "rspec/rspec-core",
+            Ruby,
+        ),
+        (
+            "file:///package.json",
+            r#"{ "dependencies": { "commit": "github:owner/commit#deadbee" } }"#,
+            "owner/commit",
+            Npm,
+        ),
+    ] {
+        let output = resolve_inline(
+            uri,
+            text,
+            package,
+            ecosystem,
+            r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"}]"#,
+        )
+        .await;
+
+        assert_no_action_update(&output);
+    }
 }
 
 #[tokio::test]
@@ -604,11 +714,6 @@ async fn routes_ruby_github_ref_dependencies_to_commits() {
 
 fn package_file_fixture(name: &str) -> String {
     crate::test_support::fixture("tests/fixtures/session/resolution/tests/github", name)
-}
-
-fn assert_commit_ref_update(output: &crate::contract::ResolveDocumentOutput) {
-    assert_eq!(output.suggestions[0].status, "updateAvailable");
-    assert_eq!(output.edits[0].new_text, r#", ref: "abcdef1""#);
 }
 use super::assert_update;
 

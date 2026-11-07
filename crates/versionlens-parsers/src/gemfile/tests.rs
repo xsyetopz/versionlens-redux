@@ -26,10 +26,7 @@ fn parses_gemfile_dependencies() {
     assert_eq!(dependencies[1].requirement, ">= 8.0.2");
     assert_eq!(dependencies[2].name, "rails/rails");
     assert_eq!(dependencies[2].requirement, "");
-    assert_eq!(
-        dependencies[2].hosted_url.as_deref(),
-        Some("https://api.github.com/repos/rails/rails/commits")
-    );
+    assert_eq!(dependencies[2].hosted_url.as_deref(), Some("branch"));
     assert_eq!(dependencies[2].hosted_name.as_deref(), Some("rails"));
     assert_eq!(extract_range(text, dependencies[2].requirement_range), "");
     assert_eq!(dependencies[2].requirement_prefix, r#", ref: ""#);
@@ -68,16 +65,13 @@ fn parses_gemfile_dependencies() {
     );
     assert_eq!(dependencies[7].name, "rspec/rspec-mocks");
     assert_eq!(dependencies[7].requirement, "main");
-    assert_eq!(
-        dependencies[7].hosted_url.as_deref(),
-        Some("https://api.github.com/repos/rspec/rspec-mocks/commits")
-    );
+    assert_eq!(dependencies[7].hosted_url.as_deref(), Some("branch"));
     assert_eq!(
         extract_range(text, dependencies[7].requirement_range),
-        r#"branch: "main""#
+        "main"
     );
-    assert_eq!(dependencies[7].requirement_prefix, r#"ref: ""#);
-    assert_eq!(dependencies[7].requirement_suffix, r#"""#);
+    assert_eq!(dependencies[7].requirement_prefix, "");
+    assert_eq!(dependencies[7].requirement_suffix, "");
     assert_eq!(dependencies[8].name, "fragment");
     assert_eq!(
         dependencies[8].requirement,
@@ -155,7 +149,7 @@ fn parses_gemfile_missing_single_quote_version_insert() {
 }
 
 #[test]
-fn parses_gemfile_github_dependencies_without_ref_from_commits() {
+fn parses_gemfile_github_dependencies_without_ref_as_branch() {
     let text =
         package_file_fixture("parses-gemfile-github-dependencies-without-ref-from-commitsGemfile");
     let dependencies = parse_gemfile(text);
@@ -163,7 +157,7 @@ fn parses_gemfile_github_dependencies_without_ref_from_commits() {
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "heartcombo/devise");
     assert_eq!(dependencies[0].requirement, "");
-    assert_github_commit_dependency(&dependencies, text, "heartcombo/devise");
+    assert_github_branch_dependency(&dependencies, text);
 }
 
 #[test]
@@ -187,16 +181,13 @@ fn parses_gemfile_git_github_tag_and_ref_dependencies() {
     assert_eq!(dependencies[0].requirement_suffix, r#"""#);
     assert_eq!(dependencies[1].name, "rspec/rspec-core");
     assert_eq!(dependencies[1].requirement, "main");
-    assert_eq!(
-        dependencies[1].hosted_url.as_deref(),
-        Some("https://api.github.com/repos/rspec/rspec-core/commits")
-    );
+    assert_eq!(dependencies[1].hosted_url.as_deref(), Some("branch"));
     assert_eq!(
         extract_range(text, dependencies[1].requirement_range),
-        r#"branch: "main""#
+        "main"
     );
-    assert_eq!(dependencies[1].requirement_prefix, r#"ref: ""#);
-    assert_eq!(dependencies[1].requirement_suffix, r#"""#);
+    assert_eq!(dependencies[1].requirement_prefix, "");
+    assert_eq!(dependencies[1].requirement_suffix, "");
 }
 
 #[test]
@@ -207,10 +198,7 @@ fn parses_gemfile_git_github_dependencies_without_ref() {
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "rails/rails");
     assert_eq!(dependencies[0].requirement, "");
-    assert_eq!(
-        dependencies[0].hosted_url.as_deref(),
-        Some("https://api.github.com/repos/rails/rails/commits")
-    );
+    assert_eq!(dependencies[0].hosted_url.as_deref(), Some("branch"));
     assert_eq!(dependencies[0].hosted_name.as_deref(), Some("rails"));
     assert_eq!(extract_range(text, dependencies[0].requirement_range), "");
     assert_eq!(dependencies[0].requirement_prefix, r#", ref: ""#);
@@ -230,10 +218,7 @@ fn parses_smoke_gemfile_smoke_shapes() {
     assert_eq!(dependencies[5].requirement, "13.0.0");
     assert_eq!(dependencies[9].name, "rails/rails");
     assert_eq!(dependencies[9].requirement, "");
-    assert_eq!(
-        dependencies[9].hosted_url.as_deref(),
-        Some("https://api.github.com/repos/rails/rails/commits")
-    );
+    assert_eq!(dependencies[9].hosted_url.as_deref(), Some("branch"));
     assert_eq!(dependencies[10].group, "group :production");
     assert_eq!(dependencies[10].name, "pg");
     assert_eq!(dependencies[11].name, "rails_12factor");
@@ -372,16 +357,8 @@ fn package_file_fixture(name: &str) -> &'static str {
     crate::support::tests::fixture("tests/fixtures/versionlens-parsers/src/gemfile/tests", name)
 }
 
-fn assert_github_commit_dependency(
-    dependencies: &[versionlens_model::Dependency],
-    text: &str,
-    repository: &str,
-) {
-    let expected_url = format!("https://api.github.com/repos/{repository}/commits");
-    assert_eq!(
-        dependencies[0].hosted_url.as_deref(),
-        Some(expected_url.as_str())
-    );
+fn assert_github_branch_dependency(dependencies: &[versionlens_model::Dependency], text: &str) {
+    assert_eq!(dependencies[0].hosted_url.as_deref(), Some("branch"));
     assert_eq!(extract_range(text, dependencies[0].requirement_range), "");
     assert_eq!(dependencies[0].requirement_prefix, r#", ref: ""#);
     assert_eq!(dependencies[0].requirement_suffix, r#"""#);

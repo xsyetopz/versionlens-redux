@@ -82,7 +82,7 @@ function isSuppressed(state: ExtensionState, host: string): boolean {
 }
 
 /**
- * Sends the stored value as 0.4.4 did. Basic is `Basic <base64>`. A custom
+ * Sends the stored value. Basic is `Basic <base64>`. A custom
  * value is the whole header value, byte for byte, so it goes out with an
  * empty scheme, which the server sends as the token alone.
  */

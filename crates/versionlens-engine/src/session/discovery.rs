@@ -171,6 +171,41 @@ impl WorkspaceDiscovery {
         }
     }
 
+    /// Checks one changed path as a full scan would: the path's document URI,
+    /// and the document, a failure, or `None` when a scan skips the path.
+    /// Returns `None` for a path outside every root.
+    pub(super) fn rescan_path(&mut self, path: &Path) -> Option<(String, Option<DiscoveryResult>)> {
+        let (root_index, path) = self.root_for_path(path)?;
+        let uri = crate::workspace_file_uri(&path)?;
+        let entry = fs::canonicalize(&path)
+            .ok()
+            .filter(|canonical| canonical.starts_with(&self.roots[root_index].path))
+            .and_then(|canonical| Some((fs::metadata(&canonical).ok()?, canonical)));
+        let Some((metadata, canonical)) = entry else {
+            return Some((uri, None));
+        };
+        self.traversal.seen_paths.remove(&path);
+        self.traversal.yielded_files = 0;
+        self.traversal.stopped = false;
+        let result = self.visit_file(ResolvedDiskEntry {
+            root_index,
+            depth: 0,
+            path,
+            canonical,
+            metadata,
+            symlink: false,
+        });
+        Some((uri, result))
+    }
+
+    /// Whether a scan skips `path`, a directory, because it lies outside every
+    /// root or is ignored or excluded.
+    pub fn skips_directory(&mut self, path: &Path) -> bool {
+        self.root_for_path(path).is_none_or(|(root_index, path)| {
+            path != self.roots[root_index].path && self.excluded(root_index, &path, true)
+        })
+    }
+
     fn new(session: &VersionLensSession, options: WorkspaceDiscoveryOptions) -> Self {
         let overlay_only = options.roots.is_empty();
         let mut roots = Vec::new();
@@ -208,11 +243,11 @@ impl WorkspaceDiscovery {
         ignore_builder
             .hidden(false)
             .parents(false)
-            .ignore(false)
+            .ignore(true)
             .git_ignore(true)
-            .git_global(false)
+            .git_global(true)
             .git_exclude(true)
-            .require_git(true)
+            .require_git(false)
             .follow_links(false);
         let git_ignores = ignore_builder.build_matchers();
 

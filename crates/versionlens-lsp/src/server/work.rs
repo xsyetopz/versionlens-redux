@@ -12,12 +12,13 @@ use tokio::task::AbortHandle;
 use versionlens_engine::{
     AnalyzeDocumentOutput, BumpActionView, ResolveDocumentOutput, SessionTask, UpdateMode,
 };
+use versionlens_model::WorkspaceEditPlan;
 
 use super::{publish_diagnostics, respond, respond_error};
 use crate::state::{
     CHOOSE_BUILD_COMMAND, DocumentWork, MANIFEST_INFO_COMMAND, ResolvedDocument, SORT_COMMAND,
-    UPDATE_ALL_COMMAND, UPDATE_COMMAND, VersionLensLspState, into_lsp_code_actions,
-    resolved_document,
+    UPDATE_ALL_COMMAND, UPDATE_COMMAND, UPDATE_WORKSPACE_COMMAND, VersionLensLspState,
+    into_lsp_code_actions, resolved_document,
 };
 
 pub(super) struct Completion {
@@ -29,19 +30,26 @@ enum TaskOutput {
     Analyzed(AnalyzeDocumentOutput),
     Resolved(ResolveDocumentOutput),
     Actions(Vec<BumpActionView>),
+    Workspace(WorkspaceEditPlan),
 }
 
 const PANICKED: &str = "VersionLens task panicked";
+
+/// How many manifests a workspace update resolves at once.
+const WORKSPACE_UPDATE_CONCURRENCY: usize = 8;
 
 enum RequestKind {
     Lenses,
     Actions,
     Update,
+    UpdateWorkspace,
     ManifestInfo,
 }
 
 struct Pending {
-    work: DocumentWork,
+    /// `None` for work across the workspace. Its edit plan is checked
+    /// against the current text before it is applied.
+    work: Option<DocumentWork>,
     cancellation: AbortHandle,
     kind: RequestKind,
 }
@@ -68,7 +76,7 @@ struct PendingApplication {
 
 struct Submission<F> {
     id: RequestId,
-    work: DocumentWork,
+    work: Option<DocumentWork>,
     job: F,
     kind: RequestKind,
 }
@@ -94,6 +102,13 @@ struct UpdateArguments {
 #[serde(deny_unknown_fields)]
 struct UpdateAllArguments {
     uri: String,
+    #[serde(default)]
+    level: Level,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct UpdateWorkspaceArguments {
     #[serde(default)]
     level: Level,
 }
@@ -140,6 +155,33 @@ struct EditRequest {
     version: Option<String>,
 }
 
+/// Adds a manifest's edits to the workspace plan. An edit another manifest
+/// already made, such as a shared Cargo workspace dependency, is kept once.
+fn merge_plan(
+    plan: &mut WorkspaceEditPlan,
+    output: Option<Result<Result<ResolveDocumentOutput, String>, tokio::task::JoinError>>,
+) {
+    let Some(Ok(Ok(output))) = output else {
+        return;
+    };
+    for document in output.edit_plan.into_iter().flat_map(|plan| plan.documents) {
+        match plan
+            .documents
+            .iter_mut()
+            .find(|planned| planned.document.uri == document.document.uri)
+        {
+            Some(planned) => {
+                for edit in document.edits {
+                    if !planned.edits.contains(&edit) {
+                        planned.edits.push(edit);
+                    }
+                }
+            }
+            None => plan.documents.push(document),
+        }
+    }
+}
+
 /// The one named-argument object of a command. Positional lists and unknown
 /// fields are rejected.
 fn command_arguments<T: DeserializeOwned>(arguments: Vec<Value>) -> Option<T> {
@@ -176,7 +218,13 @@ impl WorkQueue {
             .get(uri)
             .filter(|completed| completed.generation == work.generation)
         {
-            return respond_with_document(connection, id, &work, &completed.resolved);
+            // The diagnostics went out with the first answer for this
+            // generation.
+            return respond(
+                connection,
+                id,
+                serde_json::to_value(completed.resolved.code_lenses.as_slice())?,
+            );
         }
         // The freshness check and the analysis read the persistent cache, so
         // they run on the runtime and not on the protocol thread.
@@ -204,7 +252,7 @@ impl WorkQueue {
             connection,
             Submission {
                 id,
-                work,
+                work: Some(work),
                 job,
                 kind: RequestKind::Lenses,
             },
@@ -246,7 +294,7 @@ impl WorkQueue {
             connection,
             Submission {
                 id,
-                work,
+                work: Some(work),
                 job,
                 kind: RequestKind::Actions,
             },
@@ -304,6 +352,12 @@ impl WorkQueue {
                     version: None,
                 })
             }
+            UPDATE_WORKSPACE_COMMAND => {
+                return match command_arguments::<UpdateWorkspaceArguments>(arguments) {
+                    Some(args) => self.update_workspace(state, connection, id, args.level),
+                    None => invalid_arguments(connection, id, command),
+                };
+            }
             MANIFEST_INFO_COMMAND => {
                 return match command_arguments::<DocumentArguments>(arguments) {
                     Some(args) => self.manifest_info(state, connection, id, &args.uri),
@@ -360,9 +414,81 @@ impl WorkQueue {
             connection,
             Submission {
                 id,
-                work,
+                work: Some(work),
                 job,
                 kind: RequestKind::Update,
+            },
+        )
+    }
+
+    /// Updates every manifest that a full scan of each settings group finds,
+    /// open ones from their editor text, as one workspace edit. A manifest
+    /// that fails to resolve is left out.
+    fn update_workspace(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+        id: RequestId,
+        level: Level,
+    ) -> Result<()> {
+        if !state.client.workspace_edits {
+            return respond_error(
+                connection,
+                id,
+                ErrorCode::RequestFailed,
+                "editor does not support versioned workspace edits".to_owned(),
+            );
+        }
+        let groups = state
+            .groups()
+            .iter()
+            .enumerate()
+            .map(|(index, group)| {
+                let options = state.workspace_discovery_options(index, true);
+                (group.session.clone(), options.discovery)
+            })
+            .collect::<Vec<_>>();
+        let command = Some(level.mode().as_str().to_owned());
+        let job = async move {
+            let mut plan = WorkspaceEditPlan {
+                documents: Vec::new(),
+            };
+            let mut running = tokio::task::JoinSet::new();
+            for (session, discovery) in groups {
+                let scan = session.clone();
+                let documents = tokio::task::spawn_blocking(move || {
+                    scan.discover_workspace_documents(discovery)
+                        .filter_map(Result::ok)
+                        .collect::<Vec<_>>()
+                })
+                .await
+                .map_err(|_| PANICKED.to_owned())?;
+                for document in documents {
+                    if running.len() >= WORKSPACE_UPDATE_CONCURRENCY {
+                        merge_plan(&mut plan, running.join_next().await);
+                    }
+                    let session = session.clone();
+                    let task = SessionTask::Command {
+                        document,
+                        command: command.clone(),
+                        dependency: None,
+                        selected_version: None,
+                    };
+                    running.spawn(async move { session.run_task(task).await });
+                }
+            }
+            while let Some(output) = running.join_next().await {
+                merge_plan(&mut plan, Some(output));
+            }
+            Ok(TaskOutput::Workspace(plan))
+        };
+        self.submit(
+            connection,
+            Submission {
+                id,
+                work: None,
+                job,
+                kind: RequestKind::UpdateWorkspace,
             },
         )
     }
@@ -389,7 +515,7 @@ impl WorkQueue {
             connection,
             Submission {
                 id,
-                work,
+                work: Some(work),
                 job,
                 kind: RequestKind::ManifestInfo,
             },
@@ -449,7 +575,11 @@ impl WorkQueue {
         let Some(pending) = self.pending.remove(&completion.id) else {
             return Ok(());
         };
-        if !state.work_is_current(&pending.work) {
+        if pending
+            .work
+            .as_ref()
+            .is_some_and(|work| !state.work_is_current(work))
+        {
             return respond_error(
                 connection,
                 completion.id,
@@ -463,33 +593,35 @@ impl WorkQueue {
                 return respond_error(connection, completion.id, ErrorCode::RequestFailed, message);
             }
         };
-        match (pending.kind, output) {
-            (RequestKind::Lenses, TaskOutput::Analyzed(analysis)) => {
-                let resolved = resolved_document(analysis, &pending.work.uri);
-                let result =
-                    respond_with_document(connection, completion.id, &pending.work, &resolved);
+        match (pending.kind, output, pending.work) {
+            (RequestKind::Lenses, TaskOutput::Analyzed(analysis), Some(work)) => {
+                let resolved = resolved_document(analysis, &work.uri);
+                let result = respond_with_document(connection, completion.id, &work, &resolved);
                 self.completed.insert(
-                    pending.work.uri,
+                    work.uri,
                     CompletedDocument {
-                        generation: pending.work.generation,
+                        generation: work.generation,
                         resolved,
                     },
                 );
                 result
             }
-            (RequestKind::Actions, TaskOutput::Actions(actions)) => {
+            (RequestKind::Actions, TaskOutput::Actions(actions), Some(work)) => {
                 let actions = into_lsp_code_actions(
                     actions,
-                    &pending.work.uri.parse()?,
-                    pending.work.version,
+                    &work.uri.parse()?,
+                    work.version,
                     state.client.document_changes,
                 );
                 respond(connection, completion.id, serde_json::to_value(actions)?)
             }
-            (RequestKind::Update, TaskOutput::Resolved(output)) => {
-                self.apply(state, connection, completion.id, output)
+            (RequestKind::Update, TaskOutput::Resolved(output), _) => {
+                self.apply(state, connection, completion.id, output.edit_plan)
             }
-            (RequestKind::ManifestInfo, TaskOutput::Analyzed(analysis)) => respond(
+            (RequestKind::UpdateWorkspace, TaskOutput::Workspace(plan), _) => {
+                self.apply(state, connection, completion.id, Some(plan))
+            }
+            (RequestKind::ManifestInfo, TaskOutput::Analyzed(analysis), _) => respond(
                 connection,
                 completion.id,
                 json!({
@@ -515,9 +647,9 @@ impl WorkQueue {
         state: &VersionLensLspState,
         connection: &Connection,
         id: RequestId,
-        output: ResolveDocumentOutput,
+        plan: Option<WorkspaceEditPlan>,
     ) -> Result<()> {
-        let Some(plan) = output.edit_plan.filter(|plan| {
+        let Some(plan) = plan.filter(|plan| {
             plan.documents
                 .iter()
                 .any(|document| !document.edits.is_empty())
@@ -669,7 +801,12 @@ impl WorkQueue {
         let ids = self
             .pending
             .iter()
-            .filter(|(_, pending)| !state.work_is_current(&pending.work))
+            .filter(|(_, pending)| {
+                pending
+                    .work
+                    .as_ref()
+                    .is_some_and(|work| !state.work_is_current(work))
+            })
             .map(|(id, _)| id.clone())
             .collect::<Vec<_>>();
         for id in ids {

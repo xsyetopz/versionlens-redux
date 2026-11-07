@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+use std::path::PathBuf;
 use std::sync::PoisonError;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
@@ -39,6 +41,10 @@ pub enum WorkspaceCheckResult {
         uri: String,
         limit: usize,
     },
+    /// A rescanned file that is gone or that a scan now skips.
+    Removed {
+        uri: String,
+    },
     DiscoverySettled,
     Settled,
 }
@@ -49,11 +55,13 @@ struct Pending {
     options: Option<WorkspaceCheckingOptions>,
     /// The complete set of unsaved documents, applied without rediscovery.
     documents: Option<Vec<DocumentInput>>,
+    /// Files changed on disk, checked again one by one.
+    paths: BTreeSet<PathBuf>,
 }
 
 impl Pending {
     fn is_empty(&self) -> bool {
-        self.options.is_none() && self.documents.is_none()
+        self.options.is_none() && self.documents.is_none() && self.paths.is_empty()
     }
 }
 
@@ -84,7 +92,7 @@ impl VersionLensSession {
         let shared = Arc::new(Shared {
             pending: Mutex::new(Pending {
                 options: Some(options),
-                documents: None,
+                ..Pending::default()
             }),
             ready: Condvar::new(),
             generation: AtomicU64::new(1),
@@ -132,7 +140,7 @@ impl WorkspaceChecking {
             .store(options.max_snapshot_bytes, Ordering::Release);
         *pending = Pending {
             options: Some(options),
-            documents: None,
+            ..Pending::default()
         };
         drop(pending);
         self.shared.ready.notify_one();
@@ -159,6 +167,26 @@ impl WorkspaceChecking {
             options.discovery.overlays = documents;
         } else {
             pending.documents = Some(documents);
+        }
+        drop(pending);
+        self.shared.ready.notify_one();
+        Ok(())
+    }
+
+    /// Checks changed files again without restarting discovery or changing
+    /// the generation. A file that is gone or that a scan skips, such as an
+    /// ignored one, is reported as removed.
+    pub fn rescan_files(&self, paths: Vec<PathBuf>) -> Result<(), &'static str> {
+        let mut pending = self
+            .shared
+            .pending
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if self.shared.closed.load(Ordering::Acquire) {
+            return Err("workspace checking is stopped");
+        }
+        if pending.options.is_none() {
+            pending.paths.extend(paths);
         }
         drop(pending);
         self.shared.ready.notify_one();

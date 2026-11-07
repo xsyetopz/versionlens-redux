@@ -153,7 +153,36 @@ impl VersionLensLspState {
         self.synchronize_workspace_documents();
     }
 
+    /// The work of an open document, unless `versionlens.workspace.exclude`
+    /// matches it.
     pub(crate) fn document_work(&self, uri: &str) -> Option<DocumentWork> {
+        self.open_work(uri)
+            .filter(|work| !self.user_excluded(&work.input))
+    }
+
+    fn user_excluded(&self, input: &DocumentInput) -> bool {
+        let patterns = &self.groups()[self.group_of(&input.uri)]
+            .settings
+            .workspace
+            .exclude;
+        let Some(path) = versionlens_engine::workspace_path(&input.uri) else {
+            return false;
+        };
+        let root = input
+            .workspace_root
+            .as_deref()
+            .and_then(versionlens_engine::workspace_path);
+        let relative = versionlens_engine::workspace_exclusion_path(
+            root.as_deref()
+                .and_then(|root| path.strip_prefix(root).ok())
+                .unwrap_or(&path),
+        );
+        patterns.iter().any(|pattern| {
+            versionlens_engine::workspace_exclusion_matches(pattern, &relative, false)
+        })
+    }
+
+    fn open_work(&self, uri: &str) -> Option<DocumentWork> {
         let uri = self
             .documents
             .contains_key(uri)
@@ -234,16 +263,15 @@ impl VersionLensLspState {
         let mut changes = Vec::with_capacity(plan.documents.len());
         for document in &plan.documents {
             let uri = &document.document.uri;
-            let (edit_uri, version, model_version, text) =
-                if let Some(work) = self.document_work(uri) {
-                    (work.uri, work.version, work.input.version, work.input.text)
-                } else {
-                    let path = versionlens_engine::workspace_path(uri)
-                        .ok_or("unsupported document URI")?;
-                    let text = fs::read_to_string(path)
-                        .map_err(|error| format!("cannot validate {uri}: {error}"))?;
-                    (uri.clone(), None, None, text)
-                };
+            let (edit_uri, version, model_version, text) = if let Some(work) = self.open_work(uri) {
+                (work.uri, work.version, work.input.version, work.input.text)
+            } else {
+                let path =
+                    versionlens_engine::workspace_path(uri).ok_or("unsupported document URI")?;
+                let text = fs::read_to_string(path)
+                    .map_err(|error| format!("cannot validate {uri}: {error}"))?;
+                (uri.clone(), None, None, text)
+            };
             current.push((uri.clone(), model_version, document_text_hash(&text)));
             changes.push(
                 json!({"textDocument":{"uri":edit_uri,"version":version},"edits":document.edits}),

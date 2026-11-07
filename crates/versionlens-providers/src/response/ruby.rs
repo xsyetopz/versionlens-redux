@@ -7,6 +7,7 @@ use super::github::{latest_github_commit, latest_github_tag};
 
 pub(crate) fn latest_ruby_version(
     value: &Value,
+    requirement: &str,
     include_prereleases: bool,
     prerelease_tags: &[String],
 ) -> Option<String> {
@@ -16,7 +17,7 @@ pub(crate) fn latest_ruby_version(
         return Some(latest);
     }
     if value.is_array()
-        && let Some(latest) = latest_github_commit(value)
+        && let Some(latest) = latest_github_commit(value, requirement)
     {
         return Some(latest);
     }

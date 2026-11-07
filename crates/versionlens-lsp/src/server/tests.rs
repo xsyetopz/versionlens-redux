@@ -139,7 +139,7 @@ fn publishes_unversioned_results_for_unopened_workspace_documents() -> Result<()
         .context("missing workflow URI")?;
     let (client, server_thread) = start_configured_server(
         json!({"rootUri": root_uri, "capabilities": {}}),
-        json!({"suggestions": {"showVulnerabilities": false}}),
+        json!({"suggestions": {"showVulnerabilities": false}, "workspace": {"check": "workspace"}}),
     )?;
     let deadline = std::time::Instant::now() + Duration::from_secs(5);
     loop {
@@ -169,8 +169,10 @@ fn discovery_failures_are_logged_once_and_never_published() -> Result<()> {
     let root = versionlens_test_support::temporary_directory("versionlens-lsp-retry")?;
     std::fs::remove_dir_all(&root)?;
     let root_uri = versionlens_engine::workspace_file_uri(&root).context("missing root URI")?;
-    let (client, server_thread) =
-        start_workspace_server(json!({"rootUri": root_uri, "capabilities": {}}))?;
+    let (client, server_thread) = start_configured_server(
+        json!({"rootUri": root_uri, "capabilities": {}}),
+        json!({"workspace": {"check": "workspace"}}),
+    )?;
 
     // The missing root fails discovery, which retries after 1 s; the retry
     // fails the same way and must not be logged again.
@@ -225,6 +227,7 @@ fn initialize_client(client: &Connection) -> Result<()> {
             "versionlens.displayCodeLens",
             "versionlens.server.update",
             "versionlens.server.updateAll",
+            "versionlens.server.updateWorkspace",
             "versionlens.server.sort",
             "versionlens.server.chooseBuild",
             "versionlens.server.clearCache",

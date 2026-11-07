@@ -53,12 +53,7 @@ fn completed_lenses_are_reused_without_submitting_session_work() -> Result<()> {
         anyhow::bail!("expected cached code-lens response");
     };
     assert_eq!(response.response_result.unwrap(), json!([]));
-    let Message::Notification(diagnostics) =
-        client.receiver.recv_timeout(Duration::from_secs(1))?
-    else {
-        anyhow::bail!("expected cached diagnostics");
-    };
-    assert_eq!(diagnostics.method, "textDocument/publishDiagnostics");
+    assert!(client.receiver.try_recv().is_err());
     Ok(())
 }
 

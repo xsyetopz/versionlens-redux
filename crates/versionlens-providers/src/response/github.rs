@@ -18,12 +18,17 @@ pub(crate) fn latest_github_tag(
     )
 }
 
-pub(crate) fn latest_github_commit(value: &Value) -> Option<String> {
+/// Latest commit cut to the length of the pinned `requirement` (7 or 40).
+/// Anything else is not a pinned commit and gets no commit suggestion.
+pub(crate) fn latest_github_commit(value: &Value, requirement: &str) -> Option<String> {
+    if !matches!(requirement.len(), 7 | 40) || !requirement.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
     let first = value.as_array()?.first()?;
     let sha = first
         .as_str()
         .or_else(|| first.get("sha").and_then(|value| value.as_str()))?;
-    (!sha.is_empty()).then(|| sha.chars().take(7).collect())
+    (!sha.is_empty()).then(|| sha.chars().take(requirement.len()).collect())
 }
 
 pub(crate) fn is_commit_sha(value: &str) -> bool {

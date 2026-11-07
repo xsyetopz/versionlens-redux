@@ -1,0 +1,1 @@
+gem "rspec-core", github: "rspec/rspec-core", ref: "1234567890123456789012345678901234567890"

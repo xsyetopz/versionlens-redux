@@ -6,7 +6,9 @@ use crate::{
     session::operation::OperationContext,
 };
 use serde_json::{Value, from_str};
-use versionlens_model::{CanonicalReference, Dependency, Ecosystem::GitHub};
+use versionlens_model::CanonicalReference;
+use versionlens_model::Dependency;
+use versionlens_model::Ecosystem::{GitHub, Npm, Ruby};
 use versionlens_model::{latest_version_with_prerelease_tags, version_tag_parts};
 use versionlens_providers::{
     RegistryEndpoint, github_tag_ref_url, release_versions_from_response_for_package,
@@ -14,6 +16,9 @@ use versionlens_providers::{
 use versionlens_update::UpdateChoice;
 
 pub(crate) fn github_current_ref_is_proven(dependency: &Dependency, body: &str) -> bool {
+    if is_commit_pin(dependency) {
+        return listed_commit_matches(&dependency.requirement, body);
+    }
     if dependency.ecosystem != GitHub {
         return true;
     }
@@ -227,6 +232,29 @@ pub(super) fn github_action_reference_is_proven_by_exact_ref(
             .is_some_and(|resolved| sha_prefix_matches(commit, resolved))
 }
 
+pub(super) fn is_commit_pin(dependency: &Dependency) -> bool {
+    matches!(dependency.ecosystem, Npm | Ruby)
+        && dependency
+            .hosted_url
+            .as_deref()
+            .is_some_and(|url| url.ends_with("/commits"))
+}
+
+fn listed_commit_matches(pin: &str, body: &str) -> bool {
+    from_str::<Value>(body)
+        .ok()
+        .as_ref()
+        .and_then(Value::as_array)
+        .is_some_and(|commits| {
+            commits.iter().any(|commit| {
+                commit
+                    .as_str()
+                    .or_else(|| commit.get("sha").and_then(Value::as_str))
+                    .is_some_and(|sha| sha_prefix_matches(pin, sha))
+            })
+        })
+}
+
 fn sha_prefix_matches(expected: &str, resolved: &str) -> bool {
     (7..=40).contains(&expected.len())
         && expected.bytes().all(|byte| byte.is_ascii_hexdigit())
@@ -307,6 +335,35 @@ pub(super) fn attach_github_action_replacements(
 }
 
 impl VersionLensSession {
+    /// A pin older than the listed page is looked up on its own. If the ref
+    /// resolves to a branch called `deadbee`, the tip's SHA does not start
+    /// with `deadbee`, so the branch stays unproven.
+    pub(super) async fn fetch_commit_pin_is_proven(
+        &self,
+        dependency: &Dependency,
+        endpoint: &RegistryEndpoint,
+        context: &RegistryContext,
+        operation: &OperationContext,
+    ) -> Result<bool, FetchError> {
+        let url = format!("{}/{}", endpoint.url, dependency.requirement);
+        match self
+            .get_text_or_status_with_context(&url, dependency.ecosystem, context, operation)
+            .await
+        {
+            Ok(Some(body)) => Ok(from_str::<Value>(&body)
+                .ok()
+                .as_ref()
+                .and_then(|commit| commit.get("sha"))
+                .and_then(Value::as_str)
+                .is_some_and(|sha| sha_prefix_matches(&dependency.requirement, sha))),
+            Ok(None)
+            | Err(FetchError::HttpStatus {
+                status: 404 | 422, ..
+            }) => Ok(false),
+            Err(error) => Err(error),
+        }
+    }
+
     pub(super) async fn fetch_exact_github_action_ref_is_proven(
         &self,
         dependency: &Dependency,

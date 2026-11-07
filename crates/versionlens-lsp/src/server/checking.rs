@@ -1,6 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::mem;
 use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
@@ -25,6 +26,11 @@ const EVENT_QUEUE_CAPACITY: usize = 128;
 /// How long edits must pause before the edited documents are checked again.
 pub(super) const EDIT_DEBOUNCE: Duration = Duration::from_millis(300);
 
+/// How long changed files are collected before they are checked again. The
+/// deadline is not pushed back, so a build that keeps writing files cannot
+/// hold checking back forever.
+pub(super) const WATCH_DEBOUNCE: Duration = Duration::from_secs(1);
+
 /// The analysis of one checked document, made on the runtime because it
 /// reads the persistent cache.
 pub(super) struct Analyzed {
@@ -44,6 +50,9 @@ struct PendingDocuments {
     /// still in its debounce is sent with this text, so a check triggered by
     /// another document does not resolve a half-typed edit.
     submitted: HashMap<String, DocumentInput>,
+    /// Files changed on disk, and when they are sent to checking.
+    rescan: BTreeSet<PathBuf>,
+    rescan_due: Option<Instant>,
 }
 
 struct PublishedDocument {
@@ -152,6 +161,8 @@ impl WorkspaceController {
             group.rescan();
         }
         self.pending.submitted.clear();
+        self.pending.rescan.clear();
+        self.pending.rescan_due = None;
         Ok(())
     }
 
@@ -214,8 +225,25 @@ impl WorkspaceController {
         *deadline = if debounced { due } else { (*deadline).min(due) };
     }
 
+    pub(super) fn schedule_rescan(
+        &mut self,
+        paths: impl IntoIterator<Item = PathBuf>,
+        due: Instant,
+    ) {
+        let before = self.pending.rescan.len();
+        self.pending.rescan.extend(paths);
+        if self.pending.rescan.len() > before {
+            self.pending.rescan_due.get_or_insert(due);
+        }
+    }
+
     pub(super) fn next_due(&self) -> Option<Instant> {
-        self.pending.due.values().min().copied()
+        self.pending
+            .due
+            .values()
+            .copied()
+            .chain(self.pending.rescan_due)
+            .min()
     }
 
     /// Sends the queued documents to checking once their debounce has passed.
@@ -225,6 +253,20 @@ impl WorkspaceController {
         connection: &Connection,
         now: Instant,
     ) -> Result<()> {
+        if self.pending.rescan_due.is_some_and(|due| due <= now) {
+            self.pending.rescan_due = None;
+            let paths = mem::take(&mut self.pending.rescan)
+                .into_iter()
+                .collect::<Vec<_>>();
+            // Discovery skips a path outside a group's roots, so every group
+            // gets every path.
+            for group in &self.groups {
+                group
+                    .checking
+                    .rescan_files(paths.clone())
+                    .map_err(anyhow::Error::msg)?;
+            }
+        }
         let due = self
             .pending
             .due
@@ -397,6 +439,18 @@ impl WorkspaceController {
                     MessageType::WARNING,
                     format!("VersionLens workspace discovery: {message}"),
                 )
+            }
+            WorkspaceCheckResult::Removed { uri } => {
+                if state.group_of(&uri) != group {
+                    return Ok(());
+                }
+                if let Some(group) = self.groups.get_mut(group) {
+                    group.seen_documents.remove(&uri);
+                }
+                if state.document_is_open(&uri) || self.published.remove(&uri).is_none() {
+                    return Ok(());
+                }
+                publish_diagnostics(connection, uri.parse()?, Vec::new(), None)
             }
             WorkspaceCheckResult::DiscoverySettled => {
                 if let Some(group) = self.groups.get_mut(group) {

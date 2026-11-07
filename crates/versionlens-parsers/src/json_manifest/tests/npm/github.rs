@@ -79,10 +79,7 @@ fn parses_package_json_github_dependencies() {
         extract_range(text, dependencies[7].requirement_range),
         "github:owner/bare"
     );
-    assert_eq!(
-        dependencies[7].hosted_url.as_deref(),
-        Some("https://api.github.com/repos/owner/bare/commits")
-    );
+    assert_eq!(dependencies[7].hosted_url.as_deref(), Some("branch"));
 }
 
 #[test]
@@ -120,19 +117,17 @@ fn parses_github_url_without_ref_as_plain_git_dependency() {
 }
 
 #[test]
-fn parses_package_json_github_branch_dependencies_as_commits() {
-    let text =
-        package_file_fixture("parses-package-json-github-branch-dependencies-as-commits.json");
+fn parses_package_json_github_branch_dependencies_as_branch_references() {
+    let text = package_file_fixture(
+        "parses-package-json-github-branch-dependencies-as-branch-references.json",
+    );
     let dependencies =
         crate::support::tests::parse_test_document(text, "file:///work/package.json", "json");
 
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name, "owner/branch");
     assert_eq!(dependencies[0].requirement, "main");
-    assert_eq!(
-        dependencies[0].hosted_url.as_deref(),
-        Some("https://api.github.com/repos/owner/branch/commits")
-    );
+    assert_eq!(dependencies[0].hosted_url.as_deref(), Some("branch"));
 }
 
 fn package_file_fixture(name: &str) -> &'static str {

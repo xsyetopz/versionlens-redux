@@ -19,7 +19,8 @@ use serde_json::Value;
 use tokio::runtime::Runtime;
 
 use crate::state::{
-    CLEAR_CACHE_COMMAND, DISPLAY_CODE_LENS_COMMAND, VersionLensLspState, VersionLensTextDocument,
+    CLEAR_CACHE_COMMAND, DISPLAY_CODE_LENS_COMMAND, UPDATE_WORKSPACE_COMMAND, VersionLensLspState,
+    VersionLensTextDocument,
 };
 
 #[derive(Debug, Default, Deserialize)]
@@ -244,6 +245,8 @@ fn handle_message(
             }
             if is_command(&request, CLEAR_CACHE_COMMAND) {
                 clear_cache(connection, state, work, checking, request)?;
+            } else if is_command(&request, UPDATE_WORKSPACE_COMMAND) && settings.pending() {
+                settings.held.push(request);
             } else {
                 handle_request(connection, state, work, request)?;
             }
@@ -273,6 +276,11 @@ fn handle_message(
         Message::Response(response) if settings::is_answer(&response.id) => {
             settings.answer(connection, state, Some(checking), response)?;
             work.invalidate(state, connection)?;
+            if !settings.pending() {
+                for request in std::mem::take(&mut settings.held) {
+                    handle_request(connection, state, work, request)?;
+                }
+            }
         }
         Message::Response(response) if authorization::is_answer(&response.id) => {
             if let Some(late) = authorization.answer(response) {
@@ -443,15 +451,25 @@ fn handle_notification(
             ) else {
                 return Ok(());
             };
-            if !params
+            // An ignore file can hide or reveal any manifest, so only its
+            // change needs a full rescan.
+            if params
                 .changes
                 .iter()
-                .any(|change| state.watched_file_is_relevant(change.uri.as_str()))
+                .any(|change| state.watched_ignore_file(change.uri.as_str()))
             {
-                return Ok(());
+                state.invalidate_workspace();
+                return checking.replace(state);
             }
-            state.invalidate_workspace();
-            checking.replace(state)
+            checking.schedule_rescan(
+                params
+                    .changes
+                    .iter()
+                    .filter(|change| state.watched_file_is_relevant(change.uri.as_str()))
+                    .filter_map(|change| versionlens_engine::workspace_path(change.uri.as_str())),
+                Instant::now() + checking::WATCH_DEBOUNCE,
+            );
+            Ok(())
         }
         _ => handle_document_notification(connection, state, checking, notification),
     }

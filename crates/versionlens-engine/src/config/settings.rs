@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 use versionlens_fetch::{HttpConfig, cache_ttl_ms, standard_http_config};
 
 use super::{
@@ -23,18 +23,36 @@ pub struct Settings {
     pub http: HttpSettings,
     pub suggestions: SuggestionSettings,
     pub diagnostics: DiagnosticSettings,
+    /// Read by the language server, which decides what to scan.
+    pub workspace: WorkspaceSettings,
     /// Settings per ecosystem, keyed by its configuration name, such as
     /// `npm` or `dotnet`.
     #[serde(flatten)]
     pub ecosystems: BTreeMap<String, EcosystemSettings>,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WorkspaceSettings {
+    pub check: WorkspaceCheck,
+    /// Glob patterns of workspace paths never checked, on top of the
+    /// ignore files and `files.exclude`.
+    pub exclude: Vec<String>,
+}
+
+/// Which manifests are checked in the background.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WorkspaceCheck {
+    #[default]
+    OpenFiles,
+    Workspace,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct GlobalCaching {
-    /// Minutes. `null` turns caching off, and a missing key keeps the
-    /// default.
-    #[serde(deserialize_with = "null_is_zero")]
+    /// Minutes. Zero turns caching off.
     pub duration: Option<f64>,
 }
 
@@ -64,8 +82,7 @@ pub struct SuggestionSettings {
     pub show_prereleases_on_startup: Option<bool>,
     pub show_vulnerabilities: Option<bool>,
     pub show_suggestions_stats: Option<bool>,
-    /// Indicator text by name. Both the `camelCase` names and the `PascalCase`
-    /// names of the contributed default are read.
+    /// Indicator text by `camelCase` name.
     pub indicators: Option<BTreeMap<String, String>>,
 }
 
@@ -79,8 +96,6 @@ pub struct EcosystemSettings {
     pub caching: EcosystemCaching,
     pub http: HttpSettings,
     pub nuget: NugetSettings,
-    /// The client runs this command, so the server only accepts the key.
-    pub on_save_changes: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
@@ -88,29 +103,6 @@ pub struct EcosystemSettings {
 pub struct NugetSettings {
     pub sources: Option<Vec<String>>,
 }
-
-/// Reads `null` as zero minutes, so `null` turns caching off while a missing
-/// key keeps the default.
-fn null_is_zero<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Option::<f64>::deserialize(deserializer).map(|minutes| Some(minutes.unwrap_or(0.0)))
-}
-
-/// The `camelCase` name of each indicator and the `PascalCase` name in the
-/// contributed default.
-const INDICATOR_NAMES: [(&str, &str); 9] = [
-    ("latest", "Latest"),
-    ("satisfiesLatest", "SatisfiesLatest"),
-    ("directory", "Directory"),
-    ("error", "Error"),
-    ("noMatch", "NoMatch"),
-    ("matched", "Match"),
-    ("updateable", "Updateable"),
-    ("updateableVulnerable", "UpdateableVulnerable"),
-    ("build", "Build"),
-];
 
 impl Settings {
     /// Reads a settings section. A client answers `null` for a section it
@@ -122,6 +114,7 @@ impl Settings {
         serde_json::from_value(value).map_err(|error| error.to_string())
     }
 
+    /// The engine settings. The workspace settings are not part of them.
     pub fn session_config(self) -> SessionConfig {
         let mut providers = ProviderSettings::default();
         for (name, settings) in self.ecosystems {
@@ -193,21 +186,17 @@ impl EcosystemSettings {
 }
 
 fn indicators(mut configured: BTreeMap<String, String>) -> SuggestionIndicators {
-    let mut take = |index: usize| {
-        let (name, legacy) = INDICATOR_NAMES[index];
-        let legacy = configured.remove(legacy);
-        configured.remove(name).or(legacy).unwrap_or_default()
-    };
+    let mut take = |name: &str| configured.remove(name).unwrap_or_default();
     SuggestionIndicators {
-        latest: take(0),
-        satisfies_latest: take(1),
-        directory: take(2),
-        error: take(3),
-        no_match: take(4),
-        matched: take(5),
-        updateable: take(6),
-        updateable_vulnerable: take(7),
-        build: take(8),
+        latest: take("latest"),
+        satisfies_latest: take("satisfiesLatest"),
+        directory: take("directory"),
+        error: take("error"),
+        no_match: take("noMatch"),
+        matched: take("matched"),
+        updateable: take("updateable"),
+        updateable_vulnerable: take("updateableVulnerable"),
+        build: take("build"),
     }
     .with_standard_indicators_for_blanks()
 }

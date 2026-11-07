@@ -7,6 +7,7 @@ const SERVER_COMMANDS = {
   clearCache: "versionlens.server.clearCache",
   sort: "versionlens.server.sort",
   updateAll: "versionlens.server.updateAll",
+  updateWorkspace: "versionlens.server.updateWorkspace",
 } as const;
 
 type UpdateLevel = "latest" | "major" | "minor" | "patch";

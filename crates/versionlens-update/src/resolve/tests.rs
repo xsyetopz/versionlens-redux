@@ -116,7 +116,7 @@ fn assert_github_commit_status(
 
 #[test]
 fn ruby_github_commit_refs_compare_as_shas() {
-    assert_github_commit_status(Ruby, "rspec/rspec-core", "abcdef1234567890", "main");
+    assert_github_commit_status(Ruby, "rspec/rspec-core", "abcdef1234567890", "1234567");
 }
 
 #[test]

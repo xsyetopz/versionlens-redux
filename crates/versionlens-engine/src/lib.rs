@@ -23,7 +23,7 @@ mod test_support;
 mod vulnerability;
 mod workspace;
 
-pub use config::{SessionConfig, Settings, UpdateSeverity};
+pub use config::{SessionConfig, Settings, UpdateSeverity, WorkspaceCheck, WorkspaceSettings};
 pub use contract::validate_workspace_edit_plan;
 pub use contract::{AnalyzeDocumentOutput, RegistryResponseInput, ResolveDocumentOutput};
 pub use presentation::view::{

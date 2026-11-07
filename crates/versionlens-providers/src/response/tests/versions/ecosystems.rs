@@ -1,12 +1,21 @@
 #[test]
-fn reads_latest_versions_from_normalized_github_commit_arrays() {
+fn github_commit_arrays_follow_the_pinned_sha_length() {
+    let body = r#"[{"sha":"abcdef1234567890abcdef1234567890abcdef12"},{"sha":"1234567890abcdef"}]"#;
     for ecosystem in [Npm, Ruby] {
-        assert_latest(
-            ecosystem,
-            "owner/string-commit",
-            r#"["abcdef1234567890","1234567890abcdef"]"#,
-            "abcdef1",
-        );
+        for (requirement, expected) in [
+            ("1234567", Some("abcdef1")),
+            (
+                "1234567890123456789012345678901234567890",
+                Some("abcdef1234567890abcdef1234567890abcdef12"),
+            ),
+            ("main", None),
+            ("", None),
+        ] {
+            assert_eq!(
+                latest_version_for_requirement(ecosystem, "owner/commit", requirement, body),
+                expected.map(str::to_owned)
+            );
+        }
     }
 }
 
