@@ -31,13 +31,14 @@ describe("root directory", function()
   before_each(function()
     original_cwd = vim.uv.cwd()
     local temporary = vim.fn.tempname()
-    vim.fn.mkdir(vim.fs.joinpath(temporary, ".git"), "p")
+    vim.fn.mkdir(temporary, "p")
     project = vim.fs.normalize(vim.uv.fs_realpath(temporary))
-    vim.fn.mkdir(vim.fs.joinpath(project, ".claude", "worktrees", "agent", "launcher"), "p")
-    vim.fn.writefile(
-      { "gitdir: elsewhere" },
-      vim.fs.joinpath(project, ".claude", "worktrees", "agent", ".git")
-    )
+    vim.system({ "git", "init", "-q", project }):wait()
+    vim.fn.writefile({ ".claude/worktrees/" }, vim.fs.joinpath(project, ".gitignore"))
+    for _, checkout in ipairs({ ".claude/worktrees/agent", "vendored" }) do
+      vim.fn.mkdir(vim.fs.joinpath(project, checkout, "launcher"), "p")
+      vim.fn.writefile({ "gitdir: elsewhere" }, vim.fs.joinpath(project, checkout, ".git"))
+    end
     vim.fn.mkdir(vim.fs.joinpath(project .. "-other", "app"), "p")
     vim.fn.writefile({ "{}" }, vim.fs.joinpath(project .. "-other", "app", "package.json"))
   end)
@@ -54,11 +55,20 @@ describe("root directory", function()
     return support.root_dir(0, require("versionlens.config").resolve())
   end
 
-  it("keeps the project Neovim started in as the root of nested checkouts", function()
+  it("keeps the project Neovim started in as the root of checkouts it ignores", function()
     vim.cmd.cd(project)
     local nested =
       vim.fs.joinpath(project, ".claude", "worktrees", "agent", "launcher", "package.json")
     assert.are.equal(project, vim.fs.normalize(vim.uv.fs_realpath(root_of(nested))))
+  end)
+
+  it("uses the nearest marker for nested checkouts the project tracks", function()
+    vim.cmd.cd(project)
+    local nested = vim.fs.joinpath(project, "vendored", "launcher", "package.json")
+    assert.are.equal(
+      vim.fs.joinpath(project, "vendored"),
+      vim.fs.normalize(vim.uv.fs_realpath(root_of(nested)))
+    )
   end)
 
   it("uses the nearest marker for files outside that project", function()
