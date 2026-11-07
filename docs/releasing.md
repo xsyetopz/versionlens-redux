@@ -51,7 +51,7 @@ Configure required reviewers on the `marketplaces` GitHub environment before pub
 
 ## 3. Create the GitHub release
 
-Wait for successful `master` runs of all four editor workflows for the release commit. Dispatch `.github/workflows/release.yml` with the exact repository version. It verifies the current remote `master`, downloads the successful editor artifacts for that commit, creates `v<version>`, and attaches the complete package set to the GitHub release.
+Wait for the `master` CI run of the release commit to pass. Dispatch `.github/workflows/release.yml` with the exact repository version. It verifies the current remote `master`, downloads that CI run's packages without rebuilding them, creates `v<version>`, and attaches the complete package set to the GitHub release.
 
 ## 4. Publish externally
 

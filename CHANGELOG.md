@@ -24,6 +24,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Stopped publishing diagnostics again when the editor asks for lenses that are already cached.
 - `versionlens.enabledProviders` now offers all 36 providers, and its description no longer says VS Code must be restarted (the extension restarts the server itself).
 - Removed the `check:manifest-baseline` script, which held settings to their 0.4.4 shape.
+- The release workflow no longer rebuilds anything. It requires a passing `master` CI run for the release commit and attaches that run's packages. Pull-request CI skips the JetBrains IDE compatibility check, which downloads several IDEs (about 5 of its 11 minutes); `master` CI still runs it.
 
 ## [0.5.1] - 2026-10-20
 

@@ -57,6 +57,7 @@ jobs:
     uses: ./.github/workflows/jetbrains.yml
     with:
       lsp-artifact: ${{ needs.lsp.outputs.archives-artifact }}
+      verify-ides: ${{ github.event_name != 'pull_request' }}
 
   neovim:
     name: Neovim

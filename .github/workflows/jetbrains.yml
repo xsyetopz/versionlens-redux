@@ -8,6 +8,10 @@ on:
         description: Artifact from an earlier build-lsp run. Empty builds the language server in this run.
         type: string
         default: ""
+      verify-ides:
+        description: Run the IDE compatibility verifier, which downloads several IDEs.
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -64,6 +68,7 @@ jobs:
         run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin check verifyPluginProjectConfiguration verifyPluginStructure buildPlugin --no-daemon --stacktrace
 
       - name: Verify JetBrains IDE compatibility
+        if: ${{ inputs.verify-ides != false }}
         run: packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin verifyPlugin --no-daemon --stacktrace
 
       - name: Name plugin archive
