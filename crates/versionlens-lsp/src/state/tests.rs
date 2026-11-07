@@ -25,6 +25,7 @@ fn capabilities_match_implemented_document_and_command_protocol() -> Result<(), 
             "versionlens.displayCodeLens",
             "versionlens.server.update",
             "versionlens.server.updateAll",
+            "versionlens.server.updateWorkspace",
             "versionlens.server.sort",
             "versionlens.server.chooseBuild",
             "versionlens.server.clearCache",
@@ -139,7 +140,8 @@ fn existing_file_workspace_root_uses_its_parent_directory() -> FileTestResult {
         versionlens_engine::workspace_file_uri(&manifest).ok_or("missing file URI")?;
     let directory_uri =
         versionlens_engine::workspace_file_uri(&directory).ok_or("missing directory URI")?;
-    let mut state = VersionLensLspState::with_workspace(Some(uri(&manifest_uri)?), Vec::new());
+    let mut state = VersionLensLspState::with_workspace(Some(uri(&manifest_uri)?), Vec::new())
+        .with_settings(workspace_check());
 
     state.open_document(document(&manifest_uri, None));
 
@@ -416,6 +418,33 @@ fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), Stri
 }
 
 #[test]
+fn only_ignore_files_that_discovery_reads_are_watched() -> Result<(), String> {
+    let root = versionlens_test_support::temporary_directory("versionlens-watched-ignore")
+        .map_err(|error| error.to_string())?
+        .canonicalize()
+        .map_err(|error| error.to_string())?;
+    std::fs::write(root.join(".gitignore"), "worktrees/\n").map_err(|error| error.to_string())?;
+    let root_uri = versionlens_engine::workspace_file_uri(&root).ok_or("missing root URI")?;
+    let open_files = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new());
+    let gitignore =
+        versionlens_engine::workspace_file_uri(&root.join(".gitignore")).ok_or("missing URI")?;
+    assert!(!open_files.watched_ignore_file(&gitignore));
+    let state = open_files.with_settings(workspace_check());
+    let watched = |relative: &str| {
+        versionlens_engine::workspace_file_uri(&root.join(relative))
+            .is_some_and(|uri| state.watched_ignore_file(&uri))
+    };
+
+    assert!(watched(".gitignore"));
+    assert!(watched("app/.ignore"));
+    assert!(watched(".git/info/exclude"));
+    assert!(!watched("worktrees/copy/.gitignore"));
+    assert!(!watched("node_modules/pkg/.gitignore"));
+    assert!(!watched("app/package.json"));
+    std::fs::remove_dir_all(root).map_err(|error| error.to_string())
+}
+
+#[test]
 fn folders_that_differ_only_in_exclusions_get_their_own_sessions() -> Result<(), String> {
     let mut state = VersionLensLspState::with_workspace(
         None,
@@ -480,4 +509,51 @@ fn code_actions_use_plain_changes_for_clients_without_document_changes() {
         }]}})
     );
     assert_eq!(value[0].get("diagnostics"), None);
+}
+
+fn workspace_check() -> super::FolderSettings {
+    super::FolderSettings {
+        workspace: versionlens_engine::WorkspaceSettings {
+            check: versionlens_engine::WorkspaceCheck::Workspace,
+            exclude: vec!["fixtures/**".to_owned()],
+        },
+        ..super::FolderSettings::default()
+    }
+}
+
+#[test]
+fn only_the_workspace_check_scans_folders_and_user_exclusions_hide_open_documents()
+-> Result<(), String> {
+    let mut state =
+        VersionLensLspState::with_workspace(Some(uri("file:///workspace")?), Vec::new());
+    assert!(
+        state
+            .workspace_checking_options(0)
+            .discovery
+            .roots
+            .is_empty()
+    );
+    assert_eq!(
+        state
+            .workspace_discovery_options(0, true)
+            .discovery
+            .roots
+            .len(),
+        1
+    );
+    state = state.with_settings(workspace_check());
+    let discovery = state.workspace_checking_options(0).discovery;
+    assert_eq!(discovery.roots, [std::path::PathBuf::from("/workspace")]);
+    assert!(discovery.exclusions.contains(&"fixtures/**".to_owned()));
+    for (path, checked) in [("fixtures/Cargo.toml", false), ("app/Cargo.toml", true)] {
+        let document = format!("file:///workspace/{path}");
+        state.open_document(super::VersionLensTextDocument {
+            uri: document.clone(),
+            language_id: "toml".to_owned(),
+            text: "[dependencies]\n".to_owned(),
+            workspace_root: None,
+        });
+        assert_eq!(state.document_work(&document).is_some(), checked, "{path}");
+    }
+    Ok(())
 }

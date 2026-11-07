@@ -363,3 +363,67 @@ fn an_update_with_a_version_and_no_level_applies_that_version() -> Result<()> {
     assert_eq!(session.response(2)?.response_result.ok(), Some(Value::Null));
     session.shutdown(3)
 }
+
+#[test]
+fn workspace_update_edits_every_unignored_manifest_without_opening_it() -> Result<()> {
+    let root = versionlens_test_support::temporary_directory("versionlens-lsp-update-workspace")?
+        .canonicalize()?;
+    std::fs::write(root.join(".gitignore"), "skipped/\n")?;
+    for directory in ["first", "second", "skipped"] {
+        std::fs::create_dir_all(root.join(directory))?;
+        std::fs::write(root.join(directory).join("package.json"), MANIFEST)?;
+    }
+    let root_uri = versionlens_engine::workspace_file_uri(&root).context("missing root URI")?;
+    let (address, requests) = super::incremental::serving_registry(REGISTRY)?;
+    let (client, server) = start_configured_server(
+        json!({"rootUri": root_uri, "capabilities": {"workspace": {"applyEdit": true, "workspaceEdit": {"documentChanges": true}}}}),
+        json!({
+            "suggestions": {"showVulnerabilities": false},
+            "npm": {"apiUrl": format!("http://{address}")}
+        }),
+    )?;
+    let session = Session {
+        client,
+        server,
+        requests,
+        uri: "",
+    };
+    session.execute(
+        2,
+        "versionlens.server.updateWorkspace",
+        json!({"level": "minor"}),
+    )?;
+
+    let edit = session.next_edit()?;
+    let mut changed = edit.params["edit"]["documentChanges"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|change| {
+            let uri = change["textDocument"]["uri"].as_str().unwrap_or_default();
+            let texts = change["edits"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|edit| edit["newText"].as_str())
+                .collect::<Vec<_>>();
+            (
+                uri.rsplit('/').nth(1).unwrap_or_default().to_owned(),
+                texts.join(","),
+            )
+        })
+        .collect::<Vec<_>>();
+    changed.sort();
+    assert_eq!(
+        changed,
+        [
+            ("first".to_owned(), "1.1.0,1.1.0".to_owned()),
+            ("second".to_owned(), "1.1.0,1.1.0".to_owned())
+        ]
+    );
+    session.answer_edit(edit, json!({"applied": true}))?;
+    assert_eq!(session.response(2)?.response_result.ok(), Some(Value::Null));
+    session.shutdown(3)?;
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

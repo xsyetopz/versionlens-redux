@@ -7,13 +7,15 @@ use lsp_types::{
     WorkspaceFolder,
 };
 use serde::{Deserialize, Serialize};
-use versionlens_engine::{WorkspaceCheckingOptions, WorkspaceDiscoveryOptions};
+use versionlens_engine::{WorkspaceCheck, WorkspaceCheckingOptions, WorkspaceDiscoveryOptions};
 use versionlens_model::DocumentInput;
 
 /// Updates one dependency: `{ uri, dependency, level?, version? }`.
 pub(crate) const UPDATE_COMMAND: &str = "versionlens.server.update";
 /// Updates every dependency of a document at a level: `{ uri, level? }`.
 pub(crate) const UPDATE_ALL_COMMAND: &str = "versionlens.server.updateAll";
+/// Updates every manifest in the workspace folders at a level: `{ level? }`.
+pub(crate) const UPDATE_WORKSPACE_COMMAND: &str = "versionlens.server.updateWorkspace";
 /// Sorts the dependencies of a document: `{ uri }`.
 pub(crate) const SORT_COMMAND: &str = "versionlens.server.sort";
 /// Sets a dependency to one build: `{ uri, dependency, build }`.
@@ -256,6 +258,7 @@ impl VersionLensLspState {
                     DISPLAY_CODE_LENS_COMMAND,
                     UPDATE_COMMAND,
                     UPDATE_ALL_COMMAND,
+                    UPDATE_WORKSPACE_COMMAND,
                     SORT_COMMAND,
                     CHOOSE_BUILD_COMMAND,
                     CLEAR_CACHE_COMMAND,
@@ -276,18 +279,35 @@ impl VersionLensLspState {
         }
     }
 
-    /// The checking options of one settings group: its folders, its
-    /// exclusions and its open documents.
+    /// The checking options of one settings group: its open documents, and
+    /// its folders and exclusions when the whole workspace is checked.
     pub(crate) fn workspace_checking_options(&self, group: usize) -> WorkspaceCheckingOptions {
-        let roots = self
-            .group_roots(group)
-            .into_iter()
-            .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
-            .collect();
+        let scan = self.groups[group].settings.workspace.check == WorkspaceCheck::Workspace;
+        self.workspace_discovery_options(group, scan)
+    }
+
+    /// The discovery of one settings group. Without `scan`, only its open
+    /// documents are read.
+    pub(crate) fn workspace_discovery_options(
+        &self,
+        group: usize,
+        scan: bool,
+    ) -> WorkspaceCheckingOptions {
+        let settings = &self.groups[group].settings;
+        let roots = if scan {
+            self.group_roots(group)
+                .into_iter()
+                .filter_map(|root| root.path.as_deref().map(std::path::PathBuf::from))
+                .collect()
+        } else {
+            Vec::new()
+        };
         let mut discovery = WorkspaceDiscoveryOptions::new(roots);
-        discovery
-            .exclusions
-            .clone_from(&self.groups[group].settings.exclusions);
+        discovery.exclusions = [&settings.exclusions, &settings.workspace.exclude]
+            .into_iter()
+            .flatten()
+            .cloned()
+            .collect();
         let mut uris = self.document_uris();
         uris.sort();
         discovery.overlays = uris

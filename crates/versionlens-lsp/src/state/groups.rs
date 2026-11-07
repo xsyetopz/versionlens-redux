@@ -7,7 +7,7 @@ use std::io;
 use std::sync::Arc;
 
 use versionlens_engine::{
-    AuthorizationSource, SessionConfig, VersionLensSession, version_lens_session,
+    AuthorizationSource, SessionConfig, VersionLensSession, WorkspaceSettings, version_lens_session,
 };
 
 use super::{VersionLensLspState, WorkspaceRoot, configuration::default_workspace_exclusions};
@@ -27,6 +27,7 @@ impl fmt::Debug for AuthorizationSlot {
 pub(crate) struct FolderSettings {
     pub(crate) config: SessionConfig,
     pub(crate) exclusions: Vec<String>,
+    pub(crate) workspace: WorkspaceSettings,
 }
 
 impl Default for FolderSettings {
@@ -34,6 +35,7 @@ impl Default for FolderSettings {
         Self {
             config: SessionConfig::default(),
             exclusions: default_workspace_exclusions(),
+            workspace: WorkspaceSettings::default(),
         }
     }
 }

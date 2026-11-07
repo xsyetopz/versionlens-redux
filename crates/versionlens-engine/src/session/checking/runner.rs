@@ -148,6 +148,9 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
         if let Some(documents) = pending.documents {
             self.update_documents(documents);
         }
+        if !pending.paths.is_empty() {
+            self.rescan_files(pending.paths);
+        }
         let Some(WorkspaceCheckingOptions {
             discovery,
             max_snapshot_bytes,
@@ -243,6 +246,45 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             discovery.skip_paths(&self.discovery_overlays);
         }
         self.overlay_uris = uris;
+        self.settled = false;
+    }
+
+    fn rescan_files(&mut self, paths: BTreeSet<PathBuf>) {
+        let Some(options) = &self.discovery_options else {
+            return;
+        };
+        let mut discovery = self.session.discover_workspace_documents(options.clone());
+        // Other documents can read a changed file through their workspace
+        // graph, such as a Cargo workspace root.
+        self.session.clear_workspace_graphs();
+        for path in paths {
+            let Some((uri, result)) = discovery.rescan_path(&path) else {
+                continue;
+            };
+            if self.overlay_uris.contains(&uri) {
+                continue;
+            }
+            match result {
+                Some(Ok(input)) => {
+                    if self
+                        .documents
+                        .get(&uri)
+                        .is_some_and(|entry| entry.input.text == input.text)
+                    {
+                        continue;
+                    }
+                    self.remove(&uri);
+                    self.insert(input);
+                }
+                Some(Err(failure)) => self.emit(WorkspaceCheckResult::DiscoveryFailure(failure)),
+                None => {
+                    if self.documents.contains_key(&uri) {
+                        self.remove(&uri);
+                        self.emit(WorkspaceCheckResult::Removed { uri });
+                    }
+                }
+            }
+        }
         self.settled = false;
     }
 

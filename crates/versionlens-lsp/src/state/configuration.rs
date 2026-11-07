@@ -135,6 +135,28 @@ impl VersionLensLspState {
                 ))
     }
 
+    /// Whether `uri` is an ignore file that discovery reads: a `.gitignore`,
+    /// an `.ignore`, or a repository's `.git/info/exclude`, in a directory
+    /// that is not itself skipped.
+    pub(crate) fn watched_ignore_file(&self, uri: &str) -> bool {
+        let Some(path) = versionlens_engine::workspace_path(uri) else {
+            return false;
+        };
+        let directory = match path.file_name().and_then(|name| name.to_str()) {
+            Some(".gitignore" | ".ignore") => path.parent(),
+            Some("exclude") if path.ends_with(".git/info/exclude") => path.ancestors().nth(3),
+            _ => None,
+        };
+        let Some(directory) = directory else {
+            return false;
+        };
+        let group = self.group_of(uri);
+        !self.groups()[group]
+            .session
+            .discover_workspace_documents(self.workspace_checking_options(group).discovery)
+            .skips_directory(directory)
+    }
+
     /// Applies a folder change. New folders get the default settings until
     /// their settings are read.
     pub(crate) fn change_workspace_folders(

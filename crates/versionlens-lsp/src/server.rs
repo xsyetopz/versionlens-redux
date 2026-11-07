@@ -443,15 +443,25 @@ fn handle_notification(
             ) else {
                 return Ok(());
             };
-            if !params
+            // An ignore file can hide or reveal any manifest, so only its
+            // change needs a full rescan.
+            if params
                 .changes
                 .iter()
-                .any(|change| state.watched_file_is_relevant(change.uri.as_str()))
+                .any(|change| state.watched_ignore_file(change.uri.as_str()))
             {
-                return Ok(());
+                state.invalidate_workspace();
+                return checking.replace(state);
             }
-            state.invalidate_workspace();
-            checking.replace(state)
+            checking.schedule_rescan(
+                params
+                    .changes
+                    .iter()
+                    .filter(|change| state.watched_file_is_relevant(change.uri.as_str()))
+                    .filter_map(|change| versionlens_engine::workspace_path(change.uri.as_str())),
+                Instant::now() + checking::WATCH_DEBOUNCE,
+            );
+            Ok(())
         }
         _ => handle_document_notification(connection, state, checking, notification),
     }

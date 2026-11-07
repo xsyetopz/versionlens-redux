@@ -92,13 +92,15 @@ impl SettingsRequests {
         let mut settings = Vec::new();
         for folder in sections.chunks(state::SECTIONS.len()) {
             let versionlens = folder.first().cloned().unwrap_or(Value::Null);
-            let config = match Settings::from_value(versionlens) {
-                Ok(settings) => settings.session_config(),
+            let mut read = match Settings::from_value(versionlens) {
+                Ok(settings) => settings,
                 Err(message) => return show_configuration_error(connection, message),
             };
+            let workspace = std::mem::take(&mut read.workspace);
             settings.push(FolderSettings {
-                config,
+                config: read.session_config(),
                 exclusions: state::workspace_exclusions(folder.get(1).unwrap_or(&Value::Null)),
+                workspace,
             });
         }
         let changed = match state.replace_settings(settings) {

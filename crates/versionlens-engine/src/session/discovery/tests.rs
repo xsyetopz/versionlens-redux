@@ -202,6 +202,58 @@ fn git_ignores_nested_rules_and_repository_excludes_but_keep_hidden_manifests() 
     );
 }
 
+#[test]
+fn ignore_files_apply_without_a_git_repository() {
+    let workspace = TestWorkspace::new("ignore-files");
+    workspace.write(".gitignore", "worktrees/\n");
+    workspace.write(".ignore", "scratch/\n");
+    workspace.write("worktrees/copy/package.json", "{}");
+    workspace.write("scratch/package.json", "{}");
+    workspace.write("app/package.json", "{}");
+
+    let mut discovery = session().discover_workspace_documents(options(&workspace));
+    let root = workspace.root.canonicalize().unwrap();
+    assert!(discovery.skips_directory(&root.join("worktrees/copy")));
+    assert!(discovery.skips_directory(&root.join("scratch")));
+    assert!(!discovery.skips_directory(&root.join("app")));
+    assert!(!discovery.skips_directory(&root));
+    let results = discovery.collect::<Vec<_>>();
+
+    assert_eq!(
+        successful_uris(&results),
+        [workspace.uri("app/package.json")]
+    );
+}
+
+#[test]
+fn rescanned_paths_follow_the_scan_rules() {
+    let workspace = TestWorkspace::new("rescan");
+    workspace.write(".gitignore", "ignored/\n");
+    let kept = workspace.write("app/package.json", "{}");
+    let ignored = workspace.write("ignored/package.json", "{}");
+    let other = workspace.write("app/readme.txt", "");
+    let mut discovery = session().discover_workspace_documents(options(&workspace));
+
+    let (uri, result) = discovery.rescan_path(&kept).unwrap();
+    assert_eq!(uri, workspace.uri("app/package.json"));
+    assert_eq!(result.unwrap().unwrap().uri, uri);
+    assert!(discovery.rescan_path(&kept).unwrap().1.is_some());
+    assert!(discovery.rescan_path(&ignored).unwrap().1.is_none());
+    assert!(discovery.rescan_path(&other).unwrap().1.is_none());
+    fs::remove_file(&kept).unwrap();
+    assert_eq!(
+        discovery
+            .rescan_path(&kept)
+            .map(|(uri, result)| (uri, result.is_none())),
+        Some((workspace.uri("app/package.json"), true))
+    );
+    assert!(
+        discovery
+            .rescan_path(Path::new("/elsewhere/package.json"))
+            .is_none()
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn internal_directory_symlinks_are_never_followed() {
