@@ -364,16 +364,18 @@ fn an_update_with_a_version_and_no_level_applies_that_version() -> Result<()> {
     session.shutdown(3)
 }
 
-#[test]
-fn workspace_update_edits_every_unignored_manifest_without_opening_it() -> Result<()> {
-    let root = versionlens_test_support::temporary_directory("versionlens-lsp-update-workspace")?
-        .canonicalize()?;
+fn workspace_root(name: &str) -> Result<(std::path::PathBuf, String)> {
+    let root = versionlens_test_support::temporary_directory(name)?.canonicalize()?;
     std::fs::write(root.join(".gitignore"), "skipped/\n")?;
     for directory in ["first", "second", "skipped"] {
         std::fs::create_dir_all(root.join(directory))?;
         std::fs::write(root.join(directory).join("package.json"), MANIFEST)?;
     }
     let root_uri = versionlens_engine::workspace_file_uri(&root).context("missing root URI")?;
+    Ok((root, root_uri))
+}
+
+fn start_workspace_update_server(root_uri: &str) -> Result<(Session, std::net::SocketAddr)> {
     let (address, requests) = super::incremental::serving_registry(REGISTRY)?;
     let (client, server) = start_configured_server(
         json!({"rootUri": root_uri, "capabilities": {"workspace": {"applyEdit": true, "workspaceEdit": {"documentChanges": true}}}}),
@@ -388,13 +390,11 @@ fn workspace_update_edits_every_unignored_manifest_without_opening_it() -> Resul
         requests,
         uri: "",
     };
-    session.execute(
-        2,
-        "versionlens.server.updateWorkspace",
-        json!({"level": "minor"}),
-    )?;
+    Ok((session, address))
+}
 
-    let edit = session.next_edit()?;
+/// The folder and joined new texts of each manifest a workspace edit changes.
+fn changed_manifests(edit: &lsp_server::Request) -> Vec<(String, String)> {
     let mut changed = edit.params["edit"]["documentChanges"]
         .as_array()
         .into_iter()
@@ -414,12 +414,61 @@ fn workspace_update_edits_every_unignored_manifest_without_opening_it() -> Resul
         })
         .collect::<Vec<_>>();
     changed.sort();
+    changed
+}
+
+#[test]
+fn workspace_update_edits_every_unignored_manifest_without_opening_it() -> Result<()> {
+    let (root, root_uri) = workspace_root("versionlens-lsp-update-workspace")?;
+    let (session, _) = start_workspace_update_server(&root_uri)?;
+    session.execute(
+        2,
+        "versionlens.server.updateWorkspace",
+        json!({"level": "minor"}),
+    )?;
+
+    let edit = session.next_edit()?;
     assert_eq!(
-        changed,
+        changed_manifests(&edit),
         [
             ("first".to_owned(), "1.1.0,1.1.0".to_owned()),
             ("second".to_owned(), "1.1.0,1.1.0".to_owned())
         ]
+    );
+    session.answer_edit(edit, json!({"applied": true}))?;
+    assert_eq!(session.response(2)?.response_result.ok(), Some(Value::Null));
+    session.shutdown(3)?;
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn workspace_update_waits_for_pending_settings() -> Result<()> {
+    let (root, root_uri) = workspace_root("versionlens-lsp-update-workspace-settings")?;
+    let (session, address) = start_workspace_update_server(&root_uri)?;
+    send_notification(
+        &session.client,
+        "workspace/didChangeConfiguration",
+        json!({}),
+    )?;
+    session.execute(
+        2,
+        "versionlens.server.updateWorkspace",
+        json!({"level": "minor"}),
+    )?;
+    answer_configuration(
+        &session.client,
+        json!({
+            "suggestions": {"showVulnerabilities": false},
+            "npm": {"apiUrl": format!("http://{address}")},
+            "workspace": {"exclude": ["**/second/**"]}
+        }),
+    )?;
+
+    let edit = session.next_edit()?;
+    assert_eq!(
+        changed_manifests(&edit),
+        [("first".to_owned(), "1.1.0,1.1.0".to_owned())]
     );
     session.answer_edit(edit, json!({"applied": true}))?;
     assert_eq!(session.response(2)?.response_result.ok(), Some(Value::Null));

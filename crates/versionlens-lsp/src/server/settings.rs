@@ -23,9 +23,16 @@ pub(super) struct SettingsRequests {
     next: u64,
     /// The newest request. An older answer is out of date and is dropped.
     latest: Option<RequestId>,
+    /// Workspace updates that wait for the pending answer, so they scan
+    /// with the settings the user just set.
+    pub(super) held: Vec<Request>,
 }
 
 impl SettingsRequests {
+    pub(super) fn pending(&self) -> bool {
+        self.latest.is_some()
+    }
+
     /// Asks the client for the settings, if it can answer.
     pub(super) fn request(
         &mut self,

@@ -10,7 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Added `versionlens.workspace.check`. `openFiles` (the default) checks only open manifests. `workspace` checks the whole folder, as before.
 - Added `versionlens.workspace.exclude`, glob patterns relative to the workspace folder for manifests never to check, even when open. No extra file is needed.
-- Added the `versionlens.server.updateWorkspace` server command (`{ "level": "latest" | "major" | "minor" | "patch" }`). It updates every manifest the workspace scan finds, open or not, in one edit. VS Code runs it with **Update dependencies in workspace** (latest, major-only, minor-only and patch-only).
+- Added the `versionlens.server.updateWorkspace` server command (`{ "level": "latest" | "major" | "minor" | "patch" }`). It updates every manifest the workspace scan finds, open or not, in one edit, and waits for a pending settings refresh first. VS Code runs it with **Update dependencies in workspace** (latest, major-only, minor-only and patch-only).
 - Added the VS Code commands **Restart language server**, **Show language server output** and **Restart extension host**.
 
 ### Changed
@@ -19,7 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **Breaking:** The workspace scan now follows `.ignore` files and the global gitignore, and applies `.gitignore` outside git repositories too.
 - **Breaking:** `versionlens.suggestions.indicators` keys are camelCase only (`latest`, `matched`, `noMatch` and so on), and `Downgradeable` is gone. Keys in the old PascalCase are ignored.
 - **Breaking:** `versionlens.caching.duration` must be a number. `null` now keeps the default of 3 minutes; `0` turns caching off.
-- **Breaking:** A git dependency on a branch, or with no ref, is shown as fixed and no longer offered a commit SHA. A 7- or 40-character SHA is offered the newest commit at the same length, and a tag is offered newer tags.
+- **Breaking:** A git dependency on a branch, or with no ref, is shown as fixed and no longer offered a commit SHA. A 7- or 40-character SHA is offered the newest commit at the same length, but only after GitHub confirms it is a commit, so a branch with a hex name stays fixed. A tag, or a Gemfile `ref:` that names a version such as `v1.2.3`, is offered newer tags.
 - Rechecked only the changed files, once per second at most, when manifests change on disk, instead of rescanning the workspace. Only a change to an ignore file starts a full rescan.
 - Stopped publishing diagnostics again when the editor asks for lenses that are already cached.
 - `versionlens.enabledProviders` now offers all 36 providers, and its description no longer says VS Code must be restarted (the extension restarts the server itself).
