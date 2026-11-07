@@ -251,6 +251,22 @@ function M.root_dir(bufnr, config)
   end
   local root = vim.fs.root(bufnr, config.root_markers)
   if root then
+    -- Like the folder an editor opens: a project Neovim started in stays the
+    -- root of the files below it, so its ignore files cover nested checkouts
+    -- such as `.claude/worktrees/*`, which carry their own `.git`.
+    local cwd = vim.uv.fs_realpath(vim.uv.cwd() or "")
+    local real_root = vim.uv.fs_realpath(root)
+    if cwd and real_root then
+      cwd = vim.fs.normalize(cwd)
+      local marked = vim.fs.root(cwd, config.root_markers)
+      if
+        marked
+        and vim.fs.normalize(marked) == cwd
+        and vim.startswith(vim.fs.normalize(real_root) .. "/", cwd .. "/")
+      then
+        return cwd
+      end
+    end
     return root
   end
   local path = vim.api.nvim_buf_get_name(bufnr)

@@ -104,6 +104,11 @@ CONFIGURATION                                                   *versionlens-con
 `cmd`, $VERSIONLENS_LSP, bundled platform binary, repository debug binary,
 previously downloaded binary, then `versionlens-lsp` on $PATH.
 
+Without `root_dir`, the root of a file is the directory Neovim started in when
+that directory has a root marker and holds the file, so the project's ignore
+files also cover nested checkouts such as `.claude/worktrees/*`. Otherwise it
+is the nearest directory with a root marker.
+
 `settings` is the `versionlens` configuration section. It is sent to the server
 in `vim.lsp.start` and returned for the server's `workspace/configuration`
 requests, so Neovim answers them without extra handlers. An empty `settings` is sent
