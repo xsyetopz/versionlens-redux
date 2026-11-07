@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fs;
+use std::ops::ControlFlow;
 use std::path::{Component, Path};
 
 use versionlens_model::{CanonicalReference, Dependency};
@@ -7,27 +8,34 @@ use versionlens_update::{Suggestion, error, fixed};
 
 use crate::workspace::WorkspaceDocuments;
 
+/// `Continue` leaves the dependency to the registry. `Break(None)` gives it no
+/// result at all, because its local target is ignored or excluded.
 pub(super) fn github_action_reference_suggestion(
     dependency: Dependency,
     workspace_root: Option<&Path>,
     workspace_documents: &WorkspaceDocuments,
-) -> Option<Suggestion> {
-    match dependency.canonical_reference.as_ref()? {
-        CanonicalReference::GitHubActionExpression { .. } => Some(error(
+    skips: &mut impl FnMut(&Path, &Path) -> bool,
+) -> ControlFlow<Option<Suggestion>> {
+    let Some(reference) = dependency.canonical_reference.as_ref() else {
+        return ControlFlow::Continue(());
+    };
+    match reference {
+        CanonicalReference::GitHubActionExpression { .. } => ControlFlow::Break(Some(error(
             dependency,
             "GitHub action reference expression cannot be resolved statically".to_owned(),
-        )),
-        CanonicalReference::GitHubActionInvalid { .. } => Some(error(
+        ))),
+        CanonicalReference::GitHubActionInvalid { .. } => ControlFlow::Break(Some(error(
             dependency,
             "invalid GitHub action reference".to_owned(),
-        )),
+        ))),
         CanonicalReference::GitHubActionLocal {
             path,
             reusable_workflow,
-        } => Some(local_github_action_suggestion(
+        } => ControlFlow::Break(local_github_action_suggestion(
             dependency.clone(),
             workspace_root,
             workspace_documents,
+            skips,
             path,
             *reusable_workflow,
         )),
@@ -35,11 +43,11 @@ pub(super) fn github_action_reference_suggestion(
         // shown as a fixed ref without a registry request.
         CanonicalReference::GitHubActionRef { reference } => {
             let reference = reference.clone();
-            Some(fixed(dependency, reference))
+            ControlFlow::Break(Some(fixed(dependency, reference)))
         }
         CanonicalReference::GitHubActionTag { .. }
         | CanonicalReference::GitHubActionSha { .. }
-        | CanonicalReference::GitHubActionCommit { .. } => None,
+        | CanonicalReference::GitHubActionCommit { .. } => ControlFlow::Continue(()),
     }
 }
 
@@ -47,17 +55,21 @@ fn local_github_action_suggestion(
     dependency: Dependency,
     workspace_root: Option<&Path>,
     workspace_documents: &WorkspaceDocuments,
+    skips: &mut impl FnMut(&Path, &Path) -> bool,
     path: &str,
     reusable_workflow: bool,
-) -> Suggestion {
+) -> Option<Suggestion> {
     let Some(workspace_root) = workspace_root else {
-        return error(
+        return Some(error(
             dependency,
             "workspace root unavailable for local GitHub action reference".to_owned(),
-        );
+        ));
     };
     let Some(relative) = path.strip_prefix("./").map(Path::new) else {
-        return error(dependency, "invalid local GitHub action path".to_owned());
+        return Some(error(
+            dependency,
+            "invalid local GitHub action path".to_owned(),
+        ));
     };
     if relative.as_os_str().is_empty()
         || relative.components().any(|component| {
@@ -67,7 +79,10 @@ fn local_github_action_suggestion(
             )
         })
     {
-        return error(dependency, "invalid local GitHub action path".to_owned());
+        return Some(error(
+            dependency,
+            "invalid local GitHub action path".to_owned(),
+        ));
     }
     if reusable_workflow
         && (!path.starts_with("./.github/workflows/")
@@ -77,45 +92,53 @@ fn local_github_action_suggestion(
                 Some("yml" | "yaml")
             ))
     {
-        return error(
+        return Some(error(
             dependency,
             "invalid local reusable workflow path".to_owned(),
-        );
+        ));
     }
 
     let Ok(canonical_root) = workspace_root.canonicalize() else {
-        return error(
+        return Some(error(
             dependency,
             "workspace root unavailable for local GitHub action reference".to_owned(),
-        );
+        ));
     };
     let target = canonical_root.join(relative);
-    if reusable_workflow {
-        return local_reusable_workflow_suggestion(
-            dependency,
-            workspace_documents,
-            &canonical_root,
-            &target,
-            path,
-        );
+    // An ignored or excluded target is neither read nor reported on, like the
+    // ignored files themselves. A path skipped next to a readable one counts
+    // as missing.
+    let files = if reusable_workflow {
+        vec![target.clone()]
+    } else {
+        vec![target.join("action.yml"), target.join("action.yaml")]
+    };
+    if files.iter().all(|file| skips(&canonical_root, file)) {
+        return None;
     }
-    local_action_manifest_suggestion(
-        dependency,
-        workspace_documents,
-        &canonical_root,
-        &target,
-        path,
-    )
+    let mut read = |path: &Path| {
+        if skips(&canonical_root, path) {
+            return None;
+        }
+        workspace_file_text(workspace_documents, &canonical_root, path)
+    };
+    if reusable_workflow {
+        return Some(local_reusable_workflow_suggestion(
+            dependency, &mut read, &target, path,
+        ));
+    }
+    Some(local_action_manifest_suggestion(
+        dependency, &mut read, &target, path,
+    ))
 }
 
-fn local_reusable_workflow_suggestion(
+fn local_reusable_workflow_suggestion<'a>(
     dependency: Dependency,
-    workspace_documents: &WorkspaceDocuments,
-    workspace_root: &Path,
+    read: &mut impl FnMut(&Path) -> Option<Cow<'a, str>>,
     target: &Path,
     display_path: &str,
 ) -> Suggestion {
-    let Some(text) = workspace_file_text(workspace_documents, workspace_root, target) else {
+    let Some(text) = read(target) else {
         return error(
             dependency,
             format!("local reusable workflow `{display_path}` is unavailable"),
@@ -131,18 +154,15 @@ fn local_reusable_workflow_suggestion(
     }
 }
 
-fn local_action_manifest_suggestion(
+fn local_action_manifest_suggestion<'a>(
     dependency: Dependency,
-    workspace_documents: &WorkspaceDocuments,
-    workspace_root: &Path,
+    read: &mut impl FnMut(&Path) -> Option<Cow<'a, str>>,
     target: &Path,
     display_path: &str,
 ) -> Suggestion {
     let manifests = ["action.yml", "action.yaml"]
         .into_iter()
-        .filter_map(|name| {
-            workspace_file_text(workspace_documents, workspace_root, &target.join(name))
-        })
+        .filter_map(|name| read(&target.join(name)))
         .collect::<Vec<_>>();
     match manifests.as_slice() {
         [manifest] if versionlens_parsers::action_manifest_is_valid(manifest) => {

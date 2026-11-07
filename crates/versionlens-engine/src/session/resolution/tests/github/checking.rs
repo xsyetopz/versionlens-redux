@@ -216,6 +216,45 @@ async fn local_action_references_report_unavailable_roots_and_ambiguous_metadata
 }
 
 #[tokio::test]
+async fn ignored_and_excluded_local_actions_are_never_read() {
+    let root = temp_dir().join(format!("versionlens-github-ignored-{}", id()));
+    for action in ["vendor/build", "actions/build"] {
+        create_dir_all(root.join(action)).unwrap();
+        write(
+            root.join(action).join("action.yml"),
+            "runs: {using: composite, steps: []}\n",
+        )
+        .unwrap();
+    }
+    write(root.join(".gitignore"), "vendor/\n").unwrap();
+    let input = |action: &str| {
+        DocumentInput::new(
+            format!("file://{}/.github/workflows/ci.yml", root.display()),
+            "yaml",
+            format!("steps:\n  - uses: ./{action}\n"),
+            Some(root.to_string_lossy().into_owned()),
+        )
+    };
+    let session = session_without_vulnerabilities();
+    let statuses = async |action| {
+        session
+            .resolve_document(input(action))
+            .await
+            .suggestions
+            .into_iter()
+            .map(|suggestion| suggestion.status)
+            .collect::<Vec<_>>()
+    };
+
+    assert!(statuses("vendor/build").await.is_empty());
+    assert_eq!(statuses("actions/build").await, ["fixed"]);
+    session.set_workspace_exclusions(vec!["**/actions".to_owned()]);
+    assert!(statuses("actions/build").await.is_empty());
+    assert_eq!(statuses("missing/build").await, ["error"]);
+    remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn escaped_workflow_references_preserve_surrounding_yaml_on_update() {
     let source = r#"steps: [{uses: "acme\u002faction\u0040v\u0031.0.0", name: keep}] # retained"#;
     let output = session_without_vulnerabilities()

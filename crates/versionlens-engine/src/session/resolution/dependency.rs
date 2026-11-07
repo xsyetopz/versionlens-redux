@@ -2,6 +2,7 @@ use crate::prerelease;
 use semver::Version;
 use serde_json::Value;
 use serde_json::from_str;
+use std::ops::ControlFlow;
 use std::path::Path;
 use versionlens_model::Ecosystem::{Composer, Docker, Dotnet};
 use versionlens_model::{
@@ -72,12 +73,19 @@ impl VersionLensSession {
             operation,
         } = input;
 
-        if let Some(suggestion) = github_action_reference_suggestion(
+        let mut filter = None;
+        let mut skips = |root: &Path, path: &Path| {
+            filter
+                .get_or_insert_with(|| self.workspace_filter(root))
+                .skips_file(path)
+        };
+        if let ControlFlow::Break(suggestion) = github_action_reference_suggestion(
             dependency.clone(),
             workspace_root,
             workspace_documents,
+            &mut skips,
         ) {
-            return Some(suggestion);
+            return suggestion;
         }
 
         if let Some(latest) = project_version_latest(&dependency, project_bump) {

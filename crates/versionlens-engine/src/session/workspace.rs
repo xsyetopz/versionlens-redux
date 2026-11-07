@@ -11,7 +11,7 @@ use crate::registry::{
 use crate::workspace::{
     WorkspaceDocuments, WorkspaceGraph, document_path, workspace_path, workspace_root,
 };
-use crate::{VersionLensSession, WorkspaceDiscoveryOptions};
+use crate::{VersionLensSession, WorkspaceDiscovery, WorkspaceDiscoveryOptions};
 
 const MAX_REGISTRY_CONTEXTS: usize = 256;
 
@@ -104,6 +104,20 @@ impl VersionLensSession {
         drop(state);
     }
 
+    /// The skip rules of `root`: its ignore files and the workspace
+    /// exclusions. It is only asked about paths, never iterated.
+    pub(crate) fn workspace_filter(&self, root: &Path) -> WorkspaceDiscovery {
+        let mut options = WorkspaceDiscoveryOptions::new(vec![root.to_path_buf()]);
+        options.exclusions = self
+            .storage_state
+            .workspace
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .exclusions
+            .to_vec();
+        self.discover_workspace_documents(options)
+    }
+
     /// Signals that workspace files or workspace configuration changed on disk.
     pub fn invalidate_workspace(&self) {
         let mut state = self
@@ -150,7 +164,7 @@ impl VersionLensSession {
         let Some(root) = workspace_root(input) else {
             return WorkspaceGraph::default();
         };
-        let (generation, documents, exclusions, cached) = {
+        let (generation, documents, cached) = {
             let state = self
                 .storage_state
                 .workspace
@@ -159,18 +173,13 @@ impl VersionLensSession {
             (
                 state.generation,
                 state.documents.clone(),
-                state.exclusions.clone(),
                 state.graphs.get(&root).cloned(),
             )
         };
 
         let mut discovery = None;
         let mut skips = |path: &Path, directory: bool| {
-            let discovery = discovery.get_or_insert_with(|| {
-                let mut options = WorkspaceDiscoveryOptions::new(vec![root.clone()]);
-                options.exclusions = exclusions.to_vec();
-                self.discover_workspace_documents(options)
-            });
+            let discovery = discovery.get_or_insert_with(|| self.workspace_filter(&root));
             if directory {
                 discovery.skips_directory(path)
             } else {
