@@ -16,7 +16,7 @@ pub(crate) fn latest_npm_version(
 ) -> Option<String> {
     if value.is_array() {
         return latest_github_tag(value, include_prereleases, prerelease_tags)
-            .or_else(|| latest_github_commit(value));
+            .or_else(|| latest_github_commit(value, requirement));
     }
 
     if let Some(tagged) = npm_dist_tag_version(value, requirement) {

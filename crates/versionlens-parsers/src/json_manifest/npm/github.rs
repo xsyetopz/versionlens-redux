@@ -44,10 +44,10 @@ pub(in crate::json_manifest) fn github_dependency(
     dependency.requirement_prefix =
         requirement_prefix(value, requirement, reference.fragment.is_none());
     let repository = GithubRepository::parse(reference.name)?;
-    dependency.hosted_url = Some(repository.api_url(
-        "https://api.github.com/repos",
-        &format!("/{}", github_api_path(reference.fragment, requirement)),
-    ));
+    dependency.hosted_url = Some(match github_api_path(reference.fragment, requirement) {
+        Some(path) => repository.api_url("https://api.github.com/repos", &format!("/{path}")),
+        None => "branch".to_owned(),
+    });
     Some(dependency)
 }
 
@@ -58,16 +58,14 @@ fn requirement_prefix(value: &str, requirement: &str, missing_fragment: bool) ->
     value[..value.len() - requirement.len()].to_owned()
 }
 
-fn github_api_path(fragment: Option<&str>, requirement: &str) -> &'static str {
+/// `None` for branches and missing fragments, which are never offered a commit.
+fn github_api_path(fragment: Option<&str>, requirement: &str) -> Option<&'static str> {
     if is_commit_sha(requirement) {
-        return "commits";
+        return Some("commits");
     }
-    if fragment.is_some_and(|fragment| fragment.starts_with("semver:"))
-        || looks_like_version_requirement(requirement)
-    {
-        return "tags";
-    }
-    "commits"
+    (fragment.is_some_and(|fragment| fragment.starts_with("semver:"))
+        || looks_like_version_requirement(requirement))
+    .then_some("tags")
 }
 
 fn looks_like_version_requirement(requirement: &str) -> bool {

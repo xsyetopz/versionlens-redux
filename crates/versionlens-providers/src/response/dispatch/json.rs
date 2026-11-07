@@ -125,7 +125,12 @@ const JSON_RESPONSE_PARSERS: &[(Ecosystem, JsonResponseParser)] = &[
         latest_pub_version(value, request.include_prereleases, request.prerelease_tags)
     }),
     (Ruby, |value, request| {
-        latest_ruby_version(value, request.include_prereleases, request.prerelease_tags)
+        latest_ruby_version(
+            value,
+            request.requirement,
+            request.include_prereleases,
+            request.prerelease_tags,
+        )
     }),
     (Vcpkg, |value, request| {
         latest_vcpkg_version(value, request.include_prereleases, request.prerelease_tags)

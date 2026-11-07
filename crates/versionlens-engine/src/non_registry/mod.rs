@@ -2,7 +2,7 @@ use std::path::Path;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::{
     AnsibleGalaxy, Bazel, CocoaPods, Composer, Cran, Deno, Docker, Dotnet, Go, Haxelib, Helm,
-    LuaRocks, Maven, Nim, Nix, Npm, Swift, Terraform, Unity, Vcpkg, Zig,
+    LuaRocks, Maven, Nim, Nix, Npm, Ruby, Swift, Terraform, Unity, Vcpkg, Zig,
 };
 use versionlens_providers::{
     is_composer_platform_dependency, is_registry_dependency, is_unsupported_dotnet_requirement,
@@ -57,6 +57,11 @@ pub(crate) fn known_non_registry_suggestion(
             dependency.requirement, dependency.requirement_suffix
         );
         return Ok(fixed(dependency, requirement));
+    }
+    if matches!(dependency.ecosystem, Npm | Ruby)
+        && dependency.hosted_url.as_deref() == Some("branch")
+    {
+        return Ok(fixed(dependency, "branch reference".to_owned()));
     }
     if dependency.hosted_url.as_deref() == Some("umbrella") {
         return Ok(fixed(dependency, "umbrella dependency".to_owned()));

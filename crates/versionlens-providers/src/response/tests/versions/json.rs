@@ -30,13 +30,6 @@ fn reads_latest_versions_from_json_registry_responses() {
             "v2.5.0",
         ),
         (
-            Npm,
-            "owner/commit",
-            r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
-            "abcdef1",
-        ),
-        (Npm, "owner/short-commit", r#"[{"sha":"123"}]"#, "123"),
-        (
             Deno,
             "@std/assert",
             r#"{"versions":{"1.0.0":{"yanked":true},"1.1.0":{},"1.2.0-rc.1":{},"1.0.3":{}}}"#,
@@ -84,12 +77,6 @@ fn reads_latest_versions_from_json_registry_responses() {
             "rspec/rspec-rails",
             r#"[{"name":"v6.1.0"},{"name":"v6.0.1"}]"#,
             "v6.1.0",
-        ),
-        (
-            Ruby,
-            "rspec/rspec-core",
-            r#"[{"sha":"abcdef1234567890"},{"sha":"1234567890abcdef"}]"#,
-            "abcdef1",
         ),
         (
             Vcpkg,
