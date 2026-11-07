@@ -142,10 +142,6 @@ impl VersionLensLspState {
             .is_some_and(|revision| revision.version.is_none_or(|previous| version > previous))
     }
 
-    pub(crate) fn document_is_open(&self, uri: &str) -> bool {
-        self.documents.contains_key(uri)
-    }
-
     pub(crate) fn set_document_version(&mut self, uri: &str, version: i32) {
         if let Some(revision) = self.revisions.get_mut(uri) {
             revision.version = Some(version);
