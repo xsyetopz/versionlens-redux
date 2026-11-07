@@ -4,6 +4,13 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-11-07
+
+### Fixed
+
+- A workflow step or job that uses a local action or reusable workflow (`uses: ./…`) under an ignored or excluded path is no longer checked. VersionLens does not read the target and shows nothing for that line, so a tool checked out into an ignored folder at run time gets no error. A local target that is missing and not ignored is still an error.
+- Neovim: only a nested checkout that the started-in project ignores in git now uses that project as its root. In 0.6.1 every nested project with its own root marker did, such as a package with its own `.git` or a Cargo crate in a project without git. Those now use their nearest root marker again, as before 0.6.1.
+
 ## [0.6.1] - 2026-11-07
 
 ### Fixed
