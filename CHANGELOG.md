@@ -4,6 +4,13 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-11-09
+
+### Fixed
+
+- The "checking versions" progress icon no longer stays on until the language server restarts. It got stuck when a manifest was closed while it was being checked (an editor or extension that opens a `package.json` briefly is enough), or when a setting or ignore file started to skip a manifest during its check.
+- In `openFiles` mode, a change to a `.gitignore`, `.ignore` or `.git/info/exclude` now applies to open manifests at once. Before, an open manifest that became ignored kept its old status until the next edit.
+
 ## [0.6.2] - 2026-11-07
 
 ### Fixed
