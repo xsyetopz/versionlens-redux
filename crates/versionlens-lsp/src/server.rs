@@ -295,7 +295,7 @@ fn handle_message(
                     )?;
                 }
                 work.invalidate(state, connection)?;
-                checking.restart(state)?;
+                checking.restart(state, connection)?;
             }
         }
         Message::Response(response) => work.applied(connection, response)?,
@@ -348,7 +348,7 @@ fn clear_cache(
         );
     }
     work.invalidate(state, connection)?;
-    if let Err(error) = checking.restart(state) {
+    if let Err(error) = checking.restart(state, connection) {
         return respond_error(
             connection,
             request.id,
@@ -443,7 +443,7 @@ fn handle_notification(
                 return Ok(());
             };
             state.change_workspace_folders(params.event)?;
-            checking.restart(state).map_err(Into::into)
+            checking.restart(state, connection)
         }
         "workspace/didChangeWatchedFiles" => {
             let Ok(params) = serde_json::from_value::<lsp_types::DidChangeWatchedFilesParams>(
@@ -459,7 +459,7 @@ fn handle_notification(
                 .any(|change| state.watched_ignore_file(change.uri.as_str()))
             {
                 state.invalidate_workspace();
-                return checking.replace(state);
+                return checking.replace(state, connection);
             }
             checking.schedule_rescan(
                 params
@@ -537,7 +537,7 @@ fn handle_document_notification(
             };
             let uri = params.text_document.uri;
             state.close_document(uri.as_str());
-            checking.forget_document(uri.as_str());
+            checking.forget_document(connection, uri.as_str())?;
             publish_diagnostics(connection, uri, Vec::new(), None)?;
             checking.update_documents(state)
         }
