@@ -18,6 +18,7 @@ const NPM_DEPENDENCY_GROUPS: &[&str] = &[
 const PUB_DEPENDENCY_GROUPS: &[&str] =
     &["dependencies", "dev_dependencies", "dependency_overrides"];
 
+/// Whether `dependencies` sit in sortable groups with unique lines and spans.
 pub fn can_sort_dependencies(dependencies: &[Dependency]) -> bool {
     let sortable = sortable_dependencies(dependencies);
 

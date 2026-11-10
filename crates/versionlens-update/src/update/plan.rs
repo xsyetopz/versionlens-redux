@@ -10,11 +10,14 @@ use crate::support::minimum_version_token;
 /// The update plan for one requirement. `update::plan` builds it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Plan {
+    /// Whether the requirement accepts the newest release.
     pub status: PlanStatus,
+    /// The candidate versions to offer.
     pub bumps: Vec<Bump>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Whether a requirement accepts the newest release.
 pub enum PlanStatus {
     /// The requirement already accepts the newest release.
     AllowsLatest,
@@ -25,16 +28,24 @@ pub enum PlanStatus {
 /// One candidate version for a requirement. Bumps are deduplicated by rendered text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Bump {
+    /// How far the version moves from the requirement.
     pub kind: BumpKind,
+    /// The candidate version.
     pub version: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The size of a bump.
 pub enum BumpKind {
+    /// The newest version the requirement already accepts.
     Satisfying,
+    /// The newest patch release.
     Patch,
+    /// The newest minor release.
     Minor,
+    /// The newest major release.
     Major,
+    /// The newest release overall.
     Latest,
 }
 
@@ -266,233 +277,233 @@ fn newest<'a>(versions: impl Iterator<Item = &'a str>, dialect: VersionDialect) 
 
 #[cfg(test)]
 mod tests {
-use super::{Bump, BumpKind, Plan, PlanStatus, plan};
-use versionlens_model::VersionDialect::{Cargo, Pep440, Semver};
+    use super::{Bump, BumpKind, Plan, PlanStatus, plan};
+    use versionlens_model::VersionDialect::{Cargo, Pep440, Semver};
 
-fn versions(list: &[&str]) -> Vec<String> {
-    list.iter().map(|version| (*version).to_owned()).collect()
-}
-
-fn bump(kind: BumpKind, version: &str) -> Bump {
-    Bump {
-        kind,
-        version: version.to_owned(),
+    fn versions(list: &[&str]) -> Vec<String> {
+        list.iter().map(|version| (*version).to_owned()).collect()
     }
-}
 
-#[test]
-fn caret_range_behind_latest_allows_latest_and_bumps_to_latest() {
-    let result = plan(
-        "^2.5.8",
-        Semver,
-        &versions(&["2.5.8", "2.5.9", "2.5.10", "2.5.14"]),
-    );
-
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![bump(BumpKind::Latest, "2.5.14")],
+    fn bump(kind: BumpKind, version: &str) -> Bump {
+        Bump {
+            kind,
+            version: version.to_owned(),
         }
-    );
-}
+    }
 
-#[test]
-fn intermediate_releases_are_not_listed_individually() {
-    let result = plan(
-        "^0.41.7",
-        Semver,
-        &versions(&[
-            "0.41.7", "0.41.11", "0.42.0", "0.42.1", "0.42.2", "0.42.3", "0.42.4", "0.42.5",
-            "0.42.6",
-        ]),
-    );
+    #[test]
+    fn caret_range_behind_latest_allows_latest_and_bumps_to_latest() {
+        let result = plan(
+            "^2.5.8",
+            Semver,
+            &versions(&["2.5.8", "2.5.9", "2.5.10", "2.5.14"]),
+        );
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::ExcludesLatest,
-            bumps: vec![
-                bump(BumpKind::Satisfying, "0.41.11"),
-                bump(BumpKind::Latest, "0.42.6"),
-            ],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![bump(BumpKind::Latest, "2.5.14")],
+            }
+        );
+    }
 
-#[test]
-fn prefix_similar_minimum_is_not_treated_as_latest() {
-    let result = plan("^1.2.1", Semver, &versions(&["1.2.1", "1.2.10"]));
+    #[test]
+    fn intermediate_releases_are_not_listed_individually() {
+        let result = plan(
+            "^0.41.7",
+            Semver,
+            &versions(&[
+                "0.41.7", "0.41.11", "0.42.0", "0.42.1", "0.42.2", "0.42.3", "0.42.4", "0.42.5",
+                "0.42.6",
+            ]),
+        );
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![bump(BumpKind::Latest, "1.2.10")],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::ExcludesLatest,
+                bumps: vec![
+                    bump(BumpKind::Satisfying, "0.41.11"),
+                    bump(BumpKind::Latest, "0.42.6"),
+                ],
+            }
+        );
+    }
 
-#[test]
-fn cargo_exact_pin_at_latest_offers_nothing() {
-    let result = plan("=0.7.0", Semver, &versions(&["0.6.0", "0.7.0"]));
+    #[test]
+    fn prefix_similar_minimum_is_not_treated_as_latest() {
+        let result = plan("^1.2.1", Semver, &versions(&["1.2.1", "1.2.10"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![bump(BumpKind::Latest, "1.2.10")],
+            }
+        );
+    }
 
-#[test]
-fn python_exact_pin_at_latest_offers_nothing() {
-    let result = plan("==2.34.2", Pep440, &versions(&["2.34.1", "2.34.2"]));
+    #[test]
+    fn cargo_exact_pin_at_latest_offers_nothing() {
+        let result = plan("=0.7.0", Semver, &versions(&["0.6.0", "0.7.0"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![],
+            }
+        );
+    }
 
-#[test]
-fn bracketed_exact_pin_behind_latest_bumps_to_latest() {
-    let result = plan("[1.0.0]", Semver, &versions(&["1.0.0", "1.0.1"]));
+    #[test]
+    fn python_exact_pin_at_latest_offers_nothing() {
+        let result = plan("==2.34.2", Pep440, &versions(&["2.34.1", "2.34.2"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::ExcludesLatest,
-            bumps: vec![bump(BumpKind::Latest, "1.0.1")],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![],
+            }
+        );
+    }
 
-#[test]
-fn bare_npm_version_is_an_exact_pin() {
-    let result = plan(
-        "1.0.0",
-        Semver,
-        &versions(&["1.0.0", "1.0.1", "1.1.0", "2.0.0"]),
-    );
+    #[test]
+    fn bracketed_exact_pin_behind_latest_bumps_to_latest() {
+        let result = plan("[1.0.0]", Semver, &versions(&["1.0.0", "1.0.1"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::ExcludesLatest,
-            bumps: vec![
-                bump(BumpKind::Patch, "1.0.1"),
-                bump(BumpKind::Minor, "1.1.0"),
-                bump(BumpKind::Latest, "2.0.0"),
-            ],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::ExcludesLatest,
+                bumps: vec![bump(BumpKind::Latest, "1.0.1")],
+            }
+        );
+    }
 
-#[test]
-fn cargo_bare_version_is_a_caret_requirement() {
-    let result = plan("1.0.200", Cargo, &versions(&["1.0.200", "1.0.210"]));
+    #[test]
+    fn bare_npm_version_is_an_exact_pin() {
+        let result = plan(
+            "1.0.0",
+            Semver,
+            &versions(&["1.0.0", "1.0.1", "1.1.0", "2.0.0"]),
+        );
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![bump(BumpKind::Latest, "1.0.210")],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::ExcludesLatest,
+                bumps: vec![
+                    bump(BumpKind::Patch, "1.0.1"),
+                    bump(BumpKind::Minor, "1.1.0"),
+                    bump(BumpKind::Latest, "2.0.0"),
+                ],
+            }
+        );
+    }
 
-#[test]
-fn cargo_exact_pin_names_only_its_version() {
-    let result = plan("=1.0.200", Cargo, &versions(&["1.0.200", "1.0.210"]));
+    #[test]
+    fn cargo_bare_version_is_a_caret_requirement() {
+        let result = plan("1.0.200", Cargo, &versions(&["1.0.200", "1.0.210"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::ExcludesLatest,
-            bumps: vec![bump(BumpKind::Latest, "1.0.210")],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![bump(BumpKind::Latest, "1.0.210")],
+            }
+        );
+    }
 
-#[test]
-fn newest_major_line_is_offered_between_satisfying_and_latest() {
-    let result = plan(
-        "^1.0.0",
-        Semver,
-        &versions(&["1.0.0", "1.5.0", "2.0.0", "2.4.0", "3.0.0"]),
-    );
+    #[test]
+    fn cargo_exact_pin_names_only_its_version() {
+        let result = plan("=1.0.200", Cargo, &versions(&["1.0.200", "1.0.210"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::ExcludesLatest,
-            bumps: vec![
-                bump(BumpKind::Satisfying, "1.5.0"),
-                bump(BumpKind::Major, "2.4.0"),
-                bump(BumpKind::Latest, "3.0.0"),
-            ],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::ExcludesLatest,
+                bumps: vec![bump(BumpKind::Latest, "1.0.210")],
+            }
+        );
+    }
 
-#[test]
-fn requirement_already_at_latest_offers_no_bump() {
-    let result = plan("^2.5.14", Semver, &versions(&["2.5.8", "2.5.14"]));
+    #[test]
+    fn newest_major_line_is_offered_between_satisfying_and_latest() {
+        let result = plan(
+            "^1.0.0",
+            Semver,
+            &versions(&["1.0.0", "1.5.0", "2.0.0", "2.4.0", "3.0.0"]),
+        );
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::ExcludesLatest,
+                bumps: vec![
+                    bump(BumpKind::Satisfying, "1.5.0"),
+                    bump(BumpKind::Major, "2.4.0"),
+                    bump(BumpKind::Latest, "3.0.0"),
+                ],
+            }
+        );
+    }
 
-#[test]
-fn prerelease_versions_are_never_bumps() {
-    let result = plan(
-        "^1.0.0",
-        Semver,
-        &versions(&["1.0.0", "1.1.0", "2.0.0-beta.1"]),
-    );
+    #[test]
+    fn requirement_already_at_latest_offers_no_bump() {
+        let result = plan("^2.5.14", Semver, &versions(&["2.5.8", "2.5.14"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![bump(BumpKind::Latest, "1.1.0")],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![],
+            }
+        );
+    }
 
-#[test]
-fn bump_spelling_the_requirement_version_differently_is_dropped() {
-    let result = plan("~1.5.0", Semver, &versions(&["1.5.0", "v1.5.0", "1.6.0"]));
+    #[test]
+    fn prerelease_versions_are_never_bumps() {
+        let result = plan(
+            "^1.0.0",
+            Semver,
+            &versions(&["1.0.0", "1.1.0", "2.0.0-beta.1"]),
+        );
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::ExcludesLatest,
-            bumps: vec![bump(BumpKind::Latest, "1.6.0")],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![bump(BumpKind::Latest, "1.1.0")],
+            }
+        );
+    }
 
-#[test]
-fn no_releases_allows_latest_without_bumps() {
-    let result = plan("^1.0.0", Semver, &[]);
+    #[test]
+    fn bump_spelling_the_requirement_version_differently_is_dropped() {
+        let result = plan("~1.5.0", Semver, &versions(&["1.5.0", "v1.5.0", "1.6.0"]));
 
-    assert_eq!(
-        result,
-        Plan {
-            status: PlanStatus::AllowsLatest,
-            bumps: vec![],
-        }
-    );
-}
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::ExcludesLatest,
+                bumps: vec![bump(BumpKind::Latest, "1.6.0")],
+            }
+        );
+    }
+
+    #[test]
+    fn no_releases_allows_latest_without_bumps() {
+        let result = plan("^1.0.0", Semver, &[]);
+
+        assert_eq!(
+            result,
+            Plan {
+                status: PlanStatus::AllowsLatest,
+                bumps: vec![],
+            }
+        );
+    }
 }

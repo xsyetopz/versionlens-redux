@@ -1,3 +1,5 @@
+//! Version suggestions and text edits for dependency updates.
+
 mod choices;
 mod constructors;
 mod range;
