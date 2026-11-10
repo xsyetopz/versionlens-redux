@@ -1,6 +1,7 @@
 [package]
 name = "versionlens-engine"
 description = "Version Lens orchestration contracts and domain model."
+publish = false
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true

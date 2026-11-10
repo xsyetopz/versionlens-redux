@@ -1,5 +1,6 @@
 [package]
 name = "versionlens-lsp"
+publish = false
 edition.workspace = true
 rust-version.workspace = true
 description = "Editor-neutral VersionLens language server"
