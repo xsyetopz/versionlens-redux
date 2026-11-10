@@ -3,6 +3,7 @@ import { expect, it } from "bun:test";
 import { field, items, manifestVersion, parseJson } from "../lib/json.mjs";
 import { capture } from "../lib/spawn.mjs";
 
+// The first cargo call on a fresh machine installs the pinned toolchain.
 it("release check derives and validates every root Cargo workspace package", async () => {
 	const metadata = await capture([
 		"cargo",
@@ -27,4 +28,4 @@ it("release check derives and validates every root Cargo workspace package", asy
 		field(entry, "name"),
 	);
 	expect(names).toContain("versionlens-test-support");
-});
+}, 300_000);

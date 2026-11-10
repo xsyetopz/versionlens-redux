@@ -1,12 +1,12 @@
 import { afterEach, beforeAll, describe, expect, it } from "bun:test";
 
 import {
+	buildServerBinary,
 	diagnostics,
 	hasStatus,
 	MANIFEST,
 	objectContaining,
 	open,
-	requireServerBinary,
 	runCleanups,
 	settled,
 	startSession,
@@ -15,7 +15,8 @@ import {
 	URI,
 } from "./support/session.ts";
 
-beforeAll(requireServerBinary);
+// A cold debug build of the server takes minutes.
+beforeAll(buildServerBinary, 600_000);
 
 afterEach(runCleanups);
 

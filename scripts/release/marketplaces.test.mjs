@@ -85,6 +85,28 @@ const configureWithFakeGitHub = async (directory, input, existing = "") => {
 	return { log: await Bun.file(log).text(), result };
 };
 
+/**
+ * @param {string[]} commandArguments
+ */
+const dryRunWithFakeGitHub = async (commandArguments) => {
+	const directory = await mkdtemp(
+		join(tmpdir(), "versionlens-marketplace-dry-run-"),
+	);
+	try {
+		const binaryDirectory = await fakeGitHubCli(directory);
+		return await configureMarketplaces(["--dry-run", ...commandArguments], {
+			env: {
+				...Bun.env,
+				GH_EXISTING: "",
+				GH_LOG: join(directory, "gh.log"),
+				PATH: `${binaryDirectory}${delimiter}${Bun.env["PATH"] ?? ""}`,
+			},
+		});
+	} finally {
+		await rm(directory, { force: true, recursive: true });
+	}
+};
+
 it("expands home-relative secret file paths before reading them", async () => {
 	const home = await mkdtemp(join(tmpdir(), "versionlens-marketplace-home-"));
 	try {
@@ -146,7 +168,7 @@ it("keeps existing secrets by default when resuming configuration", async () => 
 });
 
 it("lists every required marketplace secret without making hosted changes", async () => {
-	const result = await configureMarketplaces(["--dry-run"]);
+	const result = await dryRunWithFakeGitHub([]);
 	expect(result.exitCode).toBe(0);
 	for (const name of [
 		"AZURE_CLIENT_ID",
@@ -165,7 +187,7 @@ it("lists every required marketplace secret without making hosted changes", asyn
 });
 
 it("allows unavailable marketplaces to be skipped", async () => {
-	const result = await configureMarketplaces(["--dry-run", "--only", "zed"]);
+	const result = await dryRunWithFakeGitHub(["--only", "zed"]);
 	expect(result.exitCode).toBe(0);
 	expect(result.stdout).toContain("Selected marketplaces: zed");
 	expect(result.stdout).toContain("marketplaces: ZED_EXTENSIONS_FORK");
@@ -176,11 +198,7 @@ it("allows unavailable marketplaces to be skipped", async () => {
 });
 
 it("rejects unknown marketplace selections", async () => {
-	const result = await configureMarketplaces([
-		"--dry-run",
-		"--only",
-		"unknown",
-	]);
+	const result = await dryRunWithFakeGitHub(["--only", "unknown"]);
 	expect(result.exitCode).toBe(1);
 	expect(result.stderr).toContain("unknown marketplace unknown");
 });

@@ -8,17 +8,18 @@ import type { ExtensionState } from "../src/extension/state.ts";
 import type { Json, LspConnection } from "./support/lsp-client.ts";
 import type { FakeRegistry } from "./support/session.ts";
 import {
+	buildServerBinary,
 	diagnostics,
 	hasPublishedDiagnostics,
 	hasStatus,
 	open,
-	requireServerBinary,
 	runCleanups,
 	startRegistry,
 	startSession,
 } from "./support/session.ts";
 
-beforeAll(requireServerBinary);
+// A cold debug build of the server takes minutes.
+beforeAll(buildServerBinary, 600_000);
 
 afterEach(runCleanups);
 

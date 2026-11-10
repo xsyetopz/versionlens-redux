@@ -98,10 +98,21 @@ const serverBinary = (): string => {
 	return resolve(targetDirectory, "debug", name);
 };
 
-/** Fails the suite early when the server binary was not built. */
-const requireServerBinary = async (): Promise<void> => {
+/** Builds the server binary when it is missing, and fails the suite when it still is. */
+const buildServerBinary = async (): Promise<void> => {
 	const binary = serverBinary();
-	if (!(await Bun.file(binary).exists())) {
+	if (await Bun.file(binary).exists()) {
+		return;
+	}
+	const build = Bun.spawn(
+		["cargo", "build", "-p", "versionlens-lsp", "--locked"],
+		{
+			cwd: repositoryRoot,
+			stderr: "inherit",
+			stdout: "inherit",
+		},
+	);
+	if ((await build.exited) !== 0 || !(await Bun.file(binary).exists())) {
 		throw new Error(
 			`the language server is not built (${binary}). Run \`cargo build -p versionlens-lsp\` or set VERSIONLENS_LSP.`,
 		);
@@ -244,7 +255,7 @@ export {
 	MANIFEST,
 	objectContaining,
 	open,
-	requireServerBinary,
+	buildServerBinary,
 	runCleanups,
 	settled,
 	startRegistry,
