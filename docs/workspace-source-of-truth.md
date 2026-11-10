@@ -1,11 +1,11 @@
-# Workspace/source-of-truth layer
+# Workspace/Source-of-Truth Layer
 
 The graph is intentionally bounded to `DocumentInput.workspaceRoot`. It reads
 only explicit workspace declarations, rejects malformed/missing/duplicate
 members, and uses the open document text when the on-disk file is stale. A
 local identity must be proven before registry routing is bypassed.
 
-## Supported-parser disposition
+## Supported-Parser Disposition
 
 | Family / manifests currently parsed | Disposition |
 | --- | --- |
@@ -18,7 +18,7 @@ This matrix is a disposition, not a promise to infer tool-specific build
 evaluation. Unsupported or ambiguous references must remain visible to the
 existing terminal behavior.
 
-## Exhaustive `ManifestKind` coverage
+## Exhaustive `ManifestKind` Coverage
 
 The following is the complete `ManifestKind` inventory (defined in
 `crates/versionlens-model/src/manifest.rs`; the file-type table is
@@ -34,7 +34,7 @@ owner):
 | B | `PubspecOverridesYaml`, `PubspecYaml`, `GoMod`, `SwiftPackage`, `UnityProjectManifestJson`, `RubyGemspec`, `Gemfile`, `PaketReferences`, `CocoaPodsPodfile`, `DuneProject` |
 | C | `ComposerJson`, `DenoJson`, `DenoImportMapJson`, `JsrJson`, `DotnetProjectJson`, `DotnetXml`, `PaketDependencies`, `DockerComposeYaml`, `Dockerfile`, `KustomizationYaml`, `DubJson`, `DubSdl`, `MavenPomXml`, `GradleBuild`, `GradleSettings`, `GradleVersionCatalogToml`, `SbtBuild`, `ClojureDepsEdn`, `LeiningenProjectClj`, `MixExs`, `RebarConfig`, `GleamToml`, `Opam`, `Cabal`, `CabalProject`, `StackYaml`, `JuliaProjectToml`, `JuliaManifestToml`, `RDescription`, `RenvLock`, `ConanfileTxt`, `ConanfilePy`, `VcpkgJson`, `Cmake`, `XmakeLua`, `MesonWrap`, `BazelWorkspace`, `ZigBuildZon`, `Nimble`, `LuaRockspec`, `Cpanfile`, `HaxelibJson`, `TerraformTf`, `HelmChartYaml`, `AnsibleGalaxyRequirementsYaml`, `BazelModule`, `NixFlake`, `GitHubActions`, `CargoConfigToml`, `DotnetToolsJson`, `Cartfile`, `PythonPipfile`, `PythonPyprojectToml`, `PythonRequirementsTxt`, `Nvmrc`, `NodeVersion`, `BunVersion`, `RustToolchain`, `RustToolchainToml`, `VersionLensMultiRegistries`, `Unknown` |
 
-## Authoritative specifications consulted
+## Authoritative Specifications Consulted
 
 - npm package/workspace metadata (npm CLI v12): `https://docs.npmjs.com/cli/v12/configuring-npm/package-json`
 - Bun package workspaces: `https://bun.sh/docs/install/workspaces`

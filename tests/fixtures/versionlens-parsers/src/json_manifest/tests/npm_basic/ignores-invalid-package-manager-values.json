@@ -1,6 +1,6 @@
 {
-	"packageManager": "@9.1.2",
-	"dependencies": {
-		"left-pad": "1.0.0"
-	}
+  "packageManager": "@9.1.2",
+  "dependencies": {
+    "left-pad": "1.0.0"
+  }
 }

@@ -1,991 +1,1356 @@
 {
-	"entries": [
-		{
-			"ecosystem": "cargo",
-			"provider": "cargo",
-			"registry": "crates.io index/API or configured Cargo registry",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.cargo.files",
-					"defaultGlob": "**/{rust-toolchain,rust-toolchain.toml,Cargo.toml,.cargo/config.toml,.cargo/config}",
-					"fileForms": [
-						"Cargo.toml",
-						".cargo/config.toml",
-						".cargo/config",
-						"rust-toolchain",
-						"rust-toolchain.toml"
-					],
-					"languages": ["plaintext", "toml"],
-					"manifestKinds": [
-						"CargoToml",
-						"CargoConfigToml",
-						"RustToolchain",
-						"RustToolchainToml"
-					],
-					"parsers": [
-						"parse_cargo_toml_with_paths",
-						"parse_rust_toolchain",
-						"parse_rust_toolchain_toml"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.cargo.dependencyProperties",
-				"default": [
-					"package",
-					"dependencies",
-					"dependencies.*",
-					"dev-dependencies",
-					"dev-dependencies.*",
-					"build-dependencies",
-					"build-dependencies.*",
-					"target.*.dependencies",
-					"target.*.dependencies.*",
-					"target.*.dev-dependencies",
-					"target.*.dev-dependencies.*",
-					"target.*.build-dependencies",
-					"target.*.build-dependencies.*",
-					"workspace.dependencies",
-					"workspace.dependencies.*",
-					"patch.*",
-					"patch.*.*"
-				]
-			}
-		},
-		{
-			"ecosystem": "composer",
-			"provider": "composer",
-			"registry": "Packagist or configured Composer repository",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.composer.files",
-					"defaultGlob": "**/composer.json",
-					"fileForms": ["composer.json"],
-					"languages": ["json", "jsonc"],
-					"manifestKinds": ["ComposerJson"],
-					"parsers": ["parse_composer_json_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.composer.dependencyProperties",
-				"default": [
-					"version",
-					"require",
-					"require-dev",
-					"conflict",
-					"replace",
-					"provide"
-				]
-			}
-		},
-		{
-			"ecosystem": "deno-jsr-npm",
-			"provider": "deno",
-			"registry": "Deno import maps, JSR API, npm registry for npm: specifiers",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.deno.files",
-					"defaultGlob": "**/{deno.json,deno.jsonc,import_map.json,jsr.json,jsr.jsonc}",
-					"fileForms": [
-						"deno.json",
-						"deno.jsonc",
-						"import_map.json",
-						"jsr.json",
-						"jsr.jsonc"
-					],
-					"languages": ["json", "jsonc"],
-					"manifestKinds": ["DenoJson", "DenoImportMapJson", "JsrJson"],
-					"parsers": ["parse_deno_json_with_paths", "parse_jsr_json_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.deno.dependencyProperties",
-				"default": ["version", "imports", "scopes"]
-			}
-		},
-		{
-			"ecosystem": "docker",
-			"provider": "docker",
-			"registry": "OCI/Docker registry tags",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.docker.files",
-					"defaultGlob": "**/{compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml,dockerfile,*.dockerfile,Dockerfile,*.Dockerfile}",
-					"fileForms": [
-						"dockerfile",
-						"*.dockerfile",
-						"Dockerfile",
-						"*.Dockerfile",
-						"compose.yaml",
-						"compose.yml",
-						"*.compose.yaml",
-						"*.compose.yml",
-						"compose.*.yaml",
-						"compose.*.yml",
-						"docker-compose.yaml",
-						"docker-compose.yml",
-						"docker-compose.*.yaml",
-						"docker-compose.*.yml"
-					],
-					"languages": ["dockercompose", "yaml", "dockerfile", "plaintext"],
-					"manifestKinds": ["Dockerfile", "DockerComposeYaml"],
-					"parsers": ["parse_dockerfile", "parse_docker_compose_yaml"]
-				}
-			]
-		},
-		{
-			"ecosystem": "dotnet",
-			"provider": "dotnet",
-			"registry": "NuGet v3 service index or configured NuGet/Paket source",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.dotnet.files",
-					"defaultGlob": "**/{packages.config,*.csproj,*.fsproj,*.vbproj,*.targets,*.props,paket.dependencies,paket.references,project.json,dotnet-tools.json}",
-					"fileForms": [
-						"*.csproj",
-						"*.fsproj",
-						"*.vbproj",
-						"project.json",
-						"dotnet-tools.json",
-						"Directory.Packages.props",
-						"packages.config",
-						"paket.dependencies",
-						"paket.references",
-						"*.targets",
-						"*.props"
-					],
-					"languages": ["xml", "plaintext", "json", "jsonc"],
-					"manifestKinds": [
-						"DotnetXml",
-						"DotnetProjectJson",
-						"DotnetToolsJson",
-						"PaketDependencies",
-						"PaketReferences"
-					],
-					"parsers": [
-						"parse_dotnet_xml_with_paths",
-						"parse_dotnet_project_json_with_paths",
-						"parse_paket_dependencies",
-						"parse_paket_references"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.dotnet.dependencyProperties",
-				"default": [
-					"Project.Sdk",
-					"Project.PropertyGroup.Version",
-					"Project.PropertyGroup.AssemblyVersion",
-					"Project.ItemGroup.GlobalPackageReference",
-					"Project.ItemGroup.PackageReference",
-					"Project.ItemGroup.PackageVersion",
-					"Project.ItemGroup.DotNetCliToolReference",
-					"packages.package",
-					"paket.dependencies",
-					"paket.references"
-				]
-			}
-		},
-		{
-			"ecosystem": "dub",
-			"provider": "dub",
-			"registry": "Dub registry API",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.dub.files",
-					"defaultGlob": "**/{dub.json,dub.selections.json,dub.sdl}",
-					"fileForms": ["dub.json", "dub.selections.json", "dub.sdl"],
-					"languages": ["json", "jsonc", "plaintext"],
-					"manifestKinds": ["DubJson", "DubSelectionsJson", "DubSdl"],
-					"parsers": ["parse_dub_json_with_paths", "parse_dub_sdl"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.dub.dependencyProperties",
-				"default": ["dependencies", "versions", "configurations.*.dependencies"]
-			}
-		},
-		{
-			"ecosystem": "go",
-			"provider": "golang",
-			"registry": "Go module proxy",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.golang.files",
-					"defaultGlob": "**/{go.mod,go.work}",
-					"fileForms": ["go.mod", "go.work"],
-					"languages": ["go.mod", "plaintext"],
-					"manifestKinds": ["GoMod"],
-					"parsers": ["parse_go_mod"]
-				}
-			]
-		},
-		{
-			"ecosystem": "hex",
-			"provider": "hex",
-			"registry": "Hex package API or configured Hex-compatible registry",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.hex.files",
-					"defaultGlob": "**/{mix.exs,rebar.config,gleam.toml}",
-					"fileForms": ["mix.exs", "rebar.config", "gleam.toml"],
-					"languages": ["elixir", "plaintext", "erlang", "toml"],
-					"manifestKinds": ["MixExs", "RebarConfig", "GleamToml"],
-					"parsers": [
-						"parse_mix_exs_document",
-						"parse_rebar_config_document",
-						"parse_gleam_toml_document"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.hex.dependencyProperties",
-				"default": [
-					"version",
-					"deps",
-					"plugins",
-					"project_plugins",
-					"dependencies",
-					"dev-dependencies",
-					"dev_dependencies"
-				]
-			}
-		},
-		{
-			"ecosystem": "maven",
-			"provider": "maven",
-			"registry": "Maven Central, Gradle Plugin Portal, configured Maven repositories, and Clojars",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.maven.files",
-					"defaultGlob": "**/{gradle/libs.versions.toml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,build.sbt,deps.edn,project.clj,pom.xml}",
-					"fileForms": [
-						"pom.xml",
-						"build.gradle",
-						"build.gradle.kts",
-						"settings.gradle",
-						"settings.gradle.kts",
-						"gradle/libs.versions.toml",
-						"build.sbt",
-						"deps.edn",
-						"project.clj"
-					],
-					"languages": [
-						"toml",
-						"groovy",
-						"kotlin",
-						"plaintext",
-						"scala",
-						"clojure",
-						"xml"
-					],
-					"manifestKinds": [
-						"MavenPomXml",
-						"GradleBuild",
-						"GradleSettings",
-						"GradleVersionCatalogToml",
-						"SbtBuild",
-						"ClojureDepsEdn",
-						"LeiningenProjectClj"
-					],
-					"parsers": [
-						"parse_maven_xml_with_paths",
-						"parse_gradle_build",
-						"parse_gradle_settings",
-						"parse_gradle_version_catalog_toml",
-						"parse_sbt_build",
-						"parse_clojure_deps_edn",
-						"parse_leiningen_project_clj"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.maven.dependencyProperties",
-				"default": [
-					"project.version",
-					"project.dependencies.dependency",
-					"project.dependencyManagement.dependencies.dependency",
-					"project.parent",
-					"project.build.plugins.plugin",
-					"project.build.pluginManagement.plugins.plugin",
-					"project.profiles.profile.dependencies.dependency",
-					"project.profiles.profile.dependencyManagement.dependencies.dependency",
-					"project.profiles.profile.build.plugins.plugin",
-					"project.profiles.profile.build.pluginManagement.plugins.plugin"
-				]
-			}
-		},
-		{
-			"ecosystem": "npm",
-			"provider": "npm",
-			"registry": "npm registry or configured npm-compatible registry",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.npm.files",
-					"defaultGlob": "**/{.nvmrc,.node-version,.bun-version,package.json,package.json5,package.yaml,package.yml}",
-					"fileForms": [
-						"package.json",
-						"package.json5",
-						"package.yaml",
-						"package.yml",
-						".nvmrc",
-						".node-version",
-						".bun-version"
-					],
-					"languages": ["plaintext", "json", "jsonc", "json5", "yaml"],
-					"manifestKinds": [
-						"NpmPackageJson",
-						"NpmPackageJson5",
-						"NpmPackageYaml",
-						"Nvmrc",
-						"NodeVersion",
-						"BunVersion"
-					],
-					"parsers": [
-						"parse_package_json_with_paths",
-						"parse_package_yaml_with_paths",
-						"parse_nvmrc",
-						"parse_node_version",
-						"parse_bun_version"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.npm.dependencyProperties"
-			}
-		},
-		{
-			"ecosystem": "pnpm-yarn",
-			"provider": "pnpm",
-			"registry": "npm registry through pnpm/Yarn workspace configuration",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.pnpm.files",
-					"defaultGlob": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yml,.yarnrc.yaml}",
-					"fileForms": [
-						"pnpm-workspace.yaml",
-						"pnpm-workspace.yml",
-						".yarnrc.yaml",
-						".yarnrc.yml"
-					],
-					"languages": ["yaml"],
-					"manifestKinds": ["PnpmYaml"],
-					"parsers": ["parse_pnpm_yaml_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.pnpm.dependencyProperties",
-				"default": [
-					"catalog",
-					"catalogs.*.*",
-					"overrides",
-					"packageExtensions.*.dependencies",
-					"packageExtensions.*.devDependencies",
-					"packageExtensions.*.peerDependencies",
-					"packageExtensions.*.optionalDependencies"
-				]
-			}
-		},
-		{
-			"ecosystem": "pub",
-			"provider": "pub",
-			"registry": "pub.dev API or hosted Pub source",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.pub.files",
-					"defaultGlob": "**/{pubspec_overrides.yaml,pubspec.yaml,pubspec.yml}",
-					"fileForms": [
-						"pubspec.yaml",
-						"pubspec.yml",
-						"pubspec_overrides.yaml"
-					],
-					"languages": ["yaml"],
-					"manifestKinds": ["PubspecYaml", "PubspecOverridesYaml"],
-					"parsers": [
-						"parse_pubspec_yaml_with_paths",
-						"parse_pubspec_overrides_yaml_with_paths"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.pub.dependencyProperties",
-				"default": [
-					"version",
-					"workspace",
-					"dependencies",
-					"dev_dependencies",
-					"dependency_overrides"
-				]
-			}
-		},
-		{
-			"ecosystem": "python",
-			"provider": "pypi",
-			"registry": "PyPI JSON API or configured Python package index/source",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.pypi.files",
-					"defaultGlob": "**/{*requirements*.txt,*constraints*.txt,Pipfile,pyproject.toml}",
-					"fileForms": [
-						"Pipfile",
-						"pyproject.toml",
-						"*requirements*.txt",
-						"*constraints*.txt"
-					],
-					"languages": ["plaintext", "pip-requirements", "toml"],
-					"manifestKinds": [
-						"PythonPipfile",
-						"PythonPyprojectToml",
-						"PythonRequirementsTxt"
-					],
-					"parsers": [
-						"parse_pipfile_with_paths",
-						"parse_pyproject_toml_with_paths",
-						"parse_requirements_txt"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.pypi.dependencyProperties",
-				"default": [
-					"project",
-					"packages",
-					"dev-packages",
-					"tool.poetry.dependencies",
-					"tool.poetry.dev-dependencies",
-					"tool.poetry.group.*.dependencies",
-					"project.optional-dependencies",
-					"dependency-groups",
-					"tool.uv.sources"
-				]
-			}
-		},
-		{
-			"ecosystem": "ruby",
-			"provider": "ruby",
-			"registry": "RubyGems API or Bundler source",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.ruby.files",
-					"defaultGlob": "**/{*.gemspec,Gemfile}",
-					"fileForms": ["Gemfile", "*.gemspec"],
-					"languages": ["ruby", "plaintext"],
-					"manifestKinds": ["Gemfile", "RubyGemspec"],
-					"parsers": ["parse_gemfile", "parse_gemspec"]
-				}
-			]
-		},
-		{
-			"ecosystem": "opam",
-			"provider": "opam",
-			"registry": "opam package pages from opam.ocaml.org or configured opam package site",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.opam.files",
-					"defaultGlob": "**/{opam,*.opam,dune-project}",
-					"fileForms": ["opam", "*.opam", "dune-project"],
-					"languages": ["plaintext"],
-					"manifestKinds": ["Opam", "DuneProject"],
-					"parsers": ["parse_opam", "parse_dune_project"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.opam.dependencyProperties",
-				"default": [
-					"version",
-					"depends",
-					"depopts",
-					"conflicts",
-					"package.version",
-					"package.depends"
-				]
-			}
-		},
-		{
-			"ecosystem": "haskell",
-			"provider": "hackage",
-			"registry": "Hackage package API, Stackage snapshots API, and Stack extra-deps package index entries",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.hackage.files",
-					"defaultGlob": "**/{cabal.project,*.cabal,stack.yaml,stack.yml}",
-					"fileForms": ["*.cabal", "cabal.project", "stack.yaml", "stack.yml"],
-					"languages": ["properties", "plaintext", "yaml"],
-					"manifestKinds": ["Cabal", "CabalProject", "StackYaml"],
-					"parsers": ["parse_cabal", "parse_cabal_project", "parse_stack_yaml"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.hackage.dependencyProperties",
-				"default": [
-					"version",
-					"build-depends",
-					"setup-depends",
-					"build-tool-depends",
-					"constraints",
-					"resolver",
-					"extra-deps"
-				]
-			}
-		},
-		{
-			"ecosystem": "julia",
-			"provider": "julia",
-			"registry": "Julia General registry Versions.toml files or configured Julia registry base URL",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.julia.files",
-					"defaultGlob": "**/{Project.toml,Manifest.toml,Manifest-v*.toml}",
-					"fileForms": [
-						"Project.toml",
-						"Manifest.toml",
-						"Manifest-v{major}.{minor}.toml"
-					],
-					"languages": ["toml"],
-					"manifestKinds": ["JuliaProjectToml", "JuliaManifestToml"],
-					"parsers": ["parse_julia_project", "parse_julia_manifest"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.julia.dependencyProperties",
-				"default": ["version", "deps", "compat", "sources"]
-			}
-		},
-		{
-			"ecosystem": "r",
-			"provider": "cran",
-			"registry": "CRAN PACKAGES metadata from CRAN or configured CRAN-like repositories",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.cran.files",
-					"defaultGlob": "**/{DESCRIPTION,renv.lock}",
-					"fileForms": ["DESCRIPTION", "renv.lock"],
-					"languages": ["plaintext", "json", "jsonc"],
-					"manifestKinds": ["RDescription", "RenvLock"],
-					"parsers": ["parse_r_description", "parse_renv_lock"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.cran.dependencyProperties",
-				"default": [
-					"Version",
-					"Depends",
-					"Imports",
-					"Suggests",
-					"Enhances",
-					"LinkingTo",
-					"Packages"
-				]
-			}
-		},
-		{
-			"ecosystem": "c-cpp",
-			"provider": "conan",
-			"registry": "Conan v2 registry search API from ConanCenter or configured Conan-compatible remotes",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.conan.files",
-					"defaultGlob": "**/{conanfile.txt,conanfile.py}",
-					"fileForms": ["conanfile.txt", "conanfile.py"],
-					"languages": ["plaintext", "python"],
-					"manifestKinds": ["ConanfileTxt", "ConanfilePy"],
-					"parsers": ["parse_conanfile_txt", "parse_conanfile_py"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.conan.dependencyProperties",
-				"default": [
-					"requires",
-					"tool_requires",
-					"build_requires",
-					"test_requires",
-					"python_requires"
-				]
-			}
-		},
-		{
-			"ecosystem": "c-cpp",
-			"provider": "cpp",
-			"registry": "GitHub tags for GitHub-backed CMake, Meson wrap, and Bazel dependencies; Xmake package recipes from xmake-repo for Xmake dependencies",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.cpp.files",
-					"defaultGlob": "**/{CMakeLists.txt,*.cmake,xmake.lua,subprojects/*.wrap,WORKSPACE,WORKSPACE.bazel}",
-					"fileForms": [
-						"CMakeLists.txt",
-						"*.cmake",
-						"xmake.lua",
-						"subprojects/*.wrap",
-						"WORKSPACE",
-						"WORKSPACE.bazel"
-					],
-					"languages": [
-						"cmake",
-						"plaintext",
-						"lua",
-						"meson",
-						"ini",
-						"starlark"
-					],
-					"manifestKinds": ["Cmake", "XmakeLua", "MesonWrap", "BazelWorkspace"],
-					"parsers": [
-						"parse_cmake_with_paths",
-						"parse_xmake_lua_with_paths",
-						"parse_meson_wrap_with_paths",
-						"parse_bazel_workspace_with_paths"
-					]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.cpp.dependencyProperties",
-				"default": [
-					"add_requires",
-					"FetchContent_Declare",
-					"ExternalProject_Add",
-					"CPMAddPackage",
-					"meson.wrap",
-					"http_archive"
-				]
-			}
-		},
-		{
-			"ecosystem": "c-cpp",
-			"provider": "vcpkg",
-			"registry": "vcpkg registry version database from the configured registry repository",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.vcpkg.files",
-					"defaultGlob": "**/vcpkg.json",
-					"fileForms": ["vcpkg.json"],
-					"languages": ["json", "jsonc"],
-					"manifestKinds": ["VcpkgJson"],
-					"parsers": ["parse_vcpkg_json"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.vcpkg.dependencyProperties",
-				"default": ["dependencies", "features.*.dependencies", "overrides"]
-			}
-		},
-		{
-			"ecosystem": "github-actions",
-			"provider": "github",
-			"registry": "GitHub repository tags and SHA-pinned releases; action-specific runtime release sources",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.github.files",
-					"defaultGlob": "**/.github/{workflows,actions}/**/*.{yml,yaml}",
-					"fileForms": [
-						".github/workflows/*.{yml,yaml}",
-						".github/actions/**/action.{yml,yaml}"
-					],
-					"languages": ["yaml"],
-					"manifestKinds": ["GitHubActions"],
-					"parsers": ["parse_github_actions"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.github.dependencyProperties",
-				"default": [
-					"uses",
-					"with.node-version",
-					"with.bun-version",
-					"with.go-version",
-					"with.deno-version",
-					"with.python-version",
-					"with.java-version",
-					"with.dotnet-version",
-					"with.ruby-version",
-					"with.toolchain"
-				]
-			}
-		},
-		{
-			"ecosystem": "swift",
-			"provider": "swift",
-			"registry": "Swift package registry API or GitHub tags for GitHub URL dependencies",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.swift.files",
-					"defaultGlob": "**/{Package.swift,Cartfile,Cartfile.private}",
-					"fileForms": ["Package.swift", "Cartfile", "Cartfile.private"],
-					"languages": ["swift", "plaintext"],
-					"manifestKinds": ["SwiftPackage", "Cartfile"],
-					"parsers": ["parse_swift_package", "parse_cartfile"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.swift.dependencyProperties",
-				"default": ["dependencies"]
-			}
-		},
-		{
-			"ecosystem": "zig",
-			"provider": "zig",
-			"registry": "Zig package URLs with GitHub tag lookup for GitHub-hosted archives",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.zig.files",
-					"defaultGlob": "**/build.zig.zon",
-					"fileForms": ["build.zig.zon"],
-					"languages": ["zig", "plaintext"],
-					"manifestKinds": ["ZigBuildZon"],
-					"parsers": ["parse_zig_build_zon"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.zig.dependencyProperties",
-				"default": ["dependencies"]
-			}
-		},
-		{
-			"ecosystem": "nim",
-			"provider": "nim",
-			"registry": "Nimble packages index with GitHub tag lookup for GitHub URL dependencies",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.nim.files",
-					"defaultGlob": "**/*.nimble",
-					"fileForms": [".nimble"],
-					"languages": ["nim", "plaintext"],
-					"manifestKinds": ["Nimble"],
-					"parsers": ["parse_nimble"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.nim.dependencyProperties",
-				"default": ["requires", "dev.requires", "feature.*.requires"]
-			}
-		},
-		{
-			"ecosystem": "luarocks",
-			"provider": "luarocks",
-			"registry": "LuaRocks manifest repository",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.luarocks.files",
-					"defaultGlob": "**/*.rockspec",
-					"fileForms": [".rockspec"],
-					"languages": ["lua", "plaintext"],
-					"manifestKinds": ["LuaRockspec"],
-					"parsers": ["parse_luarocks_rockspec"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.luarocks.dependencyProperties",
-				"default": ["dependencies", "build_dependencies", "test_dependencies"]
-			}
-		},
-		{
-			"ecosystem": "cpan",
-			"provider": "cpan",
-			"registry": "MetaCPAN download_url API",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.cpan.files",
-					"defaultGlob": "**/cpanfile",
-					"fileForms": ["cpanfile"],
-					"languages": ["perl", "plaintext"],
-					"manifestKinds": ["Cpanfile"],
-					"parsers": ["parse_cpanfile"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.cpan.dependencyProperties",
-				"default": [
-					"requires",
-					"recommends",
-					"suggests",
-					"conflicts",
-					"configure.requires",
-					"build.requires",
-					"test.requires",
-					"develop.requires",
-					"feature.*.requires",
-					"feature.*.recommends",
-					"feature.*.suggests",
-					"feature.*.conflicts"
-				]
-			}
-		},
-		{
-			"ecosystem": "haxelib",
-			"provider": "haxelib",
-			"registry": "Haxelib project versions page",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.haxelib.files",
-					"defaultGlob": "**/haxelib.json",
-					"fileForms": ["haxelib.json"],
-					"languages": ["json", "jsonc"],
-					"manifestKinds": ["HaxelibJson"],
-					"parsers": ["parse_haxelib_json_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.haxelib.dependencyProperties",
-				"default": ["dependencies"]
-			}
-		},
-		{
-			"ecosystem": "terraform",
-			"provider": "terraform",
-			"registry": "Terraform Registry protocol",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.terraform.files",
-					"defaultGlob": "**/{*.tf,*.tofu}",
-					"fileForms": ["*.tf", "*.tofu"],
-					"languages": ["terraform", "hcl", "plaintext"],
-					"manifestKinds": ["TerraformTf"],
-					"parsers": ["parse_terraform_hcl"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.terraform.dependencyProperties",
-				"default": ["required_providers"]
-			}
-		},
-		{
-			"ecosystem": "helm",
-			"provider": "helm",
-			"registry": "Helm chart repository index.yaml and OCI tags",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.helm.files",
-					"defaultGlob": "**/Chart.yaml",
-					"fileForms": ["Chart.yaml"],
-					"languages": ["yaml"],
-					"manifestKinds": ["HelmChartYaml"],
-					"parsers": ["parse_helm_chart_yaml_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.helm.dependencyProperties",
-				"default": ["dependencies"]
-			}
-		},
-		{
-			"ecosystem": "ansible-galaxy",
-			"provider": "ansible",
-			"registry": "Ansible Galaxy API for collections and roles; git/source requirements are fixed",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.ansible.files",
-					"defaultGlob": "**/{requirements.yml,requirements.yaml}",
-					"fileForms": ["requirements.yml", "requirements.yaml"],
-					"languages": ["yaml"],
-					"manifestKinds": ["AnsibleGalaxyRequirementsYaml"],
-					"parsers": ["parse_ansible_galaxy_requirements_yaml_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.ansible.dependencyProperties",
-				"default": ["roles", "collections"]
-			}
-		},
-		{
-			"ecosystem": "bazel",
-			"provider": "bazel",
-			"registry": "Bazel Central Registry metadata.json or configured Bazel registry",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.bazel.files",
-					"defaultGlob": "**/MODULE.bazel",
-					"fileForms": ["MODULE.bazel"],
-					"languages": ["starlark", "plaintext"],
-					"manifestKinds": ["BazelModule"],
-					"parsers": ["parse_bazel_module_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.bazel.dependencyProperties",
-				"default": [
-					"bazel_dep",
-					"single_version_override",
-					"multiple_version_override"
-				]
-			}
-		},
-		{
-			"ecosystem": "nix",
-			"provider": "nix",
-			"registry": "GitHub repository tags for GitHub-backed Nix flake inputs; local/path/git follows are fixed",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.nix.files",
-					"defaultGlob": "**/flake.nix",
-					"fileForms": ["flake.nix"],
-					"languages": ["nix", "plaintext"],
-					"manifestKinds": ["NixFlake"],
-					"parsers": ["parse_nix_flake_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.nix.dependencyProperties",
-				"default": ["inputs"]
-			}
-		},
-		{
-			"ecosystem": "kustomize",
-			"provider": "kustomize",
-			"registry": "Docker Hub and OCI-compatible registries through image tag lookup",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.kustomize.files",
-					"defaultGlob": "**/{kustomization.yaml,kustomization.yml,Kustomization}",
-					"fileForms": [
-						"kustomization.yaml",
-						"kustomization.yml",
-						"Kustomization"
-					],
-					"languages": ["yaml"],
-					"manifestKinds": ["KustomizationYaml"],
-					"parsers": ["parse_kustomization_yaml_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.kustomize.dependencyProperties",
-				"default": ["images"]
-			}
-		},
-		{
-			"ecosystem": "unity",
-			"provider": "unity",
-			"registry": "Unity npm-compatible package registry and project scopedRegistries",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.unity.files",
-					"defaultGlob": "**/Packages/manifest.json",
-					"fileForms": ["Packages/manifest.json"],
-					"languages": ["json", "jsonc"],
-					"manifestKinds": ["UnityProjectManifestJson"],
-					"parsers": ["parse_unity_project_manifest_json_with_paths"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.unity.dependencyProperties",
-				"default": ["dependencies"]
-			}
-		},
-		{
-			"ecosystem": "cocoapods",
-			"provider": "cocoapods",
-			"registry": "CocoaPods specs/trunk metadata or configured specs source",
-			"manifests": [
-				{
-					"defaultSettingKey": "versionlens.cocoapods.files",
-					"defaultGlob": "**/Podfile",
-					"fileForms": ["Podfile"],
-					"languages": ["ruby", "plaintext"],
-					"manifestKinds": ["CocoaPodsPodfile"],
-					"parsers": ["parse_cocoapods_podfile"]
-				}
-			],
-			"dependencyProperties": {
-				"settingKey": "versionlens.cocoapods.dependencyProperties",
-				"default": ["pod"]
-			}
-		}
-	]
+  "entries": [
+    {
+      "ecosystem": "cargo",
+      "provider": "cargo",
+      "registry": "crates.io index/API or configured Cargo registry",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.cargo.files",
+          "defaultGlob": "**/{rust-toolchain,rust-toolchain.toml,Cargo.toml,.cargo/config.toml,.cargo/config}",
+          "fileForms": [
+            "Cargo.toml",
+            ".cargo/config.toml",
+            ".cargo/config",
+            "rust-toolchain",
+            "rust-toolchain.toml"
+          ],
+          "languages": [
+            "plaintext",
+            "toml"
+          ],
+          "manifestKinds": [
+            "CargoToml",
+            "CargoConfigToml",
+            "RustToolchain",
+            "RustToolchainToml"
+          ],
+          "parsers": [
+            "parse_cargo_toml_with_paths",
+            "parse_rust_toolchain",
+            "parse_rust_toolchain_toml"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.cargo.dependencyProperties",
+        "default": [
+          "package",
+          "dependencies",
+          "dependencies.*",
+          "dev-dependencies",
+          "dev-dependencies.*",
+          "build-dependencies",
+          "build-dependencies.*",
+          "target.*.dependencies",
+          "target.*.dependencies.*",
+          "target.*.dev-dependencies",
+          "target.*.dev-dependencies.*",
+          "target.*.build-dependencies",
+          "target.*.build-dependencies.*",
+          "workspace.dependencies",
+          "workspace.dependencies.*",
+          "patch.*",
+          "patch.*.*"
+        ]
+      }
+    },
+    {
+      "ecosystem": "composer",
+      "provider": "composer",
+      "registry": "Packagist or configured Composer repository",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.composer.files",
+          "defaultGlob": "**/composer.json",
+          "fileForms": [
+            "composer.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "ComposerJson"
+          ],
+          "parsers": [
+            "parse_composer_json_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.composer.dependencyProperties",
+        "default": [
+          "version",
+          "require",
+          "require-dev",
+          "conflict",
+          "replace",
+          "provide"
+        ]
+      }
+    },
+    {
+      "ecosystem": "deno-jsr-npm",
+      "provider": "deno",
+      "registry": "Deno import maps, JSR API, npm registry for npm: specifiers",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.deno.files",
+          "defaultGlob": "**/{deno.json,deno.jsonc,import_map.json,jsr.json,jsr.jsonc}",
+          "fileForms": [
+            "deno.json",
+            "deno.jsonc",
+            "import_map.json",
+            "jsr.json",
+            "jsr.jsonc"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "DenoJson",
+            "DenoImportMapJson",
+            "JsrJson"
+          ],
+          "parsers": [
+            "parse_deno_json_with_paths",
+            "parse_jsr_json_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.deno.dependencyProperties",
+        "default": [
+          "version",
+          "imports",
+          "scopes"
+        ]
+      }
+    },
+    {
+      "ecosystem": "docker",
+      "provider": "docker",
+      "registry": "OCI/Docker registry tags",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.docker.files",
+          "defaultGlob": "**/{compose.yaml,compose.yml,*.compose.yaml,*.compose.yml,compose.*.yaml,compose.*.yml,docker-compose.yaml,docker-compose.yml,docker-compose.*.yaml,docker-compose.*.yml,dockerfile,*.dockerfile,Dockerfile,*.Dockerfile}",
+          "fileForms": [
+            "dockerfile",
+            "*.dockerfile",
+            "Dockerfile",
+            "*.Dockerfile",
+            "compose.yaml",
+            "compose.yml",
+            "*.compose.yaml",
+            "*.compose.yml",
+            "compose.*.yaml",
+            "compose.*.yml",
+            "docker-compose.yaml",
+            "docker-compose.yml",
+            "docker-compose.*.yaml",
+            "docker-compose.*.yml"
+          ],
+          "languages": [
+            "dockercompose",
+            "yaml",
+            "dockerfile",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Dockerfile",
+            "DockerComposeYaml"
+          ],
+          "parsers": [
+            "parse_dockerfile",
+            "parse_docker_compose_yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "ecosystem": "dotnet",
+      "provider": "dotnet",
+      "registry": "NuGet v3 service index or configured NuGet/Paket source",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.dotnet.files",
+          "defaultGlob": "**/{packages.config,*.csproj,*.fsproj,*.vbproj,*.targets,*.props,paket.dependencies,paket.references,project.json,dotnet-tools.json}",
+          "fileForms": [
+            "*.csproj",
+            "*.fsproj",
+            "*.vbproj",
+            "project.json",
+            "dotnet-tools.json",
+            "Directory.Packages.props",
+            "packages.config",
+            "paket.dependencies",
+            "paket.references",
+            "*.targets",
+            "*.props"
+          ],
+          "languages": [
+            "xml",
+            "plaintext",
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "DotnetXml",
+            "DotnetProjectJson",
+            "DotnetToolsJson",
+            "PaketDependencies",
+            "PaketReferences"
+          ],
+          "parsers": [
+            "parse_dotnet_xml_with_paths",
+            "parse_dotnet_project_json_with_paths",
+            "parse_paket_dependencies",
+            "parse_paket_references"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.dotnet.dependencyProperties",
+        "default": [
+          "Project.Sdk",
+          "Project.PropertyGroup.Version",
+          "Project.PropertyGroup.AssemblyVersion",
+          "Project.ItemGroup.GlobalPackageReference",
+          "Project.ItemGroup.PackageReference",
+          "Project.ItemGroup.PackageVersion",
+          "Project.ItemGroup.DotNetCliToolReference",
+          "packages.package",
+          "paket.dependencies",
+          "paket.references"
+        ]
+      }
+    },
+    {
+      "ecosystem": "dub",
+      "provider": "dub",
+      "registry": "Dub registry API",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.dub.files",
+          "defaultGlob": "**/{dub.json,dub.selections.json,dub.sdl}",
+          "fileForms": [
+            "dub.json",
+            "dub.selections.json",
+            "dub.sdl"
+          ],
+          "languages": [
+            "json",
+            "jsonc",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "DubJson",
+            "DubSelectionsJson",
+            "DubSdl"
+          ],
+          "parsers": [
+            "parse_dub_json_with_paths",
+            "parse_dub_sdl"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.dub.dependencyProperties",
+        "default": [
+          "dependencies",
+          "versions",
+          "configurations.*.dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "go",
+      "provider": "golang",
+      "registry": "Go module proxy",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.golang.files",
+          "defaultGlob": "**/{go.mod,go.work}",
+          "fileForms": [
+            "go.mod",
+            "go.work"
+          ],
+          "languages": [
+            "go.mod",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "GoMod"
+          ],
+          "parsers": [
+            "parse_go_mod"
+          ]
+        }
+      ]
+    },
+    {
+      "ecosystem": "hex",
+      "provider": "hex",
+      "registry": "Hex package API or configured Hex-compatible registry",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.hex.files",
+          "defaultGlob": "**/{mix.exs,rebar.config,gleam.toml}",
+          "fileForms": [
+            "mix.exs",
+            "rebar.config",
+            "gleam.toml"
+          ],
+          "languages": [
+            "elixir",
+            "plaintext",
+            "erlang",
+            "toml"
+          ],
+          "manifestKinds": [
+            "MixExs",
+            "RebarConfig",
+            "GleamToml"
+          ],
+          "parsers": [
+            "parse_mix_exs_document",
+            "parse_rebar_config_document",
+            "parse_gleam_toml_document"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.hex.dependencyProperties",
+        "default": [
+          "version",
+          "deps",
+          "plugins",
+          "project_plugins",
+          "dependencies",
+          "dev-dependencies",
+          "dev_dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "maven",
+      "provider": "maven",
+      "registry": "Maven Central, Gradle Plugin Portal, configured Maven repositories, and Clojars",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.maven.files",
+          "defaultGlob": "**/{gradle/libs.versions.toml,build.gradle,build.gradle.kts,settings.gradle,settings.gradle.kts,build.sbt,deps.edn,project.clj,pom.xml}",
+          "fileForms": [
+            "pom.xml",
+            "build.gradle",
+            "build.gradle.kts",
+            "settings.gradle",
+            "settings.gradle.kts",
+            "gradle/libs.versions.toml",
+            "build.sbt",
+            "deps.edn",
+            "project.clj"
+          ],
+          "languages": [
+            "toml",
+            "groovy",
+            "kotlin",
+            "plaintext",
+            "scala",
+            "clojure",
+            "xml"
+          ],
+          "manifestKinds": [
+            "MavenPomXml",
+            "GradleBuild",
+            "GradleSettings",
+            "GradleVersionCatalogToml",
+            "SbtBuild",
+            "ClojureDepsEdn",
+            "LeiningenProjectClj"
+          ],
+          "parsers": [
+            "parse_maven_xml_with_paths",
+            "parse_gradle_build",
+            "parse_gradle_settings",
+            "parse_gradle_version_catalog_toml",
+            "parse_sbt_build",
+            "parse_clojure_deps_edn",
+            "parse_leiningen_project_clj"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.maven.dependencyProperties",
+        "default": [
+          "project.version",
+          "project.dependencies.dependency",
+          "project.dependencyManagement.dependencies.dependency",
+          "project.parent",
+          "project.build.plugins.plugin",
+          "project.build.pluginManagement.plugins.plugin",
+          "project.profiles.profile.dependencies.dependency",
+          "project.profiles.profile.dependencyManagement.dependencies.dependency",
+          "project.profiles.profile.build.plugins.plugin",
+          "project.profiles.profile.build.pluginManagement.plugins.plugin"
+        ]
+      }
+    },
+    {
+      "ecosystem": "npm",
+      "provider": "npm",
+      "registry": "npm registry or configured npm-compatible registry",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.npm.files",
+          "defaultGlob": "**/{.nvmrc,.node-version,.bun-version,package.json,package.json5,package.yaml,package.yml}",
+          "fileForms": [
+            "package.json",
+            "package.json5",
+            "package.yaml",
+            "package.yml",
+            ".nvmrc",
+            ".node-version",
+            ".bun-version"
+          ],
+          "languages": [
+            "plaintext",
+            "json",
+            "jsonc",
+            "json5",
+            "yaml"
+          ],
+          "manifestKinds": [
+            "NpmPackageJson",
+            "NpmPackageJson5",
+            "NpmPackageYaml",
+            "Nvmrc",
+            "NodeVersion",
+            "BunVersion"
+          ],
+          "parsers": [
+            "parse_package_json_with_paths",
+            "parse_package_yaml_with_paths",
+            "parse_nvmrc",
+            "parse_node_version",
+            "parse_bun_version"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.npm.dependencyProperties"
+      }
+    },
+    {
+      "ecosystem": "pnpm-yarn",
+      "provider": "pnpm",
+      "registry": "npm registry through pnpm/Yarn workspace configuration",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.pnpm.files",
+          "defaultGlob": "**/{pnpm-workspace.yaml,pnpm-workspace.yml,.yarnrc.yml,.yarnrc.yaml}",
+          "fileForms": [
+            "pnpm-workspace.yaml",
+            "pnpm-workspace.yml",
+            ".yarnrc.yaml",
+            ".yarnrc.yml"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "PnpmYaml"
+          ],
+          "parsers": [
+            "parse_pnpm_yaml_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.pnpm.dependencyProperties",
+        "default": [
+          "catalog",
+          "catalogs.*.*",
+          "overrides",
+          "packageExtensions.*.dependencies",
+          "packageExtensions.*.devDependencies",
+          "packageExtensions.*.peerDependencies",
+          "packageExtensions.*.optionalDependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "pub",
+      "provider": "pub",
+      "registry": "pub.dev API or hosted Pub source",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.pub.files",
+          "defaultGlob": "**/{pubspec_overrides.yaml,pubspec.yaml,pubspec.yml}",
+          "fileForms": [
+            "pubspec.yaml",
+            "pubspec.yml",
+            "pubspec_overrides.yaml"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "PubspecYaml",
+            "PubspecOverridesYaml"
+          ],
+          "parsers": [
+            "parse_pubspec_yaml_with_paths",
+            "parse_pubspec_overrides_yaml_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.pub.dependencyProperties",
+        "default": [
+          "version",
+          "workspace",
+          "dependencies",
+          "dev_dependencies",
+          "dependency_overrides"
+        ]
+      }
+    },
+    {
+      "ecosystem": "python",
+      "provider": "pypi",
+      "registry": "PyPI JSON API or configured Python package index/source",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.pypi.files",
+          "defaultGlob": "**/{*requirements*.txt,*constraints*.txt,Pipfile,pyproject.toml}",
+          "fileForms": [
+            "Pipfile",
+            "pyproject.toml",
+            "*requirements*.txt",
+            "*constraints*.txt"
+          ],
+          "languages": [
+            "plaintext",
+            "pip-requirements",
+            "toml"
+          ],
+          "manifestKinds": [
+            "PythonPipfile",
+            "PythonPyprojectToml",
+            "PythonRequirementsTxt"
+          ],
+          "parsers": [
+            "parse_pipfile_with_paths",
+            "parse_pyproject_toml_with_paths",
+            "parse_requirements_txt"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.pypi.dependencyProperties",
+        "default": [
+          "project",
+          "packages",
+          "dev-packages",
+          "tool.poetry.dependencies",
+          "tool.poetry.dev-dependencies",
+          "tool.poetry.group.*.dependencies",
+          "project.optional-dependencies",
+          "dependency-groups",
+          "tool.uv.sources"
+        ]
+      }
+    },
+    {
+      "ecosystem": "ruby",
+      "provider": "ruby",
+      "registry": "RubyGems API or Bundler source",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.ruby.files",
+          "defaultGlob": "**/{*.gemspec,Gemfile}",
+          "fileForms": [
+            "Gemfile",
+            "*.gemspec"
+          ],
+          "languages": [
+            "ruby",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Gemfile",
+            "RubyGemspec"
+          ],
+          "parsers": [
+            "parse_gemfile",
+            "parse_gemspec"
+          ]
+        }
+      ]
+    },
+    {
+      "ecosystem": "opam",
+      "provider": "opam",
+      "registry": "opam package pages from opam.ocaml.org or configured opam package site",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.opam.files",
+          "defaultGlob": "**/{opam,*.opam,dune-project}",
+          "fileForms": [
+            "opam",
+            "*.opam",
+            "dune-project"
+          ],
+          "languages": [
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Opam",
+            "DuneProject"
+          ],
+          "parsers": [
+            "parse_opam",
+            "parse_dune_project"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.opam.dependencyProperties",
+        "default": [
+          "version",
+          "depends",
+          "depopts",
+          "conflicts",
+          "package.version",
+          "package.depends"
+        ]
+      }
+    },
+    {
+      "ecosystem": "haskell",
+      "provider": "hackage",
+      "registry": "Hackage package API, Stackage snapshots API, and Stack extra-deps package index entries",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.hackage.files",
+          "defaultGlob": "**/{cabal.project,*.cabal,stack.yaml,stack.yml}",
+          "fileForms": [
+            "*.cabal",
+            "cabal.project",
+            "stack.yaml",
+            "stack.yml"
+          ],
+          "languages": [
+            "properties",
+            "plaintext",
+            "yaml"
+          ],
+          "manifestKinds": [
+            "Cabal",
+            "CabalProject",
+            "StackYaml"
+          ],
+          "parsers": [
+            "parse_cabal",
+            "parse_cabal_project",
+            "parse_stack_yaml"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.hackage.dependencyProperties",
+        "default": [
+          "version",
+          "build-depends",
+          "setup-depends",
+          "build-tool-depends",
+          "constraints",
+          "resolver",
+          "extra-deps"
+        ]
+      }
+    },
+    {
+      "ecosystem": "julia",
+      "provider": "julia",
+      "registry": "Julia General registry Versions.toml files or configured Julia registry base URL",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.julia.files",
+          "defaultGlob": "**/{Project.toml,Manifest.toml,Manifest-v*.toml}",
+          "fileForms": [
+            "Project.toml",
+            "Manifest.toml",
+            "Manifest-v{major}.{minor}.toml"
+          ],
+          "languages": [
+            "toml"
+          ],
+          "manifestKinds": [
+            "JuliaProjectToml",
+            "JuliaManifestToml"
+          ],
+          "parsers": [
+            "parse_julia_project",
+            "parse_julia_manifest"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.julia.dependencyProperties",
+        "default": [
+          "version",
+          "deps",
+          "compat",
+          "sources"
+        ]
+      }
+    },
+    {
+      "ecosystem": "r",
+      "provider": "cran",
+      "registry": "CRAN PACKAGES metadata from CRAN or configured CRAN-like repositories",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.cran.files",
+          "defaultGlob": "**/{DESCRIPTION,renv.lock}",
+          "fileForms": [
+            "DESCRIPTION",
+            "renv.lock"
+          ],
+          "languages": [
+            "plaintext",
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "RDescription",
+            "RenvLock"
+          ],
+          "parsers": [
+            "parse_r_description",
+            "parse_renv_lock"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.cran.dependencyProperties",
+        "default": [
+          "Version",
+          "Depends",
+          "Imports",
+          "Suggests",
+          "Enhances",
+          "LinkingTo",
+          "Packages"
+        ]
+      }
+    },
+    {
+      "ecosystem": "c-cpp",
+      "provider": "conan",
+      "registry": "Conan v2 registry search API from ConanCenter or configured Conan-compatible remotes",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.conan.files",
+          "defaultGlob": "**/{conanfile.txt,conanfile.py}",
+          "fileForms": [
+            "conanfile.txt",
+            "conanfile.py"
+          ],
+          "languages": [
+            "plaintext",
+            "python"
+          ],
+          "manifestKinds": [
+            "ConanfileTxt",
+            "ConanfilePy"
+          ],
+          "parsers": [
+            "parse_conanfile_txt",
+            "parse_conanfile_py"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.conan.dependencyProperties",
+        "default": [
+          "requires",
+          "tool_requires",
+          "build_requires",
+          "test_requires",
+          "python_requires"
+        ]
+      }
+    },
+    {
+      "ecosystem": "c-cpp",
+      "provider": "cpp",
+      "registry": "GitHub tags for GitHub-backed CMake, Meson wrap, and Bazel dependencies; Xmake package recipes from xmake-repo for Xmake dependencies",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.cpp.files",
+          "defaultGlob": "**/{CMakeLists.txt,*.cmake,xmake.lua,subprojects/*.wrap,WORKSPACE,WORKSPACE.bazel}",
+          "fileForms": [
+            "CMakeLists.txt",
+            "*.cmake",
+            "xmake.lua",
+            "subprojects/*.wrap",
+            "WORKSPACE",
+            "WORKSPACE.bazel"
+          ],
+          "languages": [
+            "cmake",
+            "plaintext",
+            "lua",
+            "meson",
+            "ini",
+            "starlark"
+          ],
+          "manifestKinds": [
+            "Cmake",
+            "XmakeLua",
+            "MesonWrap",
+            "BazelWorkspace"
+          ],
+          "parsers": [
+            "parse_cmake_with_paths",
+            "parse_xmake_lua_with_paths",
+            "parse_meson_wrap_with_paths",
+            "parse_bazel_workspace_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.cpp.dependencyProperties",
+        "default": [
+          "add_requires",
+          "FetchContent_Declare",
+          "ExternalProject_Add",
+          "CPMAddPackage",
+          "meson.wrap",
+          "http_archive"
+        ]
+      }
+    },
+    {
+      "ecosystem": "c-cpp",
+      "provider": "vcpkg",
+      "registry": "vcpkg registry version database from the configured registry repository",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.vcpkg.files",
+          "defaultGlob": "**/vcpkg.json",
+          "fileForms": [
+            "vcpkg.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "VcpkgJson"
+          ],
+          "parsers": [
+            "parse_vcpkg_json"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.vcpkg.dependencyProperties",
+        "default": [
+          "dependencies",
+          "features.*.dependencies",
+          "overrides"
+        ]
+      }
+    },
+    {
+      "ecosystem": "github-actions",
+      "provider": "github",
+      "registry": "GitHub repository tags and SHA-pinned releases; action-specific runtime release sources",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.github.files",
+          "defaultGlob": "**/.github/{workflows,actions}/**/*.{yml,yaml}",
+          "fileForms": [
+            ".github/workflows/*.{yml,yaml}",
+            ".github/actions/**/action.{yml,yaml}"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "GitHubActions"
+          ],
+          "parsers": [
+            "parse_github_actions"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.github.dependencyProperties",
+        "default": [
+          "uses",
+          "with.node-version",
+          "with.bun-version",
+          "with.go-version",
+          "with.deno-version",
+          "with.python-version",
+          "with.java-version",
+          "with.dotnet-version",
+          "with.ruby-version",
+          "with.toolchain"
+        ]
+      }
+    },
+    {
+      "ecosystem": "swift",
+      "provider": "swift",
+      "registry": "Swift package registry API or GitHub tags for GitHub URL dependencies",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.swift.files",
+          "defaultGlob": "**/{Package.swift,Cartfile,Cartfile.private}",
+          "fileForms": [
+            "Package.swift",
+            "Cartfile",
+            "Cartfile.private"
+          ],
+          "languages": [
+            "swift",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "SwiftPackage",
+            "Cartfile"
+          ],
+          "parsers": [
+            "parse_swift_package",
+            "parse_cartfile"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.swift.dependencyProperties",
+        "default": [
+          "dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "zig",
+      "provider": "zig",
+      "registry": "Zig package URLs with GitHub tag lookup for GitHub-hosted archives",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.zig.files",
+          "defaultGlob": "**/build.zig.zon",
+          "fileForms": [
+            "build.zig.zon"
+          ],
+          "languages": [
+            "zig",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "ZigBuildZon"
+          ],
+          "parsers": [
+            "parse_zig_build_zon"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.zig.dependencyProperties",
+        "default": [
+          "dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "nim",
+      "provider": "nim",
+      "registry": "Nimble packages index with GitHub tag lookup for GitHub URL dependencies",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.nim.files",
+          "defaultGlob": "**/*.nimble",
+          "fileForms": [
+            ".nimble"
+          ],
+          "languages": [
+            "nim",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Nimble"
+          ],
+          "parsers": [
+            "parse_nimble"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.nim.dependencyProperties",
+        "default": [
+          "requires",
+          "dev.requires",
+          "feature.*.requires"
+        ]
+      }
+    },
+    {
+      "ecosystem": "luarocks",
+      "provider": "luarocks",
+      "registry": "LuaRocks manifest repository",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.luarocks.files",
+          "defaultGlob": "**/*.rockspec",
+          "fileForms": [
+            ".rockspec"
+          ],
+          "languages": [
+            "lua",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "LuaRockspec"
+          ],
+          "parsers": [
+            "parse_luarocks_rockspec"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.luarocks.dependencyProperties",
+        "default": [
+          "dependencies",
+          "build_dependencies",
+          "test_dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "cpan",
+      "provider": "cpan",
+      "registry": "MetaCPAN download_url API",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.cpan.files",
+          "defaultGlob": "**/cpanfile",
+          "fileForms": [
+            "cpanfile"
+          ],
+          "languages": [
+            "perl",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Cpanfile"
+          ],
+          "parsers": [
+            "parse_cpanfile"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.cpan.dependencyProperties",
+        "default": [
+          "requires",
+          "recommends",
+          "suggests",
+          "conflicts",
+          "configure.requires",
+          "build.requires",
+          "test.requires",
+          "develop.requires",
+          "feature.*.requires",
+          "feature.*.recommends",
+          "feature.*.suggests",
+          "feature.*.conflicts"
+        ]
+      }
+    },
+    {
+      "ecosystem": "haxelib",
+      "provider": "haxelib",
+      "registry": "Haxelib project versions page",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.haxelib.files",
+          "defaultGlob": "**/haxelib.json",
+          "fileForms": [
+            "haxelib.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "HaxelibJson"
+          ],
+          "parsers": [
+            "parse_haxelib_json_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.haxelib.dependencyProperties",
+        "default": [
+          "dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "terraform",
+      "provider": "terraform",
+      "registry": "Terraform Registry protocol",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.terraform.files",
+          "defaultGlob": "**/{*.tf,*.tofu}",
+          "fileForms": [
+            "*.tf",
+            "*.tofu"
+          ],
+          "languages": [
+            "terraform",
+            "hcl",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "TerraformTf"
+          ],
+          "parsers": [
+            "parse_terraform_hcl"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.terraform.dependencyProperties",
+        "default": [
+          "required_providers"
+        ]
+      }
+    },
+    {
+      "ecosystem": "helm",
+      "provider": "helm",
+      "registry": "Helm chart repository index.yaml and OCI tags",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.helm.files",
+          "defaultGlob": "**/Chart.yaml",
+          "fileForms": [
+            "Chart.yaml"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "HelmChartYaml"
+          ],
+          "parsers": [
+            "parse_helm_chart_yaml_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.helm.dependencyProperties",
+        "default": [
+          "dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "ansible-galaxy",
+      "provider": "ansible",
+      "registry": "Ansible Galaxy API for collections and roles; git/source requirements are fixed",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.ansible.files",
+          "defaultGlob": "**/{requirements.yml,requirements.yaml}",
+          "fileForms": [
+            "requirements.yml",
+            "requirements.yaml"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "AnsibleGalaxyRequirementsYaml"
+          ],
+          "parsers": [
+            "parse_ansible_galaxy_requirements_yaml_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.ansible.dependencyProperties",
+        "default": [
+          "roles",
+          "collections"
+        ]
+      }
+    },
+    {
+      "ecosystem": "bazel",
+      "provider": "bazel",
+      "registry": "Bazel Central Registry metadata.json or configured Bazel registry",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.bazel.files",
+          "defaultGlob": "**/MODULE.bazel",
+          "fileForms": [
+            "MODULE.bazel"
+          ],
+          "languages": [
+            "starlark",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "BazelModule"
+          ],
+          "parsers": [
+            "parse_bazel_module_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.bazel.dependencyProperties",
+        "default": [
+          "bazel_dep",
+          "single_version_override",
+          "multiple_version_override"
+        ]
+      }
+    },
+    {
+      "ecosystem": "nix",
+      "provider": "nix",
+      "registry": "GitHub repository tags for GitHub-backed Nix flake inputs; local/path/git follows are fixed",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.nix.files",
+          "defaultGlob": "**/flake.nix",
+          "fileForms": [
+            "flake.nix"
+          ],
+          "languages": [
+            "nix",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "NixFlake"
+          ],
+          "parsers": [
+            "parse_nix_flake_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.nix.dependencyProperties",
+        "default": [
+          "inputs"
+        ]
+      }
+    },
+    {
+      "ecosystem": "kustomize",
+      "provider": "kustomize",
+      "registry": "Docker Hub and OCI-compatible registries through image tag lookup",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.kustomize.files",
+          "defaultGlob": "**/{kustomization.yaml,kustomization.yml,Kustomization}",
+          "fileForms": [
+            "kustomization.yaml",
+            "kustomization.yml",
+            "Kustomization"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "KustomizationYaml"
+          ],
+          "parsers": [
+            "parse_kustomization_yaml_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.kustomize.dependencyProperties",
+        "default": [
+          "images"
+        ]
+      }
+    },
+    {
+      "ecosystem": "unity",
+      "provider": "unity",
+      "registry": "Unity npm-compatible package registry and project scopedRegistries",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.unity.files",
+          "defaultGlob": "**/Packages/manifest.json",
+          "fileForms": [
+            "Packages/manifest.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "UnityProjectManifestJson"
+          ],
+          "parsers": [
+            "parse_unity_project_manifest_json_with_paths"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.unity.dependencyProperties",
+        "default": [
+          "dependencies"
+        ]
+      }
+    },
+    {
+      "ecosystem": "cocoapods",
+      "provider": "cocoapods",
+      "registry": "CocoaPods specs/trunk metadata or configured specs source",
+      "manifests": [
+        {
+          "defaultSettingKey": "versionlens.cocoapods.files",
+          "defaultGlob": "**/Podfile",
+          "fileForms": [
+            "Podfile"
+          ],
+          "languages": [
+            "ruby",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "CocoaPodsPodfile"
+          ],
+          "parsers": [
+            "parse_cocoapods_podfile"
+          ]
+        }
+      ],
+      "dependencyProperties": {
+        "settingKey": "versionlens.cocoapods.dependencyProperties",
+        "default": [
+          "pod"
+        ]
+      }
+    }
+  ]
 }

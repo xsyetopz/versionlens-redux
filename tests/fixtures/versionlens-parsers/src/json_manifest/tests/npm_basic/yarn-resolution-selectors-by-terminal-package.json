@@ -1,8 +1,8 @@
 {
-	"resolutions": {
-		"webpack/memory-fs": "0.4.1",
-		"@babel/core/json5": "2.1.0",
-		"@babel/core/@babel/generator": "7.3.4",
-		"@babel/core@npm:7.0.0/@babel/generator": "7.3.4"
-	}
+  "resolutions": {
+    "webpack/memory-fs": "0.4.1",
+    "@babel/core/json5": "2.1.0",
+    "@babel/core/@babel/generator": "7.3.4",
+    "@babel/core@npm:7.0.0/@babel/generator": "7.3.4"
+  }
 }
