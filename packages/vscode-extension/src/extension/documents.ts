@@ -7,24 +7,24 @@ import {
 
 import { enabledFilePatternKeys } from "./config/keys.ts";
 
-function fileDocument(
+const fileDocument = (
 	document: TextDocument | undefined,
-): TextDocument | undefined {
+): TextDocument | undefined => {
 	let file: TextDocument | undefined;
 	if (document?.uri.scheme === "file") {
 		file = document;
 	}
 	return file;
-}
+};
 
-type FileDocumentSelectors = Array<{
+type FileDocumentSelectors = {
 	language: string;
 	pattern: string;
 	scheme: string;
-}>;
+}[];
 
 /** The documents the server is told about, from the enabled providers. */
-function documentSelectors(): FileDocumentSelectors {
+const documentSelectors = (): FileDocumentSelectors => {
 	const selectors = [
 		undefined,
 		...(workspace.workspaceFolders ?? []).map(({ uri }): Uri => uri),
@@ -39,11 +39,11 @@ function documentSelectors(): FileDocumentSelectors {
 			]),
 		).values(),
 	];
-}
+};
 
-function selectorsForResource(
+const selectorsForResource = (
 	resource: Uri | undefined,
-): FileDocumentSelectors {
+): FileDocumentSelectors => {
 	const config = workspace.getConfiguration("versionlens", resource);
 	return enabledFilePatternKeys(
 		config.get<string[]>("enabledProviders"),
@@ -55,10 +55,9 @@ function selectorsForResource(
 			scheme: "file",
 		}));
 	});
-}
+};
 
-function selectorKey(selector: DocumentFilter): string {
-	return `${selector.scheme}\0${selector.language}\0${String(selector.pattern)}`;
-}
+const selectorKey = ({ language, pattern, scheme }: DocumentFilter): string =>
+	`${scheme}\0${language}\0${typeof pattern === "string" ? pattern : pattern?.pattern}`;
 
 export { documentSelectors, fileDocument };

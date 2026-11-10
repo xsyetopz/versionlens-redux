@@ -15,28 +15,30 @@ const SERVER_COMMANDS = {
 type UpdateLevel = "latest" | "major" | "minor" | "patch";
 
 /** Runs a server command through `workspace/executeCommand`. */
-async function runServerCommand(
+const runServerCommand = (
 	state: ExtensionState,
 	command: string,
 	argument?: object,
-): Promise<unknown> {
+): Promise<unknown> => {
 	const { client } = state;
-	if (!client?.isRunning()) {
-		throw new Error("The VersionLens language server is not running.");
+	if (client?.isRunning() !== true) {
+		return Promise.reject(
+			new Error("The VersionLens language server is not running."),
+		);
 	}
 	const args = argument ? [argument] : [];
-	return await client.sendRequest(ExecuteCommandRequest.type, {
+	return client.sendRequest(ExecuteCommandRequest.type, {
 		arguments: args,
 		command,
 	});
-}
+};
 
 /** Runs a server command on the document of the active editor. */
-function runDocumentCommand(
+const runDocumentCommand = (
 	state: ExtensionState,
 	command: string,
 	extra: object = {},
-): Promise<unknown> {
+): Promise<unknown> => {
 	const document = window.activeTextEditor?.document;
 	if (!(document && state.client)) {
 		throw new Error("Open a supported manifest file first.");
@@ -45,7 +47,7 @@ function runDocumentCommand(
 		...extra,
 		uri: state.client.code2ProtocolConverter.asUri(document.uri),
 	});
-}
+};
 
 export type { UpdateLevel };
 export { runDocumentCommand, runServerCommand, SERVER_COMMANDS };

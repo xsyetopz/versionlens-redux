@@ -8,11 +8,12 @@ type AuthorizationValue =
 
 const cancelled: AuthorizationValue = { kind: "cancelled" };
 
-function provided(value: string): AuthorizationValue {
-	return { kind: "provided", value };
-}
+const provided = (value: string): AuthorizationValue => ({
+	kind: "provided",
+	value,
+});
 
-async function confirmInsecureUrl(url: string): Promise<boolean> {
+const confirmInsecureUrl = async (url: string): Promise<boolean> => {
 	if (url.startsWith("https:")) {
 		return true;
 	}
@@ -22,12 +23,12 @@ async function confirmInsecureUrl(url: string): Promise<boolean> {
 		"Yes",
 	);
 	return choice === "Yes";
-}
+};
 
-async function authorizationValue(
+const authorizationValue = async (
 	scheme: AuthHeaderMetadata["scheme"],
 	url: string,
-): Promise<AuthorizationValue> {
+): Promise<AuthorizationValue> => {
 	if (scheme === customScheme) {
 		const value = normalizedRequiredInput(
 			await window.showInputBox({
@@ -42,12 +43,12 @@ async function authorizationValue(
 		}
 		return provided(value);
 	}
-	return await basicAuthorizationValue(url);
-}
+	return basicAuthorizationValue(url);
+};
 
-async function basicAuthorizationValue(
+const basicAuthorizationValue = async (
 	url: string,
-): Promise<AuthorizationValue> {
+): Promise<AuthorizationValue> => {
 	const username = await window.showInputBox({
 		ignoreFocusOut: true,
 		password: false,
@@ -78,6 +79,6 @@ async function basicAuthorizationValue(
 		return cancelled;
 	}
 	return provided(Buffer.from(`${username}:${password}`).toString("base64"));
-}
+};
 
 export { authorizationValue, confirmInsecureUrl };

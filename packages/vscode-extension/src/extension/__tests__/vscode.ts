@@ -10,14 +10,13 @@ const vscodeRuntimeExports = [
 	"workspace",
 ] as const;
 
-function completeVscodeHostMock(overrides: MockModule): MockModule {
-	return Object.fromEntries([
+const completeVscodeHostMock = (overrides: MockModule): MockModule =>
+	Object.fromEntries([
 		...vscodeRuntimeExports.map((name): [string, undefined] => [
 			name,
 			undefined,
 		]),
 		...Object.entries(overrides),
 	]);
-}
 
 export { completeVscodeHostMock };

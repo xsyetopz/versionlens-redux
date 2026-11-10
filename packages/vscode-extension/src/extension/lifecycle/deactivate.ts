@@ -2,9 +2,9 @@ import { stopClient } from "../client.ts";
 import type { ExtensionState } from "../state.ts";
 import { disposeUi } from "./ui.ts";
 
-export async function deactivateExtension(
+export const deactivateExtension = async (
 	state: ExtensionState,
-): Promise<void> {
+): Promise<void> => {
 	await stopClient(state);
 	disposeUi(state);
 	for (const subscription of state.context?.subscriptions ?? []) {
@@ -14,4 +14,4 @@ export async function deactivateExtension(
 	state.snapshots.savedDependencies.clear();
 	state.snapshots.editedDependencies.clear();
 	state.context = undefined;
-}
+};

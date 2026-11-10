@@ -1,11 +1,12 @@
-function optionalProperty<Key extends PropertyKey, Value>(
+const optionalProperty = <Key extends PropertyKey, Value>(
 	key: Key,
 	value: Value | undefined,
-): Partial<Record<Key, Value>> {
-	if (value === undefined) {
-		return {};
+): Partial<Record<Key, Value>> => {
+	const result: Partial<Record<Key, Value>> = {};
+	if (value !== undefined) {
+		result[key] = value;
 	}
-	return { [key]: value } as Record<Key, Value>;
-}
+	return result;
+};
 
 export { optionalProperty };

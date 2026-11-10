@@ -4,28 +4,31 @@ import {
 	type TaskExecution,
 	tasks,
 	window,
-	type WorkspaceFolder,
 } from "#vscode-host";
 
 const activeTasks = new Set<string>();
+
+/** The part of a `WorkspaceFolder` that task selection reads. */
+interface TaskFolder {
+	uri: { toString: () => string };
+}
 
 type TaskRunResult =
 	| { exitCode: number | undefined; kind: "completed" }
 	| { kind: "busy" }
 	| { kind: "notFound" };
 
-async function runTask(
+const runTask = async (
 	label: string,
-	workspaceFolder?: WorkspaceFolder,
-): Promise<TaskRunResult> {
+	workspaceFolder?: TaskFolder,
+): Promise<TaskRunResult> => {
 	const activeKey = `${workspaceFolder?.uri.toString() ?? "<workspace>"}\0${label}`;
 	if (activeTasks.has(activeKey)) {
 		return { kind: "busy" };
 	}
 
-	const namedTasks = (await tasks.fetchTasks()).filter(
-		(item): boolean => item.name === label,
-	);
+	const fetched = await tasks.fetchTasks();
+	const namedTasks = fetched.filter((item): boolean => item.name === label);
 	const task = selectWorkspaceTask(namedTasks, workspaceFolder);
 	if (!task) {
 		window.showWarningMessage(`Version Lens task not found: ${label}`);
@@ -33,19 +36,27 @@ async function runTask(
 	}
 
 	activeTasks.add(activeKey);
+	return executeAndAwait(task, activeKey);
+};
+
+const executeAndAwait = async (
+	task: Task,
+	activeKey: string,
+): Promise<TaskRunResult> => {
 	let disposable: Disposable | undefined;
 	try {
-		let execution: TaskExecution | undefined;
+		// A holder, because the listener below runs before `executeTask` resolves.
+		const started: { execution?: TaskExecution } = {};
 		const earlyCompletions = new Map<TaskExecution, number | undefined>();
 		let complete: ((result: TaskRunResult) => void) | undefined;
 		const completed = new Promise<TaskRunResult>((resolve): void => {
 			complete = resolve;
 			disposable = tasks.onDidEndTaskProcess((event): void => {
-				if (!execution) {
+				if (!started.execution) {
 					earlyCompletions.set(event.execution, event.exitCode);
 					return;
 				}
-				if (event.execution !== execution) {
+				if (event.execution !== started.execution) {
 					return;
 				}
 
@@ -55,7 +66,8 @@ async function runTask(
 			});
 		});
 
-		execution = await tasks.executeTask(task);
+		const execution = await tasks.executeTask(task);
+		started.execution = execution;
 		if (earlyCompletions.has(execution)) {
 			const exitCode = earlyCompletions.get(execution);
 			disposable?.dispose();
@@ -68,12 +80,12 @@ async function runTask(
 		activeTasks.delete(activeKey);
 		throw error;
 	}
-}
+};
 
-function selectWorkspaceTask(
+const selectWorkspaceTask = (
 	availableTasks: Task[],
-	workspaceFolder: WorkspaceFolder | undefined,
-): Task | undefined {
+	workspaceFolder: TaskFolder | undefined,
+): Task | undefined => {
 	if (!workspaceFolder) {
 		return availableTasks.find(
 			(task): boolean => typeof task.scope !== "object",
@@ -88,7 +100,7 @@ function selectWorkspaceTask(
 				task.scope?.uri.toString() === workspaceUri,
 		) ?? availableTasks.find((task): boolean => typeof task.scope !== "object")
 	);
-}
+};
 
 export type { TaskRunResult };
 export { runTask };

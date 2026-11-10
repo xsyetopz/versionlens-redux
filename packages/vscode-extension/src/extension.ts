@@ -6,10 +6,10 @@ import { createExtensionState } from "./extension/state.ts";
 
 const state = createExtensionState();
 
-export async function activate(context: ExtensionContext): Promise<void> {
+/** Starts the extension: the server client, commands and listeners. */
+export const activate = async (context: ExtensionContext): Promise<void> => {
 	await activateExtension(state, context);
-}
+};
 
-export function deactivate(): Promise<void> {
-	return deactivateExtension(state);
-}
+/** Stops the language server when the extension is deactivated. */
+export const deactivate = (): Promise<void> => deactivateExtension(state);

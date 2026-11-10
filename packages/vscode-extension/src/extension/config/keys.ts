@@ -61,9 +61,9 @@ const filePatternKeys: readonly FilePatternKey[] = [
 	["github", "github.files", ["yaml"]],
 ] as const;
 
-function enabledFilePatternKeys(
+const enabledFilePatternKeys = (
 	enabledProviders: readonly string[] | undefined,
-): readonly FilePatternKey[] {
+): readonly FilePatternKey[] => {
 	if (!enabledProviders || enabledProviders.length === 0) {
 		return filePatternKeys;
 	}
@@ -72,6 +72,6 @@ function enabledFilePatternKeys(
 	return filePatternKeys.filter(([ecosystem]): boolean =>
 		enabled.has(ecosystem),
 	);
-}
+};
 
 export { enabledFilePatternKeys, filePatternKeys };

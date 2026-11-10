@@ -13,10 +13,10 @@ import { updateContexts } from "./contexts.ts";
 import { reportError } from "./error.ts";
 import { notifyConfigurationChanged } from "./toggles.ts";
 
-export function registerConfigurationHandler(
+export const registerConfigurationHandler = (
 	state: ExtensionState,
-): Disposable {
-	return workspace.onDidChangeConfiguration((event): Promise<void> => {
+): Disposable =>
+	workspace.onDidChangeConfiguration((event): Promise<void> => {
 		if (!(
 			event.affectsConfiguration("versionlens") ||
 			event.affectsConfiguration("http") ||
@@ -30,21 +30,19 @@ export function registerConfigurationHandler(
 		}
 		return synchronizeServer(state);
 	});
-}
 
-export function registerWorkspaceFolderHandler(
+export const registerWorkspaceFolderHandler = (
 	state: ExtensionState,
-): Disposable {
-	return workspace.onDidChangeWorkspaceFolders((): Promise<void> =>
+): Disposable =>
+	workspace.onDidChangeWorkspaceFolders((): Promise<void> =>
 		synchronizeServer(state),
 	);
-}
 
 /**
  * Tells the server to pull the settings again. The documents it is told
  * about come from the settings, so the client starts over when they change.
  */
-async function synchronizeServer(state: ExtensionState): Promise<void> {
+const synchronizeServer = async (state: ExtensionState): Promise<void> => {
 	try {
 		state.snapshots.savedDependencies.clear();
 		state.snapshots.editedDependencies.clear();
@@ -60,4 +58,4 @@ async function synchronizeServer(state: ExtensionState): Promise<void> {
 	} catch (error) {
 		await reportError(state, "could not apply the settings", error);
 	}
-}
+};

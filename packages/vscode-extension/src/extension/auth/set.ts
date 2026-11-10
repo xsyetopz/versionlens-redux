@@ -43,22 +43,22 @@ const authenticationProviders: ProviderQuickPick[] = [
 	},
 ];
 
-async function addAuthHeader(
+const addAuthHeader = async (
 	state: ExtensionState,
 	options: AddAuthHeaderOptions = {},
-): Promise<boolean> {
+): Promise<boolean> => {
 	const { context } = state;
 	if (!context) {
 		return false;
 	}
 
 	const retried = await retryExistingAuthHeader(context, options);
-	if (retried !== undefined) {
+	if (retried !== null) {
 		return retried;
 	}
 
 	const url = await promptAuthorizationUrl(options);
-	if (url === undefined) {
+	if (url === null) {
 		await suppressAuthPrompt(context, options.authUrl);
 		return false;
 	}
@@ -77,26 +77,26 @@ async function addAuthHeader(
 		return false;
 	}
 
-	return await storeCredentials(context, url, {
+	return storeCredentials(context, url, {
 		label: provider.label,
 		scheme: provider.providerScheme,
 	});
-}
+};
 
 /** Asks for the value and stores it with the secret; false when cancelled. */
-async function storeCredentials(
+const storeCredentials = async (
 	context: AuthContext,
 	url: string,
 	metadata: AuthHeaderMetadata,
 	presetSecret?: string,
-): Promise<boolean> {
+): Promise<boolean> => {
 	const value = await authorizationValue(metadata.scheme, url);
 	if (value.kind === "cancelled") {
 		await suppressAuthPrompt(context, url);
 		return false;
 	}
 	const secret = presetSecret ?? authSecretKey(context, url);
-	if (!secret) {
+	if (secret === undefined || secret === "") {
 		return false;
 	}
 	await context.secrets.store(secret, value.value);
@@ -109,23 +109,26 @@ async function storeCredentials(
 		}),
 	);
 	return true;
-}
+};
 
-async function retryExistingAuthHeader(
+const retryExistingAuthHeader = async (
 	context: AuthContext,
 	{ authUrl }: AddAuthHeaderOptions,
-): Promise<boolean | undefined> {
-	if (!authUrl) {
-		return;
+): Promise<boolean | null> => {
+	if (authUrl === undefined || authUrl === "") {
+		return null;
 	}
 	const header = getUrlAuthentication(context, authUrl);
-	if (!header || header.scheme === notSetScheme) {
-		return;
+	if (header === undefined || header.scheme === notSetScheme) {
+		return null;
 	}
 	const secret = authSecretKey(context, authUrl);
-	const previousValue = secret ? await context.secrets.get(secret) : undefined;
-	if (!previousValue) {
-		return;
+	const previousValue =
+		secret === undefined || secret === ""
+			? undefined
+			: await context.secrets.get(secret);
+	if (previousValue === undefined || previousValue === "") {
+		return null;
 	}
 	const retry = await window.showWarningMessage(
 		`Could not authenticate credentials with ${authUrl}.\n\nWould you like to re-enter your credentials?`,
@@ -137,7 +140,7 @@ async function retryExistingAuthHeader(
 		return false;
 	}
 	if (header.scheme === basicScheme || previousValue.startsWith("Basic ")) {
-		return await storeCredentials(
+		return storeCredentials(
 			context,
 			authUrl,
 			{
@@ -147,7 +150,7 @@ async function retryExistingAuthHeader(
 			secret,
 		);
 	}
-	return await storeCredentials(
+	return storeCredentials(
 		context,
 		authUrl,
 		{
@@ -156,12 +159,12 @@ async function retryExistingAuthHeader(
 		},
 		secret,
 	);
-}
+};
 
-async function promptAuthorizationUrl(
+const promptAuthorizationUrl = async (
 	options: AddAuthHeaderOptions,
 	suggestedUrl = options.authUrl,
-): Promise<string | undefined> {
+): Promise<string | null> => {
 	const url = normalizedAuthorizationUrl(
 		await window.showInputBox({
 			ignoreFocusOut: true,
@@ -170,32 +173,32 @@ async function promptAuthorizationUrl(
 			...optionalProperty("value", suggestedUrl),
 		}),
 	);
-	if (!url) {
-		return;
+	if (url === undefined) {
+		return null;
 	}
 	const validation = await validateAuthorizationUrl(url, options.requestUrl);
 	if (validation === undefined) {
-		return;
+		return null;
 	}
 	if (!validation) {
 		return promptAuthorizationUrl(options, url);
 	}
 	return url;
-}
+};
 
-async function suppressAuthPrompt(
+const suppressAuthPrompt = async (
 	context: AuthContext,
 	url: string | undefined,
 	status: DeclinedStatus = "User cancelled",
-): Promise<void> {
-	if (url) {
+): Promise<void> => {
+	if (url !== undefined && url !== "") {
 		await updateUrlAuthentication(
 			context,
 			url,
 			createUrlAuthenticationData(url, status),
 		);
 	}
-}
+};
 
 export type { AddAuthHeaderOptions };
 export { addAuthHeader };

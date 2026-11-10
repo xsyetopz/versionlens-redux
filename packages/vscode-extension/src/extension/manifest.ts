@@ -23,19 +23,19 @@ interface CachedInfo {
 
 const cache = new Map<string, CachedInfo>();
 
-function clearManifestInfo(): void {
+const clearManifestInfo = (): void => {
 	cache.clear();
-}
+};
 
 /**
  * What the server knows about an open document, or `undefined` when the
  * server is not running or has no such document. Cached per document
  * version.
  */
-function manifestInfo(
+const manifestInfo = (
 	state: ExtensionState,
 	document: TextDocument,
-): Promise<ManifestInfo | undefined> {
+): Promise<ManifestInfo | undefined> => {
 	const key = document.uri.toString();
 	const cached = cache.get(key);
 	if (cached?.version === document.version) {
@@ -44,29 +44,43 @@ function manifestInfo(
 	const info = requestManifestInfo(state, document);
 	cache.set(key, { info, version: document.version });
 	return info;
-}
+};
 
-async function requestManifestInfo(
+const requestManifestInfo = async (
 	state: ExtensionState,
 	document: TextDocument,
-): Promise<ManifestInfo | undefined> {
+): Promise<ManifestInfo | undefined> => {
 	const { client } = state;
-	if (!client?.isRunning()) {
+	let info: ManifestInfo | undefined;
+	if (client?.isRunning() === true) {
+		try {
+			const answer: unknown = await client.sendRequest(
+				ExecuteCommandRequest.type,
+				{
+					arguments: [
+						{ uri: client.code2ProtocolConverter.asUri(document.uri) },
+					],
+					command: MANIFEST_INFO_COMMAND,
+				},
+			);
+			if (isManifestInfo(answer)) {
+				info = answer;
+			}
+		} catch {
+			// The server does not track documents outside the selector.
+			cache.delete(document.uri.toString());
+		}
+	} else {
 		cache.delete(document.uri.toString());
-		return;
 	}
-	try {
-		const info = await client.sendRequest(ExecuteCommandRequest.type, {
-			arguments: [{ uri: client.code2ProtocolConverter.asUri(document.uri) }],
-			command: MANIFEST_INFO_COMMAND,
-		});
-		return info as ManifestInfo;
-	} catch {
-		// The server does not track documents outside the selector.
-		cache.delete(document.uri.toString());
-		return;
-	}
-}
+	return info;
+};
+
+const isManifestInfo = (value: unknown): value is ManifestInfo =>
+	typeof value === "object" &&
+	value !== null &&
+	"supported" in value &&
+	"dependencySignature" in value;
 
 export type { ManifestInfo };
 export { clearManifestInfo, manifestInfo };

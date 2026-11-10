@@ -1,6 +1,5 @@
 import {
 	type ExtensionContext,
-	type TextDocument,
 	type TextDocumentChangeEvent,
 	TextDocumentChangeReason,
 	window,
@@ -16,18 +15,14 @@ import { updateContexts } from "../commands/contexts.ts";
 import { reportError } from "../commands/error.ts";
 import { registerCommands } from "../commands/register.ts";
 import { fileDocument } from "../documents.ts";
-import { manifestInfo } from "../manifest.ts";
 import type { ExtensionState } from "../state.ts";
 import { handleDidSaveTextDocument } from "../tasks.ts";
-import {
-	dependencySnapshot,
-	rememberDependencySnapshot,
-} from "../tasks/snapshot.ts";
+import { trackDocument } from "./track.ts";
 
-function registerExtensionSubscriptions(
+const registerExtensionSubscriptions = (
 	state: ExtensionState,
 	context: ExtensionContext,
-): void {
+): void => {
 	const { outputChannel } = state.ui;
 	if (!outputChannel) {
 		return;
@@ -73,42 +68,25 @@ function registerExtensionSubscriptions(
 			}),
 		),
 	);
-}
+};
 
-/** Remembers the dependencies of a manifest to tell later edits apart. */
-async function trackDocument(
-	state: ExtensionState,
-	textDocument: TextDocument,
-): Promise<void> {
-	const document = fileDocument(textDocument);
-	if (!(document && (await manifestInfo(state, document))?.supported)) {
-		return;
-	}
-	rememberDependencySnapshot(
-		state,
-		document,
-		await dependencySnapshot(state, document),
-	);
-}
-
-async function guarded(
+const guarded = async (
 	state: ExtensionState,
 	title: string,
 	handler: () => Promise<void>,
-): Promise<void> {
+): Promise<void> => {
 	try {
 		await handler();
 	} catch (error) {
 		await reportError(state, title, error);
 	}
-}
+};
 
-function isRelevantTextDocumentChange(event: TextDocumentChangeEvent): boolean {
-	return (
-		event.reason === TextDocumentChangeReason.Undo ||
-		event.reason === TextDocumentChangeReason.Redo ||
-		event.contentChanges.length > 0
-	);
-}
+const isRelevantTextDocumentChange = (
+	event: TextDocumentChangeEvent,
+): boolean =>
+	event.reason === TextDocumentChangeReason.Undo ||
+	event.reason === TextDocumentChangeReason.Redo ||
+	event.contentChanges.length > 0;
 
-export { registerExtensionSubscriptions, trackDocument };
+export { registerExtensionSubscriptions };

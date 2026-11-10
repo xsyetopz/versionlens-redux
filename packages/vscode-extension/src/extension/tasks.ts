@@ -5,19 +5,19 @@ import { manifestInfo } from "./manifest.ts";
 import type { ExtensionState } from "./state.ts";
 import { runInstallTaskIfDependenciesChanged } from "./tasks/save.ts";
 
-export async function handleDidSaveTextDocument(
+export const handleDidSaveTextDocument = async (
 	state: ExtensionState,
 	document: TextDocument,
-): Promise<void> {
+): Promise<void> => {
 	const file = fileDocument(document);
 	if (!file) {
 		return;
 	}
 
 	const info = await manifestInfo(state, file);
-	if (!info?.supported) {
+	if (info?.supported !== true) {
 		return;
 	}
 
 	await runInstallTaskIfDependenciesChanged(state, file);
-}
+};

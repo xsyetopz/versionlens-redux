@@ -3,53 +3,50 @@ import { window } from "#vscode-host";
 const trailingSlashes = /\/+$/u;
 const registryUrlPrefix = /^https?:\/\//u;
 
-function normalizedRequiredInput(
+const normalizedRequiredInput = (
 	value: string | undefined,
-): string | undefined {
-	return value?.trim() || undefined;
-}
+): string | undefined => {
+	const trimmed = value?.trim();
+	return trimmed === "" ? undefined : trimmed;
+};
 
-function normalizedAuthorizationUrl(
+const normalizedAuthorizationUrl = (
 	value: string | undefined,
-): string | undefined {
+): string | undefined => {
 	const url = normalizedRequiredInput(value);
-	if (!(url && registryUrlPrefix.test(url) && URL.canParse(url))) {
-		return;
-	}
-	return url.replace(trailingSlashes, "");
-}
+	return url !== undefined && registryUrlPrefix.test(url) && URL.canParse(url)
+		? url.replace(trailingSlashes, "")
+		: undefined;
+};
 
-async function validateAuthorizationUrl(
+const validateAuthorizationUrl = (
 	url: string,
 	requestUrl: string | undefined,
-): Promise<boolean | undefined> {
+): Promise<boolean | undefined> => {
 	if (requestUrl === undefined) {
-		return true;
+		return Promise.resolve(true);
 	}
 	const parsedRequestUrl = new URL(requestUrl);
 	const parsedAuthUrl = new URL(url);
 	if (!sameOrigin(parsedAuthUrl, parsedRequestUrl)) {
-		return await retryOrCancel(
+		return retryOrCancel(
 			"The authorization url must have the same scheme, domain, and port as the request url",
 		);
 	}
 	if (!pathContains(parsedAuthUrl.pathname, parsedRequestUrl.pathname)) {
-		return await retryOrCancel(
+		return retryOrCancel(
 			`The authorization url must partially match the request url ${requestUrl}`,
 		);
 	}
-	return true;
-}
+	return Promise.resolve(true);
+};
 
-function sameOrigin(authUrl: URL, requestUrl: URL): boolean {
-	return (
-		authUrl.protocol === requestUrl.protocol &&
-		authUrl.hostname === requestUrl.hostname &&
-		effectivePort(authUrl) === effectivePort(requestUrl)
-	);
-}
+const sameOrigin = (authUrl: URL, requestUrl: URL): boolean =>
+	authUrl.protocol === requestUrl.protocol &&
+	authUrl.hostname === requestUrl.hostname &&
+	effectivePort(authUrl) === effectivePort(requestUrl);
 
-function effectivePort(url: URL): string {
+const effectivePort = (url: URL): string => {
 	if (url.port) {
 		return url.port;
 	}
@@ -60,9 +57,9 @@ function effectivePort(url: URL): string {
 		return "443";
 	}
 	return "";
-}
+};
 
-function pathContains(authPath: string, requestPath: string): boolean {
+const pathContains = (authPath: string, requestPath: string): boolean => {
 	const normalizedAuthPath = authPath.replace(trailingSlashes, "");
 	const normalizedRequestPath = requestPath.replace(trailingSlashes, "");
 	return (
@@ -70,19 +67,16 @@ function pathContains(authPath: string, requestPath: string): boolean {
 		normalizedRequestPath === normalizedAuthPath ||
 		normalizedRequestPath.startsWith(`${normalizedAuthPath}/`)
 	);
-}
+};
 
-async function retryOrCancel(message: string): Promise<false | undefined> {
+const retryOrCancel = async (message: string): Promise<false | undefined> => {
 	const choice = await window.showInformationMessage(
 		message,
 		{ modal: true, detail: "" },
 		"Retry",
 	);
-	if (choice) {
-		return false;
-	}
-	return;
-}
+	return choice === undefined ? undefined : false;
+};
 
 export {
 	normalizedAuthorizationUrl,

@@ -25,63 +25,62 @@ const notSetScheme = "NotSet";
 const basicScheme = "Basic";
 const customScheme = "Custom";
 
-function storeEntries(context: ExtensionContext): [string, unknown][] {
+const storeEntries = (context: ExtensionContext): [string, unknown][] => {
 	const collection = context.workspaceState?.get<unknown>(storeKey, {});
 	if (typeof collection === "object" && collection !== null) {
 		return Object.entries(collection);
 	}
 	return [];
-}
+};
 
-function urlAuthenticationEntries(
+const urlAuthenticationEntries = (
 	context: ExtensionContext | undefined,
-): UrlAuthenticationData[] {
+): UrlAuthenticationData[] => {
 	if (!context) {
 		return [];
 	}
 	return storeEntries(context)
 		.map((entry): unknown => entry[1])
-		.filter(isUrlAuthenticationData);
-}
+		.filter((value): value is UrlAuthenticationData =>
+			isUrlAuthenticationData(value),
+		);
+};
 
-function getUrlAuthentication(
+const getUrlAuthentication = (
 	context: ExtensionContext | undefined,
 	url: string,
-): UrlAuthenticationData | undefined {
-	return urlAuthenticationEntries(context).find(
-		(entry): boolean => entry.url === url,
-	);
-}
+): UrlAuthenticationData | undefined =>
+	urlAuthenticationEntries(context).find((entry): boolean => entry.url === url);
 
-async function updateUrlAuthentication(
+const updateUrlAuthentication = async (
 	context: ExtensionContext,
 	url: string,
 	value: UrlAuthenticationData,
-): Promise<void> {
+): Promise<void> => {
 	const entries = storeEntries(context).filter(([key]): boolean => key !== url);
 	await context.workspaceState.update(
 		storeKey,
 		Object.fromEntries([...entries, [url, value]]),
 	);
-}
+};
 
-async function removeUrlAuthentication(
+const removeUrlAuthentication = async (
 	context: ExtensionContext,
 	url: string,
-): Promise<void> {
+): Promise<void> => {
 	await context.workspaceState.update(
 		storeKey,
 		Object.fromEntries(
 			storeEntries(context).filter(([key]): boolean => key !== url),
 		),
 	);
-}
+};
 
 /** Stored data for a url: credentials for metadata, a decline for a status. */
-function createUrlAuthenticationData(
+const createUrlAuthenticationData = (
 	url: string,
 	metadata: AuthHeaderMetadata | DeclinedStatus,
-): UrlAuthenticationData {
+): UrlAuthenticationData => {
 	const { protocol } = new URL(url);
 	if (typeof metadata === "string") {
 		return { protocol, scheme: notSetScheme, status: metadata, url };
@@ -93,37 +92,38 @@ function createUrlAuthenticationData(
 		status: noStatus,
 		url,
 	};
-}
+};
 
-function authSecretKey(
+const isNonEmpty = (value: string | undefined): value is string =>
+	value !== undefined && value !== "";
+
+const authSecretKey = (
 	context: ExtensionContext,
 	url: string,
-): string | undefined {
-	let folder = context.storageUri?.path;
+): string | undefined => {
+	const storagePath = context.storageUri?.path;
 	const activePath = window?.activeTextEditor?.document.uri.path;
-	if (!folder && activePath) {
-		folder = dirname(activePath);
-	}
-	if (folder) {
-		return `${folder}__${url}`;
-	}
-	return;
-}
+	const fromActive =
+		activePath === undefined || activePath === ""
+			? undefined
+			: dirname(activePath);
+	const folder = isNonEmpty(storagePath) ? storagePath : fromActive;
+	return isNonEmpty(folder) ? `${folder}__${url}` : undefined;
+};
 
-function isUrlAuthenticationData(
+const isUrlAuthenticationData = (
 	value: unknown,
-): value is UrlAuthenticationData {
-	if (!(typeof value === "object" && value !== null)) {
-		return false;
-	}
-	const entry = value as UrlAuthenticationData;
-	return (
-		typeof entry.url === "string" &&
-		typeof entry.scheme === "string" &&
-		typeof entry.status === "string" &&
-		typeof entry.protocol === "string"
-	);
-}
+): value is UrlAuthenticationData =>
+	typeof value === "object" &&
+	value !== null &&
+	"url" in value &&
+	typeof value.url === "string" &&
+	"scheme" in value &&
+	typeof value.scheme === "string" &&
+	"status" in value &&
+	typeof value.status === "string" &&
+	"protocol" in value &&
+	typeof value.protocol === "string";
 
 export type {
 	AuthenticationScheme,

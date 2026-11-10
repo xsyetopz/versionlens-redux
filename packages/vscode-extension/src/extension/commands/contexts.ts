@@ -5,36 +5,40 @@ import { manifestInfo } from "../manifest.ts";
 import type { ExtensionState } from "../state.ts";
 import { customInstallTaskLabel } from "../tasks/custom-install.ts";
 
-export async function updateContexts(
+export const updateContexts = async (
 	state: ExtensionState,
-): Promise<string | false> {
+): Promise<string | false> => {
 	const activeDocument = fileDocument(window.activeTextEditor?.document);
-	let info: Awaited<ReturnType<typeof manifestInfo>>;
-	if (activeDocument) {
-		info = await manifestInfo(state, activeDocument);
-	}
-	const providerActive = (info?.supported && info.provider) || false;
+	const info =
+		activeDocument === undefined
+			? undefined
+			: await manifestInfo(state, activeDocument);
+	const provider = info?.supported === true ? info.provider : null;
+	const providerActive =
+		provider !== null && provider !== "" ? provider : false;
 	await setContexts(state, {
 		"versionlens.providerActive": providerActive,
 		"versionlens.show": state.flags.showVersionLenses,
 		"versionlens.showCustomInstall":
-			providerActive &&
+			providerActive !== false &&
 			Boolean(await customInstallTaskLabel(state, activeDocument)),
 		"versionlens.showOutdated": state.flags.showOutdated,
 		"versionlens.showPrereleases": state.flags.showPrereleases,
 		"versionlens.showSortAlphabetically":
-			providerActive && (info?.canSortDependencies ?? false),
+			providerActive !== false && (info?.canSortDependencies ?? false),
 	});
 	return providerActive;
-}
+};
 
-async function setContexts(
+const setContexts = async (
 	state: ExtensionState,
 	contexts: Record<string, boolean | string>,
-): Promise<void> {
-	for (const [key, value] of Object.entries(contexts)) {
-		await commands.executeCommand("setContext", key, value);
-	}
+): Promise<void> => {
+	await Promise.all(
+		Object.entries(contexts).map(([key, value]) =>
+			commands.executeCommand("setContext", key, value),
+		),
+	);
 	await commands.executeCommand(
 		"setContext",
 		"versionlens.providerBusy",
@@ -45,4 +49,4 @@ async function setContexts(
 		"versionlens.providerError",
 		state.flags.providerError,
 	);
-}
+};

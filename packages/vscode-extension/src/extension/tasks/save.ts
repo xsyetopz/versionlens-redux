@@ -5,10 +5,10 @@ import { customInstallTaskLabel } from "./custom-install.ts";
 import { runTask } from "./runner.ts";
 import { dependencySnapshot } from "./snapshot.ts";
 
-async function runInstallTaskIfDependenciesChanged(
+const runInstallTaskIfDependenciesChanged = async (
 	state: ExtensionState,
 	document: TextDocument,
-): Promise<boolean> {
+): Promise<boolean> => {
 	const key = document.uri.toString();
 	const previous = state.snapshots.savedDependencies.get(key);
 	const current =
@@ -21,7 +21,7 @@ async function runInstallTaskIfDependenciesChanged(
 	}
 
 	const label = await customInstallTaskLabel(state, document);
-	if (!label) {
+	if (label === undefined || label === "") {
 		rememberSavedDependencies(state, key, current);
 		return true;
 	}
@@ -38,16 +38,16 @@ async function runInstallTaskIfDependenciesChanged(
 
 	state.flags.showOutdated = true;
 	return false;
-}
+};
 
-function rememberSavedDependencies(
+const rememberSavedDependencies = (
 	state: ExtensionState,
 	key: string,
 	current: string,
-): void {
+): void => {
 	state.snapshots.savedDependencies.set(key, current);
 	state.snapshots.editedDependencies.delete(key);
 	state.flags.showOutdated = false;
-}
+};
 
 export { runInstallTaskIfDependenciesChanged };

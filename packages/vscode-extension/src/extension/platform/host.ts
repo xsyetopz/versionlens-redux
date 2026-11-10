@@ -1,32 +1,35 @@
-export type CodeLens = import("vscode").CodeLens;
-export type ConfigurationChangeEvent =
-	import("vscode").ConfigurationChangeEvent;
-export type Diagnostic = import("vscode").Diagnostic;
-export type DiagnosticCollection = import("vscode").DiagnosticCollection;
-export type DiagnosticSeverity = import("vscode").DiagnosticSeverity;
-export type Disposable = import("vscode").Disposable;
-export type DocumentFilter = import("vscode").DocumentFilter;
-export type DocumentSelector = import("vscode").DocumentSelector;
-export type EventEmitter<T> = import("vscode").EventEmitter<T>;
-export type ExtensionContext = import("vscode").ExtensionContext;
-export type LogOutputChannel = import("vscode").LogOutputChannel;
-export type OutputChannel = import("vscode").OutputChannel;
-export type QuickPickItem = import("vscode").QuickPickItem;
-export type Range = import("vscode").Range;
-export type RelativePattern = import("vscode").RelativePattern;
-export type Task = import("vscode").Task;
-export type TaskExecution = import("vscode").TaskExecution;
-export type TextDocument = import("vscode").TextDocument;
-export type TextDocumentChangeEvent = import("vscode").TextDocumentChangeEvent;
-export type Uri = import("vscode").Uri;
-export type WorkspaceConfiguration = import("vscode").WorkspaceConfiguration;
-export type WorkspaceEdit = import("vscode").WorkspaceEdit;
-export type WorkspaceFolder = import("vscode").WorkspaceFolder;
+import type * as vscode from "vscode";
 
-export declare const TextDocumentChangeReason: typeof import("vscode").TextDocumentChangeReason;
-export declare const commands: typeof import("vscode").commands;
-export declare const extensions: typeof import("vscode").extensions;
-export declare const languages: typeof import("vscode").languages;
-export declare const tasks: typeof import("vscode").tasks;
-export declare const window: typeof import("vscode").window;
-export declare const workspace: typeof import("vscode").workspace;
+export type {
+	CodeLens,
+	ConfigurationChangeEvent,
+	Diagnostic,
+	DiagnosticCollection,
+	DiagnosticSeverity,
+	Disposable,
+	DocumentFilter,
+	DocumentSelector,
+	EventEmitter,
+	ExtensionContext,
+	LogOutputChannel,
+	OutputChannel,
+	QuickPickItem,
+	Range,
+	RelativePattern,
+	Task,
+	TaskExecution,
+	TextDocument,
+	TextDocumentChangeEvent,
+	Uri,
+	WorkspaceConfiguration,
+	WorkspaceEdit,
+	WorkspaceFolder,
+} from "vscode";
+
+export declare const TextDocumentChangeReason: typeof vscode.TextDocumentChangeReason;
+export declare const commands: typeof vscode.commands;
+export declare const extensions: typeof vscode.extensions;
+export declare const languages: typeof vscode.languages;
+export declare const tasks: typeof vscode.tasks;
+export declare const window: typeof vscode.window;
+export declare const workspace: typeof vscode.workspace;

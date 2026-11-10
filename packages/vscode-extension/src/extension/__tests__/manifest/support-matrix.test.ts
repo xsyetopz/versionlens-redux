@@ -1,4 +1,3 @@
-import { expect, it } from "bun:test";
 import { resolve } from "node:path";
 
 import { expect, it } from "../runtime.ts";
@@ -27,11 +26,30 @@ interface MatrixManifest {
 	parsers: string[];
 }
 
-async function readMatrix(): Promise<ManifestSupportMatrix> {
-	return (await Bun.file(
-		resolve("tests/fixtures/manifest-support-matrix.json"),
-	).json()) as ManifestSupportMatrix;
+interface PackageJson {
+	contributes: {
+		configuration: { properties: Record<string, { default?: unknown }> };
+	};
 }
+
+const isMatrix = (value: unknown): value is ManifestSupportMatrix =>
+	typeof value === "object" &&
+	value !== null &&
+	"entries" in value &&
+	Array.isArray(value.entries);
+
+const isPackageJson = (value: unknown): value is PackageJson =>
+	typeof value === "object" && value !== null && "contributes" in value;
+
+const readMatrix = async (): Promise<ManifestSupportMatrix> => {
+	const matrix: unknown = await Bun.file(
+		resolve("tests/fixtures/manifest-support-matrix.json"),
+	).json();
+	if (!isMatrix(matrix)) {
+		throw new TypeError("Unexpected manifest support matrix shape");
+	}
+	return matrix;
+};
 
 const readmeLabelGroups: Record<string, string>[] = [
 	{
@@ -76,36 +94,38 @@ const readmeLabelGroups: Record<string, string>[] = [
 	},
 ] satisfies Record<string, string>[];
 
-const readmeLabels: Record<string, string> = Object.assign(
-	{},
-	...readmeLabelGroups,
+const readmeLabels: Record<string, string> = Object.fromEntries(
+	readmeLabelGroups.flatMap((group): [string, string][] =>
+		Object.entries(group),
+	),
 );
 
-async function readReadme(): Promise<string> {
-	return await Bun.file(resolve("packages/vscode-extension/README.md")).text();
-}
+const readmeLabel = (provider: string): string => {
+	const label = readmeLabels[provider];
+	if (label === undefined) {
+		throw new Error(`Missing README label for ${provider}`);
+	}
+	return label;
+};
 
-async function readPackageJson(): Promise<{
-	contributes: {
-		configuration: { properties: Record<string, { default?: unknown }> };
-	};
-}> {
-	return (await Bun.file(
+const readReadme = (): Promise<string> =>
+	Bun.file(resolve("packages/vscode-extension/README.md")).text();
+
+const readPackageJson = async (): Promise<PackageJson> => {
+	const packageJson: unknown = await Bun.file(
 		resolve("packages/vscode-extension/package.json"),
-	).json()) as {
-		contributes: {
-			configuration: {
-				properties: Record<string, { default?: unknown }>;
-			};
-		};
-	};
-}
+	).json();
+	if (!isPackageJson(packageJson)) {
+		throw new TypeError("Unexpected package.json shape");
+	}
+	return packageJson;
+};
 
-function dependencyPropertiesForMatrix(
+const dependencyPropertiesForMatrix = (
 	matrix: ManifestSupportMatrix,
 	properties: Record<string, { default?: unknown }>,
-): Map<string, string[]> {
-	return new Map(
+): Map<string, string[]> =>
+	new Map(
 		matrix.entries.flatMap(
 			({ dependencyProperties }): [readonly [string, string[]]] | [] => {
 				if (!dependencyProperties) {
@@ -115,7 +135,7 @@ function dependencyPropertiesForMatrix(
 					dependencyProperties.default ??
 					properties[dependencyProperties.settingKey]?.default;
 				if (!Array.isArray(configuredDefault)) {
-					throw new Error(
+					throw new TypeError(
 						`Missing dependency-property default for ${dependencyProperties.settingKey}`,
 					);
 				}
@@ -123,7 +143,6 @@ function dependencyPropertiesForMatrix(
 			},
 		),
 	);
-}
 
 it("readme documents every manifest support matrix provider", async (): Promise<void> => {
 	const matrix = await readMatrix();
@@ -134,12 +153,7 @@ it("readme documents every manifest support matrix provider", async (): Promise<
 	const readme = await readReadme();
 
 	for (const entry of matrix.entries) {
-		const label = readmeLabels[entry.provider];
-		expect(label).toBeString();
-		if (!label) {
-			throw new Error(`Missing README label for ${entry.provider}`);
-		}
-		expect(readme).toContain(label);
+		expect(readme).toContain(readmeLabel(entry.provider));
 		const apiUrlSettings = Object.keys(properties).filter(
 			(setting): boolean => setting === `versionlens.${entry.provider}.apiUrl`,
 		);
@@ -183,9 +197,9 @@ it("manifest support matrix covers supported file defaults", async (): Promise<v
 	);
 
 	expect(matrix.entries.length).toBeGreaterThan(0);
-	expect([...matrixBySetting.keys()].sort()).toEqual(fileSettingKeys.sort());
-	expect([...matrixDependencyProperties.keys()].sort()).toEqual(
-		dependencyPropertyKeys.sort(),
+	expect(new Set(matrixBySetting.keys())).toEqual(new Set(fileSettingKeys));
+	expect(new Set(matrixDependencyProperties.keys())).toEqual(
+		new Set(dependencyPropertyKeys),
 	);
 
 	for (const [dependencySettingKey, defaults] of matrixDependencyProperties) {

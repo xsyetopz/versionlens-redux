@@ -7,26 +7,26 @@ const BUNDLED_SERVER_DIRECTORY = "server";
 /** Environment variable that points at a server binary to use instead. */
 const SERVER_ENVIRONMENT_VARIABLE = "VERSIONLENS_LSP";
 
-function bundledServerPath(
+const bundledServerPath = (
 	extensionPath: string,
 	platform: NodeJS.Platform = process.platform,
-): string {
+): string => {
 	let name = "versionlens-lsp";
 	if (platform === "win32") {
 		name = "versionlens-lsp.exe";
 	}
 	return join(extensionPath, BUNDLED_SERVER_DIRECTORY, name);
-}
+};
 
-function resolveServerPath(
+const resolveServerPath = (
 	extensionPath: string,
 	environment: NodeJS.ProcessEnv = process.env,
-): string {
+): string => {
 	const override = environment[SERVER_ENVIRONMENT_VARIABLE]?.trim();
-	if (override) {
+	if (override !== undefined && override !== "") {
 		return override;
 	}
 	return bundledServerPath(extensionPath);
-}
+};
 
 export { bundledServerPath, resolveServerPath, SERVER_ENVIRONMENT_VARIABLE };

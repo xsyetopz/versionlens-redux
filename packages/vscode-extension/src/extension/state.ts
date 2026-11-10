@@ -40,29 +40,27 @@ export interface ExtensionState {
 	};
 }
 
-export function createExtensionState(): ExtensionState {
-	return {
-		context: undefined,
-		client: undefined,
-		lifecycle: Promise.resolve(),
-		selectorKey: undefined,
-		ui: {
-			outputChannel: undefined,
-		},
-		flags: {
-			diagnosticsHidden: false,
-			showVersionLenses: true,
-			showOutdated: false,
-			showPrereleases: false,
-			providerBusy: 0,
-			providerError: false,
-		},
-		activity: new Map(),
-		diagnostics: new Map(),
-		promptedHosts: new Set(),
-		snapshots: {
-			savedDependencies: new Map(),
-			editedDependencies: new Map(),
-		},
-	};
-}
+export const createExtensionState = (): ExtensionState => ({
+	context: undefined,
+	client: undefined,
+	lifecycle: Promise.resolve(),
+	selectorKey: undefined,
+	ui: {
+		outputChannel: undefined,
+	},
+	flags: {
+		diagnosticsHidden: false,
+		showVersionLenses: true,
+		showOutdated: false,
+		showPrereleases: false,
+		providerBusy: 0,
+		providerError: false,
+	},
+	activity: new Map(),
+	diagnostics: new Map(),
+	promptedHosts: new Set(),
+	snapshots: {
+		savedDependencies: new Map(),
+		editedDependencies: new Map(),
+	},
+});

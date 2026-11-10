@@ -1,5 +1,3 @@
-import { expect, it } from "bun:test";
-
 import type { TaskRunResult } from "../../tasks/runner.ts";
 import { expect, it, mockVscodeHost } from "../runtime.ts";
 
@@ -19,8 +17,8 @@ const failedTaskExitCode = 7;
 
 const availableTasks: TaskStub[] = [];
 const executed: ExecutionStub[] = [];
-const endListeners: ((event: {
-	execution: ExecutionStub;
+let endListeners: ((event: {
+	execution: ExecutionStub | undefined;
 	exitCode: number | undefined;
 }) => void)[] = [];
 
@@ -37,17 +35,16 @@ mockVscodeHost((): MockModule => ({
 		fetchTasks: (): TaskStub[] => availableTasks,
 		onDidEndTaskProcess(
 			listener: (event: {
-				execution: ExecutionStub;
+				execution: ExecutionStub | undefined;
 				exitCode: number | undefined;
 			}) => void,
 		): { dispose: () => void } {
 			endListeners.push(listener);
 			return {
 				dispose(): void {
-					const index = endListeners.indexOf(listener);
-					if (index >= 0) {
-						endListeners.splice(index, 1);
-					}
+					endListeners = endListeners.filter(
+						(entry): boolean => entry !== listener,
+					);
 				},
 			};
 		},
@@ -59,7 +56,7 @@ it("runTask selects the document workspace and ignores same-name executions", as
 	const { runTask } = await import("../../tasks/runner.ts");
 	availableTasks.length = 0;
 	executed.length = 0;
-	endListeners.length = 0;
+	endListeners = [];
 	const folderA = workspaceFolder("file:///workspace-a");
 	const folderB = workspaceFolder("file:///workspace-b");
 	const taskA = { name: "install", scope: folderA };
@@ -67,12 +64,11 @@ it("runTask selects the document workspace and ignores same-name executions", as
 	availableTasks.push(taskA, taskB);
 
 	let completed = false;
-	const pending = runTask("install", folderB as never).then(
-		(result): TaskRunResult => {
-			completed = true;
-			return result;
-		},
-	);
+	const pending = (async (): Promise<TaskRunResult> => {
+		const result = await runTask("install", folderB);
+		completed = true;
+		return result;
+	})();
 	await Promise.resolve();
 	expect(executed[0]?.task).toBe(taskB);
 
@@ -81,9 +77,6 @@ it("runTask selects the document workspace and ignores same-name executions", as
 	expect(completed).toBe(false);
 
 	const [selectedExecution] = executed;
-	if (!selectedExecution) {
-		throw new Error("expected selected task execution");
-	}
 	finish(selectedExecution, failedTaskExitCode);
 	expect(await pending).toEqual({
 		exitCode: failedTaskExitCode,
@@ -91,12 +84,15 @@ it("runTask selects the document workspace and ignores same-name executions", as
 	});
 });
 
-function workspaceFolder(uri: string): { uri: { toString: () => string } } {
-	return { uri: { toString: (): string => uri } };
-}
+const workspaceFolder = (uri: string): { uri: { toString: () => string } } => ({
+	uri: { toString: (): string => uri },
+});
 
-function finish(execution: ExecutionStub, exitCode: number | undefined): void {
-	for (const listener of [...endListeners]) {
+const finish = (
+	execution: ExecutionStub | undefined,
+	exitCode: number | undefined,
+): void => {
+	for (const listener of endListeners) {
 		listener({ execution, exitCode });
 	}
-}
+};

@@ -14,15 +14,16 @@ type AuthHeaderQuickPick = QuickPickItem & {
 	entry: UrlAuthenticationData;
 };
 
-async function removeAuthHeader(state: ExtensionState): Promise<boolean> {
+const removeAuthHeader = async (state: ExtensionState): Promise<boolean> => {
 	const { context } = state;
-	const choices = urlAuthenticationEntries(context).map(
-		(entry): AuthHeaderQuickPick => ({
+	const choices: AuthHeaderQuickPick[] = [];
+	for (const entry of urlAuthenticationEntries(context)) {
+		choices.push({
 			entry,
 			label: entry.url,
 			...urlAuthenticationDetail(entry),
-		}),
-	);
+		});
+	}
 	const picked = await window.showQuickPick<AuthHeaderQuickPick>(choices, {
 		canPickMany: true,
 		placeHolder: "Choose which urls to remove",
@@ -36,21 +37,21 @@ async function removeAuthHeader(state: ExtensionState): Promise<boolean> {
 		picked.map(async ({ entry }): Promise<void> => {
 			await removeUrlAuthentication(context, entry.url);
 			const secret = authSecretKey(context, entry.url);
-			if (entry.scheme !== notSetScheme && secret) {
+			if (entry.scheme !== notSetScheme && secret !== undefined) {
 				await context.secrets.delete(secret);
 			}
 		}),
 	);
 	return true;
-}
+};
 
-function urlAuthenticationDetail(
+const urlAuthenticationDetail = (
 	entry: UrlAuthenticationData,
-): { detail: string } | { detail?: never } {
+): { detail: string } | { detail?: never } => {
 	const detail: string[] = [];
 	if (entry.scheme !== notSetScheme) {
 		detail.push(entry.protocol === "http:" ? "Unsecured" : "Secure");
-		if (entry.label) {
+		if (entry.label !== undefined && entry.label !== "") {
 			detail.push(entry.label);
 		}
 	}
@@ -61,6 +62,6 @@ function urlAuthenticationDetail(
 		return { detail: detail.join(" ") };
 	}
 	return {};
-}
+};
 
 export { removeAuthHeader };

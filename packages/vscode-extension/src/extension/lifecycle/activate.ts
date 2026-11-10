@@ -10,16 +10,14 @@ import { startClient } from "../client.ts";
 import { updateContexts } from "../commands/contexts.ts";
 import { reloadConfigurationState } from "../session/flags.ts";
 import type { ExtensionState } from "../state.ts";
-import {
-	registerExtensionSubscriptions,
-	trackDocument,
-} from "./subscriptions.ts";
+import { registerExtensionSubscriptions } from "./subscriptions.ts";
+import { trackDocument } from "./track.ts";
 import { initializeUi } from "./ui.ts";
 
-async function activateExtension(
+const activateExtension = async (
 	state: ExtensionState,
 	context: ExtensionContext,
-): Promise<void> {
+): Promise<void> => {
 	state.context = context;
 	reloadConfigurationState(state);
 	initializeUi(state);
@@ -34,11 +32,11 @@ async function activateExtension(
 		),
 	);
 	await updateContexts(state);
-}
+};
 
-async function warnWhenOriginalVersionLensInstalled(
+const warnWhenOriginalVersionLensInstalled = async (
 	state: ExtensionState,
-): Promise<void> {
+): Promise<void> => {
 	const originalExtensionId = "pflannery.vscode-versionlens";
 	if (!extensions.getExtension(originalExtensionId)) {
 		return;
@@ -58,19 +56,17 @@ async function warnWhenOriginalVersionLensInstalled(
 		"workbench.extensions.action.disableExtension",
 		originalExtensionId,
 	);
-}
+};
 
-function warnWhenCodeLensesDisabled(state: ExtensionState): void {
+const warnWhenCodeLensesDisabled = (state: ExtensionState): void => {
 	const editorCodeLensKey = "editor.codeLens";
-	if (
-		workspace.getConfiguration().get<boolean>(editorCodeLensKey, true) !== false
-	) {
+	if (workspace.getConfiguration().get<boolean>(editorCodeLensKey, true)) {
 		return;
 	}
 
 	state.ui.outputChannel?.appendLine(
 		"Code lenses are disabled. This extension won't work unless you enable 'editor.codeLens' in your vscode settings",
 	);
-}
+};
 
 export { activateExtension };
