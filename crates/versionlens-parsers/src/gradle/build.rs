@@ -6,6 +6,7 @@ type GradleDependencies = Vec<Dependency>;
 
 use crate::positions::offset_range;
 
+/// The Maven repositories of a Gradle build script.
 pub type GradleMavenRepositories = Vec<MavenNamedRepository>;
 type ParsedGradleDependency = Option<Dependency>;
 type GradleBlockStack<'a> = Vec<&'a str>;
@@ -18,14 +19,17 @@ pub(crate) fn parse_gradle_settings(text: &str) -> GradleDependencies {
     parse_gradle_script(text, false)
 }
 
+/// Reads the Maven repositories of a Gradle build script.
 pub fn parse_gradle_maven_repositories(text: &str) -> GradleMavenRepositories {
     parse_gradle_maven_repositories_with_scope(text, GradleAll)
 }
 
+/// Reads the Maven repositories that a Gradle build script uses to resolve dependencies.
 pub fn parse_gradle_dependency_maven_repositories(text: &str) -> GradleMavenRepositories {
     parse_gradle_maven_repositories_with_scope(text, GradleDependency)
 }
 
+/// Reads the Maven repositories that a Gradle build script uses to resolve plugins.
 pub fn parse_gradle_plugin_maven_repositories(text: &str) -> GradleMavenRepositories {
     parse_gradle_maven_repositories_with_scope(text, GradlePluginManagement)
 }
@@ -174,8 +178,8 @@ fn parse_plugin_line(text: &str, line: &str, line_offset: usize) -> ParsedGradle
             line_offset + strings[1].content_start,
             line_offset + strings[1].content_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -219,8 +223,8 @@ fn parse_string_dependency_line(
             line_offset + version_content_start,
             line_offset + version_content_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -249,8 +253,8 @@ fn parse_map_dependency_line(text: &str, line: &str, line_offset: usize) -> Pars
             line_offset + version.content_start,
             line_offset + version.content_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -286,8 +290,8 @@ fn parse_local_dependency_line(
             line_offset + local.content_start,
             line_offset + local.content_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

@@ -1,3 +1,6 @@
+//! Integration tests run against the public API, as another crate would.
+#![cfg(test)]
+
 use std::io::ErrorKind;
 
 use versionlens_test_support::read_fixture;

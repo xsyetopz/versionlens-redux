@@ -22,37 +22,39 @@ pub(crate) fn latest_python_version(
 }
 
 pub(crate) fn python_release_versions(body: &str) -> Vec<String> {
-    let mut versions = from_str::<Value>(body)
-        .ok()
-        .map(python_json_release_versions)
-        .unwrap_or_else(|| python_rss_release_versions(body));
+    let mut versions = from_str::<Value>(body).ok().as_ref().map_or_else(
+        || python_rss_release_versions(body),
+        python_json_release_versions,
+    );
 
     sort_python_versions(&mut versions);
     versions.dedup();
     versions
 }
 
-fn python_json_release_versions(value: Value) -> Vec<String> {
+fn python_json_release_versions(value: &Value) -> Vec<String> {
     let versions = value
         .get("releases")
         .and_then(|releases| releases.as_object())
-        .map(|releases| {
-            releases
-                .keys()
-                .filter(|version| !yanked::python_release_is_yanked(&value, version))
-                .map(|version| version.as_str())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_else(|| {
-            value
-                .get("versions")
-                .unwrap_or(&value)
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(|value| value.as_str())
-                .collect()
-        });
+        .map_or_else(
+            || {
+                value
+                    .get("versions")
+                    .unwrap_or(value)
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|value| value.as_str())
+                    .collect()
+            },
+            |releases| {
+                releases
+                    .keys()
+                    .filter(|version| !yanked::python_release_is_yanked(value, version))
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+            },
+        );
 
     versions
         .into_iter()

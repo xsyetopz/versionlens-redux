@@ -37,8 +37,8 @@ fn parse_dub_sdl_line(line_index: usize, line: &str) -> Option<Dependency> {
             requirement_start,
             requirement_start + requirement.len(),
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

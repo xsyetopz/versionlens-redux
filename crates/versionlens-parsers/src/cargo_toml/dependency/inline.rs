@@ -20,6 +20,6 @@ pub(super) fn inline_registry_name(value: &TomlValue) -> Option<&str> {
         .as_inline_table()?
         .get("registry")
         .and_then(|value| value.as_str())
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|name| !name.is_empty())
 }

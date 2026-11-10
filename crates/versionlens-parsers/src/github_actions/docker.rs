@@ -23,7 +23,7 @@ pub(super) fn dependency(
     };
     let source_offset =
         |offset| scalar_content_offset(text, span.clone(), "docker://".len() + offset);
-    let mut dependency = sourced_dependency(SourcedDependency {
+    let mut dependency = sourced_dependency(&SourcedDependency {
         text,
         ecosystem: Ecosystem::Docker,
         group: "uses",
@@ -35,6 +35,6 @@ pub(super) fn dependency(
             ..source_offset(image.name_offset + image.name.len())?,
         requirement_range: source_offset(offset)?..source_offset(offset + requirement.len())?,
     });
-    dependency.requirement_prefix = prefix.to_owned();
+    prefix.clone_into(&mut dependency.requirement_prefix);
     Some(dependency)
 }

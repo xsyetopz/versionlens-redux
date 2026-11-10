@@ -77,7 +77,7 @@ impl VersionLensSession {
                     cache.insert_with_ttl(key, cached.clone(), ttl);
                     drop(cache);
                     if !has_registry_response && let Some(persistent_key) = persistent_key {
-                        self.store_persistent_latest(persistent_key, &cached, ttl, operation);
+                        self.store_persistent_latest(&persistent_key, &cached, ttl, operation);
                     }
                 }
                 lookup

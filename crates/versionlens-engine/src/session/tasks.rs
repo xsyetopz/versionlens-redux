@@ -11,13 +11,22 @@ use crate::concurrency::Priority;
 /// A newer check follows it, so callers do not report it.
 pub const CHECKING_CANCELLED: &str = "checking cancelled";
 
+/// A unit of work for `VersionLensSession::run_task`.
+#[derive(Debug)]
 pub enum SessionTask {
+    /// Resolve a document.
     Resolve(DocumentInput),
+    /// Resolve a document at background priority.
     Background(DocumentInput),
+    /// Run an update command on a document.
     Command {
+        /// The document.
         document: DocumentInput,
+        /// The command.
         command: Option<String>,
+        /// The package the command is for.
         dependency: Option<String>,
+        /// The version the user selected.
         selected_version: Option<String>,
     },
 }
@@ -31,6 +40,11 @@ impl Drop for OperationCancellation {
 }
 
 impl VersionLensSession {
+    /// Runs `task`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `CHECKING_CANCELLED` when the task was cancelled before it finished.
     pub async fn run_task(&self, task: SessionTask) -> Result<ResolveDocumentOutput, String> {
         self.synchronize_persistent_cache();
         let cancellation = Arc::new(AtomicBool::new(false));

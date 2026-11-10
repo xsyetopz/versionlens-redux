@@ -1,4 +1,4 @@
-# Differences from the 0.4.4 golden output
+# Differences From the 0.4.4 Golden Output
 
 Baseline: `tests/golden/0.4.4` as captured in commit `67f3b1d4` (the `v0.4.4`
 tag has no golden files). The working folder is recaptured from the engine
@@ -22,7 +22,7 @@ heading is stale (file identical or missing), or when the folder has a file the
 baseline lacks. Without git history it is skipped locally and fails under `CI`. Spec paths are under
 `openspec/changes/unify-lsp-and-fix-suggestions/specs/`.
 
-## Changed files
+## Changed Files
 
 ### `gradle-catalog/gradle/libs.versions.toml.json`
 
@@ -44,7 +44,7 @@ baseline lacks. Without git history it is skipped locally and fails under `CI`. 
   (scenario "Status lens without an update has no update command"), and
   tasks.md 4.8 (update always resolves, so a no-op command is not offered).
 
-## Added files (not in the baseline)
+## Added Files (Not in the Baseline)
 
 New in 0.5.0, under `tests/golden/0.5.0/`; they have no 0.4.4 counterpart:
 

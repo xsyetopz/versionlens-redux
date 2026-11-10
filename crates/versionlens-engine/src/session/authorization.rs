@@ -17,6 +17,7 @@ pub type AuthorizationFuture = Pin<Box<dyn Future<Output = Option<Credential>> +
 /// source helps. Implementations must not block the thread that polls them,
 /// and should ask at most once per host.
 pub trait AuthorizationSource: Send + Sync {
+    /// Returns the credential for `host`, which answered with `status`.
     fn authorize(&self, host: &str, status: u16) -> AuthorizationFuture;
 
     /// Told that `host` refused requests until `reset` because its rate

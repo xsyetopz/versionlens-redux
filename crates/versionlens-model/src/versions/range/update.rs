@@ -11,6 +11,7 @@ use super::requirements::{
 };
 use crate::versions::policy::UpdateLevel::{Major, Minor, Patch};
 
+/// Report whether `latest` is an update over `requirement` under semver rules, where an empty requirement always counts as updatable.
 pub fn is_update_available(latest: &str, requirement: &str) -> bool {
     if requirement.trim().is_empty() {
         return true;
@@ -41,6 +42,7 @@ pub fn is_update_available(latest: &str, requirement: &str) -> bool {
     is_newer(latest, requirement)
 }
 
+/// Report whether `latest` is an update over `requirement` under `dialect`.
 pub fn is_update_available_for_dialect(
     latest: &str,
     requirement: &str,
@@ -53,10 +55,12 @@ pub fn is_update_available_for_dialect(
     }
 }
 
+/// Report whether `latest` satisfies `requirement` under semver rules.
 pub fn requirement_satisfies_latest(requirement: &str, latest: &str) -> bool {
     range_requirement_satisfies(requirement, latest)
 }
 
+/// Report whether `latest` satisfies `requirement` under `dialect`.
 pub fn requirement_satisfies_latest_for_dialect(
     requirement: &str,
     latest: &str,
@@ -71,6 +75,7 @@ pub fn requirement_satisfies_latest_for_dialect(
     }
 }
 
+/// Report whether `requirement` is empty, a version, or a range form that can be evaluated against `latest`.
 pub fn requirement_is_parseable(requirement: &str, latest: &str) -> bool {
     let requirement = requirement.trim();
     requirement.is_empty()
@@ -81,6 +86,7 @@ pub fn requirement_is_parseable(requirement: &str, latest: &str) -> bool {
         || semver_range_requirement_satisfies(requirement, latest).is_some()
 }
 
+/// Report whether `requirement` can be evaluated against `latest` under `dialect`.
 pub fn requirement_is_parseable_for_dialect(
     requirement: &str,
     latest: &str,
@@ -135,6 +141,7 @@ fn semver_lower_bounds(requirement: &str) -> Vec<semver::Version> {
         .collect()
 }
 
+/// Report whether `latest` differs from `requirement` only in its build metadata.
 pub fn is_build_update(latest: &str, requirement: &str) -> bool {
     let Some(latest) = parse_version(latest) else {
         return false;
@@ -150,6 +157,7 @@ pub fn is_build_update(latest: &str, requirement: &str) -> bool {
         && latest.build != current.build
 }
 
+/// List the distinct `versions` that match `requirement` apart from build metadata, or nothing when fewer than two exist.
 pub fn build_variants<'a>(
     requirement: &str,
     versions: impl IntoIterator<Item = &'a str>,
@@ -177,6 +185,7 @@ pub fn build_variants<'a>(
     if variants.len() > 1 { variants } else { vec![] }
 }
 
+/// Return the highest component in which `latest` differs from `requirement`, or `None` if they match or do not parse.
 pub fn update_level(latest: &str, requirement: &str) -> Option<UpdateLevel> {
     let latest = parse_version(latest)?;
     let current = parse_version(requirement).or_else(|| parse_coerced_version(requirement))?;

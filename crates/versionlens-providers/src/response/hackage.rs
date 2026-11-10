@@ -24,7 +24,7 @@ pub(crate) fn latest_hackage_version(
             .then_some(version.as_str())
         })
         .max_by(compare_hackage_versions)
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 fn latest_stackage_snapshot(value: &Value, package: &str) -> Option<String> {
@@ -42,7 +42,7 @@ fn latest_stackage_snapshot(value: &Value, package: &str) -> Option<String> {
         .filter_map(|snapshot| snapshot.as_array()?.first()?.as_str())
         .filter_map(|name| name.strip_prefix(prefix))
         .max_by(compare_stackage_snapshots)
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 fn compare_stackage_snapshots(left: &&str, right: &&str) -> Ordering {
@@ -80,6 +80,7 @@ fn compare_hackage_versions(left: &&str, right: &&str) -> Ordering {
 fn split_prerelease(version: &str) -> (&str, Option<&str>) {
     version
         .split_once('-')
-        .map(|(release, prerelease)| (release, Some(prerelease)))
-        .unwrap_or((version, None))
+        .map_or((version, None), |(release, prerelease)| {
+            (release, Some(prerelease))
+        })
 }

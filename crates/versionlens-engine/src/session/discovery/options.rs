@@ -37,17 +37,23 @@ impl WorkspaceDiscoveryCancellation {
 }
 
 #[derive(Debug, Clone)]
+/// What workspace discovery reads.
 pub struct WorkspaceDiscoveryOptions {
     /// Empty roots check only the supplied overlays, without reading their parent directories.
     pub roots: Vec<PathBuf>,
+    /// Glob patterns of paths to skip.
     pub exclusions: Vec<String>,
+    /// Patterns to skip per ecosystem.
     pub provider_exclusions: Vec<WorkspaceProviderExclusion>,
+    /// Unsaved documents, which replace the files on disk.
     pub overlays: Vec<DocumentInput>,
     pub(crate) limits: WorkspaceDiscoveryLimits,
+    /// Stops discovery when cancelled.
     pub cancellation: WorkspaceDiscoveryCancellation,
 }
 
 impl WorkspaceDiscoveryOptions {
+    /// Options that read `roots` with the default limits.
     pub fn new(roots: Vec<PathBuf>) -> Self {
         Self {
             roots,

@@ -10,6 +10,6 @@ pub(super) fn npm_response_status(body: &str) -> Option<String> {
 
     status
         .as_str()
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
         .or_else(|| status.as_u64().map(|status| status.to_string()))
 }

@@ -4,10 +4,10 @@ This project expects contributors to keep discussions useful, respectful, and sa
 
 This code merges the practical expectations used by the Rust project with the Microsoft Open Source Code of Conduct used by TypeScript projects. References:
 
-- Rust Code of Conduct: https://www.rust-lang.org/policies/code-of-conduct
-- Microsoft Open Source Code of Conduct: https://opensource.microsoft.com/codeofconduct/
+- Rust Code of Conduct: <https://www.rust-lang.org/policies/code-of-conduct>
+- Microsoft Open Source Code of Conduct: <https://opensource.microsoft.com/codeofconduct/>
 
-## Expected behavior
+## Expected Behavior
 
 Contributors are expected to:
 
@@ -18,7 +18,7 @@ Contributors are expected to:
 - help keep issue threads, pull requests, reviews, and chat spaces productive;
 - respect privacy and avoid publishing private communication or personal information without consent.
 
-## Unacceptable behavior
+## Unacceptable Behavior
 
 The following behavior is not acceptable in project spaces:
 

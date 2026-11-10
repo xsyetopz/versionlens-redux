@@ -40,8 +40,10 @@ fn dependency(dependency: &Dependency) -> usize {
     let canonical = match &dependency.canonical_reference {
         Some(CanonicalReference::GitHubActionTag { tag }) => tag.capacity(),
         Some(CanonicalReference::GitHubActionCommit { commit }) => commit.capacity(),
-        Some(CanonicalReference::GitHubActionRef { reference })
-        | Some(CanonicalReference::GitHubActionInvalid { reference }) => reference.capacity(),
+        Some(
+            CanonicalReference::GitHubActionRef { reference }
+            | CanonicalReference::GitHubActionInvalid { reference },
+        ) => reference.capacity(),
         Some(CanonicalReference::GitHubActionLocal { path, .. }) => path.capacity(),
         Some(CanonicalReference::GitHubActionExpression { expression }) => expression.capacity(),
         Some(CanonicalReference::GitHubActionSha {

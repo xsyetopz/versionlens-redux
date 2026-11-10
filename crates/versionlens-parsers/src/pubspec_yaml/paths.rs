@@ -9,7 +9,7 @@ pub(super) fn dependency_groups<'a>(dependency_paths: &[&'a str]) -> Vec<&'a str
         .collect()
 }
 
-fn dependency_group<'a>(path: &'a str) -> Option<&'a str> {
+fn dependency_group(path: &str) -> Option<&str> {
     let group = path.split_once('.').map_or(path, |(group, _)| group);
     (group != "version").then_some(group)
 }

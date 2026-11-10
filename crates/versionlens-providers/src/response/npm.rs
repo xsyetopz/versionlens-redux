@@ -95,14 +95,14 @@ fn npm_dist_tag_version(value: &Value, requirement: &str) -> Option<String> {
         .as_object()?
         .get(requirement)?
         .as_str()
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 fn npm_latest_dist_tag(value: &Value) -> Option<String> {
     value
         .pointer("/dist-tags/latest")
         .and_then(|value| value.as_str())
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 fn latest_object_key(
@@ -113,12 +113,13 @@ fn latest_object_key(
 ) -> Option<String> {
     let versions = value.get(key)?.as_object()?;
     latest_version_with_prerelease_tags(
-        versions.keys().map(|value| value.as_str()),
+        versions.keys().map(String::as_str),
         include_prereleases,
         prerelease_tags,
     )
 }
 
+/// Lists the build variants of an npm version found in a response body.
 pub fn npm_build_versions(body: &str, requirement: &str) -> Vec<String> {
     if let Some(versions) = ordered_version_object_keys(body)
         && !versions.is_empty()
@@ -136,7 +137,7 @@ pub fn npm_build_versions(body: &str, requirement: &str) -> Vec<String> {
     if let Some(versions) = versions.as_object() {
         return sorted_npm_versions(build_variants(
             requirement,
-            versions.keys().map(|value| value.as_str()),
+            versions.keys().map(String::as_str),
         ));
     }
 
@@ -160,6 +161,7 @@ fn sorted_npm_versions(mut versions: Vec<String>) -> Vec<String> {
     versions
 }
 
+/// Lists the release versions of an npm package found in a response body.
 pub fn npm_release_versions(body: &str) -> Vec<String> {
     if let Some(versions) = ordered_version_object_keys(body)
         && !versions.is_empty()
@@ -172,7 +174,7 @@ pub fn npm_release_versions(body: &str) -> Vec<String> {
     };
 
     if let Some(versions) = versions.as_object() {
-        return sorted_npm_versions(versions.keys().map(|value| value.to_owned()).collect());
+        return sorted_npm_versions(versions.keys().map(ToOwned::to_owned).collect());
     }
 
     let Some(versions) = versions.as_array() else {
@@ -183,7 +185,7 @@ pub fn npm_release_versions(body: &str) -> Vec<String> {
         versions
             .iter()
             .filter_map(|value| value.as_str())
-            .map(|value| value.to_owned())
+            .map(ToOwned::to_owned)
             .collect(),
     )
 }
@@ -201,7 +203,7 @@ fn ordered_version_object_keys(body: &str) -> Option<Vec<String>> {
     let mut escaped = false;
     let mut capturing_key = false;
     let mut expecting_key = true;
-    let mut key = "".to_owned();
+    let mut key = String::new();
 
     for char in body[object_start + 1..].chars() {
         if in_string {
@@ -219,7 +221,7 @@ fn ordered_version_object_keys(body: &str) -> Option<Vec<String>> {
             if char == '"' {
                 if capturing_key {
                     keys.push(key);
-                    key = "".to_owned();
+                    key = String::new();
                 }
                 in_string = false;
                 capturing_key = false;

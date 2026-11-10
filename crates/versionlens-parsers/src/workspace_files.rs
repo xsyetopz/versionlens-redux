@@ -6,11 +6,15 @@ use marked_yaml::types::Node as YamlNode;
 use toml_edit::{DocumentMut, Item, Value};
 
 /// The `members` and `exclude` patterns of a Cargo `[workspace]` table.
+#[derive(Debug)]
 pub struct CargoWorkspaceMembers {
+    /// The member patterns.
     pub members: Vec<String>,
+    /// Package name patterns that the repository or workspace leaves out.
     pub exclude: Vec<String>,
 }
 
+/// Reads the `[workspace]` member patterns of a `Cargo.toml`, or returns `None` when it has none.
 pub fn parse_cargo_workspace_members(text: &str) -> Option<CargoWorkspaceMembers> {
     let document = text.parse::<DocumentMut>().ok()?;
     let workspace = document.get("workspace")?.as_table_like()?;

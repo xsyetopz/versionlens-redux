@@ -8,6 +8,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestTable {
+    /// One entry per file type.
     pub manifests: Vec<ManifestTableEntry>,
 }
 
@@ -38,6 +39,7 @@ pub struct ManifestTableEntry {
     pub settings_properties: Vec<String>,
 }
 
+/// Builds the manifest table as plain data.
 pub fn manifest_table() -> ManifestTable {
     ManifestTable {
         manifests: MANIFESTS.iter().map(entry).collect(),

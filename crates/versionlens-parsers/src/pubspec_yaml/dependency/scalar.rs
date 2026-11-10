@@ -15,8 +15,8 @@ pub(super) fn scalar_dependency_from_source(
     let text = source.text;
     let key = source.key;
     let value_range = scalar_range(text, value).unwrap_or_else(|| empty_value_range(text, key));
-    let mut requirement_prefix = "".to_owned();
-    let mut requirement_suffix = "".to_owned();
+    let mut requirement_prefix = String::new();
+    let mut requirement_suffix = String::new();
     let key_tail = key_line_tail(text, key);
     let requirement = if value.as_str() == "any" {
         "*"

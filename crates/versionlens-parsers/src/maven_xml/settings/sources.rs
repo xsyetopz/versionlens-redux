@@ -1,6 +1,7 @@
 use super::entries::MavenRepository;
 use super::xml::repository_urls_from_settings_xml;
 
+/// Reads the repository sources from the effective settings of Maven.
 pub fn parse_maven_effective_settings_repository_sources(text: &str) -> Vec<MavenRepository> {
     settings_repository_urls_with_default(text)
         .into_iter()
@@ -8,6 +9,7 @@ pub fn parse_maven_effective_settings_repository_sources(text: &str) -> Vec<Mave
         .collect()
 }
 
+/// Reads the repository sources that use `https` from the effective settings of Maven.
 pub fn parse_maven_effective_settings_https_repository_sources(text: &str) -> Vec<MavenRepository> {
     parse_maven_effective_settings_repository_sources(text)
         .into_iter()
@@ -24,10 +26,12 @@ fn maven_repository_from_url(url: String) -> MavenRepository {
 
 const DEFAULT_MAVEN_REPOSITORY: &str = "https://repo.maven.apache.org/maven2/";
 
+/// Lists the repository URLs from the effective settings of Maven.
 pub fn parse_maven_effective_settings_repositories(text: &str) -> Vec<String> {
     repository_urls_from_settings_xml(text)
 }
 
+/// Lists the `https` repository URLs from the effective settings of Maven.
 pub fn parse_maven_effective_settings_https_repositories(text: &str) -> Vec<String> {
     settings_repository_urls_with_default(text)
         .into_iter()
@@ -43,6 +47,7 @@ pub(super) fn settings_repository_urls_with_default(text: &str) -> Vec<String> {
     repositories
 }
 
+/// Collects the URLs of `repositories`.
 pub fn extract_maven_repository_urls(repositories: &[MavenRepository]) -> Vec<String> {
     repositories
         .iter()

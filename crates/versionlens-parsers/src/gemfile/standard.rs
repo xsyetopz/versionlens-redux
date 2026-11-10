@@ -16,8 +16,7 @@ pub(super) fn standard_gem_dependency(
 ) -> Dependency {
     let (requirement, requirement_start, requirement_end, requirement_prefix, requirement_suffix) =
         gem_requirement(context.content, name.end, version);
-    let hosted_url =
-        gem_source_url(context.content).or_else(|| source_url.map(|value| value.to_owned()));
+    let hosted_url = gem_source_url(context.content).or_else(|| source_url.map(ToOwned::to_owned));
 
     Dependency {
         name: name.name.to_owned(),
@@ -58,8 +57,8 @@ fn gem_requirement<'a>(
             CowBorrowed(requirement),
             start,
             end,
-            "".to_owned(),
-            "".to_owned(),
+            String::new(),
+            String::new(),
         );
     }
 
@@ -67,7 +66,7 @@ fn gem_requirement<'a>(
         .or_else(|| attr_string(content, "git"))
         .or_else(|| github_string(content))
     {
-        return (requirement, start, end, "".to_owned(), "".to_owned());
+        return (requirement, start, end, String::new(), String::new());
     }
 
     let quote = content.as_bytes().get(name_end).copied().unwrap_or(b'"') as char;

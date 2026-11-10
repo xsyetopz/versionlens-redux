@@ -137,7 +137,7 @@ fn baseline_dependency(
         group,
         name,
         support::DependencyParts {
-            requirement: "".to_owned(),
+            requirement: String::new(),
             name_start,
             name_end,
             requirement_start: name_end,

@@ -10,9 +10,7 @@ pub(in crate::versions::range) fn semver_range_requirement_satisfies(
         return None;
     }
 
-    let Some(latest) = parse_version(latest) else {
-        return None;
-    };
+    let latest = parse_version(latest)?;
     parse_normalized_version_req(requirement).map(|requirement| requirement.matches(&latest))
 }
 

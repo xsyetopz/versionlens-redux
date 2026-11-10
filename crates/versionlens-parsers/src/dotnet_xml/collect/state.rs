@@ -36,7 +36,7 @@ struct OpenChildPackageVersion {
     value: String,
 }
 
-impl<'a> DotnetXmlCollector<'a> {
+impl DotnetXmlCollector<'_> {
     pub(super) fn start_tag(
         &mut self,
         context: &DotnetEventContext<'_>,
@@ -49,16 +49,16 @@ impl<'a> DotnetXmlCollector<'a> {
         if is_project_version_path(&self.stack, &name) {
             self.open_project_version = Some(OpenProjectVersion {
                 text_start: context.span.end,
-                value: "".to_owned(),
+                value: String::new(),
             });
         }
-        if is_package_child_version_path(&self.stack, &name) {
-            if let Some(open) = &mut self.open_package_version {
-                open.child = Some(OpenChildPackageVersion {
-                    text_start: context.span.end,
-                    value: "".to_owned(),
-                });
-            }
+        if is_package_child_version_path(&self.stack, &name)
+            && let Some(open) = &mut self.open_package_version
+        {
+            open.child = Some(OpenChildPackageVersion {
+                text_start: context.span.end,
+                value: String::new(),
+            });
         }
         if is_package_tag(&name) && self.open_package_version.is_none() {
             self.open_package_version = pending_package_version(context, &name);
@@ -149,8 +149,8 @@ impl<'a> DotnetXmlCollector<'a> {
             hosted_name: None,
             range: open.fallback.range,
             requirement_range: offset_range(text, value_start, value_start + value.len()),
-            requirement_prefix: "".to_owned(),
-            requirement_suffix: "".to_owned(),
+            requirement_prefix: String::new(),
+            requirement_suffix: String::new(),
             canonical_reference: None,
         })
     }
@@ -210,7 +210,7 @@ fn is_project_version_path(stack: &[String], name: &str) -> bool {
     matches!(name, "Version" | "AssemblyVersion")
         && stack
             .iter()
-            .map(|value| value.as_str())
+            .map(String::as_str)
             .eq(["Project", "PropertyGroup"])
 }
 
@@ -223,7 +223,7 @@ fn is_package_child_version_path(stack: &[String], name: &str) -> bool {
 }
 
 fn is_packages_config_package_path(stack: &[String], name: &str) -> bool {
-    name == "package" && stack.iter().map(|value| value.as_str()).eq(["packages"])
+    name == "package" && stack.iter().map(String::as_str).eq(["packages"])
 }
 
 fn packages_config_dependency(context: &DotnetEventContext<'_>) -> DotnetPackageDependency {
@@ -243,8 +243,8 @@ fn packages_config_dependency(context: &DotnetEventContext<'_>) -> DotnetPackage
         hosted_name: None,
         range: offset_range(context.text, name_start, name_start + name.len),
         requirement_range: offset_range(context.text, version_start, version_start + version.len),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -270,7 +270,7 @@ fn missing_package_version_dependency(
         .find_map(|name_attr| missing_dependency(context, group, name_attr, true))
 }
 
-pub(super) fn dotnet_xml_collector<'a>(dependency_paths: Vec<&'a str>) -> DotnetXmlCollector<'a> {
+pub(super) fn dotnet_xml_collector(dependency_paths: Vec<&str>) -> DotnetXmlCollector<'_> {
     DotnetXmlCollector {
         stack: vec![],
         open_project_version: None,

@@ -15,7 +15,10 @@
             "rust-toolchain",
             "rust-toolchain.toml"
           ],
-          "languages": ["plaintext", "toml"],
+          "languages": [
+            "plaintext",
+            "toml"
+          ],
           "manifestKinds": [
             "CargoToml",
             "CargoConfigToml",
@@ -60,10 +63,19 @@
         {
           "defaultSettingKey": "versionlens.composer.files",
           "defaultGlob": "**/composer.json",
-          "fileForms": ["composer.json"],
-          "languages": ["json", "jsonc"],
-          "manifestKinds": ["ComposerJson"],
-          "parsers": ["parse_composer_json_with_paths"]
+          "fileForms": [
+            "composer.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "ComposerJson"
+          ],
+          "parsers": [
+            "parse_composer_json_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -93,14 +105,28 @@
             "jsr.json",
             "jsr.jsonc"
           ],
-          "languages": ["json", "jsonc"],
-          "manifestKinds": ["DenoJson", "DenoImportMapJson", "JsrJson"],
-          "parsers": ["parse_deno_json_with_paths", "parse_jsr_json_with_paths"]
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "DenoJson",
+            "DenoImportMapJson",
+            "JsrJson"
+          ],
+          "parsers": [
+            "parse_deno_json_with_paths",
+            "parse_jsr_json_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.deno.dependencyProperties",
-        "default": ["version", "imports", "scopes"]
+        "default": [
+          "version",
+          "imports",
+          "scopes"
+        ]
       }
     },
     {
@@ -127,9 +153,20 @@
             "docker-compose.*.yaml",
             "docker-compose.*.yml"
           ],
-          "languages": ["dockercompose", "yaml", "dockerfile", "plaintext"],
-          "manifestKinds": ["Dockerfile", "DockerComposeYaml"],
-          "parsers": ["parse_dockerfile", "parse_docker_compose_yaml"]
+          "languages": [
+            "dockercompose",
+            "yaml",
+            "dockerfile",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Dockerfile",
+            "DockerComposeYaml"
+          ],
+          "parsers": [
+            "parse_dockerfile",
+            "parse_docker_compose_yaml"
+          ]
         }
       ]
     },
@@ -154,7 +191,12 @@
             "*.targets",
             "*.props"
           ],
-          "languages": ["xml", "plaintext", "json", "jsonc"],
+          "languages": [
+            "xml",
+            "plaintext",
+            "json",
+            "jsonc"
+          ],
           "manifestKinds": [
             "DotnetXml",
             "DotnetProjectJson",
@@ -194,15 +236,34 @@
         {
           "defaultSettingKey": "versionlens.dub.files",
           "defaultGlob": "**/{dub.json,dub.selections.json,dub.sdl}",
-          "fileForms": ["dub.json", "dub.selections.json", "dub.sdl"],
-          "languages": ["json", "jsonc", "plaintext"],
-          "manifestKinds": ["DubJson", "DubSelectionsJson", "DubSdl"],
-          "parsers": ["parse_dub_json_with_paths", "parse_dub_sdl"]
+          "fileForms": [
+            "dub.json",
+            "dub.selections.json",
+            "dub.sdl"
+          ],
+          "languages": [
+            "json",
+            "jsonc",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "DubJson",
+            "DubSelectionsJson",
+            "DubSdl"
+          ],
+          "parsers": [
+            "parse_dub_json_with_paths",
+            "parse_dub_sdl"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.dub.dependencyProperties",
-        "default": ["dependencies", "versions", "configurations.*.dependencies"]
+        "default": [
+          "dependencies",
+          "versions",
+          "configurations.*.dependencies"
+        ]
       }
     },
     {
@@ -213,10 +274,20 @@
         {
           "defaultSettingKey": "versionlens.golang.files",
           "defaultGlob": "**/{go.mod,go.work}",
-          "fileForms": ["go.mod", "go.work"],
-          "languages": ["go.mod", "plaintext"],
-          "manifestKinds": ["GoMod"],
-          "parsers": ["parse_go_mod"]
+          "fileForms": [
+            "go.mod",
+            "go.work"
+          ],
+          "languages": [
+            "go.mod",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "GoMod"
+          ],
+          "parsers": [
+            "parse_go_mod"
+          ]
         }
       ]
     },
@@ -228,9 +299,22 @@
         {
           "defaultSettingKey": "versionlens.hex.files",
           "defaultGlob": "**/{mix.exs,rebar.config,gleam.toml}",
-          "fileForms": ["mix.exs", "rebar.config", "gleam.toml"],
-          "languages": ["elixir", "plaintext", "erlang", "toml"],
-          "manifestKinds": ["MixExs", "RebarConfig", "GleamToml"],
+          "fileForms": [
+            "mix.exs",
+            "rebar.config",
+            "gleam.toml"
+          ],
+          "languages": [
+            "elixir",
+            "plaintext",
+            "erlang",
+            "toml"
+          ],
+          "manifestKinds": [
+            "MixExs",
+            "RebarConfig",
+            "GleamToml"
+          ],
           "parsers": [
             "parse_mix_exs_document",
             "parse_rebar_config_document",
@@ -332,7 +416,13 @@
             ".node-version",
             ".bun-version"
           ],
-          "languages": ["plaintext", "json", "jsonc", "json5", "yaml"],
+          "languages": [
+            "plaintext",
+            "json",
+            "jsonc",
+            "json5",
+            "yaml"
+          ],
           "manifestKinds": [
             "NpmPackageJson",
             "NpmPackageJson5",
@@ -368,9 +458,15 @@
             ".yarnrc.yaml",
             ".yarnrc.yml"
           ],
-          "languages": ["yaml"],
-          "manifestKinds": ["PnpmYaml"],
-          "parsers": ["parse_pnpm_yaml_with_paths"]
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "PnpmYaml"
+          ],
+          "parsers": [
+            "parse_pnpm_yaml_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -399,8 +495,13 @@
             "pubspec.yml",
             "pubspec_overrides.yaml"
           ],
-          "languages": ["yaml"],
-          "manifestKinds": ["PubspecYaml", "PubspecOverridesYaml"],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "PubspecYaml",
+            "PubspecOverridesYaml"
+          ],
           "parsers": [
             "parse_pubspec_yaml_with_paths",
             "parse_pubspec_overrides_yaml_with_paths"
@@ -432,7 +533,11 @@
             "*requirements*.txt",
             "*constraints*.txt"
           ],
-          "languages": ["plaintext", "pip-requirements", "toml"],
+          "languages": [
+            "plaintext",
+            "pip-requirements",
+            "toml"
+          ],
           "manifestKinds": [
             "PythonPipfile",
             "PythonPyprojectToml",
@@ -468,10 +573,22 @@
         {
           "defaultSettingKey": "versionlens.ruby.files",
           "defaultGlob": "**/{*.gemspec,Gemfile}",
-          "fileForms": ["Gemfile", "*.gemspec"],
-          "languages": ["ruby", "plaintext"],
-          "manifestKinds": ["Gemfile", "RubyGemspec"],
-          "parsers": ["parse_gemfile", "parse_gemspec"]
+          "fileForms": [
+            "Gemfile",
+            "*.gemspec"
+          ],
+          "languages": [
+            "ruby",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Gemfile",
+            "RubyGemspec"
+          ],
+          "parsers": [
+            "parse_gemfile",
+            "parse_gemspec"
+          ]
         }
       ]
     },
@@ -483,10 +600,22 @@
         {
           "defaultSettingKey": "versionlens.opam.files",
           "defaultGlob": "**/{opam,*.opam,dune-project}",
-          "fileForms": ["opam", "*.opam", "dune-project"],
-          "languages": ["plaintext"],
-          "manifestKinds": ["Opam", "DuneProject"],
-          "parsers": ["parse_opam", "parse_dune_project"]
+          "fileForms": [
+            "opam",
+            "*.opam",
+            "dune-project"
+          ],
+          "languages": [
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Opam",
+            "DuneProject"
+          ],
+          "parsers": [
+            "parse_opam",
+            "parse_dune_project"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -509,10 +638,27 @@
         {
           "defaultSettingKey": "versionlens.hackage.files",
           "defaultGlob": "**/{cabal.project,*.cabal,stack.yaml,stack.yml}",
-          "fileForms": ["*.cabal", "cabal.project", "stack.yaml", "stack.yml"],
-          "languages": ["properties", "plaintext", "yaml"],
-          "manifestKinds": ["Cabal", "CabalProject", "StackYaml"],
-          "parsers": ["parse_cabal", "parse_cabal_project", "parse_stack_yaml"]
+          "fileForms": [
+            "*.cabal",
+            "cabal.project",
+            "stack.yaml",
+            "stack.yml"
+          ],
+          "languages": [
+            "properties",
+            "plaintext",
+            "yaml"
+          ],
+          "manifestKinds": [
+            "Cabal",
+            "CabalProject",
+            "StackYaml"
+          ],
+          "parsers": [
+            "parse_cabal",
+            "parse_cabal_project",
+            "parse_stack_yaml"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -541,14 +687,27 @@
             "Manifest.toml",
             "Manifest-v{major}.{minor}.toml"
           ],
-          "languages": ["toml"],
-          "manifestKinds": ["JuliaProjectToml", "JuliaManifestToml"],
-          "parsers": ["parse_julia_project", "parse_julia_manifest"]
+          "languages": [
+            "toml"
+          ],
+          "manifestKinds": [
+            "JuliaProjectToml",
+            "JuliaManifestToml"
+          ],
+          "parsers": [
+            "parse_julia_project",
+            "parse_julia_manifest"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.julia.dependencyProperties",
-        "default": ["version", "deps", "compat", "sources"]
+        "default": [
+          "version",
+          "deps",
+          "compat",
+          "sources"
+        ]
       }
     },
     {
@@ -559,10 +718,23 @@
         {
           "defaultSettingKey": "versionlens.cran.files",
           "defaultGlob": "**/{DESCRIPTION,renv.lock}",
-          "fileForms": ["DESCRIPTION", "renv.lock"],
-          "languages": ["plaintext", "json", "jsonc"],
-          "manifestKinds": ["RDescription", "RenvLock"],
-          "parsers": ["parse_r_description", "parse_renv_lock"]
+          "fileForms": [
+            "DESCRIPTION",
+            "renv.lock"
+          ],
+          "languages": [
+            "plaintext",
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "RDescription",
+            "RenvLock"
+          ],
+          "parsers": [
+            "parse_r_description",
+            "parse_renv_lock"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -586,10 +758,22 @@
         {
           "defaultSettingKey": "versionlens.conan.files",
           "defaultGlob": "**/{conanfile.txt,conanfile.py}",
-          "fileForms": ["conanfile.txt", "conanfile.py"],
-          "languages": ["plaintext", "python"],
-          "manifestKinds": ["ConanfileTxt", "ConanfilePy"],
-          "parsers": ["parse_conanfile_txt", "parse_conanfile_py"]
+          "fileForms": [
+            "conanfile.txt",
+            "conanfile.py"
+          ],
+          "languages": [
+            "plaintext",
+            "python"
+          ],
+          "manifestKinds": [
+            "ConanfileTxt",
+            "ConanfilePy"
+          ],
+          "parsers": [
+            "parse_conanfile_txt",
+            "parse_conanfile_py"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -627,7 +811,12 @@
             "ini",
             "starlark"
           ],
-          "manifestKinds": ["Cmake", "XmakeLua", "MesonWrap", "BazelWorkspace"],
+          "manifestKinds": [
+            "Cmake",
+            "XmakeLua",
+            "MesonWrap",
+            "BazelWorkspace"
+          ],
           "parsers": [
             "parse_cmake_with_paths",
             "parse_xmake_lua_with_paths",
@@ -656,15 +845,28 @@
         {
           "defaultSettingKey": "versionlens.vcpkg.files",
           "defaultGlob": "**/vcpkg.json",
-          "fileForms": ["vcpkg.json"],
-          "languages": ["json", "jsonc"],
-          "manifestKinds": ["VcpkgJson"],
-          "parsers": ["parse_vcpkg_json"]
+          "fileForms": [
+            "vcpkg.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "VcpkgJson"
+          ],
+          "parsers": [
+            "parse_vcpkg_json"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.vcpkg.dependencyProperties",
-        "default": ["dependencies", "features.*.dependencies", "overrides"]
+        "default": [
+          "dependencies",
+          "features.*.dependencies",
+          "overrides"
+        ]
       }
     },
     {
@@ -679,9 +881,15 @@
             ".github/workflows/*.{yml,yaml}",
             ".github/actions/**/action.{yml,yaml}"
           ],
-          "languages": ["yaml"],
-          "manifestKinds": ["GitHubActions"],
-          "parsers": ["parse_github_actions"]
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "GitHubActions"
+          ],
+          "parsers": [
+            "parse_github_actions"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -708,15 +916,30 @@
         {
           "defaultSettingKey": "versionlens.swift.files",
           "defaultGlob": "**/{Package.swift,Cartfile,Cartfile.private}",
-          "fileForms": ["Package.swift", "Cartfile", "Cartfile.private"],
-          "languages": ["swift", "plaintext"],
-          "manifestKinds": ["SwiftPackage", "Cartfile"],
-          "parsers": ["parse_swift_package", "parse_cartfile"]
+          "fileForms": [
+            "Package.swift",
+            "Cartfile",
+            "Cartfile.private"
+          ],
+          "languages": [
+            "swift",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "SwiftPackage",
+            "Cartfile"
+          ],
+          "parsers": [
+            "parse_swift_package",
+            "parse_cartfile"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.swift.dependencyProperties",
-        "default": ["dependencies"]
+        "default": [
+          "dependencies"
+        ]
       }
     },
     {
@@ -727,15 +950,26 @@
         {
           "defaultSettingKey": "versionlens.zig.files",
           "defaultGlob": "**/build.zig.zon",
-          "fileForms": ["build.zig.zon"],
-          "languages": ["zig", "plaintext"],
-          "manifestKinds": ["ZigBuildZon"],
-          "parsers": ["parse_zig_build_zon"]
+          "fileForms": [
+            "build.zig.zon"
+          ],
+          "languages": [
+            "zig",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "ZigBuildZon"
+          ],
+          "parsers": [
+            "parse_zig_build_zon"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.zig.dependencyProperties",
-        "default": ["dependencies"]
+        "default": [
+          "dependencies"
+        ]
       }
     },
     {
@@ -746,15 +980,28 @@
         {
           "defaultSettingKey": "versionlens.nim.files",
           "defaultGlob": "**/*.nimble",
-          "fileForms": [".nimble"],
-          "languages": ["nim", "plaintext"],
-          "manifestKinds": ["Nimble"],
-          "parsers": ["parse_nimble"]
+          "fileForms": [
+            ".nimble"
+          ],
+          "languages": [
+            "nim",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Nimble"
+          ],
+          "parsers": [
+            "parse_nimble"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.nim.dependencyProperties",
-        "default": ["requires", "dev.requires", "feature.*.requires"]
+        "default": [
+          "requires",
+          "dev.requires",
+          "feature.*.requires"
+        ]
       }
     },
     {
@@ -765,15 +1012,28 @@
         {
           "defaultSettingKey": "versionlens.luarocks.files",
           "defaultGlob": "**/*.rockspec",
-          "fileForms": [".rockspec"],
-          "languages": ["lua", "plaintext"],
-          "manifestKinds": ["LuaRockspec"],
-          "parsers": ["parse_luarocks_rockspec"]
+          "fileForms": [
+            ".rockspec"
+          ],
+          "languages": [
+            "lua",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "LuaRockspec"
+          ],
+          "parsers": [
+            "parse_luarocks_rockspec"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.luarocks.dependencyProperties",
-        "default": ["dependencies", "build_dependencies", "test_dependencies"]
+        "default": [
+          "dependencies",
+          "build_dependencies",
+          "test_dependencies"
+        ]
       }
     },
     {
@@ -784,10 +1044,19 @@
         {
           "defaultSettingKey": "versionlens.cpan.files",
           "defaultGlob": "**/cpanfile",
-          "fileForms": ["cpanfile"],
-          "languages": ["perl", "plaintext"],
-          "manifestKinds": ["Cpanfile"],
-          "parsers": ["parse_cpanfile"]
+          "fileForms": [
+            "cpanfile"
+          ],
+          "languages": [
+            "perl",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "Cpanfile"
+          ],
+          "parsers": [
+            "parse_cpanfile"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -816,15 +1085,26 @@
         {
           "defaultSettingKey": "versionlens.haxelib.files",
           "defaultGlob": "**/haxelib.json",
-          "fileForms": ["haxelib.json"],
-          "languages": ["json", "jsonc"],
-          "manifestKinds": ["HaxelibJson"],
-          "parsers": ["parse_haxelib_json_with_paths"]
+          "fileForms": [
+            "haxelib.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "HaxelibJson"
+          ],
+          "parsers": [
+            "parse_haxelib_json_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.haxelib.dependencyProperties",
-        "default": ["dependencies"]
+        "default": [
+          "dependencies"
+        ]
       }
     },
     {
@@ -835,15 +1115,28 @@
         {
           "defaultSettingKey": "versionlens.terraform.files",
           "defaultGlob": "**/{*.tf,*.tofu}",
-          "fileForms": ["*.tf", "*.tofu"],
-          "languages": ["terraform", "hcl", "plaintext"],
-          "manifestKinds": ["TerraformTf"],
-          "parsers": ["parse_terraform_hcl"]
+          "fileForms": [
+            "*.tf",
+            "*.tofu"
+          ],
+          "languages": [
+            "terraform",
+            "hcl",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "TerraformTf"
+          ],
+          "parsers": [
+            "parse_terraform_hcl"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.terraform.dependencyProperties",
-        "default": ["required_providers"]
+        "default": [
+          "required_providers"
+        ]
       }
     },
     {
@@ -854,15 +1147,25 @@
         {
           "defaultSettingKey": "versionlens.helm.files",
           "defaultGlob": "**/Chart.yaml",
-          "fileForms": ["Chart.yaml"],
-          "languages": ["yaml"],
-          "manifestKinds": ["HelmChartYaml"],
-          "parsers": ["parse_helm_chart_yaml_with_paths"]
+          "fileForms": [
+            "Chart.yaml"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "HelmChartYaml"
+          ],
+          "parsers": [
+            "parse_helm_chart_yaml_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.helm.dependencyProperties",
-        "default": ["dependencies"]
+        "default": [
+          "dependencies"
+        ]
       }
     },
     {
@@ -873,15 +1176,27 @@
         {
           "defaultSettingKey": "versionlens.ansible.files",
           "defaultGlob": "**/{requirements.yml,requirements.yaml}",
-          "fileForms": ["requirements.yml", "requirements.yaml"],
-          "languages": ["yaml"],
-          "manifestKinds": ["AnsibleGalaxyRequirementsYaml"],
-          "parsers": ["parse_ansible_galaxy_requirements_yaml_with_paths"]
+          "fileForms": [
+            "requirements.yml",
+            "requirements.yaml"
+          ],
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "AnsibleGalaxyRequirementsYaml"
+          ],
+          "parsers": [
+            "parse_ansible_galaxy_requirements_yaml_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.ansible.dependencyProperties",
-        "default": ["roles", "collections"]
+        "default": [
+          "roles",
+          "collections"
+        ]
       }
     },
     {
@@ -892,10 +1207,19 @@
         {
           "defaultSettingKey": "versionlens.bazel.files",
           "defaultGlob": "**/MODULE.bazel",
-          "fileForms": ["MODULE.bazel"],
-          "languages": ["starlark", "plaintext"],
-          "manifestKinds": ["BazelModule"],
-          "parsers": ["parse_bazel_module_with_paths"]
+          "fileForms": [
+            "MODULE.bazel"
+          ],
+          "languages": [
+            "starlark",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "BazelModule"
+          ],
+          "parsers": [
+            "parse_bazel_module_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
@@ -915,15 +1239,26 @@
         {
           "defaultSettingKey": "versionlens.nix.files",
           "defaultGlob": "**/flake.nix",
-          "fileForms": ["flake.nix"],
-          "languages": ["nix", "plaintext"],
-          "manifestKinds": ["NixFlake"],
-          "parsers": ["parse_nix_flake_with_paths"]
+          "fileForms": [
+            "flake.nix"
+          ],
+          "languages": [
+            "nix",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "NixFlake"
+          ],
+          "parsers": [
+            "parse_nix_flake_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.nix.dependencyProperties",
-        "default": ["inputs"]
+        "default": [
+          "inputs"
+        ]
       }
     },
     {
@@ -939,14 +1274,22 @@
             "kustomization.yml",
             "Kustomization"
           ],
-          "languages": ["yaml"],
-          "manifestKinds": ["KustomizationYaml"],
-          "parsers": ["parse_kustomization_yaml_with_paths"]
+          "languages": [
+            "yaml"
+          ],
+          "manifestKinds": [
+            "KustomizationYaml"
+          ],
+          "parsers": [
+            "parse_kustomization_yaml_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.kustomize.dependencyProperties",
-        "default": ["images"]
+        "default": [
+          "images"
+        ]
       }
     },
     {
@@ -957,15 +1300,26 @@
         {
           "defaultSettingKey": "versionlens.unity.files",
           "defaultGlob": "**/Packages/manifest.json",
-          "fileForms": ["Packages/manifest.json"],
-          "languages": ["json", "jsonc"],
-          "manifestKinds": ["UnityProjectManifestJson"],
-          "parsers": ["parse_unity_project_manifest_json_with_paths"]
+          "fileForms": [
+            "Packages/manifest.json"
+          ],
+          "languages": [
+            "json",
+            "jsonc"
+          ],
+          "manifestKinds": [
+            "UnityProjectManifestJson"
+          ],
+          "parsers": [
+            "parse_unity_project_manifest_json_with_paths"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.unity.dependencyProperties",
-        "default": ["dependencies"]
+        "default": [
+          "dependencies"
+        ]
       }
     },
     {
@@ -976,15 +1330,26 @@
         {
           "defaultSettingKey": "versionlens.cocoapods.files",
           "defaultGlob": "**/Podfile",
-          "fileForms": ["Podfile"],
-          "languages": ["ruby", "plaintext"],
-          "manifestKinds": ["CocoaPodsPodfile"],
-          "parsers": ["parse_cocoapods_podfile"]
+          "fileForms": [
+            "Podfile"
+          ],
+          "languages": [
+            "ruby",
+            "plaintext"
+          ],
+          "manifestKinds": [
+            "CocoaPodsPodfile"
+          ],
+          "parsers": [
+            "parse_cocoapods_podfile"
+          ]
         }
       ],
       "dependencyProperties": {
         "settingKey": "versionlens.cocoapods.dependencyProperties",
-        "default": ["pod"]
+        "default": [
+          "pod"
+        ]
       }
     }
   ]

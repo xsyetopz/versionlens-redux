@@ -3,6 +3,12 @@ use serde_json::Value;
 use super::{RuntimeSource, versions::go_releases};
 
 impl RuntimeSource {
+    /// Picks the release a floating channel requirement currently resolves to.
+    ///
+    /// # Errors
+    ///
+    /// Returns a message when the body is not valid catalog metadata or the channel
+    /// has no valid published version.
     pub fn preferred_release(
         &self,
         body: &str,

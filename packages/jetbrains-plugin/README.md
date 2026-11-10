@@ -11,7 +11,7 @@ The JetBrains plugin starts the shared `versionlens-lsp` server through the Inte
 
 The plugin is written in Kotlin and targets IntelliJ IDEA through the IntelliJ Platform Gradle plugin. The checked-in wrapper pins Gradle 9.6.1; dependency locks and checksum verification make resolution reproducible, and CI disables the Gradle daemon.
 
-## Build the language server
+## Build the Language Server
 
 From the repository root:
 
@@ -28,7 +28,7 @@ The plugin does not compile the server. It bundles the prebuilt release binaries
 5. Repository-local debug binary at `target/debug/versionlens-lsp`.
 6. `versionlens-lsp` on `PATH`.
 
-## Build the plugin
+## Build the Plugin
 
 Stage the release binaries as `<dir>/<rust-target>/versionlens-lsp[.exe]` from the build-lsp archives, then build. The default directory is `build/lsp-binaries`; override it with `-PversionlensBinariesDir=<dir>`.
 
@@ -53,7 +53,7 @@ The server asks the IDE for its settings with `workspace/configuration`. The plu
 
 `diagnostics.updateSeverity` sets the severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected.
 
-## Private registries
+## Private Registries
 
 The plugin does not implement the `versionlens/authorization` request, so the server uses its other credential sources:
 
@@ -66,7 +66,7 @@ Start the IDE with the variables set. Tokens are never written to logs, diagnost
 
 The release workflow builds the archive once. `publish-marketplaces.yml` downloads it from the GitHub release and runs `publishPlugin -x buildPlugin -PversionlensReleasePlugin=<zip>`, which signs that archive and uploads it without rebuilding. Run `bun run marketplaces:configure` once to store `JB_CERTIFICATE_CHAIN`, `JB_PRIVATE_KEY`, `JB_PRIVATE_KEY_PASSWORD`, and `JETBRAINS_MARKETPLACE_TOKEN` in the approval-gated GitHub environment. JetBrains requires the first plugin version to be uploaded manually before later versions can use automated publishing.
 
-## Development checks
+## Development Checks
 
 ```bash
 packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin test --no-daemon

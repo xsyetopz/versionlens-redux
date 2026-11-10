@@ -2,13 +2,13 @@
 
 Thanks for working on VersionLens.
 
-## Before changing code
+## Before Changing Code
 
 1. Read `README.md` for product scope.
 2. Read `AGENTS.md` for repository-specific build, test, and safety rules.
 3. Inspect the affected Rust crates, TypeScript adapter code, scripts, and tests before editing.
 
-## Development setup
+## Development Setup
 
 Install Bun 1.4.3 and the Rust toolchain declared in `rust-toolchain.toml`, then install dependencies:
 
@@ -34,7 +34,7 @@ Build all editor packages and verify their bundled runtimes:
 bun run package:editors
 ```
 
-## Adding a file type
+## Adding a File Type
 
 Add one row to the table in `crates/versionlens-parsers/src/manifest/table.rs` (with a `ManifestKind` variant in `crates/versionlens-model/src/manifest.rs` and a parser function, new or existing), then run `bun run generate:manifests`. `bun run check:manifests` fails when the generated editor file lists are stale.
 
@@ -70,7 +70,7 @@ bun run verify
 
 `bun run verify` is intentionally broad and can be slow, and the JetBrains build needs Java 21. Neovim tests run with `make test` in `packages/neovim-plugin`; e2e tests with `bun run test:e2e`. Do not run it in the background unless someone explicitly asked for that.
 
-## Pull requests
+## Pull Requests
 
 A good pull request includes:
 
@@ -91,7 +91,7 @@ If OpenAI Codex CLI materially contributed, include:
 Co-authored-by: Codex <noreply@openai.com>
 ```
 
-## Code review expectations
+## Code Review Expectations
 
 - Keep unrelated formatting and cleanup out of behavior changes.
 - Preserve command IDs, settings keys, and extension contribution points unless the change requires a migration.

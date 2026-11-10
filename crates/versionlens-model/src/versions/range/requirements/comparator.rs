@@ -10,6 +10,7 @@ fn next_patch(version: &Version) -> Version {
     crate::versions::semver_version(version.major, version.minor, version.patch + 1)
 }
 
+/// Report whether the lower and upper comparators in `requirement` can never be satisfied together, such as `>=2.0.0 <1.0.0`.
 pub fn requirement_has_empty_comparator_intersection(requirement: &str) -> bool {
     let mut lower: Option<ComparatorBound> = None;
     let mut upper: Option<ComparatorBound> = None;

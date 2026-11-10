@@ -46,7 +46,7 @@ fn chart_dependency(text: &str, entry: &MarkedMappingNode) -> Option<Dependency>
         version_range.start,
         &["~", "^", ">=", "<=", ">", "<", "="],
     );
-    let hosted_url = helm_hosted_url(repository.map(|value| value.as_str()));
+    let hosted_url = helm_hosted_url(repository.map(marked_yaml::types::MarkedScalarNode::as_str));
     let hosted_name = alias.map(|_| name.as_str().to_owned());
 
     Some(Dependency {
@@ -63,7 +63,7 @@ fn chart_dependency(text: &str, entry: &MarkedMappingNode) -> Option<Dependency>
             version_range.start + version.as_str().len(),
         ),
         requirement_prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

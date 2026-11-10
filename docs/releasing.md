@@ -1,8 +1,8 @@
-# Releasing and Marketplace publication
+# Releasing and Marketplace Publication
 
 VersionLens Redux separates GitHub release creation from external Marketplace publication. Both workflows are manually dispatched from trusted repository state; neither receives publishing credentials on pull requests.
 
-## 1. Prepare the version
+## 1. Prepare the Version
 
 Update every version-bearing manifest with the repository command, then update `CHANGELOG.md`:
 
@@ -13,7 +13,7 @@ bun run test:release
 
 The version command updates the Rust workspace and lockfile, Bun workspace and lockfile, VS Code package, Zed crate and manifest, JetBrains Gradle build, and Neovim runtime version together.
 
-## 2. Configure GitHub environment secrets
+## 2. Configure GitHub Environment Secrets
 
 Authenticate GitHub CLI with an account that can administer Actions secrets for this repository, then run:
 
@@ -42,18 +42,18 @@ It configures:
 
 Configure required reviewers on the `marketplaces` GitHub environment before publication.
 
-### One-time provider setup
+### One-Time Provider Setup
 
 - **VS Code:** create a Microsoft Entra workload identity trusted by this repository environment, add it to the `xsyetopz` Marketplace publisher, and configure the GitHub OIDC federated subject for the `marketplaces` environment.
 - **JetBrains:** create the Marketplace plugin and upload its first version manually, create a permanent token, and generate the signing key and certificate chain.
 - **Zed:** fork `zed-industries/extensions` to the account recorded by `ZED_EXTENSIONS_FORK`. The token must be able to push branches to that fork and create a pull request against the public upstream registry.
 - **LuaRocks:** create an account and API key. Neovim itself recommends LuaRocks for publishing versioned Lua plugins.
 
-## 3. Create the GitHub release
+## 3. Create the GitHub Release
 
 Wait for the `master` CI run of the release commit to pass. Dispatch `.github/workflows/release.yml` with the exact repository version. It verifies the current remote `master`, downloads that CI run's packages without rebuilding them, creates `v<version>`, and attaches the complete package set to the GitHub release.
 
-## 4. Publish externally
+## 4. Publish Externally
 
 Dispatch `.github/workflows/publish-marketplaces.yml` with the released version. Each destination can be selected independently:
 

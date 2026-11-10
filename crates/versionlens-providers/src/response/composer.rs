@@ -12,7 +12,7 @@ pub(crate) fn latest_composer_version(
     let versions = composer_versions_from_package_value(package_versions);
 
     latest_version_with_prerelease_tags(
-        versions.iter().map(|value| value.as_str()),
+        versions.iter().map(String::as_str),
         include_prereleases,
         prerelease_tags,
     )
@@ -54,7 +54,7 @@ fn composer_json_api_package_versions<'a>(value: &'a Value, package: &str) -> Op
 
 fn composer_versions_from_package_value(package_versions: &Value) -> Vec<String> {
     if let Some(versions) = package_versions.as_object() {
-        let mut output = normalize_composer_versions(versions.keys().map(|value| value.as_str()));
+        let mut output = normalize_composer_versions(versions.keys().map(String::as_str));
         output.extend(versions.values().flat_map(composer_branch_aliases));
         return output;
     }
@@ -88,7 +88,7 @@ fn composer_branch_aliases(value: &Value) -> Vec<String> {
         .flat_map(|aliases| aliases.values())
         .filter_map(|value| value.as_str())
         .filter(|alias| is_composer_branch_alias(alias))
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
         .collect()
 }
 

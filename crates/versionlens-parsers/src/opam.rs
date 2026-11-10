@@ -40,8 +40,8 @@ pub(crate) fn version_dependency(
         hosted_name: None,
         range,
         requirement_range,
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }

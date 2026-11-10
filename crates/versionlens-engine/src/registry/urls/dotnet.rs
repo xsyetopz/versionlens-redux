@@ -15,8 +15,8 @@ impl VersionLensSession {
                     runtime_dotnet_registry_source_urls(&self.config.providers.registry_urls)
                 })
                 .iter()
-                .map(|value| value.as_str())
-                .map(|value| value.to_owned())
+                .map(String::as_str)
+                .map(ToOwned::to_owned)
                 .collect::<Vec<_>>()
         }
     }

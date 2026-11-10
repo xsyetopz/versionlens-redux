@@ -42,9 +42,11 @@ impl SuggestionIndicators {
 }
 
 fn indicator_or_default(value: String, default: String) -> String {
-    (!value.trim().is_empty())
-        .then_some(value)
-        .unwrap_or(default)
+    if !value.trim().is_empty() {
+        value
+    } else {
+        default
+    }
 }
 
 pub(crate) fn standard_suggestion_indicators() -> SuggestionIndicators {

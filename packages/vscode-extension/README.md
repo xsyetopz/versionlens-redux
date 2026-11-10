@@ -8,7 +8,7 @@ VersionLens Redux shows dependency versions, update actions, and vulnerability d
 
 ![Show releases](images/faq/show-releases.gif)
 
-## Extension identity
+## Extension Identity
 
 - Extension name: `versionlens-redux`
 - Publisher: `xsyetopz`
@@ -28,7 +28,7 @@ When the original VersionLens extension is installed, VersionLens Redux warns an
 - Registry, prerelease, file-pattern, and HTTP settings per provider.
 - Cache clearing and an optional install task after saving a changed manifest.
 
-## Supported manifests
+## Supported Manifests
 
 VersionLens Redux reads dependency files across these ecosystems:
 
@@ -44,7 +44,7 @@ VersionLens Redux reads dependency files across these ecosystems:
 
 TOML support requires a VS Code TOML language extension such as Even Better TOML.
 
-## Manifest coverage
+## Manifest Coverage
 
 | Provider | Files | Main settings | Registry/source |
 | --- | --- | --- | --- |
@@ -112,7 +112,7 @@ Settings are read by the server through `workspace/configuration`, per workspace
 }
 ```
 
-## Private registries
+## Private Registries
 
 The server finds credentials in this order:
 
@@ -122,7 +122,7 @@ The server finds credentials in this order:
 
 Tokens are never written to logs, diagnostics, or the cache. Requests honor `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `NO_PROXY`, the operating system certificate store, and `versionlens.http.strictSSL`.
 
-## Install from VSIX
+## Install From VSIX
 
 Download a VSIX from the [GitHub releases page](https://github.com/xsyetopz/versionlens-redux/releases), then install it in VS Code:
 

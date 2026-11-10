@@ -17,6 +17,7 @@ pub(crate) fn parse_clojure_deps_edn(text: &str) -> Vec<Dependency> {
     dependencies
 }
 
+/// Reads the Maven repositories declared in a Clojure `deps.edn`.
 pub fn parse_clojure_maven_repositories(text: &str) -> Vec<MavenNamedRepository> {
     let tokens = tokenize(text);
     let Some(repos_key) = tokens.iter().position(|token| token.text == ":mvn/repos") else {
@@ -71,7 +72,7 @@ fn collect_deps_maps(text: &str, tokens: &Tokens<'_>, dependencies: &mut Clojure
         deps_group,
         |group, start, end| {
             collect_dependency_entries(
-                ClojureDependencyEntries {
+                &mut ClojureDependencyEntries {
                     text,
                     tokens,
                     group: &group,
@@ -133,7 +134,7 @@ struct ClojureDependencyEntries<'a, 'tokens> {
 }
 
 fn collect_dependency_entries(
-    context: ClojureDependencyEntries<'_, '_>,
+    context: &mut ClojureDependencyEntries<'_, '_>,
     mut index: usize,
     end: usize,
 ) {
@@ -187,12 +188,12 @@ fn clojure_dependency(
         requirement: requirement.to_owned(),
         ecosystem: Maven,
         group: group.to_owned(),
-        hosted_url: hosted_url.map(|value| value.to_owned()),
+        hosted_url: hosted_url.map(ToOwned::to_owned),
         hosted_name: None,
         range: offset_range(text, tokens[name_index].start, tokens[coord_end].end),
         requirement_range: offset_range(text, requirement_span.0, requirement_span.1),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

@@ -15,7 +15,7 @@ pub(crate) fn latest_cran_version(
 
 pub(crate) fn cran_release_versions(body: &str, package: &str) -> Vec<String> {
     cran_package_versions(body, package)
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
         .collect()
 }
 
@@ -29,5 +29,5 @@ fn record_field<'a>(record: &'a str, name: &str) -> Option<&'a str> {
     let prefix = format!("{name}:");
     record
         .lines()
-        .find_map(|line| line.strip_prefix(&prefix).map(|value| value.trim()))
+        .find_map(|line| line.strip_prefix(&prefix).map(str::trim))
 }

@@ -12,7 +12,7 @@ VersionLens Redux shows dependency version information in editor manifests using
 
 This repository is a fork of VersionLens with a Rust-first implementation and a new extension identity: `xsyetopz.versionlens-redux` for VS Code. The original VS Code extension id is `pflannery.vscode-versionlens`; the VS Code adapter warns when that extension is also installed.
 
-## Repository layout
+## Repository Layout
 
 | Path | Purpose |
 | --- | --- |
@@ -25,7 +25,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 | `scripts/` | Manifest generation, packaging, release, test, and benchmark scripts. |
 | `tests/` | Repo-level boundary, parser fixture, golden, and e2e tests; VS Code unit tests live beside adapter source under `packages/vscode-extension/src/extension/__tests__/`. |
 
-## Editor packages
+## Editor Packages
 
 | Package | README | Runtime boundary |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 bun install --frozen-lockfile
 ```
 
-## Common commands
+## Common Commands
 
 ```bash
 bun run build                 # build the VS Code extension bundle
@@ -67,7 +67,7 @@ Neovim tests run with `make test` in `packages/neovim-plugin`.
 
 The release and Marketplace publication procedure is documented in [`docs/releasing.md`](docs/releasing.md). Publication is a separate, manually dispatched, approval-gated workflow and never runs for pull requests.
 
-## Adding a file type
+## Adding a File Type
 
 Add one row to the manifest table in [`crates/versionlens-parsers/src/manifest/table.rs`](crates/versionlens-parsers/src/manifest/table.rs), with its `ManifestKind` variant in `crates/versionlens-model/src/manifest.rs` and a parser function (new or existing). Then run `bun run generate:manifests` to refresh the file lists of the VS Code manifest, Neovim, JetBrains, and Zed packages; `bun run check:manifests` verifies them.
 
@@ -75,7 +75,7 @@ Add one row to the manifest table in [`crates/versionlens-parsers/src/manifest/t
 
 Each crate has a local `README.md` and inherits repository metadata from the workspace manifest. Crates inherit the root [`ISC`](LICENSE) license through `license.workspace = true`; do not add per-crate license files.
 
-## Asset policy
+## Asset Policy
 
 Shared VersionLens media lives in [`assets/versionlens/`](assets/versionlens/). The VS Code package keeps `packages/vscode-extension/images` as a package-local mirror so marketplace paths such as `images/logo.png` and `images/faq/show-releases.gif` resolve inside the extension package.
 

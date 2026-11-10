@@ -173,10 +173,10 @@ fn resolve_nuget_source_url(config_path: &Path, url: &str) -> String {
         return url.to_owned();
     }
 
-    config_path
-        .parent()
-        .map(|parent| parent.join(url).to_string_lossy().into_owned())
-        .unwrap_or_else(|| url.to_owned())
+    config_path.parent().map_or_else(
+        || url.to_owned(),
+        |parent| parent.join(url).to_string_lossy().into_owned(),
+    )
 }
 
 fn remote_url(url: &str) -> bool {

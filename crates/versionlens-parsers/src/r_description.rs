@@ -38,8 +38,8 @@ pub(crate) fn parse_r_description(text: &str) -> RDependencies {
                 version.value_start + leading_ws_len(&version.value),
                 version.end - trailing_ws_len(&version.value),
             ),
-            requirement_prefix: "".to_owned(),
-            requirement_suffix: "".to_owned(),
+            requirement_prefix: String::new(),
+            requirement_suffix: String::new(),
             canonical_reference: None,
         });
     }
@@ -115,7 +115,7 @@ fn description_dependency_entries(text: &str, field: &Field) -> RDependencies {
     field
         .value
         .split(',')
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|entry| !entry.is_empty())
         .filter_map(|entry| description_dependency_entry(text, field, entry))
         .collect()
@@ -133,15 +133,13 @@ fn description_dependency_entry(text: &str, field: &Field, entry: &str) -> Optio
     }
     let entry_start = text[field.start..field.end]
         .find(entry)
-        .map(|index| field.start + index)
-        .unwrap_or(field.value_start);
+        .map_or(field.value_start, |index| field.start + index);
     let requirement_start = if requirement == "latest" {
         entry_start + entry.len()
     } else {
         text[entry_start..field.end]
             .find(requirement)
-            .map(|index| entry_start + index)
-            .unwrap_or(entry_start)
+            .map_or(entry_start, |index| entry_start + index)
     };
 
     Some(Dependency {
@@ -160,12 +158,12 @@ fn description_dependency_entry(text: &str, field: &Field, entry: &str) -> Optio
         requirement_prefix: if requirement == "latest" {
             " (>= ".to_owned()
         } else {
-            "".to_owned()
+            String::new()
         },
         requirement_suffix: if requirement == "latest" {
             ")".to_owned()
         } else {
-            "".to_owned()
+            String::new()
         },
         canonical_reference: None,
     })
@@ -204,8 +202,8 @@ fn renv_package_dependency(text: &str, key: &str, package: &Value) -> Option<Dep
         hosted_name: None,
         range: offset_range(text, range_start, range_end),
         requirement_range: offset_range(text, requirement_start, requirement_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

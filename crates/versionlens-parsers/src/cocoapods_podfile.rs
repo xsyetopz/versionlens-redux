@@ -48,7 +48,7 @@ impl PodfileParser {
             content,
             offset: line.len() - trimmed.len(),
             group: self.current_group(),
-            global_source: self.sources.first().map(|value| value.as_str()),
+            global_source: self.sources.first().map(String::as_str),
         }) {
             self.dependencies.push(dependency);
         }
@@ -57,11 +57,11 @@ impl PodfileParser {
     fn current_group(&self) -> &str {
         self.block_stack
             .last()
-            .map(|value| value.as_str())
-            .unwrap_or("dependencies")
+            .map_or("dependencies", String::as_str)
     }
 }
 
+#[derive(Clone, Copy)]
 struct PodLine<'a> {
     line_index: usize,
     line: &'a str,
@@ -89,7 +89,7 @@ fn parse_pod_line(pod_line: PodLine<'_>) -> Option<Dependency> {
                 absolute_start,
                 absolute_end,
                 prefix.to_owned(),
-                "".to_owned(),
+                String::new(),
             )
         } else if let Some((key, value, start, end)) =
             source_option(args, &["tag", "branch", "commit"])
@@ -110,8 +110,8 @@ fn parse_pod_line(pod_line: PodLine<'_>) -> Option<Dependency> {
                 value.to_owned(),
                 pod_start + name_quote_end + start,
                 pod_start + name_quote_end + end,
-                "".to_owned(),
-                "".to_owned(),
+                String::new(),
+                String::new(),
             )
         } else {
             let insert_at = pod_start + name_end + quote_len_after_name(after_pod, name_end);
@@ -163,7 +163,7 @@ fn parse_pod_line(pod_line: PodLine<'_>) -> Option<Dependency> {
     })
 }
 
-fn first_version_requirement<'a>(args: &'a str) -> Option<(&'a str, usize, usize)> {
+fn first_version_requirement(args: &str) -> Option<(&str, usize, usize)> {
     quoted_strings(args).find(|(_, start, _)| !args[..*start].contains(':'))
 }
 

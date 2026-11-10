@@ -152,10 +152,7 @@ fn requirement_operator_len(value: &str) -> usize {
 }
 
 fn leading_space_len(value: &str) -> usize {
-    value
-        .bytes()
-        .take_while(|byte| byte.is_ascii_whitespace())
-        .count()
+    value.bytes().take_while(u8::is_ascii_whitespace).count()
 }
 
 fn valid_upstream_requirement_version_byte(byte: u8) -> bool {

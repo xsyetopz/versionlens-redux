@@ -12,28 +12,47 @@ use crate::presentation::view::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// What the engine found in one document, without a registry lookup.
 pub struct AnalyzeDocumentOutput {
+    /// The dependencies in the document.
     pub dependencies: Vec<DependencyView>,
+    /// The code lenses to show.
     pub code_lenses: Vec<LensView>,
+    /// The diagnostics to show.
     pub diagnostics: Vec<DiagnosticView>,
+    /// The status of the document.
     pub status: StatusView,
+    /// Whether the dependencies can be sorted.
     pub can_sort_dependencies: bool,
+    /// Whether the document is a manifest the engine supports.
     pub is_supported_manifest: bool,
+    /// The name of the provider that handles the document, if any.
     pub active_provider_name: Option<String>,
+    /// The setting key of the install task for this manifest, if it has one.
     pub install_task_config_key: Option<String>,
+    /// A signature of the dependencies, to tell whether they changed.
     pub dependency_signature: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// The result of resolving the versions of one document.
 pub struct ResolveDocumentOutput {
+    /// One suggestion per dependency.
     pub suggestions: Vec<SuggestionView>,
+    /// Text edits that apply the update.
     pub edits: Vec<TextEdit>,
+    /// How many registry requests need authorization.
     pub authorization_required_count: u32,
+    /// The registry requests that need authorization.
     pub authorization_required_requests: Vec<AuthorizationRequestPayload>,
+    /// How many updates are offered for vulnerable versions.
     pub vulnerable_update_count: u32,
+    /// The package of the vulnerable update, when there is one.
     pub vulnerable_update_package: Option<String>,
+    /// The version of the vulnerable update, when there is one.
     pub vulnerable_update_version: Option<String>,
+    /// The edits with the document snapshots they apply to.
     pub edit_plan: Option<WorkspaceEditPlan>,
 }
 
@@ -95,6 +114,14 @@ pub(crate) fn document_edit_plan(
         .map(|()| plan)
 }
 
+/// Checks that `plan` still applies to the documents in `current`.
+///
+/// `current` holds the URI, version, and text hash of each open document.
+///
+/// # Errors
+///
+/// Returns a message when the plan lists a document twice, names a document
+/// that is not in `current`, is stale, or has overlapping edits.
 pub fn validate_workspace_edit_plan(
     plan: &WorkspaceEditPlan,
     current: &[(String, Option<u64>, String)],
@@ -137,13 +164,18 @@ pub struct AuthorizationRequestPayload {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// A registry response the editor already fetched.
 pub struct RegistryResponseInput {
+    /// The package the response is for.
     pub package: String,
+    /// The ecosystem of the package.
     pub ecosystem: Ecosystem,
+    /// The response body.
     pub body: String,
 }
 
 impl RegistryResponseInput {
+    /// Creates a response for `package`.
     pub fn new(package: impl Into<String>, ecosystem: Ecosystem, body: impl Into<String>) -> Self {
         Self {
             package: package.into(),
@@ -154,4 +186,74 @@ impl RegistryResponseInput {
 }
 
 #[cfg(test)]
-mod tests;
+mod tests {
+    use super::*;
+    use versionlens_model::{Position, Range};
+
+    fn edit(start: u32, end: u32) -> TextEdit {
+        TextEdit {
+            range: Range {
+                start: Position {
+                    line: 0,
+                    character: start,
+                },
+                end: Position {
+                    line: 0,
+                    character: end,
+                },
+            },
+            new_text: String::new(),
+        }
+    }
+
+    fn plan(edits: Vec<TextEdit>) -> WorkspaceEditPlan {
+        WorkspaceEditPlan {
+            documents: vec![DocumentEditPlan {
+                document: DocumentSnapshot {
+                    uri: "file:///a".into(),
+                    version: Some(1),
+                    text_hash: "hash".into(),
+                },
+                edits,
+            }],
+        }
+    }
+
+    #[test]
+    fn validator_sorts_and_allows_adjacent_edits() {
+        assert!(
+            validate_workspace_edit_plan(
+                &plan(vec![edit(2, 3), edit(0, 1)]),
+                &[("file:///a".into(), Some(1), "hash".into())],
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn validator_rejects_overlap_duplicate_and_stale_documents() {
+        assert!(
+            validate_workspace_edit_plan(
+                &plan(vec![edit(0, 2), edit(1, 3)]),
+                &[("file:///a".into(), Some(1), "hash".into())],
+            )
+            .is_err()
+        );
+        let mut duplicate = plan(vec![]);
+        duplicate.documents.push(duplicate.documents[0].clone());
+        assert!(
+            validate_workspace_edit_plan(
+                &duplicate,
+                &[("file:///a".into(), Some(1), "hash".into())]
+            )
+            .is_err()
+        );
+        assert!(
+            validate_workspace_edit_plan(
+                &plan(vec![]),
+                &[("file:///a".into(), Some(2), "hash".into())]
+            )
+            .is_err()
+        );
+    }
+}

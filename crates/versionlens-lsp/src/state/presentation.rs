@@ -8,6 +8,7 @@ use versionlens_model::{Position as ModelPosition, Range as ModelRange};
 
 use super::{CHOOSE_BUILD_COMMAND, DISPLAY_CODE_LENS_COMMAND, UPDATE_COMMAND};
 
+/// Converts a model range to an LSP range.
 pub fn into_lsp_range(range: ModelRange) -> Range {
     Range {
         start: Position::new(range.start.line, range.start.character),

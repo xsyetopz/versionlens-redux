@@ -62,6 +62,7 @@ enum NugetConfigSection {
     Other,
 }
 
+/// Lists the package source URLs of a `NuGet.Config` file.
 pub fn parse_nuget_config_source_urls(text: &str) -> Vec<String> {
     parse_nuget_config_named_sources(text)
         .into_iter()
@@ -69,24 +70,28 @@ pub fn parse_nuget_config_source_urls(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Lists the named package sources of a `NuGet.Config` file.
 pub fn parse_nuget_config_named_sources(text: &str) -> Vec<DotnetNamedSource> {
     parse_nuget_config(text)
         .map(|config| config.sources)
         .unwrap_or_default()
 }
 
+/// Lists the package source mappings of a `NuGet.Config` file.
 pub fn parse_nuget_config_source_mappings(text: &str) -> Vec<DotnetSourceMapping> {
     parse_nuget_config(text)
         .map(|config| config.source_mappings)
         .unwrap_or_default()
 }
 
+/// Lists the credentials of a `NuGet.Config` file.
 pub fn parse_nuget_config_auth_entries(text: &str) -> Vec<DotnetAuthEntry> {
     parse_nuget_config(text)
         .map(|config| config.auth_entries)
         .unwrap_or_default()
 }
 
+/// Reads a `NuGet.Config` file, or returns `None` when the text is not valid XML.
 pub fn parse_nuget_config(text: &str) -> Option<DotnetNugetConfig> {
     parse_nuget_config_state(text).map(dotnet_nuget_config)
 }

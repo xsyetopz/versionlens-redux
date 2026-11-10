@@ -94,14 +94,14 @@ impl SettingsRequests {
         self.latest = None;
         let sections = match response.response_result {
             Ok(result) => serde_json::from_value::<Vec<Value>>(result).unwrap_or_default(),
-            Err(error) => return show_configuration_error(connection, error.message),
+            Err(error) => return show_configuration_error(connection, &error.message),
         };
         let mut settings = Vec::new();
         for folder in sections.chunks(state::SECTIONS.len()) {
             let versionlens = folder.first().cloned().unwrap_or(Value::Null);
             let mut read = match Settings::from_value(versionlens) {
                 Ok(settings) => settings,
-                Err(message) => return show_configuration_error(connection, message),
+                Err(message) => return show_configuration_error(connection, &message),
             };
             let workspace = std::mem::take(&mut read.workspace);
             settings.push(FolderSettings {
@@ -112,7 +112,7 @@ impl SettingsRequests {
         }
         let changed = match state.replace_settings(settings) {
             Ok(changed) => changed,
-            Err(error) => return show_configuration_error(connection, error.to_string()),
+            Err(error) => return show_configuration_error(connection, &error.to_string()),
         };
         let Some(checking) = checking else {
             return Ok(());

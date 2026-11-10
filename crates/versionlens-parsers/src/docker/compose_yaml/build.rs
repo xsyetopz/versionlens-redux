@@ -16,8 +16,7 @@ pub(super) fn build_dependency(text: &str, value: &Node) -> Option<Dependency> {
             let context = map.get_scalar("context")?;
             let dockerfile = map
                 .get_scalar("dockerfile")
-                .map(|value| value.as_str())
-                .unwrap_or("dockerfile");
+                .map_or("dockerfile", MarkedScalarNode::as_str);
             build_path_dependency(text, context, dockerfile)
         }
         YamlSequence(_) => None,
@@ -41,8 +40,8 @@ fn build_path_dependency(
         hosted_name: None,
         range: offset_range(text, value_range.start, value_range.end),
         requirement_range: offset_range(text, value_range.start, value_range.end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

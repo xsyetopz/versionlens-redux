@@ -46,7 +46,7 @@ impl VersionLensSession {
         }
         let mut comparable = dependency.clone();
         if let Some((version, _)) = dependency.requirement.split_once("+sha") {
-            comparable.requirement = version.to_owned();
+            version.clone_into(&mut comparable.requirement);
         }
         let mut suggestion = resolve_dependency(comparable, Some(latest));
         suggestion.dependency = dependency;

@@ -193,8 +193,10 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             .filter_map(|input| crate::workspace_path(&input.uri))
             .collect();
         let mut retry = WorkspaceDiscoveryOptions::new(discovery.roots.clone());
-        retry.exclusions = discovery.exclusions.clone();
-        retry.provider_exclusions = discovery.provider_exclusions.clone();
+        retry.exclusions.clone_from(&discovery.exclusions);
+        retry
+            .provider_exclusions
+            .clone_from(&discovery.provider_exclusions);
         retry.limits = discovery.limits;
         retry.cancellation = discovery.cancellation.clone();
         self.discovery_options = Some(retry);
@@ -405,23 +407,23 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             .map(|(uri, _)| uri.clone())
             .collect::<Vec<_>>();
         for uri in uris {
-            self.submit(uri);
+            self.submit(&uri);
         }
     }
 
-    fn submit(&mut self, uri: String) {
+    fn submit(&mut self, uri: &str) {
         let Some(task_id) = self.next_task.checked_add(1) else {
             self.shared.closed.store(true, Ordering::Release);
             return;
         };
         self.next_task = task_id;
-        let Some(entry) = self.documents.get_mut(&uri) else {
+        let Some(entry) = self.documents.get_mut(uri) else {
             return;
         };
         let sender = self.sender.clone();
         let shared = Arc::clone(&self.shared);
         let generation = self.generation;
-        let completion_uri = uri.clone();
+        let completion_uri = uri.to_owned();
         let session = self.session.clone();
         let input = entry.input.clone();
         let run = self
@@ -437,12 +439,12 @@ impl<F: Fn(WorkspaceCheckEvent)> Runner<F> {
             if !shared.closed.load(Ordering::Acquire)
                 && shared.generation.load(Ordering::Acquire) == generation
             {
-                let _ = sender.send(Completion {
+                drop(sender.send(Completion {
                     generation,
                     task_id,
                     uri: completion_uri,
                     result,
-                });
+                }));
                 shared.ready.notify_one();
             }
         });

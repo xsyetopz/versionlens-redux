@@ -89,7 +89,7 @@ pub(crate) fn parse_meson_wrap(text: &str) -> CppDependencies {
     dependencies.push(cpp_dependency(
         text,
         CppDependencySource {
-            name: package_name(directory.map(|field| field.value).unwrap_or(repo)),
+            name: package_name(directory.map_or(repo, |field| field.value)),
             group: "meson.wrap",
             requirement: requirement.value,
             name_span: (url.start, url.end),
@@ -174,15 +174,15 @@ fn xmake_dependency(text: &str, quoted: Quoted<'_>) -> Option<Dependency> {
             repo: None,
         },
     );
-    dependency.requirement_prefix = requirement_prefix.to_owned();
+    requirement_prefix.clone_into(&mut dependency.requirement_prefix);
     Some(dependency)
 }
 
 fn cmake_call_dependencies(text: &str, function: &str, call: Field<'_>) -> CppDependencies {
-    if function == "CPMAddPackage" {
-        if let Some(dependency) = cpm_shorthand_dependency(text, call) {
-            return vec![dependency];
-        }
+    if function == "CPMAddPackage"
+        && let Some(dependency) = cpm_shorthand_dependency(text, call)
+    {
+        return vec![dependency];
     }
     let first = first_call_arg(call.value, call.start);
     let name = first
@@ -243,6 +243,7 @@ fn cpm_shorthand_dependency(text: &str, call: Field<'_>) -> Option<Dependency> {
     ))
 }
 
+#[derive(Clone, Copy)]
 struct CppDependencySource<'a> {
     name: &'a str,
     group: &'a str,
@@ -258,7 +259,7 @@ fn cpp_dependency(text: &str, source: CppDependencySource<'_>) -> Dependency {
         requirement: source.requirement.to_owned(),
         ecosystem: Cpp,
         group: source.group.to_owned(),
-        hosted_url: source.repo.and_then(|repo| github::tags_url(repo)),
+        hosted_url: source.repo.and_then(github::tags_url),
         hosted_name: source.repo.map(ToOwned::to_owned),
         range: offset_range(text, source.name_span.0, source.name_span.1),
         requirement_range: offset_range(text, source.requirement_span.0, source.requirement_span.1),

@@ -1,3 +1,6 @@
+//! Integration tests run against the public API, as another crate would.
+#![cfg(test)]
+
 use semver as _;
 use serde as _;
 use versionlens_model::GithubRepository;

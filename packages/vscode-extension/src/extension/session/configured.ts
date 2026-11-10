@@ -1,13 +1,13 @@
 import type { WorkspaceConfiguration } from "#vscode-host";
 
-export function configuredValue<T>(
-  key: string,
-  config: WorkspaceConfiguration,
-): T | undefined {
-  const inspected = config.inspect<T>(key);
-  return (
-    inspected?.workspaceFolderValue ??
-    inspected?.workspaceValue ??
-    inspected?.globalValue
-  );
-}
+export const configuredValue = (
+	key: string,
+	config: WorkspaceConfiguration,
+): unknown => {
+	const inspected = config.inspect<unknown>(key);
+	return (
+		inspected?.workspaceFolderValue ??
+		inspected?.workspaceValue ??
+		inspected?.globalValue
+	);
+};

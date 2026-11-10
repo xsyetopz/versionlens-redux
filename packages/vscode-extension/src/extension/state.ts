@@ -1,67 +1,66 @@
 import type { LanguageClient } from "vscode-languageclient/node";
+
 import type {
-  Diagnostic,
-  ExtensionContext,
-  LogOutputChannel,
-  Uri,
+	Diagnostic,
+	ExtensionContext,
+	LogOutputChannel,
+	Uri,
 } from "#vscode-host";
 
 export type DocumentActivity = "busy" | "error";
 
 export interface ExtensionState {
-  context: ExtensionContext | undefined;
-  client: LanguageClient | undefined;
-  /** Tail of the chain that serializes server start, stop and restart. */
-  lifecycle: Promise<void>;
-  /** Serialized document selector the running client was created with. */
-  selectorKey: string | undefined;
-  ui: {
-    outputChannel: LogOutputChannel | undefined;
-  };
-  flags: {
-    /** Set by the hide command, not by starting with lenses off. */
-    diagnosticsHidden: boolean;
-    showVersionLenses: boolean;
-    showOutdated: boolean;
-    showPrereleases: boolean;
-    providerBusy: number;
-    providerError: boolean;
-  };
-  /** Busy and error documents reported by `versionlens/status`. */
-  activity: Map<string, DocumentActivity>;
-  /** The diagnostics last published by the server, by document. */
-  diagnostics: Map<string, { diagnostics: Diagnostic[]; uri: Uri }>;
-  /** Hosts the user was already asked about in this session. */
-  promptedHosts: Set<string>;
-  snapshots: {
-    savedDependencies: Map<string, string>;
-    editedDependencies: Map<string, string>;
-  };
+	context: ExtensionContext | undefined;
+	client: LanguageClient | undefined;
+	/** Tail of the chain that serializes server start, stop and restart. */
+	lifecycle: Promise<void>;
+	/** Serialized document selector the running client was created with. */
+	selectorKey: string | undefined;
+	ui: {
+		outputChannel: LogOutputChannel | undefined;
+	};
+	flags: {
+		/** Set by the hide command, not by starting with lenses off. */
+		diagnosticsHidden: boolean;
+		showVersionLenses: boolean;
+		showOutdated: boolean;
+		showPrereleases: boolean;
+		providerBusy: number;
+		providerError: boolean;
+	};
+	/** Busy and error documents reported by `versionlens/status`. */
+	activity: Map<string, DocumentActivity>;
+	/** The diagnostics last published by the server, by document. */
+	diagnostics: Map<string, { diagnostics: Diagnostic[]; uri: Uri }>;
+	/** Hosts the user was already asked about in this session. */
+	promptedHosts: Set<string>;
+	snapshots: {
+		savedDependencies: Map<string, string>;
+		editedDependencies: Map<string, string>;
+	};
 }
 
-export function createExtensionState(): ExtensionState {
-  return {
-    context: undefined,
-    client: undefined,
-    lifecycle: Promise.resolve(),
-    selectorKey: undefined,
-    ui: {
-      outputChannel: undefined,
-    },
-    flags: {
-      diagnosticsHidden: false,
-      showVersionLenses: true,
-      showOutdated: false,
-      showPrereleases: false,
-      providerBusy: 0,
-      providerError: false,
-    },
-    activity: new Map(),
-    diagnostics: new Map(),
-    promptedHosts: new Set(),
-    snapshots: {
-      savedDependencies: new Map(),
-      editedDependencies: new Map(),
-    },
-  };
-}
+export const createExtensionState = (): ExtensionState => ({
+	context: undefined,
+	client: undefined,
+	lifecycle: Promise.resolve(),
+	selectorKey: undefined,
+	ui: {
+		outputChannel: undefined,
+	},
+	flags: {
+		diagnosticsHidden: false,
+		showVersionLenses: true,
+		showOutdated: false,
+		showPrereleases: false,
+		providerBusy: 0,
+		providerError: false,
+	},
+	activity: new Map(),
+	diagnostics: new Map(),
+	promptedHosts: new Set(),
+	snapshots: {
+		savedDependencies: new Map(),
+		editedDependencies: new Map(),
+	},
+});

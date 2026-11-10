@@ -22,6 +22,7 @@ pub(crate) fn path_or_member_enabled_exact(
     })
 }
 
+/// Tells whether `path` matches the dependency path `pattern`.
 pub fn path_matches(pattern: &str, path: &str) -> bool {
     if pattern == path || path.starts_with(&format!("{pattern}.")) {
         return true;

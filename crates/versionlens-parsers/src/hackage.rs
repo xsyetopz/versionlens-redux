@@ -24,8 +24,8 @@ pub(crate) fn parse_cabal(text: &str) -> HackageDependencies {
             hosted_name: None,
             range: offset_range(text, version.field_start, version.value_end),
             requirement_range: offset_range(text, version.value_start, version.value_end),
-            requirement_prefix: "".to_owned(),
-            requirement_suffix: "".to_owned(),
+            requirement_prefix: String::new(),
+            requirement_suffix: String::new(),
             canonical_reference: None,
         });
     }
@@ -109,8 +109,8 @@ fn stack_resolver_dependency(text: &str, root: YamlNode<'_>) -> ParsedHackageDep
         hosted_name: None,
         range: offset_range(text, resolver.field_start, resolver.value_end),
         requirement_range: offset_range(text, resolver.value_start, resolver.value_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -135,8 +135,8 @@ fn stackage_resolver_dependency(
         hosted_name: None,
         range: offset_range(text, resolver.field_start, resolver.value_end),
         requirement_range: offset_range(text, version_start, resolver.value_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -280,7 +280,7 @@ fn parse_cabal_dependency_entry(
                 constraint.range_start,
                 constraint.range_end,
                 constraint.prefix,
-                "".to_owned(),
+                String::new(),
             )
         } else {
             (
@@ -288,7 +288,7 @@ fn parse_cabal_dependency_entry(
                 name_end,
                 name_end,
                 " >= ".to_owned(),
-                "".to_owned(),
+                String::new(),
             )
         };
 
@@ -384,8 +384,8 @@ fn fixed_stack_dependency(
         hosted_name: None,
         range: offset_range(text, value_start, value_end),
         requirement_range: offset_range(text, value_start, value_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }
@@ -414,7 +414,7 @@ fn parse_hackage_package_id(
         hosted_name: None,
         range: offset_range(text, value_start, value_start + value.len()),
         requirement_range: offset_range(text, requirement_start, requirement_end),
-        requirement_prefix: "".to_owned(),
+        requirement_prefix: String::new(),
         requirement_suffix: value.get(suffix_start..).unwrap_or_default().to_owned(),
         canonical_reference: None,
     })

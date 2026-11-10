@@ -84,7 +84,7 @@ pub(crate) fn github_action_latest(
 
 /// Among the tags whose version equals `version` (`v9` and `v9.0.0`), the one
 /// with the most version segments.
-fn most_specific_equal_tag<'a, T: std::borrow::Borrow<GithubTag>>(
+fn most_specific_equal_tag<'a, T: Borrow<GithubTag>>(
     tags: &'a [T],
     version: &str,
 ) -> Option<&'a GithubTag> {

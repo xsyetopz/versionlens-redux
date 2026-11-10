@@ -98,9 +98,9 @@ fn deno_import_dependency(text: &str, group: &str, prop: &ObjectProp<'_>) -> Opt
     );
     if let Some(parts) = requirement_parts {
         dependency.requirement_prefix = parts.prefix;
-        dependency.requirement_suffix = parts.suffix.to_owned();
+        parts.suffix.clone_into(&mut dependency.requirement_suffix);
     }
-    dependency.hosted_name = deno_registry_package_name(raw).map(|value| value.to_owned());
+    dependency.hosted_name = deno_registry_package_name(raw).map(ToOwned::to_owned);
     Some(dependency)
 }
 
@@ -137,7 +137,7 @@ fn deno_import_requirement(raw: &str) -> Option<DenoImportRequirement<'_>> {
 
     if let Some(version_at) = spec.rfind('@').filter(|index| *index > spec_start) {
         return Some(DenoImportRequirement {
-            prefix: raw[..version_at + 1].to_owned(),
+            prefix: raw[..=version_at].to_owned(),
             requirement: &spec[version_at + 1..],
             suffix,
         });

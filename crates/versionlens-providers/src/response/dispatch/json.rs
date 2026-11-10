@@ -214,7 +214,7 @@ fn yanked_versions(value: &Value) -> BTreeSet<&str> {
     value
         .get("yanked_versions")
         .and_then(|value| value.as_object())
-        .map(|versions| versions.keys().map(|value| value.as_str()).collect())
+        .map(|versions| versions.keys().map(String::as_str).collect())
         .unwrap_or_default()
 }
 
@@ -289,7 +289,7 @@ fn comparable_nix_version(tag: &str, request: &ResponseRequest<'_>) -> Option<Ve
 
 fn latest_terraform_json_response(value: &Value, request: &ResponseRequest<'_>) -> Option<String> {
     let versions = object_version_values(value)?;
-    versionlens_model::latest_version_with_prerelease_tags(
+    latest_version_with_prerelease_tags(
         versions,
         request.include_prereleases,
         request.prerelease_tags,

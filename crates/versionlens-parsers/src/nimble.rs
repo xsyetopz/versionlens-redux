@@ -13,7 +13,7 @@ pub(crate) fn parse_nimble(text: &str) -> Vec<Dependency> {
         let trimmed = line.trim_start();
         let indent = line.len() - trimmed.len();
         if indent == 0 {
-            current_group = "requires".to_owned();
+            "requires".clone_into(&mut current_group);
             if let Some(feature) = feature_block_name(trimmed) {
                 current_group = format!("{feature}.requires");
             }
@@ -62,7 +62,7 @@ fn parse_requires_line(text: &str, requires_start: usize, group: &str) -> Option
         range: offset_range(text, requirement.start, requirement.start + parsed.name_len),
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix: range.prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     };
     if let Some(repo) = parsed.github_repo {
@@ -103,7 +103,7 @@ fn parse_requirement(value: &str) -> Option<ParsedRequirement<'_>> {
         let start = name.len() + relative;
         (start, value[start..].trim().to_owned())
     } else {
-        (name.len(), "".to_owned())
+        (name.len(), String::new())
     };
     Some(ParsedRequirement {
         name: name.to_owned(),
@@ -130,7 +130,7 @@ fn parse_url_requirement(value: &str) -> Option<ParsedRequirement<'_>> {
             let start = url.len() + 1;
             (start, branch.to_owned())
         } else {
-            (url.len(), "".to_owned())
+            (url.len(), String::new())
         };
     Some(ParsedRequirement {
         name,

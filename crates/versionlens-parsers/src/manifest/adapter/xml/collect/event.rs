@@ -33,7 +33,7 @@ fn collect_xml_event(
     }
 
     if let XmlEventText(event) = event {
-        collect_xml_text(event, collector, start, end);
+        collect_xml_text(&event, collector, start, end);
     }
 
     Some(())

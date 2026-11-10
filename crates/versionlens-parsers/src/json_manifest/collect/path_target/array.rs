@@ -52,7 +52,7 @@ fn collect_package_name_array_dependency(
     out.push(json_manifest_dependency(
         source,
         name,
-        "".to_owned(),
+        String::new(),
         JsonDependencyRanges {
             name_start,
             name_end,

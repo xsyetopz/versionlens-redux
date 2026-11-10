@@ -44,7 +44,7 @@ pub(super) fn image_dependency(text: &str, value: &MarkedScalarNode) -> Option<D
             requirement_start + requirement.len(),
         ),
         requirement_prefix: requirement_prefix.to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

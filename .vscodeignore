@@ -7,5 +7,4 @@
 node_modules/**
 client/**
 bun.lock
-biome.jsonc
 .claude/**

@@ -58,7 +58,7 @@ fn hosted_dependency_without_version(
 
     Some(Dependency {
         name: key.as_str().to_owned(),
-        requirement: "".to_owned(),
+        requirement: String::new(),
         ecosystem: Pub,
         group: source.group.to_owned(),
         hosted_url: Some(url),
@@ -66,7 +66,7 @@ fn hosted_dependency_without_version(
         range: offset_range(text, name_start, name_start + key.as_str().len()),
         requirement_range: offset_range(text, insert_at, insert_at),
         requirement_prefix: format!("\n{}version: ", child_indent(text, key)?),
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

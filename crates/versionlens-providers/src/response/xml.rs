@@ -16,7 +16,7 @@ pub(crate) fn latest_python_rss_version(
 ) -> Option<String> {
     let versions = collect_element_texts(body, b"title", python_rss_title_version)?;
     latest_version_for_dialect(
-        versions.iter().map(|value| value.as_str()),
+        versions.iter().map(String::as_str),
         include_prereleases,
         prerelease_tags,
         VersionDialect::Pep440,
@@ -39,7 +39,7 @@ pub(crate) fn latest_maven_version(
 ) -> Option<String> {
     let versions = collect_element_texts(body, b"version", |version| Some(version.to_owned()))?;
     latest_version_with_prerelease_tags(
-        versions.iter().map(|value| value.as_str()),
+        versions.iter().map(String::as_str),
         include_prereleases,
         prerelease_tags,
     )

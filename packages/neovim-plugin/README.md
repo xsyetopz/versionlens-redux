@@ -22,7 +22,7 @@ The archive is already rooted like a Neovim plugin and includes the matching `ve
 
 See `:help versionlens`.
 
-## Server binary
+## Server Binary
 
 The plugin looks for `versionlens-lsp` in this order:
 
@@ -57,7 +57,7 @@ require("versionlens").setup({
 
 `setup()` is idempotent. Set `vim.g.versionlens_disable_auto_setup = 1` before plugin loading when your plugin manager should own initialization completely.
 
-## Private registries
+## Private Registries
 
 Neovim does not implement the `versionlens/authorization` request, so the server uses its other credential sources:
 

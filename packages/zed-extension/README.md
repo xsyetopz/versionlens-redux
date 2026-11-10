@@ -9,7 +9,7 @@ The Zed extension starts the shared `versionlens-lsp` server so Zed can show Ver
 - Manifest: [`extension.toml`](extension.toml)
 - Runtime server: `crates/versionlens-lsp`
 
-## Build the language server
+## Build the Language Server
 
 From the repository root:
 
@@ -41,7 +41,7 @@ The `lsp.versionlens.settings` object is returned to the server as its `versionl
 
 `diagnostics.updateSeverity` sets the severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected.
 
-## Private registries
+## Private Registries
 
 Zed does not implement the `versionlens/authorization` request, so the server uses its other credential sources:
 
@@ -50,7 +50,7 @@ Zed does not implement the `versionlens/authorization` request, so the server us
 
 Start Zed with the variables set. Tokens are never written to logs, diagnostics, or the cache.
 
-## Zed verification
+## Zed Verification
 
 Enable version checks and update commands in Zed's Code Actions menu:
 

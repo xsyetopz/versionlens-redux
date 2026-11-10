@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+/// A value that stops being returned once its time-to-live has elapsed.
 #[derive(Debug, Clone)]
 pub struct CacheEntry<T> {
     value: T,
@@ -7,6 +8,7 @@ pub struct CacheEntry<T> {
 }
 
 impl<T> CacheEntry<T> {
+    /// Wraps `value` so that it expires `ttl` from now.
     pub fn new(value: T, ttl: Duration) -> Self {
         Self {
             value,
@@ -14,6 +16,7 @@ impl<T> CacheEntry<T> {
         }
     }
 
+    /// The value, or `None` once the entry has expired.
     pub fn get(&self) -> Option<&T> {
         (Instant::now() < self.expires_at).then_some(&self.value)
     }

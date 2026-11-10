@@ -4,17 +4,26 @@
 //! Ecosystems are named as the model serializes them (`"cargo"`, `"gitHub"`).
 
 /// A canned registry response for one package.
+#[derive(Debug)]
 pub struct Registry {
+    /// Package name the response answers for.
     pub package: &'static str,
+    /// Ecosystem name as the model serializes it.
     pub ecosystem: &'static str,
+    /// Raw response body the registry returns.
     pub body: String,
 }
 
 /// One manifest and the registry answers its check receives.
+#[derive(Debug)]
 pub struct Case {
+    /// Document URI of the manifest.
     pub uri: &'static str,
+    /// Editor language id of the manifest.
     pub language: &'static str,
+    /// Full manifest text.
     pub text: String,
+    /// Registry responses served while checking the manifest.
     pub registry: Vec<Registry>,
 }
 
@@ -47,8 +56,10 @@ fn npm_versions(versions: &[&str], latest: &str) -> String {
 const WORKFLOW: &str = "file:///work/.github/workflows/ci.yml";
 const MAVEN_KOTLIN: &str = "<metadata><versioning><versions><version>2.0.0</version><version>2.1.0</version></versions></versioning></metadata>";
 
+/// Commit SHA that the `v9.0.0` and `v9` tags of `actions/github-script` resolve to in [`sha_pinned_action`].
 pub const GITHUB_SCRIPT_SHA: &str = "3a2844b7e9c422d3c10d287c895573f7108da1b3";
 
+/// A Cargo manifest with an exact `=0.7.0` pin on `zed_extension_api`.
 pub fn cargo_exact_pin() -> Case {
     case(
         "file:///work/Cargo.toml",
@@ -62,6 +73,7 @@ pub fn cargo_exact_pin() -> Case {
     )
 }
 
+/// A requirements file with an exact `requests==2.34.2` pin.
 pub fn python_exact_pin() -> Case {
     case(
         "file:///work/requirements.txt",
@@ -75,6 +87,7 @@ pub fn python_exact_pin() -> Case {
     )
 }
 
+/// A `package.json` whose caret range on `@biomejs/biome` is behind the latest release.
 pub fn caret_range_behind_latest() -> Case {
     case(
         "file:///work/package.json",
@@ -88,9 +101,11 @@ pub fn caret_range_behind_latest() -> Case {
     )
 }
 
+/// Versions of `@astrojs/starlight` between the pinned one and latest that [`intermediate_releases`] expects to be skipped.
 pub const STARLIGHT_SKIPPED: [&str; 6] =
     ["0.42.0", "0.42.1", "0.42.2", "0.42.3", "0.42.4", "0.42.5"];
 
+/// A `package.json` whose `@astrojs/starlight` range has several releases between it and latest.
 pub fn intermediate_releases() -> Case {
     case(
         "file:///work/package.json",
@@ -110,6 +125,7 @@ pub fn intermediate_releases() -> Case {
     )
 }
 
+/// A workflow using `actions/github-script` pinned by commit SHA with a version comment.
 pub fn sha_pinned_action() -> Case {
     let sha = GITHUB_SCRIPT_SHA;
     case(
@@ -126,6 +142,7 @@ pub fn sha_pinned_action() -> Case {
     )
 }
 
+/// A workflow using `taiki-e/install-action` at a branch ref, with no registry data.
 pub fn branch_action_ref() -> Case {
     case(
         WORKFLOW,
@@ -135,6 +152,7 @@ pub fn branch_action_ref() -> Case {
     )
 }
 
+/// A `package.json` with only an `engines.vscode` constraint.
 pub fn vscode_engine_field() -> Case {
     case(
         "file:///work/package.json",
@@ -144,6 +162,7 @@ pub fn vscode_engine_field() -> Case {
     )
 }
 
+/// A workflow whose `actions/setup-dotnet` step has a four-part `dotnet-version`.
 pub fn unsupported_setup_dotnet() -> Case {
     case(
         WORKFLOW,
@@ -157,6 +176,7 @@ pub fn unsupported_setup_dotnet() -> Case {
     )
 }
 
+/// A workflow whose `node-version` refers to a top-level `env` variable.
 pub fn workflow_env_reference() -> Case {
     case(
         WORKFLOW,
@@ -173,6 +193,7 @@ pub fn workflow_env_reference() -> Case {
     )
 }
 
+/// A workflow whose `dotnet-version` is a `steps.*.outputs` expression.
 pub fn step_output_expression() -> Case {
     case(
         WORKFLOW,
@@ -186,6 +207,7 @@ pub fn step_output_expression() -> Case {
     )
 }
 
+/// A Gradle version catalog whose library takes its version from a `version.ref` alias.
 pub fn gradle_version_alias() -> Case {
     case(
         "file:///work/gradle/libs.versions.toml",
@@ -199,6 +221,7 @@ pub fn gradle_version_alias() -> Case {
     )
 }
 
+/// A Gradle version catalog whose plugin takes its version from a `version.ref` alias.
 pub fn gradle_plugin_alias() -> Case {
     case(
         "file:///work/gradle/libs.versions.toml",
@@ -212,6 +235,7 @@ pub fn gradle_plugin_alias() -> Case {
     )
 }
 
+/// A Cargo manifest with a bare `serde = "1.0.200"` requirement.
 pub fn cargo_bare_version() -> Case {
     case(
         "file:///work/Cargo.toml",

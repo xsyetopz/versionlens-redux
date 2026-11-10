@@ -1,4 +1,4 @@
-# versionlens-providers
+# `versionlens-providers`
 
 Provider selection and registry request construction for supported ecosystems such as crates.io, npm-compatible registries, NuGet, Maven, Docker/OCI, and others.
 

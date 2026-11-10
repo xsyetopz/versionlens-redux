@@ -36,10 +36,10 @@ impl RateLimitNotices {
             typ: MessageType::WARNING,
             message: message(host, seconds),
         };
-        let _ = sender.send(Message::Notification(Notification::new(
+        drop(sender.send(Message::Notification(Notification::new(
             ShowMessage::METHOD.to_owned(),
             params,
-        )));
+        ))));
     }
 }
 

@@ -3,7 +3,7 @@ const DIRECTIVES: [&str; 4] = ["require", "replace", "exclude", "use"];
 pub(super) type GoModBlock = Option<&'static str>;
 
 pub(super) fn update_go_mod_block(trimmed: &str, current_block: &mut GoModBlock) -> bool {
-    if let Some(block) = trimmed.strip_suffix('(').map(|value| value.trim()) {
+    if let Some(block) = trimmed.strip_suffix('(').map(str::trim) {
         if let Some(directive) = known_directive(block) {
             *current_block = Some(directive);
         }
@@ -18,10 +18,10 @@ pub(super) fn update_go_mod_block(trimmed: &str, current_block: &mut GoModBlock)
     false
 }
 
-pub(super) fn go_mod_dependency_group<'a>(
-    trimmed: &'a str,
+pub(super) fn go_mod_dependency_group(
+    trimmed: &str,
     current_block: GoModBlock,
-) -> Option<(&'static str, &'a str)> {
+) -> Option<(&'static str, &str)> {
     if current_block.is_none()
         && let Some((directive, rest)) = trimmed.split_once(' ')
         && let Some(directive) = known_directive(directive)

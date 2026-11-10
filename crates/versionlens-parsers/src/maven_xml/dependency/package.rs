@@ -38,8 +38,8 @@ pub(super) fn package_dependency(
         hosted_name: None,
         range: offset_range(context.text, node.open_start, node.close_end),
         requirement_range: text_range(context.text, version),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

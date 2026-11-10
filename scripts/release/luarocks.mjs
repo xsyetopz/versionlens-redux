@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { parseSemver } from "./semver.mjs";
 
-const [, , version] = Bun.argv;
-if (!version) {
-  throw new Error(
-    "usage: bun scripts/release/luarocks.mjs <major.minor.patch> [output-directory]",
-  );
+const version = Bun.argv[2];
+if (version === undefined || version === "") {
+	throw new Error(
+		"usage: bun scripts/release/luarocks.mjs <major.minor.patch> [output-directory]",
+	);
 }
 parseSemver(version);
 
@@ -48,6 +48,6 @@ build = {
 }
 `;
 
-mkdirSync(outputDirectory, { recursive: true });
-writeFileSync(output, rockspec);
+await mkdir(outputDirectory, { recursive: true });
+await Bun.write(output, rockspec);
 console.log(output);

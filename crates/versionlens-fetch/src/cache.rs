@@ -14,6 +14,11 @@ pub use memory::MemoryCache;
 pub use persistent::{PersistentCache, PersistentRecord};
 pub use ttl::{cache_ttl_ms, minutes_to_ms};
 
+/// The per-user cache directory for this application, under the platform cache root.
+///
+/// # Errors
+///
+/// Returns an error when the platform cache root cannot be determined or is not absolute.
 pub fn application_cache_directory() -> io::Result<PathBuf> {
     #[cfg(target_os = "macos")]
     let base = var_os("HOME").map(|home| PathBuf::from(home).join("Library/Caches"));

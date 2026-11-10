@@ -1,6 +1,7 @@
 [package]
 name = "versionlens-fetch"
 description = "Registry HTTP, proxy and TLS setup, and caches for Version Lens."
+publish = false
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true

@@ -1,3 +1,5 @@
+//! Registry provider selection, request construction, and response parsing.
+
 mod runtime;
 pub use runtime::{RuntimeSource, RuntimeSourceError};
 mod python;

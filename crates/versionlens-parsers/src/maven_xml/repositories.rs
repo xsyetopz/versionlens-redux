@@ -17,6 +17,7 @@ const PROJECT_REPOSITORY_URL_PATHS: &[&str] = &[
     "project.pluginRepositories.pluginRepository.url",
 ];
 
+/// Lists the repository URLs of a Maven POM.
 pub fn parse_maven_pom_repository_urls(text: &str) -> Vec<String> {
     collect_nodes(text)
         .map(|nodes| {
@@ -28,6 +29,7 @@ pub fn parse_maven_pom_repository_urls(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Lists the named repositories of a Maven POM.
 pub fn parse_maven_pom_repositories(text: &str) -> Vec<MavenNamedRepository> {
     collect_nodes(text)
         .map(|nodes| {

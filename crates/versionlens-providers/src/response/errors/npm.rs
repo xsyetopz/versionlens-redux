@@ -8,6 +8,7 @@ use status::npm_status_error;
 
 use super::RegistryErrorStatus;
 
+/// Maps an npm registry error response body to a status, or `None` when it has none.
 pub fn npm_error_status_from_response(body: &str) -> Option<RegistryErrorStatus> {
     let status = npm_response_status(body)?;
     npm_error_status(&status)

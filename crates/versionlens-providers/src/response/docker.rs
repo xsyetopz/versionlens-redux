@@ -12,6 +12,7 @@ use entries::docker_tag_entries;
 
 type DockerTagEntries<'a> = &'a [DockerTagEntry<'a>];
 
+/// Whether a Docker Hub response body lists a tag, or `None` when it cannot be parsed.
 pub fn docker_tag_exists(body: &str, tag: &str) -> Option<bool> {
     let value = from_str::<Value>(body).ok()?;
     Some(
@@ -67,7 +68,7 @@ pub(crate) fn docker_build_versions(body: &str, requirement: &str) -> Vec<String
     if has_latest {
         builds.push("latest".to_owned());
     }
-    builds.extend(aliases.into_iter().map(|value| value.to_owned()));
+    builds.extend(aliases.into_iter().map(ToOwned::to_owned));
     builds
 }
 

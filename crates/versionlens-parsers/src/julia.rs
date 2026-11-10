@@ -65,7 +65,7 @@ pub(crate) fn parse_julia_project(text: &str) -> Vec<Dependency> {
                 range: offset_range(text, entry.line.start, entry.line.end),
                 requirement_range: offset_range(text, entry.value_span.end, entry.value_span.end),
                 requirement_prefix: " # compat ".to_owned(),
-                requirement_suffix: "".to_owned(),
+                requirement_suffix: String::new(),
                 canonical_reference: None,
             });
         }
@@ -93,8 +93,8 @@ fn project_version(text: &str, root: TomlNode<'_>) -> Option<Dependency> {
         hosted_name: None,
         range: offset_range(text, line.start, line.end),
         requirement_range: offset_range(text, version.span.start, version.span.end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -149,8 +149,8 @@ fn string_entry_dependency(text: &str, group: &str, entry: &StringEntry) -> Depe
         hosted_name: None,
         range: offset_range(text, entry.line.start, entry.line.end),
         requirement_range: offset_range(text, entry.value_span.start, entry.value_span.end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }
@@ -165,8 +165,8 @@ fn source_dependency(text: &str, package: &str, source: &SourceEntry) -> Depende
         hosted_name: None,
         range: offset_range(text, source.line.start, source.line.end),
         requirement_range: offset_range(text, source.value_span.start, source.value_span.end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }
@@ -216,8 +216,8 @@ pub(crate) fn parse_julia_manifest(text: &str) -> Vec<Dependency> {
                 hosted_name: None,
                 range: offset_range(text, *start, end),
                 requirement_range: offset_range(text, requirement.span.start, requirement.span.end),
-                requirement_prefix: "".to_owned(),
-                requirement_suffix: "".to_owned(),
+                requirement_prefix: String::new(),
+                requirement_suffix: String::new(),
                 canonical_reference: None,
             })
         })

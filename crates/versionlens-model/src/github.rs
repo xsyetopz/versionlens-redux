@@ -1,5 +1,4 @@
 use std::fmt;
-use std::fmt::Write as _;
 
 /// A validated GitHub owner/repository identity.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,14 +27,17 @@ impl GithubRepository {
         })
     }
 
+    /// Return the repository owner.
     pub fn owner(&self) -> &str {
         &self.owner
     }
 
+    /// Return the repository name.
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Return the GitHub REST API URL that lists this repository's tags.
     pub fn tags_url(&self) -> String {
         self.api_url("https://api.github.com/repos", "/tags")
     }
@@ -71,7 +73,13 @@ fn encode_path_component(value: &str) -> String {
         if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~') {
             encoded.push(byte as char);
         } else {
-            let _ = write!(encoded, "%{byte:02X}");
+            encoded.push('%');
+            encoded.extend(
+                [byte >> 4, byte & 0x0F]
+                    .into_iter()
+                    .filter_map(|nibble| char::from_digit(u32::from(nibble), 16))
+                    .map(|digit| digit.to_ascii_uppercase()),
+            );
         }
     }
     encoded

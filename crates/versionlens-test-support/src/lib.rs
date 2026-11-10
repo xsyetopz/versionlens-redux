@@ -37,6 +37,11 @@ pub fn accept_within_deadline(listener: &TcpListener) -> Option<TcpStream> {
     }
 }
 
+/// Creates a new empty directory in the system temp dir named `prefix-<pid>-<serial>`.
+///
+/// # Errors
+///
+/// Returns any I/O error from creating the directory other than the name already existing.
 pub fn temporary_directory(prefix: &str) -> io::Result<PathBuf> {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -51,9 +56,12 @@ pub fn temporary_directory(prefix: &str) -> io::Result<PathBuf> {
     }
 }
 
+/// A fixture that could not be read, with the path that was tried.
 #[derive(Debug)]
 pub struct FixtureError {
+    /// Path of the fixture file that failed to read.
     pub path: PathBuf,
+    /// The underlying I/O failure.
     pub source: io::Error,
 }
 
@@ -74,6 +82,11 @@ impl std::error::Error for FixtureError {
     }
 }
 
+/// Reads `base/name` relative to the repository root two levels above `manifest_dir`.
+///
+/// # Errors
+///
+/// Returns a [`FixtureError`] when `manifest_dir` has no grandparent directory or the file cannot be read.
 pub fn read_fixture(manifest_dir: &str, base: &str, name: &str) -> Result<String, FixtureError> {
     let manifest_path = PathBuf::from(manifest_dir);
     let repository_root = manifest_path
@@ -90,6 +103,7 @@ pub fn read_fixture(manifest_dir: &str, base: &str, name: &str) -> Result<String
     fs::read_to_string(&path).map_err(|source| FixtureError { path, source })
 }
 
+/// Reads a fixture relative to the calling crate's `CARGO_MANIFEST_DIR`, as [`read_fixture`] does.
 #[macro_export]
 macro_rules! fixture {
     ($base:expr, $name:expr) => {
@@ -97,6 +111,7 @@ macro_rules! fixture {
     };
 }
 
+/// Like [`fixture!`], but leaks the contents so the `String` becomes a `&'static str`.
 #[macro_export]
 macro_rules! static_fixture {
     ($base:expr, $name:expr) => {
