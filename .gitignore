@@ -23,6 +23,9 @@ __pycache__/
 .vscode-test/
 packages/vscode-extension/server/
 
+# Neovim test dependencies, cloned by packages/neovim-plugin/Makefile and CI
+.deps/
+
 # >>> bedrock
 # Adapted from github/gitignore@41862c8 (CC0-1.0): Global/macOS, Global/VisualStudioCode,
 # Global/JetBrains.

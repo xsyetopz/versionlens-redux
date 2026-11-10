@@ -887,8 +887,8 @@ dependencies = [
 
 [[package]]
 name = "rust-bedrock"
-version = "0.1.0"
-source = "git+https://github.com/xsyetopz/bedrock?tag=rust-bedrock-v0.1.0#3aa30a9e1fb385d06692dfaf6b8a6c172f9a2ce7"
+version = "0.1.1"
+source = "git+https://github.com/xsyetopz/bedrock?tag=rust-bedrock-v0.1.1#e7c1753b3c2c3acc9c30946c8c16de72512e3ee5"
 dependencies = [
  "serde",
  "serde_json",

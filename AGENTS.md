@@ -25,34 +25,34 @@ Do not add npm, pnpm, yarn, `package-lock.json`, or root Node package managers o
 
 ## Commands
 
-Use the scripts already defined in `package.json`.
+Use the `just` recipes; `just` lists them, and `project.just` holds the VersionLens ones.
 
 Small checks:
 
 ```bash
-bun run typecheck   # runs `bun check --cwd packages/vscode-extension`
-cargo fmt --all -- --check
+just typecheck
+just rust::format-check
 ```
 
 Package the VS Code extension:
 
 ```bash
-bun run package
+just package
 ```
 
-Full validation is expensive and chains `check:biome`, `check:rustfmt`, `check:manifests`, `test:release`, `check:clippy`, `typecheck`, `check:extension-build`, `cargo test --workspace --locked`, `test:extension`, and `package:editors`:
+Full validation is expensive. It runs the TypeScript and Rust checks, then `project-verify` in `project.just`: `check:manifests`, `test:release`, `check:extension-build`, `test:extension`, and `package:editors`:
 
 ```bash
-bun run verify
+just verify
 ```
 
-`verify` builds the JetBrains plugin, which needs Java 21 (for example `JAVA_HOME` pointing at an openjdk@21 install). Neovim tests: `make test` in `packages/neovim-plugin`. E2E: `bun run test:e2e`.
+`project-verify` builds the JetBrains plugin, which needs Java 21 (for example `JAVA_HOME` pointing at an openjdk@21 install). Neovim tests: `make test` in `packages/neovim-plugin`. E2E: `bun run test:e2e`.
 
 Add a file type with one row in `crates/versionlens-parsers/src/manifest/table.rs` (plus its `ManifestKind` variant in `crates/versionlens-model/src/manifest.rs` and a parser function, new or existing), then run `bun run generate:manifests` to refresh the editor file lists. `bun run check:manifests` verifies they are current.
 
 Do not leave long-running background checks unattended. Prefer the smallest targeted validation that covers the change.
 
-## Style and architecture
+## Style and Architecture
 
 - Preserve existing behavior unless the requested task explicitly changes it.
 - Inspect callsites before changing public contracts across the Rust LSP server and the editor adapters.
@@ -74,7 +74,7 @@ Co-authored-by: Codex <noreply@openai.com>
 <!-- bedrock -->
 - Run each task through `just`. `just` lists the recipes. Check each change with the narrowest one, such as `just rust::test` or `just lint`, and run `just verify` once before you finish a change that alters behavior.
 - Fix the cause of each lint, type, or guard error in the code. Keep the shared configs as they are; the bedrock that wrote them owns them.
-- Put project recipes in `project.just`. The `justfile` and `.just/` are shared and get replaced on the next adopt.
+- Put project recipes in `project.just`. The `justfile` and `.just/` are shared and get replaced on the next adopt. A recipe there named `project-<task>`, such as `project-verify` or `project-test`, runs after the languages' `<task>`, so a project extends `just verify` there.
 - Write commit messages as Conventional Commits; the commit-msg hook checks them.
 - When a recipe reports a missing tool, run `just setup`, which installs the pinned ones. Install any it can't, such as `just`, Bun, rustup, or Xcode, with the system's package manager, then rerun the recipe. Tell the user what you installed, and keep the check instead of skipping it.
 <!-- /bedrock -->

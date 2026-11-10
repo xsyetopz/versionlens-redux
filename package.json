@@ -14,15 +14,12 @@
 			"markdownlint-rule-title-case-style": "0.4.3",
 			"oxlint": "1.93.0",
 			"oxlint-tsgolint": "7.0.2006",
-			"typescript": "7.0.2"
+			"typescript": "7.0.2",
+			"typescript-bedrock": "0.1.6"
 		}
 	},
 	"scripts": {
-		"biome:check": "oxlint --fix",
-		"biome:format": "bun fmt",
-		"biome:lint": "oxlint --fix",
 		"build": "bun scripts/package/extension.mjs",
-		"check:biome": "oxlint",
 		"check:clippy": "cargo clippy --workspace --all-targets",
 		"check:extension-build": "bun scripts/package/extension.mjs --check",
 		"check:manifests": "bun scripts/generate/manifests.mjs --check",
@@ -57,7 +54,7 @@
 		"oxlint": "catalog:",
 		"oxlint-tsgolint": "catalog:",
 		"typescript": "catalog:",
-		"typescript-bedrock": "file:/Users/krystian/.claude/plugins/cache/xsyetopz/bedrock/0.1.4/.bedrock/packages/typescript-bedrock"
+		"typescript-bedrock": "catalog:"
 	},
 	"overrides": {
 		"@types/node": "26.6.6"
@@ -67,7 +64,6 @@
 	},
 	"packageManager": "bun@1.4.4",
 	"trustedDependencies": [
-		"@biomejs/biome",
 		"@vscode/vsce-sign",
 		"keytar"
 	]

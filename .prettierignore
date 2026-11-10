@@ -1,0 +1,3 @@
+# bun fmt reads this file. Test inputs and expected outputs keep their exact bytes.
+tests/fixtures/
+tests/golden/

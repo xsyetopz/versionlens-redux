@@ -63,7 +63,7 @@ jobs:
 
       - name: Check formatting
         run: |
-          bun run check:biome
+          bun run lint
           bun run check:rustfmt
 
       - name: Typecheck and test
