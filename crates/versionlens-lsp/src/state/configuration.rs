@@ -137,7 +137,8 @@ impl VersionLensLspState {
 
     /// Whether `uri` is an ignore file that discovery reads: a `.gitignore`,
     /// an `.ignore`, or a repository's `.git/info/exclude`, in a directory
-    /// that is not itself skipped.
+    /// that is not itself skipped. The folders apply in both check modes,
+    /// since ignore files also skip open documents.
     pub(crate) fn watched_ignore_file(&self, uri: &str) -> bool {
         let Some(path) = versionlens_engine::workspace_path(uri) else {
             return false;
@@ -153,7 +154,7 @@ impl VersionLensLspState {
         let group = self.group_of(uri);
         !self.groups()[group]
             .session
-            .discover_workspace_documents(self.workspace_checking_options(group).discovery)
+            .discover_workspace_documents(self.workspace_scope(group))
             .skips_directory(directory)
     }
 

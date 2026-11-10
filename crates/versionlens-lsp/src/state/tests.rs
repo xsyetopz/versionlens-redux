@@ -428,19 +428,22 @@ fn only_ignore_files_that_discovery_reads_are_watched() -> Result<(), String> {
     let open_files = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new());
     let gitignore =
         versionlens_engine::workspace_file_uri(&root.join(".gitignore")).ok_or("missing URI")?;
-    assert!(!open_files.watched_ignore_file(&gitignore));
-    let state = open_files.with_settings(workspace_check());
-    let watched = |relative: &str| {
-        versionlens_engine::workspace_file_uri(&root.join(relative))
-            .is_some_and(|uri| state.watched_ignore_file(&uri))
-    };
+    assert!(open_files.watched_ignore_file(&gitignore));
+    let workspace = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
+        .with_settings(workspace_check());
+    for state in [&open_files, &workspace] {
+        let watched = |relative: &str| {
+            versionlens_engine::workspace_file_uri(&root.join(relative))
+                .is_some_and(|uri| state.watched_ignore_file(&uri))
+        };
 
-    assert!(watched(".gitignore"));
-    assert!(watched("app/.ignore"));
-    assert!(watched(".git/info/exclude"));
-    assert!(!watched("worktrees/copy/.gitignore"));
-    assert!(!watched("node_modules/pkg/.gitignore"));
-    assert!(!watched("app/package.json"));
+        assert!(watched(".gitignore"));
+        assert!(watched("app/.ignore"));
+        assert!(watched(".git/info/exclude"));
+        assert!(!watched("worktrees/copy/.gitignore"));
+        assert!(!watched("node_modules/pkg/.gitignore"));
+        assert!(!watched("app/package.json"));
+    }
     std::fs::remove_dir_all(root).map_err(|error| error.to_string())
 }
 

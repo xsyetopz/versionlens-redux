@@ -127,6 +127,63 @@ fn statuses(sent: &[(String, serde_json::Value)]) -> Vec<&str> {
 }
 
 #[test]
+fn closing_a_busy_or_failed_document_sets_it_idle() -> Result<()> {
+    let (state, _) = open_state();
+    let (mut controller, _runtime) = controller(&state)?;
+    let (server, client) = Connection::memory();
+    for status in [DocumentStatus::Busy, DocumentStatus::Error] {
+        controller.set_status(&server, OPEN, status)?;
+        sent(&client);
+
+        controller.forget_document(&server, OPEN)?;
+
+        assert_eq!(statuses(&sent(&client)), ["idle"]);
+    }
+    controller.forget_document(&server, OPEN)?;
+    assert_eq!(sent(&client), []);
+    Ok(())
+}
+
+#[test]
+fn a_busy_document_that_settings_exclude_is_set_idle() -> Result<()> {
+    let root = std::env::temp_dir().canonicalize()?;
+    let folder = lsp_types::WorkspaceFolder {
+        uri: versionlens_engine::workspace_file_uri(&root)
+            .expect("a file URI")
+            .parse()?,
+        name: "root".to_owned(),
+    };
+    let uri =
+        versionlens_engine::workspace_file_uri(&root.join("package.json")).expect("a file URI");
+    let uri = uri.as_str();
+    let mut state = VersionLensLspState::with_workspace(None, vec![folder]);
+    state.open_document(VersionLensTextDocument {
+        uri: uri.to_owned(),
+        language_id: "json".to_owned(),
+        text: "{}".to_owned(),
+        workspace_root: None,
+    });
+    assert!(state.document_work(uri).is_some());
+    let (mut controller, _runtime) = controller(&state)?;
+    let (server, client) = Connection::memory();
+    controller.set_status(&server, uri, DocumentStatus::Busy)?;
+    sent(&client);
+    let mut excluding = crate::state::FolderSettings::default();
+    excluding.workspace.exclude = vec!["**/package.json".to_owned()];
+    state.replace_settings(vec![excluding])?;
+    assert!(state.document_work(uri).is_none());
+
+    controller.restart(&state, &server)?;
+    assert_eq!(statuses(&sent(&client)), ["idle"]);
+
+    controller.set_status(&server, uri, DocumentStatus::Busy)?;
+    sent(&client);
+    controller.replace(&state, &server)?;
+    assert_eq!(statuses(&sent(&client)), ["idle"]);
+    Ok(())
+}
+
+#[test]
 fn a_cancelled_check_publishes_nothing() -> Result<()> {
     let (state, input) = open_state();
     let (mut controller, _runtime) = controller(&state)?;

@@ -118,7 +118,7 @@ impl SettingsRequests {
             return Ok(());
         };
         if changed {
-            checking.restart(state)?;
+            checking.restart(state, connection)?;
         }
         Ok(())
     }

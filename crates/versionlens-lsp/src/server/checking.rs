@@ -149,9 +149,13 @@ impl WorkspaceController {
         }
     }
 
-    pub(super) fn replace(&mut self, state: &VersionLensLspState) -> Result<()> {
+    pub(super) fn replace(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+    ) -> Result<()> {
         if self.groups.len() != state.groups().len() {
-            return self.restart(state).map_err(Into::into);
+            return self.restart(state, connection);
         }
         for (index, group) in self.groups.iter_mut().enumerate() {
             group
@@ -163,6 +167,27 @@ impl WorkspaceController {
         self.pending.submitted.clear();
         self.pending.rescan.clear();
         self.pending.rescan_due = None;
+        self.idle_unchecked(state, connection)
+    }
+
+    /// Sets idle the documents that new settings or ignore files now skip:
+    /// checking drops them, so no result will end their status.
+    fn idle_unchecked(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+    ) -> Result<()> {
+        let unchecked = self
+            .statuses
+            .iter()
+            .filter(|(uri, status)| {
+                **status != DocumentStatus::Idle && state.document_work(uri).is_none()
+            })
+            .map(|(uri, _)| uri.clone())
+            .collect::<Vec<_>>();
+        for uri in unchecked {
+            self.set_status(connection, &uri, DocumentStatus::Idle)?;
+        }
         Ok(())
     }
 
@@ -205,7 +230,11 @@ impl WorkspaceController {
             .collect()
     }
 
-    pub(super) fn restart(&mut self, state: &VersionLensLspState) -> std::io::Result<()> {
+    pub(super) fn restart(
+        &mut self,
+        state: &VersionLensLspState,
+        connection: &Connection,
+    ) -> Result<()> {
         self.stop();
         let mut replacement = Self::start(state, self.runtime.clone())?;
         replacement.published = mem::take(&mut self.published);
@@ -214,7 +243,7 @@ impl WorkspaceController {
         replacement.pending.due = mem::take(&mut self.pending.due);
         replacement.statuses = mem::take(&mut self.statuses);
         mem::swap(self, &mut replacement);
-        Ok(())
+        self.idle_unchecked(state, connection)
     }
 
     /// Queues an opened or edited document for checking at `due`. Edits
@@ -291,14 +320,18 @@ impl WorkspaceController {
         Ok(())
     }
 
-    pub(super) fn forget_document(&mut self, uri: &str) {
+    /// Forgets a closed document. Its status goes back to idle first, since the
+    /// client counts busy documents and no result will end this one's check.
+    pub(super) fn forget_document(&mut self, connection: &Connection, uri: &str) -> Result<()> {
         self.published.remove(uri);
         for group in &mut self.groups {
             group.seen_documents.remove(uri);
         }
         self.pending.due.remove(uri);
         self.pending.submitted.remove(uri);
+        self.set_status(connection, uri, DocumentStatus::Idle)?;
         self.statuses.remove(uri);
+        Ok(())
     }
 
     fn set_status(
