@@ -184,4 +184,159 @@ fn is_npm_dist_tag_dependency(dependency: &Dependency, latest: &str) -> bool {
 }
 
 #[cfg(test)]
-mod tests;
+mod tests {
+use crate::suggestion::SuggestionStatus::{
+    Current as StatusCurrent, InvalidRange as StatusInvalidRange, NoMatch as StatusNoMatch,
+    SatisfiesLatest as StatusSatisfiesLatest, UpdateAvailable as StatusUpdateAvailable,
+};
+
+use super::resolve_dependency;
+use versionlens_model::Ecosystem;
+use versionlens_model::Ecosystem::*;
+
+#[test]
+fn npm_dist_tag_requirement_resolves_as_update() {
+    let mut current = crate::support::tests::test_dependency("typescript", "next");
+    current.ecosystem = Npm;
+
+    assert_eq!(
+        resolve_dependency(current, Some("7.0.0-beta.1".to_owned())).status,
+        StatusUpdateAvailable
+    );
+}
+
+#[test]
+fn npm_latest_dist_tag_resolves_as_current() {
+    let mut current = crate::support::tests::test_dependency("typescript", "latest");
+    current.ecosystem = Npm;
+
+    assert_eq!(
+        resolve_dependency(current, Some("6.0.3".to_owned())).status,
+        StatusCurrent
+    );
+}
+
+#[test]
+fn npm_alias_specifiers_compare_embedded_version_ranges() {
+    let mut current = crate::support::tests::test_dependency("chalk", "npm:chalk@^5.3.0");
+    current.ecosystem = Npm;
+
+    assert_eq!(
+        resolve_dependency(current, Some("6.0.0".to_owned())).status,
+        StatusUpdateAvailable
+    );
+}
+
+#[test]
+fn invalid_dotnet_requirements_resolve_as_no_match() {
+    let mut current = crate::support::tests::test_dependency("Test.Package", "invalid");
+    current.ecosystem = Dotnet;
+
+    let suggestion = resolve_dependency(current, Some("1.1.0".to_owned()));
+
+    assert_eq!(suggestion.status, StatusNoMatch);
+}
+
+#[test]
+fn invalid_semver_requirements_resolve_as_no_match() {
+    let current = crate::support::tests::test_dependency("serde", "not-a-version");
+
+    let suggestion = resolve_dependency(current, Some("1.1.0".to_owned()));
+
+    assert_eq!(suggestion.status, StatusNoMatch);
+}
+
+#[test]
+fn empty_semver_ranges_resolve_as_invalid_range() {
+    for requirement in [">1 <1", ">1.0.0 <1.0.1", ">2 <1"] {
+        let current = crate::support::tests::test_dependency("typescript", requirement);
+
+        assert_eq!(
+            resolve_dependency(current, Some("5.0.0".to_owned())).status,
+            StatusInvalidRange
+        );
+    }
+}
+
+#[test]
+fn ranges_whose_minimum_matches_latest_resolve_as_current_like_upstream() {
+    let current = crate::support::tests::test_dependency("typescript", "~1.1.0");
+
+    assert_eq!(
+        resolve_dependency(current, Some("1.1.0".to_owned())).status,
+        StatusCurrent
+    );
+}
+
+#[test]
+fn range_minimum_is_compared_as_a_version_not_as_a_prefix() {
+    let current = crate::support::tests::test_dependency("typescript", "^1.2.1");
+
+    assert_eq!(
+        resolve_dependency(current, Some("1.2.10".to_owned())).status,
+        StatusSatisfiesLatest
+    );
+}
+
+fn assert_github_commit_status(
+    ecosystem: Ecosystem,
+    name: &str,
+    current_requirement: &str,
+    stale_requirement: &str,
+) {
+    let mut current = crate::support::tests::test_dependency(name, current_requirement);
+    current.ecosystem = ecosystem;
+    current.hosted_url = Some(format!("https://api.github.com/repos/{name}/commits"));
+
+    let mut stale = current.clone();
+    stale.requirement = stale_requirement.to_owned();
+
+    assert_eq!(
+        resolve_dependency(current, Some("abcdef1".to_owned())).status,
+        StatusCurrent
+    );
+    assert_eq!(
+        resolve_dependency(stale, Some("abcdef1".to_owned())).status,
+        StatusUpdateAvailable
+    );
+}
+
+#[test]
+fn ruby_github_commit_refs_compare_as_shas() {
+    assert_github_commit_status(Ruby, "rspec/rspec-core", "abcdef1234567890", "1234567");
+}
+
+#[test]
+fn npm_github_commit_refs_compare_as_shas() {
+    assert_github_commit_status(Npm, "owner/commit", "abcdef1234567890", "1234567");
+}
+
+#[test]
+fn python_pep440_constraints_and_releases_are_resolved() {
+    let mut excluded = crate::support::tests::test_dependency("demo", ">=1!2.0.0.0,!=1!2.1.0.0");
+    excluded.ecosystem = Python;
+    assert_eq!(
+        resolve_dependency(excluded, Some("1!2.0.0.4+linux.1".to_owned())).status,
+        crate::suggestion::SuggestionStatus::SatisfiesLatest,
+    );
+
+    let mut prerelease = crate::support::tests::test_dependency("demo", ">=1.0rc1,<2.0");
+    prerelease.ecosystem = Python;
+    assert_eq!(
+        resolve_dependency(prerelease, Some("1.1-rc.2".to_owned())).status,
+        crate::suggestion::SuggestionStatus::SatisfiesLatest,
+    );
+}
+
+#[test]
+fn python_provider_versions_older_than_declared_bounds_are_not_updates() {
+    for requirement in ["2.0", "==2.0", ">=2.0,<3.0"] {
+        let mut current = crate::support::tests::test_dependency("demo", requirement);
+        current.ecosystem = Python;
+        assert_eq!(
+            resolve_dependency(current, Some("1.9.post1".to_owned())).status,
+            StatusCurrent,
+        );
+    }
+}
+}

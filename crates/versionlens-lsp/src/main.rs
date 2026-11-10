@@ -9,8 +9,9 @@ use versionlens_model as _;
 use versionlens_parsers as _;
 
 #[cfg(test)]
-#[path = "main/tests.rs"]
-mod tests;
+mod tests {
+use versionlens_test_support as _;
+}
 
 use std::io::Write as _;
 

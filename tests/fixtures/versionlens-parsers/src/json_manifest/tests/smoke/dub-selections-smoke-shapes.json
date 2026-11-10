@@ -1,8 +1,8 @@
 {
-  "fileVersion": 1,
-  "versions": {
-    "gtk-d:gtkd": "3.11.0",
-    "imageformats": "7.0.2",
-    "derelict-sdl2": "2.1.4"
-  }
+	"fileVersion": 1,
+	"versions": {
+		"gtk-d:gtkd": "3.11.0",
+		"imageformats": "7.0.2",
+		"derelict-sdl2": "2.1.4"
+	}
 }

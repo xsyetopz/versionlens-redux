@@ -1,71 +1,72 @@
+import { expect, it } from "bun:test";
 import { resolve } from "node:path";
 
 import { expect, it } from "./runtime.ts";
 
 interface PackageManifest {
-  activationEvents?: string[];
-  keywords?: string[];
-  contributes?: {
-    commands?: { command: string }[];
-    jsonValidation?: unknown[];
-    configuration?: { properties?: { [key: string]: unknown } };
-  };
+	activationEvents?: string[];
+	keywords?: string[];
+	contributes?: {
+		commands?: { command: string }[];
+		jsonValidation?: unknown[];
+		configuration?: { properties?: { [key: string]: unknown } };
+	};
 }
 
 it("command activation events rely on VS Code 1.75 automatic generation", async (): Promise<void> => {
-  const local = await packageJson("packages/vscode-extension/package.json");
-  const activationEvents = local.activationEvents ?? [];
+	const local = await packageJson("packages/vscode-extension/package.json");
+	const activationEvents = local.activationEvents ?? [];
 
-  expect(
-    activationEvents.some((event): boolean => event.startsWith("onCommand:")),
-  ).toBe(false);
+	expect(
+		activationEvents.some((event): boolean => event.startsWith("onCommand:")),
+	).toBe(false);
 });
 
 it("all configured manifest languages activate the extension", async (): Promise<void> => {
-  const local = await packageJson("packages/vscode-extension/package.json");
-  const activationEvents = new Set(local.activationEvents ?? []);
-  const { filePatternKeys } = await import("../config/keys.ts");
+	const local = await packageJson("packages/vscode-extension/package.json");
+	const activationEvents = new Set(local.activationEvents ?? []);
+	const { filePatternKeys } = await import("../config/keys.ts");
 
-  for (const [, , languages] of filePatternKeys) {
-    for (const language of languages) {
-      expect(activationEvents).toContain(`onLanguage:${language}`);
-    }
-  }
+	for (const [, , languages] of filePatternKeys) {
+		for (const language of languages) {
+			expect(activationEvents).toContain(`onLanguage:${language}`);
+		}
+	}
 });
 
 it("CocoaPods cache and save settings use shared configuration contracts", async (): Promise<void> => {
-  const local = await packageJson("packages/vscode-extension/package.json");
-  const properties = local.contributes?.configuration?.properties ?? {};
+	const local = await packageJson("packages/vscode-extension/package.json");
+	const properties = local.contributes?.configuration?.properties ?? {};
 
-  expect(properties["versionlens.cocoapods.caching.duration"]).toEqual(
-    expect.objectContaining({
-      type: "number",
-      description: expect.stringContaining("minutes"),
-    }),
-  );
-  expect(
-    properties["versionlens.cocoapods.caching.duration"],
-  ).not.toHaveProperty("default");
-  expect(properties["versionlens.cocoapods.onSaveChanges"]).toEqual(
-    expect.objectContaining({ type: "string", default: null }),
-  );
+	expect(properties["versionlens.cocoapods.caching.duration"]).toEqual(
+		expect.objectContaining({
+			type: "number",
+			description: expect.stringContaining("minutes"),
+		}),
+	);
+	expect(
+		properties["versionlens.cocoapods.caching.duration"],
+	).not.toHaveProperty("default");
+	expect(properties["versionlens.cocoapods.onSaveChanges"]).toEqual(
+		expect.objectContaining({ type: "string", default: null }),
+	);
 });
 
 it("enabledProviders offers every provider the client can select", async (): Promise<void> => {
-  const local = await packageJson("packages/vscode-extension/package.json");
-  const properties = local.contributes?.configuration?.properties ?? {};
-  const { filePatternKeys } = await import("../config/keys.ts");
+	const local = await packageJson("packages/vscode-extension/package.json");
+	const properties = local.contributes?.configuration?.properties ?? {};
+	const { filePatternKeys } = await import("../config/keys.ts");
 
-  expect(properties["versionlens.enabledProviders"]).toEqual(
-    expect.objectContaining({
-      items: expect.objectContaining({
-        enum: filePatternKeys.map(([provider]): string => provider),
-      }),
-    }),
-  );
+	expect(properties["versionlens.enabledProviders"]).toEqual(
+		expect.objectContaining({
+			items: expect.objectContaining({
+				enum: filePatternKeys.map(([provider]): string => provider),
+			}),
+		}),
+	);
 });
 
 async function packageJson(path: string): Promise<PackageManifest> {
-  const packagePath = path;
-  return (await Bun.file(resolve(packagePath)).json()) as PackageManifest;
+	const packagePath = path;
+	return (await Bun.file(resolve(packagePath)).json()) as PackageManifest;
 }

@@ -1,48 +1,74 @@
 {
-  "name": "@versionlens/workspace",
-  "private": true,
-  "version": "0.6.3",
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "build": "bun scripts/package/extension.mjs",
-    "version:bump": "bun scripts/release/version.mjs",
-    "marketplaces:configure": "bun scripts/release/configure-marketplaces.mjs",
-    "biome:check": "biome check --write --unsafe --max-diagnostics 16384",
-    "biome:format": "biome format --write --max-diagnostics 16384",
-    "biome:lint": "biome lint --write --max-diagnostics 16384",
-    "verify": "bun run check:biome && bun run check:rustfmt && bun run check:manifests && bun run test:release && bun run check:clippy && bun run typecheck && bun run check:extension-build && cargo test --workspace --locked && bun run test:extension && bun run package:editors",
-    "check:biome": "biome check --max-diagnostics 16384",
-    "check:clippy": "cargo clippy --workspace --all-targets",
-    "check:extension-build": "bun scripts/package/extension.mjs --check",
-    "check:rustfmt": "cargo fmt --all -- --check",
-    "check:manifests": "bun scripts/generate/manifests.mjs --check",
-    "generate:manifests": "bun scripts/generate/manifests.mjs",
-    "package": "bun scripts/package/vscode.mjs",
-    "package:vscode-target": "bun scripts/package/vscode.mjs",
-    "package:editors": "bun scripts/package/editors.mjs",
-    "test": "bun run test:extension",
-    "test:extension": "bun scripts/test/extension.mjs",
-    "test:e2e": "cargo build -p versionlens-lsp && bun run build && bun scripts/test/e2e.mjs",
-    "test:release": "bun test scripts/release",
-    "typecheck": "bun check --cwd packages/vscode-extension"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.6.6",
-    "@types/bun": "1.4.4",
-    "@types/node": "26.6.6",
-    "@types/vscode": "1.145.0",
-    "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "4.1.0"
-  },
-  "trustedDependencies": [
-    "@biomejs/biome",
-    "@vscode/vsce-sign",
-    "keytar"
-  ],
-  "packageManager": "bun@1.4.4",
-  "engines": {
-    "bun": ">=1.4.3"
-  }
+	"name": "@versionlens/workspace",
+	"version": "0.6.3",
+	"private": true,
+	"workspaces": {
+		"packages": [
+			"packages/*"
+		],
+		"catalog": {
+			"@types/bun": "1.4.4",
+			"@types/node": "26.6.6",
+			"eslint-plugin-jsdoc": "65.4.5",
+			"markdownlint-cli2": "0.24.0",
+			"markdownlint-rule-title-case-style": "0.4.3",
+			"oxlint": "1.93.0",
+			"oxlint-tsgolint": "7.0.2006",
+			"typescript": "7.0.2"
+		}
+	},
+	"scripts": {
+		"biome:check": "oxlint --fix",
+		"biome:format": "bun fmt",
+		"biome:lint": "oxlint --fix",
+		"build": "bun scripts/package/extension.mjs",
+		"check:biome": "oxlint",
+		"check:clippy": "cargo clippy --workspace --all-targets",
+		"check:extension-build": "bun scripts/package/extension.mjs --check",
+		"check:manifests": "bun scripts/generate/manifests.mjs --check",
+		"check:rustfmt": "cargo fmt --all -- --check",
+		"format": "bun fmt",
+		"format:check": "bun fmt --check",
+		"generate:manifests": "bun scripts/generate/manifests.mjs",
+		"guard": "typescript-bedrock guard",
+		"lint": "bun run --sequential --no-exit-on-error oxlint markdownlint-cli2",
+		"lint:fix": "bun run --sequential --no-exit-on-error 'oxlint --fix' 'markdownlint-cli2 --fix'",
+		"marketplaces:configure": "bun scripts/release/configure-marketplaces.mjs",
+		"package": "bun scripts/package/vscode.mjs",
+		"package:editors": "bun scripts/package/editors.mjs",
+		"package:vscode-target": "bun scripts/package/vscode.mjs",
+		"test": "bun run test:extension",
+		"test:e2e": "cargo build -p versionlens-lsp && bun run build && bun scripts/test/e2e.mjs",
+		"test:extension": "bun scripts/test/extension.mjs",
+		"test:release": "bun test scripts/release",
+		"typecheck": "bun check",
+		"verify": "bun run --sequential format:check typecheck lint guard test",
+		"version:bump": "bun scripts/release/version.mjs"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"@types/node": "catalog:",
+		"@types/vscode": "1.145.0",
+		"@vscode/test-electron": "^3.1.0",
+		"@vscode/vsce": "4.1.0",
+		"eslint-plugin-jsdoc": "catalog:",
+		"markdownlint-cli2": "catalog:",
+		"markdownlint-rule-title-case-style": "catalog:",
+		"oxlint": "catalog:",
+		"oxlint-tsgolint": "catalog:",
+		"typescript": "catalog:",
+		"typescript-bedrock": "file:/Users/krystian/.claude/plugins/cache/xsyetopz/bedrock/0.1.4/.bedrock/packages/typescript-bedrock"
+	},
+	"overrides": {
+		"@types/node": "26.6.6"
+	},
+	"engines": {
+		"bun": ">=1.4.4"
+	},
+	"packageManager": "bun@1.4.4",
+	"trustedDependencies": [
+		"@biomejs/biome",
+		"@vscode/vsce-sign",
+		"keytar"
+	]
 }

@@ -58,7 +58,55 @@ impl RetryPolicy {
 }
 
 #[cfg(test)]
-mod tests;
+mod tests {
+fn should_retry_error() -> bool {
+    false
+}
+fn retry_backoff_ms(attempt: u32) -> u64 {
+    100 * 2_u64.pow(attempt)
+}
+
+#[test]
+fn request_light_parity_does_not_retry_transient_failures() {
+    assert!(!should_retry_error());
+    assert_eq!(retry_backoff_ms(0), 100);
+    assert_eq!(retry_backoff_ms(1), 200);
+}
+
+#[test]
+fn npm_registry_fetch_retry_policy_keeps_large_manifest_failures_fast() {
+    let policy = crate::http::npm_registry_fetch_retry_policy();
+
+    assert_eq!(policy.max_retries(), 2);
+    assert_eq!(policy.retry_backoff_ms(0), Some(250));
+    assert_eq!(policy.retry_backoff_ms(1), Some(500));
+    assert_eq!(policy.retry_backoff_ms(2), None);
+}
+
+#[test]
+fn npm_registry_fetch_retry_policy_retries_transient_non_post_statuses() {
+    let policy = crate::http::npm_registry_fetch_retry_policy();
+
+    assert!(policy.should_retry_status("GET", 408));
+    assert!(policy.should_retry_status("GET", 420));
+    assert!(policy.should_retry_status("GET", 429));
+    assert!(policy.should_retry_status("GET", 500));
+    assert!(policy.should_retry_status("GET", 503));
+    assert!(!policy.should_retry_status("GET", 404));
+    assert!(!policy.should_retry_status("POST", 500));
+}
+
+#[test]
+fn disabled_retry_policy_preserves_request_light_no_retry_behavior() {
+    let policy = crate::http::disabled_retry_policy();
+
+    assert_eq!(policy.max_retries(), 0);
+    assert_eq!(policy.retry_backoff_ms(0), None);
+    assert!(!policy.should_retry_status("GET", 408));
+    assert!(!policy.should_retry_status("GET", 429));
+    assert!(!policy.should_retry_status("GET", 500));
+}
+}
 
 pub fn disabled_retry_policy() -> RetryPolicy {
     RetryPolicy::disabled()

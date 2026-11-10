@@ -110,4 +110,15 @@ fn material(path: Option<&str>, inline: Option<&str>) -> Result<Option<Vec<u8>>,
 }
 
 #[cfg(test)]
-pub(super) mod tests;
+pub(super) mod tests {
+use super::cache_key;
+use crate::http::config::HttpConfig;
+
+pub(crate) fn uses_same_agent_cache_key(first: &HttpConfig, second: &HttpConfig) -> bool {
+    cache_key(first) == cache_key(second)
+}
+
+pub(crate) fn uses_agent_cache(config: &HttpConfig) -> bool {
+    cache_key(config).is_some()
+}
+}

@@ -1,22 +1,22 @@
 {
-  "name": "sharex-lite",
-  "description": "A minimal D application.",
-  "dependencies": {
-    "gtk-d:gtkd": "~>3.11.0",
-    "imageformats": "~>7.0.2",
-    "derelict-sdl2": "~>2.1.4",
-    "luad": "~master",
-    "painlessjson": {
-      "version": "1.4.0"
-    },
-    "eventsystem": "~>2.0.0",
-    "i18n": "~>0.1.0",
-    "standardpaths": "~>0.8.3"
-  },
-  "subPackages": [
-    "./modules/selector",
-    {
-      "standardpaths": "~>0.2.1"
-    }
-  ]
+	"name": "sharex-lite",
+	"description": "A minimal D application.",
+	"dependencies": {
+		"gtk-d:gtkd": "~>3.11.0",
+		"imageformats": "~>7.0.2",
+		"derelict-sdl2": "~>2.1.4",
+		"luad": "~master",
+		"painlessjson": {
+			"version": "1.4.0"
+		},
+		"eventsystem": "~>2.0.0",
+		"i18n": "~>0.1.0",
+		"standardpaths": "~>0.8.3"
+	},
+	"subPackages": [
+		"./modules/selector",
+		{
+			"standardpaths": "~>0.2.1"
+		}
+	]
 }

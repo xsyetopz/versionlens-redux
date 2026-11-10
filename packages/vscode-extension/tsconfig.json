@@ -1,9 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "types": ["bun", "node", "vscode"]
-  },
-  "exclude": ["node_modules", ".vscode-test", "dist"],
-  "include": ["src/**/*.ts"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "src",
+		"types": ["bun", "node", "vscode"]
+	},
+	"exclude": ["node_modules", ".vscode-test", "dist"],
+	"include": ["src/**/*.ts"]
 }

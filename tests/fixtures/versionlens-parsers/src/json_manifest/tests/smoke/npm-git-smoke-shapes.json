@@ -1,9 +1,9 @@
 {
-  "name": "smoke-test",
-  "title": "bun git smoke test",
-  "dependencies": {},
-  "devDependencies": {
-    "gitpkgnotfound1": "git+https://git@github.com/testuser/test.git",
-    "gitpkgnotfound2": "git+ssh://git@some.com/testuser/test.git"
-  }
+	"name": "smoke-test",
+	"title": "bun git smoke test",
+	"dependencies": {},
+	"devDependencies": {
+		"gitpkgnotfound1": "git+https://git@github.com/testuser/test.git",
+		"gitpkgnotfound2": "git+ssh://git@some.com/testuser/test.git"
+	}
 }

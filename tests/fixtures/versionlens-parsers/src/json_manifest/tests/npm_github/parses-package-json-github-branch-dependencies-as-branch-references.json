@@ -1,5 +1,5 @@
 {
-  "dependencies": {
-    "branch": "github:owner/branch#main"
-  }
+	"dependencies": {
+		"branch": "github:owner/branch#main"
+	}
 }

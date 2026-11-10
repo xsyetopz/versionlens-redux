@@ -1,11 +1,11 @@
 {
-  "conflict": {
-    "vendor/bad": "<1.0 || >=2.0"
-  },
-  "replace": {
-    "vendor/original": "self.version"
-  },
-  "provide": {
-    "psr/log-implementation": "1.0|2.0"
-  }
+	"conflict": {
+		"vendor/bad": "<1.0 || >=2.0"
+	},
+	"replace": {
+		"vendor/original": "self.version"
+	},
+	"provide": {
+		"psr/log-implementation": "1.0|2.0"
+	}
 }

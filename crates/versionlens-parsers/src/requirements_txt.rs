@@ -1,0 +1,297 @@
+mod line;
+mod split;
+
+use versionlens_model::Dependency;
+
+use line::parse_requirement_line;
+
+pub(crate) use split::split_python_requirement;
+
+pub(crate) fn parse_requirements_txt(text: &str) -> Vec<Dependency> {
+    text.lines()
+        .enumerate()
+        .filter_map(|(line_index, line)| parse_requirement_line(line_index, line))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+use crate::document::test_support::{assert_parenthesized_pep508, extract_range};
+use crate::{DocumentInput, parse_document};
+use versionlens_model::Ecosystem::Python;
+
+#[test]
+fn parses_requirements_txt_dependencies() {
+    let text = package_file_fixture("parses-requirements-txt-dependencies.txt");
+    let dependencies = parse_requirements(&text);
+
+    assert_eq!(dependencies.len(), 6);
+    assert_eq!(dependencies[0].name, "requests");
+    assert_eq!(dependencies[0].requirement, ">=2.0");
+    assert_eq!(dependencies[0].group, "dependencies");
+    assert_eq!(dependencies[0].ecosystem, Python);
+    assert_eq!(dependencies[0].range.start.character, 1);
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        ">=2.0"
+    );
+    assert_eq!(dependencies[1].name, "-r");
+    assert_eq!(dependencies[1].requirement, "other.txt");
+    assert_eq!(
+        extract_range(text, dependencies[1].requirement_range),
+        "other.txt"
+    );
+    assert_eq!(dependencies[2].name, "flask");
+    assert_eq!(
+        extract_range(text, dependencies[2].requirement_range),
+        "==3.0.0"
+    );
+    assert_eq!(dependencies[3].name, "httpx");
+    assert_eq!(dependencies[3].requirement, "");
+    assert_eq!(dependencies[3].requirement_prefix, "==");
+    assert_eq!(extract_range(text, dependencies[3].range), "httpx");
+    assert_eq!(extract_range(text, dependencies[3].requirement_range), "");
+    assert_eq!(dependencies[4].name, "importlib-metadata");
+    assert_eq!(dependencies[4].requirement, "");
+    assert_eq!(dependencies[4].requirement_prefix, "==");
+    assert_eq!(
+        extract_range(text, dependencies[4].range),
+        "importlib-metadata"
+    );
+    assert_eq!(extract_range(text, dependencies[4].requirement_range), "");
+    assert_eq!(dependencies[5].name, "local");
+    assert_eq!(
+        dependencies[5].requirement,
+        "https://example.test/local.whl#sha256=abc"
+    );
+    assert_eq!(dependencies[5].requirement_prefix, "");
+    assert_eq!(
+        extract_range(text, dependencies[5].requirement_range),
+        "https://example.test/local.whl#sha256=abc"
+    );
+}
+
+#[test]
+fn parses_parenthesized_pep_508_requirements() {
+    let text = "unfat (>=0.0.13)
+httpx[http2] (>=0.28,<1); python_version >= '3.11'
+";
+    let dependencies = parse_requirements(text);
+
+    assert_parenthesized_pep508(text, &dependencies);
+}
+
+#[test]
+fn requirements_txt_adjacent_hash_not_part_of_normal_version() {
+    let text =
+        package_file_fixture("requirements-txt-adjacent-hash-not-part-of-normal-version.txt");
+    let dependencies = parse_requirements(text);
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].name, "pkg");
+    assert_eq!(dependencies[0].requirement, "==1.2.3");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "==1.2.3"
+    );
+}
+
+#[test]
+fn parses_smoke_requirements_smoke_shapes() {
+    let text = package_file_fixture("parses-smoke-requirements-smoke-shapes.txt");
+    let dependencies = parse_requirements(text);
+
+    assert_eq!(dependencies.len(), 10);
+    assert_eq!(dependencies[0].ecosystem, Python);
+    assert_eq!(dependencies[0].name, "requests");
+    assert_eq!(dependencies[0].requirement, "==2.34.2");
+    assert_eq!(dependencies[1].name, "flask");
+    assert_eq!(dependencies[1].requirement, ">=3.1.3");
+    assert_eq!(dependencies[2].name, "django");
+    assert_eq!(dependencies[2].requirement, "<=6.0.6");
+    assert_eq!(dependencies[5].name, "pandas");
+    assert_eq!(dependencies[5].requirement, "~=3.0.3");
+    assert_eq!(dependencies[6].name, "urllib3");
+    assert_eq!(dependencies[6].requirement, "===2.7.0");
+    assert_eq!(
+        extract_range(text, dependencies[6].requirement_range),
+        "===2.7.0"
+    );
+    assert_eq!(dependencies[9].name, "not_found_package");
+}
+
+#[test]
+fn requirements_txt_rejects_names_outside_upstream_regex() {
+    let text = package_file_fixture("requirements-txt-rejects-names-outside-upstream-regex.txt");
+    let dependencies = parse_requirements(text);
+
+    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies[0].name, "valid_name-1.2");
+    assert_eq!(dependencies[0].requirement, "==2.0.0");
+    assert_eq!(dependencies[1].name, "name");
+    assert_eq!(dependencies[1].requirement, "");
+    assert_eq!(dependencies[1].requirement_prefix, "==");
+}
+
+#[test]
+fn requirements_txt_direct_urls_preserve_source_requirement() {
+    let text =
+        package_file_fixture("requirements-txt-direct-urls-match-upstream-blank-version.txt");
+    let dependencies = parse_requirements(text);
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].name, "local");
+    assert_eq!(
+        dependencies[0].requirement,
+        "https://example.test/local.whl#sha256=abc"
+    );
+    assert_eq!(dependencies[0].requirement_prefix, "");
+    assert_eq!(extract_range(text, dependencies[0].range), "local");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "https://example.test/local.whl#sha256=abc"
+    );
+}
+
+#[test]
+fn requirements_txt_named_direct_references_keep_source_requirement() {
+    let text = "local @ https://example.test/local.tar.gz\n".to_owned()
+        + "vcs[dev] @ git+https://github.com/example/vcs.git@main ; python_version >= '3.11'\n"
+        + "requests==2.32.0\n";
+    let dependencies = parse_requirements(&text);
+
+    assert_eq!(dependencies.len(), 3);
+    assert_eq!(dependencies[0].name, "local");
+    assert_eq!(
+        dependencies[0].requirement,
+        "https://example.test/local.tar.gz"
+    );
+    assert_eq!(
+        extract_range(text.as_str(), dependencies[0].requirement_range),
+        "https://example.test/local.tar.gz"
+    );
+    assert_eq!(dependencies[1].name, "vcs");
+    assert_eq!(
+        dependencies[1].requirement,
+        "git+https://github.com/example/vcs.git@main"
+    );
+    assert_eq!(
+        extract_range(text.as_str(), dependencies[1].requirement_range),
+        "git+https://github.com/example/vcs.git@main"
+    );
+    assert_eq!(dependencies[2].name, "requests");
+    assert_eq!(dependencies[2].requirement, "==2.32.0");
+}
+
+#[test]
+fn requirements_txt_bare_direct_references_are_not_registry_dependencies() {
+    let text = "https://example.test/package.tar.gz\n".to_owned()
+        + "git+https://github.com/example/package.git@main\n"
+        + "requests>=2.0\n";
+    let dependencies = parse_document(&DocumentInput {
+        uri: "file:///work/requirements.txt".to_owned(),
+        language_id: "pip-requirements".to_owned(),
+        text,
+        workspace_root: None,
+        version: None,
+    });
+
+    assert_eq!(dependencies.len(), 1);
+    assert_eq!(dependencies[0].name, "requests");
+    assert_eq!(dependencies[0].requirement, ">=2.0");
+}
+
+#[test]
+fn requirements_txt_versions_stop_at_first_upstream_version_token() {
+    let text =
+        package_file_fixture("requirements-txt-versions-stop-at-first-upstream-version-token.txt");
+    let dependencies = parse_requirements(text);
+
+    assert_first_requirement(text, &dependencies, ">=1.0");
+    assert_eq!(dependencies[1].name, "other");
+    assert_eq!(dependencies[1].requirement, "==1.0");
+}
+#[test]
+fn requirements_txt_descriptor_versions_omit_operator_spacing_like_upstream() {
+    let text = package_file_fixture(
+        "requirements-txt-descriptor-versions-omit-operator-spacing-like-upstream.txt",
+    );
+    let dependencies = parse_requirements(text);
+
+    assert_first_requirement(text, &dependencies, ">= 1.0");
+    assert_eq!(dependencies[1].name, "other");
+    assert_eq!(dependencies[1].requirement, "==2.0");
+    assert_eq!(
+        extract_range(text, dependencies[1].requirement_range),
+        "== 2.0"
+    );
+}
+#[test]
+fn requirements_txt_accepts_raw_version_without_operator_like_upstream() {
+    let text = package_file_fixture(
+        "requirements-txt-accepts-raw-version-without-operator-like-upstream.txt",
+    );
+    let dependencies = parse_requirements(text);
+
+    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies[0].name, "pkg");
+    assert_eq!(dependencies[0].requirement, "1.0");
+    assert_eq!(dependencies[0].requirement_prefix, "");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "1.0"
+    );
+    assert_eq!(dependencies[1].name, "local");
+    assert_eq!(
+        dependencies[1].requirement,
+        "https://example.test/local.whl"
+    );
+    assert_eq!(dependencies[1].requirement_prefix, "");
+}
+#[test]
+fn requirements_txt_option_like_lines_parse_like_upstream() {
+    let text = package_file_fixture("requirements-txt-option-like-lines-parse-like-upstream.txt");
+    let dependencies = parse_requirements(text);
+
+    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies[0].name, "-r");
+    assert_eq!(dependencies[0].requirement, "other.txt");
+    assert_eq!(extract_range(text, dependencies[0].range), "-r");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        "other.txt"
+    );
+    assert_eq!(dependencies[1].name, "--index-url");
+    assert_eq!(dependencies[1].requirement, "https");
+}
+
+fn parse_requirements(text: impl AsRef<str>) -> Vec<versionlens_model::Dependency> {
+    parse_document(&DocumentInput::new(
+        "file:///work/requirements.txt".to_owned(),
+        "pip-requirements".to_owned(),
+        text.as_ref().to_owned(),
+        None,
+    ))
+}
+
+fn assert_first_requirement(
+    text: &str,
+    dependencies: &[versionlens_model::Dependency],
+    extracted: &str,
+) {
+    assert_eq!(dependencies.len(), 2);
+    assert_eq!(dependencies[0].name, "pkg");
+    assert_eq!(dependencies[0].requirement, ">=1.0");
+    assert_eq!(
+        extract_range(text, dependencies[0].requirement_range),
+        extracted
+    );
+}
+
+fn package_file_fixture(name: &str) -> &'static str {
+    crate::support::tests::fixture(
+        "tests/fixtures/versionlens-parsers/src/requirements_txt/tests",
+        name,
+    )
+}
+}

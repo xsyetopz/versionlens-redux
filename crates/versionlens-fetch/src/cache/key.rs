@@ -31,7 +31,14 @@ impl CacheKey {
 }
 
 #[cfg(test)]
-mod tests;
+mod tests {
+#[test]
+fn provider_dependency_cache_key_includes_requirement() {
+    let key = crate::cache::provider_dependency_cache_key("npm", "typescript", "^6.0.3");
+
+    assert_eq!(key.as_str(), "npm:typescript@^6.0.3");
+}
+}
 
 pub fn provider_package_cache_key(provider: &str, package: &str) -> CacheKey {
     CacheKey(format!("{provider}:{package}"))

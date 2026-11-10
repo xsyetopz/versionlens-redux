@@ -6,9 +6,9 @@ import { parseSemver } from "./semver.mjs";
 
 const [, , version] = Bun.argv;
 if (!version) {
-  throw new Error(
-    "usage: bun scripts/release/luarocks.mjs <major.minor.patch> [output-directory]",
-  );
+	throw new Error(
+		"usage: bun scripts/release/luarocks.mjs <major.minor.patch> [output-directory]",
+	);
 }
 parseSemver(version);
 

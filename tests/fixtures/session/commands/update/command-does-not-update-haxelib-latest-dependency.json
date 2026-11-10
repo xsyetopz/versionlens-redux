@@ -1,7 +1,7 @@
 {
-  "name": "demo",
-  "version": "1.0.0",
-  "dependencies": {
-    "tink_macro": ""
-  }
+	"name": "demo",
+	"version": "1.0.0",
+	"dependencies": {
+		"tink_macro": ""
+	}
 }

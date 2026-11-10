@@ -1,0 +1,300 @@
+//! The manifest table: one row per supported file type.
+
+use versionlens_model::{Dependency, DocumentInput, Ecosystem, ManifestKind};
+
+pub(crate) mod adapter;
+mod export;
+pub(crate) mod path_query;
+mod patterns;
+mod table;
+
+pub use export::{ManifestTable, ManifestTableEntry, manifest_table};
+pub use table::MANIFESTS;
+
+type ParsedDependencies = Vec<Dependency>;
+
+/// The parser for a manifest kind: the document text, and the dependency
+/// path queries when the format selects dependencies by path.
+#[derive(Clone, Copy)]
+pub(crate) enum ManifestParser {
+    Direct(fn(&str) -> ParsedDependencies),
+    WithPaths(fn(&str, &[&str]) -> ParsedDependencies),
+}
+
+/// How a manifest file is written. `Custom` file types keep a hand-written parser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ManifestFormat {
+    Json,
+    Toml,
+    Yaml,
+    Xml,
+    Custom,
+}
+
+/// The order in which classification tries patterns. A document gets the kind
+/// of the first row that matches in the earliest stage, so a later stage only
+/// sees documents that no earlier stage claimed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Stage {
+    Early,
+    Editor,
+    Workflow,
+    Late,
+    Content,
+    Python,
+    Pubspec,
+}
+
+impl Stage {
+    pub const ALL: [Stage; 7] = [
+        Stage::Early,
+        Stage::Editor,
+        Stage::Workflow,
+        Stage::Late,
+        Stage::Content,
+        Stage::Python,
+        Stage::Pubspec,
+    ];
+}
+
+#[derive(Clone, Copy)]
+pub enum Rule {
+    /// The file name, compared without ASCII case.
+    Name(&'static str),
+    /// The file extension, compared without ASCII case.
+    Extension(&'static str),
+    /// The editor language ID.
+    Language(&'static str),
+    /// A test on the whole document URI.
+    Uri(fn(&str) -> bool),
+    /// A test on the document text.
+    Content(fn(&DocumentInput, &str) -> bool),
+}
+
+#[derive(Clone, Copy)]
+pub struct Pattern {
+    pub stage: Stage,
+    pub rule: Rule,
+}
+
+pub struct ManifestRow {
+    pub kind: ManifestKind,
+    pub ecosystem: Ecosystem,
+    /// Provider family name, such as `golang` or `pypi`.
+    pub provider: &'static str,
+    pub format: ManifestFormat,
+    pub patterns: &'static [Pattern],
+    pub(crate) parser: ManifestParser,
+    /// The path queries that select dependencies, used when the user
+    /// configures none. Empty for file types that have no paths.
+    pub dependency_paths: &'static [&'static str],
+    /// Path queries for the file's own version fields, such as the `version`
+    /// of a `package.json`. Dependency parsing leaves them out, even when the
+    /// user configures them, and `parse_own_version` reads them.
+    pub(crate) own_version: &'static [&'static str],
+    /// File globs for the patterns that a name or an extension cannot express,
+    /// such as a URI test. Generated editor lists read them.
+    pub globs: &'static [&'static str],
+    /// Editor language IDs that host the file type, when its format does not
+    /// imply them.
+    pub languages: &'static [&'static str],
+    /// The globs that the `versionlens.<provider>.files` setting lists for this
+    /// row, when they differ from the names, extensions and `globs`.
+    pub file_globs: &'static [&'static str],
+    /// Exact file names that editors with a name and extension filter accept
+    /// for patterns that only a glob can express.
+    pub editor_names: &'static [&'static str],
+    /// What the row adds to `versionlens.<provider>.dependencyProperties`.
+    pub settings: SettingsDefault,
+}
+
+/// The entries that a row adds to its provider's `dependencyProperties`
+/// default. The setting is a contract with users, so it is listed apart from
+/// the internal path queries when the two differ.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsDefault {
+    /// The row adds nothing.
+    Hidden,
+    /// The row adds its `dependency_paths`.
+    Paths,
+    /// The row adds exactly these entries.
+    Listed(&'static [&'static str]),
+}
+
+impl ManifestRow {
+    pub(crate) const fn dependency_paths(mut self, paths: &'static [&'static str]) -> Self {
+        self.dependency_paths = paths;
+        self
+    }
+
+    pub(crate) const fn globs(mut self, globs: &'static [&'static str]) -> Self {
+        self.globs = globs;
+        self
+    }
+
+    pub(crate) const fn languages(mut self, languages: &'static [&'static str]) -> Self {
+        self.languages = languages;
+        self
+    }
+
+    pub(crate) const fn file_globs(mut self, globs: &'static [&'static str]) -> Self {
+        self.file_globs = globs;
+        self
+    }
+
+    pub(crate) const fn editor_names(mut self, names: &'static [&'static str]) -> Self {
+        self.editor_names = names;
+        self
+    }
+
+    pub(crate) const fn settings_from_paths(mut self) -> Self {
+        self.settings = SettingsDefault::Paths;
+        self
+    }
+
+    pub(crate) const fn settings(mut self, entries: &'static [&'static str]) -> Self {
+        self.settings = SettingsDefault::Listed(entries);
+        self
+    }
+
+    pub(crate) const fn own_version(mut self, paths: &'static [&'static str]) -> Self {
+        self.own_version = paths;
+        self
+    }
+
+    /// The dependencies of `text`, without the file's own version fields.
+    pub(crate) fn parse(&self, text: &str, paths: &[&str]) -> ParsedDependencies {
+        let configured = !paths.is_empty();
+        let paths = paths
+            .iter()
+            .copied()
+            .filter(|path| !self.own_version.contains(path))
+            .collect::<Vec<_>>();
+        match self.parser {
+            ManifestParser::Direct(parser) => parser(text),
+            ManifestParser::WithPaths(parser) => parser(
+                text,
+                if configured {
+                    &paths
+                } else {
+                    self.dependency_paths
+                },
+            ),
+        }
+    }
+
+    /// The file's own version fields, which only project-version commands edit.
+    pub(crate) fn parse_own_version(&self, text: &str) -> ParsedDependencies {
+        if self.own_version.is_empty() {
+            return Vec::new();
+        }
+        match self.parser {
+            ManifestParser::Direct(_) => Vec::new(),
+            ManifestParser::WithPaths(parser) => parser(text, self.own_version),
+        }
+    }
+}
+
+impl Rule {
+    pub(crate) fn matches(&self, input: &DocumentInput, uri: &str) -> bool {
+        let name = patterns::file_name(uri);
+        match *self {
+            Rule::Name(expected) => name.is_some_and(|name| name.eq_ignore_ascii_case(expected)),
+            Rule::Extension(expected) => name.is_some_and(|name| {
+                std::path::Path::new(name)
+                    .extension()
+                    .is_some_and(|extension| extension.eq_ignore_ascii_case(expected))
+            }),
+            Rule::Language(expected) => input.language_id == expected,
+            Rule::Uri(test) => test(uri),
+            Rule::Content(test) => test(input, uri),
+        }
+    }
+}
+
+pub fn manifest_row(kind: ManifestKind) -> Option<&'static ManifestRow> {
+    MANIFESTS.iter().find(|row| row.kind == kind)
+}
+
+pub fn ecosystem_for_manifest(kind: ManifestKind) -> Option<Ecosystem> {
+    manifest_row(kind).map(|row| row.ecosystem)
+}
+
+pub fn provider_name_for_manifest(kind: ManifestKind) -> Option<&'static str> {
+    manifest_row(kind).map(|row| row.provider)
+}
+
+#[cfg(test)]
+mod tests {
+use versionlens_model::Ecosystem;
+use versionlens_model::ManifestKind::{
+    BunVersion, CargoToml, GoMod, NodeVersion, Nvmrc, RustToolchain, RustToolchainToml, Unknown,
+    VersionLensMultiRegistries,
+};
+
+use super::{
+    MANIFESTS, ManifestFormat, ecosystem_for_manifest, manifest_row, provider_name_for_manifest,
+};
+
+#[test]
+fn lists_each_manifest_kind_once_with_a_pattern() {
+    for (index, row) in MANIFESTS.iter().enumerate() {
+        assert!(!row.patterns.is_empty(), "{:?} has no pattern", row.kind);
+        assert!(
+            MANIFESTS[index + 1..]
+                .iter()
+                .all(|other| other.kind != row.kind),
+            "{:?} has two rows",
+            row.kind
+        );
+    }
+}
+
+#[test]
+fn maps_manifest_kinds_to_their_row() {
+    for row in MANIFESTS {
+        assert_eq!(ecosystem_for_manifest(row.kind), Some(row.ecosystem));
+        assert_eq!(provider_name_for_manifest(row.kind), Some(row.provider));
+    }
+    assert_eq!(ecosystem_for_manifest(GoMod), Some(Ecosystem::Go));
+    assert_eq!(provider_name_for_manifest(GoMod), Some("golang"));
+    assert_eq!(
+        manifest_row(CargoToml).map(|row| row.format),
+        Some(ManifestFormat::Toml)
+    );
+}
+
+#[test]
+fn ignores_non_dependency_manifest_kinds() {
+    for kind in [Unknown, VersionLensMultiRegistries] {
+        assert!(manifest_row(kind).is_none());
+        assert_eq!(ecosystem_for_manifest(kind), None);
+        assert_eq!(provider_name_for_manifest(kind), None);
+    }
+}
+
+#[test]
+fn maps_runtime_manifests_to_their_provider_families() {
+    for kind in [Nvmrc, NodeVersion, BunVersion] {
+        assert_eq!(provider_name_for_manifest(kind), Some("npm"));
+    }
+    for kind in [RustToolchain, RustToolchainToml] {
+        assert_eq!(provider_name_for_manifest(kind), Some("cargo"));
+    }
+}
+
+#[test]
+fn rows_hold_their_default_dependency_paths() {
+    use versionlens_model::ManifestKind::{NixFlake, NpmPackageJson, PubspecOverridesYaml};
+
+    let defaults = |kind| manifest_row(kind).expect("row exists").dependency_paths;
+
+    let npm = defaults(NpmPackageJson);
+    assert!(npm.contains(&"dependencies"));
+    assert!(!npm.contains(&"version"));
+    assert_eq!(defaults(CargoToml).first(), Some(&"package"));
+    assert_eq!(defaults(PubspecOverridesYaml), ["dependency_overrides"]);
+    assert!(defaults(NixFlake).is_empty());
+    assert!(defaults(GoMod).is_empty());
+}
+}

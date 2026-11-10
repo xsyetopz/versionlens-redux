@@ -1,6 +1,6 @@
 {
-  "repositories": [{ "type": "vcs", "url": "https://github.com/acme/pkg" }],
-  "require": {
-    "acme/pkg": "dev-bugfix as 1.0.x-dev"
-  }
+	"repositories": [{ "type": "vcs", "url": "https://github.com/acme/pkg" }],
+	"require": {
+		"acme/pkg": "dev-bugfix as 1.0.x-dev"
+	}
 }

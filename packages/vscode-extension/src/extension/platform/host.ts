@@ -1,6 +1,6 @@
 export type CodeLens = import("vscode").CodeLens;
 export type ConfigurationChangeEvent =
-  import("vscode").ConfigurationChangeEvent;
+	import("vscode").ConfigurationChangeEvent;
 export type Diagnostic = import("vscode").Diagnostic;
 export type DiagnosticCollection = import("vscode").DiagnosticCollection;
 export type DiagnosticSeverity = import("vscode").DiagnosticSeverity;

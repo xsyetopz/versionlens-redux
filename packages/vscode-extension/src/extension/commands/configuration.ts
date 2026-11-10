@@ -1,8 +1,9 @@
 import { type Disposable, workspace } from "#vscode-host";
+
 import {
-  applyDiagnosticsVisibility,
-  restartClient,
-  startClient,
+	applyDiagnosticsVisibility,
+	restartClient,
+	startClient,
 } from "../client.ts";
 import { documentSelectors } from "../documents.ts";
 import { clearManifestInfo } from "../manifest.ts";
@@ -13,32 +14,30 @@ import { reportError } from "./error.ts";
 import { notifyConfigurationChanged } from "./toggles.ts";
 
 export function registerConfigurationHandler(
-  state: ExtensionState,
+	state: ExtensionState,
 ): Disposable {
-  return workspace.onDidChangeConfiguration((event): Promise<void> => {
-    if (
-      !(
-        event.affectsConfiguration("versionlens") ||
-        event.affectsConfiguration("http") ||
-        event.affectsConfiguration("files.exclude")
-      )
-    ) {
-      return Promise.resolve();
-    }
-    if (event.affectsConfiguration("versionlens")) {
-      reloadConfigurationState(state);
-      applyDiagnosticsVisibility(state);
-    }
-    return synchronizeServer(state);
-  });
+	return workspace.onDidChangeConfiguration((event): Promise<void> => {
+		if (!(
+			event.affectsConfiguration("versionlens") ||
+			event.affectsConfiguration("http") ||
+			event.affectsConfiguration("files.exclude")
+		)) {
+			return Promise.resolve();
+		}
+		if (event.affectsConfiguration("versionlens")) {
+			reloadConfigurationState(state);
+			applyDiagnosticsVisibility(state);
+		}
+		return synchronizeServer(state);
+	});
 }
 
 export function registerWorkspaceFolderHandler(
-  state: ExtensionState,
+	state: ExtensionState,
 ): Disposable {
-  return workspace.onDidChangeWorkspaceFolders(
-    (): Promise<void> => synchronizeServer(state),
-  );
+	return workspace.onDidChangeWorkspaceFolders((): Promise<void> =>
+		synchronizeServer(state),
+	);
 }
 
 /**
@@ -46,19 +45,19 @@ export function registerWorkspaceFolderHandler(
  * about come from the settings, so the client starts over when they change.
  */
 async function synchronizeServer(state: ExtensionState): Promise<void> {
-  try {
-    state.snapshots.savedDependencies.clear();
-    state.snapshots.editedDependencies.clear();
-    clearManifestInfo();
-    if (!state.client) {
-      await startClient(state);
-    } else if (state.selectorKey === JSON.stringify(documentSelectors())) {
-      await notifyConfigurationChanged(state);
-    } else {
-      await restartClient(state);
-    }
-    await updateContexts(state);
-  } catch (error) {
-    await reportError(state, "could not apply the settings", error);
-  }
+	try {
+		state.snapshots.savedDependencies.clear();
+		state.snapshots.editedDependencies.clear();
+		clearManifestInfo();
+		if (!state.client) {
+			await startClient(state);
+		} else if (state.selectorKey === JSON.stringify(documentSelectors())) {
+			await notifyConfigurationChanged(state);
+		} else {
+			await restartClient(state);
+		}
+		await updateContexts(state);
+	} catch (error) {
+		await reportError(state, "could not apply the settings", error);
+	}
 }
