@@ -62,7 +62,7 @@ pub(super) struct LateCredential {
 impl AuthorizationBroker {
     pub(super) fn new(sender: Sender<Message>, runtime: Handle, timeout: Duration) -> Arc<Self> {
         Arc::new_cyclic(|me| Self {
-            me: me.clone(),
+            me: Weak::clone(me),
             sender: Mutex::new(Some(sender)),
             runtime,
             timeout,
@@ -83,7 +83,7 @@ impl AuthorizationBroker {
             .take();
         let mut asked = self.lock();
         for (_, (_, answer)) in asked.open.drain() {
-            let _ = answer.send(Some(None));
+            drop(answer.send(Some(None)));
         }
         asked.expired.clear();
     }
@@ -93,7 +93,7 @@ impl AuthorizationBroker {
     fn expire(&self, id: &RequestId) {
         let mut asked = self.lock();
         if let Some((host, answer)) = asked.open.remove(id) {
-            let _ = answer.send(Some(None));
+            drop(answer.send(Some(None)));
             asked.expired.insert(id.clone(), host);
         }
     }
@@ -116,7 +116,7 @@ impl AuthorizationBroker {
             // Waiting resolutions take the answer themselves. Others may have
             // given up at their own deadline, so every credential is also
             // returned, once per host, to check the refused dependencies again.
-            let _ = answer.send(Some(credential.clone()));
+            drop(answer.send(Some(credential.clone())));
             return credential.map(|credential| LateCredential { host, credential });
         }
         let host = asked.expired.remove(&response.id)?;
@@ -150,7 +150,7 @@ impl AuthorizationBroker {
             .is_some_and(|sender| sender.send(request).is_ok());
         if sent {
             asked.open.insert(id.clone(), (host.to_owned(), answer));
-            let (broker, timeout) = (self.me.clone(), self.timeout);
+            let (broker, timeout) = (Weak::clone(&self.me), self.timeout);
             self.runtime.spawn(async move {
                 tokio::time::sleep(timeout).await;
                 if let Some(broker) = broker.upgrade() {
@@ -158,7 +158,7 @@ impl AuthorizationBroker {
                 }
             });
         } else {
-            let _ = answer.send(Some(None));
+            drop(answer.send(Some(None)));
         }
         asked.hosts.insert(host.to_owned(), receiver.clone());
         receiver

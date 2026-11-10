@@ -129,8 +129,8 @@ impl VersionLensLspState {
                 .session
                 .document_is_supported(&versionlens_model::DocumentInput::new(
                     uri.to_owned(),
-                    "".to_owned(),
-                    "".to_owned(),
+                    String::new(),
+                    String::new(),
                     versionlens_engine::workspace_file_uri(root),
                 ))
     }

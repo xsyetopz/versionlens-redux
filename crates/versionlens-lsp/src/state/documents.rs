@@ -58,17 +58,20 @@ impl VersionLensLspState {
         self.open_document(document);
     }
 
+    /// Forgets a closed document.
     pub fn close_document(&mut self, uri: &str) {
         self.documents.remove(uri);
         self.revisions.remove(uri);
         self.synchronize_workspace_documents();
     }
 
+    /// Code lenses for an open document; empty when it is not open.
     pub fn code_lenses(&self, uri: &str) -> Vec<CodeLens> {
         self.analyzed_document(uri)
             .map_or_else(Vec::new, |resolved| resolved.code_lenses)
     }
 
+    /// Diagnostics parameters for `uri`, without a document version.
     pub fn publish_diagnostics(uri: Uri, diagnostics: Vec<Diagnostic>) -> PublishDiagnosticsParams {
         PublishDiagnosticsParams {
             uri,

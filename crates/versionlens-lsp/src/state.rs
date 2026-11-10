@@ -29,10 +29,15 @@ pub(crate) const DISPLAY_CODE_LENS_COMMAND: &str = "versionlens.displayCodeLens"
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// A text document the client has opened.
 pub struct VersionLensTextDocument {
+    /// Document URI.
     pub uri: String,
+    /// Language id the client assigned.
     pub language_id: String,
+    /// Full text.
     pub text: String,
+    /// Workspace root the document belongs to, if known.
     pub workspace_root: Option<String>,
 }
 
@@ -66,6 +71,10 @@ impl WorkspaceRoot {
         }
     }
 
+    #[expect(
+        clippy::redundant_closure_for_method_calls,
+        reason = "fluent_uri is not a dependency, so `Scheme::as_str` and `Authority::as_str` cannot be named"
+    )]
     fn contains(&self, document_uri: &Uri) -> bool {
         if self.uri.scheme().map(|scheme| scheme.as_str())
             != document_uri.scheme().map(|scheme| scheme.as_str())
@@ -99,6 +108,7 @@ fn normalized_file_path(uri: &str) -> Option<std::path::PathBuf> {
     }))
 }
 
+/// Server state: open documents, settings, and the analysis sessions.
 #[derive(Debug)]
 pub struct VersionLensLspState {
     groups: Vec<SessionGroup>,
@@ -199,6 +209,7 @@ impl VersionLensLspState {
         self
     }
 
+    /// A state with no workspace folders.
     pub fn standard() -> Self {
         Self::with_workspace(None, Vec::new())
     }
@@ -234,6 +245,7 @@ impl VersionLensLspState {
         self.modes.controller_managed = true;
     }
 
+    /// Capabilities the server announces in the initialize result.
     pub fn server_capabilities() -> ServerCapabilities {
         ServerCapabilities {
             text_document_sync: Some(TextDocumentSyncCapability::Options(
@@ -352,870 +364,923 @@ pub use presentation::into_lsp_range;
 
 #[cfg(test)]
 mod fixtures {
-//! The group 2.2 regression fixtures, checked through the server. They share
-//! manifests and registry answers with the engine fixtures
-//! (`versionlens_test_support::regression`) and expect the same lenses and
-//! diagnostics, so every client of the server (`JetBrains`, Zed, Neovim) gets
-//! the engine's behavior.
+    //! The group 2.2 regression fixtures, checked through the server. They share
+    //! manifests and registry answers with the engine fixtures
+    //! (`versionlens_test_support::regression`) and expect the same lenses and
+    //! diagnostics, so every client of the server (`JetBrains`, Zed, Neovim) gets
+    //! the engine's behavior.
 
-use lsp_types::{CodeLens, Diagnostic, NumberOrString};
-use versionlens_engine::{RegistryResponseInput, Settings, UPDATE_AVAILABLE};
-use versionlens_test_support::regression::{self, Case};
+    use lsp_types::{CodeLens, Diagnostic, NumberOrString};
+    use versionlens_engine::{RegistryResponseInput, Settings, UPDATE_AVAILABLE};
+    use versionlens_test_support::regression::{self, Case};
 
-use super::{VersionLensLspState, VersionLensTextDocument};
+    use super::{VersionLensLspState, VersionLensTextDocument};
 
-struct Served {
-    lenses: Vec<CodeLens>,
-    diagnostics: Vec<Diagnostic>,
-}
-
-impl Served {
-    fn titles(&self) -> Vec<&str> {
-        self.lenses
-            .iter()
-            .filter_map(|lens| lens.command.as_ref())
-            .map(|command| command.title.as_str())
-            .collect()
+    struct Served {
+        lenses: Vec<CodeLens>,
+        diagnostics: Vec<Diagnostic>,
     }
 
-    fn bumps(&self) -> Vec<&str> {
-        self.titles()
-            .into_iter()
-            .filter(|title| title.starts_with('↑'))
-            .collect()
-    }
-
-    /// The versions the bump lenses offer, from their command arguments. These
-    /// are bare versions; the range operator is added when an update applies.
-    fn bump_versions(&self) -> Vec<String> {
-        self.lenses
-            .iter()
-            .filter_map(|lens| lens.command.as_ref())
-            .filter(|command| command.title.starts_with('↑'))
-            .filter_map(|command| command.arguments.as_ref()?.first()?.get("version"))
-            .filter_map(|version| version.as_str().map(str::to_owned))
-            .collect()
-    }
-
-    /// A bump lens sits on the given line, where the edit lands.
-    fn assert_bump_on_line(&self, line: u32) {
-        assert!(
-            self.lenses.iter().any(|lens| {
-                lens.range.start.line == line
-                    && lens
-                        .command
-                        .as_ref()
-                        .is_some_and(|command| command.title.starts_with('↑'))
-            }),
-            "no bump on line {line}: {:?}",
+    impl Served {
+        fn titles(&self) -> Vec<&str> {
             self.lenses
-        );
-    }
-
-    fn assert_status(&self, status: &str) {
-        assert!(
-            self.titles()
                 .iter()
-                .any(|title| title.ends_with(status) && !title.starts_with('↑')),
-            "expected status `{status}`, lenses: {:?}",
-            self.titles()
-        );
-    }
+                .filter_map(|lens| lens.command.as_ref())
+                .map(|command| command.title.as_str())
+                .collect()
+        }
 
-    fn assert_no_bump(&self) {
-        assert_eq!(self.bumps(), Vec::<&str>::new());
-    }
-
-    /// No error lens (an error shows as a lens, never as a diagnostic) and no
-    /// diagnostic other than an available update.
-    fn assert_silent(&self) {
-        assert!(
+        fn bumps(&self) -> Vec<&str> {
             self.titles()
+                .into_iter()
+                .filter(|title| title.starts_with('↑'))
+                .collect()
+        }
+
+        /// The versions the bump lenses offer, from their command arguments. These
+        /// are bare versions; the range operator is added when an update applies.
+        fn bump_versions(&self) -> Vec<String> {
+            self.lenses
                 .iter()
-                .all(|title| !title.starts_with('\u{1F534}')),
-            "error lens: {:?}",
-            self.titles()
-        );
-        let noise = self
-            .diagnostics
+                .filter_map(|lens| lens.command.as_ref())
+                .filter(|command| command.title.starts_with('↑'))
+                .filter_map(|command| command.arguments.as_ref()?.first()?.get("version"))
+                .filter_map(|version| version.as_str().map(str::to_owned))
+                .collect()
+        }
+
+        /// A bump lens sits on the given line, where the edit lands.
+        fn assert_bump_on_line(&self, line: u32) {
+            assert!(
+                self.lenses.iter().any(|lens| {
+                    lens.range.start.line == line
+                        && lens
+                            .command
+                            .as_ref()
+                            .is_some_and(|command| command.title.starts_with('↑'))
+                }),
+                "no bump on line {line}: {:?}",
+                self.lenses
+            );
+        }
+
+        fn assert_status(&self, status: &str) {
+            assert!(
+                self.titles()
+                    .iter()
+                    .any(|title| title.ends_with(status) && !title.starts_with('↑')),
+                "expected status `{status}`, lenses: {:?}",
+                self.titles()
+            );
+        }
+
+        fn assert_no_bump(&self) {
+            assert_eq!(self.bumps(), Vec::<&str>::new());
+        }
+
+        /// No error lens (an error shows as a lens, never as a diagnostic) and no
+        /// diagnostic other than an available update.
+        fn assert_silent(&self) {
+            assert!(
+                self.titles()
+                    .iter()
+                    .all(|title| !title.starts_with('\u{1F534}')),
+                "error lens: {:?}",
+                self.titles()
+            );
+            let noise = self
+                .diagnostics
+                .iter()
+                .filter(|diagnostic| {
+                    diagnostic.code != Some(NumberOrString::String(UPDATE_AVAILABLE.to_owned()))
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(noise, Vec::<&Diagnostic>::new());
+        }
+    }
+
+    /// Registries that refuse connections, so any lookup surfaces as an error
+    /// instead of reaching the network.
+    fn offline() -> serde_json::Value {
+        let unreachable = serde_json::json!({"apiUrl": "http://127.0.0.1:9/"});
+        serde_json::json!({
+            "github": unreachable,
+            "npm": unreachable,
+            "dotnet": {"nuget": {"sources": ["http://127.0.0.1:9/"]}},
+        })
+    }
+
+    /// Opens the fixture in the server and resolves it with its registry answers.
+    async fn serve(case: &Case, offline_registries: bool) -> Served {
+        let mut settings = if offline_registries {
+            offline()
+        } else {
+            serde_json::json!({})
+        };
+        settings["suggestions"] = serde_json::json!({"showVulnerabilities": false});
+        let config = Settings::from_value(settings)
+            .expect("fixture settings are valid")
+            .session_config();
+        let mut state = VersionLensLspState::standard().with_config(config);
+        state.open_document(VersionLensTextDocument {
+            uri: case.uri.to_owned(),
+            language_id: case.language.to_owned(),
+            text: case.text.clone(),
+            workspace_root: None,
+        });
+        let responses = case
+            .registry
             .iter()
-            .filter(|diagnostic| {
-                diagnostic.code != Some(NumberOrString::String(UPDATE_AVAILABLE.to_owned()))
+            .map(|stub| {
+                let ecosystem = serde_json::from_value(serde_json::json!(stub.ecosystem))
+                    .unwrap_or_else(|error| panic!("{}: {error}", stub.ecosystem));
+                RegistryResponseInput::new(stub.package, ecosystem, stub.body.clone())
             })
             .collect::<Vec<_>>();
-        assert_eq!(noise, Vec::<&Diagnostic>::new());
+        let work = state.document_work(case.uri).expect("document is open");
+        state
+            .session_for(case.uri)
+            .resolve_document_with_responses(work.input, &responses)
+            .await;
+        let resolved = state.analyzed_document(case.uri).expect("document is open");
+        Served {
+            lenses: resolved.code_lenses,
+            diagnostics: resolved.diagnostics,
+        }
     }
-}
 
-/// Registries that refuse connections, so any lookup surfaces as an error
-/// instead of reaching the network.
-fn offline() -> serde_json::Value {
-    let unreachable = serde_json::json!({"apiUrl": "http://127.0.0.1:9/"});
-    serde_json::json!({
-        "github": unreachable,
-        "npm": unreachable,
-        "dotnet": {"nuget": {"sources": ["http://127.0.0.1:9/"]}},
-    })
-}
-
-/// Opens the fixture in the server and resolves it with its registry answers.
-async fn serve(case: &Case, offline_registries: bool) -> Served {
-    let mut settings = if offline_registries {
-        offline()
-    } else {
-        serde_json::json!({})
-    };
-    settings["suggestions"] = serde_json::json!({"showVulnerabilities": false});
-    let config = Settings::from_value(settings)
-        .expect("fixture settings are valid")
-        .session_config();
-    let mut state = VersionLensLspState::standard().with_config(config);
-    state.open_document(VersionLensTextDocument {
-        uri: case.uri.to_owned(),
-        language_id: case.language.to_owned(),
-        text: case.text.clone(),
-        workspace_root: None,
-    });
-    let responses = case
-        .registry
-        .iter()
-        .map(|stub| {
-            let ecosystem = serde_json::from_value(serde_json::json!(stub.ecosystem))
-                .unwrap_or_else(|error| panic!("{}: {error}", stub.ecosystem));
-            RegistryResponseInput::new(stub.package, ecosystem, stub.body.clone())
-        })
-        .collect::<Vec<_>>();
-    let work = state.document_work(case.uri).expect("document is open");
-    state
-        .session_for(case.uri)
-        .resolve_document_with_responses(work.input, &responses)
-        .await;
-    let resolved = state.analyzed_document(case.uri).expect("document is open");
-    Served {
-        lenses: resolved.code_lenses,
-        diagnostics: resolved.diagnostics,
+    #[tokio::test]
+    async fn cargo_exact_pin_is_current() {
+        let served = serve(&regression::cargo_exact_pin(), false).await;
+        served.assert_status("latest 0.7.0");
+        served.assert_no_bump();
     }
-}
 
-#[tokio::test]
-async fn cargo_exact_pin_is_current() {
-    let served = serve(&regression::cargo_exact_pin(), false).await;
-    served.assert_status("latest 0.7.0");
-    served.assert_no_bump();
-}
-
-#[tokio::test]
-async fn python_exact_pin_is_current() {
-    let served = serve(&regression::python_exact_pin(), false).await;
-    served.assert_status("latest 2.34.2");
-    served.assert_no_bump();
-}
-
-#[tokio::test]
-async fn caret_range_offers_a_floor_bump_without_a_diagnostic() {
-    let served = serve(&regression::caret_range_behind_latest(), false).await;
-    served.assert_status("satisfies latest 2.5.14");
-    assert_eq!(served.bump_versions(), ["2.5.14"]);
-    assert_eq!(served.diagnostics, vec![]);
-}
-
-#[tokio::test]
-async fn starlight_intermediate_releases_are_not_listed() {
-    let served = serve(&regression::intermediate_releases(), false).await;
-    served.assert_status("satisfies 0.41.11");
-    assert_eq!(served.bump_versions(), ["0.41.11", "0.42.6"]);
-    for skipped in regression::STARLIGHT_SKIPPED {
-        assert!(
-            served.titles().iter().all(|title| !title.contains(skipped)),
-            "{skipped} listed: {:?}",
-            served.titles()
-        );
+    #[tokio::test]
+    async fn python_exact_pin_is_current() {
+        let served = serve(&regression::python_exact_pin(), false).await;
+        served.assert_status("latest 2.34.2");
+        served.assert_no_bump();
     }
-}
 
-#[tokio::test]
-async fn github_script_sha_with_floating_and_exact_tags_is_current() {
-    let served = serve(&regression::sha_pinned_action(), false).await;
-    served.assert_status("latest v9.0.0");
-    served.assert_no_bump();
-}
-
-#[tokio::test]
-async fn install_action_branch_ref_is_fixed_without_a_lookup() {
-    let served = serve(&regression::branch_action_ref(), true).await;
-    served.assert_silent();
-    served.assert_status("fixed just");
-    served.assert_no_bump();
-}
-
-#[tokio::test]
-async fn engines_vscode_is_skipped_without_an_error() {
-    let served = serve(&regression::vscode_engine_field(), true).await;
-    served.assert_silent();
-    // The field is recognised and shown as unsupported, not looked up.
-    assert_eq!(served.titles(), ["⚪ not supported"]);
-}
-
-#[tokio::test]
-async fn setup_dotnet_unsupported_syntax_is_not_an_error() {
-    let served = serve(&regression::unsupported_setup_dotnet(), true).await;
-    served.assert_silent();
-    served.assert_status("not supported");
-    served.assert_no_bump();
-}
-
-#[tokio::test]
-async fn env_reference_resolves_the_runtime() {
-    let served = serve(&regression::workflow_env_reference(), false).await;
-    served.assert_silent();
-    // The runtime resolved from `${{ env.NODE_VERSION }}` ("20") against the
-    // node release list.
-    served.assert_status("fixed 20");
-    assert_eq!(served.bump_versions(), ["22.0.0"]);
-}
-
-#[tokio::test]
-async fn steps_output_expression_is_skipped_silently() {
-    let served = serve(&regression::step_output_expression(), true).await;
-    served.assert_silent();
-    // Only the action itself is checked; the expression is not looked up.
-    assert_eq!(served.titles().len(), 1, "{:?}", served.titles());
-    served.assert_status("latest v4");
-    served.assert_no_bump();
-}
-
-#[tokio::test]
-async fn gradle_version_alias_resolves_through_its_library() {
-    let served = serve(&regression::gradle_version_alias(), false).await;
-    served.assert_silent();
-    assert_eq!(served.bump_versions(), ["2.1.0"]);
-    served.assert_bump_on_line(1);
-}
-
-#[tokio::test]
-async fn gradle_plugin_alias_uses_the_plugin_marker() {
-    let served = serve(&regression::gradle_plugin_alias(), false).await;
-    served.assert_silent();
-    assert_eq!(served.bump_versions(), ["2.0.0"]);
-    served.assert_bump_on_line(1);
-}
-
-#[tokio::test]
-async fn cargo_bare_version_is_a_caret_requirement() {
-    let served = serve(&regression::cargo_bare_version(), false).await;
-    served.assert_status("satisfies latest 1.0.229");
-    assert_eq!(served.bump_versions(), ["1.0.229"]);
-}
-
-#[tokio::test]
-async fn package_version_fields_are_not_dependencies() {
-    for case in regression::package_version_fields() {
-        let served = serve(&case, true).await;
-        assert_eq!(served.titles(), Vec::<&str>::new(), "{}", case.uri);
-        assert_eq!(served.diagnostics, vec![], "{}", case.uri);
+    #[tokio::test]
+    async fn caret_range_offers_a_floor_bump_without_a_diagnostic() {
+        let served = serve(&regression::caret_range_behind_latest(), false).await;
+        served.assert_status("satisfies latest 2.5.14");
+        assert_eq!(served.bump_versions(), ["2.5.14"]);
+        assert_eq!(served.diagnostics, vec![]);
     }
-}
+
+    #[tokio::test]
+    async fn starlight_intermediate_releases_are_not_listed() {
+        let served = serve(&regression::intermediate_releases(), false).await;
+        served.assert_status("satisfies 0.41.11");
+        assert_eq!(served.bump_versions(), ["0.41.11", "0.42.6"]);
+        for skipped in regression::STARLIGHT_SKIPPED {
+            assert!(
+                served.titles().iter().all(|title| !title.contains(skipped)),
+                "{skipped} listed: {:?}",
+                served.titles()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn github_script_sha_with_floating_and_exact_tags_is_current() {
+        let served = serve(&regression::sha_pinned_action(), false).await;
+        served.assert_status("latest v9.0.0");
+        served.assert_no_bump();
+    }
+
+    #[tokio::test]
+    async fn install_action_branch_ref_is_fixed_without_a_lookup() {
+        let served = serve(&regression::branch_action_ref(), true).await;
+        served.assert_silent();
+        served.assert_status("fixed just");
+        served.assert_no_bump();
+    }
+
+    #[tokio::test]
+    async fn engines_vscode_is_skipped_without_an_error() {
+        let served = serve(&regression::vscode_engine_field(), true).await;
+        served.assert_silent();
+        // The field is recognised and shown as unsupported, not looked up.
+        assert_eq!(served.titles(), ["⚪ not supported"]);
+    }
+
+    #[tokio::test]
+    async fn setup_dotnet_unsupported_syntax_is_not_an_error() {
+        let served = serve(&regression::unsupported_setup_dotnet(), true).await;
+        served.assert_silent();
+        served.assert_status("not supported");
+        served.assert_no_bump();
+    }
+
+    #[tokio::test]
+    async fn env_reference_resolves_the_runtime() {
+        let served = serve(&regression::workflow_env_reference(), false).await;
+        served.assert_silent();
+        // The runtime resolved from `${{ env.NODE_VERSION }}` ("20") against the
+        // node release list.
+        served.assert_status("fixed 20");
+        assert_eq!(served.bump_versions(), ["22.0.0"]);
+    }
+
+    #[tokio::test]
+    async fn steps_output_expression_is_skipped_silently() {
+        let served = serve(&regression::step_output_expression(), true).await;
+        served.assert_silent();
+        // Only the action itself is checked; the expression is not looked up.
+        assert_eq!(served.titles().len(), 1, "{:?}", served.titles());
+        served.assert_status("latest v4");
+        served.assert_no_bump();
+    }
+
+    #[tokio::test]
+    async fn gradle_version_alias_resolves_through_its_library() {
+        let served = serve(&regression::gradle_version_alias(), false).await;
+        served.assert_silent();
+        assert_eq!(served.bump_versions(), ["2.1.0"]);
+        served.assert_bump_on_line(1);
+    }
+
+    #[tokio::test]
+    async fn gradle_plugin_alias_uses_the_plugin_marker() {
+        let served = serve(&regression::gradle_plugin_alias(), false).await;
+        served.assert_silent();
+        assert_eq!(served.bump_versions(), ["2.0.0"]);
+        served.assert_bump_on_line(1);
+    }
+
+    #[tokio::test]
+    async fn cargo_bare_version_is_a_caret_requirement() {
+        let served = serve(&regression::cargo_bare_version(), false).await;
+        served.assert_status("satisfies latest 1.0.229");
+        assert_eq!(served.bump_versions(), ["1.0.229"]);
+    }
+
+    #[tokio::test]
+    async fn package_version_fields_are_not_dependencies() {
+        for case in regression::package_version_fields() {
+            let served = serve(&case, true).await;
+            assert_eq!(served.titles(), Vec::<&str>::new(), "{}", case.uri);
+            assert_eq!(served.diagnostics, vec![], "{}", case.uri);
+        }
+    }
 }
 #[cfg(test)]
 mod tests {
-use lsp_types::{TextDocumentSyncCapability, TextDocumentSyncKind, Uri, WorkspaceFolder};
+    use lsp_types::{TextDocumentSyncCapability, TextDocumentSyncKind, Uri, WorkspaceFolder};
 
-use super::{VersionLensLspState, VersionLensTextDocument};
+    use super::{VersionLensLspState, VersionLensTextDocument};
 
-type FileTestResult = Result<(), Box<dyn std::error::Error>>;
+    #[test]
+    fn capabilities_match_implemented_document_and_command_protocol() {
+        let capabilities = VersionLensLspState::server_capabilities();
+        let Some(TextDocumentSyncCapability::Options(sync)) = capabilities.text_document_sync
+        else {
+            panic!("expected explicit text document sync options");
+        };
+        assert_eq!(sync.open_close, Some(true));
+        assert_eq!(sync.change, Some(TextDocumentSyncKind::FULL));
+        let Some(code_lens) = capabilities.code_lens_provider else {
+            panic!("expected CodeLens capabilities");
+        };
+        assert_eq!(code_lens.resolve_provider, Some(false));
+        let Some(execute_command) = capabilities.execute_command_provider else {
+            panic!("expected execute command capabilities");
+        };
+        assert_eq!(
+            execute_command.commands,
+            [
+                "versionlens.displayCodeLens",
+                "versionlens.server.update",
+                "versionlens.server.updateAll",
+                "versionlens.server.updateWorkspace",
+                "versionlens.server.sort",
+                "versionlens.server.chooseBuild",
+                "versionlens.server.clearCache",
+                "versionlens.server.manifestInfo",
+            ]
+        );
+    }
 
-#[test]
-fn capabilities_match_implemented_document_and_command_protocol() -> Result<(), &'static str> {
-    let capabilities = VersionLensLspState::server_capabilities();
-    let Some(TextDocumentSyncCapability::Options(sync)) = capabilities.text_document_sync else {
-        return Err("expected explicit text document sync options");
-    };
-    assert_eq!(sync.open_close, Some(true));
-    assert_eq!(sync.change, Some(TextDocumentSyncKind::FULL));
-    let Some(code_lens) = capabilities.code_lens_provider else {
-        return Err("expected CodeLens capabilities");
-    };
-    assert_eq!(code_lens.resolve_provider, Some(false));
-    let Some(execute_command) = capabilities.execute_command_provider else {
-        return Err("expected execute command capabilities");
-    };
-    assert_eq!(
-        execute_command.commands,
-        [
-            "versionlens.displayCodeLens",
-            "versionlens.server.update",
-            "versionlens.server.updateAll",
-            "versionlens.server.updateWorkspace",
-            "versionlens.server.sort",
-            "versionlens.server.chooseBuild",
-            "versionlens.server.clearCache",
-            "versionlens.server.manifestInfo",
-        ]
-    );
-    Ok(())
-}
+    #[test]
+    fn selects_the_deepest_workspace_folder_and_decodes_its_path() {
+        let root_uri = uri("file:///workspace").expect("test setup");
+        let workspace_folders = vec![
+            folder("file:///workspace/project", "project").expect("test setup"),
+            folder("file:///workspace/project/nested%20folder", "nested").expect("test setup"),
+        ];
+        let mut state = VersionLensLspState::with_workspace(Some(root_uri), workspace_folders);
+        let document_uri = "file:///workspace/project/nested%20folder/package.json";
 
-#[test]
-fn selects_the_deepest_workspace_folder_and_decodes_its_path() -> Result<(), String> {
-    let root_uri = uri("file:///workspace")?;
-    let workspace_folders = vec![
-        folder("file:///workspace/project", "project")?,
-        folder("file:///workspace/project/nested%20folder", "nested")?,
-    ];
-    let mut state = VersionLensLspState::with_workspace(Some(root_uri), workspace_folders);
-    let document_uri = "file:///workspace/project/nested%20folder/package.json";
+        state.open_document(document(document_uri, None));
 
-    state.open_document(document(document_uri, None));
+        assert_eq!(
+            state
+                .documents
+                .get(document_uri)
+                .and_then(|document| document.workspace_root.as_deref()),
+            Some("file:///workspace/project/nested%20folder")
+        );
+    }
 
-    assert_eq!(
-        state
-            .documents
-            .get(document_uri)
-            .and_then(|document| document.workspace_root.as_deref()),
-        Some("file:///workspace/project/nested%20folder")
-    );
-    Ok(())
-}
+    #[cfg(unix)]
+    #[test]
+    fn workspace_roots_match_canonical_document_uris_and_new_files() {
+        use versionlens_model::{
+            DocumentEditPlan, DocumentSnapshot, WorkspaceEditPlan, document_text_hash,
+        };
 
-#[cfg(unix)]
-#[test]
-fn workspace_roots_match_canonical_document_uris_and_new_files() -> FileTestResult {
-    use versionlens_model::{
-        DocumentEditPlan, DocumentSnapshot, WorkspaceEditPlan, document_text_hash,
-    };
+        let directory = versionlens_test_support::temporary_directory("versionlens-lsp-roots")
+            .expect("test setup")
+            .canonicalize()
+            .expect("test setup");
+        let real = directory.join("real");
+        let alias = directory.join("alias");
+        std::fs::create_dir(&real).expect("test setup");
+        std::os::unix::fs::symlink(&real, &alias).expect("test setup");
+        let root_uri = format!("file://{}", alias.display());
+        let mut state =
+            VersionLensLspState::with_workspace(Some(uri(&root_uri).expect("test setup")), vec![]);
+        let document_uri = format!("file://{}/package.json", alias.display());
+        let canonical_uri = format!("file://{}/package.json", real.display());
+        state.open_document(document(&document_uri, None));
+        let work = state.document_work(&document_uri).unwrap();
+        assert_eq!(
+            work.input.workspace_root.as_deref(),
+            versionlens_engine::workspace_file_uri(&real).as_deref()
+        );
+        assert_eq!(work.input.uri, canonical_uri);
+        assert_eq!(
+            state.document_work(&canonical_uri).unwrap().uri,
+            document_uri
+        );
+        let edit = state
+            .workspace_edit(&WorkspaceEditPlan {
+                documents: vec![DocumentEditPlan {
+                    document: DocumentSnapshot {
+                        uri: canonical_uri,
+                        version: None,
+                        text_hash: document_text_hash("{}"),
+                    },
+                    edits: vec![],
+                }],
+            })
+            .expect("test setup");
+        assert_eq!(
+            edit["documentChanges"][0]["textDocument"]["uri"],
+            document_uri
+        );
+        std::fs::remove_dir_all(directory).expect("test setup");
+    }
 
-    let directory =
-        versionlens_test_support::temporary_directory("versionlens-lsp-roots")?.canonicalize()?;
-    let real = directory.join("real");
-    let alias = directory.join("alias");
-    std::fs::create_dir(&real)?;
-    std::os::unix::fs::symlink(&real, &alias)?;
-    let root_uri = format!("file://{}", alias.display());
-    let mut state = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), vec![]);
-    let document_uri = format!("file://{}/package.json", alias.display());
-    let canonical_uri = format!("file://{}/package.json", real.display());
-    state.open_document(document(&document_uri, None));
-    let work = state.document_work(&document_uri).unwrap();
-    assert_eq!(
-        work.input.workspace_root.as_deref(),
-        versionlens_engine::workspace_file_uri(&real).as_deref()
-    );
-    assert_eq!(work.input.uri, canonical_uri);
-    assert_eq!(
-        state.document_work(&canonical_uri).unwrap().uri,
-        document_uri
-    );
-    let edit = state.workspace_edit(&WorkspaceEditPlan {
-        documents: vec![DocumentEditPlan {
-            document: DocumentSnapshot {
-                uri: canonical_uri,
-                version: None,
-                text_hash: document_text_hash("{}"),
-            },
-            edits: vec![],
-        }],
-    })?;
-    assert_eq!(
-        edit["documentChanges"][0]["textDocument"]["uri"],
-        document_uri
-    );
-    std::fs::remove_dir_all(directory)?;
-    Ok(())
-}
+    #[test]
+    fn root_uri_is_used_only_for_documents_inside_it() {
+        let mut state = VersionLensLspState::with_workspace(
+            Some(uri("file:///workspace").expect("test setup")),
+            Vec::new(),
+        );
+        let inside = "file:///workspace/package.json";
+        let outside = "file:///workspace-other/package.json";
 
-#[test]
-fn root_uri_is_used_only_for_documents_inside_it() -> Result<(), String> {
-    let mut state =
-        VersionLensLspState::with_workspace(Some(uri("file:///workspace")?), Vec::new());
-    let inside = "file:///workspace/package.json";
-    let outside = "file:///workspace-other/package.json";
+        state.open_document(document(inside, None));
+        state.open_document(document(outside, None));
 
-    state.open_document(document(inside, None));
-    state.open_document(document(outside, None));
+        assert_eq!(
+            state
+                .documents
+                .get(inside)
+                .and_then(|document| document.workspace_root.as_deref()),
+            Some("file:///workspace")
+        );
+        assert_eq!(
+            state
+                .documents
+                .get(outside)
+                .and_then(|document| document.workspace_root.as_deref()),
+            None
+        );
+    }
 
-    assert_eq!(
-        state
-            .documents
-            .get(inside)
-            .and_then(|document| document.workspace_root.as_deref()),
-        Some("file:///workspace")
-    );
-    assert_eq!(
-        state
-            .documents
-            .get(outside)
-            .and_then(|document| document.workspace_root.as_deref()),
-        None
-    );
-    Ok(())
-}
-
-#[test]
-fn existing_file_workspace_root_uses_its_parent_directory() -> FileTestResult {
-    let directory = versionlens_test_support::temporary_directory("versionlens-lsp-file-root")?
-        .canonicalize()?;
-    let manifest = directory.join("package.json");
-    std::fs::write(&manifest, "{}")?;
-    let manifest_uri =
-        versionlens_engine::workspace_file_uri(&manifest).ok_or("missing file URI")?;
-    let directory_uri =
-        versionlens_engine::workspace_file_uri(&directory).ok_or("missing directory URI")?;
-    let mut state = VersionLensLspState::with_workspace(Some(uri(&manifest_uri)?), Vec::new())
+    #[test]
+    fn existing_file_workspace_root_uses_its_parent_directory() {
+        let directory = versionlens_test_support::temporary_directory("versionlens-lsp-file-root")
+            .expect("test setup")
+            .canonicalize()
+            .expect("test setup");
+        let manifest = directory.join("package.json");
+        std::fs::write(&manifest, "{}").expect("test setup");
+        let manifest_uri = versionlens_engine::workspace_file_uri(&manifest)
+            .ok_or("missing file URI")
+            .expect("test setup");
+        let directory_uri = versionlens_engine::workspace_file_uri(&directory)
+            .ok_or("missing directory URI")
+            .expect("test setup");
+        let mut state = VersionLensLspState::with_workspace(
+            Some(uri(&manifest_uri).expect("test setup")),
+            Vec::new(),
+        )
         .with_settings(workspace_check());
 
-    state.open_document(document(&manifest_uri, None));
+        state.open_document(document(&manifest_uri, None));
 
-    assert_eq!(
-        state
-            .document_work(&manifest_uri)
-            .unwrap()
-            .input
-            .workspace_root,
-        Some(directory_uri)
-    );
-    assert_eq!(
-        state.workspace_checking_options(0).discovery.roots,
-        [directory]
-    );
-    Ok(())
-}
-
-#[test]
-fn workspace_folder_changes_rebind_open_documents_and_invalidate_work() -> Result<(), String> {
-    let parent = folder("file:///workspace", "parent")?;
-    let nested = folder("file:///workspace/nested%20folder", "nested")?;
-    let mut state =
-        VersionLensLspState::with_workspace(Some(parent.uri.clone()), vec![parent.clone()]);
-    let document_uri = "file:///workspace/nested%20folder/package.json";
-    state.open_document(document(document_uri, None));
-    state.set_document_version(document_uri, 7);
-    for (added, removed, expected) in [
-        (
-            vec![nested.clone()],
-            vec![],
-            Some("file:///workspace/nested%20folder"),
-        ),
-        (vec![], vec![nested], Some("file:///workspace")),
-        (vec![], vec![parent], None),
-    ] {
-        let before = state
-            .document_work(document_uri)
-            .ok_or("missing open document")?;
-        state
-            .change_workspace_folders(lsp_types::WorkspaceFoldersChangeEvent { added, removed })
-            .map_err(|error| error.to_string())?;
-        let after = state
-            .document_work(document_uri)
-            .ok_or("missing updated document")?;
-        assert!(!state.work_is_current(&before));
-        assert_eq!(after.input.workspace_root.as_deref(), expected);
-        assert_eq!(after.version, Some(7));
+        assert_eq!(
+            state
+                .document_work(&manifest_uri)
+                .unwrap()
+                .input
+                .workspace_root,
+            Some(directory_uri)
+        );
+        assert_eq!(
+            state.workspace_checking_options(0).discovery.roots,
+            [directory]
+        );
     }
-    Ok(())
-}
 
-#[test]
-fn code_lenses_bind_updates_to_the_document_and_close_with_it() {
-    let mut state = VersionLensLspState::standard();
-    let uri = "file:///workspace/jsr.json";
-    state.open_document(VersionLensTextDocument {
-        uri: uri.to_owned(),
-        language_id: "json".to_owned(),
-        text: r#"{"name":"@scope/pkg","version":"1.0.0"}"#.to_owned(),
-        workspace_root: Some("/workspace".to_owned()),
-    });
+    #[test]
+    fn workspace_folder_changes_rebind_open_documents_and_invalidate_work() {
+        let parent = folder("file:///workspace", "parent").expect("test setup");
+        let nested = folder("file:///workspace/nested%20folder", "nested").expect("test setup");
+        let mut state =
+            VersionLensLspState::with_workspace(Some(parent.uri.clone()), vec![parent.clone()]);
+        let document_uri = "file:///workspace/nested%20folder/package.json";
+        state.open_document(document(document_uri, None));
+        state.set_document_version(document_uri, 7);
+        for (added, removed, expected) in [
+            (
+                vec![nested.clone()],
+                vec![],
+                Some("file:///workspace/nested%20folder"),
+            ),
+            (vec![], vec![nested], Some("file:///workspace")),
+            (vec![], vec![parent], None),
+        ] {
+            let before = state
+                .document_work(document_uri)
+                .ok_or("missing open document")
+                .expect("test setup");
+            state
+                .change_workspace_folders(lsp_types::WorkspaceFoldersChangeEvent { added, removed })
+                .map_err(|error| error.to_string())
+                .expect("test setup");
+            let after = state
+                .document_work(document_uri)
+                .ok_or("missing updated document")
+                .expect("test setup");
+            assert!(!state.work_is_current(&before));
+            assert_eq!(after.input.workspace_root.as_deref(), expected);
+            assert_eq!(after.version, Some(7));
+        }
+    }
 
-    let lenses = state.code_lenses(uri);
-    crate::test_support::assert_update_code_lenses(&lenses);
+    #[test]
+    fn code_lenses_bind_updates_to_the_document_and_close_with_it() {
+        let mut state = VersionLensLspState::standard();
+        let uri = "file:///workspace/jsr.json";
+        state.open_document(VersionLensTextDocument {
+            uri: uri.to_owned(),
+            language_id: "json".to_owned(),
+            text: r#"{"name":"@scope/pkg","version":"1.0.0"}"#.to_owned(),
+            workspace_root: Some("/workspace".to_owned()),
+        });
 
-    state.close_document(uri);
-    assert!(state.code_lenses(uri).is_empty());
-    assert!(!state.documents.contains_key(uri));
-}
+        let lenses = state.code_lenses(uri);
+        crate::test_support::assert_update_code_lenses(&lenses);
 
-#[tokio::test]
-async fn dependency_lenses_share_the_meaningful_source_range() {
-    let mut state = VersionLensLspState::standard();
-    let uri = "file:///workspace/package.json";
-    let text = r#"{"dependencies":{"example":"1.0.0"}}"#;
-    state.open_document(VersionLensTextDocument {
-        uri: uri.to_owned(),
-        language_id: "json".to_owned(),
-        text: text.to_owned(),
-        workspace_root: Some("/workspace".to_owned()),
-    });
-    let work = state.document_work(uri).unwrap();
-    state
-        .session_for(uri)
-        .resolve_document_with_responses(
-            work.input,
-            &[versionlens_engine::RegistryResponseInput::new(
-                "example",
-                versionlens_model::Ecosystem::Npm,
-                r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"2.0.0":{}}}"#,
-            )],
-        )
-        .await;
+        state.close_document(uri);
+        assert_eq!(state.code_lenses(uri).len(), 0);
+        assert!(!state.documents.contains_key(uri));
+    }
 
-    let lenses = state.code_lenses(uri);
-
-    assert!(lenses.len() >= 2);
-    assert!(lenses.iter().all(|lens| {
-        lens.range
-            == lsp_types::Range::new(
-                lsp_types::Position::new(0, 18),
-                lsp_types::Position::new(0, 33),
+    #[tokio::test]
+    async fn dependency_lenses_share_the_meaningful_source_range() {
+        let mut state = VersionLensLspState::standard();
+        let uri = "file:///workspace/package.json";
+        let text = r#"{"dependencies":{"example":"1.0.0"}}"#;
+        state.open_document(VersionLensTextDocument {
+            uri: uri.to_owned(),
+            language_id: "json".to_owned(),
+            text: text.to_owned(),
+            workspace_root: Some("/workspace".to_owned()),
+        });
+        let work = state.document_work(uri).unwrap();
+        state
+            .session_for(uri)
+            .resolve_document_with_responses(
+                work.input,
+                &[versionlens_engine::RegistryResponseInput::new(
+                    "example",
+                    versionlens_model::Ecosystem::Npm,
+                    r#"{"dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{},"2.0.0":{}}}"#,
+                )],
             )
-    }));
-}
+            .await;
 
-#[test]
-fn changing_an_unknown_document_does_not_open_it() {
-    let mut state = VersionLensLspState::standard();
-    let uri = "file:///missing/package.json";
-    state.change_document(uri, "{}".to_owned());
-    assert!(state.document_work(uri).is_none());
-}
+        let lenses = state.code_lenses(uri);
 
-fn uri(value: &str) -> Result<Uri, String> {
-    value.parse::<Uri>().map_err(|error| error.to_string())
-}
-
-fn folder(value: &str, name: &str) -> Result<WorkspaceFolder, String> {
-    Ok(WorkspaceFolder {
-        uri: uri(value)?,
-        name: name.to_owned(),
-    })
-}
-
-fn document(uri: &str, workspace_root: Option<String>) -> VersionLensTextDocument {
-    VersionLensTextDocument {
-        uri: uri.to_owned(),
-        language_id: "json".to_owned(),
-        text: "{}".to_owned(),
-        workspace_root,
+        assert!(lenses.len() >= 2);
+        assert!(lenses.iter().all(|lens| {
+            lens.range
+                == lsp_types::Range::new(
+                    lsp_types::Position::new(0, 18),
+                    lsp_types::Position::new(0, 33),
+                )
+        }));
     }
-}
 
-#[test]
-fn configuration_changes_invalidate_document_work_and_preserve_versions() -> Result<(), String> {
-    let mut state = VersionLensLspState::standard();
-    let uri = "file:///workspace/package.json";
-    state.open_document(document(uri, None));
-    state.set_document_version(uri, 9);
-    let work = state.document_work(uri).ok_or("missing document")?;
-    let config = versionlens_engine::Settings::from_value(
-        serde_json::json!({"suggestions":{"showVulnerabilities":false}}),
-    )?
-    .session_config();
-    assert!(!config.show_vulnerabilities);
-    let changed = state
-        .replace_settings(vec![super::FolderSettings {
-            config,
-            ..super::FolderSettings::default()
-        }])
-        .map_err(|error| error.to_string())?;
-    assert!(changed);
-    assert!(!state.work_is_current(&work));
-    assert_eq!(
-        state.document_work(uri).ok_or("missing document")?.version,
-        Some(9)
-    );
-    assert!(!state.accepts_document_version(uri, 9));
-    assert!(state.accepts_document_version(uri, 10));
-    Ok(())
-}
+    #[test]
+    fn changing_an_unknown_document_does_not_open_it() {
+        let mut state = VersionLensLspState::standard();
+        let uri = "file:///missing/package.json";
+        state.change_document(uri, "{}".to_owned());
+        assert!(state.document_work(uri).is_none());
+    }
 
-#[test]
-fn workspace_edits_validate_every_open_document_before_application() {
-    use versionlens_model::{
-        DocumentEditPlan, DocumentSnapshot, WorkspaceEditPlan, document_text_hash,
-    };
-    let mut state = VersionLensLspState::standard();
-    let uris = [
-        "file:///workspace/a/package.json",
-        "file:///workspace/b/package.json",
-    ];
-    for uri in uris {
+    fn uri(value: &str) -> Result<Uri, String> {
+        value.parse::<Uri>().map_err(|error| error.to_string())
+    }
+
+    fn folder(value: &str, name: &str) -> Result<WorkspaceFolder, String> {
+        Ok(WorkspaceFolder {
+            uri: uri(value)?,
+            name: name.to_owned(),
+        })
+    }
+
+    fn document(uri: &str, workspace_root: Option<String>) -> VersionLensTextDocument {
+        VersionLensTextDocument {
+            uri: uri.to_owned(),
+            language_id: "json".to_owned(),
+            text: "{}".to_owned(),
+            workspace_root,
+        }
+    }
+
+    #[test]
+    fn configuration_changes_invalidate_document_work_and_preserve_versions() {
+        let mut state = VersionLensLspState::standard();
+        let uri = "file:///workspace/package.json";
         state.open_document(document(uri, None));
-        state.set_document_version(uri, 1);
+        state.set_document_version(uri, 9);
+        let work = state
+            .document_work(uri)
+            .ok_or("missing document")
+            .expect("test setup");
+        let config = versionlens_engine::Settings::from_value(
+            serde_json::json!({"suggestions":{"showVulnerabilities":false}}),
+        )
+        .expect("test setup")
+        .session_config();
+        assert!(!config.show_vulnerabilities);
+        let changed = state
+            .replace_settings(vec![super::FolderSettings {
+                config,
+                ..super::FolderSettings::default()
+            }])
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+        assert!(changed);
+        assert!(!state.work_is_current(&work));
+        assert_eq!(
+            state
+                .document_work(uri)
+                .ok_or("missing document")
+                .expect("test setup")
+                .version,
+            Some(9)
+        );
+        assert!(!state.accepts_document_version(uri, 9));
+        assert!(state.accepts_document_version(uri, 10));
     }
-    let plan = WorkspaceEditPlan {
-        documents: uris
-            .into_iter()
-            .map(|uri| DocumentEditPlan {
-                document: DocumentSnapshot {
-                    uri: uri.to_owned(),
-                    version: Some(1),
-                    text_hash: document_text_hash("{}"),
-                },
-                edits: vec![],
-            })
-            .collect(),
-    };
-    assert!(state.workspace_edit(&plan).is_ok());
-    state.change_document(uris[1], "{\"version\":\"2.0.0\"}".to_owned());
-    state.set_document_version(uris[1], 2);
-    assert!(state.workspace_edit(&plan).is_err());
-}
 
-#[test]
-fn workspace_snapshot_changes_invalidate_other_open_document_work() {
-    let root = std::env::temp_dir().canonicalize().unwrap();
-    let mut state = VersionLensLspState::standard();
-    let paths = [
-        "versionlens-lsp-a/package.json",
-        "versionlens-lsp-b/package.json",
-    ]
-    .map(|name| root.join(name).to_string_lossy().into_owned());
-    for path in &paths {
-        state.open_document(document(path, Some(root.to_string_lossy().into_owned())));
+    #[test]
+    fn workspace_edits_validate_every_open_document_before_application() {
+        use versionlens_model::{
+            DocumentEditPlan, DocumentSnapshot, WorkspaceEditPlan, document_text_hash,
+        };
+        let mut state = VersionLensLspState::standard();
+        let uris = [
+            "file:///workspace/a/package.json",
+            "file:///workspace/b/package.json",
+        ];
+        for uri in uris {
+            state.open_document(document(uri, None));
+            state.set_document_version(uri, 1);
+        }
+        let plan = WorkspaceEditPlan {
+            documents: uris
+                .into_iter()
+                .map(|uri| DocumentEditPlan {
+                    document: DocumentSnapshot {
+                        uri: uri.to_owned(),
+                        version: Some(1),
+                        text_hash: document_text_hash("{}"),
+                    },
+                    edits: vec![],
+                })
+                .collect(),
+        };
+        assert!(state.workspace_edit(&plan).is_ok());
+        state.change_document(uris[1], "{\"version\":\"2.0.0\"}".to_owned());
+        state.set_document_version(uris[1], 2);
+        assert!(state.workspace_edit(&plan).is_err());
     }
-    let work = state.document_work(&paths[0]).unwrap();
-    state.change_document(&paths[1], "{\"version\":\"2.0.0\"}".to_owned());
-    assert!(!state.work_is_current(&work));
-    let work = state.document_work(&paths[0]).unwrap();
-    state.close_document(&paths[1]);
-    assert!(!state.work_is_current(&work));
-    let work = state.document_work(&paths[0]).unwrap();
-    state.invalidate_workspace();
-    assert!(!state.work_is_current(&work));
-}
 
-#[test]
-fn editor_exclusions_expand_braces_and_filter_watched_files() -> Result<(), String> {
-    let root = std::env::temp_dir()
-        .canonicalize()
-        .map_err(|error| error.to_string())?;
-    let root_uri = versionlens_engine::workspace_file_uri(&root).ok_or("missing root URI")?;
-    let state = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
+    #[test]
+    fn workspace_snapshot_changes_invalidate_other_open_document_work() {
+        let root = std::env::temp_dir().canonicalize().unwrap();
+        let mut state = VersionLensLspState::standard();
+        let paths = [
+            "versionlens-lsp-a/package.json",
+            "versionlens-lsp-b/package.json",
+        ]
+        .map(|name| root.join(name).to_string_lossy().into_owned());
+        for path in &paths {
+            state.open_document(document(path, Some(root.to_string_lossy().into_owned())));
+        }
+        let work = state.document_work(&paths[0]).unwrap();
+        state.change_document(&paths[1], "{\"version\":\"2.0.0\"}".to_owned());
+        assert!(!state.work_is_current(&work));
+        let work = state.document_work(&paths[0]).unwrap();
+        state.close_document(&paths[1]);
+        assert!(!state.work_is_current(&work));
+        let work = state.document_work(&paths[0]).unwrap();
+        state.invalidate_workspace();
+        assert!(!state.work_is_current(&work));
+    }
+
+    #[test]
+    fn editor_exclusions_expand_braces_and_filter_watched_files() {
+        let root = std::env::temp_dir()
+            .canonicalize()
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+        let root_uri = versionlens_engine::workspace_file_uri(&root)
+            .ok_or("missing root URI")
+            .expect("test setup");
+        let state = VersionLensLspState::with_workspace(
+            Some(uri(&root_uri).expect("test setup")),
+            Vec::new(),
+        )
         .with_workspace_exclusions(super::workspace_exclusions(&serde_json::json!({
             "**/{generated,cache}/**": true
         })));
-    let included = root.join("src/package.json");
-    let cargo = root.join("src/Cargo.toml");
-    let configured = root.join("src/deps.custom");
-    let unrelated = root.join("src/readme.md");
-    let generated = root.join("generated/package.json");
-    let cache = root.join("cache/package.json");
-    let file_uri = |path: &std::path::Path| {
-        versionlens_engine::workspace_file_uri(path).ok_or_else(|| "missing file URI".to_owned())
-    };
+        let included = root.join("src/package.json");
+        let cargo = root.join("src/Cargo.toml");
+        let configured = root.join("src/deps.custom");
+        let unrelated = root.join("src/readme.md");
+        let generated = root.join("generated/package.json");
+        let cache = root.join("cache/package.json");
+        let file_uri = |path: &std::path::Path| {
+            versionlens_engine::workspace_file_uri(path)
+                .ok_or_else(|| "missing file URI".to_owned())
+        };
 
-    assert!(state.watched_file_is_relevant(&file_uri(&included)?));
-    assert!(!state.watched_file_is_relevant(&file_uri(&unrelated)?));
-    assert!(!state.watched_file_is_relevant(&file_uri(&generated)?));
-    assert!(!state.watched_file_is_relevant(&file_uri(&cache)?));
-    let options = state.workspace_checking_options(0);
-    assert!(options.discovery.provider_exclusions.is_empty());
-    assert!(
-        options
-            .discovery
-            .exclusions
-            .contains(&"**/obj/**".to_owned())
-    );
+        assert!(state.watched_file_is_relevant(&file_uri(&included).expect("test setup")));
+        assert!(!state.watched_file_is_relevant(&file_uri(&unrelated).expect("test setup")));
+        assert!(!state.watched_file_is_relevant(&file_uri(&generated).expect("test setup")));
+        assert!(!state.watched_file_is_relevant(&file_uri(&cache).expect("test setup")));
+        let options = state.workspace_checking_options(0);
+        assert_eq!(options.discovery.provider_exclusions.len(), 0);
+        assert!(
+            options
+                .discovery
+                .exclusions
+                .contains(&"**/obj/**".to_owned())
+        );
 
-    let cargo_only = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
+        let cargo_only = VersionLensLspState::with_workspace(
+            Some(uri(&root_uri).expect("test setup")),
+            Vec::new(),
+        )
         .with_config(
             versionlens_engine::Settings::from_value(serde_json::json!({
                 "enabledProviders": ["cargo"]
-            }))?
+            }))
+            .expect("test setup")
             .session_config(),
         );
-    assert!(cargo_only.watched_file_is_relevant(&file_uri(&cargo)?));
-    assert!(!cargo_only.watched_file_is_relevant(&file_uri(&included)?));
+        assert!(cargo_only.watched_file_is_relevant(&file_uri(&cargo).expect("test setup")));
+        assert!(!cargo_only.watched_file_is_relevant(&file_uri(&included).expect("test setup")));
 
-    let configured_npm = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
+        let configured_npm = VersionLensLspState::with_workspace(
+            Some(uri(&root_uri).expect("test setup")),
+            Vec::new(),
+        )
         .with_config(
             versionlens_engine::Settings::from_value(serde_json::json!({
                 "enabledProviders": ["npm"],
                 "npm": {"files": "**/deps.custom"}
-            }))?
+            }))
+            .expect("test setup")
             .session_config(),
         );
-    assert!(configured_npm.watched_file_is_relevant(&file_uri(&configured)?));
-    Ok(())
-}
+        assert!(
+            configured_npm.watched_file_is_relevant(&file_uri(&configured).expect("test setup"))
+        );
+    }
 
-#[test]
-fn only_ignore_files_that_discovery_reads_are_watched() -> Result<(), String> {
-    let root = versionlens_test_support::temporary_directory("versionlens-watched-ignore")
-        .map_err(|error| error.to_string())?
-        .canonicalize()
-        .map_err(|error| error.to_string())?;
-    std::fs::write(root.join(".gitignore"), "worktrees/\n").map_err(|error| error.to_string())?;
-    let root_uri = versionlens_engine::workspace_file_uri(&root).ok_or("missing root URI")?;
-    let open_files = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new());
-    let gitignore =
-        versionlens_engine::workspace_file_uri(&root.join(".gitignore")).ok_or("missing URI")?;
-    assert!(open_files.watched_ignore_file(&gitignore));
-    let workspace = VersionLensLspState::with_workspace(Some(uri(&root_uri)?), Vec::new())
+    #[test]
+    fn only_ignore_files_that_discovery_reads_are_watched() {
+        let root = versionlens_test_support::temporary_directory("versionlens-watched-ignore")
+            .map_err(|error| error.to_string())
+            .expect("test setup")
+            .canonicalize()
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+        std::fs::write(root.join(".gitignore"), "worktrees/\n")
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+        let root_uri = versionlens_engine::workspace_file_uri(&root)
+            .ok_or("missing root URI")
+            .expect("test setup");
+        let open_files = VersionLensLspState::with_workspace(
+            Some(uri(&root_uri).expect("test setup")),
+            Vec::new(),
+        );
+        let gitignore = versionlens_engine::workspace_file_uri(&root.join(".gitignore"))
+            .ok_or("missing URI")
+            .expect("test setup");
+        assert!(open_files.watched_ignore_file(&gitignore));
+        let workspace = VersionLensLspState::with_workspace(
+            Some(uri(&root_uri).expect("test setup")),
+            Vec::new(),
+        )
         .with_settings(workspace_check());
-    for state in [&open_files, &workspace] {
-        let watched = |relative: &str| {
-            versionlens_engine::workspace_file_uri(&root.join(relative))
-                .is_some_and(|uri| state.watched_ignore_file(&uri))
-        };
+        for state in [&open_files, &workspace] {
+            let watched = |relative: &str| {
+                versionlens_engine::workspace_file_uri(&root.join(relative))
+                    .is_some_and(|uri| state.watched_ignore_file(&uri))
+            };
 
-        assert!(watched(".gitignore"));
-        assert!(watched("app/.ignore"));
-        assert!(watched(".git/info/exclude"));
-        assert!(!watched("worktrees/copy/.gitignore"));
-        assert!(!watched("node_modules/pkg/.gitignore"));
-        assert!(!watched("app/package.json"));
+            assert!(watched(".gitignore"));
+            assert!(watched("app/.ignore"));
+            assert!(watched(".git/info/exclude"));
+            assert!(!watched("worktrees/copy/.gitignore"));
+            assert!(!watched("node_modules/pkg/.gitignore"));
+            assert!(!watched("app/package.json"));
+        }
+        std::fs::remove_dir_all(root)
+            .map_err(|error| error.to_string())
+            .expect("test setup");
     }
-    std::fs::remove_dir_all(root).map_err(|error| error.to_string())
-}
 
-#[test]
-fn folders_that_differ_only_in_exclusions_get_their_own_sessions() -> Result<(), String> {
-    let mut state = VersionLensLspState::with_workspace(
-        None,
-        vec![
-            folder("file:///first", "first")?,
-            folder("file:///second", "second")?,
-        ],
-    );
-    let mut second = super::FolderSettings::default();
-    second.exclusions.push("**/generated/**".to_owned());
-    state
-        .replace_settings(vec![super::FolderSettings::default(), second])
-        .map_err(|error| error.to_string())?;
-    let [first, second] = state.groups() else {
-        return Err(format!("expected two groups, got {}", state.groups().len()));
-    };
-    let documents = vec![versionlens_model::DocumentInput::new(
-        "file:///first/package.json".to_owned(),
-        "json".to_owned(),
-        "{}".to_owned(),
-        None,
-    )];
-    assert!(first.session.set_workspace_documents(documents.clone()));
-    // A shared session would already hold these documents.
-    assert!(second.session.set_workspace_documents(documents));
-    Ok(())
-}
-
-#[test]
-fn code_actions_use_plain_changes_for_clients_without_document_changes() {
-    let range = versionlens_model::Range {
-        start: versionlens_model::Position {
-            line: 0,
-            character: 1,
-        },
-        end: versionlens_model::Position {
-            line: 0,
-            character: 2,
-        },
-    };
-    let action = versionlens_engine::BumpActionView {
-        title: "Bump to ^2.0.0".to_owned(),
-        edit: versionlens_model::TextEdit {
-            range,
-            new_text: "^2.0.0".to_owned(),
-        },
-        preferred: true,
-        diagnostic: None,
-    };
-    let uri = "file:///workspace/package.json"
-        .parse::<lsp_types::Uri>()
-        .unwrap();
-
-    let actions = super::into_lsp_code_actions(vec![action], &uri, Some(3), false);
-
-    let value = serde_json::to_value(&actions).unwrap();
-    assert_eq!(
-        value[0]["edit"],
-        serde_json::json!({"changes": {"file:///workspace/package.json": [{
-            "range": {"start": {"line": 0, "character": 1}, "end": {"line": 0, "character": 2}},
-            "newText": "^2.0.0"
-        }]}})
-    );
-    assert_eq!(value[0].get("diagnostics"), None);
-}
-
-fn workspace_check() -> super::FolderSettings {
-    super::FolderSettings {
-        workspace: versionlens_engine::WorkspaceSettings {
-            check: versionlens_engine::WorkspaceCheck::Workspace,
-            exclude: vec!["fixtures/**".to_owned()],
-        },
-        ..super::FolderSettings::default()
-    }
-}
-
-#[test]
-fn only_the_workspace_check_scans_folders() -> Result<(), String> {
-    let mut state =
-        VersionLensLspState::with_workspace(Some(uri("file:///workspace")?), Vec::new());
-    assert!(
+    #[test]
+    fn folders_that_differ_only_in_exclusions_get_their_own_sessions() {
+        let mut state = VersionLensLspState::with_workspace(
+            None,
+            vec![
+                folder("file:///first", "first").expect("test setup"),
+                folder("file:///second", "second").expect("test setup"),
+            ],
+        );
+        let mut second = super::FolderSettings::default();
+        second.exclusions.push("**/generated/**".to_owned());
         state
-            .workspace_checking_options(0)
-            .discovery
-            .roots
-            .is_empty()
-    );
-    assert_eq!(
-        state
-            .workspace_discovery_options(0, true)
-            .discovery
-            .roots
-            .len(),
-        1
-    );
-    state = state.with_settings(workspace_check());
-    let discovery = state.workspace_checking_options(0).discovery;
-    assert_eq!(discovery.roots, [std::path::PathBuf::from("/workspace")]);
-    assert!(discovery.exclusions.contains(&"fixtures/**".to_owned()));
-    Ok(())
-}
-
-#[test]
-fn open_documents_that_a_scan_skips_are_not_checked() -> Result<(), String> {
-    let root = versionlens_test_support::temporary_directory("versionlens-open-ignored")
-        .map_err(|error| error.to_string())?
-        .canonicalize()
-        .map_err(|error| error.to_string())?;
-    std::fs::write(root.join(".gitignore"), ".claude/worktrees/\n")
-        .map_err(|error| error.to_string())?;
-    let root_uri = versionlens_engine::workspace_file_uri(&root).ok_or("missing root URI")?;
-    let root_uri = uri(&root_uri)?;
-    let with_files_exclude = |mut settings: super::FolderSettings| {
-        settings.exclusions.push("**/generated/**".to_owned());
-        settings.exclusions.push("**/scratch".to_owned());
-        VersionLensLspState::with_workspace(Some(root_uri.clone()), Vec::new())
-            .with_settings(settings)
-    };
-    for (mut state, mode) in [
-        (
-            with_files_exclude(super::FolderSettings::default()),
-            "open files",
-        ),
-        (with_files_exclude(workspace_check()), "workspace"),
-    ] {
-        for (path, checked) in [
-            (".claude/worktrees/agent/launcher/Cargo.toml", false),
-            ("generated/Cargo.toml", false),
-            ("scratch/tool/Cargo.toml", false),
-            ("build/tool/Cargo.toml", true),
-            ("fixtures/Cargo.toml", mode == "open files"),
-            ("app/Cargo.toml", true),
-        ] {
-            let document = versionlens_engine::workspace_file_uri(&root.join(path))
-                .ok_or("missing document URI")?;
-            state.open_document(super::VersionLensTextDocument {
-                uri: document.clone(),
-                language_id: "toml".to_owned(),
-                text: "[dependencies]\n".to_owned(),
-                workspace_root: None,
-            });
-            assert_eq!(
-                state.document_work(&document).is_some(),
-                checked,
-                "{mode}: {path}"
+            .replace_settings(vec![super::FolderSettings::default(), second])
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+        let [first, second] = state.groups() else {
+            panic!(
+                "{}",
+                format!("expected two groups, got {}", state.groups().len())
             );
+        };
+        let documents = vec![versionlens_model::DocumentInput::new(
+            "file:///first/package.json".to_owned(),
+            "json".to_owned(),
+            "{}".to_owned(),
+            None,
+        )];
+        assert!(first.session.set_workspace_documents(documents.clone()));
+        // A shared session would already hold these documents.
+        assert!(second.session.set_workspace_documents(documents));
+    }
+
+    #[test]
+    fn code_actions_use_plain_changes_for_clients_without_document_changes() {
+        let range = versionlens_model::Range {
+            start: versionlens_model::Position {
+                line: 0,
+                character: 1,
+            },
+            end: versionlens_model::Position {
+                line: 0,
+                character: 2,
+            },
+        };
+        let action = versionlens_engine::BumpActionView {
+            title: "Bump to ^2.0.0".to_owned(),
+            edit: versionlens_model::TextEdit {
+                range,
+                new_text: "^2.0.0".to_owned(),
+            },
+            preferred: true,
+            diagnostic: None,
+        };
+        let uri = "file:///workspace/package.json".parse::<Uri>().unwrap();
+
+        let actions = super::into_lsp_code_actions(vec![action], &uri, Some(3), false);
+
+        let value = serde_json::to_value(&actions).unwrap();
+        assert_eq!(
+            value[0]["edit"],
+            serde_json::json!({"changes": {"file:///workspace/package.json": [{
+                "range": {"start": {"line": 0, "character": 1}, "end": {"line": 0, "character": 2}},
+                "newText": "^2.0.0"
+            }]}})
+        );
+        assert_eq!(value[0].get("diagnostics"), None);
+    }
+
+    fn workspace_check() -> super::FolderSettings {
+        super::FolderSettings {
+            workspace: versionlens_engine::WorkspaceSettings {
+                check: versionlens_engine::WorkspaceCheck::Workspace,
+                exclude: vec!["fixtures/**".to_owned()],
+            },
+            ..super::FolderSettings::default()
         }
     }
-    std::fs::remove_dir_all(root).map_err(|error| error.to_string())
-}
+
+    #[test]
+    fn only_the_workspace_check_scans_folders() {
+        let mut state = VersionLensLspState::with_workspace(
+            Some(uri("file:///workspace").expect("test setup")),
+            Vec::new(),
+        );
+        assert_eq!(state.workspace_checking_options(0).discovery.roots.len(), 0);
+        assert_eq!(
+            state
+                .workspace_discovery_options(0, true)
+                .discovery
+                .roots
+                .len(),
+            1
+        );
+        state = state.with_settings(workspace_check());
+        let discovery = state.workspace_checking_options(0).discovery;
+        assert_eq!(discovery.roots, [std::path::PathBuf::from("/workspace")]);
+        assert!(discovery.exclusions.contains(&"fixtures/**".to_owned()));
+    }
+
+    #[test]
+    fn open_documents_that_a_scan_skips_are_not_checked() {
+        let root = versionlens_test_support::temporary_directory("versionlens-open-ignored")
+            .map_err(|error| error.to_string())
+            .expect("test setup")
+            .canonicalize()
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+        std::fs::write(root.join(".gitignore"), ".claude/worktrees/\n")
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+        let root_uri = versionlens_engine::workspace_file_uri(&root)
+            .ok_or("missing root URI")
+            .expect("test setup");
+        let root_uri = uri(&root_uri).expect("test setup");
+        let with_files_exclude = |mut settings: super::FolderSettings| {
+            settings.exclusions.push("**/generated/**".to_owned());
+            settings.exclusions.push("**/scratch".to_owned());
+            VersionLensLspState::with_workspace(Some(root_uri.clone()), Vec::new())
+                .with_settings(settings)
+        };
+        for (mut state, mode) in [
+            (
+                with_files_exclude(super::FolderSettings::default()),
+                "open files",
+            ),
+            (with_files_exclude(workspace_check()), "workspace"),
+        ] {
+            for (path, checked) in [
+                (".claude/worktrees/agent/launcher/Cargo.toml", false),
+                ("generated/Cargo.toml", false),
+                ("scratch/tool/Cargo.toml", false),
+                ("build/tool/Cargo.toml", true),
+                ("fixtures/Cargo.toml", mode == "open files"),
+                ("app/Cargo.toml", true),
+            ] {
+                let document = versionlens_engine::workspace_file_uri(&root.join(path))
+                    .ok_or("missing document URI")
+                    .expect("test setup");
+                state.open_document(VersionLensTextDocument {
+                    uri: document.clone(),
+                    language_id: "toml".to_owned(),
+                    text: "[dependencies]\n".to_owned(),
+                    workspace_root: None,
+                });
+                assert_eq!(
+                    state.document_work(&document).is_some(),
+                    checked,
+                    "{mode}: {path}"
+                );
+            }
+        }
+        std::fs::remove_dir_all(root)
+            .map_err(|error| error.to_string())
+            .expect("test setup");
+    }
 }
