@@ -40,10 +40,10 @@ pub(crate) fn known_non_registry_suggestion(
     if is_npm_override_reference(&dependency) {
         return Ok(fixed(dependency, "override reference".to_owned()));
     }
-    if is_docker_build_path(&dependency) {
-        if let Some(path) = local_dependency_path(&dependency, document_uri) {
-            return Ok(local_directory_suggestion(dependency, path));
-        }
+    if is_docker_build_path(&dependency)
+        && let Some(path) = local_dependency_path(&dependency, document_uri)
+    {
+        return Ok(local_directory_suggestion(dependency, path));
     }
     if is_docker_argument_reference(&dependency) {
         return Ok(not_supported(dependency));

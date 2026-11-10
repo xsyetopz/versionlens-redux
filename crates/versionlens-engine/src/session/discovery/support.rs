@@ -92,6 +92,7 @@ pub(super) fn normalize_absolute(path: &Path) -> Option<PathBuf> {
     Some(normalized)
 }
 
+/// Joins the normal components of `path` with `/`.
 pub fn slash_path(path: &Path) -> String {
     path.components()
         .filter_map(|component| match component {
@@ -102,6 +103,7 @@ pub fn slash_path(path: &Path) -> String {
         .join("/")
 }
 
+/// Whether the exclusion `pattern` matches `path`. `directory` tells whether `path` is a directory.
 pub fn exclusion_matches(pattern: &str, path: &str, directory: bool) -> bool {
     let pattern = pattern
         .trim()

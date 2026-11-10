@@ -18,10 +18,15 @@ use super::{
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
+    /// The names of the providers that are on. `None` keeps all of them.
     pub enabled_providers: Option<Vec<String>>,
+    /// Cache settings.
     pub caching: GlobalCaching,
+    /// HTTP settings.
     pub http: HttpSettings,
+    /// Suggestion settings.
     pub suggestions: SuggestionSettings,
+    /// Diagnostic settings.
     pub diagnostics: DiagnosticSettings,
     /// Read by the language server, which decides what to scan.
     pub workspace: WorkspaceSettings,
@@ -33,7 +38,9 @@ pub struct Settings {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
+/// The `versionlens.workspace` settings.
 pub struct WorkspaceSettings {
+    /// Which manifests are checked in the background.
     pub check: WorkspaceCheck,
     /// Glob patterns of workspace paths never checked, on top of the
     /// ignore files and `files.exclude`.
@@ -45,7 +52,9 @@ pub struct WorkspaceSettings {
 #[serde(rename_all = "camelCase")]
 pub enum WorkspaceCheck {
     #[default]
+    /// Check only the manifests open in the editor.
     OpenFiles,
+    /// Check every manifest in the workspace.
     Workspace,
 }
 
@@ -107,6 +116,10 @@ pub struct NugetSettings {
 impl Settings {
     /// Reads a settings section. A client answers `null` for a section it
     /// does not have, which keeps every default.
+    ///
+    /// # Errors
+    ///
+    /// Returns the message of the deserialization error when `value` is not a valid settings section.
     pub fn from_value(value: serde_json::Value) -> Result<Self, String> {
         if value.is_null() {
             return Ok(Self::default());
@@ -132,8 +145,7 @@ impl Settings {
             suggestion_indicators: self
                 .suggestions
                 .indicators
-                .map(indicators)
-                .unwrap_or_else(standard_suggestion_indicators),
+                .map_or_else(standard_suggestion_indicators, indicators),
             show_vulnerabilities: self.suggestions.show_vulnerabilities.unwrap_or(true),
             show_suggestion_stats: self.suggestions.show_suggestions_stats.unwrap_or(false),
             show_prereleases: self
@@ -159,11 +171,11 @@ impl EcosystemSettings {
             self.api_url
                 .into_iter()
                 .chain(self.nuget.sources.into_iter().flatten())
-                .filter_map(|url| registry_url_config_from_name(name, url)),
+                .filter_map(|url| registry_url_config_from_name(name, &url)),
         );
         providers.file_patterns.extend(
             self.files
-                .and_then(|pattern| file_pattern_config_from_name(name, pattern)),
+                .and_then(|pattern| file_pattern_config_from_name(name, &pattern)),
         );
         providers.prerelease_tags.extend(
             self.prerelease_tag_filter
@@ -203,113 +215,113 @@ fn indicators(mut configured: BTreeMap<String, String>) -> SuggestionIndicators 
 
 #[cfg(test)]
 mod tests {
-use serde_json::json;
-use versionlens_model::{Ecosystem, ManifestKind};
+    use serde_json::json;
+    use versionlens_model::{Ecosystem, ManifestKind};
 
-use super::Settings;
-use crate::SessionConfig;
+    use super::Settings;
+    use crate::SessionConfig;
 
-fn config(value: serde_json::Value) -> SessionConfig {
-    Settings::from_value(value)
-        .expect("valid settings")
-        .session_config()
-}
+    fn config(value: serde_json::Value) -> SessionConfig {
+        Settings::from_value(value)
+            .expect("valid settings")
+            .session_config()
+    }
 
-#[test]
-fn missing_settings_give_the_engine_defaults() {
-    assert_eq!(config(json!({})), SessionConfig::default());
-    assert_eq!(config(json!(null)), SessionConfig::default());
-}
+    #[test]
+    fn missing_settings_give_the_engine_defaults() {
+        assert_eq!(config(json!({})), SessionConfig::default());
+        assert_eq!(config(json!(null)), SessionConfig::default());
+    }
 
-#[test]
-fn vscode_keys_map_onto_the_session() {
-    let config = config(json!({
-        "enabledProviders": ["npm"],
-        "caching": {"duration": 2},
-        "http": {"strictSSL": false},
-        "suggestions": {
-            "showPrereleasesOnStartup": true,
-            "showVulnerabilities": false,
-            "showSuggestionsStats": true,
-            "indicators": {"Latest": "ignored", "latest": "L", "noMatch": "N"}
-        },
-        "npm": {
-            "apiUrl": "http://registry.test",
-            "prereleaseTagFilter": ["beta"],
-            "dependencyProperties": ["dependencies"],
-            "files": "**/package.json",
-            "caching": {"duration": 7},
-            "http": {"strictSSL": true}
-        },
-        "dotnet": {"nuget": {"sources": ["http://nuget.test/v3/index.json"]}},
-        "pnpm": {"dependencyProperties": ["catalog"]}
-    }));
-    assert_eq!(config.cache_ttl_ms, 120_000);
-    assert_eq!(config.enabled_providers.len(), 1);
-    assert!(!config.http.strict_ssl);
-    assert!(config.show_prereleases);
-    assert!(!config.show_vulnerabilities);
-    assert!(config.show_suggestion_stats);
-    assert_eq!(config.suggestion_indicators.latest, "L");
-    assert_eq!(config.suggestion_indicators.no_match, "N");
+    #[test]
+    fn vscode_keys_map_onto_the_session() {
+        let config = config(json!({
+            "enabledProviders": ["npm"],
+            "caching": {"duration": 2},
+            "http": {"strictSSL": false},
+            "suggestions": {
+                "showPrereleasesOnStartup": true,
+                "showVulnerabilities": false,
+                "showSuggestionsStats": true,
+                "indicators": {"Latest": "ignored", "latest": "L", "noMatch": "N"}
+            },
+            "npm": {
+                "apiUrl": "http://registry.test",
+                "prereleaseTagFilter": ["beta"],
+                "dependencyProperties": ["dependencies"],
+                "files": "**/package.json",
+                "caching": {"duration": 7},
+                "http": {"strictSSL": true}
+            },
+            "dotnet": {"nuget": {"sources": ["http://nuget.test/v3/index.json"]}},
+            "pnpm": {"dependencyProperties": ["catalog"]}
+        }));
+        assert_eq!(config.cache_ttl_ms, 120_000);
+        assert_eq!(config.enabled_providers.len(), 1);
+        assert!(!config.http.strict_ssl);
+        assert!(config.show_prereleases);
+        assert!(!config.show_vulnerabilities);
+        assert!(config.show_suggestion_stats);
+        assert_eq!(config.suggestion_indicators.latest, "L");
+        assert_eq!(config.suggestion_indicators.no_match, "N");
 
-    let providers = &config.providers;
-    let urls = providers
-        .registry_urls
-        .iter()
-        .map(|url| (url.ecosystem, url.url.as_str()))
-        .collect::<Vec<_>>();
-    assert_eq!(
-        urls,
-        [
-            (Ecosystem::Dotnet, "http://nuget.test/v3/index.json"),
-            (Ecosystem::Npm, "http://registry.test"),
-        ]
-    );
-    assert_eq!(providers.prerelease_tags[0].tags, ["beta"]);
-    assert_eq!(providers.provider_cache[0].cache_ttl_ms, 420_000);
-    assert_eq!(providers.provider_http[0].ecosystem, Ecosystem::Npm);
-    assert!(providers.file_patterns.iter().any(|pattern| {
-        pattern.manifest_kind == ManifestKind::NpmPackageJson
-            && pattern.pattern == "**/package.json"
-    }));
-    let pnpm = providers
-        .dependency_properties
-        .iter()
-        .find(|config| config.manifest_kind == Some(ManifestKind::PnpmYaml))
-        .expect("pnpm properties");
-    assert_eq!(pnpm.properties, ["catalog"]);
-}
+        let providers = &config.providers;
+        let urls = providers
+            .registry_urls
+            .iter()
+            .map(|url| (url.ecosystem, url.url.as_str()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            urls,
+            [
+                (Ecosystem::Dotnet, "http://nuget.test/v3/index.json"),
+                (Ecosystem::Npm, "http://registry.test"),
+            ]
+        );
+        assert_eq!(providers.prerelease_tags[0].tags, ["beta"]);
+        assert_eq!(providers.provider_cache[0].cache_ttl_ms, 420_000);
+        assert_eq!(providers.provider_http[0].ecosystem, Ecosystem::Npm);
+        assert!(providers.file_patterns.iter().any(|pattern| {
+            pattern.manifest_kind == ManifestKind::NpmPackageJson
+                && pattern.pattern == "**/package.json"
+        }));
+        let pnpm = providers
+            .dependency_properties
+            .iter()
+            .find(|config| config.manifest_kind == Some(ManifestKind::PnpmYaml))
+            .expect("pnpm properties");
+        assert_eq!(pnpm.properties, ["catalog"]);
+    }
 
-#[test]
-fn a_wrongly_typed_value_is_an_error() {
-    assert!(Settings::from_value(json!({"caching": {"duration": "soon"}})).is_err());
-    assert!(Settings::from_value(json!({"npm": {"files": 3}})).is_err());
-}
+    #[test]
+    fn a_wrongly_typed_value_is_an_error() {
+        assert!(Settings::from_value(json!({"caching": {"duration": "soon"}})).is_err());
+        assert!(Settings::from_value(json!({"npm": {"files": 3}})).is_err());
+    }
 
-#[test]
-fn workspace_settings_are_not_an_ecosystem() {
-    let settings = Settings::from_value(json!({
-        "workspace": {"check": "workspace", "exclude": ["**/fixtures/**"]}
-    }))
-    .unwrap();
-    assert_eq!(settings.workspace.check, super::WorkspaceCheck::Workspace);
-    assert_eq!(settings.workspace.exclude, ["**/fixtures/**"]);
-    assert!(settings.ecosystems.is_empty());
-    assert_eq!(
-        Settings::default().workspace.check,
-        super::WorkspaceCheck::OpenFiles
-    );
-    assert!(Settings::from_value(json!({"workspace": {"check": "everything"}})).is_err());
-}
+    #[test]
+    fn workspace_settings_are_not_an_ecosystem() {
+        let settings = Settings::from_value(json!({
+            "workspace": {"check": "workspace", "exclude": ["**/fixtures/**"]}
+        }))
+        .unwrap();
+        assert_eq!(settings.workspace.check, super::WorkspaceCheck::Workspace);
+        assert_eq!(settings.workspace.exclude, ["**/fixtures/**"]);
+        assert_eq!(settings.ecosystems.len(), 0);
+        assert_eq!(
+            Settings::default().workspace.check,
+            super::WorkspaceCheck::OpenFiles
+        );
+        assert!(Settings::from_value(json!({"workspace": {"check": "everything"}})).is_err());
+    }
 
-#[test]
-fn null_caching_keeps_the_default_and_zero_turns_it_off() {
-    let default = SessionConfig::default().cache_ttl_ms;
-    assert_eq!(
-        config(json!({"caching": {"duration": null}})).cache_ttl_ms,
-        default
-    );
-    assert_eq!(config(json!({"caching": {"duration": 0}})).cache_ttl_ms, 0);
-}
+    #[test]
+    fn null_caching_keeps_the_default_and_zero_turns_it_off() {
+        let default = SessionConfig::default().cache_ttl_ms;
+        assert_eq!(
+            config(json!({"caching": {"duration": null}})).cache_ttl_ms,
+            default
+        );
+        assert_eq!(config(json!({"caching": {"duration": 0}})).cache_ttl_ms, 0);
+    }
 }

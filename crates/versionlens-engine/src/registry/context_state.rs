@@ -168,13 +168,11 @@ fn npm_default_userconfig_path(
     env: &[(String, String)],
 ) -> RegistryConfigPath {
     let parent = document_parent_path(&input.uri)?;
-    if parent.parent().is_none() {
-        return None;
-    }
+    parent.parent()?;
 
     env_config_value(env, "HOME")
         .or_else(|| env_config_value(env, "USERPROFILE"))
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(|value| {
             let path: PathBuf = value.into();
@@ -237,7 +235,7 @@ fn push_unique_path(paths: &mut Vec<PathBuf>, path: PathBuf) {
 }
 
 fn document_parent_path(uri: &str) -> RegistryConfigPath {
-    workspace_path(uri)?.parent().map(|path| path.to_path_buf())
+    workspace_path(uri)?.parent().map(std::path::Path::to_path_buf)
 }
 
 fn parse_env_entries(text: &str) -> Vec<(String, String)> {

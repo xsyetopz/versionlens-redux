@@ -11,9 +11,9 @@ fn go_no_proxy_patterns(env: &[(String, String)]) -> Vec<String> {
 fn parse_go_glob_patterns(value: &str) -> Vec<String> {
     value
         .split(',')
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|pattern| !pattern.is_empty() && *pattern != "none")
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
         .collect()
 }
 
@@ -96,7 +96,7 @@ fn go_proxy_disables_default_registry(env: &[(String, String)]) -> bool {
     env_config_value(env, "GOPROXY").is_some_and(|value| {
         !value
             .split([',', '|'])
-            .map(|value| value.trim())
+            .map(str::trim)
             .take_while(|entry| *entry != "off")
             .any(|entry| !entry.is_empty() && entry != "direct")
     })
@@ -166,7 +166,7 @@ fn hex_registry_url_configs(
     files: &impl RegistryFileRead,
 ) -> Vec<String> {
     if let Some(url) = env_config_value(&env_entries(input, files), "HEX_API_URL")
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|url| !url.is_empty())
     {
         return vec![url.to_owned()];
@@ -174,7 +174,7 @@ fn hex_registry_url_configs(
 
     if kind == RebarConfig {
         if let Some(url) = env_config_value(&env_entries(input, files), "HEX_CDN")
-            .map(|value| value.trim())
+            .map(str::trim)
             .filter(|url| !url.is_empty())
         {
             return vec![url.to_owned()];

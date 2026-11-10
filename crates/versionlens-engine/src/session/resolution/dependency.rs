@@ -386,7 +386,7 @@ fn docker_latest_tag_choices(choices: UpdateChoices) -> UpdateChoices {
         .into_iter()
         .map(|mut choice| {
             if choice.label == "latest" {
-                choice.version = "latest".to_owned();
+                "latest".clone_into(&mut choice.version);
             }
             choice
         })
@@ -520,16 +520,16 @@ fn fixed_release_matches(release: &str, current: &Version) -> bool {
 
 #[cfg(test)]
 mod tests {
-use crate::RegistryResponseInput;
-use versionlens_model::DocumentInput;
+    use crate::RegistryResponseInput;
+    use versionlens_model::DocumentInput;
 
-use versionlens_model::Ecosystem::Dub;
+    use versionlens_model::Ecosystem::Dub;
 
-#[tokio::test]
-async fn resolves_repo_versions_as_current_when_registry_matches() {
-    let session = crate::test_support::test_session(true);
+    #[tokio::test]
+    async fn resolves_repo_versions_as_current_when_registry_matches() {
+        let session = crate::test_support::test_session(true);
 
-    let output = session
+        let output = session
         .resolve_document_with_responses(
             DocumentInput::new(
                 "file:///dub.json".to_owned(),
@@ -548,54 +548,56 @@ async fn resolves_repo_versions_as_current_when_registry_matches() {
         )
         .await;
 
-    assert_eq!(output.suggestions[0].latest.as_deref(), Some("~master"));
-    assert_eq!(output.suggestions[0].status, "current");
-    assert!(output.edits.is_empty());
-}
+        assert_eq!(output.suggestions[0].latest.as_deref(), Some("~master"));
+        assert_eq!(output.suggestions[0].status, "current");
+        assert_eq!(output.edits.len(), 0);
+    }
 
-#[tokio::test]
-async fn pub_hosted_git_dependencies_are_fixed_without_git_suffix() {
-    let session = crate::test_support::test_session(false);
-    let output = session
-        .resolve_document(DocumentInput::new(
-            "file:///pubspec.yaml".to_owned(),
-            "yaml".to_owned(),
-            package_file_fixture("pub-hosted-git-dependencies-are-fixed-without-git-suffix.yaml"),
-            None,
-        ))
-        .await;
+    #[tokio::test]
+    async fn pub_hosted_git_dependencies_are_fixed_without_git_suffix() {
+        let session = crate::test_support::test_session(false);
+        let output = session
+            .resolve_document(DocumentInput::new(
+                "file:///pubspec.yaml".to_owned(),
+                "yaml".to_owned(),
+                package_file_fixture(
+                    "pub-hosted-git-dependencies-are-fixed-without-git-suffix.yaml",
+                ),
+                None,
+            ))
+            .await;
 
-    assert_eq!(output.suggestions[0].dependency.name, "repo");
-    assert_eq!(output.suggestions[0].status, "fixed");
-    assert_eq!(
-        output.suggestions[0].latest.as_deref(),
-        Some("git repository")
-    );
-}
+        assert_eq!(output.suggestions[0].dependency.name, "repo");
+        assert_eq!(output.suggestions[0].status, "fixed");
+        assert_eq!(
+            output.suggestions[0].latest.as_deref(),
+            Some("git repository")
+        );
+    }
 
-#[tokio::test]
-async fn pub_git_tag_pattern_dependencies_are_fixed_without_pub_registry_lookup() {
-    let session = crate::test_support::test_session(false);
-    let output = session
-        .resolve_document(DocumentInput::new(
-            "file:///pubspec.yaml".to_owned(),
-            "yaml".to_owned(),
-            package_file_fixture(
-                "pub-git-tag-pattern-dependencies-are-fixed-without-pub-registry-lookup.yaml",
-            ),
-            None,
-        ))
-        .await;
+    #[tokio::test]
+    async fn pub_git_tag_pattern_dependencies_are_fixed_without_pub_registry_lookup() {
+        let session = crate::test_support::test_session(false);
+        let output = session
+            .resolve_document(DocumentInput::new(
+                "file:///pubspec.yaml".to_owned(),
+                "yaml".to_owned(),
+                package_file_fixture(
+                    "pub-git-tag-pattern-dependencies-are-fixed-without-pub-registry-lookup.yaml",
+                ),
+                None,
+            ))
+            .await;
 
-    assert_eq!(output.suggestions[0].dependency.name, "kittens");
-    assert_eq!(
-        output.suggestions[0].dependency.requirement,
-        "git@github.com:munificent/kittens.git"
-    );
-    crate::test_support::assert_fixed_git_repository(&output);
-}
+        assert_eq!(output.suggestions[0].dependency.name, "kittens");
+        assert_eq!(
+            output.suggestions[0].dependency.requirement,
+            "git@github.com:munificent/kittens.git"
+        );
+        crate::test_support::assert_fixed_git_repository(&output);
+    }
 
-fn package_file_fixture(name: &str) -> String {
-    crate::test_support::fixture("tests/fixtures/session/resolution/dependency/tests", name)
-}
+    fn package_file_fixture(name: &str) -> String {
+        crate::test_support::fixture("tests/fixtures/session/resolution/dependency/tests", name)
+    }
 }

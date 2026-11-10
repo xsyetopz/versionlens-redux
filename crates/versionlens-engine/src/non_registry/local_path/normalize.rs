@@ -12,12 +12,12 @@ pub(super) fn resolve_local_path(path: &str, document_uri: Option<&str>) -> Stri
         return path.to_string_lossy().into_owned();
     };
 
-    normalize_path(parent.join(path))
+    normalize_path(&parent.join(path))
         .to_string_lossy()
         .into_owned()
 }
 
-fn normalize_path(path: PathBuf) -> PathBuf {
+fn normalize_path(path: &Path) -> PathBuf {
     let mut normalized = PathBuf::default();
     for component in path.components() {
         apply_path_component(&mut normalized, component);

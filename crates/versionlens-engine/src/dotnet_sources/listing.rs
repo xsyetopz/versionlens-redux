@@ -22,8 +22,8 @@ pub(super) fn dotnet_source_listing() -> Option<String> {
         }
 
         if started.elapsed() >= DOTNET_SOURCE_TIMEOUT {
-            let _ = child.kill();
-            let _ = child.wait();
+            drop(child.kill());
+            drop(child.wait());
             return None;
         }
 

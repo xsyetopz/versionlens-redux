@@ -45,7 +45,7 @@ pub(crate) fn code_lens_view(dependency: &Dependency, title: String) -> LensView
 
 pub(crate) fn project_version_code_lens_view(
     dependency: &Dependency,
-    suggestion: ProjectVersionCodeLensSuggestion,
+    suggestion: &ProjectVersionCodeLensSuggestion,
     indicators: &SuggestionIndicators,
 ) -> LensView {
     let title = with_indicator(

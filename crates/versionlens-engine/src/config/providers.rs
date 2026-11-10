@@ -201,7 +201,7 @@ pub(crate) fn file_pattern_manifest_kind_from_name(provider: &str) -> Option<Man
 
 pub(crate) fn file_pattern_config_from_name(
     ecosystem: &str,
-    pattern: String,
+    pattern: &str,
 ) -> Option<FilePatternConfig> {
     let pattern = pattern.trim();
     if pattern.is_empty() {
@@ -216,7 +216,7 @@ pub(crate) fn file_pattern_config_from_name(
 
 pub(crate) fn registry_url_config_from_name(
     ecosystem: &str,
-    url: String,
+    url: &str,
 ) -> Option<RegistryUrlConfig> {
     let url = url.trim();
     if url.is_empty() {

@@ -35,7 +35,7 @@ fn local_dotnet_source_path(dependency: &Dependency, url: &str) -> Option<PathBu
     }
 
     url.strip_prefix("file://")
-        .map(|value| value.into())
+        .map(Into::into)
         .or_else(|| Some(url.into()))
 }
 

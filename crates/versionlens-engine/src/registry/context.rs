@@ -403,34 +403,34 @@ impl RegistryContext {
                 .http
                 .ca_file
                 .as_deref()
-                .map(|value| value.to_owned())
+                .map(ToOwned::to_owned)
                 .or(base.ca_file),
             ca: self
                 .npm
                 .http
                 .ca
                 .as_deref()
-                .map(|value| value.to_owned())
+                .map(ToOwned::to_owned)
                 .or(base.ca),
             cert_file: client_cert
                 .and_then(|entry| entry.cert_file.as_deref())
-                .map(|value| value.to_owned())
+                .map(ToOwned::to_owned)
                 .or(base.cert_file),
             key_file: client_cert
                 .and_then(|entry| entry.key_file.as_deref())
-                .map(|value| value.to_owned())
+                .map(ToOwned::to_owned)
                 .or(base.key_file),
             cert: client_cert
                 .is_none()
-                .then(|| self.npm.http.cert.as_deref())
+                .then_some(self.npm.http.cert.as_deref())
                 .flatten()
-                .map(|value| value.to_owned())
+                .map(ToOwned::to_owned)
                 .or(base.cert),
             key: client_cert
                 .is_none()
-                .then(|| self.npm.http.key.as_deref())
+                .then_some(self.npm.http.key.as_deref())
                 .flatten()
-                .map(|value| value.to_owned())
+                .map(ToOwned::to_owned)
                 .or(base.key),
             auth_headers: base.auth_headers,
         }
@@ -447,7 +447,7 @@ impl RegistryContext {
             .http
             .proxy
             .as_deref()
-            .map(|value| value.to_owned())
+            .map(ToOwned::to_owned)
             .or_else(|| npm_generic_proxy_for_request(url, &self.npm.http.generic_proxy))
             .or(base_proxy)
     }
@@ -520,76 +520,73 @@ include!("context_state.rs");
 
 #[cfg(test)]
 mod tests {
-use super::*;
-use crate::registry::RegistryFileSnapshot;
-use versionlens_parsers::classify_document;
+    use super::*;
+    use crate::registry::RegistryFileSnapshot;
+    use versionlens_parsers::classify_document;
 
-impl RegistryContext {
-    pub(crate) fn from_document(input: &DocumentInput) -> Self {
-        let kind = classify_document(input);
-        let snapshot = RegistryFileSnapshot::default();
-        let reader = snapshot.reader(input);
-        registry_context_from_document_kind_with_files(input, kind, &reader)
+    impl RegistryContext {
+        pub(crate) fn from_document(input: &DocumentInput) -> Self {
+            let kind = classify_document(input);
+            let snapshot = RegistryFileSnapshot::default();
+            let reader = snapshot.reader(input);
+            registry_context_from_document_kind_with_files(input, kind, &reader)
+        }
     }
-}
 
-#[test]
-fn shared_context_propagates_registry_file_bounds() {
-    let root = versionlens_test_support::temporary_directory("registry-context-bound").unwrap();
-    let config = root.join(".npmrc");
-    let file = std::fs::File::create(&config).unwrap();
-    file.set_len(1024 * 1024 + 1).unwrap();
-    let input = DocumentInput::new(
-        root.join("package.json").to_string_lossy(),
-        "json",
-        r#"{"dependencies":{"demo":"1.0.0"}}"#,
-        None,
-    );
+    #[test]
+    fn shared_context_propagates_registry_file_bounds() {
+        let root = versionlens_test_support::temporary_directory("registry-context-bound").unwrap();
+        let config = root.join(".npmrc");
+        let file = std::fs::File::create(&config).unwrap();
+        file.set_len(1024 * 1024 + 1).unwrap();
+        let input = DocumentInput::new(
+            root.join("package.json").to_string_lossy(),
+            "json",
+            r#"{"dependencies":{"demo":"1.0.0"}}"#,
+            None,
+        );
 
-    let snapshot = RegistryFileSnapshot::default();
-    let reader = snapshot.reader(&input);
-    let context = registry_context_from_document_kind_with_files(
-        &input,
-        ManifestKind::NpmPackageJson,
-        &reader,
-    );
-    assert!(
-        context
-            .failure_message()
-            .is_some_and(|message| message.contains("the limit is"))
-    );
-    std::fs::remove_dir_all(root).unwrap();
-}
+        let snapshot = RegistryFileSnapshot::default();
+        let reader = snapshot.reader(&input);
+        let context =
+            registry_context_from_document_kind_with_files(&input, NpmPackageJson, &reader);
+        assert!(
+            context
+                .failure_message()
+                .is_some_and(|message| message.contains("the limit is"))
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
 
-#[test]
-fn configured_npm_user_file_cannot_fall_back_when_missing() {
-    let root =
-        versionlens_test_support::temporary_directory("registry-required-userconfig").unwrap();
-    let required = root.join("required.npmrc");
-    let input = DocumentInput::new(
-        root.join("package.json").to_string_lossy(),
-        "json",
-        r#"{"dependencies":{"demo":"1.0.0"}}"#,
-        None,
-    );
-    let snapshot = RegistryFileSnapshot::default();
-    let files = snapshot.reader(&input);
-    let texts = npmrc_texts(
-        &input,
-        None,
-        &[(
-            "NPM_CONFIG_USERCONFIG".to_owned(),
-            required.to_string_lossy().into_owned(),
-        )],
-        &files,
-    );
+    #[test]
+    fn configured_npm_user_file_cannot_fall_back_when_missing() {
+        let root =
+            versionlens_test_support::temporary_directory("registry-required-userconfig").unwrap();
+        let required = root.join("required.npmrc");
+        let input = DocumentInput::new(
+            root.join("package.json").to_string_lossy(),
+            "json",
+            r#"{"dependencies":{"demo":"1.0.0"}}"#,
+            None,
+        );
+        let snapshot = RegistryFileSnapshot::default();
+        let files = snapshot.reader(&input);
+        let texts = npmrc_texts(
+            &input,
+            None,
+            &[(
+                "NPM_CONFIG_USERCONFIG".to_owned(),
+                required.to_string_lossy().into_owned(),
+            )],
+            &files,
+        );
 
-    assert!(texts.is_empty());
-    assert!(
-        files
-            .failure()
-            .is_some_and(|failure| failure.message().contains("required file was not found"))
-    );
-    std::fs::remove_dir_all(root).unwrap();
-}
+        assert_eq!(texts.len(), 0);
+        assert!(
+            files
+                .failure()
+                .is_some_and(|failure| failure.message().contains("required file was not found"))
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
 }

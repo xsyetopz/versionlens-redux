@@ -141,14 +141,14 @@ pub(super) fn npm_generic_proxy_for_request(
     generic_proxy: &NpmGenericProxyConfig,
 ) -> Option<String> {
     if starts_with_ignore_ascii_case(url, "https://") {
-        return generic_proxy.https.as_deref().map(|value| value.to_owned());
+        return generic_proxy.https.as_deref().map(ToOwned::to_owned);
     }
     generic_proxy
         .https
         .as_deref()
         .or(generic_proxy.http.as_deref())
         .or(generic_proxy.plain.as_deref())
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 pub(super) fn npm_no_proxy_matches(url: &str, no_proxy: Option<&str>) -> bool {
@@ -158,7 +158,7 @@ pub(super) fn npm_no_proxy_matches(url: &str, no_proxy: Option<&str>) -> bool {
     no_proxy
         .into_iter()
         .flat_map(|entries| entries.split(','))
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|entry| !entry.is_empty())
         .any(|entry| npm_no_proxy_entry_matches(host, entry))
 }

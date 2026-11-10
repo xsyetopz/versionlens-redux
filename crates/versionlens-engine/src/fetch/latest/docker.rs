@@ -147,7 +147,7 @@ fn docker_tag_shape(tag: &str) -> Option<DockerTagShape> {
     let numbers = versionlens_model::numeric_segments(version)?;
     Some(DockerTagShape {
         numbers,
-        suffix: suffix.map(|value| value.to_owned()),
+        suffix: suffix.map(ToOwned::to_owned),
     })
 }
 
@@ -169,7 +169,7 @@ fn docker_object_tag_names(value: &Value) -> Vec<String> {
         .into_iter()
         .flat_map(|tags| tags.iter())
         .filter_map(docker_object_tag_name)
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
         .collect()
 }
 
@@ -196,6 +196,6 @@ fn docker_registry_v2_tag_names(value: &Value) -> Vec<String> {
         .into_iter()
         .flat_map(|tags| tags.iter())
         .filter_map(|value| value.as_str())
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
         .collect()
 }
