@@ -1,51 +1,67 @@
 #!/usr/bin/env bun
-import {
-	chmodSync,
-	copyFileSync,
-	mkdirSync,
-	readFileSync,
-	rmSync,
-} from "node:fs";
+import { chmod, copyFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import {
 	arch as hostArchitecture,
 	platform as hostPlatform,
 } from "node:process";
 
+import { capture } from "../lib/spawn.mjs";
+import { readTargets } from "./targets.mjs";
+
+const targets = await readTargets();
+/** @type {Map<string, string>} */
 const nativeEditorTargets = new Map(
-	JSON.parse(
-		readFileSync(new URL("./targets.json", import.meta.url), "utf8"),
-	).targets.map(({ vscode, rust }) => [vscode, rust]),
+	targets.map(({ vscode, rust }) => [vscode, rust]),
 );
 
-function resolveNativeEditorTarget(args, packageName) {
-	const [requestedPlatform, requestedArchitecture, requestedRustTarget] = args;
-	const requestedTarget = args.length > 0;
-	if (requestedTarget && args.length !== 3) {
+/**
+ * @param {string[]} args
+ * @param {string} packageName
+ * @returns {void}
+ */
+const assertNativeRequest = (args, packageName) => {
+	const [requestedPlatform, requestedArchitecture] = args;
+	if (args.length === 0) {
+		return;
+	}
+	if (args.length !== 3) {
 		throw new Error(
 			`${packageName} target packaging requires platform, architecture, and Rust target arguments.`,
 		);
 	}
 	if (
-		requestedTarget &&
-		(requestedPlatform !== hostPlatform ||
-			requestedArchitecture !== hostArchitecture)
+		requestedPlatform !== hostPlatform ||
+		requestedArchitecture !== hostArchitecture
 	) {
 		throw new Error(
 			`Cannot package ${requestedPlatform}-${requestedArchitecture} on ${hostPlatform}-${hostArchitecture}; use a native runner.`,
 		);
 	}
+};
+
+/**
+ * @param {string[]} args
+ * @param {string} packageName
+ */
+const resolveNativeEditorTarget = (args, packageName) => {
+	assertNativeRequest(args, packageName);
+	const [requestedPlatform, requestedArchitecture, requestedRustTarget] = args;
 
 	const platform = requestedPlatform ?? hostPlatform;
 	const architecture = requestedArchitecture ?? hostArchitecture;
 	const editorTarget = `${platform}-${architecture}`;
 	const expectedRustTarget = nativeEditorTargets.get(editorTarget);
-	if (!expectedRustTarget) {
+	if (expectedRustTarget === undefined || expectedRustTarget === "") {
 		throw new Error(
 			`Unsupported ${packageName} package target: ${editorTarget}`,
 		);
 	}
-	if (requestedRustTarget && requestedRustTarget !== expectedRustTarget) {
+	if (
+		requestedRustTarget !== undefined &&
+		requestedRustTarget !== "" &&
+		requestedRustTarget !== expectedRustTarget
+	) {
 		throw new Error(
 			`${editorTarget} requires Rust target ${expectedRustTarget}, received ${requestedRustTarget}.`,
 		);
@@ -54,7 +70,7 @@ function resolveNativeEditorTarget(args, packageName) {
 	const executableName =
 		platform === "win32" ? "versionlens-lsp.exe" : "versionlens-lsp";
 	const sourceParts = ["target"];
-	if (requestedRustTarget) {
+	if (requestedRustTarget !== undefined && requestedRustTarget !== "") {
 		sourceParts.push(requestedRustTarget);
 	}
 	sourceParts.push("release", executableName);
@@ -67,7 +83,7 @@ function resolveNativeEditorTarget(args, packageName) {
 		rustTarget: requestedRustTarget,
 		sourceParts,
 	};
-}
+};
 
 const { editorTarget, executableName, platform, sourceParts } =
 	resolveNativeEditorTarget(Bun.argv.slice(2), "Neovim");
@@ -79,14 +95,14 @@ const output = join(
 	`versionlens-redux-neovim-plugin-${editorTarget}.tar.gz`,
 );
 
-mkdirSync(binaryDirectory, { recursive: true });
-mkdirSync("dist", { recursive: true });
+await mkdir(binaryDirectory, { recursive: true });
+await mkdir("dist", { recursive: true });
 try {
-	copyFileSync(join(...sourceParts), bundledBinary);
+	await copyFile(join(...sourceParts), bundledBinary);
 	if (platform !== "win32") {
-		chmodSync(bundledBinary, 0o755);
+		await chmod(bundledBinary, 0o755);
 	}
-	const result = Bun.spawnSync([
+	const result = await capture([
 		"tar",
 		"-czf",
 		output,
@@ -100,12 +116,10 @@ try {
 		"bin",
 	]);
 	if (result.exitCode !== 0) {
-		throw new Error(
-			`Could not create ${output}: ${new TextDecoder().decode(result.stderr)}`,
-		);
+		throw new Error(`Could not create ${output}: ${result.stderr}`);
 	}
 } finally {
-	rmSync(join(packageRoot, "bin"), { force: true, recursive: true });
+	await rm(join(packageRoot, "bin"), { force: true, recursive: true });
 }
 
 console.log(`Packaged ${output}`);

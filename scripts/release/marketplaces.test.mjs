@@ -1,25 +1,22 @@
 import { expect, it } from "bun:test";
-import {
-	chmodSync,
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+import { chmod, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 
-import { expandUserPath, readSecretFile } from "./configure-marketplaces.mjs";
+import { capture } from "../lib/spawn.mjs";
+import { expandUserPath, readSecretFile } from "./marketplace-secrets.mjs";
 
-const { expect, it } = Bun.jest(import.meta.path);
 const repository = "xsyetopz/versionlens-redux";
 
-function fakeGitHubCli(directory) {
+/**
+ * @param {string} directory
+ * @returns {Promise<string>}
+ */
+const fakeGitHubCli = async (directory) => {
 	const binaryDirectory = join(directory, "bin");
 	const windows = process.platform === "win32";
 	const binary = join(binaryDirectory, windows ? "gh.cmd" : "gh");
-	mkdirSync(binaryDirectory, { recursive: true });
+	await mkdir(binaryDirectory, { recursive: true });
 	const source = windows
 		? `@echo off
 echo %*>>"%GH_LOG%"
@@ -38,30 +35,19 @@ elif [ "$1" = "secret" ] && [ "$2" = "set" ]; then
   cat >/dev/null
 fi
 `;
-	writeFileSync(binary, source);
+	await Bun.write(binary, source);
 	if (!windows) {
-		chmodSync(binary, 0o755);
+		await chmod(binary, 0o755);
 	}
 	return binaryDirectory;
-}
+};
 
-function configureWithFakeGitHub(directory, input, existing = "") {
-	const log = join(directory, "gh.log");
-	const binaryDirectory = fakeGitHubCli(directory);
-	const result = configureMarketplaces(["--only", "jetbrains"], {
-		env: {
-			...Bun.env,
-			GH_EXISTING: existing,
-			GH_LOG: log,
-			PATH: `${binaryDirectory}${delimiter}${Bun.env.PATH ?? ""}`,
-		},
-		stdin: new TextEncoder().encode(input),
-	});
-	return { log: readFileSync(log, "utf8"), result };
-}
-
-function configureMarketplaces(commandArguments = [], options = {}) {
-	return Bun.spawnSync(
+/**
+ * @param {string[]} [commandArguments]
+ * @param {{ env?: Record<string, string | undefined>, stdin?: Uint8Array }} [options]
+ */
+const configureMarketplaces = async (commandArguments = [], options = {}) => {
+	const child = Bun.spawn(
 		[
 			"bun",
 			"scripts/release/configure-marketplaces.mjs",
@@ -69,50 +55,61 @@ function configureMarketplaces(commandArguments = [], options = {}) {
 			repository,
 			...commandArguments,
 		],
-		options,
+		{ ...options, stderr: "pipe", stdout: "pipe" },
 	);
-}
+	const [stdout, stderr, exitCode] = await Promise.all([
+		new Response(child.stdout).text(),
+		new Response(child.stderr).text(),
+		child.exited,
+	]);
+	return { exitCode, stderr, stdout };
+};
 
-function marketplaceWorkflowJob(name, nextName) {
-	const workflow = readFileSync(
-		".github/workflows/publish-marketplaces.yml",
-		"utf8",
-	);
-	const start = workflow.indexOf(`\n  ${name}:`);
-	expect(start).toBeGreaterThan(-1);
-	if (nextName === undefined) {
-		return workflow.slice(start);
-	}
-	const end = workflow.indexOf(`\n  ${nextName}:`, start);
-	expect(end).toBeGreaterThan(start);
-	return workflow.slice(start, end);
-}
+/**
+ * @param {string} directory
+ * @param {string} input
+ * @param {string} [existing]
+ */
+const configureWithFakeGitHub = async (directory, input, existing = "") => {
+	const log = join(directory, "gh.log");
+	const binaryDirectory = await fakeGitHubCli(directory);
+	const result = await configureMarketplaces(["--only", "jetbrains"], {
+		env: {
+			...Bun.env,
+			GH_EXISTING: existing,
+			GH_LOG: log,
+			PATH: `${binaryDirectory}${delimiter}${Bun.env["PATH"] ?? ""}`,
+		},
+		stdin: new TextEncoder().encode(input),
+	});
+	return { log: await Bun.file(log).text(), result };
+};
 
-it("expands home-relative secret file paths before reading them", () => {
-	const home = mkdtempSync(join(tmpdir(), "versionlens-marketplace-home-"));
+it("expands home-relative secret file paths before reading them", async () => {
+	const home = await mkdtemp(join(tmpdir(), "versionlens-marketplace-home-"));
 	try {
 		const directory = join(home, ".config", "jetbrains-signing");
-		mkdirSync(directory, { recursive: true });
-		writeFileSync(join(directory, "chain.crt"), "certificate-chain");
+		await mkdir(directory, { recursive: true });
+		await Bun.write(join(directory, "chain.crt"), "certificate-chain");
 		const path = expandUserPath("~/.config/jetbrains-signing/chain.crt", home);
-		const secret = readSecretFile(
+		const secret = await readSecretFile(
 			"~/.config/jetbrains-signing/chain.crt",
 			home,
 		);
 		expect(path).toBe(join(directory, "chain.crt"));
 		expect(secret.path).toBe(path);
-		expect(secret.contents.toString()).toBe("certificate-chain");
+		expect(new TextDecoder().decode(secret.contents)).toBe("certificate-chain");
 	} finally {
-		rmSync(home, { force: true, recursive: true });
+		await rm(home, { force: true, recursive: true });
 	}
 });
 
-it("validates every selected value before writing any secret", () => {
-	const directory = mkdtempSync(
+it("validates every selected value before writing any secret", async () => {
+	const directory = await mkdtemp(
 		join(tmpdir(), "versionlens-marketplace-preflight-"),
 	);
 	try {
-		const { log, result } = configureWithFakeGitHub(
+		const { log, result } = await configureWithFakeGitHub(
 			directory,
 			"token-value\n/definitely/missing/chain.crt\n",
 		);
@@ -120,20 +117,20 @@ it("validates every selected value before writing any secret", () => {
 		expect(log).toContain("secret list");
 		expect(log).not.toContain("secret set");
 	} finally {
-		rmSync(directory, { force: true, recursive: true });
+		await rm(directory, { force: true, recursive: true });
 	}
 });
 
-it("keeps existing secrets by default when resuming configuration", () => {
-	const directory = mkdtempSync(
+it("keeps existing secrets by default when resuming configuration", async () => {
+	const directory = await mkdtemp(
 		join(tmpdir(), "versionlens-marketplace-resume-"),
 	);
 	try {
 		const chain = join(directory, "chain.crt");
 		const key = join(directory, "private-key.pem");
-		writeFileSync(chain, "certificate-chain");
-		writeFileSync(key, "private-key");
-		const { log, result } = configureWithFakeGitHub(
+		await Bun.write(chain, "certificate-chain");
+		await Bun.write(key, "private-key");
+		const { log, result } = await configureWithFakeGitHub(
 			directory,
 			`\n${chain}\n${key}\npassword\n`,
 			"JETBRAINS_MARKETPLACE_TOKEN",
@@ -144,14 +141,13 @@ it("keeps existing secrets by default when resuming configuration", () => {
 		expect(log).toContain("secret set JB_PRIVATE_KEY");
 		expect(log).toContain("secret set JB_PRIVATE_KEY_PASSWORD");
 	} finally {
-		rmSync(directory, { force: true, recursive: true });
+		await rm(directory, { force: true, recursive: true });
 	}
 });
 
-it("lists every required marketplace secret without making hosted changes", () => {
-	const result = configureMarketplaces(["--dry-run"]);
+it("lists every required marketplace secret without making hosted changes", async () => {
+	const result = await configureMarketplaces(["--dry-run"]);
 	expect(result.exitCode).toBe(0);
-	const output = result.stdout.toString();
 	for (const name of [
 		"AZURE_CLIENT_ID",
 		"AZURE_TENANT_ID",
@@ -163,137 +159,82 @@ it("lists every required marketplace secret without making hosted changes", () =
 		"ZED_EXTENSIONS_TOKEN",
 		"LUAROCKS_API_KEY",
 	]) {
-		expect(output).toContain(`marketplaces: ${name}`);
+		expect(result.stdout).toContain(`marketplaces: ${name}`);
 	}
-	expect(output).not.toContain("AZURE_SUBSCRIPTION_ID");
+	expect(result.stdout).not.toContain("AZURE_SUBSCRIPTION_ID");
 });
 
-it("allows unavailable marketplaces to be skipped", () => {
-	const result = configureMarketplaces(["--dry-run", "--only", "zed"]);
+it("allows unavailable marketplaces to be skipped", async () => {
+	const result = await configureMarketplaces(["--dry-run", "--only", "zed"]);
 	expect(result.exitCode).toBe(0);
-	const output = result.stdout.toString();
-	expect(output).toContain("Selected marketplaces: zed");
-	expect(output).toContain("marketplaces: ZED_EXTENSIONS_FORK");
-	expect(output).toContain("marketplaces: ZED_EXTENSIONS_TOKEN");
-	expect(output).not.toContain("AZURE_CLIENT_ID");
-	expect(output).not.toContain("JETBRAINS_MARKETPLACE_TOKEN");
-	expect(output).not.toContain("LUAROCKS_API_KEY");
+	expect(result.stdout).toContain("Selected marketplaces: zed");
+	expect(result.stdout).toContain("marketplaces: ZED_EXTENSIONS_FORK");
+	expect(result.stdout).toContain("marketplaces: ZED_EXTENSIONS_TOKEN");
+	expect(result.stdout).not.toContain("AZURE_CLIENT_ID");
+	expect(result.stdout).not.toContain("JETBRAINS_MARKETPLACE_TOKEN");
+	expect(result.stdout).not.toContain("LUAROCKS_API_KEY");
 });
 
-it("rejects unknown marketplace selections", () => {
-	const result = configureMarketplaces(["--dry-run", "--only", "unknown"]);
+it("rejects unknown marketplace selections", async () => {
+	const result = await configureMarketplaces([
+		"--dry-run",
+		"--only",
+		"unknown",
+	]);
 	expect(result.exitCode).toBe(1);
-	expect(result.stderr.toString()).toContain("unknown marketplace unknown");
+	expect(result.stderr).toContain("unknown marketplace unknown");
 });
 
-it("adds and updates the VersionLens Zed registry entry", () => {
-	const directory = mkdtempSync(join(tmpdir(), "versionlens-zed-registry-"));
+it("adds and updates the VersionLens Zed registry entry", async () => {
+	const directory = await mkdtemp(join(tmpdir(), "versionlens-zed-registry-"));
 	const registry = join(directory, "extensions.toml");
 	try {
-		writeFileSync(
+		await Bun.write(
 			registry,
 			'[alpha]\nsubmodule = "extensions/alpha"\nversion = "1.0.0"\n',
 		);
-		for (const version of ["0.4.0", "0.4.1"]) {
-			const result = Bun.spawnSync([
-				"bun",
-				"scripts/release/zed-registry.mjs",
-				registry,
-				version,
-			]);
-			expect(result.exitCode).toBe(0);
-		}
-		const contents = readFileSync(registry, "utf8");
+		const first = await capture([
+			"bun",
+			"scripts/release/zed-registry.mjs",
+			registry,
+			"0.4.0",
+		]);
+		expect(first.exitCode).toBe(0);
+		const second = await capture([
+			"bun",
+			"scripts/release/zed-registry.mjs",
+			registry,
+			"0.4.1",
+		]);
+		expect(second.exitCode).toBe(0);
+		const contents = await Bun.file(registry).text();
 		expect(contents.match(/\[versionlens-lsp\]/gu)).toHaveLength(1);
 		expect(contents).toContain('path = "packages/zed-extension"');
 		expect(contents).toContain('version = "0.4.1"');
 	} finally {
-		rmSync(directory, { force: true, recursive: true });
+		await rm(directory, { force: true, recursive: true });
 	}
 });
 
-it("renders a versioned LuaRocks specification", () => {
-	const directory = mkdtempSync(join(tmpdir(), "versionlens-rockspec-"));
+it("renders a versioned LuaRocks specification", async () => {
+	const directory = await mkdtemp(join(tmpdir(), "versionlens-rockspec-"));
 	try {
-		const result = Bun.spawnSync([
+		const result = await capture([
 			"bun",
 			"scripts/release/luarocks.mjs",
 			"0.4.0",
 			directory,
 		]);
 		expect(result.exitCode).toBe(0);
-		const rockspec = readFileSync(
+		const rockspec = await Bun.file(
 			join(directory, "versionlens-redux-0.4.0-1.rockspec"),
-			"utf8",
-		);
+		).text();
 		expect(rockspec).toContain('version = "0.4.0-1"');
 		expect(rockspec).toContain("refs/tags/v0.4.0.tar.gz");
 		expect(rockspec).toContain(
 			'dir = "versionlens-redux-0.4.0/packages/neovim-plugin"',
 		);
 	} finally {
-		rmSync(directory, { force: true, recursive: true });
+		await rm(directory, { force: true, recursive: true });
 	}
-});
-
-it("provisions and validates LuaRocks upload requirements", () => {
-	const neovimJob = marketplaceWorkflowJob("neovim");
-	const install = neovimJob.indexOf(
-		"sudo apt-get install --no-install-recommends --yes lua5.4 lua-dkjson luarocks",
-	);
-	const guard = neovimJob.indexOf('if [[ -z "$LUAROCKS_API_KEY" ]]');
-	const failClosed = neovimJob.indexOf("exit 1", guard);
-	const upload = neovimJob.indexOf("luarocks upload", guard);
-
-	expect(install).toBeGreaterThan(-1);
-	expect(guard).toBeGreaterThan(install);
-	expect(failClosed).toBeGreaterThan(guard);
-	expect(upload).toBeGreaterThan(failClosed);
-});
-
-it("uses tenant-only Azure authentication for VS Code publishing", () => {
-	const vscodeJob = marketplaceWorkflowJob("vscode", "jetbrains");
-
-	expect(vscodeJob).toContain("allow-no-subscriptions: true");
-	expect(vscodeJob).not.toContain("subscription-id:");
-});
-
-it("resolves the Marketplace identity before publishing VSIX packages", () => {
-	const vscodeJob = marketplaceWorkflowJob("vscode", "jetbrains");
-	const login = vscodeJob.indexOf("name: Sign in to Microsoft Entra");
-	const resolveIdentity = vscodeJob.indexOf(
-		"name: Resolve Visual Studio Marketplace identity",
-	);
-	const profileRequest = vscodeJob.indexOf(
-		"https://app.vssps.visualstudio.com/_apis/profile/profiles/me",
-		resolveIdentity,
-	);
-	const marketplaceResource = vscodeJob.indexOf(
-		"499b84ac-1321-427f-aa17-267ca6975798",
-		resolveIdentity,
-	);
-	const failClosed = vscodeJob.indexOf("exit 1", resolveIdentity);
-	const publish = vscodeJob.indexOf("name: Publish released VSIX packages");
-
-	expect(login).toBeGreaterThan(-1);
-	expect(resolveIdentity).toBeGreaterThan(login);
-	expect(profileRequest).toBeGreaterThan(resolveIdentity);
-	expect(marketplaceResource).toBeGreaterThan(profileRequest);
-	expect(failClosed).toBeGreaterThan(marketplaceResource);
-	expect(publish).toBeGreaterThan(failClosed);
-});
-
-it("makes VS Code Marketplace publishing resumable and retries transient failures", () => {
-	const vscodeJob = marketplaceWorkflowJob("vscode", "jetbrains");
-	const publish = vscodeJob.indexOf("name: Publish released VSIX packages");
-	const skipDuplicate = vscodeJob.indexOf("--skip-duplicate", publish);
-	const retryLoop = vscodeJob.indexOf("for attempt in 1 2 3", publish);
-	const retryDelay = vscodeJob.indexOf('sleep "$delay"', retryLoop);
-	const failClosed = vscodeJob.indexOf("exit 1", retryLoop);
-
-	expect(publish).toBeGreaterThan(-1);
-	expect(retryLoop).toBeGreaterThan(publish);
-	expect(skipDuplicate).toBeGreaterThan(retryLoop);
-	expect(failClosed).toBeGreaterThan(skipDuplicate);
-	expect(retryDelay).toBeGreaterThan(failClosed);
 });

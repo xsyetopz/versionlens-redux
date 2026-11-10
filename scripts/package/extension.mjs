@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -19,6 +19,7 @@ const vscodeRuntimeExports = [
 ];
 const vscodeHostPlugin = {
 	name: "vscode-host",
+	/** @param {import("bun").PluginBuilder} build */
 	setup(build) {
 		build.onResolve({ filter: vscodeHostImport }, () => ({
 			namespace: "vscode-host",
@@ -32,11 +33,11 @@ const vscodeHostPlugin = {
 };
 let extensionDist = "packages/vscode-extension/dist";
 if (checkOnly) {
-	extensionDist = mkdtempSync(join(tmpdir(), "versionlens-extension-build-"));
+	extensionDist = await mkdtemp(join(tmpdir(), "versionlens-extension-build-"));
 }
 
 if (!checkOnly) {
-	rmSync(extensionDist, { force: true, recursive: true });
+	await rm(extensionDist, { force: true, recursive: true });
 }
 
 const result = await Bun.build({
@@ -50,12 +51,12 @@ const result = await Bun.build({
 });
 
 if (checkOnly) {
-	rmSync(extensionDist, { force: true, recursive: true });
+	await rm(extensionDist, { force: true, recursive: true });
 }
 
 if (!result.success) {
 	for (const log of result.logs) {
 		console.error(log);
 	}
-	process.exit(1);
+	process.exitCode = 1;
 }

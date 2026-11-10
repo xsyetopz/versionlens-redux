@@ -1,70 +1,95 @@
 #!/usr/bin/env bun
-import {
-	copyFileSync,
-	existsSync,
-	mkdirSync,
-	mkdtempSync,
-	readdirSync,
-	readFileSync,
-	rmSync,
-} from "node:fs";
+import { copyFile, mkdir, mkdtemp, readdir, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import process from "node:process";
+
+import { capture, inherit } from "../lib/spawn.mjs";
+import { readTargets } from "./targets.mjs";
 
 const REQUIRED_JAVA_MAJOR = 21;
 const HOST_PATTERN = /^host:\s*(?<triple>\S+)/mu;
 const JAVA_VERSION_PATTERN = /version\s+"(?<major>\d+)/u;
 
-function run(command, options = {}) {
+/**
+ * @param {string[]} command
+ * @param {{ env?: Record<string, string | undefined> }} [options]
+ * @returns {Promise<void>}
+ */
+const run = async (command, options = {}) => {
 	console.log(`$ ${command.join(" ")}`);
-	const result = Bun.spawnSync(command, {
-		stderr: "inherit",
-		stdout: "inherit",
-		...options,
-	});
-	if (result.exitCode !== 0) {
+	const exitCode = await inherit(command, options);
+	if (exitCode !== 0) {
 		throw new Error(
-			`Command failed with exit code ${result.exitCode ?? 1}: ${command.join(" ")}`,
+			`Command failed with exit code ${exitCode}: ${command.join(" ")}`,
 		);
 	}
-}
+};
 
-function commandOutput(command) {
-	const result = Bun.spawnSync(command, { stderr: "pipe", stdout: "pipe" });
+/**
+ * @param {string[]} command
+ * @returns {Promise<string>}
+ */
+const commandOutput = async (command) => {
+	const result = await capture(command);
 	if (result.exitCode !== 0) {
 		return "";
 	}
-	return new TextDecoder().decode(result.stdout).trim();
-}
+	return result.stdout.trim();
+};
 
-function javaMajor(candidateHome) {
-	const result = Bun.spawnSync(
-		[join(candidateHome, "bin", "java"), "-version"],
-		{
-			stderr: "pipe",
-			stdout: "pipe",
-		},
-	);
+/**
+ * @param {string} path
+ * @returns {Promise<boolean>}
+ */
+const fileExists = (path) => Bun.file(path).exists();
+
+/**
+ * @param {string} candidateHome
+ * @returns {Promise<number | null>}
+ */
+const javaMajor = async (candidateHome) => {
+	const result = await capture([
+		join(candidateHome, "bin", "java"),
+		"-version",
+	]);
 	if (result.exitCode !== 0) {
 		return null;
 	}
-	const output = `${new TextDecoder().decode(result.stderr)}${new TextDecoder().decode(result.stdout)}`;
-	const match = output.match(JAVA_VERSION_PATTERN);
-	if (match === null || match.groups === undefined) {
+	const match = JAVA_VERSION_PATTERN.exec(`${result.stderr}${result.stdout}`);
+	if (match?.groups === undefined) {
 		return null;
 	}
-	return Number(match.groups.major);
-}
+	return Number(match.groups["major"]);
+};
 
-function candidateJavaHomes() {
-	const candidates = [];
-	if (Bun.env.JAVA_HOME) {
-		candidates.push([Bun.env.JAVA_HOME, "JAVA_HOME"]);
+/** @returns {Promise<string[]>} */
+const sdkmanJavaDirectories = async () => {
+	try {
+		return await readdir(join(homedir(), ".sdkman/candidates/java"));
+	} catch {
+		return [];
 	}
-	if (process.platform === "darwin" && existsSync("/usr/libexec/java_home")) {
-		const javaHome = commandOutput(["/usr/libexec/java_home", "-v", "21"]);
-		if (javaHome) {
+};
+
+/** @returns {Promise<[string, string][]>} */
+const candidateJavaHomes = async () => {
+	/** @type {[string, string][]} */
+	const candidates = [];
+	const configuredJavaHome = Bun.env["JAVA_HOME"];
+	if (configuredJavaHome !== undefined && configuredJavaHome !== "") {
+		candidates.push([configuredJavaHome, "JAVA_HOME"]);
+	}
+	if (
+		process.platform === "darwin" &&
+		(await fileExists("/usr/libexec/java_home"))
+	) {
+		const javaHome = await commandOutput([
+			"/usr/libexec/java_home",
+			"-v",
+			"21",
+		]);
+		if (javaHome !== "") {
 			candidates.push([javaHome, "macOS java_home"]);
 		}
 	}
@@ -75,36 +100,50 @@ function candidateJavaHomes() {
 		]);
 	}
 	const sdkmanJavaHome = join(homedir(), ".sdkman/candidates/java");
-	if (existsSync(sdkmanJavaHome)) {
-		for (const name of readdirSync(sdkmanJavaHome)) {
-			if (name.startsWith("21")) {
-				candidates.push([
-					join(sdkmanJavaHome, name, "current"),
-					"SDKMAN Java 21",
-				]);
-			}
+	for (const name of await sdkmanJavaDirectories()) {
+		if (name.startsWith("21")) {
+			candidates.push([
+				join(sdkmanJavaHome, name, "current"),
+				"SDKMAN Java 21",
+			]);
 		}
 	}
-	const pathJava = commandOutput(["sh", "-c", "command -v java"]);
-	if (pathJava) {
+	const pathJava = await commandOutput(["sh", "-c", "command -v java"]);
+	if (pathJava !== "") {
 		candidates.push([dirname(dirname(pathJava)), "PATH java"]);
 	}
 	return candidates;
-}
+};
 
-function resolveJava21() {
+/**
+ * @param {[string, string]} candidate
+ * @returns {Promise<{ home: string, label: string, major: number | null } | null>}
+ */
+const probeCandidate = async ([home, label]) => {
+	if (!(await fileExists(join(home, "bin", "java")))) {
+		return null;
+	}
+	return { home, label, major: await javaMajor(home) };
+};
+
+/** @returns {Promise<string>} */
+const resolveJava21 = async () => {
+	const candidates = await candidateJavaHomes();
+	const probed = await Promise.all(
+		candidates.map((candidate) => probeCandidate(candidate)),
+	);
+	/** @type {string[]} */
 	const rejected = [];
-	for (const [candidate, label] of candidateJavaHomes()) {
-		if (existsSync(join(candidate, "bin", "java"))) {
-			const major = javaMajor(candidate);
-			if (major === REQUIRED_JAVA_MAJOR) {
-				return candidate;
+	for (const probe of probed) {
+		if (probe !== null) {
+			if (probe.major === REQUIRED_JAVA_MAJOR) {
+				return probe.home;
 			}
 			let version = "unreadable";
-			if (major !== null) {
-				version = `Java ${major}`;
+			if (probe.major !== null) {
+				version = `Java ${probe.major}`;
 			}
-			rejected.push(`${label}: ${version}`);
+			rejected.push(`${probe.label}: ${version}`);
 		}
 	}
 	let diagnostic = "No Java runtime candidates were found.";
@@ -119,15 +158,21 @@ function resolveJava21() {
 			diagnostic,
 		].join(" "),
 	);
-}
+};
 
-function stageHostBinary(destinationRoot) {
-	const targets = JSON.parse(
-		readFileSync(new URL("./targets.json", import.meta.url), "utf8"),
-	).targets;
-	const host = commandOutput(["rustc", "-vV"]).match(HOST_PATTERN)?.groups
-		?.triple;
-	if (!(host && targets.some(({ rust }) => rust === host))) {
+/**
+ * @param {string} destinationRoot
+ * @returns {Promise<void>}
+ */
+const stageHostBinary = async (destinationRoot) => {
+	const targets = await readTargets();
+	const hostOutput = await commandOutput(["rustc", "-vV"]);
+	const host = HOST_PATTERN.exec(hostOutput)?.groups?.["triple"];
+	if (
+		host === undefined ||
+		host === "" ||
+		!targets.some(({ rust }) => rust === host)
+	) {
 		throw new Error(
 			`Host Rust target ${host ?? "(unknown)"} is not listed in scripts/package/targets.json`,
 		);
@@ -136,14 +181,14 @@ function stageHostBinary(destinationRoot) {
 		? "versionlens-lsp.exe"
 		: "versionlens-lsp";
 	const targetDir = join(destinationRoot, host);
-	mkdirSync(targetDir, { recursive: true });
-	copyFileSync(
+	await mkdir(targetDir, { recursive: true });
+	await copyFile(
 		join(process.cwd(), "target", "release", executable),
 		join(targetDir, executable),
 	);
-}
+};
 
-const javaRuntime = resolveJava21();
+const javaRuntime = await resolveJava21();
 console.log(`Using Java ${REQUIRED_JAVA_MAJOR} runtime: ${javaRuntime}`);
 const repositoryRoot = process.cwd();
 const fixturesRoot = join(repositoryRoot, "tests", "fixtures");
@@ -160,25 +205,26 @@ const projectBuildTemp = join(
 	"build",
 	"tmp",
 );
-const gradleHome = mkdtempSync(join(tmpdir(), "versionlens-gradle-"));
+const gradleHome = await mkdtemp(join(tmpdir(), "versionlens-gradle-"));
 if (gradleHome.startsWith(fixturesRoot)) {
 	throw new Error(`Refusing Gradle user home inside fixtures: ${gradleHome}`);
 }
-const binariesDir = mkdtempSync(join(tmpdir(), "versionlens-lsp-binaries-"));
+const binariesDir = await mkdtemp(join(tmpdir(), "versionlens-lsp-binaries-"));
 const gradleEnvironment = {
 	...Bun.env,
+	GRADLE_USER_HOME: gradleHome,
+	JAVA_HOME: javaRuntime,
+	PATH: `${join(javaRuntime, "bin")}${delimiter}${Bun.env["PATH"] ?? ""}`,
 };
-gradleEnvironment.JAVA_HOME = javaRuntime;
-gradleEnvironment.PATH = `${join(javaRuntime, "bin")}${delimiter}${Bun.env.PATH ?? ""}`;
-gradleEnvironment.GRADLE_USER_HOME = gradleHome;
 
 try {
-	run(["bun", "run", "package"], { env: gradleEnvironment });
-	run(["cargo", "build", "-p", "versionlens-lsp", "--release", "--locked"], {
-		env: gradleEnvironment,
-	});
-	stageHostBinary(binariesDir);
-	run(
+	await run(["bun", "run", "package"], { env: gradleEnvironment });
+	await run(
+		["cargo", "build", "-p", "versionlens-lsp", "--release", "--locked"],
+		{ env: gradleEnvironment },
+	);
+	await stageHostBinary(binariesDir);
+	await run(
 		[
 			"cargo",
 			"build",
@@ -189,8 +235,8 @@ try {
 		],
 		{ env: gradleEnvironment },
 	);
-	run(["bun", "scripts/package/neovim.mjs"], { env: gradleEnvironment });
-	run(
+	await run(["bun", "scripts/package/neovim.mjs"], { env: gradleEnvironment });
+	await run(
 		[
 			"./packages/jetbrains-plugin/gradlew",
 			"-p",
@@ -203,8 +249,9 @@ try {
 		{ env: gradleEnvironment },
 	);
 } finally {
-	rmSync(gradleHome, { force: true, recursive: true });
-	rmSync(binariesDir, { force: true, recursive: true });
-	rmSync(projectGradleState, { force: true, recursive: true });
-	rmSync(projectBuildTemp, { force: true, recursive: true });
+	await Promise.all(
+		[gradleHome, binariesDir, projectGradleState, projectBuildTemp].map(
+			(path) => rm(path, { force: true, recursive: true }),
+		),
+	);
 }

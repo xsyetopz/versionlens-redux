@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync } from "node:fs";
-
+import { isRecord, parseJson } from "../lib/json.mjs";
+import { capture } from "../lib/spawn.mjs";
 import { fail, parseSemver, replaceExactly } from "./semver.mjs";
 
 const ROOT_VERSION_PATTERN =
@@ -19,6 +19,7 @@ const NEOVIM_VERSION_PATTERN = /return "(?<version>[^"]+)"/u;
 const NEOVIM_VERSION_REPLACEMENT_PATTERN =
 	/(?<prefix>return ")[^"]+(?<suffix>")/u;
 
+/** @type {[string, RegExp][]} */
 const manifests = [
 	[
 		"Cargo.toml",
@@ -46,21 +47,39 @@ const manifests = [
 	],
 ];
 
-function currentVersion(path, pattern) {
-	const match = pattern.exec(readFileSync(path, "utf8"));
-	if (!match?.groups?.version) {
-		fail(`${path}: could not read the current version`);
+/**
+ * @param {string} path
+ * @param {RegExp} pattern
+ * @returns {Promise<string>}
+ */
+const currentVersion = async (path, pattern) => {
+	const match = pattern.exec(await Bun.file(path).text());
+	const version = match?.groups?.["version"];
+	if (version === undefined || version === "") {
+		return fail(`${path}: could not read the current version`);
 	}
-	parseSemver(match.groups.version);
-	return match.groups.version;
-}
+	parseSemver(version);
+	return version;
+};
 
-function readRepositoryVersion() {
-	return currentVersion("package.json", ROOT_VERSION_PATTERN);
-}
+/** @returns {Promise<string>} */
+const readRepositoryVersion = () =>
+	currentVersion("package.json", ROOT_VERSION_PATTERN);
 
-function rustWorkspacePackages() {
-	const metadata = Bun.spawnSync([
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
+const stringField = (value) => {
+	if (typeof value !== "string") {
+		return fail("cargo metadata returned an unexpected shape");
+	}
+	return value;
+};
+
+/** @returns {Promise<string[]>} */
+const rustWorkspacePackages = async () => {
+	const metadata = await capture([
 		"cargo",
 		"metadata",
 		"--no-deps",
@@ -68,68 +87,92 @@ function rustWorkspacePackages() {
 		"1",
 	]);
 	if (metadata.exitCode !== 0) {
-		fail(`cargo metadata failed: ${metadata.stderr.toString()}`);
+		fail(`cargo metadata failed: ${metadata.stderr}`);
 	}
-	const workspace = JSON.parse(metadata.stdout.toString());
-	const workspaceMembers = new Set(workspace.workspace_members);
-	return workspace.packages
-		.filter(({ id }) => workspaceMembers.has(id))
-		.map(({ name }) => name)
-		.toSorted((left, right) => left.localeCompare(right));
-}
+	const workspace = parseJson(metadata.stdout);
+	if (!(
+		isRecord(workspace) &&
+		Array.isArray(workspace["workspace_members"]) &&
+		Array.isArray(workspace["packages"])
+	)) {
+		return fail("cargo metadata returned an unexpected shape");
+	}
+	/** @type {unknown[]} */
+	const members = workspace["workspace_members"];
+	/** @type {unknown[]} */
+	const packages = workspace["packages"];
+	const workspaceMembers = new Set(members);
+	// Released crates live in crates/; tooling such as xtask keeps its own version.
+	const cratesDir = `${stringField(workspace["workspace_root"])}/crates/`;
+	/** @type {string[]} */
+	const names = [];
+	for (const entry of packages) {
+		if (!isRecord(entry)) {
+			return fail("cargo metadata returned an unexpected shape");
+		}
+		if (
+			workspaceMembers.has(entry["id"]) &&
+			stringField(entry["manifest_path"]).startsWith(cratesDir)
+		) {
+			names.push(stringField(entry["name"]));
+		}
+	}
+	return names.toSorted((left, right) => left.localeCompare(right));
+};
 
-function assertSynchronizedVersions(previousVersion, rustPackages) {
-	for (const [path, pattern] of manifests) {
-		const version = currentVersion(path, pattern);
+/**
+ * @param {string} previousVersion
+ * @param {string[]} rustPackages
+ * @returns {Promise<void>}
+ */
+const assertSynchronizedVersions = async (previousVersion, rustPackages) => {
+	const manifestVersions = await Promise.all(
+		manifests.map(([path, pattern]) => currentVersion(path, pattern)),
+	);
+	for (const [index, version] of manifestVersions.entries()) {
 		if (version !== previousVersion) {
 			fail(
-				`${path}: version ${version} is not synchronized with ${previousVersion}`,
+				`${manifests[index]?.[0]}: version ${version} is not synchronized with ${previousVersion}`,
 			);
 		}
 	}
 
-	for (const name of rustPackages) {
-		const version = currentVersion(
-			"Cargo.lock",
-			new RegExp(`name = "${name}"\\nversion = "(?<version>[^"]+)"`, "u"),
-		);
+	const lockVersions = await Promise.all(
+		rustPackages.map((name) =>
+			currentVersion(
+				"Cargo.lock",
+				new RegExp(`name = "${name}"\\nversion = "(?<version>[^"]+)"`, "u"),
+			),
+		),
+	);
+	for (const [index, version] of lockVersions.entries()) {
 		if (version !== previousVersion) {
 			fail(
-				`Cargo.lock: ${name} version ${version} is not synchronized with ${previousVersion}`,
+				`Cargo.lock: ${rustPackages[index]} version ${version} is not synchronized with ${previousVersion}`,
 			);
 		}
 	}
-}
+};
 
-function updateRepositoryVersions(nextVersion, rustPackages) {
-	const changes = new Map();
-	function applyUpdate(path, pattern, replacement, count = 1) {
-		const source = changes.get(path) ?? readFileSync(path, "utf8");
-		changes.set(
-			path,
-			replaceExactly({
-				expectedCount: count,
-				path,
-				pattern,
-				replacement,
-				source,
-			}),
-		);
-	}
+/**
+ * @typedef {(match: string, prefix: string, suffix: string) => string} ReplaceVersion
+ */
 
-	const replaceVersion = (_match, prefix, suffix) =>
-		prefix + nextVersion + suffix;
-	applyCoreManifestUpdates(applyUpdate, replaceVersion);
-	applyRustLockUpdates(applyUpdate, replaceVersion, rustPackages);
-	applyPackageManifestUpdates(applyUpdate, replaceVersion, nextVersion);
+/**
+ * @typedef {object} Update
+ * @property {string} path
+ * @property {RegExp} pattern
+ * @property {string | ReplaceVersion} replacement
+ */
 
-	for (const [path, contents] of changes) {
-		writeFileSync(path, contents);
-	}
-	return changes.size;
-}
+/** @typedef {(path: string, pattern: RegExp, replacement: Update["replacement"]) => void} ApplyUpdate */
 
-function applyCoreManifestUpdates(applyUpdate, replaceVersion) {
+/**
+ * @param {ApplyUpdate} applyUpdate
+ * @param {ReplaceVersion} replaceVersion
+ * @returns {void}
+ */
+const applyCoreManifestUpdates = (applyUpdate, replaceVersion) => {
 	applyUpdate("package.json", ROOT_REPLACEMENT_PATTERN, replaceVersion);
 	applyUpdate(
 		"packages/vscode-extension/package.json",
@@ -137,9 +180,15 @@ function applyCoreManifestUpdates(applyUpdate, replaceVersion) {
 		replaceVersion,
 	);
 	applyUpdate("Cargo.toml", CARGO_REPLACEMENT_PATTERN, replaceVersion);
-}
+};
 
-function applyRustLockUpdates(applyUpdate, replaceVersion, rustPackages) {
+/**
+ * @param {ApplyUpdate} applyUpdate
+ * @param {ReplaceVersion} replaceVersion
+ * @param {string[]} rustPackages
+ * @returns {void}
+ */
+const applyRustLockUpdates = (applyUpdate, replaceVersion, rustPackages) => {
 	for (const name of rustPackages) {
 		applyUpdate(
 			"Cargo.lock",
@@ -150,9 +199,19 @@ function applyRustLockUpdates(applyUpdate, replaceVersion, rustPackages) {
 			replaceVersion,
 		);
 	}
-}
+};
 
-function applyPackageManifestUpdates(applyUpdate, replaceVersion, nextVersion) {
+/**
+ * @param {ApplyUpdate} applyUpdate
+ * @param {ReplaceVersion} replaceVersion
+ * @param {string} nextVersion
+ * @returns {void}
+ */
+const applyPackageManifestUpdates = (
+	applyUpdate,
+	replaceVersion,
+	nextVersion,
+) => {
 	applyUpdate("bun.lock", BUN_LOCK_REPLACEMENT_PATTERN, replaceVersion);
 	applyUpdate(
 		"packages/zed-extension/Cargo.toml",
@@ -179,7 +238,52 @@ function applyPackageManifestUpdates(applyUpdate, replaceVersion, nextVersion) {
 		NEOVIM_VERSION_REPLACEMENT_PATTERN,
 		replaceVersion,
 	);
-}
+};
+
+/**
+ * @param {string} nextVersion
+ * @param {string[]} rustPackages
+ * @returns {Promise<number>}
+ */
+const updateRepositoryVersions = async (nextVersion, rustPackages) => {
+	/** @type {Update[]} */
+	const updates = [];
+	/** @type {ApplyUpdate} */
+	const applyUpdate = (path, pattern, replacement) => {
+		updates.push({ path, pattern, replacement });
+	};
+
+	/** @type {ReplaceVersion} */
+	const replaceVersion = (_match, prefix, suffix) =>
+		prefix + nextVersion + suffix;
+	applyCoreManifestUpdates(applyUpdate, replaceVersion);
+	applyRustLockUpdates(applyUpdate, replaceVersion, rustPackages);
+	applyPackageManifestUpdates(applyUpdate, replaceVersion, nextVersion);
+
+	const paths = [...new Set(updates.map(({ path }) => path))];
+	const sources = await Promise.all(paths.map((path) => Bun.file(path).text()));
+	/** @type {Map<string, string>} */
+	const changes = new Map(
+		paths.map((path, index) => [path, sources[index] ?? ""]),
+	);
+	for (const { path, pattern, replacement } of updates) {
+		changes.set(
+			path,
+			replaceExactly({
+				expectedCount: 1,
+				path,
+				pattern,
+				replacement,
+				source: changes.get(path) ?? "",
+			}),
+		);
+	}
+
+	await Promise.all(
+		[...changes].map(([path, contents]) => Bun.write(path, contents)),
+	);
+	return changes.size;
+};
 
 export {
 	assertSynchronizedVersions,
