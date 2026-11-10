@@ -6,7 +6,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-rust-bedrock = { git = "https://github.com/xsyetopz/bedrock", tag = "rust-bedrock-v0.1.2" }
+rust-bedrock = { git = "https://github.com/xsyetopz/bedrock", tag = "rust-bedrock-v0.1.3" }
 
 [lints]
 workspace = true
