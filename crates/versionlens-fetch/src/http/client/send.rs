@@ -129,14 +129,14 @@ impl RequestDeadline {
 
 #[cfg(test)]
 mod tests {
-use std::time::Duration;
+    use std::time::Duration;
 
-use super::RequestDeadline;
+    use super::RequestDeadline;
 
-#[test]
-fn request_deadline_reports_expiry() {
-    let deadline = RequestDeadline::after(Some(Duration::ZERO));
+    #[test]
+    fn request_deadline_reports_expiry() {
+        let deadline = RequestDeadline::after(Some(Duration::ZERO));
 
-    assert!(deadline.ensure_remaining().is_err());
-}
+        assert!(deadline.ensure_remaining().is_err());
+    }
 }

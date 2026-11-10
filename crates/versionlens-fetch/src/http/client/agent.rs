@@ -43,7 +43,7 @@ pub(super) fn client(config: &HttpConfig) -> Result<Client, HttpError> {
 
 pub(super) fn install_tls_provider() {
     TLS_PROVIDER.get_or_init(|| {
-        let _ = rustls::crypto::ring::default_provider().install_default();
+        drop(rustls::crypto::ring::default_provider().install_default());
     });
 }
 
@@ -111,14 +111,14 @@ fn material(path: Option<&str>, inline: Option<&str>) -> Result<Option<Vec<u8>>,
 
 #[cfg(test)]
 pub(super) mod tests {
-use super::cache_key;
-use crate::http::config::HttpConfig;
+    use super::cache_key;
+    use crate::http::config::HttpConfig;
 
-pub(crate) fn uses_same_agent_cache_key(first: &HttpConfig, second: &HttpConfig) -> bool {
-    cache_key(first) == cache_key(second)
-}
+    pub(crate) fn uses_same_agent_cache_key(first: &HttpConfig, second: &HttpConfig) -> bool {
+        cache_key(first) == cache_key(second)
+    }
 
-pub(crate) fn uses_agent_cache(config: &HttpConfig) -> bool {
-    cache_key(config).is_some()
-}
+    pub(crate) fn uses_agent_cache(config: &HttpConfig) -> bool {
+        cache_key(config).is_some()
+    }
 }

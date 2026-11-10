@@ -1,3 +1,4 @@
+/// How many times, and after what delays, a failed request is retried.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RetryPolicy {
     max_retries: u32,
@@ -7,6 +8,7 @@ pub struct RetryPolicy {
 }
 
 impl RetryPolicy {
+    /// A policy that never retries.
     pub fn disabled() -> Self {
         Self {
             max_retries: 0,
@@ -16,6 +18,7 @@ impl RetryPolicy {
         }
     }
 
+    /// The policy npm-registry-fetch uses: two retries with exponential backoff from 250 ms to 1 s.
     pub fn npm_registry_fetch() -> Self {
         Self {
             max_retries: 2,
@@ -25,14 +28,17 @@ impl RetryPolicy {
         }
     }
 
+    /// The number of retries after the first attempt.
     pub fn max_retries(self) -> u32 {
         self.max_retries
     }
 
+    /// The delay in milliseconds before retry number `attempt` (counted from zero), or `None` when retries are exhausted.
     pub fn retry_backoff_ms(self, attempt: u32) -> Option<u64> {
         (attempt < self.max_retries).then(|| self.backoff_ms(attempt))
     }
 
+    /// Whether a response with `status` to a request using `method` is retried; POST is never retried.
     pub fn should_retry_status(self, method: &str, status: u16) -> bool {
         self.max_retries > 0
             && !method.eq_ignore_ascii_case("POST")
@@ -57,61 +63,63 @@ impl RetryPolicy {
     }
 }
 
-#[cfg(test)]
-mod tests {
-fn should_retry_error() -> bool {
-    false
-}
-fn retry_backoff_ms(attempt: u32) -> u64 {
-    100 * 2_u64.pow(attempt)
-}
-
-#[test]
-fn request_light_parity_does_not_retry_transient_failures() {
-    assert!(!should_retry_error());
-    assert_eq!(retry_backoff_ms(0), 100);
-    assert_eq!(retry_backoff_ms(1), 200);
-}
-
-#[test]
-fn npm_registry_fetch_retry_policy_keeps_large_manifest_failures_fast() {
-    let policy = crate::http::npm_registry_fetch_retry_policy();
-
-    assert_eq!(policy.max_retries(), 2);
-    assert_eq!(policy.retry_backoff_ms(0), Some(250));
-    assert_eq!(policy.retry_backoff_ms(1), Some(500));
-    assert_eq!(policy.retry_backoff_ms(2), None);
-}
-
-#[test]
-fn npm_registry_fetch_retry_policy_retries_transient_non_post_statuses() {
-    let policy = crate::http::npm_registry_fetch_retry_policy();
-
-    assert!(policy.should_retry_status("GET", 408));
-    assert!(policy.should_retry_status("GET", 420));
-    assert!(policy.should_retry_status("GET", 429));
-    assert!(policy.should_retry_status("GET", 500));
-    assert!(policy.should_retry_status("GET", 503));
-    assert!(!policy.should_retry_status("GET", 404));
-    assert!(!policy.should_retry_status("POST", 500));
-}
-
-#[test]
-fn disabled_retry_policy_preserves_request_light_no_retry_behavior() {
-    let policy = crate::http::disabled_retry_policy();
-
-    assert_eq!(policy.max_retries(), 0);
-    assert_eq!(policy.retry_backoff_ms(0), None);
-    assert!(!policy.should_retry_status("GET", 408));
-    assert!(!policy.should_retry_status("GET", 429));
-    assert!(!policy.should_retry_status("GET", 500));
-}
-}
-
+/// A policy that never retries; same as [`RetryPolicy::disabled`].
 pub fn disabled_retry_policy() -> RetryPolicy {
     RetryPolicy::disabled()
 }
 
+/// The policy npm-registry-fetch uses; same as [`RetryPolicy::npm_registry_fetch`].
 pub fn npm_registry_fetch_retry_policy() -> RetryPolicy {
     RetryPolicy::npm_registry_fetch()
+}
+
+#[cfg(test)]
+mod tests {
+    fn should_retry_error() -> bool {
+        false
+    }
+    fn retry_backoff_ms(attempt: u32) -> u64 {
+        100 * 2_u64.pow(attempt)
+    }
+
+    #[test]
+    fn request_light_parity_does_not_retry_transient_failures() {
+        assert!(!should_retry_error());
+        assert_eq!(retry_backoff_ms(0), 100);
+        assert_eq!(retry_backoff_ms(1), 200);
+    }
+
+    #[test]
+    fn npm_registry_fetch_retry_policy_keeps_large_manifest_failures_fast() {
+        let policy = crate::http::npm_registry_fetch_retry_policy();
+
+        assert_eq!(policy.max_retries(), 2);
+        assert_eq!(policy.retry_backoff_ms(0), Some(250));
+        assert_eq!(policy.retry_backoff_ms(1), Some(500));
+        assert_eq!(policy.retry_backoff_ms(2), None);
+    }
+
+    #[test]
+    fn npm_registry_fetch_retry_policy_retries_transient_non_post_statuses() {
+        let policy = crate::http::npm_registry_fetch_retry_policy();
+
+        assert!(policy.should_retry_status("GET", 408));
+        assert!(policy.should_retry_status("GET", 420));
+        assert!(policy.should_retry_status("GET", 429));
+        assert!(policy.should_retry_status("GET", 500));
+        assert!(policy.should_retry_status("GET", 503));
+        assert!(!policy.should_retry_status("GET", 404));
+        assert!(!policy.should_retry_status("POST", 500));
+    }
+
+    #[test]
+    fn disabled_retry_policy_preserves_request_light_no_retry_behavior() {
+        let policy = crate::http::disabled_retry_policy();
+
+        assert_eq!(policy.max_retries(), 0);
+        assert_eq!(policy.retry_backoff_ms(0), None);
+        assert!(!policy.should_retry_status("GET", 408));
+        assert!(!policy.should_retry_status("GET", 429));
+        assert!(!policy.should_retry_status("GET", 500));
+    }
 }
