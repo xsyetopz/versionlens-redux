@@ -19,6 +19,7 @@ pub(super) fn ansible_registry_url_with_base(base_url: &str, name: &str) -> Stri
     )
 }
 
+/// The Ansible Galaxy role URL for a `namespace.role` name under a base URL.
 pub fn ansible_role_registry_url_with_base(base_url: &str, name: &str) -> String {
     let (namespace, role) = name.split_once('.').unwrap_or(("", name));
     format!(
@@ -363,6 +364,7 @@ pub(super) fn python_registry_url_with_base(base_url: &str, name: &str) -> Strin
     )
 }
 
+/// The URL template of a Python JSON API under a base URL, with a `{name}` placeholder.
 pub fn python_package_json_url_template(base_url: &str) -> String {
     format!("{}/{{name}}/json", base_url.trim_end_matches('/'))
 }

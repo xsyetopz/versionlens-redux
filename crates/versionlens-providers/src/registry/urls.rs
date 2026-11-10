@@ -141,11 +141,13 @@ const CUSTOM_REGISTRY_URLS: &[RegistryUrlWithBaseBuilder] = &[
     github_registry_url_with_base,
 ];
 
+/// The default registry URL for a package.
 pub fn registry_url(ecosystem: Ecosystem, name: &str) -> String {
     let name = name.trim();
     encode_unsafe_url_bytes(&DEFAULT_REGISTRY_URLS[ecosystem as usize](name))
 }
 
+/// The registry URL for a package, using a custom base URL when one is given.
 pub fn registry_url_with_base(ecosystem: Ecosystem, name: &str, base_url: Option<&str>) -> String {
     let name = name.trim();
     let Some(base_url) = base_url.map(str::trim).filter(|url| !url.is_empty()) else {

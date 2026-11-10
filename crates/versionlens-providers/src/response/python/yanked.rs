@@ -8,10 +8,8 @@ pub(super) fn python_release_is_yanked(value: &Value, version: &str) -> bool {
         .and_then(|value| value.as_array())
         .is_some_and(|files| {
             !files.is_empty()
-                && files.iter().all(|file| {
-                    file.get("yanked")
-                        .and_then(serde_json::Value::as_bool)
-                        .unwrap_or(false)
-                })
+                && files
+                    .iter()
+                    .all(|file| file.get("yanked").and_then(Value::as_bool).unwrap_or(false))
         })
 }

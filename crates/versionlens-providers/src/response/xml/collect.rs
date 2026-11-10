@@ -54,7 +54,7 @@ where
     map_text: &'a mut F,
 }
 
-impl<'a, F> ElementTextCollector<'a, F>
+impl<F> ElementTextCollector<'_, F>
 where
     F: FnMut(&str) -> Option<String>,
 {

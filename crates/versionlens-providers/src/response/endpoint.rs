@@ -9,6 +9,7 @@ use super::python::{latest_python_version, python_release_versions};
 use super::python_simple::{latest_python_simple_version, python_simple_release_versions};
 use super::xml::{latest_python_rss_version, python_rss_release_versions};
 
+/// The latest version in a response body, read in the format the endpoint uses.
 pub fn latest_version_from_response_for_endpoint(
     endpoint: &RegistryEndpoint,
     request: LatestVersionRequest<'_>,
@@ -42,6 +43,7 @@ pub fn latest_version_from_response_for_endpoint(
     }
 }
 
+/// Lists the release versions in a response body, read in the format the endpoint uses.
 pub fn release_versions_from_response_for_endpoint(
     endpoint: &RegistryEndpoint,
     ecosystem: versionlens_model::Ecosystem,

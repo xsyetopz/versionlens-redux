@@ -19,6 +19,7 @@ fn response_request_from_latest<'a>(request: &LatestVersionRequest<'a>) -> Respo
     }
 }
 
+/// The latest stable version in a response body.
 pub fn latest_version_from_response(
     ecosystem: Ecosystem,
     package: &str,
@@ -27,6 +28,7 @@ pub fn latest_version_from_response(
     latest_version_from_response_with_prereleases(ecosystem, package, body, false)
 }
 
+/// The latest version in a response body, optionally counting prereleases.
 pub fn latest_version_from_response_with_prereleases(
     ecosystem: Ecosystem,
     package: &str,
@@ -43,6 +45,11 @@ pub fn latest_version_from_response_with_prereleases(
     })
 }
 
+/// The latest version for a fully described request.
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the exported signature takes the request by value"
+)]
 pub fn latest_version_from_response_for_request(
     request: LatestVersionRequest<'_>,
 ) -> Option<String> {

@@ -37,11 +37,13 @@ pub(super) fn docker_registry_url_with_base(base_url: &str, name: &str) -> Strin
     format!("{base_url}/v2/{name}/tags/list")
 }
 
+/// The URL of a Docker Hub tags page, or `None` when the URL is not a Docker Hub tags URL.
 pub fn docker_hub_tags_page_url(url: &str, page: u8) -> Option<String> {
     is_docker_hub_tags_url(url)
         .then(|| format!("{url}?page={page}&page_size=100&ordering=last_updated"))
 }
 
+/// Whether a Docker Hub response body links to a further page of tags.
 pub fn docker_hub_body_has_next_page(body: &str) -> bool {
     from_str::<Value>(body)
         .ok()
@@ -49,6 +51,7 @@ pub fn docker_hub_body_has_next_page(body: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Merges the results of several Docker Hub response pages into the first page.
 pub fn merge_docker_hub_response_pages(pages: Vec<String>) -> Option<String> {
     let mut pages = pages.into_iter();
     let first = pages.next()?;
@@ -112,16 +115,10 @@ fn append_docker_hub_results(merged: &mut Value, page: &str) {
     let Ok(mut page) = from_str::<Value>(page) else {
         return;
     };
-    let Some(page_results) = page
-        .get_mut("results")
-        .and_then(serde_json::Value::as_array_mut)
-    else {
+    let Some(page_results) = page.get_mut("results").and_then(Value::as_array_mut) else {
         return;
     };
-    let Some(merged_results) = merged
-        .get_mut("results")
-        .and_then(serde_json::Value::as_array_mut)
-    else {
+    let Some(merged_results) = merged.get_mut("results").and_then(Value::as_array_mut) else {
         return;
     };
 

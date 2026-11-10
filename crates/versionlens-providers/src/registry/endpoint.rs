@@ -3,32 +3,45 @@ use versionlens_model::Ecosystem::{Go, Python};
 
 use super::urls::{registry_url, registry_url_with_base};
 
+/// The format of a registry response body.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RegistryResponseKind {
+    /// The ecosystem's own response format.
     Ecosystem,
+    /// A Go module version list.
     GoModuleList,
+    /// A Go module `@latest` document.
     GoModuleLatest,
+    /// A Python JSON API document.
     PythonJson,
+    /// A Python RSS feed.
     PythonRss,
+    /// A Python simple index page.
     PythonSimple,
 }
 
+/// A registry URL and the format of the response it returns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegistryEndpoint {
+    /// The URL to request.
     pub url: String,
+    /// The format of the response body.
     pub response_kind: RegistryResponseKind,
 }
 
 impl RegistryEndpoint {
+    /// Creates an endpoint from a URL and its response format.
     pub fn new(url: String, response_kind: RegistryResponseKind) -> Self {
         Self { url, response_kind }
     }
 
+    /// Creates an endpoint that answers in the ecosystem's own format.
     pub fn ecosystem(url: String) -> Self {
         Self::new(url, RegistryResponseKind::Ecosystem)
     }
 }
 
+/// The default registry endpoint for a package.
 pub fn registry_endpoint(ecosystem: Ecosystem, name: &str) -> RegistryEndpoint {
     RegistryEndpoint::new(
         registry_url(ecosystem, name),
@@ -36,6 +49,7 @@ pub fn registry_endpoint(ecosystem: Ecosystem, name: &str) -> RegistryEndpoint {
     )
 }
 
+/// The registry endpoint for a package, using a custom base URL when one is given.
 pub fn registry_endpoint_with_base(
     ecosystem: Ecosystem,
     name: &str,

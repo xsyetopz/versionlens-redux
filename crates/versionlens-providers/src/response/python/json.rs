@@ -48,7 +48,7 @@ fn latest_python_release_key(
         releases
             .keys()
             .filter(|version| !python_release_is_yanked(value, version))
-            .map(|value| value.as_str()),
+            .map(String::as_str),
         include_prereleases,
         prerelease_tags,
         VersionDialect::Pep440,

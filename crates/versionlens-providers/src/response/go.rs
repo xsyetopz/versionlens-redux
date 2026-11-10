@@ -15,6 +15,7 @@ pub(crate) fn latest_go_version(
         .ok()
         .and_then(|value| latest_go_metadata_versions(&value, include_prereleases, prerelease_tags))
         .or_else(|| latest_go_module_proxy_version(body.lines().collect(), prerelease_tags))
+        .as_deref()
         .map(normalize_go_version)
 }
 
@@ -40,7 +41,9 @@ pub(crate) fn latest_go_module_list_version(
     } else {
         &[]
     };
-    latest_go_module_proxy_version(versions, prerelease_tags).map(normalize_go_version)
+    latest_go_module_proxy_version(versions, prerelease_tags)
+        .as_deref()
+        .map(normalize_go_version)
 }
 
 pub(crate) fn latest_go_module_latest_version(body: &str) -> Option<String> {
@@ -49,7 +52,7 @@ pub(crate) fn latest_go_module_latest_version(body: &str) -> Option<String> {
     if go_metadata_entry_is_unavailable(&value) || normalized_version(version).is_none() {
         return None;
     }
-    Some(normalize_go_version(version.to_owned()))
+    Some(normalize_go_version(version))
 }
 
 fn latest_go_metadata_versions(
@@ -180,6 +183,6 @@ fn go_retracted_value_is_active(value: &Value) -> bool {
     }
 }
 
-fn normalize_go_version(version: String) -> String {
+fn normalize_go_version(version: &str) -> String {
     version.replacen("+incompatible", "", 1)
 }

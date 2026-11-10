@@ -5,10 +5,13 @@ mod nuget;
 
 use nuget::contains_four_segment_nuget_version;
 
+/// Whether a requirement uses a four-segment `NuGet` version, which is unsupported.
 pub fn is_unsupported_dotnet_requirement(requirement: &str) -> bool {
     contains_four_segment_nuget_version(requirement.trim())
 }
 
+/// Whether a requirement refers to a registry package rather than a path, URL,
+/// git source, or other local reference.
 pub fn is_registry_requirement(ecosystem: Ecosystem, requirement: &str) -> bool {
     let requirement = requirement.trim();
     if ecosystem == Docker && requirement.starts_with("sha256:") {
@@ -43,6 +46,7 @@ pub fn is_registry_requirement(ecosystem: Ecosystem, requirement: &str) -> bool 
         || requirement.contains("://"))
 }
 
+/// Whether a dependency can be looked up in its ecosystem's registry.
 pub fn is_registry_dependency(ecosystem: Ecosystem, name: &str, requirement: &str) -> bool {
     is_registry_requirement(ecosystem, requirement)
         && (ecosystem != Cran || name != "R")
@@ -50,6 +54,7 @@ pub fn is_registry_dependency(ecosystem: Ecosystem, name: &str, requirement: &st
         && (ecosystem != Composer || !is_composer_platform_dependency(name))
 }
 
+/// Whether a Composer dependency names a platform package such as `php` or an extension.
 pub fn is_composer_platform_dependency(name: &str) -> bool {
     let name = name.trim();
     matches!(

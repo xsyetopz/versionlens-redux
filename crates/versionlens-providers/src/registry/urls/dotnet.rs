@@ -4,6 +4,7 @@ use serde_json::from_str;
 
 const NUGET_PACKAGE_BASE_ADDRESS: &str = "PackageBaseAddress";
 
+/// The package base address for a package, read from a `NuGet` service index.
 pub fn dotnet_package_url_from_service_index(body: &str, name: &str) -> Option<String> {
     let name = name.trim();
     let value = from_str::<Value>(body).ok()?;
@@ -27,7 +28,7 @@ fn package_base_address_resource(resource: &Value) -> Option<&str> {
     resource
         .get("@id")?
         .as_str()
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|id| !id.is_empty())
 }
 
