@@ -136,8 +136,8 @@ fn zig_dependency(
         hosted_name: None,
         range: offset_range(text, requirement_start, requirement_end),
         requirement_range: offset_range(text, requirement_start, requirement_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }

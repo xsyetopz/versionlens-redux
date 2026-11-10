@@ -22,6 +22,7 @@ pub(crate) fn parse_leiningen_project_clj(text: &str) -> Vec<Dependency> {
     dependencies
 }
 
+/// Reads the Maven repositories of a Leiningen `project.clj`.
 pub fn parse_leiningen_maven_repositories(text: &str) -> Vec<MavenNamedRepository> {
     let tokens = tokenize(text);
     let Some(repositories_key) = tokens
@@ -99,8 +100,8 @@ fn project_version_dependency(text: &str, tokens: &Tokens<'_>) -> Option<Depende
         hosted_name: None,
         range: offset_range(text, name.start, version.end),
         requirement_range: offset_range(text, version.content_start, version.content_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -117,7 +118,7 @@ fn collect_dependency_vectors(
         dependency_group,
         |group, start, end| {
             collect_dependency_entries(
-                LeiningenDependencyEntries {
+                &mut LeiningenDependencyEntries {
                     text,
                     tokens,
                     group: &group,
@@ -176,7 +177,7 @@ struct LeiningenDependencyEntries<'a, 'tokens> {
 }
 
 fn collect_dependency_entries(
-    context: LeiningenDependencyEntries<'_, '_>,
+    context: &mut LeiningenDependencyEntries<'_, '_>,
     mut index: usize,
     end: usize,
 ) {
@@ -224,8 +225,8 @@ fn dependency_entry(
         hosted_name: None,
         range: offset_range(text, tokens[start].start, tokens[end].end),
         requirement_range: offset_range(text, version.content_start, version.content_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

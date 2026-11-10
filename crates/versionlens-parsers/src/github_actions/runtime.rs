@@ -144,7 +144,7 @@ pub(super) fn collect(
         && let Some(span) = yaml::scalar_range(text, uses)
         && let Some(start) = yaml::scalar_content_offset(text, span.clone(), repository.len() + 1)
     {
-        dependency.requirement = revision.to_owned();
+        revision.clone_into(&mut dependency.requirement);
         dependency.requirement_range = offset_range(text, start, span.end);
         dependencies.push(dependency);
     }

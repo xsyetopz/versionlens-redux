@@ -51,7 +51,7 @@ fn collect_versions(
         return;
     };
 
-    for (name, item) in table.iter() {
+    for (name, item) in table {
         let Some(key) = table.key(name) else {
             continue;
         };
@@ -103,7 +103,7 @@ fn collect_alias_table(
         return;
     };
 
-    for (alias, item) in table.iter() {
+    for (alias, item) in table {
         let Some(key) = table.key(alias) else {
             continue;
         };
@@ -134,11 +134,14 @@ fn gradle_dependency_input<'a>(
     key: &'a Key,
     group: &'static str,
     name: String,
-    requirement: &'a str,
-    hosted_url: Option<&'static str>,
-    requirement_span: Option<ByteRange<usize>>,
-    requirement_prefix: String,
+    version: (
+        &'a str,
+        Option<ByteRange<usize>>,
+        Option<&'static str>,
+        String,
+    ),
 ) -> GradleDependencyInput<'a> {
+    let (requirement, requirement_span, hosted_url, requirement_prefix) = version;
     GradleDependencyInput {
         text,
         group,
@@ -153,29 +156,26 @@ fn gradle_dependency_input<'a>(
 }
 
 fn gradle_dependency(input: GradleDependencyInput<'_>) -> Dependency {
-    let range = input
-        .range_span
-        .map(|span| offset_range(input.text, span.start, span.end))
-        .unwrap_or_else(|| offset_range(input.text, 0, 0));
-    let requirement_range = input
-        .requirement_span
-        .map(|span| {
-            let content = string_content_bounds(input.text, span.start, span.end);
-            offset_range(input.text, content.start, content.end)
-        })
-        .unwrap_or(range);
+    let range = input.range_span.map_or_else(
+        || offset_range(input.text, 0, 0),
+        |span| offset_range(input.text, span.start, span.end),
+    );
+    let requirement_range = input.requirement_span.map_or(range, |span| {
+        let content = string_content_bounds(input.text, span.start, span.end);
+        offset_range(input.text, content.start, content.end)
+    });
 
     Dependency {
         name: input.name,
         requirement: input.requirement.to_owned(),
         ecosystem: Maven,
         group: input.group.to_owned(),
-        hosted_url: input.hosted_url.map(|value| value.to_owned()),
-        hosted_name: input.hosted_name.map(|value| value.to_owned()),
+        hosted_url: input.hosted_url.map(ToOwned::to_owned),
+        hosted_name: input.hosted_name.map(ToOwned::to_owned),
         range,
         requirement_range,
         requirement_prefix: input.requirement_prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }
@@ -210,17 +210,13 @@ fn gradle_library_dependency<'a>(
 
     let inline = value.as_inline_table()?;
     let name = inline_module_name(inline)?;
-    let (requirement, requirement_span, hosted_url, requirement_prefix) =
-        inline_version_requirement(inline)?;
+    let version = inline_version_requirement(inline)?;
     Some(gradle_dependency_input(
         text,
         key,
         "libraries",
         name,
-        requirement,
-        hosted_url,
-        requirement_span,
-        requirement_prefix,
+        version,
     ))
 }
 
@@ -244,17 +240,13 @@ fn gradle_plugin_dependency<'a>(
 
     let inline = value.as_inline_table()?;
     let id = inline.get("id")?.as_str()?;
-    let (requirement, requirement_span, hosted_url, requirement_prefix) =
-        inline_version_requirement(inline)?;
+    let version = inline_version_requirement(inline)?;
     Some(gradle_dependency_input(
         text,
         key,
         "plugins",
         gradle_plugin_marker_name(id),
-        requirement,
-        hosted_url,
-        requirement_span,
-        requirement_prefix,
+        version,
     ))
 }
 
@@ -276,10 +268,12 @@ fn gradle_string_dependency<'a>(
         key,
         group,
         name.to_owned(),
-        requirement,
-        None,
-        Some(requirement_start..requirement_start + requirement.len()),
-        "".to_owned(),
+        (
+            requirement,
+            Some(requirement_start..requirement_start + requirement.len()),
+            None,
+            String::new(),
+        ),
     ))
 }
 
@@ -300,7 +294,7 @@ fn inline_module_name(inline: &InlineTable) -> Option<String> {
 fn inline_version_requirement(inline: &InlineTable) -> InlineVersionRequirement<'_> {
     if let Some(version) = inline.get("version") {
         if let Some(requirement) = version.as_str() {
-            return Some((requirement, version.span(), None, "".to_owned()));
+            return Some((requirement, version.span(), None, String::new()));
         }
         if let Some((requirement, span, prefix)) = gradle_version_requirement(version) {
             return Some((requirement, span, None, prefix.unwrap_or_default()));
@@ -315,9 +309,9 @@ fn inline_version_requirement(inline: &InlineTable) -> InlineVersionRequirement<
                 version
                     .as_inline_table()
                     .and_then(|version| version.get("ref"))
-                    .and_then(|value| value.span()),
+                    .and_then(toml_edit::Value::span),
                 Some("version.ref"),
-                "".to_owned(),
+                String::new(),
             ));
         }
     }
@@ -325,9 +319,9 @@ fn inline_version_requirement(inline: &InlineTable) -> InlineVersionRequirement<
     if let Some(version_ref) = inline.get("version.ref").and_then(|value| value.as_str()) {
         return Some((
             version_ref,
-            inline.get("version.ref").and_then(|value| value.span()),
+            inline.get("version.ref").and_then(toml_edit::Value::span),
             Some("version.ref"),
-            "".to_owned(),
+            String::new(),
         ));
     }
     if let Some(version_ref) = inline
@@ -342,9 +336,9 @@ fn inline_version_requirement(inline: &InlineTable) -> InlineVersionRequirement<
                 .get("version")
                 .and_then(|value| value.as_inline_table())
                 .and_then(|version| version.get("ref"))
-                .and_then(|value| value.span()),
+                .and_then(toml_edit::Value::span),
             Some("version.ref"),
-            "".to_owned(),
+            String::new(),
         ));
     }
 

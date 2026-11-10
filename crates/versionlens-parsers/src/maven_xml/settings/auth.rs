@@ -6,6 +6,7 @@ use super::entries::{MavenAuthEntry, MavenMirror, MavenNamedRepository};
 use super::profile::{active_profile_ids, profile_is_active};
 use crate::manifest::adapter::xml::{XmlNode, child_named, collect_nodes, direct_children};
 
+/// Reads the credentials that a Maven `settings.xml` attaches to its repositories.
 pub fn parse_maven_settings_auth_entries(text: &str) -> Vec<MavenAuthEntry> {
     let Some(nodes) = collect_nodes(text) else {
         return vec![];
@@ -17,10 +18,11 @@ pub fn parse_maven_settings_auth_entries(text: &str) -> Vec<MavenAuthEntry> {
         .into_iter()
         .chain(plugin_repository_sources(&nodes, &active_profiles))
         .chain(mirror_sources(&nodes))
-        .filter_map(|(id, url)| auth_entry(id, url, &credentials))
+        .filter_map(|(id, url)| auth_entry(&id, url, &credentials))
         .collect()
 }
 
+/// Lists the repository URLs of a Maven `settings.xml`.
 pub fn parse_maven_settings_repository_urls(text: &str) -> Vec<String> {
     parse_maven_settings_repositories(text)
         .into_iter()
@@ -28,6 +30,7 @@ pub fn parse_maven_settings_repository_urls(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Lists the named repositories of a Maven `settings.xml`.
 pub fn parse_maven_settings_repositories(text: &str) -> Vec<MavenNamedRepository> {
     let Some(nodes) = collect_nodes(text) else {
         return vec![];
@@ -42,6 +45,7 @@ pub fn parse_maven_settings_repositories(text: &str) -> Vec<MavenNamedRepository
         .collect()
 }
 
+/// Lists the mirror URLs of a Maven `settings.xml`.
 pub fn parse_maven_settings_mirror_urls(text: &str) -> Vec<String> {
     parse_maven_settings_mirrors(text)
         .into_iter()
@@ -50,6 +54,7 @@ pub fn parse_maven_settings_mirror_urls(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Lists the mirrors of a Maven `settings.xml`.
 pub fn parse_maven_settings_mirrors(text: &str) -> Vec<MavenMirror> {
     let Some(nodes) = collect_nodes(text) else {
         return vec![];
@@ -138,11 +143,11 @@ fn server_credential(node: &XmlNode, nodes: &[XmlNode]) -> Option<(String, (Stri
 }
 
 fn auth_entry(
-    id: String,
+    id: &str,
     registry: String,
     credentials: &HashMap<String, (String, String)>,
 ) -> Option<MavenAuthEntry> {
-    let (username, password) = credentials.get(&id)?;
+    let (username, password) = credentials.get(id)?;
     let token = STANDARD.encode(format!("{username}:{password}"));
 
     Some(MavenAuthEntry {

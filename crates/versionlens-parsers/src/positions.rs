@@ -19,55 +19,16 @@ pub(crate) fn dependency_ranges(
     requirement: Option<std::ops::Range<usize>>,
     requirement_is_quoted: bool,
 ) -> (Range, Range) {
-    let name_range = name
-        .map(|span| offset_range(text, span.start, span.end))
-        .unwrap_or_else(empty_range);
-    let requirement_range = requirement
-        .map(|span| {
-            let span = if requirement_is_quoted {
-                string_content_bounds(text, span.start, span.end)
-            } else {
-                span
-            };
-            offset_range(text, span.start, span.end)
-        })
-        .unwrap_or(name_range);
+    let name_range = name.map_or_else(empty_range, |span| offset_range(text, span.start, span.end));
+    let requirement_range = requirement.map_or(name_range, |span| {
+        let span = if requirement_is_quoted {
+            string_content_bounds(text, span.start, span.end)
+        } else {
+            span
+        };
+        offset_range(text, span.start, span.end)
+    });
     (name_range, requirement_range)
-}
-
-#[cfg(test)]
-mod tests {
-use super::{line_range, offset_range};
-
-#[test]
-fn offset_ranges_count_utf16_code_units_like_vscode_position_at() {
-    let text =
-        package_file_fixture("offset-ranges-count-utf16-code-units-like-vscode-position-at.txt");
-    let name_start = text.find("left-pad").expect("dependency name");
-    let range = offset_range(text, name_start, name_start + "left-pad".len());
-
-    assert_eq!(range.start.line, 0);
-    assert_eq!(range.start.character, 20);
-    assert_eq!(range.end.character, 28);
-}
-
-#[test]
-fn line_ranges_count_utf16_code_units_like_vscode_position_at() {
-    let line = "😀 FROM node:20";
-    let name_start = line.find("node").expect("image name");
-    let range = line_range(0, line, name_start, name_start + "node".len());
-
-    assert_eq!(range.start.line, 0);
-    assert_eq!(range.start.character, 8);
-    assert_eq!(range.end.character, 12);
-}
-
-fn package_file_fixture(name: &str) -> &'static str {
-    crate::support::tests::fixture(
-        "tests/fixtures/versionlens-parsers/src/positions/tests",
-        name,
-    )
-}
 }
 
 pub(crate) fn to_u32(value: usize) -> u32 {
@@ -88,10 +49,10 @@ pub(crate) fn offset_range(text: &str, start: usize, end: usize) -> Range {
 fn offset_position(text: &str, offset: usize) -> Position {
     let prefix = prefix_at_byte_offset(text, offset);
     let line = prefix.bytes().filter(|byte| *byte == b'\n').count();
-    let character = prefix
-        .rsplit_once('\n')
-        .map(|(_, tail)| utf16_code_units(tail))
-        .unwrap_or_else(|| utf16_code_units(prefix));
+    let character = prefix.rsplit_once('\n').map_or_else(
+        || utf16_code_units(prefix),
+        |(_, tail)| utf16_code_units(tail),
+    );
 
     Position {
         line: to_u32(line),
@@ -108,7 +69,7 @@ fn prefix_at_byte_offset(text: &str, offset: usize) -> &str {
 }
 
 pub(super) fn utf16_code_units(value: &str) -> usize {
-    value.chars().map(|value| value.len_utf16()).sum()
+    value.chars().map(char::len_utf16).sum()
 }
 
 pub(crate) fn string_content_bounds(
@@ -141,5 +102,41 @@ fn line_character(line: &str, offset: usize) -> usize {
     while !line.is_char_boundary(end) {
         end = end.saturating_sub(1);
     }
-    line.get(..end).map(utf16_code_units).unwrap_or(0)
+    line.get(..end).map_or(0, utf16_code_units)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{line_range, offset_range};
+
+    #[test]
+    fn offset_ranges_count_utf16_code_units_like_vscode_position_at() {
+        let text = package_file_fixture(
+            "offset-ranges-count-utf16-code-units-like-vscode-position-at.txt",
+        );
+        let name_start = text.find("left-pad").expect("dependency name");
+        let range = offset_range(text, name_start, name_start + "left-pad".len());
+
+        assert_eq!(range.start.line, 0);
+        assert_eq!(range.start.character, 20);
+        assert_eq!(range.end.character, 28);
+    }
+
+    #[test]
+    fn line_ranges_count_utf16_code_units_like_vscode_position_at() {
+        let line = "😀 FROM node:20";
+        let name_start = line.find("node").expect("image name");
+        let range = line_range(0, line, name_start, name_start + "node".len());
+
+        assert_eq!(range.start.line, 0);
+        assert_eq!(range.start.character, 8);
+        assert_eq!(range.end.character, 12);
+    }
+
+    fn package_file_fixture(name: &str) -> &'static str {
+        crate::support::tests::fixture(
+            "tests/fixtures/versionlens-parsers/src/positions/tests",
+            name,
+        )
+    }
 }

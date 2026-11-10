@@ -16,11 +16,12 @@ pub(crate) fn parse_paket_references(text: &str) -> Vec<Dependency> {
         .collect()
 }
 
+/// Lists the source URLs of a `paket.dependencies` file.
 pub fn parse_paket_source_urls(text: &str) -> Vec<String> {
     text.lines()
         .filter_map(paket_source_url)
         .filter(|url| url.starts_with("https://") || url.starts_with("http://"))
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
         .collect()
 }
 
@@ -62,8 +63,8 @@ fn parse_paket_dependency_line(line_index: usize, line: &str) -> Option<Dependen
             offset + requirement_start_in_trimmed,
             offset + requirement_end_in_trimmed,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -79,15 +80,15 @@ fn parse_paket_reference_line(line_index: usize, line: &str) -> Option<Dependenc
     let name_end = offset + name.len();
     Some(Dependency {
         name: name.to_owned(),
-        requirement: "".to_owned(),
+        requirement: String::new(),
         ecosystem: Dotnet,
         group: "paket.references".to_owned(),
         hosted_url: None,
         hosted_name: None,
         range: line_range(line_index, line, offset, name_end),
         requirement_range: line_range(line_index, line, name_end, name_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -149,71 +150,71 @@ fn starts_paket_option(raw: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-use super::parse_paket_source_urls;
-use crate::document::test_support::{extract_range, parse_fixture};
-use versionlens_model::Ecosystem::Dotnet;
+    use super::parse_paket_source_urls;
+    use crate::document::test_support::{extract_range, parse_fixture};
+    use versionlens_model::Ecosystem::Dotnet;
 
-#[test]
-fn parses_paket_dependencies_nuget_lines() {
-    let text = package_file_fixture("parses-paket-dependencies-nuget-lines.txt");
-    let dependencies = parse_fixture(text, "file:///work/paket.dependencies", "plaintext");
+    #[test]
+    fn parses_paket_dependencies_nuget_lines() {
+        let text = package_file_fixture("parses-paket-dependencies-nuget-lines.txt");
+        let dependencies = parse_fixture(text, "file:///work/paket.dependencies", "plaintext");
 
-    assert_eq!(dependencies.len(), 3);
-    crate::support::tests::assert_dependency(
-        &dependencies,
-        crate::support::tests::DependencyExpectation::new(
-            0,
-            Dotnet,
-            "paket.dependencies",
-            "Newtonsoft.Json",
-            "13.0.3",
-        ),
-    );
-    assert_eq!(
-        extract_range(text, dependencies[0].requirement_range),
-        "13.0.3"
-    );
-    assert_eq!(dependencies[1].name, "FSharp.Core");
-    assert_eq!(dependencies[1].requirement, ">= 8.0");
-    assert_eq!(
-        extract_range(text, dependencies[1].requirement_range),
-        ">= 8.0"
-    );
-    assert_eq!(dependencies[2].name, "Paket.Core");
-    assert_eq!(dependencies[2].requirement, "");
-    assert_eq!(extract_range(text, dependencies[2].requirement_range), "");
-}
+        assert_eq!(dependencies.len(), 3);
+        crate::support::tests::assert_dependency(
+            &dependencies,
+            crate::support::tests::DependencyExpectation::new(
+                0,
+                Dotnet,
+                "paket.dependencies",
+                "Newtonsoft.Json",
+                "13.0.3",
+            ),
+        );
+        assert_eq!(
+            extract_range(text, dependencies[0].requirement_range),
+            "13.0.3"
+        );
+        assert_eq!(dependencies[1].name, "FSharp.Core");
+        assert_eq!(dependencies[1].requirement, ">= 8.0");
+        assert_eq!(
+            extract_range(text, dependencies[1].requirement_range),
+            ">= 8.0"
+        );
+        assert_eq!(dependencies[2].name, "Paket.Core");
+        assert_eq!(dependencies[2].requirement, "");
+        assert_eq!(extract_range(text, dependencies[2].requirement_range), "");
+    }
 
-#[test]
-fn parses_paket_references_as_unresolved_project_references_without_update_ranges() {
-    let text = package_file_fixture(
-        "parses-paket-references-as-unresolved-project-references-without-update-ranges.txt",
-    );
-    let dependencies = parse_fixture(text, "file:///work/paket.references", "plaintext");
+    #[test]
+    fn parses_paket_references_as_unresolved_project_references_without_update_ranges() {
+        let text = package_file_fixture(
+            "parses-paket-references-as-unresolved-project-references-without-update-ranges.txt",
+        );
+        let dependencies = parse_fixture(text, "file:///work/paket.references", "plaintext");
 
-    assert_eq!(dependencies.len(), 2);
-    crate::support::tests::assert_dependency(
-        &dependencies,
-        crate::support::tests::DependencyExpectation::new(
-            0,
-            Dotnet,
-            "paket.references",
-            "Newtonsoft.Json",
-            "",
-        ),
-    );
-    crate::support::tests::assert_requirement_range_ends_at_dependency(&dependencies, 0);
-}
+        assert_eq!(dependencies.len(), 2);
+        crate::support::tests::assert_dependency(
+            &dependencies,
+            crate::support::tests::DependencyExpectation::new(
+                0,
+                Dotnet,
+                "paket.references",
+                "Newtonsoft.Json",
+                "",
+            ),
+        );
+        crate::support::tests::assert_requirement_range_ends_at_dependency(&dependencies, 0);
+    }
 
-#[test]
-fn parses_paket_source_urls() {
-    assert_eq!(
-        parse_paket_source_urls("source https://api.nuget.org/v3/index.json\nsource ./local\n"),
-        ["https://api.nuget.org/v3/index.json"]
-    );
-}
+    #[test]
+    fn parses_paket_source_urls() {
+        assert_eq!(
+            parse_paket_source_urls("source https://api.nuget.org/v3/index.json\nsource ./local\n"),
+            ["https://api.nuget.org/v3/index.json"]
+        );
+    }
 
-fn package_file_fixture(name: &str) -> &'static str {
-    crate::support::tests::fixture("tests/fixtures/versionlens-parsers/src/paket/tests", name)
-}
+    fn package_file_fixture(name: &str) -> &'static str {
+        crate::support::tests::fixture("tests/fixtures/versionlens-parsers/src/paket/tests", name)
+    }
 }

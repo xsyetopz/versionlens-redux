@@ -18,7 +18,7 @@ fn parse_from_line(line_index: usize, line: &str) -> Option<Dependency> {
     if !trimmed
         .as_bytes()
         .get(4)
-        .is_some_and(|value| value.is_ascii_whitespace())
+        .is_some_and(u8::is_ascii_whitespace)
     {
         return None;
     }
@@ -64,7 +64,7 @@ fn parse_from_line(line_index: usize, line: &str) -> Option<Dependency> {
             requirement_start + requirement.len(),
         ),
         requirement_prefix: requirement_prefix.to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

@@ -181,7 +181,7 @@ pub(crate) fn walk_toml_values<'a>(
     keys: &mut Vec<&'a Key>,
     visit: &mut impl FnMut(&[&'a Key], &'a TomlValue),
 ) {
-    for (key_name, item) in table.iter() {
+    for (key_name, item) in table {
         let Some(key) = table.key(key_name) else {
             continue;
         };

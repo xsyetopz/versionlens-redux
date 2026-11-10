@@ -15,7 +15,7 @@ type ParsedDependencies = Vec<Dependency>;
 
 /// The parser for a manifest kind: the document text, and the dependency
 /// path queries when the format selects dependencies by path.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum ManifestParser {
     Direct(fn(&str) -> ParsedDependencies),
     WithPaths(fn(&str, &[&str]) -> ParsedDependencies),
@@ -24,10 +24,15 @@ pub(crate) enum ManifestParser {
 /// How a manifest file is written. `Custom` file types keep a hand-written parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ManifestFormat {
+    /// A JSON file.
     Json,
+    /// A TOML file.
     Toml,
+    /// A YAML file.
     Yaml,
+    /// An XML file.
     Xml,
+    /// A file with a hand-written parser.
     Custom,
 }
 
@@ -36,28 +41,37 @@ pub enum ManifestFormat {
 /// sees documents that no earlier stage claimed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Stage {
+    /// Patterns that must win over every later stage.
     Early,
+    /// Patterns that match an editor language ID.
     Editor,
+    /// Patterns for workflow files.
     Workflow,
+    /// Patterns for file names that other stages could claim.
     Late,
+    /// Patterns that test the document text.
     Content,
+    /// Patterns for Python project files.
     Python,
+    /// Patterns for Dart `pubspec` files.
     Pubspec,
 }
 
 impl Stage {
-    pub const ALL: [Stage; 7] = [
-        Stage::Early,
-        Stage::Editor,
-        Stage::Workflow,
-        Stage::Late,
-        Stage::Content,
-        Stage::Python,
-        Stage::Pubspec,
+    /// Every stage, in the order that classification tries them.
+    pub const ALL: [Self; 7] = [
+        Self::Early,
+        Self::Editor,
+        Self::Workflow,
+        Self::Late,
+        Self::Content,
+        Self::Python,
+        Self::Pubspec,
     ];
 }
 
-#[derive(Clone, Copy)]
+/// One test that a document must pass to match a manifest pattern.
+#[derive(Debug, Clone, Copy)]
 pub enum Rule {
     /// The file name, compared without ASCII case.
     Name(&'static str),
@@ -71,18 +85,27 @@ pub enum Rule {
     Content(fn(&DocumentInput, &str) -> bool),
 }
 
-#[derive(Clone, Copy)]
+/// A classification rule together with the stage that tries it.
+#[derive(Debug, Clone, Copy)]
 pub struct Pattern {
+    /// The stage that tries the rule.
     pub stage: Stage,
+    /// The test to run.
     pub rule: Rule,
 }
 
+#[derive(Debug)]
+/// One file type of the manifest table.
 pub struct ManifestRow {
+    /// The manifest kind of the file type.
     pub kind: ManifestKind,
+    /// The ecosystem of the file type.
     pub ecosystem: Ecosystem,
     /// Provider family name, such as `golang` or `pypi`.
     pub provider: &'static str,
+    /// How the file is written.
     pub format: ManifestFormat,
+    /// The patterns that match the file type.
     pub patterns: &'static [Pattern],
     pub(crate) parser: ManifestParser,
     /// The path queries that select dependencies, used when the user
@@ -199,102 +222,105 @@ impl Rule {
     pub(crate) fn matches(&self, input: &DocumentInput, uri: &str) -> bool {
         let name = patterns::file_name(uri);
         match *self {
-            Rule::Name(expected) => name.is_some_and(|name| name.eq_ignore_ascii_case(expected)),
-            Rule::Extension(expected) => name.is_some_and(|name| {
+            Self::Name(expected) => name.is_some_and(|name| name.eq_ignore_ascii_case(expected)),
+            Self::Extension(expected) => name.is_some_and(|name| {
                 std::path::Path::new(name)
                     .extension()
                     .is_some_and(|extension| extension.eq_ignore_ascii_case(expected))
             }),
-            Rule::Language(expected) => input.language_id == expected,
-            Rule::Uri(test) => test(uri),
-            Rule::Content(test) => test(input, uri),
+            Self::Language(expected) => input.language_id == expected,
+            Self::Uri(test) => test(uri),
+            Self::Content(test) => test(input, uri),
         }
     }
 }
 
+/// Finds the table row of a manifest kind.
 pub fn manifest_row(kind: ManifestKind) -> Option<&'static ManifestRow> {
     MANIFESTS.iter().find(|row| row.kind == kind)
 }
 
+/// Returns the ecosystem of a manifest kind.
 pub fn ecosystem_for_manifest(kind: ManifestKind) -> Option<Ecosystem> {
     manifest_row(kind).map(|row| row.ecosystem)
 }
 
+/// Returns the provider family name of a manifest kind.
 pub fn provider_name_for_manifest(kind: ManifestKind) -> Option<&'static str> {
     manifest_row(kind).map(|row| row.provider)
 }
 
 #[cfg(test)]
 mod tests {
-use versionlens_model::Ecosystem;
-use versionlens_model::ManifestKind::{
-    BunVersion, CargoToml, GoMod, NodeVersion, Nvmrc, RustToolchain, RustToolchainToml, Unknown,
-    VersionLensMultiRegistries,
-};
+    use versionlens_model::Ecosystem;
+    use versionlens_model::ManifestKind::{
+        BunVersion, CargoToml, GoMod, NodeVersion, Nvmrc, RustToolchain, RustToolchainToml,
+        Unknown, VersionLensMultiRegistries,
+    };
 
-use super::{
-    MANIFESTS, ManifestFormat, ecosystem_for_manifest, manifest_row, provider_name_for_manifest,
-};
+    use super::{
+        MANIFESTS, ManifestFormat, ecosystem_for_manifest, manifest_row, provider_name_for_manifest,
+    };
 
-#[test]
-fn lists_each_manifest_kind_once_with_a_pattern() {
-    for (index, row) in MANIFESTS.iter().enumerate() {
-        assert!(!row.patterns.is_empty(), "{:?} has no pattern", row.kind);
-        assert!(
-            MANIFESTS[index + 1..]
-                .iter()
-                .all(|other| other.kind != row.kind),
-            "{:?} has two rows",
-            row.kind
+    #[test]
+    fn lists_each_manifest_kind_once_with_a_pattern() {
+        for (index, row) in MANIFESTS.iter().enumerate() {
+            assert!(!row.patterns.is_empty(), "{:?} has no pattern", row.kind);
+            assert!(
+                MANIFESTS[index + 1..]
+                    .iter()
+                    .all(|other| other.kind != row.kind),
+                "{:?} has two rows",
+                row.kind
+            );
+        }
+    }
+
+    #[test]
+    fn maps_manifest_kinds_to_their_row() {
+        for row in MANIFESTS {
+            assert_eq!(ecosystem_for_manifest(row.kind), Some(row.ecosystem));
+            assert_eq!(provider_name_for_manifest(row.kind), Some(row.provider));
+        }
+        assert_eq!(ecosystem_for_manifest(GoMod), Some(Ecosystem::Go));
+        assert_eq!(provider_name_for_manifest(GoMod), Some("golang"));
+        assert_eq!(
+            manifest_row(CargoToml).map(|row| row.format),
+            Some(ManifestFormat::Toml)
         );
     }
-}
 
-#[test]
-fn maps_manifest_kinds_to_their_row() {
-    for row in MANIFESTS {
-        assert_eq!(ecosystem_for_manifest(row.kind), Some(row.ecosystem));
-        assert_eq!(provider_name_for_manifest(row.kind), Some(row.provider));
+    #[test]
+    fn ignores_non_dependency_manifest_kinds() {
+        for kind in [Unknown, VersionLensMultiRegistries] {
+            assert!(manifest_row(kind).is_none());
+            assert_eq!(ecosystem_for_manifest(kind), None);
+            assert_eq!(provider_name_for_manifest(kind), None);
+        }
     }
-    assert_eq!(ecosystem_for_manifest(GoMod), Some(Ecosystem::Go));
-    assert_eq!(provider_name_for_manifest(GoMod), Some("golang"));
-    assert_eq!(
-        manifest_row(CargoToml).map(|row| row.format),
-        Some(ManifestFormat::Toml)
-    );
-}
 
-#[test]
-fn ignores_non_dependency_manifest_kinds() {
-    for kind in [Unknown, VersionLensMultiRegistries] {
-        assert!(manifest_row(kind).is_none());
-        assert_eq!(ecosystem_for_manifest(kind), None);
-        assert_eq!(provider_name_for_manifest(kind), None);
+    #[test]
+    fn maps_runtime_manifests_to_their_provider_families() {
+        for kind in [Nvmrc, NodeVersion, BunVersion] {
+            assert_eq!(provider_name_for_manifest(kind), Some("npm"));
+        }
+        for kind in [RustToolchain, RustToolchainToml] {
+            assert_eq!(provider_name_for_manifest(kind), Some("cargo"));
+        }
     }
-}
 
-#[test]
-fn maps_runtime_manifests_to_their_provider_families() {
-    for kind in [Nvmrc, NodeVersion, BunVersion] {
-        assert_eq!(provider_name_for_manifest(kind), Some("npm"));
+    #[test]
+    fn rows_hold_their_default_dependency_paths() {
+        use versionlens_model::ManifestKind::{NixFlake, NpmPackageJson, PubspecOverridesYaml};
+
+        let defaults = |kind| manifest_row(kind).expect("row exists").dependency_paths;
+
+        let npm = defaults(NpmPackageJson);
+        assert!(npm.contains(&"dependencies"));
+        assert!(!npm.contains(&"version"));
+        assert_eq!(defaults(CargoToml).first(), Some(&"package"));
+        assert_eq!(defaults(PubspecOverridesYaml), ["dependency_overrides"]);
+        assert_eq!(defaults(NixFlake).len(), 0);
+        assert_eq!(defaults(GoMod).len(), 0);
     }
-    for kind in [RustToolchain, RustToolchainToml] {
-        assert_eq!(provider_name_for_manifest(kind), Some("cargo"));
-    }
-}
-
-#[test]
-fn rows_hold_their_default_dependency_paths() {
-    use versionlens_model::ManifestKind::{NixFlake, NpmPackageJson, PubspecOverridesYaml};
-
-    let defaults = |kind| manifest_row(kind).expect("row exists").dependency_paths;
-
-    let npm = defaults(NpmPackageJson);
-    assert!(npm.contains(&"dependencies"));
-    assert!(!npm.contains(&"version"));
-    assert_eq!(defaults(CargoToml).first(), Some(&"package"));
-    assert_eq!(defaults(PubspecOverridesYaml), ["dependency_overrides"]);
-    assert!(defaults(NixFlake).is_empty());
-    assert!(defaults(GoMod).is_empty());
-}
 }

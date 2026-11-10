@@ -9,6 +9,7 @@ use versionlens_model::Ecosystem::Bazel;
 type ParsedBazelDependency = Option<Dependency>;
 type BazelArguments = BTreeMap<String, ArgumentValue>;
 
+#[derive(Clone, Copy)]
 struct FixedOverrideRequest<'a> {
     directive: &'a str,
     call_start: usize,
@@ -186,8 +187,8 @@ fn versioned_dependency(request: VersionedDependencyRequest<'_>) -> Dependency {
             request.version.value_start,
             request.version.value_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }
@@ -215,8 +216,8 @@ fn fixed_override_dependency(
         hosted_name: None,
         range: offset_range(text, request.call_start, request.close + 1),
         requirement_range: offset_range(text, requirement.value_start, requirement.value_end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -245,12 +246,12 @@ fn parse_kwargs(text: &str, start: usize, end: usize) -> BazelArguments {
                 args.insert(key, value.into_argument());
                 continue;
             }
-        } else if text.as_bytes().get(value_start) == Some(&b'[') {
-            if let Some(value) = first_quoted_list_value(text, value_start) {
-                offset = value.outer_end;
-                args.insert(key, value.into_argument());
-                continue;
-            }
+        } else if text.as_bytes().get(value_start) == Some(&b'[')
+            && let Some(value) = first_quoted_list_value(text, value_start)
+        {
+            offset = value.outer_end;
+            args.insert(key, value.into_argument());
+            continue;
         }
         offset = value_start + 1;
     }

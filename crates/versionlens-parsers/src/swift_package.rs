@@ -37,9 +37,10 @@ fn parse_package_call(text: &str, start: usize, end: usize) -> Option<Dependency
 
     let url = find_labeled_string(text, start, call, "url:")?;
     let explicit_name = find_labeled_string(text, start, call, "name:");
-    let name = explicit_name
-        .map(|name| name.value.to_owned())
-        .unwrap_or_else(|| package_name_from_url(url.value));
+    let name = explicit_name.map_or_else(
+        || package_name_from_url(url.value),
+        |name| name.value.to_owned(),
+    );
 
     let requirement = find_labeled_string(text, start, call, "from:")
         .or_else(|| find_labeled_string(text, start, call, "exact:"))
@@ -132,8 +133,8 @@ fn swift_dependency(
         hosted_name: None,
         range: offset_range(text, value.start, value.end),
         requirement_range: offset_range(text, value.start, value.end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }

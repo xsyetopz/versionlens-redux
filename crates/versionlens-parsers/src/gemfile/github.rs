@@ -7,6 +7,7 @@ use versionlens_model::Ecosystem::Ruby;
 
 type DefaultGithubDependency = Option<Dependency>;
 
+#[derive(Clone, Copy)]
 struct DefaultGithubSource<'a> {
     repo: &'a str,
     repo_end: usize,
@@ -64,7 +65,7 @@ fn default_dependency(
     let insert_at = context.content.len();
     Dependency {
         name: source.repo.to_owned(),
-        requirement: "".to_owned(),
+        requirement: String::new(),
         ecosystem: Ruby,
         group: context.group.to_owned(),
         hosted_url: Some("branch".to_owned()),
@@ -104,8 +105,8 @@ fn gem_github_value_dependency(
     let (value, _, value_start, value_end) = attr_string_span(context.content, attr_name)?;
     let repo = github_repository(context.content)?;
     let hosted_url = match attr_name {
-        "ref" if is_commit_sha(&value) => github_api_url(&repo, "commits")?,
-        "ref" if is_version_tag(&value) => github_api_url(&repo, "tags")?,
+        "ref" if is_commit_sha(&value) => github_api_url(repo, "commits")?,
+        "ref" if is_version_tag(&value) => github_api_url(repo, "tags")?,
         _ => "branch".to_owned(),
     };
 
@@ -123,8 +124,8 @@ fn gem_github_value_dependency(
             context.offset + value_start,
             context.offset + value_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -210,7 +211,7 @@ pub(in crate::gemfile) fn gem_github_tag_dependency(
         requirement: tag.into_owned(),
         ecosystem: Ruby,
         group: context.group.to_owned(),
-        hosted_url: Some(github_api_url(&repo, "tags")?),
+        hosted_url: Some(github_api_url(repo, "tags")?),
         hosted_name: Some(name.name.to_owned()),
         range: gem_name_range(context),
         requirement_range: line_range(

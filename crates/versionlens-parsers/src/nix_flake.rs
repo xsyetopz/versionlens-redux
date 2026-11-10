@@ -95,8 +95,8 @@ fn parse_flake_source(alias: &str, source: &str, source_start: usize) -> Option<
             hosted_url: Some("path".to_owned()),
             requirement_start: source_start,
             requirement_end: source_start + source.len(),
-            requirement_prefix: "".to_owned(),
-            requirement_suffix: "".to_owned(),
+            requirement_prefix: String::new(),
+            requirement_suffix: String::new(),
         });
     }
     if source.starts_with("git+") || source.starts_with("git:") || source.contains("://") {
@@ -106,8 +106,8 @@ fn parse_flake_source(alias: &str, source: &str, source_start: usize) -> Option<
             hosted_url: Some("git".to_owned()),
             requirement_start: source_start,
             requirement_end: source_start + source.len(),
-            requirement_prefix: "".to_owned(),
-            requirement_suffix: "".to_owned(),
+            requirement_prefix: String::new(),
+            requirement_suffix: String::new(),
         });
     }
     None
@@ -144,8 +144,8 @@ fn parse_github_source(source: &str, source_start: usize) -> Option<ParsedFlakeS
         requirement: requirement.to_owned(),
         requirement_start,
         requirement_end,
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
     })
 }
 
@@ -174,8 +174,7 @@ fn input_alias_for_url(text: &str, inputs_start: usize, url_start: usize) -> Opt
     let prefix = text.get(inputs_start..url_start)?;
     let line_start = prefix
         .rfind('\n')
-        .map(|index| inputs_start + index + 1)
-        .unwrap_or(inputs_start);
+        .map_or(inputs_start, |index| inputs_start + index + 1);
     let line_prefix = text.get(line_start..url_start)?.trim_end();
     if let Some(alias) = line_prefix.strip_suffix('.') {
         let alias = alias.rsplit('.').next()?.trim();

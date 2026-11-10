@@ -12,6 +12,7 @@ use versionlens_model::Dependency;
 
 type KustomizationImageDependency = Option<Dependency>;
 
+#[derive(Clone, Copy)]
 struct TaggedImageDependency<'a> {
     original_name: &'a MarkedScalarNode,
     registry: &'a str,
@@ -148,7 +149,7 @@ fn build_image_dependency(text: &str, parts: ImageDependencyParts<'_>) -> Depend
             parts.requirement_start + parts.requirement.len(),
         ),
         requirement_prefix: parts.requirement_prefix.to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }
@@ -165,8 +166,8 @@ fn tagged_dependency(text: &str, image: TaggedImageDependency<'_>) -> Kustomizat
             .filter(|original| original != image.name),
         range: offset_range(text, image.name_start, image.name_start + image.name.len()),
         requirement_range: offset_range(text, tag_range.start, tag_range.end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -189,7 +190,7 @@ fn digest_dependency(
         range: offset_range(text, name_start, name_start + name.len()),
         requirement_range: offset_range(text, digest_range.start, digest_range.end),
         requirement_prefix: "digest: ".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

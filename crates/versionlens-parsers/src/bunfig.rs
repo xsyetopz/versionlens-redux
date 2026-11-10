@@ -4,6 +4,7 @@ use crate::npmrc::{NpmAuthEntry, NpmRegistryEntry, bearer_auth_entry, expand_env
 
 type BunfigRegistryEntries = Vec<NpmRegistryEntry>;
 
+/// Reads the npm registry entries of a `bunfig.toml`, expanding `$VAR` references from `env`.
 pub fn parse_bunfig_npm_registry_entries_with_env(
     text: &str,
     env: &[(String, String)],
@@ -19,6 +20,7 @@ pub fn parse_bunfig_npm_registry_entries_with_env(
     .unwrap_or_default()
 }
 
+/// Reads the npm auth entries of a `bunfig.toml`, expanding `$VAR` references from `env`.
 pub fn parse_bunfig_npm_auth_entries_with_env(
     text: &str,
     env: &[(String, String)],
@@ -71,11 +73,11 @@ fn scope_auth_entry(item: &Item, env: &[(String, String)]) -> Option<NpmAuthEntr
 }
 
 fn scope_registry_url(item: &Item) -> Option<String> {
-    item.as_str().map(|value| value.to_owned()).or_else(|| {
+    item.as_str().map(ToOwned::to_owned).or_else(|| {
         inline_table_item(item)?
             .get("url")?
             .as_str()
-            .map(|value| value.to_owned())
+            .map(ToOwned::to_owned)
     })
 }
 
@@ -109,9 +111,9 @@ fn string_item(item: &Item, field: &str) -> Option<String> {
     item.as_table()?
         .get(field)?
         .as_str()
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|url| !url.is_empty())
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 fn normalize_bun_scope(scope: &str) -> String {
@@ -124,17 +126,19 @@ fn normalize_bun_scope(scope: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-use super::{parse_bunfig_npm_auth_entries_with_env, parse_bunfig_npm_registry_entries_with_env};
-use crate::test_support::assert_registry_entries;
+    use super::{
+        parse_bunfig_npm_auth_entries_with_env, parse_bunfig_npm_registry_entries_with_env,
+    };
+    use crate::test_support::assert_registry_entries;
 
-#[test]
-fn parses_bunfig_registry_and_scope_registries() {
-    let env = vec![(
-        "REGISTRY_HOST".to_owned(),
-        "registry.example.test".to_owned(),
-    )];
-    let entries = parse_bunfig_npm_registry_entries_with_env(
-        r#"
+    #[test]
+    fn parses_bunfig_registry_and_scope_registries() {
+        let env = vec![(
+            "REGISTRY_HOST".to_owned(),
+            "registry.example.test".to_owned(),
+        )];
+        let entries = parse_bunfig_npm_registry_entries_with_env(
+            r#"
 [install]
 registry = "https://${REGISTRY_HOST}"
 
@@ -142,34 +146,34 @@ registry = "https://${REGISTRY_HOST}"
 scope = "https://scope.example.test/npm"
 "@quoted" = { url = "https://quoted.example.test", token = "${TOKEN}" }
 "#,
-        &env,
-    );
+            &env,
+        );
 
-    assert_registry_entries(
-        &entries,
-        &[
-            (None, "https://registry.example.test"),
-            (Some("@scope"), "https://scope.example.test/npm"),
-            (Some("@quoted"), "https://quoted.example.test"),
-        ],
-    );
-}
+        assert_registry_entries(
+            &entries,
+            &[
+                (None, "https://registry.example.test"),
+                (Some("@scope"), "https://scope.example.test/npm"),
+                (Some("@quoted"), "https://quoted.example.test"),
+            ],
+        );
+    }
 
-#[test]
-fn parses_bunfig_scope_auth_tokens() {
-    let env = vec![("TOKEN".to_owned(), "secret-token".to_owned())];
-    let entries = parse_bunfig_npm_auth_entries_with_env(
-        r#"
+    #[test]
+    fn parses_bunfig_scope_auth_tokens() {
+        let env = vec![("TOKEN".to_owned(), "secret-token".to_owned())];
+        let entries = parse_bunfig_npm_auth_entries_with_env(
+            r#"
 [install.scopes]
 "@scope" = { url = "https://scope.example.test/npm/", token = "${TOKEN}" }
 empty = { url = "https://empty.example.test", token = "" }
 string = "https://string.example.test"
 "#,
-        &env,
-    );
+            &env,
+        );
 
-    assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].registry, "//scope.example.test/npm");
-    assert_eq!(entries[0].header_value, "Bearer secret-token");
-}
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].registry, "//scope.example.test/npm");
+        assert_eq!(entries[0].header_value, "Bearer secret-token");
+    }
 }

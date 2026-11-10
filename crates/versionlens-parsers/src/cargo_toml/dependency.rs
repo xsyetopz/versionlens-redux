@@ -8,6 +8,7 @@ mod spans;
 use inline::{inline_dependency_value, inline_registry_name};
 use spans::{CargoDependencySource, CargoDependencySpans, cargo_dependency_from_span};
 
+#[derive(Clone, Copy)]
 pub(super) struct CargoTomlDependencyInput<'a> {
     pub(super) text: &'a str,
     pub(super) group: &'a str,

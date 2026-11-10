@@ -42,10 +42,10 @@ pub(crate) fn parse_rebar_config(text: &str) -> Vec<Dependency> {
         }
         if let Some(section) = rebar_dependency_section_name(trimmed) {
             in_deps = true;
-            dependency_group = current_profile
-                .as_deref()
-                .map(|profile| format!("{section}.{profile}"))
-                .unwrap_or_else(|| section.to_owned());
+            dependency_group = current_profile.as_deref().map_or_else(
+                || section.to_owned(),
+                |profile| format!("{section}.{profile}"),
+            );
         }
         if in_deps {
             if let Some(tuple_start) = rebar_multiline_tuple_start(line) {
@@ -88,7 +88,7 @@ pub(crate) fn parse_rebar_config(text: &str) -> Vec<Dependency> {
         }
         if in_deps && (trimmed.starts_with("]}") || trimmed.ends_with("]}.") || trimmed == "]}") {
             in_deps = false;
-            dependency_group = "deps".to_owned();
+            "deps".clone_into(&mut dependency_group);
         }
         if in_profiles && trimmed.ends_with("]}.") {
             in_profiles = false;
@@ -213,6 +213,7 @@ impl RebarDependencyBlock {
     }
 }
 
+#[derive(Clone, Copy)]
 struct RebarLineSpan<'a> {
     line: &'a str,
     line_offset: usize,
@@ -243,8 +244,8 @@ fn parse_rebar_bare_dependency(
             span.line_offset + span.start,
             span.line_offset + span.end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -256,10 +257,7 @@ fn parse_rebar_dependency_source(
     group: &str,
 ) -> ParsedRebarDependency {
     let tuple_start = source.find('{')?;
-    let tuple_end = source
-        .rfind('}')
-        .map(|index| index + 1)
-        .unwrap_or(source.len());
+    let tuple_end = source.rfind('}').map_or(source.len(), |index| index + 1);
     let tuple = source.get(tuple_start..tuple_end)?;
     let name = rebar_tuple_atom(tuple)?;
 
@@ -267,10 +265,11 @@ fn parse_rebar_dependency_source(
     let (requirement, hosted_url) = rebar_requirement(tuple)?;
     let requirement_offset = source[tuple_start..tuple_end]
         .find(requirement)
-        .map(|index| source_offset + tuple_start + index)
-        .unwrap_or(source_offset + tuple_start + 1);
+        .map_or(source_offset + tuple_start + 1, |index| {
+            source_offset + tuple_start + index
+        });
 
-    Some(support::sourced_dependency(support::SourcedDependency {
+    Some(support::sourced_dependency(&support::SourcedDependency {
         text,
         ecosystem: Hex,
         group,
@@ -430,77 +429,79 @@ fn rebar_package_name(tuple: &str) -> Option<(&str, Option<&str>)> {
 
 #[cfg(test)]
 mod tests {
-use super::parse_rebar_config;
+    use super::parse_rebar_config;
 
-#[test]
-fn parses_rebar_dependency_forms() {
-    let dependencies = parse_rebar_config(
-        r#"{deps,[
+    #[test]
+    fn parses_rebar_dependency_forms() {
+        let dependencies = parse_rebar_config(
+            r#"{deps,[
   {cowboy,"2.12.0"},
   {lager, {pkg, lager_fork}},
   {jsx, "3.1.0", {pkg, jsx_fork}},
   {gettext, {git, "https://github.com/elixir-lang/gettext.git", {tag, "0.26.2"}}}
 ]}.
 "#,
-    );
+        );
 
-    assert_eq!(dependencies.len(), 4);
-    assert_eq!(dependencies[0].name, "cowboy");
-    assert_eq!(dependencies[0].requirement, "2.12.0");
-    assert_eq!(dependencies[1].name, "lager_fork");
-    assert_eq!(dependencies[1].hosted_name.as_deref(), Some("lager"));
-    assert_eq!(dependencies[2].name, "jsx_fork");
-    assert_eq!(dependencies[2].requirement, "3.1.0");
-    assert_eq!(dependencies[3].hosted_url.as_deref(), Some("git"));
-}
+        assert_eq!(dependencies.len(), 4);
+        assert_eq!(dependencies[0].name, "cowboy");
+        assert_eq!(dependencies[0].requirement, "2.12.0");
+        assert_eq!(dependencies[1].name, "lager_fork");
+        assert_eq!(dependencies[1].hosted_name.as_deref(), Some("lager"));
+        assert_eq!(dependencies[2].name, "jsx_fork");
+        assert_eq!(dependencies[2].requirement, "3.1.0");
+        assert_eq!(dependencies[3].hosted_url.as_deref(), Some("git"));
+    }
 
-#[test]
-fn parses_rebar_plugins() {
-    let dependencies = parse_rebar_config(package_file_fixture("parses-rebar-plugins.txt"));
+    #[test]
+    fn parses_rebar_plugins() {
+        let dependencies = parse_rebar_config(package_file_fixture("parses-rebar-plugins.txt"));
 
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].name, "rebar_erl_vsn");
-    assert_eq!(dependencies[0].requirement, "~> 0.1");
-    assert_eq!(dependencies[0].group, "plugins");
-}
+        assert_eq!(dependencies.len(), 1);
+        assert_eq!(dependencies[0].name, "rebar_erl_vsn");
+        assert_eq!(dependencies[0].requirement, "~> 0.1");
+        assert_eq!(dependencies[0].group, "plugins");
+    }
 
-#[test]
-fn parses_rebar_project_plugins() {
-    let dependencies = parse_rebar_config(package_file_fixture("parses-rebar-project-plugins.txt"));
+    #[test]
+    fn parses_rebar_project_plugins() {
+        let dependencies =
+            parse_rebar_config(package_file_fixture("parses-rebar-project-plugins.txt"));
 
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].name, "rebar3_cuttlefish");
-    assert_eq!(dependencies[0].requirement, "~> 0.1");
-    assert_eq!(dependencies[0].group, "project_plugins");
-}
+        assert_eq!(dependencies.len(), 1);
+        assert_eq!(dependencies[0].name, "rebar3_cuttlefish");
+        assert_eq!(dependencies[0].requirement, "~> 0.1");
+        assert_eq!(dependencies[0].group, "project_plugins");
+    }
 
-#[test]
-fn parses_rebar_profile_plugins() {
-    let dependencies = parse_rebar_config(package_file_fixture("parses-rebar-profile-plugins.txt"));
+    #[test]
+    fn parses_rebar_profile_plugins() {
+        let dependencies =
+            parse_rebar_config(package_file_fixture("parses-rebar-profile-plugins.txt"));
 
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].name, "rebar3_hex");
-    assert_eq!(dependencies[0].requirement, "7.0.11");
-    assert_eq!(dependencies[0].group, "plugins.test");
-}
+        assert_eq!(dependencies.len(), 1);
+        assert_eq!(dependencies[0].name, "rebar3_hex");
+        assert_eq!(dependencies[0].requirement, "7.0.11");
+        assert_eq!(dependencies[0].group, "plugins.test");
+    }
 
-#[test]
-fn parses_rebar_dependencies_from_compact_list() {
-    let dependencies = parse_rebar_config(package_file_fixture(
-        "parses-rebar-dependencies-from-compact-list.txt",
-    ));
+    #[test]
+    fn parses_rebar_dependencies_from_compact_list() {
+        let dependencies = parse_rebar_config(package_file_fixture(
+            "parses-rebar-dependencies-from-compact-list.txt",
+        ));
 
-    assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].name, "cowboy");
-    assert_eq!(dependencies[0].requirement, "2.12.0");
-    assert_eq!(dependencies[1].name, "jsx");
-    assert_eq!(dependencies[1].requirement, "3.1.0");
-}
+        assert_eq!(dependencies.len(), 2);
+        assert_eq!(dependencies[0].name, "cowboy");
+        assert_eq!(dependencies[0].requirement, "2.12.0");
+        assert_eq!(dependencies[1].name, "jsx");
+        assert_eq!(dependencies[1].requirement, "3.1.0");
+    }
 
-#[test]
-fn parses_rebar_profile_dependencies() {
-    let dependencies = parse_rebar_config(
-        r#"{profiles, [
+    #[test]
+    fn parses_rebar_profile_dependencies() {
+        let dependencies = parse_rebar_config(
+            r#"{profiles, [
   {test, [
     {deps, [
       {meck, "1.0.0"}
@@ -508,60 +509,60 @@ fn parses_rebar_profile_dependencies() {
   ]}
 ]}.
 "#,
-    );
+        );
 
-    assert_eq!(dependencies.len(), 1);
-    assert_eq!(dependencies[0].name, "meck");
-    assert_eq!(dependencies[0].requirement, "1.0.0");
-    assert_eq!(dependencies[0].group, "deps.test");
-}
+        assert_eq!(dependencies.len(), 1);
+        assert_eq!(dependencies[0].name, "meck");
+        assert_eq!(dependencies[0].requirement, "1.0.0");
+        assert_eq!(dependencies[0].group, "deps.test");
+    }
 
-#[test]
-fn parses_rebar_compact_profile_dependencies() {
-    let dependencies = parse_rebar_config(package_file_fixture(
-        "parses-rebar-compact-profile-dependencies.txt",
-    ));
+    #[test]
+    fn parses_rebar_compact_profile_dependencies() {
+        let dependencies = parse_rebar_config(package_file_fixture(
+            "parses-rebar-compact-profile-dependencies.txt",
+        ));
 
-    assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].name, "meck");
-    assert_eq!(dependencies[0].requirement, "latest");
-    assert_eq!(dependencies[0].group, "deps.test");
-    assert_eq!(dependencies[1].name, "proper");
-    assert_eq!(dependencies[1].requirement, "1.4.0");
-    assert_eq!(dependencies[1].group, "deps.test");
-}
+        assert_eq!(dependencies.len(), 2);
+        assert_eq!(dependencies[0].name, "meck");
+        assert_eq!(dependencies[0].requirement, "latest");
+        assert_eq!(dependencies[0].group, "deps.test");
+        assert_eq!(dependencies[1].name, "proper");
+        assert_eq!(dependencies[1].requirement, "1.4.0");
+        assert_eq!(dependencies[1].group, "deps.test");
+    }
 
-#[test]
-fn parses_rebar_bare_package_dependencies() {
-    let dependencies = parse_rebar_config(package_file_fixture(
-        "parses-rebar-bare-package-dependencies.txt",
-    ));
+    #[test]
+    fn parses_rebar_bare_package_dependencies() {
+        let dependencies = parse_rebar_config(package_file_fixture(
+            "parses-rebar-bare-package-dependencies.txt",
+        ));
 
-    assert_eq!(dependencies.len(), 2);
-    assert_eq!(dependencies[0].name, "ranch");
-    assert_eq!(dependencies[0].requirement, "latest");
-    assert_eq!(dependencies[1].name, "cowboy");
-    assert_eq!(dependencies[1].requirement, "2.12.0");
-}
+        assert_eq!(dependencies.len(), 2);
+        assert_eq!(dependencies[0].name, "ranch");
+        assert_eq!(dependencies[0].requirement, "latest");
+        assert_eq!(dependencies[1].name, "cowboy");
+        assert_eq!(dependencies[1].requirement, "2.12.0");
+    }
 
-#[test]
-fn parses_rebar_multiline_dependency_tuple() {
-    let dependencies = parse_rebar_config(
-        r#"{deps,[
+    #[test]
+    fn parses_rebar_multiline_dependency_tuple() {
+        let dependencies = parse_rebar_config(
+            r#"{deps,[
   {gettext,
    {git, "https://github.com/elixir-lang/gettext.git",
     {tag, "0.26.2"}}}
 ]}.
 "#,
-    );
+        );
 
-    crate::support::tests::assert_single_git_dependency(&dependencies, "gettext");
-}
+        crate::support::tests::assert_single_git_dependency(&dependencies, "gettext");
+    }
 
-fn package_file_fixture(name: &str) -> &'static str {
-    crate::support::tests::fixture(
-        "tests/fixtures/versionlens-parsers/src/rebar_config/tests",
-        name,
-    )
-}
+    fn package_file_fixture(name: &str) -> &'static str {
+        crate::support::tests::fixture(
+            "tests/fixtures/versionlens-parsers/src/rebar_config/tests",
+            name,
+        )
+    }
 }

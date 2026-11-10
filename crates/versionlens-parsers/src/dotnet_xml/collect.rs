@@ -8,9 +8,9 @@ use super::{DotnetEventContext, DotnetTagSpan};
 use event::dotnet_xml_event_finished;
 use state::dotnet_xml_collector;
 
-pub(super) fn collect_dotnet_xml_dependencies<'a>(
+pub(super) fn collect_dotnet_xml_dependencies(
     text: &str,
-    dependency_paths: Vec<&'a str>,
+    dependency_paths: Vec<&str>,
 ) -> Vec<Dependency> {
     let mut reader = quick_xml::Reader::from_str(text);
     let mut collector = dotnet_xml_collector(dependency_paths);

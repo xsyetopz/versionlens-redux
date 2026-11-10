@@ -1,14 +1,19 @@
 use toml_edit::{Item, Value as TomlValue};
 
+/// A registry entry of a Cargo config file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CargoRegistrySource {
+    /// The registry name.
     pub name: String,
+    /// The registry index URL.
     pub url: String,
+    /// The name of the source that replaces this one.
     pub replace_with: Option<String>,
 }
 
 type CargoRegistrySources = Vec<CargoRegistrySource>;
 
+/// Reads the registry and source-replacement tables of a Cargo config file.
 pub fn parse_cargo_config_registry_sources(text: &str) -> CargoRegistrySources {
     let Ok(document) = crate::parse_toml_document(text) else {
         return vec![];
@@ -77,19 +82,19 @@ fn item_string_url(item: &Item) -> Option<String> {
 fn value_string_url(value: &TomlValue) -> Option<String> {
     value
         .as_str()
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|url| !url.is_empty())
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 #[cfg(test)]
 mod tests {
-use super::parse_cargo_config_registry_sources;
+    use super::parse_cargo_config_registry_sources;
 
-#[test]
-fn parses_cargo_config_registry_sources() {
-    let sources = parse_cargo_config_registry_sources(
-        r#"
+    #[test]
+    fn parses_cargo_config_registry_sources() {
+        let sources = parse_cargo_config_registry_sources(
+            r#"
 [registries.private]
 index = "sparse+https://cargo.example.test/api/"
 
@@ -102,26 +107,26 @@ registry = "https://vendor.example.test/index/"
 [source.crates-io]
 replace-with = "vendor"
 "#,
-    );
+        );
 
-    assert_eq!(sources.len(), 4);
-    assert_eq!(sources[0].name, "private");
-    assert_eq!(sources[0].url, "https://cargo.example.test/api");
-    assert_eq!(sources[0].replace_with, None);
-    assert_eq!(sources[1].name, "mirror");
-    assert_eq!(sources[1].url, "https://mirror.example.test/api");
-    assert_eq!(sources[1].replace_with, None);
-    let crates_io = sources
-        .iter()
-        .find(|source| source.name == "crates-io")
-        .unwrap();
-    let vendor = sources
-        .iter()
-        .find(|source| source.name == "vendor")
-        .unwrap();
-    assert_eq!(crates_io.url, "");
-    assert_eq!(crates_io.replace_with.as_deref(), Some("vendor"));
-    assert_eq!(vendor.url, "https://vendor.example.test/index");
-    assert_eq!(vendor.replace_with, None);
-}
+        assert_eq!(sources.len(), 4);
+        assert_eq!(sources[0].name, "private");
+        assert_eq!(sources[0].url, "https://cargo.example.test/api");
+        assert_eq!(sources[0].replace_with, None);
+        assert_eq!(sources[1].name, "mirror");
+        assert_eq!(sources[1].url, "https://mirror.example.test/api");
+        assert_eq!(sources[1].replace_with, None);
+        let crates_io = sources
+            .iter()
+            .find(|source| source.name == "crates-io")
+            .unwrap();
+        let vendor = sources
+            .iter()
+            .find(|source| source.name == "vendor")
+            .unwrap();
+        assert_eq!(crates_io.url, "");
+        assert_eq!(crates_io.replace_with.as_deref(), Some("vendor"));
+        assert_eq!(vendor.url, "https://vendor.example.test/index");
+        assert_eq!(vendor.replace_with, None);
+    }
 }

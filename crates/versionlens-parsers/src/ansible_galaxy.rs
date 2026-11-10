@@ -94,8 +94,8 @@ fn scalar_entry(text: &str, group: &str, value: &MarkedScalarNode) -> Option<Dep
         hosted_name: None,
         range: offset_range(text, name_range.start, name_range.end),
         requirement_range: offset_range(text, name_range.start, name_range.end),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
@@ -109,8 +109,8 @@ fn mapping_entry(text: &str, group: &str, entry: &MarkedMappingNode) -> Option<D
     let name_node = name.or(src)?;
     let dependency_name = dependency_name(
         group,
-        name.map(|value| value.as_str()),
-        src.map(|value| value.as_str()),
+        name.map(MarkedScalarNode::as_str),
+        src.map(MarkedScalarNode::as_str),
     );
     if dependency_name.is_empty() {
         return None;
@@ -139,7 +139,7 @@ fn mapping_entry(text: &str, group: &str, entry: &MarkedMappingNode) -> Option<D
             (
                 "latest".to_owned(),
                 offset_range(text, name_range.start, name_range.end),
-                "".to_owned(),
+                String::new(),
             )
         });
 
@@ -150,23 +150,20 @@ fn mapping_entry(text: &str, group: &str, entry: &MarkedMappingNode) -> Option<D
         group: group.to_owned(),
         hosted_url: hosted_url(
             group,
-            src.map(|value| value.as_str()),
-            source.map(|value| value.as_str()),
+            src.map(MarkedScalarNode::as_str),
+            source.map(MarkedScalarNode::as_str),
         ),
         hosted_name: None,
         range: offset_range(text, name_range.start, name_range.end),
         requirement_range,
         requirement_prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
 
 fn dependency_name(group: &str, name: Option<&str>, src: Option<&str>) -> String {
-    if let Some(name) = name
-        .map(|value| value.trim())
-        .filter(|name| !name.is_empty())
-    {
+    if let Some(name) = name.map(str::trim).filter(|name| !name.is_empty()) {
         return name.to_owned();
     }
 
@@ -178,10 +175,10 @@ fn dependency_name(group: &str, name: Option<&str>, src: Option<&str>) -> String
 }
 
 fn hosted_url(group: &str, src: Option<&str>, source: Option<&str>) -> Option<String> {
-    if let Some(src) = src.map(|value| value.trim()).filter(|src| !src.is_empty()) {
-        if source_is_url_or_scm(src) {
-            return Some("git".to_owned());
-        }
+    if let Some(src) = src.map(str::trim).filter(|src| !src.is_empty())
+        && source_is_url_or_scm(src)
+    {
+        return Some("git".to_owned());
     }
 
     if group == "roles" {
@@ -189,9 +186,9 @@ fn hosted_url(group: &str, src: Option<&str>, source: Option<&str>) -> Option<St
     }
 
     source
-        .map(|value| value.trim())
+        .map(str::trim)
         .filter(|source| !source.is_empty())
-        .map(|value| value.to_owned())
+        .map(ToOwned::to_owned)
 }
 
 fn source_is_url_or_scm(source: &str) -> bool {

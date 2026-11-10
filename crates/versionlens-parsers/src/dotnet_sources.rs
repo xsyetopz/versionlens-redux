@@ -14,73 +14,73 @@ pub use schema::{
 
 #[cfg(test)]
 mod tests {
-use super::{
-    filter_dotnet_remote_sources, parse_dotnet_enabled_sources, parse_dotnet_sources,
-    parse_nuget_config_auth_entries, parse_nuget_config_source_mappings,
-    parse_nuget_config_source_urls,
-};
-use crate::dotnet_sources::DotnetSourceMapping;
+    use super::{
+        filter_dotnet_remote_sources, parse_dotnet_enabled_sources, parse_dotnet_sources,
+        parse_nuget_config_auth_entries, parse_nuget_config_source_mappings,
+        parse_nuget_config_source_urls,
+    };
+    use crate::dotnet_sources::DotnetSourceMapping;
 
-#[test]
-fn parses_dotnet_sources() {
-    let sources = parse_dotnet_sources(
-        "D http://non-ssl/v3/index.json\nE  https://api.nuget.org/v3/index.json  \nEM C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\\n",
-    );
+    #[test]
+    fn parses_dotnet_sources() {
+        let sources = parse_dotnet_sources(
+            "D http://non-ssl/v3/index.json\nE  https://api.nuget.org/v3/index.json  \nEM C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\\n",
+        );
 
-    assert_eq!(sources.len(), 3);
-    assert!(!sources[0].enabled);
-    assert_eq!(sources[0].protocol, "http:");
-    assert!(sources[1].enabled);
-    assert_eq!(sources[1].protocol, "https:");
-    assert_eq!(sources[1].url, "https://api.nuget.org/v3/index.json");
-    assert!(sources[2].enabled);
-    assert!(sources[2].machine_wide);
-    assert_eq!(
-        sources[2].url,
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\"
-    );
-    assert_eq!(sources[2].protocol, "file:");
-    assert!(parse_dotnet_sources("\n   \n").is_empty());
-}
+        assert_eq!(sources.len(), 3);
+        assert!(!sources[0].enabled);
+        assert_eq!(sources[0].protocol, "http:");
+        assert!(sources[1].enabled);
+        assert_eq!(sources[1].protocol, "https:");
+        assert_eq!(sources[1].url, "https://api.nuget.org/v3/index.json");
+        assert!(sources[2].enabled);
+        assert!(sources[2].machine_wide);
+        assert_eq!(
+            sources[2].url,
+            "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\"
+        );
+        assert_eq!(sources[2].protocol, "file:");
+        assert_eq!(parse_dotnet_sources("\n   \n").len(), 0);
+    }
 
-#[test]
-fn filters_dotnet_enabled_remote_sources() {
-    let sources = parse_dotnet_enabled_sources(
-        "D http://disabled/v3/index.json\nE https://api.nuget.org/v3/index.json\nE http://non-ssl/v3/index.json\nEM C:\\NuGetPackages\\\n",
-        &[
-            "  ".to_owned(),
-            " https://feed.test/v3/index.json ".to_owned(),
-        ],
-    );
+    #[test]
+    fn filters_dotnet_enabled_remote_sources() {
+        let sources = parse_dotnet_enabled_sources(
+            "D http://disabled/v3/index.json\nE https://api.nuget.org/v3/index.json\nE http://non-ssl/v3/index.json\nEM C:\\NuGetPackages\\\n",
+            &[
+                "  ".to_owned(),
+                " https://feed.test/v3/index.json ".to_owned(),
+            ],
+        );
 
-    assert_eq!(sources.len(), 4);
-    assert_eq!(sources[0].url, "https://feed.test/v3/index.json");
-    assert!(sources[0].enabled);
-    assert_eq!(sources[1].url, "https://api.nuget.org/v3/index.json");
-    assert_eq!(sources[2].url, "http://non-ssl/v3/index.json");
-    assert!(sources[3].machine_wide);
+        assert_eq!(sources.len(), 4);
+        assert_eq!(sources[0].url, "https://feed.test/v3/index.json");
+        assert!(sources[0].enabled);
+        assert_eq!(sources[1].url, "https://api.nuget.org/v3/index.json");
+        assert_eq!(sources[2].url, "http://non-ssl/v3/index.json");
+        assert!(sources[3].machine_wide);
 
-    let remote_sources = filter_dotnet_remote_sources(sources);
+        let remote_sources = filter_dotnet_remote_sources(sources);
 
-    assert_eq!(remote_sources.len(), 3);
-    assert_eq!(remote_sources[0].protocol, "https:");
-    assert_eq!(remote_sources[1].protocol, "https:");
-    assert_eq!(remote_sources[2].protocol, "http:");
-}
+        assert_eq!(remote_sources.len(), 3);
+        assert_eq!(remote_sources[0].protocol, "https:");
+        assert_eq!(remote_sources[1].protocol, "https:");
+        assert_eq!(remote_sources[2].protocol, "http:");
+    }
 
-#[test]
-fn marks_file_feed_urls_machine_wide() {
-    let sources = parse_dotnet_enabled_sources("", &["C:\\NuGetPackages\\".to_owned()]);
+    #[test]
+    fn marks_file_feed_urls_machine_wide() {
+        let sources = parse_dotnet_enabled_sources("", &["C:\\NuGetPackages\\".to_owned()]);
 
-    assert_eq!(sources.len(), 1);
-    assert!(sources[0].machine_wide);
-    assert_eq!(sources[0].protocol, "file:");
-}
+        assert_eq!(sources.len(), 1);
+        assert!(sources[0].machine_wide);
+        assert_eq!(sources[0].protocol, "file:");
+    }
 
-#[test]
-fn parses_nuget_config_package_sources() {
-    let urls = parse_nuget_config_source_urls(
-        r#"
+    #[test]
+    fn parses_nuget_config_package_sources() {
+        let urls = parse_nuget_config_source_urls(
+            r#"
 <configuration>
   <packageSources>
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
@@ -92,45 +92,45 @@ fn parses_nuget_config_package_sources() {
   </disabledPackageSources>
 </configuration>
 "#,
-    );
+        );
 
-    assert_eq!(
-        urls,
-        vec!["https://api.nuget.org/v3/index.json", "./packages"]
-    );
-}
+        assert_eq!(
+            urls,
+            vec!["https://api.nuget.org/v3/index.json", "./packages"]
+        );
+    }
 
-#[test]
-fn parses_nuget_config_clear_elements_per_section() {
-    let text = package_file_fixture("parses-nuget-config-clear-elements-per-section.txt");
+    #[test]
+    fn parses_nuget_config_clear_elements_per_section() {
+        let text = package_file_fixture("parses-nuget-config-clear-elements-per-section.txt");
 
-    let urls = parse_nuget_config_source_urls(text);
-    let mappings = parse_nuget_config_source_mappings(text);
+        let urls = parse_nuget_config_source_urls(text);
+        let mappings = parse_nuget_config_source_mappings(text);
 
-    assert_new_nuget_source_mapping(&urls, &mappings);
-    assert_eq!(mappings[0].pattern, "New.*");
-}
+        assert_new_nuget_source_mapping(&urls, &mappings);
+        assert_eq!(mappings[0].pattern, "New.*");
+    }
 
-#[test]
-fn parses_nuget_config_remove_elements_per_section() {
-    let text = package_file_fixture("parses-nuget-config-remove-elements-per-section.txt");
+    #[test]
+    fn parses_nuget_config_remove_elements_per_section() {
+        let text = package_file_fixture("parses-nuget-config-remove-elements-per-section.txt");
 
-    let urls = parse_nuget_config_source_urls(text);
-    let mappings = parse_nuget_config_source_mappings(text);
+        let urls = parse_nuget_config_source_urls(text);
+        let mappings = parse_nuget_config_source_mappings(text);
 
-    assert_new_nuget_source_mapping(&urls, &mappings);
-}
+        assert_new_nuget_source_mapping(&urls, &mappings);
+    }
 
-fn assert_new_nuget_source_mapping(urls: &[String], mappings: &[DotnetSourceMapping]) {
-    assert_eq!(urls, ["https://new.example.test/v3/index.json"]);
-    assert_eq!(mappings.len(), 1);
-    assert_eq!(mappings[0].source, "new");
-}
+    fn assert_new_nuget_source_mapping(urls: &[String], mappings: &[DotnetSourceMapping]) {
+        assert_eq!(urls, ["https://new.example.test/v3/index.json"]);
+        assert_eq!(mappings.len(), 1);
+        assert_eq!(mappings[0].source, "new");
+    }
 
-#[test]
-fn parses_nuget_config_clear_text_credentials() {
-    let entries = parse_nuget_config_auth_entries(
-        r#"
+    #[test]
+    fn parses_nuget_config_clear_text_credentials() {
+        let entries = parse_nuget_config_auth_entries(
+            r#"
 <configuration>
   <packageSources>
     <add key="private" value="https://nuget.example.test/v3/index.json" />
@@ -151,20 +151,20 @@ fn parses_nuget_config_clear_text_credentials() {
   </packageSourceCredentials>
 </configuration>
 "#,
-    );
+        );
 
-    assert_eq!(entries.len(), 1);
-    assert_eq!(
-        entries[0].registry,
-        "https://nuget.example.test/v3/index.json"
-    );
-    assert_eq!(entries[0].header_value, "Basic dXNlcjpwYXNz");
-}
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            entries[0].registry,
+            "https://nuget.example.test/v3/index.json"
+        );
+        assert_eq!(entries[0].header_value, "Basic dXNlcjpwYXNz");
+    }
 
-#[test]
-fn parses_nuget_config_package_source_mappings() {
-    let mappings = parse_nuget_config_source_mappings(
-        r#"
+    #[test]
+    fn parses_nuget_config_package_source_mappings() {
+        let mappings = parse_nuget_config_source_mappings(
+            r#"
 <configuration>
   <packageSourceMapping>
     <packageSource key="nuget.org">
@@ -177,21 +177,21 @@ fn parses_nuget_config_package_source_mappings() {
   </packageSourceMapping>
 </configuration>
 "#,
-    );
+        );
 
-    assert_eq!(mappings.len(), 3);
-    assert_eq!(mappings[0].source, "nuget.org");
-    assert_eq!(mappings[0].pattern, "Newtonsoft.*");
-    assert_eq!(mappings[1].source, "nuget.org");
-    assert_eq!(mappings[1].pattern, "Serilog");
-    assert_eq!(mappings[2].source, "private");
-    assert_eq!(mappings[2].pattern, "Contoso.*");
-}
+        assert_eq!(mappings.len(), 3);
+        assert_eq!(mappings[0].source, "nuget.org");
+        assert_eq!(mappings[0].pattern, "Newtonsoft.*");
+        assert_eq!(mappings[1].source, "nuget.org");
+        assert_eq!(mappings[1].pattern, "Serilog");
+        assert_eq!(mappings[2].source, "private");
+        assert_eq!(mappings[2].pattern, "Contoso.*");
+    }
 
-fn package_file_fixture(name: &str) -> &'static str {
-    crate::support::tests::fixture(
-        "tests/fixtures/versionlens-parsers/src/dotnet_sources/tests",
-        name,
-    )
-}
+    fn package_file_fixture(name: &str) -> &'static str {
+        crate::support::tests::fixture(
+            "tests/fixtures/versionlens-parsers/src/dotnet_sources/tests",
+            name,
+        )
+    }
 }

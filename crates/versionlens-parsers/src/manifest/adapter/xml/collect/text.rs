@@ -3,7 +3,7 @@ use quick_xml::events::BytesText;
 use super::state::XmlCollector;
 
 pub(super) fn collect_xml_text(
-    event: BytesText<'_>,
+    event: &BytesText<'_>,
     collector: &mut XmlCollector,
     start: usize,
     end: usize,

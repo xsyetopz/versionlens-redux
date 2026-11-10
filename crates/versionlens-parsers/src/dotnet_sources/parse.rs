@@ -1,5 +1,6 @@
 use super::schema::DotnetSource;
 
+/// Reads the package sources from the output of `dotnet nuget list source`.
 pub fn parse_dotnet_sources(text: &str) -> Vec<DotnetSource> {
     text.lines()
         .filter(|line| !line.trim().is_empty())
@@ -7,6 +8,7 @@ pub fn parse_dotnet_sources(text: &str) -> Vec<DotnetSource> {
         .collect()
 }
 
+/// Reads the sources from the output of `dotnet nuget list source`, falling back to `feed_urls` when the output lists none.
 pub fn parse_dotnet_enabled_sources(text: &str, feed_urls: &[String]) -> Vec<DotnetSource> {
     feed_urls
         .iter()
@@ -48,6 +50,7 @@ fn source_from_url(url: &str) -> DotnetSource {
     }
 }
 
+/// Keeps the sources that use the `http:` or `https:` protocol.
 pub fn filter_dotnet_remote_sources(sources: Vec<DotnetSource>) -> Vec<DotnetSource> {
     sources
         .into_iter()

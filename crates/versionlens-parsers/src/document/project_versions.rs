@@ -9,6 +9,7 @@ pub fn parse_project_versions(input: &DocumentInput) -> Vec<Dependency> {
     parse_project_versions_as_manifest(input, classify_document(input))
 }
 
+/// Parses the own-version fields of a document as the given manifest kind.
 pub fn parse_project_versions_as_manifest(
     input: &DocumentInput,
     kind: ManifestKind,

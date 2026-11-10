@@ -40,6 +40,7 @@ pub(crate) fn parse_sbt_build(text: &str) -> Vec<Dependency> {
     dependencies
 }
 
+/// Reads the Maven repositories of an sbt build file.
 pub fn parse_sbt_maven_repositories(text: &str) -> Vec<MavenNamedRepository> {
     text.lines()
         .filter_map(parse_sbt_maven_repository_line)
@@ -103,6 +104,7 @@ fn parse_sbt_dependency_line(
     dependencies
 }
 
+#[derive(Clone, Copy)]
 struct SbtDependencyLine<'a> {
     text: &'a str,
     line: &'a str,
@@ -111,6 +113,7 @@ struct SbtDependencyLine<'a> {
     scala_binary_version: Option<&'a str>,
 }
 
+#[derive(Clone, Copy)]
 struct SbtDependencyStrings<'a> {
     group: QuotedString<'a>,
     artifact: QuotedString<'a>,
@@ -178,8 +181,8 @@ fn sbt_dependency_from_strings(
             line_context.line_offset + version_string.content_start,
             line_context.line_offset + version_string.content_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

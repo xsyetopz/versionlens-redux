@@ -24,7 +24,7 @@ pub(super) fn dependency(
             raw_requirement,
             value_range.start,
             value_range.end,
-            "".to_owned(),
+            String::new(),
         ));
 
     Some(Dependency {
@@ -37,7 +37,7 @@ pub(super) fn dependency(
         range: offset_range(text, name_range.start, name_range.end),
         requirement_range: offset_range(text, requirement_start, requirement_end),
         requirement_prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

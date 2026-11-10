@@ -27,10 +27,7 @@ pub(super) fn attr_value_range_in_tag(tag: &str, name: &str) -> Option<ByteRange
             continue;
         }
 
-        let Some((value, after_value)) = quoted_attribute_value_range(bytes, index + 1, quote)
-        else {
-            return None;
-        };
+        let (value, after_value) = quoted_attribute_value_range(bytes, index + 1, quote)?;
         index = after_value;
 
         if tag[attribute_name].eq_ignore_ascii_case(name) {

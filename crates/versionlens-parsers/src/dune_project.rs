@@ -249,7 +249,7 @@ fn first_dune_version_constraint(text: &str, start: usize, end: usize) -> Option
     None
 }
 
-fn head_symbol<'a>(text: &'a str, open: usize, close: usize) -> Option<&'a str> {
+fn head_symbol(text: &str, open: usize, close: usize) -> Option<&str> {
     let start = support::skip_ascii_whitespace_until(text, open + 1, close);
     let end = symbol_end(text, start, close);
     text.get(start..end)

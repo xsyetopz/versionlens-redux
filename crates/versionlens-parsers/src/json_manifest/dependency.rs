@@ -24,6 +24,7 @@ pub(super) struct JsonDependencySource<'a> {
     pub(super) ecosystem: Ecosystem,
 }
 
+#[derive(Clone, Copy)]
 pub(super) struct JsonDependencyRanges {
     pub(super) name_start: usize,
     pub(super) name_end: usize,
@@ -80,8 +81,8 @@ pub(super) fn json_manifest_dependency(
             ranges.requirement_start,
             ranges.requirement_end,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     };
     apply_composer_requirement_suffix(&mut dependency);

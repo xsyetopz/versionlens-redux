@@ -4,6 +4,7 @@ use crate::positions::dependency_ranges;
 use versionlens_model::Dependency;
 use versionlens_model::Ecosystem::Cargo;
 
+#[derive(Clone, Copy)]
 pub(super) struct CargoDependencySource<'a> {
     pub(super) text: &'a str,
     pub(super) group: &'a str,
@@ -31,12 +32,12 @@ pub(super) fn cargo_dependency_from_span(
         requirement: source.requirement.to_owned(),
         ecosystem: Cargo,
         group: source.group.to_owned(),
-        hosted_url: source.hosted_url.map(|value| value.to_owned()),
-        hosted_name: source.hosted_name.map(|value| value.to_owned()),
+        hosted_url: source.hosted_url.map(ToOwned::to_owned),
+        hosted_name: source.hosted_name.map(ToOwned::to_owned),
         range,
         requirement_range,
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }

@@ -91,6 +91,7 @@ fn cpanfile_group(kind: &str, scope_stack: &[Scope]) -> String {
     prefix.map_or_else(|| kind.to_owned(), |prefix| format!("{prefix}.{kind}"))
 }
 
+#[derive(Clone, Copy)]
 struct CpanDependencyCall<'a> {
     text: &'a str,
     line: &'a str,
@@ -138,7 +139,7 @@ fn parse_dependency_call(call: CpanDependencyCall<'_>) -> Option<Dependency> {
             requirement_absolute_end,
         ),
         requirement_prefix: range.prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

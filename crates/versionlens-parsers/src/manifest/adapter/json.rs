@@ -22,7 +22,7 @@ impl<'a> JsonNode<'a> {
     }
 }
 
-impl<'a> PathNode for JsonNode<'a> {
+impl PathNode for JsonNode<'_> {
     fn children_named(&self, key: &str) -> Vec<Self> {
         let Self::Object(object) = *self else {
             return Vec::new();
@@ -56,8 +56,7 @@ fn array_element_key(element: &Value<'_>, index: usize) -> String {
     match element {
         Value::Object(object) => object
             .get_string("name")
-            .map(|name| name.value.to_string())
-            .unwrap_or_else(|| index.to_string()),
+            .map_or_else(|| index.to_string(), |name| name.value.to_string()),
         _ => index.to_string(),
     }
 }

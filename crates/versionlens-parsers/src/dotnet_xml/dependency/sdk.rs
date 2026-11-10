@@ -35,6 +35,7 @@ pub(super) fn project_sdk_dependencies(context: &DotnetEventContext<'_>) -> Vec<
     dependencies
 }
 
+#[derive(Clone, Copy)]
 struct ProjectSdkPart<'a> {
     value_start: usize,
     value: &'a str,
@@ -62,8 +63,8 @@ fn project_sdk_dependency(text: &str, value_base: usize, part: ProjectSdkPart<'_
         hosted_name: None,
         range: offset_range(text, name_start, name_start + name_len),
         requirement_range: offset_range(text, requirement_start, requirement_end),
-        requirement_prefix: split_at.map_or("/".to_owned(), |_| "".to_owned()),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: split_at.map_or("/".to_owned(), |_| String::new()),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }

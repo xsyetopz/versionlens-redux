@@ -3,12 +3,16 @@ use toml_edit::{Array as TomlArray, Item, Value as TomlValue};
 type UvRegistryUrls = Vec<String>;
 type UvRegistryItem<'a> = Option<&'a Item>;
 
+/// A named source of the Poetry tables of a `pyproject.toml`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PoetrySource {
+    /// The source name.
     pub name: String,
+    /// The source URL.
     pub url: String,
 }
 
+/// Lists the index URLs of a Python project file.
 pub fn parse_python_registry_urls(text: &str) -> Vec<String> {
     text.lines()
         .filter_map(parse_requirements_registry_url)
@@ -17,6 +21,7 @@ pub fn parse_python_registry_urls(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Lists the index URLs of the `uv` tables of a TOML file.
 pub fn parse_uv_registry_urls(text: &str) -> UvRegistryUrls {
     let Ok(document) = crate::parse_toml_document(text) else {
         return vec![];
@@ -25,6 +30,7 @@ pub fn parse_uv_registry_urls(text: &str) -> UvRegistryUrls {
     uv_registry_urls(document.as_item())
 }
 
+/// Lists the source URLs of a `Pipfile`.
 pub fn parse_pipfile_source_urls(text: &str) -> Vec<String> {
     let Ok(document) = crate::parse_toml_document(text) else {
         return vec![];
@@ -42,6 +48,7 @@ pub fn parse_pipfile_source_urls(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Lists the source URLs of the Poetry tables of a `pyproject.toml`.
 pub fn parse_poetry_source_urls(text: &str) -> Vec<String> {
     parse_poetry_sources(text)
         .into_iter()
@@ -49,6 +56,7 @@ pub fn parse_poetry_source_urls(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Lists the named sources of the Poetry tables of a `pyproject.toml`.
 pub fn parse_poetry_sources(text: &str) -> Vec<PoetrySource> {
     let Ok(document) = crate::parse_toml_document(text) else {
         return vec![];
@@ -72,12 +80,14 @@ pub fn parse_poetry_sources(text: &str) -> Vec<PoetrySource> {
         .collect()
 }
 
+/// Lists the index URLs of a `pip.conf` file.
 pub fn parse_pip_conf_registry_urls(text: &str) -> Vec<String> {
     text.lines()
         .filter_map(parse_pip_conf_registry_url)
         .collect()
 }
 
+/// Lists the index URLs from the `PIP_*` entries of `env`.
 pub fn parse_pip_env_registry_urls(env: &[(String, String)]) -> Vec<String> {
     env.iter()
         .filter_map(|(key, value)| pip_env_registry_values(key, value))
@@ -208,55 +218,55 @@ fn ignored_line(trimmed: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-use super::{
-    parse_pip_conf_registry_urls, parse_pip_env_registry_urls, parse_pipfile_source_urls,
-    parse_poetry_source_urls, parse_python_registry_urls, parse_uv_registry_urls,
-};
+    use super::{
+        parse_pip_conf_registry_urls, parse_pip_env_registry_urls, parse_pipfile_source_urls,
+        parse_poetry_source_urls, parse_python_registry_urls, parse_uv_registry_urls,
+    };
 
-#[test]
-fn parses_requirements_index_urls() {
-    let urls = parse_python_registry_urls(
-        r#"
+    #[test]
+    fn parses_requirements_index_urls() {
+        let urls = parse_python_registry_urls(
+            r#"
 --index-url https://primary.example.test/simple
 -i=https://short.example.test/simple/
 --extra-index-url "https://extra.example.test/simple" # comment
 requests==2.32.0
 "#,
-    );
+        );
 
-    assert_eq!(
-        urls,
-        vec![
-            "https://primary.example.test/simple",
-            "https://short.example.test/simple",
-            "https://extra.example.test/simple",
-        ]
-    );
-}
+        assert_eq!(
+            urls,
+            vec![
+                "https://primary.example.test/simple",
+                "https://short.example.test/simple",
+                "https://extra.example.test/simple",
+            ]
+        );
+    }
 
-#[test]
-fn parses_pip_conf_index_urls() {
-    let urls = parse_pip_conf_registry_urls(
-        r#"
+    #[test]
+    fn parses_pip_conf_index_urls() {
+        let urls = parse_pip_conf_registry_urls(
+            r"
 [global]
 index-url = https://primary.example.test/simple/
 extra-index-url = 'https://extra.example.test/simple'
 timeout = 10
-"#,
-    );
+",
+        );
 
-    assert_eq!(
-        urls,
-        vec![
-            "https://primary.example.test/simple",
-            "https://extra.example.test/simple",
-        ]
-    );
-}
+        assert_eq!(
+            urls,
+            vec![
+                "https://primary.example.test/simple",
+                "https://extra.example.test/simple",
+            ]
+        );
+    }
 
-#[test]
-fn parses_pip_environment_registry_urls() {
-    let env = vec![
+    #[test]
+    fn parses_pip_environment_registry_urls() {
+        let env = vec![
         (
             "PIP_INDEX_URL".to_owned(),
             "https://env-primary.example.test/simple/".to_owned(),
@@ -267,22 +277,22 @@ fn parses_pip_environment_registry_urls() {
                 .to_owned(),
         ),
     ];
-    let urls = parse_pip_env_registry_urls(&env);
+        let urls = parse_pip_env_registry_urls(&env);
 
-    assert_eq!(
-        urls,
-        vec![
-            "https://env-primary.example.test/simple",
-            "https://env-extra-one.example.test/simple",
-            "https://env-extra-two.example.test/simple",
-        ]
-    );
-}
+        assert_eq!(
+            urls,
+            vec![
+                "https://env-primary.example.test/simple",
+                "https://env-extra-one.example.test/simple",
+                "https://env-extra-two.example.test/simple",
+            ]
+        );
+    }
 
-#[test]
-fn parses_pipfile_source_urls() {
-    let urls = parse_pipfile_source_urls(
-        r#"
+    #[test]
+    fn parses_pipfile_source_urls() {
+        let urls = parse_pipfile_source_urls(
+            r#"
 [[source]]
 name = "pypi"
 url = "https://pypi.org/simple/"
@@ -293,21 +303,21 @@ name = "private"
 url = "https://pypi.example.test/simple"
 verify_ssl = true
 "#,
-    );
+        );
 
-    assert_eq!(
-        urls,
-        vec![
-            "https://pypi.org/simple",
-            "https://pypi.example.test/simple"
-        ]
-    );
-}
+        assert_eq!(
+            urls,
+            vec![
+                "https://pypi.org/simple",
+                "https://pypi.example.test/simple"
+            ]
+        );
+    }
 
-#[test]
-fn parses_poetry_source_urls() {
-    let urls = parse_poetry_source_urls(
-        r#"
+    #[test]
+    fn parses_poetry_source_urls() {
+        let urls = parse_poetry_source_urls(
+            r#"
 [[tool.poetry.source]]
 name = "private"
 url = "https://poetry.example.test/simple/"
@@ -318,21 +328,21 @@ name = "mirror"
 url = "https://mirror.example.test/simple"
 priority = "supplemental"
 "#,
-    );
+        );
 
-    assert_eq!(
-        urls,
-        vec![
-            "https://poetry.example.test/simple",
-            "https://mirror.example.test/simple",
-        ]
-    );
-}
+        assert_eq!(
+            urls,
+            vec![
+                "https://poetry.example.test/simple",
+                "https://mirror.example.test/simple",
+            ]
+        );
+    }
 
-#[test]
-fn parses_uv_pyproject_registry_urls() {
-    let urls = parse_python_registry_urls(
-        r#"
+    #[test]
+    fn parses_uv_pyproject_registry_urls() {
+        let urls = parse_python_registry_urls(
+            r#"
 [tool.uv]
 index-url = "https://primary.example.test/simple/"
 extra-index-url = ["https://extra.example.test/simple", "https://mirror.example.test/simple/"]
@@ -341,23 +351,23 @@ extra-index-url = ["https://extra.example.test/simple", "https://mirror.example.
 name = "private"
 url = "https://private.example.test/simple/"
 "#,
-    );
+        );
 
-    assert_eq!(
-        urls,
-        vec![
-            "https://primary.example.test/simple",
-            "https://extra.example.test/simple",
-            "https://mirror.example.test/simple",
-            "https://private.example.test/simple",
-        ]
-    );
-}
+        assert_eq!(
+            urls,
+            vec![
+                "https://primary.example.test/simple",
+                "https://extra.example.test/simple",
+                "https://mirror.example.test/simple",
+                "https://private.example.test/simple",
+            ]
+        );
+    }
 
-#[test]
-fn parses_uv_toml_registry_urls() {
-    let urls = parse_uv_registry_urls(
-        r#"
+    #[test]
+    fn parses_uv_toml_registry_urls() {
+        let urls = parse_uv_registry_urls(
+            r#"
 index-url = "https://primary.example.test/simple/"
 extra-index-url = ["https://extra.example.test/simple"]
 
@@ -365,15 +375,15 @@ extra-index-url = ["https://extra.example.test/simple"]
 name = "private"
 url = "https://private.example.test/simple/"
 "#,
-    );
+        );
 
-    assert_eq!(
-        urls,
-        vec![
-            "https://primary.example.test/simple",
-            "https://extra.example.test/simple",
-            "https://private.example.test/simple",
-        ]
-    );
-}
+        assert_eq!(
+            urls,
+            vec![
+                "https://primary.example.test/simple",
+                "https://extra.example.test/simple",
+                "https://private.example.test/simple",
+            ]
+        );
+    }
 }

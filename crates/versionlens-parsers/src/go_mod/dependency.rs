@@ -54,11 +54,12 @@ pub(super) fn parse_go_mod_dependency(
             requirement_start,
             requirement_start + parts.requirement.value_len,
         ),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: requirement_value
-            .ends_with(INCOMPATIBLE)
-            .then(|| INCOMPATIBLE.to_owned())
-            .unwrap_or_default(),
+        requirement_prefix: String::new(),
+        requirement_suffix: if requirement_value.ends_with(INCOMPATIBLE) {
+            INCOMPATIBLE.to_owned()
+        } else {
+            String::default()
+        },
         canonical_reference: None,
     })
 }

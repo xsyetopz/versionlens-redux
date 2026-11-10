@@ -16,7 +16,7 @@ pub(in crate::pyproject_toml) fn collect_requirement_array(
         return;
     };
 
-    for item in array.iter() {
+    for item in array {
         let Some(raw) = item.as_str() else {
             continue;
         };
@@ -44,7 +44,7 @@ pub(in crate::pyproject_toml) fn collect_requirement_array(
             requirement_prefix: if requirement.is_empty() {
                 "==".to_owned()
             } else {
-                "".to_owned()
+                String::new()
             },
             requirement_suffix: requirement_suffix.to_owned(),
             canonical_reference: None,
@@ -52,6 +52,7 @@ pub(in crate::pyproject_toml) fn collect_requirement_array(
     }
 }
 
+#[derive(Clone, Copy)]
 pub(in crate::pyproject_toml) struct PythonKeyedDependencyInput<'a> {
     pub(in crate::pyproject_toml) text: &'a str,
     pub(in crate::pyproject_toml) group: &'a str,
@@ -110,6 +111,7 @@ fn inline_dependency_source(value: &TomlValue) -> Option<&str> {
         .and_then(|value| value.as_str())
 }
 
+#[derive(Clone, Copy)]
 pub(in crate::pyproject_toml) struct PythonDependencySource<'a> {
     pub(in crate::pyproject_toml) text: &'a str,
     pub(in crate::pyproject_toml) group: &'a str,
@@ -135,16 +137,16 @@ pub(in crate::pyproject_toml) fn dependency_from_span(
         requirement: source.requirement.to_owned(),
         ecosystem: Python,
         group: source.group.to_owned(),
-        hosted_url: source.hosted_url.map(|value| value.to_owned()),
+        hosted_url: source.hosted_url.map(ToOwned::to_owned),
         hosted_name: None,
         range,
         requirement_range,
         requirement_prefix: if source.requirement.is_empty() {
             "==".to_owned()
         } else {
-            "".to_owned()
+            String::new()
         },
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }

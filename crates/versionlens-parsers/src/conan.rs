@@ -4,6 +4,7 @@ use versionlens_model::Ecosystem::Conan;
 
 type ConanDependencies = Vec<Dependency>;
 
+#[derive(Clone, Copy)]
 struct ConanRequirementInput<'a> {
     raw_version: &'a str,
     version_start: usize,
@@ -168,7 +169,7 @@ fn conan_requirement_parts(
 ) -> (String, usize, usize, String, String) {
     let mut requirement_start = input.version_start;
     let mut requirement_end = input.version_end;
-    let mut prefix = "".to_owned();
+    let mut prefix = String::new();
     let mut suffix = conan_reference_suffix(
         input.reference,
         input.rest,
@@ -201,7 +202,7 @@ fn conan_version_len(rest: &str) -> usize {
 fn conan_reference_suffix(reference: &str, rest: &str, version_len: usize) -> String {
     let suffix_in_rest = &rest[version_len..];
     if suffix_in_rest.is_empty() {
-        "".to_owned()
+        String::new()
     } else {
         reference[reference.len() - suffix_in_rest.len()..].to_owned()
     }

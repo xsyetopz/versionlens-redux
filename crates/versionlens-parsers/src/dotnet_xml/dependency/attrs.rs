@@ -7,6 +7,7 @@ use super::super::DotnetEventContext;
 use super::super::attributes::{attr_value, tag_bounds, version_insert};
 use versionlens_model::Ecosystem::Dotnet;
 
+#[derive(Clone, Copy)]
 pub(super) struct DotnetDependencyAttrs<'a> {
     pub(super) group: &'a str,
     pub(super) name_attr: &'a str,
@@ -14,6 +15,7 @@ pub(super) struct DotnetDependencyAttrs<'a> {
     pub(super) range: DotnetDependencyRange,
 }
 
+#[derive(Clone, Copy)]
 pub(super) struct DotnetMissingVersionAttrs<'a> {
     pub(super) group: &'a str,
     pub(super) name_attr: &'a str,
@@ -49,8 +51,8 @@ pub(super) fn dependency_from_attrs(
         hosted_name: None,
         range,
         requirement_range: offset_range(context.text, version_start, version_start + version.len),
-        requirement_prefix: "".to_owned(),
-        requirement_suffix: "".to_owned(),
+        requirement_prefix: String::new(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }

@@ -21,7 +21,7 @@ impl XmlCollector {
             name,
             path,
             open_start: start,
-            text: "".to_owned(),
+            text: String::new(),
             text_range: None,
         });
     }
@@ -39,7 +39,7 @@ impl XmlCollector {
             path,
             open_start,
             close_end,
-            text: "".to_owned(),
+            text: String::new(),
             text_range: None,
         });
     }

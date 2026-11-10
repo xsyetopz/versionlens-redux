@@ -81,8 +81,7 @@ fn object_provider_dependency(
     let version = attribute_string(block, block_start, "version");
     let source_value = source
         .as_ref()
-        .map(|value| value.value.as_str())
-        .unwrap_or_else(|| local_name);
+        .map_or_else(|| local_name, |value| value.value.as_str());
     let package_name = terraform_provider_source(local_name, source_value);
     let hosted_url =
         (package_name == "terraform.io/builtin/terraform").then(|| "builtin".to_owned());
@@ -133,11 +132,11 @@ fn provider_dependency(input: TerraformProviderDependency<'_>) -> Dependency {
         ecosystem: Terraform,
         group: "required_providers".to_owned(),
         hosted_url: input.hosted_url,
-        hosted_name: input.hosted_name.map(|value| value.to_owned()),
+        hosted_name: input.hosted_name.map(ToOwned::to_owned),
         range: offset_range(input.text, input.range_start, input.value_end + 1),
         requirement_range: offset_range(input.text, version_start, input.value_end),
         requirement_prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     }
 }
@@ -159,10 +158,10 @@ fn terraform_requirement_parts(requirement: &str, value_start: usize) -> (&str, 
             let rest_trimmed = rest.trim_start();
             let whitespace = rest.len() - rest_trimmed.len();
             let version_start = value_start + leading + operator.len() + whitespace;
-            return (trimmed, "".to_owned(), version_start);
+            return (trimmed, String::new(), version_start);
         }
     }
-    (trimmed, "".to_owned(), value_start + leading)
+    (trimmed, String::new(), value_start + leading)
 }
 
 struct StringAttribute {

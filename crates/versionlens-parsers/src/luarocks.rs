@@ -116,7 +116,7 @@ fn parse_dependency_string(
     let requirement = if requirement_start > trimmed_start + name_len {
         value[requirement_start..].trim().to_owned()
     } else {
-        "".to_owned()
+        String::new()
     };
     let range = operator_requirement_range(&requirement, &["==", "~=", "<=", ">=", "~>", "<", ">"]);
     let name_start = value_start + trimmed_start;
@@ -133,7 +133,7 @@ fn parse_dependency_string(
         range: offset_range(text, name_start, name_start + name_len),
         requirement_range: offset_range(text, requirement_absolute_start, requirement_absolute_end),
         requirement_prefix: range.prefix,
-        requirement_suffix: "".to_owned(),
+        requirement_suffix: String::new(),
         canonical_reference: None,
     })
 }
