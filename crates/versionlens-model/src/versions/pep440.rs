@@ -175,9 +175,7 @@ fn release_end(value: &str) -> Option<usize> {
     }
     while index < bytes.len()
         && bytes[index] == b'.'
-        && bytes
-            .get(index + 1)
-            .is_some_and(|byte| byte.is_ascii_digit())
+        && bytes.get(index + 1).is_some_and(u8::is_ascii_digit)
     {
         index += 1;
         while index < bytes.len() && bytes[index].is_ascii_digit() {

@@ -3,40 +3,75 @@ use serde::{Deserialize, Serialize};
 #[repr(usize)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// A package ecosystem whose dependencies `VersionLens` can check.
 pub enum Ecosystem {
+    /// Rust crates on crates.io.
     Cargo,
+    /// PHP packages on Packagist.
     Composer,
+    /// Deno modules and JSR packages.
     Deno,
+    /// .NET packages on `NuGet`.
     Dotnet,
+    /// Container images in Docker registries.
     Docker,
+    /// D packages on the DUB registry.
     Dub,
+    /// Go modules.
     Go,
+    /// JVM artifacts on Maven repositories.
     Maven,
+    /// JavaScript packages on npm-compatible registries.
     Npm,
+    /// Python packages on `PyPI`.
     Python,
+    /// Dart and Flutter packages on pub.dev.
     Pub,
+    /// Ruby gems on `RubyGems`.
     Ruby,
+    /// Elixir and Erlang packages on Hex.
     Hex,
+    /// OCaml packages on opam.
     Opam,
+    /// Haskell packages on Hackage.
     Hackage,
+    /// Julia packages.
     Julia,
+    /// R packages on CRAN.
     Cran,
+    /// C and C++ packages on Conan.
     Conan,
+    /// C and C++ packages in vcpkg.
     Vcpkg,
+    /// Swift packages.
     Swift,
+    /// Zig packages.
     Zig,
+    /// Nim packages.
     Nim,
+    /// Lua packages on `LuaRocks`.
     LuaRocks,
+    /// Perl modules on CPAN.
     Cpan,
+    /// Haxe libraries on Haxelib.
     Haxelib,
+    /// Terraform and `OpenTofu` providers and modules.
     Terraform,
+    /// Helm charts.
     Helm,
+    /// Ansible roles and collections on Galaxy.
     AnsibleGalaxy,
+    /// Bazel modules.
     Bazel,
+    /// Nix flake inputs.
     Nix,
+    /// Unity packages.
     Unity,
+    /// `CocoaPods` pods.
     CocoaPods,
+    /// C and C++ dependencies declared in `CMake`, xmake, and Meson files.
     Cpp,
+    /// GitHub Actions references and repository tags.
     GitHub,
 }
 
@@ -263,10 +298,12 @@ fn row(ecosystem: Ecosystem) -> &'static EcosystemRow {
     &ECOSYSTEMS[ecosystem as usize]
 }
 
+/// Iterate over every ecosystem in declaration order.
 pub fn all_ecosystems() -> impl Iterator<Item = Ecosystem> {
     ECOSYSTEMS.iter().map(|row| row.ecosystem)
 }
 
+/// Find the ecosystem that accepts `name` as a settings name, including legacy names.
 pub fn ecosystem_from_config_name(name: &str) -> Option<Ecosystem> {
     ECOSYSTEMS
         .iter()
@@ -274,100 +311,102 @@ pub fn ecosystem_from_config_name(name: &str) -> Option<Ecosystem> {
         .map(|row| row.ecosystem)
 }
 
+/// Return the settings namespace of `ecosystem`, such as `golang` for Go.
 pub fn ecosystem_config_namespace(ecosystem: Ecosystem) -> &'static str {
     row(ecosystem).namespace
 }
 
+/// Return the registry-layer provider ID of `ecosystem`.
 pub fn ecosystem_provider_id(ecosystem: Ecosystem) -> &'static str {
     row(ecosystem).provider_id
 }
 
 #[cfg(test)]
 mod tests {
-use super::{
-    ECOSYSTEMS, all_ecosystems, ecosystem_config_namespace, ecosystem_from_config_name,
-    ecosystem_provider_id,
-};
-use crate::Ecosystem::{Cpp, Docker};
+    use super::{
+        ECOSYSTEMS, all_ecosystems, ecosystem_config_namespace, ecosystem_from_config_name,
+        ecosystem_provider_id,
+    };
+    use crate::Ecosystem::{Cpp, Docker};
 
-#[test]
-fn maps_config_names_and_legacy_names_to_ecosystems() {
-    for row in ECOSYSTEMS {
-        for name in row.config_names {
-            assert_eq!(ecosystem_from_config_name(name), Some(row.ecosystem));
+    #[test]
+    fn maps_config_names_and_legacy_names_to_ecosystems() {
+        for row in ECOSYSTEMS {
+            for name in row.config_names {
+                assert_eq!(ecosystem_from_config_name(name), Some(row.ecosystem));
+            }
         }
     }
-}
 
-#[test]
-fn ignores_unknown_config_names() {
-    assert_eq!(ecosystem_from_config_name("unknown"), None);
-}
-
-#[test]
-fn maps_ecosystems_to_config_namespaces() {
-    let cases = [
-        (crate::Ecosystem::Cargo, "cargo"),
-        (crate::Ecosystem::Composer, "composer"),
-        (crate::Ecosystem::Deno, "deno"),
-        (crate::Ecosystem::Dotnet, "dotnet"),
-        (Docker, "docker"),
-        (crate::Ecosystem::Dub, "dub"),
-        (crate::Ecosystem::Go, "golang"),
-        (crate::Ecosystem::Maven, "maven"),
-        (crate::Ecosystem::Hex, "hex"),
-        (crate::Ecosystem::Opam, "opam"),
-        (crate::Ecosystem::Hackage, "hackage"),
-        (crate::Ecosystem::Julia, "julia"),
-        (crate::Ecosystem::Cran, "cran"),
-        (crate::Ecosystem::Conan, "conan"),
-        (crate::Ecosystem::Vcpkg, "vcpkg"),
-        (Cpp, "cpp"),
-        (crate::Ecosystem::Swift, "swift"),
-        (crate::Ecosystem::Zig, "zig"),
-        (crate::Ecosystem::Nim, "nim"),
-        (crate::Ecosystem::LuaRocks, "luarocks"),
-        (crate::Ecosystem::Cpan, "cpan"),
-        (crate::Ecosystem::Haxelib, "haxelib"),
-        (crate::Ecosystem::Npm, "npm"),
-        (crate::Ecosystem::Python, "pypi"),
-        (crate::Ecosystem::Pub, "pub"),
-        (crate::Ecosystem::Ruby, "ruby"),
-        (crate::Ecosystem::GitHub, "github"),
-    ];
-
-    for (ecosystem, namespace) in cases {
-        assert_eq!(ecosystem_config_namespace(ecosystem), namespace);
+    #[test]
+    fn ignores_unknown_config_names() {
+        assert_eq!(ecosystem_from_config_name("unknown"), None);
     }
-}
 
-#[test]
-fn keeps_rows_in_ecosystem_declaration_order() {
-    for (index, row) in ECOSYSTEMS.iter().enumerate() {
-        assert_eq!(row.ecosystem as usize, index, "{:?}", row.ecosystem);
+    #[test]
+    fn maps_ecosystems_to_config_namespaces() {
+        let cases = [
+            (crate::Ecosystem::Cargo, "cargo"),
+            (crate::Ecosystem::Composer, "composer"),
+            (crate::Ecosystem::Deno, "deno"),
+            (crate::Ecosystem::Dotnet, "dotnet"),
+            (Docker, "docker"),
+            (crate::Ecosystem::Dub, "dub"),
+            (crate::Ecosystem::Go, "golang"),
+            (crate::Ecosystem::Maven, "maven"),
+            (crate::Ecosystem::Hex, "hex"),
+            (crate::Ecosystem::Opam, "opam"),
+            (crate::Ecosystem::Hackage, "hackage"),
+            (crate::Ecosystem::Julia, "julia"),
+            (crate::Ecosystem::Cran, "cran"),
+            (crate::Ecosystem::Conan, "conan"),
+            (crate::Ecosystem::Vcpkg, "vcpkg"),
+            (Cpp, "cpp"),
+            (crate::Ecosystem::Swift, "swift"),
+            (crate::Ecosystem::Zig, "zig"),
+            (crate::Ecosystem::Nim, "nim"),
+            (crate::Ecosystem::LuaRocks, "luarocks"),
+            (crate::Ecosystem::Cpan, "cpan"),
+            (crate::Ecosystem::Haxelib, "haxelib"),
+            (crate::Ecosystem::Npm, "npm"),
+            (crate::Ecosystem::Python, "pypi"),
+            (crate::Ecosystem::Pub, "pub"),
+            (crate::Ecosystem::Ruby, "ruby"),
+            (crate::Ecosystem::GitHub, "github"),
+        ];
+
+        for (ecosystem, namespace) in cases {
+            assert_eq!(ecosystem_config_namespace(ecosystem), namespace);
+        }
     }
-    assert_eq!(
-        all_ecosystems().count(),
-        crate::Ecosystem::GitHub as usize + 1
-    );
-}
 
-#[test]
-fn accepts_each_config_name_for_one_ecosystem_only() {
-    let mut names = ECOSYSTEMS
-        .iter()
-        .flat_map(|row| row.config_names.iter())
-        .collect::<Vec<_>>();
-    let count = names.len();
-    names.sort();
-    names.dedup();
-    assert_eq!(names.len(), count);
-}
+    #[test]
+    fn keeps_rows_in_ecosystem_declaration_order() {
+        for (index, row) in ECOSYSTEMS.iter().enumerate() {
+            assert_eq!(row.ecosystem as usize, index, "{:?}", row.ecosystem);
+        }
+        assert_eq!(
+            all_ecosystems().count(),
+            crate::Ecosystem::GitHub as usize + 1
+        );
+    }
 
-#[test]
-fn maps_ecosystems_to_provider_ids() {
-    assert_eq!(ecosystem_provider_id(crate::Ecosystem::Go), "go");
-    assert_eq!(ecosystem_provider_id(crate::Ecosystem::Python), "python");
-    assert_eq!(ecosystem_provider_id(crate::Ecosystem::Cargo), "cargo");
-}
+    #[test]
+    fn accepts_each_config_name_for_one_ecosystem_only() {
+        let mut names = ECOSYSTEMS
+            .iter()
+            .flat_map(|row| row.config_names.iter())
+            .collect::<Vec<_>>();
+        let count = names.len();
+        names.sort();
+        names.dedup();
+        assert_eq!(names.len(), count);
+    }
+
+    #[test]
+    fn maps_ecosystems_to_provider_ids() {
+        assert_eq!(ecosystem_provider_id(crate::Ecosystem::Go), "go");
+        assert_eq!(ecosystem_provider_id(crate::Ecosystem::Python), "python");
+        assert_eq!(ecosystem_provider_id(crate::Ecosystem::Cargo), "cargo");
+    }
 }

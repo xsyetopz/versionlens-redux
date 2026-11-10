@@ -27,7 +27,7 @@ pub(super) fn disjunctive_requirement_satisfies(requirement: &str, latest: &str)
     Some(
         requirement
             .split("||")
-            .map(|value| value.trim())
+            .map(str::trim)
             .filter(|part| !part.is_empty())
             .any(|part| simple_range_requirement_satisfies(part, latest)),
     )

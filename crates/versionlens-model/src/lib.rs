@@ -1,3 +1,4 @@
+//! Shared data model and version-comparison rules used by every `VersionLens` crate.
 mod document;
 mod ecosystem;
 mod edit;
@@ -33,6 +34,7 @@ pub use versions::{
     version_tag_parts,
 };
 
+/// Remove one pair of matching double or single quotes surrounding `value`, or return it unchanged.
 pub fn strip_matching_quotes(value: &str) -> &str {
     value
         .strip_prefix('"')

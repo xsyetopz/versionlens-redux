@@ -19,10 +19,12 @@ pub(crate) fn parse_version(raw: &str) -> ParsedVersion {
     parse_padded_version(&normalize_version(raw))
 }
 
+/// Parse `raw` leniently (prefixes and short forms allowed) and return its canonical semver text, or `None` if it is not a version.
 pub fn normalized_version(raw: &str) -> Option<String> {
     Some(parse_version(raw)?.to_string())
 }
 
+/// Parse `raw` under `dialect` and return its canonical version text, or `None` if it is not a version.
 pub fn normalized_version_for_dialect(raw: &str, dialect: VersionDialect) -> Option<String> {
     match dialect {
         VersionDialect::Semver | VersionDialect::Cargo => normalized_version(raw),

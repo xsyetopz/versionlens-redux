@@ -5,10 +5,12 @@ use crate::versions::VersionDialect;
 use crate::versions::parse::parse_version;
 use crate::versions::pep440;
 
+/// Order two versions by semver precedence, or `None` if either does not parse.
 pub fn compare_versions(left: &str, right: &str) -> Option<Ordering> {
     Some(parse_version(left)?.cmp(&parse_version(right)?))
 }
 
+/// Order two versions under `dialect`, or `None` if either does not parse.
 pub fn compare_versions_for_dialect(
     left: &str,
     right: &str,
@@ -22,6 +24,7 @@ pub fn compare_versions_for_dialect(
     }
 }
 
+/// Report whether `left` is a strictly higher version than `right`.
 pub fn is_newer(left: &str, right: &str) -> bool {
     matches!(compare_versions(left, right), Some(OrderingGreater))
 }

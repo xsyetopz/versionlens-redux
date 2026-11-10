@@ -29,6 +29,7 @@ fn join_spaced_comparators(parts: &[String]) -> String {
 
     output.join(" ")
 }
+/// Remove a leading `v` or `V` from the version in `part`, keeping any operator prefix before it.
 pub fn strip_version_prefix(part: &str) -> String {
     let split_at = part
         .find(|char: char| char.is_ascii_digit() || matches!(char, 'v' | 'V'))
