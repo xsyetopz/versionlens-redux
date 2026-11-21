@@ -14,6 +14,10 @@ safe-remotes:
 package:
     bun run package
 
+# Drive the extension in a real VS Code window against the live registries; needs a desktop and the network.
+vscode-live: package
+    bun scripts/vscode-live.mjs
+
 # Check the release scripts, the extension build and tests, the Neovim plugin, and the editor packages.
 project-verify:
     bun run test:release

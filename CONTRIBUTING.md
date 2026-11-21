@@ -70,6 +70,8 @@ just verify
 
 `just verify` is broad and slow: it builds every editor package. Do not run it in the background unless someone explicitly asked for that.
 
+`just vscode-live` packages the extension and drives it in an isolated VS Code window against the live registries and OSV: hints, lenses, quick fixes, hovers, diagnostics, settings, every palette command, restart, and the Output log. It needs a desktop session and the network, so `just verify` leaves it out. Set `VSCODE_BIN` when VS Code is not at the macOS default path.
+
 ## Pull Requests
 
 A good pull request includes:
