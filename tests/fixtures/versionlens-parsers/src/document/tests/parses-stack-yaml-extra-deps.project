@@ -1,7 +1,0 @@
-resolver: lts-22.43
-extra-deps:
-  - acme-missiles-0.3
-  - text-2.1.1@rev:0
-  - ./vendor/local-package
-  - git: https://github.com/example/package.git
-    commit: abcdef

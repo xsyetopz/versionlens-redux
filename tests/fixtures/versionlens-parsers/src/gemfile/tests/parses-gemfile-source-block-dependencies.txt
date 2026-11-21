@@ -1,8 +1,0 @@
-
-source "https://private.gems.example.test/" do
-  gem "private_gem", "1.0.0"
-  group :development do
-    gem "dev_private", "2.0.0"
-  end
-  gem "remote", github: "owner/remote", tag: "v1.0.0"
-end

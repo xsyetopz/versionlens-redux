@@ -1,4 +1,0 @@
-[wrap-git]
-url = https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
-source_fallback_url = https://example.com/fallback/googletest.tar.gz
-directory = googletest-1.14.0

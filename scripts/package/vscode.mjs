@@ -9,7 +9,7 @@ import {
 	executableNameFor,
 	hostTarget,
 	rustTargetFor,
-	stageLspBinary,
+	stageLspBinary
 } from "./stage-lsp.mjs";
 
 /**
@@ -38,9 +38,9 @@ const stageServer = async (requestedTarget, archivesDir, serverDirectory) => {
 			server: await stageLspBinary(
 				archivesDir,
 				rustTargetFor(requestedTarget),
-				serverDirectory,
+				serverDirectory
 			),
-			vscodeTarget: requestedTarget,
+			vscodeTarget: requestedTarget
 		};
 	}
 	const host = await hostTarget();
@@ -51,7 +51,7 @@ const stageServer = async (requestedTarget, archivesDir, serverDirectory) => {
 			"-p",
 			"versionlens-lsp",
 			"--release",
-			"--locked",
+			"--locked"
 		]))
 	) {
 		return null;
@@ -73,7 +73,7 @@ const packageExtension = async (server, vscodeTarget) => {
 		return;
 	}
 	const version = manifestVersion(
-		parseJson(await Bun.file("package.json").text()),
+		parseJson(await Bun.file("package.json").text())
 	);
 	const output = `versionlens-redux-${version}-${vscodeTarget}.vsix`;
 	const packaged = await run(
@@ -85,9 +85,9 @@ const packageExtension = async (server, vscodeTarget) => {
 			"--target",
 			vscodeTarget,
 			"--out",
-			output,
+			output
 		],
-		{ cwd: "packages/vscode-extension" },
+		{ cwd: "packages/vscode-extension" }
 	);
 	if (!packaged) {
 		return;
@@ -97,7 +97,7 @@ const packageExtension = async (server, vscodeTarget) => {
 		"scripts/package/vsix.mjs",
 		`packages/vscode-extension/${output}`,
 		server,
-		vscodeTarget,
+		vscodeTarget
 	]);
 	if (!verified) {
 		return;
@@ -112,13 +112,13 @@ const requestedTarget = Bun.argv[2] ?? "";
 const archivesDir = Bun.argv[3] ?? "";
 if ((requestedTarget !== "") !== (archivesDir !== "")) {
 	throw new Error(
-		"usage: bun scripts/package/vscode.mjs [<vscode-target> <build-lsp-archives-dir>]",
+		"usage: bun scripts/package/vscode.mjs [<vscode-target> <build-lsp-archives-dir>]"
 	);
 }
 const staged = await stageServer(
 	requestedTarget,
 	archivesDir,
-	join("packages", "vscode-extension", "server"),
+	join("packages", "vscode-extension", "server")
 );
 if (staged !== null) {
 	await packageExtension(staged.server, staged.vscodeTarget);

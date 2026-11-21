@@ -1,4 +1,0 @@
-
-[dependencies]
-serde_json = { package = "serde-json", version = "1.0" }
-private = { version = "2.0", registry = "private" }

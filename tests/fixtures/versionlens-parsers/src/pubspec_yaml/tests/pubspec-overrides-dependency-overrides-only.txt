@@ -1,8 +1,0 @@
-
-dependencies:
-  ignored: ^1.0.0
-dependency_overrides:
-  local_override:
-    path: ../local_override
-  hosted_override:
-    version: ^2.0.0

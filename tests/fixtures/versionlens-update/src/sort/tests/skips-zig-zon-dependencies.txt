@@ -1,1 +1,0 @@
-.{ .dependencies = .{ .zlib = .{ .url = "https://example.com/zlib.tar.gz" }, .fmt = .{ .url = "https://example.com/fmt.tar.gz" } } }

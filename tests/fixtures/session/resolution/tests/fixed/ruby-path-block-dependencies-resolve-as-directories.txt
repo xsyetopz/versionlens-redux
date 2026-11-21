@@ -1,3 +1,0 @@
-path "vendor/local" do
-  gem "local_one"
-end

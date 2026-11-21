@@ -1,2 +1,0 @@
-[dependencies]
-serde = "1.0"

@@ -1,5 +1,0 @@
-from conan import ConanFile
-class Pkg(ConanFile):
-    requires = "hello/1.0", "otherlib/2.1@otheruser/testing"
-    tool_requires = "tool_a/0.2"
-    test_requires = "gtest/1.17.0"

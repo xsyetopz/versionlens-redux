@@ -1,4 +1,0 @@
-zeta==1
-alpha==1
-z-dev==1
-a-dev==1

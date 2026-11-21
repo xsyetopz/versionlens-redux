@@ -1,3 +1,0 @@
-[dependencies]
-localdep = { path = "./localdep" }
-localdep_bare = { path = "vendor/localdep" }

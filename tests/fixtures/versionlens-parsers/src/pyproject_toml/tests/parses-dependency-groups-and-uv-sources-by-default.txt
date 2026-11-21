@@ -1,7 +1,0 @@
-
-[dependency-groups]
-dev = ["mypy>=1.16"]
-
-[tool.uv.sources]
-local = { path = "../local" }
-remote = { git = "https://example.test/repo.git" }

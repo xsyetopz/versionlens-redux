@@ -32,7 +32,7 @@ jobs:
         uses: NTBBloodbath/selene-action@23ef05dd5c4d687f4d3c939f76a1c342baf454aa # v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --config packages/neovim-plugin/selene-tests.toml packages/neovim-plugin/tests
+          args: --config packages/neovim-plugin/selene.toml packages/neovim-plugin/tests
 
       - name: Check formatting with StyLua
         uses: JohnnyMorganz/stylua-action@v5
@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         neovim:
-          - v0.10.4
+          - v0.11.5
           - stable
           - nightly
 
@@ -57,19 +57,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Checkout plenary.nvim
-        uses: actions/checkout@v7.0.1
-        with:
-          repository: nvim-lua/plenary.nvim
-          path: .deps/plenary.nvim
-
       - name: Setup Neovim
         uses: rhysd/action-setup-vim@v1.6.1
         with:
           neovim: true
           version: ${{ matrix.neovim }}
 
-      - name: Run Plenary tests
+      - name: Run tests against the server
         run: make -C packages/neovim-plugin test
 
   targets:

@@ -1,62 +1,29 @@
 #!/usr/bin/env bun
-
+// Bundles the VS Code extension; `--check` builds into a temporary folder to prove it compiles.
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 
 const checkOnly = process.argv.includes("--check");
-const vscodeHostImport = /^#vscode-host$/u;
-const virtualModule = /.*/u;
-const vscodeRuntimeExports = [
-	"TextDocumentChangeReason",
-	"commands",
-	"extensions",
-	"languages",
-	"tasks",
-	"window",
-	"workspace",
-];
-const vscodeHostPlugin = {
-	name: "vscode-host",
-	/** @param {import("bun").PluginBuilder} build */
-	setup(build) {
-		build.onResolve({ filter: vscodeHostImport }, () => ({
-			namespace: "vscode-host",
-			path: "vscode-host",
-		}));
-		build.onLoad({ filter: virtualModule, namespace: "vscode-host" }, () => ({
-			contents: `export { ${vscodeRuntimeExports.join(", ")} } from "vscode";`,
-			loader: "js",
-		}));
-	},
-};
-let extensionDist = "packages/vscode-extension/dist";
-if (checkOnly) {
-	extensionDist = await mkdtemp(join(tmpdir(), "versionlens-extension-build-"));
-}
-
-if (!checkOnly) {
-	await rm(extensionDist, { force: true, recursive: true });
-}
-
+const outdir = checkOnly
+	? await mkdtemp(join(tmpdir(), "versionlens-extension-"))
+	: "packages/vscode-extension/dist";
+await rm(outdir, { force: true, recursive: true });
 const result = await Bun.build({
-	external: ["vscode"],
 	entrypoints: ["packages/vscode-extension/src/extension.ts"],
+	external: ["vscode"],
 	format: "cjs",
 	minify: true,
-	outdir: extensionDist,
-	plugins: [vscodeHostPlugin],
-	target: "node",
+	outdir,
+	target: "node"
 });
-
 if (checkOnly) {
-	await rm(extensionDist, { force: true, recursive: true });
+	await rm(outdir, { force: true, recursive: true });
 }
-
+for (const log of result.logs) {
+	console.error(log);
+}
 if (!result.success) {
-	for (const log of result.logs) {
-		console.error(log);
-	}
 	process.exitCode = 1;
 }

@@ -1,4 +1,0 @@
-
-gem "rubocop", "1.80.2", group: :development
-gem "rspec", "3.13.0", groups: [:development, :test]
-gem "guard", "2.19.1", group: ["development", "test"]

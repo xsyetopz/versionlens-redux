@@ -1,7 +1,0 @@
-
-[packages]
-requests = "==2.32"
-local = { path = "../local" }
-
-[dev-packages]
-pytest = ">=8"

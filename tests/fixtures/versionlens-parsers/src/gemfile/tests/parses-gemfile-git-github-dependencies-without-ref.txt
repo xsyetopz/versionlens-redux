@@ -1,1 +1,0 @@
-gem "rails", git: "https://github.com/rails/rails.git"

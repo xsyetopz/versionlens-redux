@@ -1,16 +1,14 @@
 NVIM ?= nvim
-PLENARY_DIR ?= $(abspath ../../.deps/plenary.nvim)
+SERVER ?= $(abspath ../../target/debug/versionlens-lsp)
 
 .PHONY: lint test check
 
 lint:
 	stylua --check lua plugin tests
-	selene --config selene.toml lua plugin
-	selene --config selene-tests.toml tests
+	selene --config selene.toml lua plugin tests
 
 test:
-	PLENARY_DIR="$(PLENARY_DIR)" $(NVIM) --headless --noplugin -u tests/minimal_init.lua \
-		-c "lua require('plenary.test_harness').test_directory('tests/versionlens', { minimal_init = 'tests/minimal_init.lua' })" \
-		-c "qa!"
+	cargo build -p versionlens-lsp --locked
+	$(NVIM) --headless --clean -l tests/run.lua "$(SERVER)"
 
 check: lint test

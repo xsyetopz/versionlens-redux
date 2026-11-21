@@ -1,4 +1,0 @@
-dependencies:
-  http: ^1.0.0
-custom_dependencies:
-  retry: ^1.0.0

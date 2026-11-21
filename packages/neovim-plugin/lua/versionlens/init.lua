@@ -1,190 +1,252 @@
-local config = require("versionlens.config")
-local support = require("versionlens.support")
+-- VersionLens for Neovim: starts versionlens-lsp for the manifests it reads and exposes its commands.
+local M = {}
 
-local M = {
-  config = config.resolve(),
+M.defaults = {
+  -- Server command; nil looks at $VERSIONLENS_LSP, the bundled bin/, PATH, then the downloaded release.
+  cmd = nil,
+  auto_download = true,
+  autostart = true,
+  codelens = true,
+  inlay_hints = true,
+  -- The `versionlens` settings section, as in VS Code: { prereleases = true, timeoutMs = 5000, ... }.
+  settings = {},
+  on_attach = nil,
 }
 
-local group_name = "VersionLensRedux"
-local client_name = "versionlens"
-local active_keymaps = {}
-local downloading = false
-local pending = {}
-local download_error = nil
+M.config = vim.deepcopy(M.defaults)
+M.messages = {}
 
--- An empty top-level table would encode as a JSON array; the server expects an object.
--- Nested tables are left alone because empty list settings must stay arrays.
-local function as_object(value)
-  return vim.tbl_isempty(value) and vim.empty_dict() or value
-end
+local name = "versionlens"
+local patterns = nil
+local MAX_MESSAGES = 2000
 
 local function notify(message, level)
-  if M.config.notify then
-    vim.notify(message, level or vim.log.levels.INFO, { title = "VersionLens Redux" })
+  vim.notify("VersionLens: " .. message, level or vim.log.levels.INFO)
+end
+
+local function record(line)
+  table.insert(M.messages, os.date("%H:%M:%S ") .. line)
+  if #M.messages > MAX_MESSAGES then
+    table.remove(M.messages, 1)
   end
 end
 
-function M.refresh(bufnr)
-  if not M.config.codelens.enabled then
-    return
+--- The server command, or nil with the reason none was found.
+function M.cmd()
+  if M.config.cmd then
+    return M.config.cmd
   end
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-  vim.lsp.codelens.refresh({ bufnr = bufnr })
+  local env = vim.env.VERSIONLENS_LSP
+  if env and env ~= "" then
+    return { env }
+  end
+  local file = vim.fn.has("win32") == 1 and "versionlens-lsp.exe" or "versionlens-lsp"
+  local bundled = vim.api.nvim_get_runtime_file("bin/" .. file, false)[1]
+  if bundled then
+    return { bundled }
+  end
+  if vim.fn.executable("versionlens-lsp") == 1 then
+    return { "versionlens-lsp" }
+  end
+  local installed = require("versionlens.install").binary()
+  if vim.fn.executable(installed) == 1 then
+    return { installed }
+  end
+  return nil
 end
 
-local function refresh_client_lenses(_error, _result, context)
-  local client = vim.lsp.get_client_by_id(context.client_id)
-  if client then
-    for bufnr in pairs(client.attached_buffers) do
-      if vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
-        M.refresh(bufnr)
-      end
+-- A server glob such as `requirements/*.txt` becomes a Lua pattern anchored at a path segment.
+local function to_pattern(glob)
+  local escaped = glob:lower():gsub("[%^%$%(%)%%%.%[%]%+%-%?]", "%%%0"):gsub("%*", "[^/]*")
+  return "/" .. escaped .. "$"
+end
+
+--- Lua patterns for every manifest the server reads, asked from the server once.
+function M.patterns(cmd)
+  if patterns then
+    return patterns
+  end
+  local result =
+    vim.system(vim.list_extend(vim.deepcopy(cmd), { "--file-types" }), { text = true }):wait(10000)
+  local ok, decoded = pcall(vim.json.decode, result.stdout or "")
+  if result.code ~= 0 or not ok or type(decoded.globs) ~= "table" then
+    error(("%s --file-types failed: %s"):format(cmd[1], result.stderr or result.stdout or ""))
+  end
+  patterns = vim.tbl_map(to_pattern, decoded.globs)
+  return patterns
+end
+
+--- Whether the server reads the file at path.
+function M.supports(path, list)
+  local normalized = "/" .. path:gsub("\\", "/"):lower()
+  for _, pattern in ipairs(list) do
+    if normalized:find(pattern) then
+      return true
     end
   end
-  return vim.NIL
+  return false
 end
 
--- Downloads the matching server release once, then starts every buffer that waited for it.
--- A failure is remembered until :VersionLensStart or :VersionLensRestart.
-function M.download(bufnr)
-  pending[bufnr] = true
-  if downloading then
-    return
+local function on_attach(client, bufnr)
+  if M.config.codelens then
+    if vim.lsp.codelens.enable then
+      vim.lsp.codelens.enable(true, { bufnr = bufnr })
+    else
+      vim.lsp.codelens.refresh({ bufnr = bufnr })
+      vim.api.nvim_create_autocmd({ "BufEnter", "InsertLeave" }, {
+        buffer = bufnr,
+        callback = function()
+          vim.lsp.codelens.refresh({ bufnr = bufnr })
+        end,
+      })
+    end
   end
-  downloading = true
-  local version = require("versionlens.version")
-  notify("Downloading versionlens-lsp " .. version)
-  require("versionlens.download").install(version, function(err)
-    downloading = false
-    local waiting = vim.tbl_keys(pending)
-    pending = {}
-    if err then
-      download_error = err
-      notify("Could not install versionlens-lsp: " .. err, vim.log.levels.ERROR)
-      return
-    end
-    for _, buffer in ipairs(waiting) do
-      if vim.api.nvim_buf_is_valid(buffer) then
-        M.start(buffer)
-      end
-    end
-  end)
+  if M.config.inlay_hints then
+    vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+  end
+  if M.config.on_attach then
+    M.config.on_attach(client, bufnr)
+  end
 end
 
+local handlers = {
+  ["window/logMessage"] = function(_, params)
+    record(params.message)
+    return vim.NIL
+  end,
+}
+
+-- Neovim 0.12 refreshes enabled code lenses itself; older versions need the handler.
+if not vim.lsp.codelens.enable then
+  handlers["workspace/codeLens/refresh"] = function(_, _, ctx)
+    local client = vim.lsp.get_client_by_id(ctx.client_id)
+    for bufnr in pairs(client and client.attached_buffers or {}) do
+      vim.lsp.codelens.refresh({ bufnr = bufnr })
+    end
+    return vim.NIL
+  end
+end
+
+--- Starts or reuses the server for bufnr when it is a supported manifest.
 function M.start(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local path = vim.api.nvim_buf_get_name(bufnr)
-  if not support.supports(path) then
-    return nil
+  if path == "" or vim.bo[bufnr].buftype ~= "" then
+    return
   end
-  local cmd = support.resolve_cmd(M.config)
+  local cmd = M.cmd()
   if not cmd then
     if M.config.auto_download then
-      if not download_error then
-        M.download(bufnr)
-      end
+      require("versionlens.install").ensure(function()
+        M.start(bufnr)
+      end, notify)
     else
-      notify(
-        "Could not find versionlens-lsp. Install it on PATH, set VERSIONLENS_LSP, "
-          .. "configure cmd, or enable auto_download.",
-        vim.log.levels.ERROR
-      )
+      notify("versionlens-lsp not found; set cmd, $VERSIONLENS_LSP, or PATH", vim.log.levels.ERROR)
     end
-    return nil
+    return
   end
-
-  local user_on_attach = M.config.on_attach
-  local capabilities = vim.lsp.protocol.make_client_capabilities()
-  capabilities.workspace.workspaceEdit.documentChanges = true
-  capabilities.workspace.codeLens = { refreshSupport = true }
+  local ok, list = pcall(M.patterns, cmd)
+  if not ok then
+    notify(list, vim.log.levels.ERROR)
+    return
+  end
+  if not M.supports(path, list) then
+    return
+  end
+  local settings =
+    { versionlens = vim.tbl_isempty(M.config.settings) and vim.empty_dict() or M.config.settings }
   return vim.lsp.start({
-    name = client_name,
-    cmd = cmd,
-    capabilities = capabilities,
-    handlers = { ["workspace/codeLens/refresh"] = refresh_client_lenses },
-    root_dir = support.root_dir(bufnr, M.config),
-    settings = { versionlens = as_object(M.config.settings) },
-    on_attach = function(client, attached_bufnr)
-      M.refresh(attached_bufnr)
-      if user_on_attach then
-        user_on_attach(client, attached_bufnr)
+    name = name,
+    cmd = vim.list_extend(vim.deepcopy(cmd), { "--stdio" }),
+    root_dir = vim.fs.root(bufnr, { ".git" }) or vim.fs.dirname(path),
+    settings = settings,
+    init_options = settings,
+    handlers = handlers,
+    on_attach = on_attach,
+  }, { bufnr = bufnr })
+end
+
+local function clients(bufnr)
+  return vim.lsp.get_clients({ bufnr = bufnr, name = name })
+end
+
+local function execute(command, bufnr)
+  local client = clients(bufnr)[1]
+  if not client then
+    notify("not running for this buffer", vim.log.levels.WARN)
+    return
+  end
+  local arguments = command == "versionlens.clearCache" and {} or { vim.uri_from_bufnr(bufnr) }
+  client:request(
+    "workspace/executeCommand",
+    { command = command, arguments = arguments },
+    function(err)
+      if err then
+        notify(err.message, vim.log.levels.ERROR)
       end
     end,
-  }, {
-    bufnr = bufnr,
-    reuse_client = function(client, candidate)
-      return client.name == candidate.name and client.config.root_dir == candidate.root_dir
+    bufnr
+  )
+end
+
+local function show_log()
+  vim.cmd("botright new")
+  local buf = vim.api.nvim_get_current_buf()
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].bufhidden = "wipe"
+  vim.api.nvim_buf_set_name(buf, "versionlens://log")
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, M.messages)
+end
+
+--- Subcommands of :VersionLens.
+M.actions = {
+  refresh = function(bufnr)
+    execute("versionlens.refresh", bufnr)
+  end,
+  updateAll = function(bufnr)
+    execute("versionlens.updateAll", bufnr)
+  end,
+  toggle = function(bufnr)
+    execute("versionlens.toggle", bufnr)
+  end,
+  clearCache = function(bufnr)
+    execute("versionlens.clearCache", bufnr)
+  end,
+  restart = function(bufnr)
+    for _, client in ipairs(clients(bufnr)) do
+      client:stop()
+    end
+    patterns = nil
+    vim.defer_fn(function()
+      M.start(bufnr)
+    end, 200)
+  end,
+  log = show_log,
+  info = function()
+    local cmd = M.cmd()
+    notify(cmd and table.concat(cmd, " ") or "server not found")
+  end,
+}
+
+--- Configures the plugin, registers :VersionLens, and starts on manifest buffers.
+function M.setup(opts)
+  M.config = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
+  patterns = nil
+  vim.api.nvim_create_user_command("VersionLens", function(args)
+    local action = M.actions[args.args]
+    if not action then
+      notify("unknown subcommand " .. args.args, vim.log.levels.ERROR)
+      return
+    end
+    action(vim.api.nvim_get_current_buf())
+  end, {
+    nargs = 1,
+    force = true,
+    complete = function()
+      return vim.tbl_keys(M.actions)
     end,
   })
-end
-
-function M.stop(bufnr)
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-  for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr, name = client_name })) do
-    client:stop()
-  end
-end
-
-function M.restart(bufnr)
-  download_error = nil
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-  M.stop(bufnr)
-  vim.schedule(function()
-    M.start(bufnr)
-  end)
-end
-
-function M.info()
-  local cmd, source = support.resolve_cmd(M.config)
-  if cmd then
-    notify(("Language server (%s): %s"):format(source, table.concat(cmd, " ")))
-  else
-    notify("Language server not found", vim.log.levels.WARN)
-  end
-end
-
-local function register_commands()
-  vim.api.nvim_create_user_command("VersionLensStart", function()
-    download_error = nil
-    M.start()
-  end, { desc = "Start VersionLens Redux for the current buffer", force = true })
-  vim.api.nvim_create_user_command("VersionLensStop", function()
-    M.stop()
-  end, { desc = "Stop VersionLens Redux for the current buffer", force = true })
-  vim.api.nvim_create_user_command("VersionLensRestart", function()
-    M.restart()
-  end, { desc = "Restart VersionLens Redux for the current buffer", force = true })
-  vim.api.nvim_create_user_command("VersionLensRefresh", function()
-    M.refresh()
-  end, { desc = "Refresh VersionLens Redux code lenses", force = true })
-  vim.api.nvim_create_user_command("VersionLensInfo", function()
-    M.info()
-  end, { desc = "Show VersionLens Redux runtime information", force = true })
-end
-
-local function register_keymaps()
-  for _, lhs in ipairs(active_keymaps) do
-    pcall(vim.keymap.del, "n", lhs)
-  end
-  active_keymaps = {}
-  if M.config.keymaps.refresh then
-    local lhs = M.config.keymaps.refresh
-    vim.keymap.set("n", lhs, function()
-      M.refresh()
-    end, { desc = "Refresh VersionLens" })
-    table.insert(active_keymaps, lhs)
-  end
-  if M.config.keymaps.restart then
-    local lhs = M.config.keymaps.restart
-    vim.keymap.set("n", lhs, function()
-      M.restart()
-    end, { desc = "Restart VersionLens" })
-    table.insert(active_keymaps, lhs)
-  end
-end
-
-local function register_autocommands()
-  local group = vim.api.nvim_create_augroup(group_name, { clear = true })
+  local group = vim.api.nvim_create_augroup("VersionLens", { clear = true })
   if M.config.autostart then
     vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
       group = group,
@@ -192,30 +254,12 @@ local function register_autocommands()
         M.start(event.buf)
       end,
     })
-  end
-  if M.config.codelens.enabled then
-    vim.api.nvim_create_autocmd(M.config.codelens.events, {
-      group = group,
-      callback = function(event)
-        M.refresh(event.buf)
-      end,
-    })
-  end
-end
-
-function M.setup(opts)
-  M.config = config.resolve(opts)
-  download_error = nil
-  register_commands()
-  register_keymaps()
-  register_autocommands()
-  if M.config.autostart then
-    local bufnr = vim.api.nvim_get_current_buf()
-    if vim.api.nvim_buf_is_loaded(bufnr) then
-      M.start(bufnr)
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_loaded(bufnr) then
+        M.start(bufnr)
+      end
     end
   end
-  return M.config
 end
 
 return M

@@ -4,6 +4,29 @@ All notable changes to VersionLens Redux are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Rewrote the language server as one crate, `versionlens-lsp`, of about 3,500 lines of code, no file above 603. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
+- Every editor takes its file globs from the server, so VS Code, JetBrains, and Neovim pick up a new file type with no change of their own. JetBrains and Neovim run `versionlens-lsp --file-types`; VS Code reads `capabilities.experimental.fileTypes` from the initialize result and sends the server only those files.
+- OSV checks send one `querybatch` request per document instead of one request per dependency. Registry requests share one pooled HTTP/2 client, capped by `versionlens.concurrency` and limited by `versionlens.timeoutMs`.
+- Quick fixes come from results already in memory, so they no longer wait on the network.
+- Settings are now a flat `versionlens` section: `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, `registries`, and `serverPath`. The per-provider `versionlens.<provider>.*` settings are gone; `versionlens.registries` replaces their API URLs.
+- JetBrains: the plugin has a settings page, Tools menu actions, and a VersionLens log tool window. It builds as a module of the root Gradle build.
+- Neovim: `:VersionLens refresh|updateAll|toggle|clearCache|restart|log|info` replaces the separate `:VersionLens*` commands.
+
+### Fixed
+
+- `requirements.txt`, `requirements/*.txt`, `*constraints*.txt`, and `*.hxml` files are recognised.
+- VS Code commands act on the active manifest, and the VersionLens output channel logs the server path, each applied setting, and every failed request.
+- A failed lookup shows `✗` with its reason on the dependency's line instead of disappearing.
+
+### Removed
+
+- Workspace-wide scanning, dependency sorting, the install task after save, the private-registry authorization prompt, and update-available diagnostics.
+- Support for Nix flakes, Zig, Nim, LuaRocks, Xmake, Meson wraps, Stack, `.cargo/config.toml`, `rust-toolchain`, and Bazel `WORKSPACE` files.
+
 ## [0.6.3] - 2026-11-09
 
 ### Fixed

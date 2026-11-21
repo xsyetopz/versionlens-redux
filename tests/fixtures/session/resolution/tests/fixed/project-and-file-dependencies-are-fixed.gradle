@@ -1,4 +1,0 @@
-dependencies {
-    implementation project(':shared')
-    runtimeOnly files('libs/shared.jar')
-}

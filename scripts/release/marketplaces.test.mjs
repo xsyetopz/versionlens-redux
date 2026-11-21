@@ -53,14 +53,14 @@ const configureMarketplaces = async (commandArguments = [], options = {}) => {
 			"scripts/release/configure-marketplaces.mjs",
 			"--repo",
 			repository,
-			...commandArguments,
+			...commandArguments
 		],
-		{ ...options, stderr: "pipe", stdout: "pipe" },
+		{ ...options, stderr: "pipe", stdout: "pipe" }
 	);
 	const [stdout, stderr, exitCode] = await Promise.all([
 		new Response(child.stdout).text(),
 		new Response(child.stderr).text(),
-		child.exited,
+		child.exited
 	]);
 	return { exitCode, stderr, stdout };
 };
@@ -78,9 +78,9 @@ const configureWithFakeGitHub = async (directory, input, existing = "") => {
 			...Bun.env,
 			GH_EXISTING: existing,
 			GH_LOG: log,
-			PATH: `${binaryDirectory}${delimiter}${Bun.env["PATH"] ?? ""}`,
+			PATH: `${binaryDirectory}${delimiter}${Bun.env["PATH"] ?? ""}`
 		},
-		stdin: new TextEncoder().encode(input),
+		stdin: new TextEncoder().encode(input)
 	});
 	return { log: await Bun.file(log).text(), result };
 };
@@ -90,7 +90,7 @@ const configureWithFakeGitHub = async (directory, input, existing = "") => {
  */
 const dryRunWithFakeGitHub = async (commandArguments) => {
 	const directory = await mkdtemp(
-		join(tmpdir(), "versionlens-marketplace-dry-run-"),
+		join(tmpdir(), "versionlens-marketplace-dry-run-")
 	);
 	try {
 		const binaryDirectory = await fakeGitHubCli(directory);
@@ -99,8 +99,8 @@ const dryRunWithFakeGitHub = async (commandArguments) => {
 				...Bun.env,
 				GH_EXISTING: "",
 				GH_LOG: join(directory, "gh.log"),
-				PATH: `${binaryDirectory}${delimiter}${Bun.env["PATH"] ?? ""}`,
-			},
+				PATH: `${binaryDirectory}${delimiter}${Bun.env["PATH"] ?? ""}`
+			}
 		});
 	} finally {
 		await rm(directory, { force: true, recursive: true });
@@ -116,7 +116,7 @@ it("expands home-relative secret file paths before reading them", async () => {
 		const path = expandUserPath("~/.config/jetbrains-signing/chain.crt", home);
 		const secret = await readSecretFile(
 			"~/.config/jetbrains-signing/chain.crt",
-			home,
+			home
 		);
 		expect(path).toBe(join(directory, "chain.crt"));
 		expect(secret.path).toBe(path);
@@ -128,12 +128,12 @@ it("expands home-relative secret file paths before reading them", async () => {
 
 it("validates every selected value before writing any secret", async () => {
 	const directory = await mkdtemp(
-		join(tmpdir(), "versionlens-marketplace-preflight-"),
+		join(tmpdir(), "versionlens-marketplace-preflight-")
 	);
 	try {
 		const { log, result } = await configureWithFakeGitHub(
 			directory,
-			"token-value\n/definitely/missing/chain.crt\n",
+			"token-value\n/definitely/missing/chain.crt\n"
 		);
 		expect(result.exitCode).toBe(1);
 		expect(log).toContain("secret list");
@@ -145,7 +145,7 @@ it("validates every selected value before writing any secret", async () => {
 
 it("keeps existing secrets by default when resuming configuration", async () => {
 	const directory = await mkdtemp(
-		join(tmpdir(), "versionlens-marketplace-resume-"),
+		join(tmpdir(), "versionlens-marketplace-resume-")
 	);
 	try {
 		const chain = join(directory, "chain.crt");
@@ -155,7 +155,7 @@ it("keeps existing secrets by default when resuming configuration", async () => 
 		const { log, result } = await configureWithFakeGitHub(
 			directory,
 			`\n${chain}\n${key}\npassword\n`,
-			"JETBRAINS_MARKETPLACE_TOKEN",
+			"JETBRAINS_MARKETPLACE_TOKEN"
 		);
 		expect(result.exitCode).toBe(0);
 		expect(log).not.toContain("secret set JETBRAINS_MARKETPLACE_TOKEN");
@@ -179,7 +179,7 @@ it("lists every required marketplace secret without making hosted changes", asyn
 		"JB_PRIVATE_KEY_PASSWORD",
 		"ZED_EXTENSIONS_FORK",
 		"ZED_EXTENSIONS_TOKEN",
-		"LUAROCKS_API_KEY",
+		"LUAROCKS_API_KEY"
 	]) {
 		expect(result.stdout).toContain(`marketplaces: ${name}`);
 	}
@@ -209,20 +209,20 @@ it("adds and updates the VersionLens Zed registry entry", async () => {
 	try {
 		await Bun.write(
 			registry,
-			'[alpha]\nsubmodule = "extensions/alpha"\nversion = "1.0.0"\n',
+			'[alpha]\nsubmodule = "extensions/alpha"\nversion = "1.0.0"\n'
 		);
 		const first = await capture([
 			"bun",
 			"scripts/release/zed-registry.mjs",
 			registry,
-			"0.4.0",
+			"0.4.0"
 		]);
 		expect(first.exitCode).toBe(0);
 		const second = await capture([
 			"bun",
 			"scripts/release/zed-registry.mjs",
 			registry,
-			"0.4.1",
+			"0.4.1"
 		]);
 		expect(second.exitCode).toBe(0);
 		const contents = await Bun.file(registry).text();
@@ -241,16 +241,16 @@ it("renders a versioned LuaRocks specification", async () => {
 			"bun",
 			"scripts/release/luarocks.mjs",
 			"0.4.0",
-			directory,
+			directory
 		]);
 		expect(result.exitCode).toBe(0);
 		const rockspec = await Bun.file(
-			join(directory, "versionlens-redux-0.4.0-1.rockspec"),
+			join(directory, "versionlens-redux-0.4.0-1.rockspec")
 		).text();
 		expect(rockspec).toContain('version = "0.4.0-1"');
 		expect(rockspec).toContain("refs/tags/v0.4.0.tar.gz");
 		expect(rockspec).toContain(
-			'dir = "versionlens-redux-0.4.0/packages/neovim-plugin"',
+			'dir = "versionlens-redux-0.4.0/packages/neovim-plugin"'
 		);
 	} finally {
 		await rm(directory, { force: true, recursive: true });

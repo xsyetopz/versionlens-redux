@@ -1,2 +1,0 @@
-requires "zlib >= 1.0.0"
-requires "fmt >= 10.1.1"

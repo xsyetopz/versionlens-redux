@@ -1,6 +1,0 @@
-{
-  // JSON5-style package manifest
-  dependencies: {
-    "left-pad": "1.0.0",
-  },
-}

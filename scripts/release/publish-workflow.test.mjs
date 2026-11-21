@@ -7,7 +7,7 @@ import { expect, it } from "bun:test";
  */
 const marketplaceWorkflowJob = async (name, nextName) => {
 	const workflow = await Bun.file(
-		".github/workflows/publish-marketplaces.yml",
+		".github/workflows/publish-marketplaces.yml"
 	).text();
 	const start = workflow.indexOf(`\n  ${name}:`);
 	expect(start).toBeGreaterThan(-1);
@@ -22,7 +22,7 @@ const marketplaceWorkflowJob = async (name, nextName) => {
 it("provisions and validates LuaRocks upload requirements", async () => {
 	const neovimJob = await marketplaceWorkflowJob("neovim");
 	const install = neovimJob.indexOf(
-		"sudo apt-get install --no-install-recommends --yes lua5.4 lua-dkjson luarocks",
+		"sudo apt-get install --no-install-recommends --yes lua5.4 lua-dkjson luarocks"
 	);
 	const guard = neovimJob.indexOf('if [[ -z "$LUAROCKS_API_KEY" ]]');
 	const failClosed = neovimJob.indexOf("exit 1", guard);
@@ -45,15 +45,15 @@ it("resolves the Marketplace identity before publishing VSIX packages", async ()
 	const vscodeJob = await marketplaceWorkflowJob("vscode", "jetbrains");
 	const login = vscodeJob.indexOf("name: Sign in to Microsoft Entra");
 	const resolveIdentity = vscodeJob.indexOf(
-		"name: Resolve Visual Studio Marketplace identity",
+		"name: Resolve Visual Studio Marketplace identity"
 	);
 	const profileRequest = vscodeJob.indexOf(
 		"https://app.vssps.visualstudio.com/_apis/profile/profiles/me",
-		resolveIdentity,
+		resolveIdentity
 	);
 	const marketplaceResource = vscodeJob.indexOf(
 		"499b84ac-1321-427f-aa17-267ca6975798",
-		resolveIdentity,
+		resolveIdentity
 	);
 	const failClosed = vscodeJob.indexOf("exit 1", resolveIdentity);
 	const publish = vscodeJob.indexOf("name: Publish released VSIX packages");

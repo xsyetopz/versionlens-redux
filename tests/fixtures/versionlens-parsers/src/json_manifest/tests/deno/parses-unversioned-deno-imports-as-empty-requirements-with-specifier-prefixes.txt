@@ -1,6 +1,0 @@
-{
-  "imports": {
-    "@std/assert": "jsr:@std/assert",
-    "chalk": "npm:chalk"
-  }
-}

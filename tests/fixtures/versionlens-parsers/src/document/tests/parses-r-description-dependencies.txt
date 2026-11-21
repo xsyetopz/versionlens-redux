@@ -1,7 +1,0 @@
-Package: demo
-Version: 0.1.0
-Depends: R (>= 4.3), dplyr (>= 1.1.0),
-    tidyr
-Imports: cli (>= 3.6.0)
-Suggests: testthat (>= 3.0.0)
-LinkingTo: Rcpp (>= 1.0.0)

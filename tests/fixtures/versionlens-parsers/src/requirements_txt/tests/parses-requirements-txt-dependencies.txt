@@ -1,7 +1,0 @@
-# nope
- requests>=2.0 # comment
--r other.txt
-flask==3.0.0
-httpx[socks]>=0.28; python_version >= '3.12'
-importlib-metadata; python_version < '3.8'
-local @ https://example.test/local.whl#sha256=abc

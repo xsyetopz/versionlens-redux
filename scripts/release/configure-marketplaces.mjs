@@ -15,7 +15,7 @@ const marketplaceLabels = new Map([
 	["vscode", "VS Code Marketplace"],
 	["jetbrains", "JetBrains Marketplace"],
 	["zed", "Zed extension registry"],
-	["neovim", "Neovim via LuaRocks"],
+	["neovim", "Neovim via LuaRocks"]
 ]);
 
 /** @returns {Set<string> | null} */
@@ -26,21 +26,21 @@ const requestedMarketplaces = () => {
 	const value = process.argv[onlyArgumentIndex + 1];
 	if (value === undefined || value === "") {
 		throw new Error(
-			`--only requires one or more of: ${marketplaceIds.join(", ")}`,
+			`--only requires one or more of: ${marketplaceIds.join(", ")}`
 		);
 	}
 	const selected = new Set(
 		value
 			.split(",")
 			.map((entry) => entry.trim().toLowerCase())
-			.filter((entry) => entry !== ""),
+			.filter((entry) => entry !== "")
 	);
 	const unknown = [...selected].filter(
-		(entry) => !marketplaceLabels.has(entry),
+		(entry) => !marketplaceLabels.has(entry)
 	);
 	if (unknown.length > 0) {
 		throw new Error(
-			`unknown marketplace ${unknown.join(", ")}; expected: ${marketplaceIds.join(", ")}`,
+			`unknown marketplace ${unknown.join(", ")}; expected: ${marketplaceIds.join(", ")}`
 		);
 	}
 	return selected;
@@ -60,7 +60,7 @@ const chooseMarketplaces = async (ask) => {
 	}
 
 	console.log(
-		"\nSelect the destinations whose provider accounts are ready. Skipped destinations can be configured by running this command again later.",
+		"\nSelect the destinations whose provider accounts are ready. Skipped destinations can be configured by running this command again later."
 	);
 	/** @type {Set<string>} */
 	const selected = new Set();
@@ -97,9 +97,9 @@ const existingSecretNames = async (repo) => {
 			"--json",
 			"name",
 			"--jq",
-			".[].name",
+			".[].name"
 		],
-		{ capture: true },
+		{ capture: true }
 	);
 	return new Set(output === "" ? [] : output.split("\n"));
 };
@@ -119,7 +119,7 @@ const setSecret = async (repo, name, value) => {
 		typeof value === "string" ? new TextEncoder().encode(value) : value;
 	await run(
 		["gh", "secret", "set", name, "--repo", repo, "--env", environment],
-		{ stdin: bytes },
+		{ stdin: bytes }
 	);
 };
 
@@ -137,13 +137,13 @@ const resolveRepository = async () => {
 				"--json",
 				"nameWithOwner",
 				"--jq",
-				".nameWithOwner",
+				".nameWithOwner"
 			],
-			{ capture: true },
+			{ capture: true }
 		));
 	if (!/^[^/]+\/[^/]+$/u.test(repo)) {
 		throw new Error(
-			`could not determine a GitHub owner/repository, got ${repo}`,
+			`could not determine a GitHub owner/repository, got ${repo}`
 		);
 	}
 	return repo;
@@ -167,9 +167,9 @@ const configureSelected = async (repo, selected, ask) => {
 				"api",
 				"--method",
 				"PUT",
-				`repos/${repo}/environments/${environment}`,
+				`repos/${repo}/environments/${environment}`
 			],
-			{ quiet: true },
+			{ quiet: true }
 		);
 	}
 	/** @type {{ name: string, value: string | Uint8Array }[]} */
@@ -179,9 +179,9 @@ const configureSelected = async (repo, selected, ask) => {
 			ask,
 			dryRun,
 			existingSecrets: await existingSecretNames(repo),
-			pendingSecrets,
+			pendingSecrets
 		},
-		selected,
+		selected
 	);
 
 	if (pendingSecrets.length === 0) {
@@ -189,13 +189,13 @@ const configureSelected = async (repo, selected, ask) => {
 		return;
 	}
 	console.log(
-		`\nValidated ${pendingSecrets.length} secret value${pendingSecrets.length === 1 ? "" : "s"}. Applying updates to GitHub...`,
+		`\nValidated ${pendingSecrets.length} secret value${pendingSecrets.length === 1 ? "" : "s"}. Applying updates to GitHub...`
 	);
 	await sequentially(pendingSecrets, ({ name, value }) =>
-		setSecret(repo, name, value),
+		setSecret(repo, name, value)
 	);
 	console.log(
-		`\nConfigured GitHub environment secrets in ${repo}/${environment}.`,
+		`\nConfigured GitHub environment secrets in ${repo}/${environment}.`
 	);
 };
 
@@ -208,7 +208,7 @@ const configure = async () => {
 		const selected = await chooseMarketplaces(prompt.ask);
 		if (selected.size === 0) {
 			console.log(
-				"No marketplaces selected; no GitHub environment changes were made.",
+				"No marketplaces selected; no GitHub environment changes were made."
 			);
 			return;
 		}

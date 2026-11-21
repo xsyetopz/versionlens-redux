@@ -1,3 +1,0 @@
-[compat]
-Zeta = "1"
-Alpha = "1"

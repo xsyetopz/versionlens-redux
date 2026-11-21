@@ -18,11 +18,15 @@ languages = [
   "C#",
   "C++",
   "Clojure",
+  "CMake",
   "Dockerfile",
   "Elixir",
   "Erlang",
   "Gleam",
   "Go",
+  "Go Mod",
+  "Go Work",
+  "Groovy",
   "HCL",
   "Java",
   "JavaScript",
@@ -31,13 +35,17 @@ languages = [
   "Kotlin",
   "Lua",
   "Nix",
+  "OCaml",
+  "Perl",
   "Plain Text",
   "Python",
   "Ruby",
   "Rust",
   "Scala",
   "Shell Script",
+  "Starlark",
   "Swift",
+  "Terraform",
   "TOML",
   "TSX",
   "TypeScript",
@@ -52,11 +60,15 @@ name = "VersionLens Redux Language Server"
 "C#" = "csharp"
 "C++" = "cpp"
 "Clojure" = "clojure"
+"CMake" = "cmake"
 "Dockerfile" = "dockerfile"
 "Elixir" = "elixir"
 "Erlang" = "erlang"
 "Gleam" = "gleam"
 "Go" = "go"
+"Go Mod" = "go.mod"
+"Go Work" = "go.work"
+"Groovy" = "groovy"
 "HCL" = "terraform"
 "Java" = "java"
 "JavaScript" = "javascript"
@@ -65,13 +77,17 @@ name = "VersionLens Redux Language Server"
 "Kotlin" = "kotlin"
 "Lua" = "lua"
 "Nix" = "nix"
+"OCaml" = "ocaml"
+"Perl" = "perl"
 "Plain Text" = "plaintext"
 "Python" = "python"
 "Ruby" = "ruby"
 "Rust" = "rust"
 "Scala" = "scala"
 "Shell Script" = "shellscript"
+"Starlark" = "starlark"
 "Swift" = "swift"
+"Terraform" = "terraform"
 "TOML" = "toml"
 "TSX" = "typescriptreact"
 "TypeScript" = "typescript"

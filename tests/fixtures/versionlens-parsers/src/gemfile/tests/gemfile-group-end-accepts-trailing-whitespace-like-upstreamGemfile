@@ -1,4 +1,0 @@
-group :test do
-  gem "rspec", "3.13.0"
-end   
-gem "rails", "8.1.3"

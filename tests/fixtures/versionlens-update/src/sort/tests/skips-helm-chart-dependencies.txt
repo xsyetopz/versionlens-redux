@@ -1,5 +1,0 @@
-dependencies:
-  - name: zeta
-    version: 1.0.0
-  - name: alpha
-    version: 1.0.0

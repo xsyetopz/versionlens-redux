@@ -22,12 +22,12 @@ const createPrompt = () => {
 				process.stdout.write(chunk, encoding);
 			}
 			callback();
-		},
+		}
 	});
 	const input = createInterface({
 		input: process.stdin,
 		output: promptOutput,
-		terminal: process.stdin.isTTY,
+		terminal: process.stdin.isTTY
 	});
 	const lines = input[Symbol.asyncIterator]();
 	return {
@@ -50,7 +50,7 @@ const createPrompt = () => {
 		close: () => {
 			muteInputEcho = false;
 			input.close();
-		},
+		}
 	};
 };
 

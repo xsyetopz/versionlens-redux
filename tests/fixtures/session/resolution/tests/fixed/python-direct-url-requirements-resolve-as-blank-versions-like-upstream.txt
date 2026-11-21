@@ -1,1 +1,0 @@
-local @ https://example.test/local.whl#sha256=abc

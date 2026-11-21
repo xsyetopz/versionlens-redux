@@ -36,7 +36,7 @@ bun run package:editors
 
 ## Adding a File Type
 
-Add one row to the table in `crates/versionlens-parsers/src/manifest/table.rs` (with a `ManifestKind` variant in `crates/versionlens-model/src/manifest.rs` and a parser function, new or existing), then run `bun run generate:manifests`. `bun run check:manifests` fails when the generated editor file lists are stale.
+Add one `row` to `FILE_TYPES` in `crates/versionlens-lsp/src/catalog/rows.rs`, and a `REGISTRIES` row in `crates/versionlens-lsp/src/registry.rs` when the registry is new. Editors read the globs from `versionlens-lsp --file-types` or from `capabilities.experimental.fileTypes` in the initialize result, so their packages stay unchanged; Zed needs the file's language in `packages/zed-extension/extension.toml`.
 
 ## Release
 
@@ -56,19 +56,19 @@ The release workflow refuses stale commits, mismatched versions, existing tags, 
 Run the smallest check that covers your change. Common checks:
 
 ```bash
-bun run typecheck   # bun check --cwd packages/vscode-extension
-cargo fmt --all -- --check
-cargo test --workspace
-bun run check:manifests
+cargo test -p versionlens-lsp
+bun test packages/vscode-extension
+just jvm::verify
+make -C packages/neovim-plugin test
 ```
 
 Before a release or broad refactor, run:
 
 ```bash
-bun run verify
+just verify
 ```
 
-`bun run verify` is intentionally broad and can be slow, and the JetBrains build needs Java 21. Neovim tests run with `make test` in `packages/neovim-plugin`; e2e tests with `bun run test:e2e`. Do not run it in the background unless someone explicitly asked for that.
+`just verify` is broad and slow: it builds every editor package. Do not run it in the background unless someone explicitly asked for that.
 
 ## Pull Requests
 

@@ -1,9 +1,0 @@
-
-[dependencies]
-serde = "1.0"
-
-[target.'cfg(unix)'.dependencies]
-nix = "0.29"
-
-[target.x86_64-pc-windows-msvc.dev-dependencies]
-win-test = "0.1"

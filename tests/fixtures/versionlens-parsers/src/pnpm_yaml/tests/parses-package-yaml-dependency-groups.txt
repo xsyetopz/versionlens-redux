@@ -1,9 +1,0 @@
-
-dependencies:
-  react: ^19.0.0
-devDependencies:
-  typescript: ^6.0.3
-peerDependencies:
-  '@types/react': ^19.0.0
-optionalDependencies:
-  fsevents: ^2.3.3

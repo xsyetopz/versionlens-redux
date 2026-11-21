@@ -17,7 +17,7 @@ const expandUserPath = (value, home = homedir()) => {
 	}
 	if (value.startsWith("~")) {
 		throw new Error(
-			"paths for another user's home directory are not supported",
+			"paths for another user's home directory are not supported"
 		);
 	}
 	return resolve(value);
@@ -134,10 +134,10 @@ const askForFile = async (context, name, prompt) => {
 		context.pendingSecrets.push({ name, value: contents });
 	} catch (error) {
 		console.error(
-			`Could not read ${name}: ${error instanceof Error ? error.message : String(error)}`,
+			`Could not read ${name}: ${error instanceof Error ? error.message : String(error)}`
 		);
 		console.error(
-			"Enter another path, or press Ctrl-C to leave all secrets unchanged.",
+			"Enter another path, or press Ctrl-C to leave all secrets unchanged."
 		);
 		await askForFile(context, name, prompt);
 	}
@@ -162,7 +162,7 @@ const collectors = {
 		await visibleSecret(
 			context,
 			"AZURE_CLIENT_ID",
-			"Azure managed identity or app client ID",
+			"Azure managed identity or app client ID"
 		);
 		await visibleSecret(context, "AZURE_TENANT_ID", "Azure tenant ID");
 	},
@@ -171,22 +171,22 @@ const collectors = {
 		await hiddenSecret(
 			context,
 			"JETBRAINS_MARKETPLACE_TOKEN",
-			"JetBrains permanent Marketplace token",
+			"JetBrains permanent Marketplace token"
 		);
 		await fileSecret(
 			context,
 			"JB_CERTIFICATE_CHAIN",
-			"JetBrains signing certificate chain PEM",
+			"JetBrains signing certificate chain PEM"
 		);
 		await fileSecret(
 			context,
 			"JB_PRIVATE_KEY",
-			"JetBrains signing private key PEM",
+			"JetBrains signing private key PEM"
 		);
 		await hiddenSecret(
 			context,
 			"JB_PRIVATE_KEY_PASSWORD",
-			"JetBrains signing private key password",
+			"JetBrains signing private key password"
 		);
 	},
 	zed: async (context) => {
@@ -194,18 +194,18 @@ const collectors = {
 		await visibleSecret(
 			context,
 			"ZED_EXTENSIONS_FORK",
-			"Fork of zed-industries/extensions (owner/extensions)",
+			"Fork of zed-industries/extensions (owner/extensions)"
 		);
 		await hiddenSecret(
 			context,
 			"ZED_EXTENSIONS_TOKEN",
-			"GitHub token that can push to the fork and open a pull request against zed-industries/extensions",
+			"GitHub token that can push to the fork and open a pull request against zed-industries/extensions"
 		);
 	},
 	neovim: async (context) => {
 		console.log("\nNeovim via LuaRocks");
 		await hiddenSecret(context, "LUAROCKS_API_KEY", "LuaRocks API key");
-	},
+	}
 };
 
 /**
@@ -219,7 +219,7 @@ const collectSecrets = async (context, selected) => {
 	const ids = Object.keys(collectors).filter((id) => selected.has(id));
 	await sequentially(
 		ids,
-		(id) => collectors[id]?.(context) ?? Promise.resolve(),
+		(id) => collectors[id]?.(context) ?? Promise.resolve()
 	);
 };
 

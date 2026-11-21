@@ -1,1 +1,0 @@
-{project_plugins,[{rebar3_cuttlefish,"~> 0.1"}]}.

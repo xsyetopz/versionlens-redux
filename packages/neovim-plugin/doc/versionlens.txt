@@ -1,153 +1,79 @@
-*versionlens.txt*   VersionLens Redux for Neovim
+*versionlens.txt*  Dependency versions in manifests, from versionlens-lsp
 
 ==============================================================================
-CONTENTS                                                    *versionlens-contents*
+CONTENTS                                                         *versionlens*
 
-  1. Introduction ........................................ |versionlens-intro|
-  2. Installation ......................................... |versionlens-install|
-  3. Setup ................................................ |versionlens-setup|
-  4. Commands ............................................. |versionlens-commands|
-  5. Configuration ........................................ |versionlens-config|
-  6. Health ............................................... |versionlens-health|
-
-==============================================================================
-INTRODUCTION                                                   *versionlens-intro*
-
-VersionLens Redux displays dependency diagnostics and code lenses from the
-shared Rust `versionlens-lsp` server in supported manifest files.
-
-Requirements:
-
-- Neovim 0.10 or newer.
-- `versionlens-lsp`: bundled with a release archive, selected through
-  $VERSIONLENS_LSP, supplied with `cmd`, installed on $PATH, or downloaded
-  automatically (see |versionlens-download|).
+  1. Introduction ................................ |versionlens-intro|
+  2. Server ...................................... |versionlens-server|
+  3. Setup ....................................... |versionlens-setup|
+  4. Commands .................................... |versionlens-commands|
+  5. Health ...................................... |versionlens-health|
 
 ==============================================================================
-INSTALLATION                                                 *versionlens-install*
+1. INTRODUCTION                                            *versionlens-intro*
 
-Download the release archive for the current platform and architecture, then
-extract it under a Neovim package directory such as:
+VersionLens starts the `versionlens-lsp` language server on each manifest the
+server reads (package.json, Cargo.toml, requirements.txt, go.mod, and more)
+and shows the latest versions as code lenses, inlay hints, and diagnostics.
+Code actions and code lenses update a dependency.
 
-  $XDG_DATA_HOME/nvim/site/pack/versionlens/start/versionlens-redux
-
-The archive contains this plugin plus its matching language-server binary.
-For monorepo development, add packages/neovim-plugin to 'runtimepath'.
+The plugin asks the server for the files it reads with
+`versionlens-lsp --file-types`, so new server file types need no plugin
+change.
 
 ==============================================================================
-SETUP                                                           *versionlens-setup*
+2. SERVER                                                 *versionlens-server*
 
-The plugin starts automatically with defaults. Plugin managers may call:
+The first server found is used:
 
->lua
-    require("versionlens").setup({})
+  1. The `cmd` option.
+  2. `$VERSIONLENS_LSP`.
+  3. `bin/versionlens-lsp` on 'runtimepath' (the release archive).
+  4. `versionlens-lsp` on `PATH`.
+  5. A previous download in `stdpath("data")/versionlens/<version>/`.
+
+When none is found and `auto_download` is true, the matching release is
+downloaded with curl, checked against the release SHA256SUMS, and installed in
+that data directory. Failures are reported with |vim.notify()|.
+
+==============================================================================
+3. SETUP                                                   *versionlens-setup*
+
+                                                         *versionlens.setup()*
+The plugin calls `setup()` when it loads, unless
+`vim.g.versionlens_disable_auto_setup` is set. Options and defaults: >lua
+
+  require("versionlens").setup({
+    cmd = nil,
+    auto_download = true,
+    autostart = true,
+    codelens = true,
+    inlay_hints = true,
+    settings = {},
+    on_attach = nil,
+  })
 <
-
-Calling setup multiple times is safe. Set `g:versionlens_disable_auto_setup`
-to 1 before loading the plugin when setup must be entirely manager-controlled.
-
-==============================================================================
-COMMANDS                                                     *versionlens-commands*
-
-:VersionLensStart                                           *:VersionLensStart*
-    Start or attach VersionLens Redux to the current buffer.
-
-:VersionLensStop                                             *:VersionLensStop*
-    Stop VersionLens Redux clients attached to the current buffer.
-
-:VersionLensRestart                                       *:VersionLensRestart*
-    Restart VersionLens Redux for the current buffer.
-
-:VersionLensRefresh                                       *:VersionLensRefresh*
-    Refresh visible VersionLens code lenses.
-
-:VersionLensInfo                                             *:VersionLensInfo*
-    Show the selected language-server executable.
+`settings` holds the server settings, the VS Code `versionlens.*` keys
+without the prefix: `enabled`, `codeLens`, `inlayHints`, `prereleases`,
+`vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`,
+`githubToken`, and `registries` (registry id to URL template, for mirrors).
 
 ==============================================================================
-CONFIGURATION                                                   *versionlens-config*
+4. COMMANDS                                             *versionlens-commands*
 
->lua
-    require("versionlens").setup({
-      auto_download = true,
-      autostart = true,
-      cmd = nil,
-      codelens = {
-        enabled = true,
-        events = { "BufEnter", "InsertLeave" },
-      },
-      keymaps = {
-        refresh = nil,
-        restart = nil,
-      },
-      notify = true,
-      on_attach = nil,
-      root_dir = nil,
-      settings = {},
-      root_markers = {
-        ".git",
-        ".nvmrc",
-        ".node-version",
-        ".bun-version",
-        "Cargo.toml",
-        "package.json",
-        "pnpm-workspace.yaml",
-        "pyproject.toml",
-        "go.mod",
-        "rust-toolchain",
-        "rust-toolchain.toml",
-      },
-    })
-<
-
-`cmd` accepts an executable string or argv-style list. Resolution order:
-`cmd`, $VERSIONLENS_LSP, bundled platform binary, repository debug binary,
-previously downloaded binary, then `versionlens-lsp` on $PATH.
-
-Without `root_dir`, the root of a file is the nearest directory with a root
-marker. One exception: when that directory is a checkout that the project
-Neovim started in ignores in git, such as `.claude/worktrees/*`, the root is
-that project, so its ignore files keep covering the checkout.
-
-`settings` is the `versionlens` configuration section. It is sent to the server
-in `vim.lsp.start` and returned for the server's `workspace/configuration`
-requests, so Neovim answers them without extra handlers. An empty `settings` is sent
-as a JSON object (the server rejects an array). Nested empty tables stay
-arrays, as list settings need; write `vim.empty_dict()` for an empty nested
-object. For example:
-
->lua
-    require("versionlens").setup({ settings = { ... } })
-<
-
-See the VersionLens settings reference for the available keys.
-
-To change the severity of update diagnostics, set
-`settings = { diagnostics = { updateSeverity = "warn" } }`. Values are
-"error", "warn", "info", "hint", and "off"; the default is "info".
-
-Neovim does not answer `versionlens/authorization`. The server reads
-credentials from the environment (GITHUB_TOKEN, GH_TOKEN) and from registry
-config files (.npmrc, .yarnrc.yml, NuGet.config).
-
-                                                             *versionlens-download*
-`auto_download` (default true) downloads the server when no other step finds
-one. It fetches the release asset `versionlens-lsp-<version>-<rust-triple>`
-(for example x86_64-apple-darwin; tar.gz, zip on Windows) and `SHA256SUMS` for the plugin's version from GitHub with
-`curl`, verifies the archive with `sha256sum`, `shasum`, or `certutil`
-(whichever exists), extracts it with `tar` (Windows: System32\tar.exe), and installs it into
-stdpath("data")/versionlens/<version>/. Other version directories there are
-removed. Alpine (musl) systems get the musl build. A failed download is not
-retried until |:VersionLensStart| or |:VersionLensRestart|. Buffers opened
-while downloading start once it finishes. On a checksum mismatch the download is deleted, the server is not
-started, and the error names the expected and actual sums. With
-`auto_download = false` no network request is made and an error explains how
-to install the server.
+                                                                *:VersionLens*
+:VersionLens refresh       Fetch the current buffer's versions again.
+:VersionLens updateAll     Update every dependency in the buffer.
+:VersionLens toggle        Show or hide lenses and hints.
+:VersionLens clearCache    Drop cached registry answers.
+:VersionLens restart       Restart the server.
+:VersionLens log           Show the server's log messages.
+:VersionLens info          Show the server command.
 
 ==============================================================================
-HEALTH                                                         *versionlens-health*
+5. HEALTH                                                 *versionlens-health*
 
-Run `:checkhealth versionlens` to verify Neovim and language-server discovery.
-The report shows which resolution step found the server.
+`:checkhealth versionlens` checks the Neovim version, that the server runs,
+and how many file patterns it reports.
 
-vim:tw=78:ts=8:noet:ft=help:norl:
+ vim:tw=78:ts=8:ft=help:norl:

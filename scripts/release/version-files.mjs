@@ -23,28 +23,25 @@ const NEOVIM_VERSION_REPLACEMENT_PATTERN =
 const manifests = [
 	[
 		"Cargo.toml",
-		/\[workspace\.package\][\s\S]*?^version = "(?<version>[^"]+)"/mu,
+		/\[workspace\.package\][\s\S]*?^version = "(?<version>[^"]+)"/mu
 	],
 	[
 		"packages/vscode-extension/package.json",
-		/"name": "versionlens-redux",[\s\S]*?"version": "(?<version>[^"]+)"/u,
+		/"name": "versionlens-redux",[\s\S]*?"version": "(?<version>[^"]+)"/u
 	],
 	[
 		"packages/zed-extension/Cargo.toml",
-		/name = "versionlens-zed-extension"\nversion = "(?<version>[^"]+)"/u,
+		/name = "versionlens-zed-extension"\nversion = "(?<version>[^"]+)"/u
 	],
 	[
 		"packages/zed-extension/extension.toml",
-		/^version = "(?<version>[^"]+)"$/mu,
+		/^version = "(?<version>[^"]+)"$/mu
 	],
 	[
 		"packages/jetbrains-plugin/build.gradle.kts",
-		/^version = "(?<version>[^"]+)"$/mu,
+		/^version = "(?<version>[^"]+)"$/mu
 	],
-	[
-		"packages/neovim-plugin/lua/versionlens/version.lua",
-		NEOVIM_VERSION_PATTERN,
-	],
+	["packages/neovim-plugin/lua/versionlens/version.lua", NEOVIM_VERSION_PATTERN]
 ];
 
 /**
@@ -84,7 +81,7 @@ const rustWorkspacePackages = async () => {
 		"metadata",
 		"--no-deps",
 		"--format-version",
-		"1",
+		"1"
 	]);
 	if (metadata.exitCode !== 0) {
 		fail(`cargo metadata failed: ${metadata.stderr}`);
@@ -127,12 +124,12 @@ const rustWorkspacePackages = async () => {
  */
 const assertSynchronizedVersions = async (previousVersion, rustPackages) => {
 	const manifestVersions = await Promise.all(
-		manifests.map(([path, pattern]) => currentVersion(path, pattern)),
+		manifests.map(([path, pattern]) => currentVersion(path, pattern))
 	);
 	for (const [index, version] of manifestVersions.entries()) {
 		if (version !== previousVersion) {
 			fail(
-				`${manifests[index]?.[0]}: version ${version} is not synchronized with ${previousVersion}`,
+				`${manifests[index]?.[0]}: version ${version} is not synchronized with ${previousVersion}`
 			);
 		}
 	}
@@ -141,14 +138,14 @@ const assertSynchronizedVersions = async (previousVersion, rustPackages) => {
 		rustPackages.map((name) =>
 			currentVersion(
 				"Cargo.lock",
-				new RegExp(`name = "${name}"\\nversion = "(?<version>[^"]+)"`, "u"),
-			),
-		),
+				new RegExp(`name = "${name}"\\nversion = "(?<version>[^"]+)"`, "u")
+			)
+		)
 	);
 	for (const [index, version] of lockVersions.entries()) {
 		if (version !== previousVersion) {
 			fail(
-				`Cargo.lock: ${rustPackages[index]} version ${version} is not synchronized with ${previousVersion}`,
+				`Cargo.lock: ${rustPackages[index]} version ${version} is not synchronized with ${previousVersion}`
 			);
 		}
 	}
@@ -177,7 +174,7 @@ const applyCoreManifestUpdates = (applyUpdate, replaceVersion) => {
 	applyUpdate(
 		"packages/vscode-extension/package.json",
 		EXTENSION_REPLACEMENT_PATTERN,
-		replaceVersion,
+		replaceVersion
 	);
 	applyUpdate("Cargo.toml", CARGO_REPLACEMENT_PATTERN, replaceVersion);
 };
@@ -194,9 +191,9 @@ const applyRustLockUpdates = (applyUpdate, replaceVersion, rustPackages) => {
 			"Cargo.lock",
 			new RegExp(
 				`(?<prefix>name = "${name}"\\nversion = ")[^"]+(?<suffix>")`,
-				"u",
+				"u"
 			),
-			replaceVersion,
+			replaceVersion
 		);
 	}
 };
@@ -210,33 +207,33 @@ const applyRustLockUpdates = (applyUpdate, replaceVersion, rustPackages) => {
 const applyPackageManifestUpdates = (
 	applyUpdate,
 	replaceVersion,
-	nextVersion,
+	nextVersion
 ) => {
 	applyUpdate("bun.lock", BUN_LOCK_REPLACEMENT_PATTERN, replaceVersion);
 	applyUpdate(
 		"packages/zed-extension/Cargo.toml",
 		ZED_CARGO_REPLACEMENT_PATTERN,
-		replaceVersion,
+		replaceVersion
 	);
 	applyUpdate(
 		"packages/zed-extension/Cargo.lock",
 		ZED_CARGO_REPLACEMENT_PATTERN,
-		replaceVersion,
+		replaceVersion
 	);
 	applyUpdate(
 		"packages/zed-extension/extension.toml",
 		VERSION_LINE_PATTERN,
-		`version = "${nextVersion}"`,
+		`version = "${nextVersion}"`
 	);
 	applyUpdate(
 		"packages/jetbrains-plugin/build.gradle.kts",
 		VERSION_LINE_PATTERN,
-		`version = "${nextVersion}"`,
+		`version = "${nextVersion}"`
 	);
 	applyUpdate(
 		"packages/neovim-plugin/lua/versionlens/version.lua",
 		NEOVIM_VERSION_REPLACEMENT_PATTERN,
-		replaceVersion,
+		replaceVersion
 	);
 };
 
@@ -264,7 +261,7 @@ const updateRepositoryVersions = async (nextVersion, rustPackages) => {
 	const sources = await Promise.all(paths.map((path) => Bun.file(path).text()));
 	/** @type {Map<string, string>} */
 	const changes = new Map(
-		paths.map((path, index) => [path, sources[index] ?? ""]),
+		paths.map((path, index) => [path, sources[index] ?? ""])
 	);
 	for (const { path, pattern, replacement } of updates) {
 		changes.set(
@@ -274,13 +271,13 @@ const updateRepositoryVersions = async (nextVersion, rustPackages) => {
 				path,
 				pattern,
 				replacement,
-				source: changes.get(path) ?? "",
-			}),
+				source: changes.get(path) ?? ""
+			})
 		);
 	}
 
 	await Promise.all(
-		[...changes].map(([path, contents]) => Bun.write(path, contents)),
+		[...changes].map(([path, contents]) => Bun.write(path, contents))
 	);
 	return changes.size;
 };
@@ -289,5 +286,5 @@ export {
 	assertSynchronizedVersions,
 	readRepositoryVersion,
 	rustWorkspacePackages,
-	updateRepositoryVersions,
+	updateRepositoryVersions
 };

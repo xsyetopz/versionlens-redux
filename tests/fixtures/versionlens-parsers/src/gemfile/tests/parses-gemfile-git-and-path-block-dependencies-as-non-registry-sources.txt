@@ -1,9 +1,0 @@
-
-path "vendor/local" do
-  gem "local_one"
-end
-
-git "https://github.com/rails/rails.git", branch: "main" do
-  gem "activesupport"
-  gem "actionpack"
-end

@@ -8,7 +8,7 @@ if (
 	version === ""
 ) {
 	throw new Error(
-		"usage: bun scripts/release/zed-registry.mjs <extensions.toml> <version>",
+		"usage: bun scripts/release/zed-registry.mjs <extensions.toml> <version>"
 	);
 }
 
@@ -17,7 +17,7 @@ const entry = `[${extensionId}]\nsubmodule = "extensions/${extensionId}"\npath =
 const source = await Bun.file(registryPath).text();
 const sectionPattern = new RegExp(
 	`^\\[${extensionId}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`,
-	"mu",
+	"mu"
 );
 const next = sectionPattern.test(source)
 	? source.replace(sectionPattern, entry)

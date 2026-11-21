@@ -1,5 +1,0 @@
-go 1.22
-
-use ./app
-
-replace example.com/old v1.0.0 => ./local
