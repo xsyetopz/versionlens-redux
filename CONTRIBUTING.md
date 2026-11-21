@@ -72,6 +72,8 @@ just verify
 
 `just vscode-live` packages the extension and drives it in an isolated VS Code window against the live registries and OSV: hints, lenses, quick fixes, hovers, diagnostics, settings, every palette command, restart, and the Output log. It needs a desktop session and the network, so `just verify` leaves it out. Set `VSCODE_BIN` when VS Code is not at the macOS default path.
 
+`just jetbrains-live` builds the server and runs `LiveTest` in a headless IntelliJ IDEA, using the plugin's own client against the live registries and OSV: hints, diagnostics, the update intention, hover, settings, every action, and restart. It needs the network and no desktop. Other test runs skip `LiveTest`.
+
 ## Pull Requests
 
 A good pull request includes:

@@ -18,6 +18,11 @@ package:
 vscode-live: package
     bun scripts/vscode-live.mjs
 
+# Drive the JetBrains plugin in a headless IntelliJ IDEA against the live registries; needs the network.
+jetbrains-live:
+    cargo build -p versionlens-lsp
+    just jvm::gradle :jetbrains-plugin:test --tests com.versionlens.jetbrains.LiveTest -PversionlensLiveServer={{justfile_directory()}}/target/debug/versionlens-lsp --rerun
+
 # Check the release scripts, the extension build and tests, the Neovim plugin, and the editor packages.
 project-verify:
     bun run test:release

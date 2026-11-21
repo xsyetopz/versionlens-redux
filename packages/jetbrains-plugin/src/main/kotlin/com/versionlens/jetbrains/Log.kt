@@ -28,6 +28,9 @@ internal class Log {
         console?.print(line, ConsoleViewContentType.NORMAL_OUTPUT)
     }
 
+    /** The kept lines, oldest first. */
+    @Synchronized fun lines(): List<String> = lines.toList()
+
     /** Shows every kept line in [view], then each new one. */
     @Synchronized
     fun attach(view: ConsoleView) {

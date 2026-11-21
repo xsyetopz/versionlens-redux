@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+
 plugins {
     id("bedrock.kotlin")
     alias(libs.plugins.intellij.platform)
@@ -15,11 +17,15 @@ val repositoryRoot = rootProject.layout.projectDirectory
 val binaries = providers.gradleProperty("versionlensBinariesDir").map { rootProject.file(it) }
 
 dependencies {
+    // The IntelliJ test framework loads JUnit 4 classes at runtime; the tests use Jupiter.
+    testRuntimeOnly(libs.junit4)
     intellijPlatform {
         intellijIdea("2026.1.4")
         bundledModule("com.intellij.modules.lsp")
         bundledModule("com.intellij.modules.ultimate")
         zipSigner()
+        testFramework(TestFrameworkType.Platform)
+        testFramework(TestFrameworkType.JUnit5)
     }
 }
 
@@ -72,3 +78,20 @@ tasks.buildPlugin { archiveBaseName = "versionlens-redux-jetbrains-plugin" }
 providers.gradleProperty("versionlensReleasePlugin").orNull?.let { release ->
     tasks.signPlugin { archiveFile = file(release) }
 }
+
+// `just jetbrains-live` passes -PversionlensLiveServer=<versionlens-lsp> to run LiveTest against
+// that server, the live registries, and OSV; other test runs skip LiveTest.
+val liveServer = providers.gradleProperty("versionlensLiveServer")
+
+tasks.test {
+    inputs.property("versionlensLiveServer", liveServer.orElse(""))
+    liveServer.orNull?.let {
+        environment("VERSIONLENS_LSP", it)
+        environment("VERSIONLENS_LIVE", "1")
+        testLogging.showStandardStreams = true
+    }
+}
+
+// Qodana's bundled Code Provenance plugin records edits after the test project is disposed, which
+// the test framework reports as an uncaught exception; the plugin plays no part in VersionLens.
+tasks.prepareTestSandbox { disabledPlugins.add("com.intellij.code.provenance") }
