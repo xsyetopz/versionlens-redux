@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::{Receiver, Sender, select};
-use lsp_server::{Connection, Message, Notification, Request, RequestId, Response};
+use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
 use lsp_types::{MessageType, Uri};
 use serde_json::{Value, json};
 
@@ -136,7 +136,7 @@ pub(crate) fn run() -> Result<(), String> {
 fn serve(conn: Connection) -> Result<(), String> {
     let (id, params) = conn.initialize_start().map_err(|e| e.to_string())?;
     let capabilities = json!({
-        "textDocumentSync": { "openClose": true, "change": 1 },
+        "textDocumentSync": { "openClose": true, "change": 2 },
         "codeLensProvider": { "resolveProvider": false },
         "inlayHintProvider": true,
         "hoverProvider": true,
@@ -226,6 +226,23 @@ impl Server {
         drop(self.conn.sender.send(message.into()));
     }
 
+    /// Waits for `exit` after `shutdown`. Editors may still deliver queued notifications, which
+    /// are dropped, and requests, which the protocol answers with `InvalidRequest`. Returning
+    /// before `exit` arrives would make the stdio reader fail to forward it.
+    fn await_exit(&self) {
+        for message in &self.conn.receiver {
+            match message {
+                Message::Notification(n) if n.method == "exit" => return,
+                Message::Request(r) => self.send(Response::new_err(
+                    r.id,
+                    ErrorCode::InvalidRequest as i32,
+                    "the server is shutting down".to_owned(),
+                )),
+                Message::Notification(_) | Message::Response(_) => {}
+            }
+        }
+    }
+
     fn notify(&self, method: &str, params: Value) {
         self.send(Notification::new(method.to_owned(), params));
     }
@@ -248,7 +265,9 @@ impl Server {
     fn message(&mut self, message: Message) -> bool {
         match message {
             Message::Request(request) => {
-                if self.conn.handle_shutdown(&request).unwrap_or(true) {
+                if request.method == "shutdown" {
+                    self.send(Response::new_ok(request.id, ()));
+                    self.await_exit();
                     return true;
                 }
                 let (id, method) = (request.id.clone(), request.method.clone());
@@ -299,9 +318,21 @@ impl Server {
             }
             "textDocument/didChange" => {
                 let p: lsp_types::DidChangeTextDocumentParams = param(params)?;
-                if let Some(change) = p.content_changes.into_iter().last() {
-                    self.open(&p.text_document.uri, change.text);
+                let uri = p.text_document.uri;
+                let Some(mut text) = self.docs.get(uri.as_str()).map(|d| d.text.clone()) else {
+                    return Ok(());
+                };
+                for change in p.content_changes {
+                    match change.range {
+                        Some(range) => {
+                            let lines = render::Lines::new(&text);
+                            let (a, b) = (lines.offset(range.start), lines.offset(range.end));
+                            text.replace_range(a.min(b)..a.max(b), &change.text);
+                        }
+                        None => text = change.text,
+                    }
                 }
+                self.open(&uri, text);
             }
             "textDocument/didClose" => {
                 let p: lsp_types::DidCloseTextDocumentParams = param(params)?;

@@ -66,6 +66,25 @@ impl<'a> Lines<'a> {
         )
     }
 
+    /// The byte offset of an LSP position, clamped to its line and to the text.
+    pub(crate) fn offset(&self, at: Position) -> usize {
+        let Some(&start) = self.starts.get(at.line as usize) else {
+            return self.text.len();
+        };
+        let line = self.text[start..]
+            .split_inclusive('\n')
+            .next()
+            .unwrap_or("");
+        let mut units = 0;
+        for (i, c) in line.char_indices() {
+            if units >= at.character as usize || c == '\n' {
+                return start + i;
+            }
+            units += c.len_utf16();
+        }
+        start + line.len()
+    }
+
     pub(crate) fn range(&self, span: &std::ops::Range<usize>) -> Range {
         Range::new(self.position(span.start), self.position(span.end))
     }

@@ -31,3 +31,12 @@ fn shortens_errors_to_their_cause() {
         "dns error"
     );
 }
+
+#[test]
+fn maps_positions_to_byte_offsets() {
+    let lines = Lines::new("a€b\nxy\n");
+    assert_eq!(lines.offset(Position::new(0, 2)), 4);
+    assert_eq!(lines.offset(Position::new(0, 99)), 5);
+    assert_eq!(lines.offset(Position::new(1, 1)), 7);
+    assert_eq!(lines.offset(Position::new(9, 0)), 9);
+}

@@ -107,22 +107,29 @@ impl Server {
                     return Ok(Value::Null);
                 };
                 let at = p.text_document_position_params.position;
-                json!(
-                    self.views(doc)
-                        .iter()
-                        .find(|v| on && within(&v.range, &at))
-                        .map(render::hover)
-                )
+                // Prefer the dependency under the cursor, then any dependency on the cursor's line.
+                let views = self.views(doc);
+                let on_line =
+                    |v: &&View<'_>| v.range.start.line <= at.line && at.line <= v.range.end.line;
+                let view = views
+                    .iter()
+                    .find(|v| within(&v.range, &at))
+                    .or_else(|| views.iter().find(on_line));
+                json!(view.filter(|_| on).map(render::hover))
             }
             "textDocument/codeAction" => {
                 let p: lsp_types::CodeActionParams = param(params).map_err(bad)?;
                 let Some(doc) = self.docs.get(p.text_document.uri.as_str()) else {
                     return Ok(Value::Null);
                 };
+                // The light bulb follows the line, so a cursor on the package name offers fixes too.
                 let views: Vec<View<'_>> = self
                     .views(doc)
                     .into_iter()
-                    .filter(|v| p.range.start <= v.range.end && v.range.start <= p.range.end)
+                    .filter(|v| {
+                        p.range.start.line <= v.range.end.line
+                            && v.range.start.line <= p.range.end.line
+                    })
                     .collect();
                 json!(if on {
                     render::actions(&doc.uri, &views, doc.file.insert)

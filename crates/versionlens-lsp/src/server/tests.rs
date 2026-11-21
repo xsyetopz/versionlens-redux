@@ -85,7 +85,7 @@ fn answers_lenses_and_hovers_from_memory_at_once() {
         json!({ "textDocument": { "uri": "file:///p/libraries.hxml" } }),
     );
     assert_eq!(lenses.response_result.unwrap().as_array().unwrap().len(), 2);
-    let hover = client.request(3, "textDocument/hover", json!({ "textDocument": { "uri": "file:///p/requirements.txt" }, "position": { "line": 0, "character": 11 } }));
+    let hover = client.request(3, "textDocument/hover", json!({ "textDocument": { "uri": "file:///p/requirements.txt" }, "position": { "line": 0, "character": 2 } }));
     assert!(
         hover
             .response_result
@@ -139,6 +139,56 @@ fn advertises_globs_and_ignores_other_files() {
 }
 
 #[test]
+fn applies_incremental_changes() {
+    let client = Client::start();
+    let uri = "file:///p/requirements.txt";
+    client.open(uri, "requests==2.31.0\n");
+    let edit = json!({ "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 1, "character": 0 } }, "text": "flask==2.0\n" });
+    client.notify(
+        "textDocument/didChange",
+        json!({ "textDocument": { "uri": uri, "version": 2 }, "contentChanges": [edit] }),
+    );
+    let lenses = client.request(
+        2,
+        "textDocument/hover",
+        json!({ "textDocument": { "uri": uri }, "position": { "line": 1, "character": 1 } }),
+    );
+    assert!(
+        lenses
+            .response_result
+            .unwrap()
+            .pointer("/contents/value")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .contains("flask")
+    );
+    client.stop();
+}
+
+#[test]
 fn decodes_file_uris() {
     assert_eq!(decode("/a%20b/%E2%82%AC.txt"), "/a b/€.txt");
+}
+
+#[test]
+fn waits_for_exit_after_late_messages() {
+    let client = Client::start();
+    client.open("file:///p/requirements.txt", "requests==2.31.0\n");
+    client.request(98, "shutdown", Value::Null);
+    client.notify(
+        "textDocument/didChange",
+        json!({ "textDocument": { "uri": "file:///p/requirements.txt", "version": 2 }, "contentChanges": [{ "text": "flask\n" }] }),
+    );
+    let late = client.request(
+        2,
+        "textDocument/codeLens",
+        json!({ "textDocument": { "uri": "file:///p/requirements.txt" } }),
+    );
+    assert_eq!(
+        late.response_result.unwrap_err().code,
+        ErrorCode::InvalidRequest as i32
+    );
+    client.notify("exit", Value::Null);
+    client.server.join().unwrap().unwrap();
 }
