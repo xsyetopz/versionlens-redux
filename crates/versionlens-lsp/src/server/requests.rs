@@ -131,7 +131,7 @@ impl Server {
                             && v.range.start.line <= p.range.end.line
                     })
                     .collect();
-                json!(if on {
+                json!(if on && render::wants_actions(p.context.only.as_deref()) {
                     render::actions(&doc.uri, &views, doc.file.insert)
                 } else {
                     Vec::new()
@@ -150,6 +150,50 @@ impl Server {
             }
         };
         Ok(result)
+    }
+
+    /// Runs each deferred `updateAll` whose manifest has no lookups left.
+    pub(super) fn run_deferred_updates(&mut self) {
+        let ready: Vec<String> = self
+            .update_after
+            .iter()
+            .filter(|uri| {
+                self.docs
+                    .get(*uri)
+                    .is_none_or(|doc| !doc.deps.iter().any(|d| self.inflight.contains(&key(d))))
+            })
+            .cloned()
+            .collect();
+        for uri in ready {
+            self.update_after.remove(&uri);
+            self.update_all(&uri);
+        }
+    }
+
+    fn update_all(&mut self, uri: &str) {
+        let Some(doc) = self.docs.get(uri) else {
+            return self.log(
+                MessageType::WARNING,
+                format!("{uri} closed before its update"),
+            );
+        };
+        let views = self.views(doc);
+        let failed = views
+            .iter()
+            .filter(|v| matches!(v.state, State::Failed(_)))
+            .count();
+        let edit = render::update_all(&doc.uri, &views, doc.file.insert);
+        let message = match failed {
+            0 => format!("{}: every dependency is up to date", doc.path),
+            n => format!(
+                "{}: {n} dependencies could not be looked up; see the log",
+                doc.path
+            ),
+        };
+        match edit {
+            Some(edit) => self.request("workspace/applyEdit", json!({ "label": "Update all dependencies", "edit": edit }), Pending::Ignore),
+            None => self.notify("window/showMessage", json!({ "type": if failed == 0 { MessageType::INFO } else { MessageType::WARNING }, "message": message })),
+        }
     }
 
     fn command(&mut self, command: &str, args: &[Value]) -> Result<(), (ErrorCode, String)> {
@@ -173,13 +217,20 @@ impl Server {
                     .map_err(bad)?
                     .ok_or_else(|| bad("expected the manifest uri".into()))?;
                 let doc = self.doc(&uri)?;
-                let (edit, path) = (
-                    render::update_all(&doc.uri, &self.views(doc), doc.file.insert),
-                    doc.path.clone(),
-                );
-                match edit {
-                    Some(edit) => self.request("workspace/applyEdit", json!({ "label": "Update all dependencies", "edit": edit }), Pending::Ignore),
-                    None => self.notify("window/showMessage", json!({ "type": MessageType::INFO, "message": format!("{path}: every dependency is up to date") })),
+                let waiting = doc
+                    .deps
+                    .iter()
+                    .filter(|d| self.inflight.contains(&key(d)))
+                    .count();
+                if waiting == 0 {
+                    self.update_all(uri.as_str());
+                } else {
+                    // Updating now would skip the dependencies still being looked up.
+                    self.log(
+                        MessageType::INFO,
+                        format!("{}: updating after {waiting} lookups", doc.path),
+                    );
+                    self.update_after.insert(uri.as_str().to_owned());
                 }
             }
             "versionlens.refresh" | "versionlens.clearCache" => {

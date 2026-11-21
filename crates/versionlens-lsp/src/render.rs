@@ -267,13 +267,29 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
     }
 }
 
+/// Version updates rewrite a requirement rather than fix a diagnostic. The LSP client of IDEA
+/// and the other `IntelliJ` IDEs hides `quickfix` actions that come without a diagnostic.
+pub(crate) const ACTION_KIND: &str = "refactor.rewrite";
+
+/// Whether a request limited to `only` kinds accepts [`ACTION_KIND`]; kinds are dot-separated
+/// prefixes, so `refactor` accepts `refactor.rewrite`.
+pub(crate) fn wants_actions(only: Option<&[CodeActionKind]>) -> bool {
+    only.is_none_or(|only| {
+        only.iter().any(|k| {
+            ACTION_KIND
+                .strip_prefix(k.as_str())
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+        })
+    })
+}
+
 pub(crate) fn actions(uri: &Uri, views: &[View<'_>], insert: &str) -> Vec<CodeActionOrCommand> {
     let mut out = Vec::new();
     for view in views {
         for (index, (label, text)) in picks(view, insert).into_iter().enumerate() {
             out.push(CodeActionOrCommand::CodeAction(CodeAction {
                 title: format!("Update {} to {label}", view.dep.name),
-                kind: Some(CodeActionKind::QUICKFIX),
+                kind: Some(CodeActionKind::from(ACTION_KIND)),
                 edit: Some(edit(uri, view.range, text)),
                 is_preferred: Some(index == 0),
                 ..CodeAction::default()

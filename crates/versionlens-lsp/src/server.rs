@@ -82,6 +82,8 @@ struct Server {
     docs: HashMap<String, Doc>,
     cache: HashMap<Key, Entry>,
     inflight: HashSet<Key>,
+    /// Manifests whose `updateAll` waits for their lookups to finish.
+    update_after: HashSet<String>,
     vulns: HashMap<Query, Vec<String>>,
     osv_inflight: HashSet<Query>,
     osv_warned: bool,
@@ -140,7 +142,7 @@ fn serve(conn: Connection) -> Result<(), String> {
         "codeLensProvider": { "resolveProvider": false },
         "inlayHintProvider": true,
         "hoverProvider": true,
-        "codeActionProvider": { "codeActionKinds": ["quickfix"] },
+        "codeActionProvider": { "codeActionKinds": [render::ACTION_KIND] },
         "executeCommandProvider": { "commands": COMMANDS },
         "experimental": { "fileTypes": crate::catalog::globs() },
     });
@@ -181,6 +183,7 @@ fn serve(conn: Connection) -> Result<(), String> {
         docs: HashMap::new(),
         cache: HashMap::new(),
         inflight: HashSet::new(),
+        update_after: HashSet::new(),
         vulns: HashMap::new(),
         osv_inflight: HashSet::new(),
         osv_warned: false,
@@ -602,6 +605,7 @@ impl Server {
             self.request("workspace/inlayHint/refresh", Value::Null, Pending::Ignore);
         }
         self.report_progress();
+        self.run_deferred_updates();
     }
 
     fn start_progress(&mut self) {

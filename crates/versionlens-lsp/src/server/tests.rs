@@ -10,6 +10,10 @@ struct Client {
 
 impl Client {
     fn start() -> Self {
+        Self::with(&json!({ "vulnerabilities": false, "timeoutMs": 500 }))
+    }
+
+    fn with(options: &Value) -> Self {
         let (server, conn) = Connection::memory();
         let server = thread::spawn(move || serve(server));
         let mut client = Self {
@@ -17,7 +21,7 @@ impl Client {
             server,
             init: Value::Null,
         };
-        let options = json!({ "versionlens": { "vulnerabilities": false, "timeoutMs": 500 } });
+        let options = json!({ "versionlens": options });
         client.init = client
             .request(
                 1,
@@ -191,4 +195,40 @@ fn waits_for_exit_after_late_messages() {
     );
     client.notify("exit", Value::Null);
     client.server.join().unwrap().unwrap();
+}
+
+#[test]
+fn updates_all_after_pending_lookups_and_names_failures() {
+    // A blackhole address keeps the lookup in flight until the timeout fails it.
+    let registries = json!({ "pypi": "http://10.255.255.1/{name}" });
+    let client = Client::with(
+        &json!({ "vulnerabilities": false, "timeoutMs": 500, "registries": registries }),
+    );
+    client.open("file:///p/requirements.txt", "requests==2.31.0\n");
+    let args =
+        json!({ "command": "versionlens.updateAll", "arguments": ["file:///p/requirements.txt"] });
+    assert!(
+        client
+            .request(2, "workspace/executeCommand", args)
+            .response_result
+            .is_ok()
+    );
+    // Run before the lookup ends, the update would report the pending dependency as up to date.
+    let shown = loop {
+        match client
+            .conn
+            .receiver
+            .recv_timeout(Duration::from_secs(3))
+            .unwrap()
+        {
+            Message::Notification(n) if n.method == "window/showMessage" => break n.params,
+            _ => {}
+        }
+    };
+    let message = shown["message"].as_str().unwrap();
+    assert!(
+        message.contains("1 dependencies could not be looked up"),
+        "{message}"
+    );
+    client.stop();
 }

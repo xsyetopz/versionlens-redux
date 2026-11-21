@@ -40,3 +40,21 @@ fn maps_positions_to_byte_offsets() {
     assert_eq!(lines.offset(Position::new(1, 1)), 7);
     assert_eq!(lines.offset(Position::new(9, 0)), 9);
 }
+
+#[test]
+fn offers_updates_only_to_matching_kinds() {
+    let kinds = |list: &[&str]| {
+        list.iter()
+            .map(|k| CodeActionKind::from(k.to_string()))
+            .collect::<Vec<_>>()
+    };
+    assert!(wants_actions(None));
+    assert!(wants_actions(Some(&kinds(&["refactor"]))));
+    assert!(wants_actions(Some(&kinds(&[
+        "quickfix",
+        "refactor.rewrite"
+    ]))));
+    assert!(!wants_actions(Some(&kinds(&["quickfix"]))));
+    assert!(!wants_actions(Some(&kinds(&["refactor.re"]))));
+    assert!(!wants_actions(Some(&kinds(&["source.organizeImports"]))));
+}
