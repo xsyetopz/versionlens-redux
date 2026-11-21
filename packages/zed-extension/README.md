@@ -31,7 +31,7 @@ Zed starts language servers per language, not per file name. The extension regis
 
 The keys are `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, and `registries`. The [VS Code README](../vscode-extension/README.md#settings) describes each one. A change applies without a restart.
 
-Zed shows inlay hints only when `inlay_hints.enabled` is on. The update quick fixes are in the code actions menu.
+Zed shows inlay hints only when `inlay_hints.enabled` is on, and code lenses only when `"code_lens": "on"` (or `"menu"`) is in the user settings; Zed's default is `"off"`. The update quick fixes are in the code actions menu.
 
 ## Development
 
