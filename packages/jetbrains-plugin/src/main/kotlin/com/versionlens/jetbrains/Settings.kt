@@ -18,7 +18,6 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.rows
-import org.eclipse.lsp4j.DidChangeConfigurationParams
 
 /**
  * The `versionlens` settings the server reads, as in VS Code; the GitHub token is in PasswordSafe.
@@ -125,17 +124,8 @@ internal class SettingsPage : BoundConfigurable("VersionLens") {
         super.apply()
         settings.githubToken = token
         for (project in ProjectManager.getInstance().openProjects) {
-            if (settings.serverPath != path) {
-                Client.restart(project)
-            } else {
-                Client.running(project).forEach { client ->
-                    client.sendNotification {
-                        it.workspaceService.didChangeConfiguration(
-                            DidChangeConfigurationParams(JsonObject()),
-                        )
-                    }
-                }
-            }
+            if (settings.serverPath != path) Client.restart(project)
+            else Client.reconfigure(project)
         }
     }
 }

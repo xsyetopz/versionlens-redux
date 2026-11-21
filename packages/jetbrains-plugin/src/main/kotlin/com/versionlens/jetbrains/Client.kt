@@ -1,5 +1,6 @@
 package com.versionlens.jetbrains
 
+import com.google.gson.JsonObject
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
@@ -13,6 +14,7 @@ import com.intellij.platform.lsp.api.LspServerNotificationsHandler
 import com.intellij.platform.lsp.api.ProjectWideLspClientDescriptor
 import java.util.concurrent.atomic.AtomicBoolean
 import org.eclipse.lsp4j.ConfigurationItem
+import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.MessageParams
 
 /** Starts versionlens-lsp when the project opens a manifest it reads. */
@@ -86,6 +88,17 @@ internal class Client(project: Project) : ProjectWideLspClientDescriptor(project
         /** The running clients of [project]. */
         fun running(project: Project): Collection<LspClient> =
             LspClientManager.getInstance(project).getClients(Provider::class.java)
+
+        /** Tells the servers of [project] that [Settings] changed; each pulls the new section. */
+        fun reconfigure(project: Project) {
+            running(project).forEach { client ->
+                client.sendNotification {
+                    it.workspaceService.didChangeConfiguration(
+                        DidChangeConfigurationParams(JsonObject()),
+                    )
+                }
+            }
+        }
 
         /** Restarts the server in [project], asking it for its file types again. */
         fun restart(project: Project) {
