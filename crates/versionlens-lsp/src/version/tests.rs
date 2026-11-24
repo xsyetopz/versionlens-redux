@@ -55,6 +55,36 @@ fn matches_requirement_dialects() {
     assert!(Req::parse("workspace:*", Bare::Exact).is_none());
 }
 
+fn suggested(req: &str, list: &[Version]) -> Vec<String> {
+    let plan = plan(&Req::parse(req, Bare::Exact).unwrap(), list, None, false).unwrap();
+    plan.picks
+        .iter()
+        .map(|(label, v)| format!("{label} {}", v.raw))
+        .collect()
+}
+
+#[test]
+fn suggests_as_the_original_does() {
+    let list = versions(&[
+        "1.2.3", "1.2.9", "1.4.0", "2.0.0", "2.1.0", "3.0.0", "3.0.2",
+    ]);
+    // A range counts from the version it resolves to, and can bump up to it.
+    assert_eq!(
+        suggested("^1.2.3", &list),
+        ["latest 3.0.2", "major 2.1.0", "bump 1.4.0"]
+    );
+    // A pin counts from itself.
+    assert_eq!(
+        suggested("1.2.3", &list),
+        ["latest 3.0.2", "major 2.1.0", "minor 1.4.0", "patch 1.2.9"]
+    );
+    // A range already on the latest offers only to raise its floor to it.
+    assert_eq!(suggested(">=2.0", &list), ["latest 3.0.2"]);
+    assert_eq!(suggested("3.0.2", &list), Vec::<String>::new());
+    // Nothing matches, so the latest is all there is to offer.
+    assert_eq!(suggested("^9.0.0", &list), ["latest 3.0.2"]);
+}
+
 #[test]
 fn plans_patch_minor_and_latest() {
     let list = versions(&["1.2.3", "1.2.9", "1.4.0", "2.0.0", "3.0.0-beta.1"]);
@@ -65,8 +95,7 @@ fn plans_patch_minor_and_latest() {
         false,
     )
     .unwrap();
-    let picks: Vec<&str> = plan.picks.iter().map(|p| p.raw.as_str()).collect();
-    assert_eq!(picks, ["1.2.9", "1.4.0", "2.0.0"]);
+    assert_eq!(plan.resolved.map(|v| v.raw).as_deref(), Some("1.4.0"));
     assert!(!plan.satisfied);
     let with_pre = super::plan(
         &Req::parse("^1.2.3", Bare::Exact).unwrap(),

@@ -24,6 +24,33 @@ M.glyphs = {
   },
 }
 
+-- Lens and hint glyphs sent as the server's `indicators`: the server's defaults are the VS Code
+-- emoji, which terminals draw at uneven widths, so Neovim sends text glyphs in their place.
+M.indicators = {
+  unicode = {
+    latest = "✓",
+    update = "↑",
+    checking = "⋯",
+    failed = "✗",
+    unreadable = "?",
+    vulnerable = "⚠",
+    newer = "→",
+    satisfies = "◐",
+    noMatch = "○",
+  },
+  ascii = {
+    latest = "ok",
+    update = "^",
+    checking = "...",
+    failed = "x",
+    unreadable = "?",
+    vulnerable = "!",
+    newer = "->",
+    satisfies = "~",
+    noMatch = "-",
+  },
+}
+
 -- Status tables by normalized file path: the server names buffers by URI.
 local by_path = {}
 local frame = 1

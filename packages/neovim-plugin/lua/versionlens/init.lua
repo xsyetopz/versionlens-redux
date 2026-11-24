@@ -173,11 +173,13 @@ if not vim.lsp.codelens.enable then
   end
 end
 
--- The server reads the `versionlens` section; an empty table must encode as a JSON object.
+-- The server reads the `versionlens` section, with the terminal glyph set under the user's own
+-- `indicators`.
 local function server_settings()
-  return {
-    versionlens = vim.tbl_isempty(M.config.settings) and vim.empty_dict() or M.config.settings,
-  }
+  local settings = vim.deepcopy(M.config.settings)
+  local glyphs = require("versionlens.status").indicators[M.config.ascii and "ascii" or "unicode"]
+  settings.indicators = vim.tbl_extend("force", glyphs, settings.indicators or {})
+  return { versionlens = settings }
 end
 
 --- Starts or reuses the server for bufnr when it is a supported manifest.

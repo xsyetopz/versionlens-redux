@@ -72,12 +72,12 @@ fn bulk_updates_pick_the_named_level() {
         source: None,
     };
     let versions: Vec<Version> = ["1.2.0", "1.2.5", "1.4.0", "2.1.0"].map(v).into();
-    let req = Req::parse("^1.2.0", crate::version::Bare::Exact).unwrap();
+    let req = Req::parse("^1.2.0", version::Bare::Exact).unwrap();
     let view = View {
         dep: &dep,
         range: Range::default(),
         state: State::Planned {
-            plan: Box::new(crate::version::plan(&req, &versions, None, false).unwrap()),
+            plan: Box::new(version::plan(&req, &versions, None, false).unwrap()),
             current: req.floor().cloned(),
         },
         vulns: &[],
@@ -103,6 +103,7 @@ fn status_follows_the_original_wording() {
         satisfied: false,
         resolved: resolved.map(v),
         picks: Vec::new(),
+        steps: Vec::new(),
     };
     let (sat, latest, none) = (&glyphs.satisfies, &glyphs.latest, &glyphs.no_match);
     assert_eq!(

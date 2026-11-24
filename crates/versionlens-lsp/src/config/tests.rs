@@ -28,13 +28,13 @@ fn reads_string_maps_and_drops_blank_values() {
 #[test]
 fn reads_indicators_lists_and_severity() {
     let settings = Settings::from_json(&json!({
-        "indicators": { "latest": "🟢", "update": 1 },
+        "indicators": { "latest": "ok", "update": 1 },
         "prereleaseTags": ["beta", " ", 2],
         "updateSeverity": "off",
         "fileTypes": ["npm"],
     }));
-    assert_eq!(settings.indicators.latest, "🟢");
-    assert_eq!(settings.indicators.update, "↑");
+    assert_eq!(settings.indicators.latest, "ok");
+    assert_eq!(settings.indicators.update, Indicators::default().update);
     assert_eq!(settings.prerelease_tags, ["beta"]);
     assert_eq!(settings.update_severity, None);
     assert_eq!(settings.file_types, ["npm"]);

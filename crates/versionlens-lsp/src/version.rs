@@ -424,8 +424,12 @@ pub(crate) struct Plan {
     pub(crate) satisfied: bool,
     /// The newest version the requirement allows, or `None` when it allows none.
     pub(crate) resolved: Option<Version>,
-    /// Newer versions worth offering, oldest first: newest patch, newest minor, latest.
-    pub(crate) picks: Vec<Version>,
+    /// The original 1.x suggestions, newest first, one per version: each labelled `latest`,
+    /// `major`, `minor`, `patch`, or `bump`.
+    pub(crate) picks: Vec<(&'static str, Version)>,
+    /// What the bulk updates move the requirement's floor to, oldest first: its newest patch,
+    /// its newest minor, and the latest.
+    pub(crate) steps: Vec<Version>,
 }
 
 /// Plans updates for `req` from the versions a registry lists. `tagged` is the registry's own
@@ -446,32 +450,79 @@ pub(crate) fn plan(
                 && (pre || (!v.is_prerelease() && tagged.is_none_or(|t| *v <= t)))
         })
         .collect();
-    let latest = (*pool.iter().max()?).clone();
-    let mut picks: Vec<Version> = Vec::new();
+    let latest = *pool.iter().max()?;
+    let resolved = pool.iter().filter(|v| req.matches(v)).max().copied();
+    Some(Plan {
+        satisfied: req.matches(latest),
+        picks: suggest(&pool, latest, resolved, floor),
+        steps: steps(&pool, latest, floor),
+        resolved: resolved.cloned(),
+        latest: latest.clone(),
+    })
+}
+
+fn steps(pool: &[&Version], latest: &Version, floor: Option<&Version>) -> Vec<Version> {
+    let mut out: Vec<Version> = Vec::new();
     if let Some(floor) = floor {
         for depth in [2, 1] {
             let same = |v: &&&Version| {
                 v.raw != floor.raw && **v > floor && (0..depth).all(|i| v.num(i) == floor.num(i))
             };
             if let Some(v) = pool.iter().filter(same).max() {
-                picks.push((*v).clone());
+                out.push((*v).clone());
             }
         }
     }
-    if floor.is_none_or(|f| latest > *f) {
-        picks.push(latest.clone());
+    if floor.is_none_or(|f| latest > f) {
+        out.push(latest.clone());
     }
-    picks.dedup_by(|a, b| a.raw == b.raw);
-    Some(Plan {
-        satisfied: req.matches(&latest),
-        resolved: pool
+    out.dedup_by(|a, b| a.raw == b.raw);
+    out
+}
+
+/// The original's release suggestions: the latest version unless the requirement already sits
+/// exactly on it, the newest of the next major line and of the minor and patch lines past the
+/// version in use, and a bump of a range up to the newest version it allows.
+fn suggest(
+    pool: &[&Version],
+    latest: &Version,
+    resolved: Option<&Version>,
+    floor: Option<&Version>,
+) -> Vec<(&'static str, Version)> {
+    let is_latest = resolved == Some(latest);
+    // The range admits versions older than the one it resolves to, so it can be raised.
+    let range_update = floor.is_none_or(|f| resolved.is_some_and(|r| r > f));
+    let mut found: Vec<(&'static str, &Version)> = Vec::new();
+    if !is_latest || range_update {
+        found.push(("latest", latest));
+    }
+    if let Some(base) = resolved.or(floor) {
+        let newest =
+            |test: &dyn Fn(&Version) -> bool| pool.iter().copied().filter(|v| test(v)).max();
+        let next = pool
             .iter()
-            .filter(|v| req.matches(v))
-            .max()
-            .map(|v| (*v).clone()),
-        latest,
-        picks,
-    })
+            .map(|v| v.num(0))
+            .filter(|m| *m > base.num(0))
+            .min();
+        let same = |v: &Version, n: usize| (0..n).all(|i| v.num(i) == base.num(i));
+        let lines = [
+            ("major", newest(&|v| Some(v.num(0)) == next)),
+            ("minor", newest(&|v| same(v, 1) && v.num(1) > base.num(1))),
+            ("patch", newest(&|v| same(v, 2) && v.num(2) > base.num(2))),
+        ];
+        found.extend(lines.into_iter().filter_map(|(label, v)| Some((label, v?))));
+    }
+    if let Some(r) = resolved.filter(|_| !is_latest && range_update) {
+        found.push(("bump", r));
+    }
+    let mut picks: Vec<(&'static str, Version)> = Vec::new();
+    for (label, v) in found {
+        if !picks.iter().any(|(_, p)| p.raw == v.raw) {
+            picks.push((label, v.clone()));
+        }
+    }
+    picks.sort_by(|a, b| b.1.cmp(&a.1));
+    picks
 }
 
 #[cfg(test)]

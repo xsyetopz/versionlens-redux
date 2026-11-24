@@ -22,18 +22,20 @@ pub(crate) struct Indicators {
     pub(crate) no_match: String,
 }
 
+/// The original 1.x glyphs, which GUI editors show as is; terminal editors such as Neovim send
+/// their own text glyphs instead.
 impl Default for Indicators {
     fn default() -> Self {
         Self {
-            latest: "✓".into(),
-            update: "↑".into(),
+            latest: "🟢".into(),
+            update: "↑ ".into(),
             checking: "⋯".into(),
-            failed: "✗".into(),
+            failed: "🔴".into(),
             unreadable: "?".into(),
-            vulnerable: "⚠".into(),
+            vulnerable: "⚠️".into(),
             newer: "→".into(),
-            satisfies: "◐".into(),
-            no_match: "○".into(),
+            satisfies: "🟡".into(),
+            no_match: "⚪".into(),
         }
     }
 }

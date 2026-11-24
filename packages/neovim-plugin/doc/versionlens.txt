@@ -57,7 +57,10 @@ The plugin calls `setup()` when it loads, unless
     on_attach = nil,
   })
 <
-`ascii`       Use ASCII instead of Unicode glyphs in the status component.
+`ascii`       Use ASCII instead of Unicode glyphs in the status component and
+              in lenses and hints: `ok`, `^`, `~`, `-`, `x`, `!` for the
+              Unicode `✓`, `↑`, `◐`, `○`, `✗`, `⚠` that stand in for the
+              VS Code emoji. `settings.indicators` overrides single ones.
 `glyphs`      Override single glyphs by name (see |versionlens-status|).
 `winbar`      Set each manifest window's 'winbar' to the status component
               when it is empty.

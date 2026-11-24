@@ -12,7 +12,7 @@ use serde_json::json;
 
 use crate::config::Indicators;
 use crate::extract::Dep;
-use crate::version::{Plan, Req, Version, level};
+use crate::version::{self, Plan, Req, Version};
 
 /// What is known about one dependency right now.
 #[derive(Debug)]
@@ -143,16 +143,17 @@ fn update_command(title: String, uri: &Uri, view: &View<'_>, text: &str) -> Comm
     }
 }
 
-/// The updates a view offers: label, version level, and replacement text.
+/// The updates a view offers, newest first: the 1.x label with its version, and the
+/// replacement text.
 pub(crate) fn picks(view: &View<'_>, insert: &str) -> Vec<(String, String)> {
-    let State::Planned { plan, current, .. } = &view.state else {
+    let State::Planned { plan, .. } = &view.state else {
         return Vec::new();
     };
     plan.picks
         .iter()
-        .map(|pick| {
+        .map(|(label, pick)| {
             (
-                format!("{} {}", level(current.as_ref(), pick), pick.raw),
+                format!("{label} {}", pick.raw),
                 replacement(&view.dep.req, pick, insert),
             )
         })
@@ -334,16 +335,19 @@ pub(crate) fn updates(views: &[View<'_>], insert: &str, level: &str) -> Vec<Text
     views
         .iter()
         .filter_map(|view| {
-            let mut picks = picks(view, insert);
-            let pick = if level == "latest" {
-                picks.pop()
-            } else {
-                // Labels read "<level> <version>".
-                picks
-                    .into_iter()
-                    .find(|(label, _)| label.split(' ').next() == Some(level))
+            let State::Planned { plan, current } = &view.state else {
+                return None;
             };
-            pick.map(|(_, new_text)| TextEdit {
+            // Steps run oldest first and hold one version per level counted from the floor.
+            let pick = if level == "latest" {
+                plan.steps.last()
+            } else {
+                plan.steps
+                    .iter()
+                    .find(|v| version::level(current.as_ref(), v) == level)
+            }?;
+            let new_text = replacement(&view.dep.req, pick, insert);
+            (new_text != view.dep.req).then_some(TextEdit {
                 range: view.range,
                 new_text,
             })
@@ -383,7 +387,7 @@ pub(crate) fn diagnostics(
             ));
         }
         if let Some(severity) = updates
-            && let Some((label, _)) = picks(view, insert).pop()
+            && let Some((label, _)) = picks(view, insert).into_iter().next()
         {
             let message = format!("{} can update to {label}", view.dep.name);
             out.push(diagnostic(view, severity, "outdated", message));

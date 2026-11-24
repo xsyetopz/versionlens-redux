@@ -43,7 +43,7 @@ require("versionlens").setup({
   autostart = true,
   codelens = true,
   inlay_hints = true,
-  ascii = false,        -- ASCII glyphs in the status component
+  ascii = false,        -- ASCII glyphs in the status component, lenses, and hints
   glyphs = {},          -- override single glyphs, e.g. { outdated = "U" }
   winbar = false,       -- show the status in each manifest window's winbar
   settings = {          -- the VS Code `versionlens.*` settings, without the prefix
