@@ -29,13 +29,13 @@ Zed starts language servers per language, not per file name. The extension regis
 }
 ```
 
-The keys are those of the [VS Code settings](../vscode-extension/README.md#settings): `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, `registries`, `authorization`, `install`, `files`, `indicators`, `prereleaseTags`, `updateSeverity`, `stats`, `fileTypes`, and `workspaceExclude`. A change applies without a restart.
+The keys are those of the [VS Code settings](../vscode-extension/README.md#settings): `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, `registries`, `authorization`, `install`, `files`, `indicators`, `prereleaseTags`, `updateSeverity`, `stats`, `fileTypes`, `workspaceExclude`, and `providers` (per registry id, `cacheMinutes`, `strictSsl`, and `prereleaseTags` overrides). A change applies without a restart.
 
 Zed shows inlay hints only when `inlay_hints.enabled` is on, and code lenses only when `"code_lens": "on"` (or `"menu"`) is in the user settings; Zed's default is `"off"`.
 
 ## Commands
 
-Zed extensions cannot add toolbar buttons or palette commands, so the server offers every VS Code command as a code action in the code actions menu (`editor: toggle code actions`, `cmd-.` or `ctrl-.`), titled `VersionLens: …`:
+Zed extensions cannot add toolbar buttons or palette commands (`zed_extension_api` 0.7.0 exports only language server, slash command, context server, docs, and debug adapter hooks), so the server offers every VS Code command as a code action in the code actions menu (`editor: toggle code actions`, `cmd-.` or `ctrl-.`), titled `VersionLens: …`:
 
 - Update the file's dependencies to latest, major, minor, or patch, when one of them is outdated.
 - Update the workspace's dependencies at each level.

@@ -41,6 +41,7 @@ When none runs, the plugin shows one notification and writes the reason to the l
 | File types | empty; comma-separated file type or registry ids, empty reads all |
 | Workspace exclude | empty; comma-separated globs a workspace update skips |
 | Registries | `registry id=URL template` lines, such as `npm=https://npm.example.com/{enc}` |
+| Per registry | `registry id.setting=value` lines overriding `cacheMinutes`, `strictSsl`, or `prereleaseTags` for one registry, such as `npm.cacheMinutes=5` |
 | Authorization | `URL prefix=header value` lines; stored in the IDE password safe |
 | Install commands | `file type or registry id=shell command` lines, run when a save changes the dependencies |
 | Extra files | `glob=file type id` lines |

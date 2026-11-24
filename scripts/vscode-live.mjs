@@ -20,6 +20,14 @@ await Bun.write(
 	"-lib heaps:1.10.0\n-lib format\n"
 );
 await Bun.write(join(workspace, "dockerfile"), "FROM alpine:3.18\n");
+// Settings written for the original extension, which the server reads under their new names.
+await Bun.write(
+	join(workspace, ".vscode", "settings.json"),
+	JSON.stringify({
+		"versionlens.cargo.apiUrl": "https://crates.example/api",
+		"versionlens.pypi.caching.duration": 5
+	})
+);
 await Bun.write(join(workspace, "main.ts"), "export const x = 1;\n");
 const build = await Bun.build({
 	entrypoints: ["packages/vscode-extension/src/live/run.ts"],

@@ -24,6 +24,7 @@ internal data class Values(
     val fileTypes: String = "",
     val workspaceExclude: String = "",
     val indicators: String = "",
+    val providers: String = "",
 )
 
 /** Builds the `versionlens` configuration section the server reads. */
@@ -74,6 +75,42 @@ internal object Section {
             add("fileTypes", list(values.fileTypes))
             add("workspaceExclude", list(values.workspaceExclude))
             add("indicators", map(values.indicators))
+            add("providers", providers(values.providers))
+        }
+
+    /**
+     * Parses `registry.setting=value` lines into the per-registry overrides: `cacheMinutes` takes a
+     * whole number, `strictSsl` true or false, and `prereleaseTags` a comma-separated list. Throws
+     * [IllegalArgumentException] naming the line that breaks one of these.
+     */
+    fun providers(text: String): JsonObject =
+        JsonObject().apply {
+            parseMap(text).forEach { (key, value) ->
+                val registry = key.substringBeforeLast('.', "")
+                require(registry.isNotEmpty()) { "$key is not registry.setting" }
+                val entry = getAsJsonObject(registry) ?: JsonObject().also { add(registry, it) }
+                when (val setting = key.substringAfterLast('.')) {
+                    "cacheMinutes" ->
+                        entry.addProperty(
+                            setting,
+                            requireNotNull(value.toIntOrNull()?.takeIf { it >= 0 }) {
+                                "$key needs a whole number of minutes"
+                            },
+                        )
+                    "strictSsl" ->
+                        entry.addProperty(
+                            setting,
+                            requireNotNull(value.toBooleanStrictOrNull()) {
+                                "$key needs true or false"
+                            },
+                        )
+                    "prereleaseTags" -> entry.add(setting, list(value))
+                    else ->
+                        throw IllegalArgumentException(
+                            "$key: use cacheMinutes, strictSsl, or prereleaseTags",
+                        )
+                }
+            }
         }
 
     /** Splits a comma- or newline-separated list, dropping blanks. */

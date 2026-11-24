@@ -48,6 +48,7 @@ internal class Settings : PersistentStateComponent<Settings> {
     var fileTypes: String = ""
     var workspaceExclude: String = ""
     var indicators: String = ""
+    var providers: String = ""
 
     override fun getState(): Settings = this
 
@@ -71,6 +72,7 @@ internal class Settings : PersistentStateComponent<Settings> {
         fileTypes = state.fileTypes
         workspaceExclude = state.workspaceExclude
         indicators = state.indicators
+        providers = state.providers
     }
 
     var githubToken: String
@@ -103,6 +105,7 @@ internal class Settings : PersistentStateComponent<Settings> {
                 fileTypes,
                 workspaceExclude,
                 indicators,
+                providers,
             ),
             githubToken,
             authorization,
@@ -159,7 +162,17 @@ internal class SettingsPage : BoundConfigurable("VersionLens") {
         row("GitHub token:") {
             passwordField().bindText(::token).comment("Empty uses GITHUB_TOKEN or GH_TOKEN.")
         }
+        maps()
+    }
+
+    private fun Panel.maps() {
         lines("Registries:", settings::registries, "registry id=URL template, one per line")
+        lines(
+            "Per registry:",
+            settings::providers,
+            "registry id.setting=value; settings: cacheMinutes, strictSsl, prereleaseTags",
+            Section::providers,
+        )
         lines(
             "Authorization:",
             ::authorization,
@@ -178,7 +191,12 @@ internal class SettingsPage : BoundConfigurable("VersionLens") {
         )
     }
 
-    private fun Panel.lines(label: String, property: KMutableProperty0<String>, comment: String) =
+    private fun Panel.lines(
+        label: String,
+        property: KMutableProperty0<String>,
+        comment: String,
+        parse: (String) -> Any = Section::parseMap,
+    ) =
         row(label) {
             textArea()
                 .rows(3)
@@ -186,7 +204,7 @@ internal class SettingsPage : BoundConfigurable("VersionLens") {
                 .bindText(property)
                 .comment(comment)
                 .validationOnApply {
-                    runCatching { Section.parseMap(it.text) }
+                    runCatching { parse(it.text) }
                         .exceptionOrNull()
                         ?.let { error("Use key=value lines: ${it.message}") }
                 }

@@ -414,6 +414,33 @@
 					},
 					"markdownDescription": "URL template per registry id, for mirrors and private registries, such as `{\"npm\": \"https://npm.example.com/{enc}\"}`."
 				},
+				"versionlens.providers": {
+					"type": "object",
+					"default": {},
+					"additionalProperties": {
+						"type": "object",
+						"additionalProperties": false,
+						"properties": {
+							"cacheMinutes": {
+								"type": "number",
+								"minimum": 0,
+								"description": "Minutes this registry's versions stay cached."
+							},
+							"strictSsl": {
+								"type": "boolean",
+								"description": "Verify this registry's TLS certificates."
+							},
+							"prereleaseTags": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								},
+								"description": "Prerelease tags this registry's prereleases must hold."
+							}
+						}
+					},
+					"markdownDescription": "Per registry id, overrides of `#versionlens.cacheMinutes#`, `#versionlens.strictSsl#`, and `#versionlens.prereleaseTags#`, such as `{\"npm\": {\"cacheMinutes\": 5}}`. The original `versionlens.<provider>.caching.duration`, `.http.strictSSL`, and `.prereleaseTagFilter` keys still work."
+				},
 				"versionlens.authorization": {
 					"type": "object",
 					"default": {},

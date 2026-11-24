@@ -89,6 +89,18 @@ pub(crate) struct Settings {
     pub(crate) file_types: Vec<String>,
     /// Globs of paths a workspace update skips.
     pub(crate) workspace_exclude: Vec<String>,
+    /// Overrides keyed by registry id, as the original's per-provider settings were.
+    pub(crate) providers: HashMap<String, Provider>,
+    /// Original 1.x keys found in the section that have no counterpart, named for the log.
+    pub(crate) unread: Vec<String>,
+}
+
+/// One registry's overrides of the global lookup settings; `None` keeps the global value.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct Provider {
+    pub(crate) cache: Option<Duration>,
+    pub(crate) strict_ssl: Option<bool>,
+    pub(crate) prerelease_tags: Option<Vec<String>>,
 }
 
 impl Default for Settings {
@@ -114,6 +126,8 @@ impl Default for Settings {
             stats: false,
             file_types: Vec::new(),
             workspace_exclude: Vec::new(),
+            providers: HashMap::new(),
+            unread: Vec::new(),
         }
     }
 }
@@ -132,7 +146,7 @@ impl Settings {
             .and_then(Value::as_str)
             .filter(|t| !t.is_empty())
             .map(str::to_owned);
-        Self {
+        let mut settings = Self {
             enabled: flag("enabled", base.enabled),
             code_lens: flag("codeLens", base.code_lens),
             inlay_hints: flag("inlayHints", base.inlay_hints),
@@ -163,8 +177,66 @@ impl Settings {
             stats: flag("stats", base.stats),
             file_types: list(section, "fileTypes"),
             workspace_exclude: list(section, "workspaceExclude"),
-        }
+            providers: providers(section),
+            unread: Vec::new(),
+        };
+        legacy::apply(section, &mut settings);
+        settings
     }
+
+    /// How long a registry's answers stay fresh.
+    pub(crate) fn cache_for(&self, registry: &str) -> Duration {
+        self.providers
+            .get(registry)
+            .and_then(|p| p.cache)
+            .unwrap_or(self.cache)
+    }
+
+    /// Whether a registry's certificates are verified.
+    pub(crate) fn strict_ssl_for(&self, registry: &str) -> bool {
+        self.providers
+            .get(registry)
+            .and_then(|p| p.strict_ssl)
+            .unwrap_or(self.strict_ssl)
+    }
+
+    /// The prerelease tags a registry's prereleases must hold; empty keeps every one.
+    pub(crate) fn prerelease_tags_for(&self, registry: &str) -> &[String] {
+        self.providers
+            .get(registry)
+            .and_then(|p| p.prerelease_tags.as_deref())
+            .unwrap_or(&self.prerelease_tags)
+    }
+}
+
+/// A number of minutes as a duration; negative and non-numeric values are skipped.
+fn minutes(value: &Value) -> Option<Duration> {
+    value
+        .as_f64()
+        .filter(|m| m.is_finite() && *m >= 0.0)
+        .map(|m| Duration::from_secs_f64(m * 60.0))
+}
+
+/// The `providers` setting: `cacheMinutes`, `strictSsl`, and `prereleaseTags` per registry id.
+fn providers(section: &Value) -> HashMap<String, Provider> {
+    section
+        .get("providers")
+        .and_then(Value::as_object)
+        .map_or_default(|map| {
+            map.iter()
+                .map(|(id, entry)| {
+                    let provider = Provider {
+                        cache: entry.get("cacheMinutes").and_then(minutes),
+                        strict_ssl: entry.get("strictSsl").and_then(Value::as_bool),
+                        prerelease_tags: entry
+                            .get("prereleaseTags")
+                            .is_some()
+                            .then(|| list(entry, "prereleaseTags")),
+                    };
+                    (id.clone(), provider)
+                })
+                .collect()
+        })
 }
 
 /// A string-to-string object setting; other value types are skipped.
@@ -195,6 +267,8 @@ fn list(section: &Value, key: &str) -> Vec<String> {
                 .collect()
         })
 }
+
+mod legacy;
 
 #[cfg(test)]
 mod tests;

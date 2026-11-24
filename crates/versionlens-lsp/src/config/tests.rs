@@ -44,3 +44,52 @@ fn reads_indicators_lists_and_severity() {
         Some(DiagnosticSeverity::INFORMATION)
     );
 }
+
+#[test]
+fn providers_override_one_registry_and_keep_the_global_for_others() {
+    let settings = Settings::from_json(&json!({
+        "cacheMinutes": 10,
+        "providers": { "npm": { "cacheMinutes": 1, "strictSsl": false, "prereleaseTags": ["rc"] } },
+    }));
+    assert_eq!(settings.cache_for("npm"), Duration::from_secs(60));
+    assert_eq!(settings.cache_for("cargo"), Duration::from_secs(600));
+    assert!(!settings.strict_ssl_for("npm") && settings.strict_ssl_for("cargo"));
+    assert_eq!(settings.prerelease_tags_for("npm"), ["rc"]);
+    assert_eq!(settings.prerelease_tags_for("cargo"), [] as [String; 0]);
+}
+
+#[test]
+fn reads_the_original_settings_under_their_new_names() {
+    let settings = Settings::from_json(&json!({ "versionlens": {
+        "caching": { "duration": 3 },
+        "http": { "strictSSL": false },
+        "suggestions": { "showOnStartup": false, "showPrereleasesOnStartup": true,
+            "indicators": { "Latest": "🟢", "Match": "🟡" } },
+        "enabledProviders": ["golang", "npm"],
+        "golang": { "caching": { "duration": 0 }, "prereleaseTagFilter": ["beta"] },
+        "npm": { "onSaveChanges": "npm install", "files": "**/{package.json,deps/*.json}" },
+        "cargo": { "apiUrl": "https://crates.example/api" },
+    }}));
+    assert_eq!(settings.cache, Duration::from_secs(180));
+    assert!(!settings.strict_ssl && !settings.enabled && settings.prereleases);
+    assert_eq!(settings.indicators.latest, "🟢");
+    assert_eq!(settings.file_types, ["go", "npm"]);
+    assert_eq!(settings.cache_for("go"), Duration::ZERO);
+    assert_eq!(settings.prerelease_tags_for("go"), ["beta"]);
+    assert_eq!(settings.install["npm"], "npm install");
+    assert_eq!(settings.files["**/package.json"], "npm");
+    assert_eq!(settings.files["**/deps/*.json"], "npm");
+    assert_eq!(settings.unread, ["versionlens.cargo.apiUrl"]);
+}
+
+#[test]
+fn new_keys_win_over_the_original_ones() {
+    let settings = Settings::from_json(&json!({
+        "cacheMinutes": 5,
+        "caching": { "duration": 3 },
+        "providers": { "go": { "cacheMinutes": 2 } },
+        "golang": { "caching": { "duration": 9 } },
+    }));
+    assert_eq!(settings.cache, Duration::from_secs(300));
+    assert_eq!(settings.cache_for("go"), Duration::from_secs(120));
+}

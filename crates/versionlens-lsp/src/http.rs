@@ -15,6 +15,8 @@ use crate::registry::{Registry, Versions, expand};
 #[derive(Clone)]
 pub(crate) struct Http {
     client: Client,
+    /// The client with the other `strictSsl`, built only when a registry overrides it.
+    other: Option<Client>,
     permits: Arc<Semaphore>,
     settings: Arc<Settings>,
 }
@@ -42,14 +44,25 @@ impl Http {
     pub(crate) fn new(settings: Settings) -> Result<Self, String> {
         // reqwest is built without a bundled crypto provider; the first install wins and later calls are no-ops.
         drop(rustls::crypto::ring::default_provider().install_default());
-        let client = Client::builder()
-            .user_agent(concat!("versionlens/", env!("CARGO_PKG_VERSION")))
-            .connect_timeout(settings.timeout)
-            .tls_danger_accept_invalid_certs(!settings.strict_ssl)
-            .build()
-            .map_err(|e| chain(&e))?;
+        let build = |strict: bool| {
+            Client::builder()
+                .user_agent(concat!("versionlens/", env!("CARGO_PKG_VERSION")))
+                .connect_timeout(settings.timeout)
+                .tls_danger_accept_invalid_certs(!strict)
+                .build()
+                .map_err(|e| chain(&e))
+        };
+        let client = build(settings.strict_ssl)?;
+        let overridden = settings
+            .providers
+            .values()
+            .any(|p| p.strict_ssl.is_some_and(|s| s != settings.strict_ssl));
+        let other = overridden
+            .then(|| build(!settings.strict_ssl))
+            .transpose()?;
         Ok(Self {
             client,
+            other,
             permits: Arc::new(Semaphore::new(settings.concurrency)),
             settings: Arc::new(settings),
         })
@@ -85,8 +98,8 @@ impl Http {
     ///
     /// # Errors
     /// Names the URL with the failure: connection, status, or deadline.
-    pub(crate) async fn get(&self, url: &str, accept: &str) -> Result<String, String> {
-        let mut request = self.client.get(url).header(header::ACCEPT, accept);
+    async fn get(&self, client: &Client, url: &str, accept: &str) -> Result<String, String> {
+        let mut request = client.get(url).header(header::ACCEPT, accept);
         // The longest matching prefix wins, so a host-wide value can be narrowed per path.
         let configured = self
             .settings
@@ -133,7 +146,15 @@ impl Http {
             .get(registry.id)
             .map_or(registry.url, String::as_str);
         let url = expand(template, name, source)?;
-        let body = self.get(&url, registry.accept).await?;
+        let client = match &self.other {
+            Some(other)
+                if self.settings.strict_ssl_for(registry.id) != self.settings.strict_ssl =>
+            {
+                other
+            }
+            _ => &self.client,
+        };
+        let body = self.get(client, &url, registry.accept).await?;
         let versions = registry
             .parse(&body, name)
             .map_err(|e| format!("{url}: {e}"))?;

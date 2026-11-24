@@ -80,6 +80,7 @@ The server lists the files it reads in its initialize result, and the extension 
 | `versionlens.strictSsl` | `true` | Reject registries whose TLS certificate does not verify. |
 | `versionlens.githubToken` | empty | Token for GitHub tag lookups. Falls back to `GITHUB_TOKEN`, then `GH_TOKEN`. |
 | `versionlens.registries` | `{}` | URL template per registry id, for mirrors and private registries, such as `{"npm": "https://npm.example.com/{enc}"}`. |
+| `versionlens.providers` | `{}` | Per registry id, overrides of `cacheMinutes`, `strictSsl`, and `prereleaseTags`, such as `{"npm": {"cacheMinutes": 5}}`. |
 | `versionlens.authorization` | `{}` | `Authorization` header per registry URL prefix. **Add url authentication** keeps headers in secret storage instead. |
 | `versionlens.install` | `{}` | Shell command per file type or registry id, run in the manifest's folder when a save changes the dependencies and from **Run custom install task**. |
 | `versionlens.files` | `{}` | Extra manifests: glob to file type id, such as `{"deps/*.list": "requirements"}`. |
@@ -91,6 +92,22 @@ The server lists the files it reads in its initialize result, and the extension 
 | `versionlens.workspaceExclude` | `[]` | Globs the workspace update skips, such as `["examples/**"]`. |
 | `versionlens.serverPath` | empty | A `versionlens-lsp` binary to run instead of the bundled one. `VERSIONLENS_LSP` takes precedence. |
 | `versionlens.trace.server` | `off` | Log LSP traffic to the output channel. |
+
+### Settings and Commands From VersionLens 1.x
+
+A `settings.json` written for the original extension keeps working; a key of this version wins over the original one it replaces.
+
+| Original | Read as |
+| --- | --- |
+| `versionlens.caching.duration`, `versionlens.http.strictSSL` | `cacheMinutes`, `strictSsl` |
+| `versionlens.suggestions.showOnStartup`, `.showPrereleasesOnStartup`, `.showVulnerabilities`, `.showSuggestionsStats` | `enabled`, `prereleases`, `vulnerabilities`, `stats` |
+| `versionlens.suggestions.indicators` `Latest`, `Updateable`, `Error`, `UpdateableVulnerable` | `indicators` `latest`, `update`, `failed`, `vulnerable` |
+| `versionlens.enabledProviders` | `fileTypes`, with `golang` as `go`, `ruby` as `rubygems`, `dotnet` as `nuget`, `pnpm` as `npm`, `deno` as `jsr` |
+| `versionlens.<provider>.caching.duration`, `.http.strictSSL`, `.prereleaseTagFilter` | `providers.<registry id>` |
+| `versionlens.<provider>.onSaveChanges` | `install` for the provider's file type |
+| `versionlens.<provider>.files` | `files`, one entry per `{a,b}` alternative |
+
+The output channel names any `versionlens.<provider>.apiUrl`, `.dependencyProperties`, or `versionlens.dotnet.nuget.sources` it finds: registry URLs are now templates in `versionlens.registries`, and the catalog holds the dependency rules. Every original command id, such as `versionlens.editor.onShowVersionLenses`, still runs its replacement, so old keybindings work.
 
 A changed setting applies without a restart, and the output channel logs it. Changing `versionlens.serverPath` or `versionlens.files` restarts the server.
 

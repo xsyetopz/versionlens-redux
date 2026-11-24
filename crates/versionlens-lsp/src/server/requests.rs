@@ -11,9 +11,13 @@ use crate::render::{self, Lines, State, View};
 use crate::version::{Req, Version, plan};
 
 impl Server {
-    /// The versions without the prereleases the `prereleaseTags` setting leaves out.
-    fn tagged_prereleases<'v>(&self, versions: &'v [Version]) -> Cow<'v, [Version]> {
-        let tags = &self.settings.prerelease_tags;
+    /// The versions without the prereleases the registry's `prereleaseTags` leave out.
+    fn tagged_prereleases<'v>(
+        &self,
+        registry: &str,
+        versions: &'v [Version],
+    ) -> Cow<'v, [Version]> {
+        let tags = self.settings.prerelease_tags_for(registry);
         if tags.is_empty() {
             return Cow::Borrowed(versions);
         }
@@ -41,7 +45,7 @@ impl Server {
                         None => State::Unreadable,
                         Some(req) => match plan(
                             &req,
-                            &self.tagged_prereleases(&found.versions),
+                            &self.tagged_prereleases(dep.registry, &found.versions),
                             found.tagged.as_ref(),
                             self.settings.prereleases,
                         ) {

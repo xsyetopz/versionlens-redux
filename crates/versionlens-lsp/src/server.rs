@@ -419,7 +419,8 @@ impl Server {
             || settings.file_types != self.settings.file_types;
         let refetch = settings.registries != self.settings.registries
             || settings.authorization != self.settings.authorization
-            || settings.github_token != self.settings.github_token;
+            || settings.github_token != self.settings.github_token
+            || settings.providers != self.settings.providers;
         match Http::new(settings.clone()) {
             Ok(http) => self.http = http,
             Err(error) => self.log(
@@ -439,6 +440,13 @@ impl Server {
             s.registries.keys().collect::<Vec<_>>()
         );
         self.log(MessageType::INFO, text);
+        if !self.settings.unread.is_empty() {
+            let unread = self.settings.unread.join(", ");
+            self.log(
+                MessageType::WARNING,
+                format!("not read, no counterpart in this version: {unread}; see the README"),
+            );
+        }
         if refetch {
             self.cache.clear();
         }

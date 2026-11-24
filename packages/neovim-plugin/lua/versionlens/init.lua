@@ -346,6 +346,7 @@ function M.validate_settings(settings)
     stats = "boolean",
     fileTypes = "table",
     workspaceExclude = "table",
+    providers = "table",
   }
   local problems = {}
   for key, value in pairs(settings) do

@@ -93,4 +93,22 @@ class SectionTest {
         assertEquals(0, section.getAsJsonArray("workspaceExclude").size())
         assertEquals("hint", section.get("updateSeverity").asString)
     }
+
+    @Test
+    fun providerLinesBecomeTypedOverridesPerRegistry() {
+        val providers =
+            Section.providers("npm.cacheMinutes=5\nnpm.strictSsl=false\ngo.prereleaseTags=rc, beta")
+
+        val npm = providers.getAsJsonObject("npm")
+        assertEquals(5, npm.get("cacheMinutes").asInt)
+        assertEquals(false, npm.get("strictSsl").asBoolean)
+        assertEquals(2, providers.getAsJsonObject("go").getAsJsonArray("prereleaseTags").size())
+    }
+
+    @Test
+    fun providerLinesRejectUnknownSettingsAndBadValues() {
+        assertFailsWith<IllegalArgumentException> { Section.providers("npm.apiUrl=x") }
+        assertFailsWith<IllegalArgumentException> { Section.providers("npm.strictSsl=maybe") }
+        assertFailsWith<IllegalArgumentException> { Section.providers("cacheMinutes=5") }
+    }
 }

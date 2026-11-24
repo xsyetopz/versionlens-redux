@@ -30,9 +30,9 @@ impl Server {
         let Some(doc) = self.docs.get(uri) else {
             return;
         };
-        let ttl = self.settings.cache;
         let wanted: Vec<Key> = doc.deps.iter().map(key).collect();
         for key in wanted {
+            let ttl = self.settings.cache_for(key.0);
             let fresh = self
                 .cache
                 .get(&key)
