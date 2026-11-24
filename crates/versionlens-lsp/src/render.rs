@@ -10,6 +10,7 @@ use lsp_types::{
 };
 use serde_json::json;
 
+use crate::config::Indicators;
 use crate::extract::Dep;
 use crate::version::{Plan, Req, Version, level};
 
@@ -158,7 +159,12 @@ pub(crate) fn picks(view: &View<'_>, insert: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-pub(crate) fn lenses(uri: &Uri, views: &[View<'_>], insert: &str) -> Vec<CodeLens> {
+pub(crate) fn lenses(
+    uri: &Uri,
+    views: &[View<'_>],
+    insert: &str,
+    glyphs: &Indicators,
+) -> Vec<CodeLens> {
     let mut out = Vec::new();
     for view in views {
         let lens = |title: String, command: &str, args: Vec<serde_json::Value>| CodeLens {
@@ -173,24 +179,36 @@ pub(crate) fn lenses(uri: &Uri, views: &[View<'_>], insert: &str) -> Vec<CodeLen
         let open = |title: String| lens(title, "versionlens.open", vec![json!(view.page)]);
         if !view.vulns.is_empty() {
             out.push(open(format!(
-                "⚠ {} vulnerabilit{}",
+                "{} {} vulnerabilit{}",
+                glyphs.vulnerable,
                 view.vulns.len(),
                 if view.vulns.len() == 1 { "y" } else { "ies" }
             )));
         }
         match &view.state {
-            State::Pending => out.push(open("⋯ checking".into())),
-            State::Failed(error) => out.push(open(format!("✗ {}", short(error)))),
-            State::Unreadable => out.push(open("? unreadable requirement".into())),
+            State::Pending => out.push(open(format!("{} checking", glyphs.checking))),
+            State::Failed(error) => out.push(open(format!("{} {}", glyphs.failed, short(error)))),
+            State::Unreadable => out.push(open(format!(
+                "{} unreadable requirement",
+                glyphs.unreadable
+            ))),
             State::Planned { plan, .. } => {
                 let choices = picks(view, insert);
                 if choices.is_empty() {
-                    out.push(open(format!("✓ latest {}", plan.latest.raw)));
+                    out.push(open(format!(
+                        "{} latest {}",
+                        glyphs.latest, plan.latest.raw
+                    )));
                 }
                 for (label, text) in choices {
                     out.push(CodeLens {
                         range: view.range,
-                        command: Some(update_command(format!("↑ {label}"), uri, view, &text)),
+                        command: Some(update_command(
+                            format!("{} {label}", glyphs.update),
+                            uri,
+                            view,
+                            &text,
+                        )),
                         data: None,
                     });
                 }
@@ -209,7 +227,7 @@ fn short(error: &str) -> &str {
     }
 }
 
-pub(crate) fn hints(views: &[View<'_>]) -> Vec<InlayHint> {
+pub(crate) fn hints(views: &[View<'_>], glyphs: &Indicators) -> Vec<InlayHint> {
     views
         .iter()
         .filter_map(|view| {
@@ -217,10 +235,10 @@ pub(crate) fn hints(views: &[View<'_>]) -> Vec<InlayHint> {
                 State::Planned { plan, .. }
                     if plan.picks.is_empty() || plan.satisfied && view.dep.req.is_empty() =>
                 {
-                    "✓".to_owned()
+                    glyphs.latest.clone()
                 }
-                State::Planned { plan, .. } => format!("→ {}", plan.latest.raw),
-                State::Failed(_) => "✗".to_owned(),
+                State::Planned { plan, .. } => format!("{} {}", glyphs.newer, plan.latest.raw),
+                State::Failed(_) => glyphs.failed.clone(),
                 State::Pending | State::Unreadable => return None,
             };
             Some(InlayHint {
@@ -324,24 +342,83 @@ pub(crate) fn updates(views: &[View<'_>], insert: &str, level: &str) -> Vec<Text
         .collect()
 }
 
-pub(crate) fn diagnostics(views: &[View<'_>]) -> Vec<Diagnostic> {
-    views
-        .iter()
-        .filter(|view| !view.vulns.is_empty())
-        .map(|view| Diagnostic {
-            range: view.range,
-            severity: Some(DiagnosticSeverity::WARNING),
-            code: Some(lsp_types::NumberOrString::String("vulnerable".into())),
-            source: Some("VersionLens".into()),
-            message: format!(
+/// Vulnerability warnings, and with `updates` a diagnostic of that severity for each dependency
+/// that has a newer version.
+pub(crate) fn diagnostics(
+    views: &[View<'_>],
+    insert: &str,
+    updates: Option<DiagnosticSeverity>,
+) -> Vec<Diagnostic> {
+    let diagnostic = |view: &View<'_>, severity, code: &str, message| Diagnostic {
+        range: view.range,
+        severity: Some(severity),
+        code: Some(lsp_types::NumberOrString::String(code.into())),
+        source: Some("VersionLens".into()),
+        message,
+        ..Diagnostic::default()
+    };
+    let mut out = Vec::new();
+    for view in views {
+        if !view.vulns.is_empty() {
+            let message = format!(
                 "{} {} has known vulnerabilities: {}",
                 view.dep.name,
                 view.dep.req,
                 view.vulns.join(", ")
-            ),
-            ..Diagnostic::default()
-        })
-        .collect()
+            );
+            out.push(diagnostic(
+                view,
+                DiagnosticSeverity::WARNING,
+                "vulnerable",
+                message,
+            ));
+        }
+        if let Some(severity) = updates
+            && let Some((label, _)) = picks(view, insert).pop()
+        {
+            let message = format!("{} can update to {label}", view.dep.name);
+            out.push(diagnostic(view, severity, "outdated", message));
+        }
+    }
+    out
+}
+
+/// The summary lens that heads a manifest: dependency, update, failure, and vulnerability
+/// counts; it refreshes the manifest's versions.
+pub(crate) fn stats(
+    uri: &Uri,
+    views: &[View<'_>],
+    insert: &str,
+    glyphs: &Indicators,
+) -> Option<CodeLens> {
+    if views.is_empty() {
+        return None;
+    }
+    let count = |test: &dyn Fn(&View<'_>) -> bool| views.iter().filter(|v| test(v)).count();
+    let outdated = count(&|v| !picks(v, insert).is_empty());
+    let failed = count(&|v| matches!(v.state, State::Failed(_)));
+    let vulnerable = count(&|v| !v.vulns.is_empty());
+    let pending = count(&|v| matches!(v.state, State::Pending));
+    let mut parts = vec![format!("{} dependencies", views.len())];
+    for (n, glyph, text) in [
+        (outdated, &glyphs.update, "outdated"),
+        (failed, &glyphs.failed, "failed"),
+        (vulnerable, &glyphs.vulnerable, "vulnerable"),
+        (pending, &glyphs.checking, "checking"),
+    ] {
+        if n > 0 {
+            parts.push(format!("{glyph} {n} {text}"));
+        }
+    }
+    Some(CodeLens {
+        range: Range::default(),
+        command: Some(Command {
+            title: parts.join(" · "),
+            command: "versionlens.refresh".into(),
+            arguments: Some(vec![json!(uri)]),
+        }),
+        data: None,
+    })
 }
 
 /// The version a requirement currently resolves to, for OSV and update levels: the newest listed

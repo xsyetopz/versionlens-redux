@@ -3,7 +3,57 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
+use lsp_types::DiagnosticSeverity;
 use serde_json::Value;
+
+/// The glyphs that lenses and inlay hints start with, so users can swap them for emoji or ASCII.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Indicators {
+    pub(crate) latest: String,
+    pub(crate) update: String,
+    pub(crate) checking: String,
+    pub(crate) failed: String,
+    pub(crate) unreadable: String,
+    pub(crate) vulnerable: String,
+    pub(crate) newer: String,
+}
+
+impl Default for Indicators {
+    fn default() -> Self {
+        Self {
+            latest: "✓".into(),
+            update: "↑".into(),
+            checking: "⋯".into(),
+            failed: "✗".into(),
+            unreadable: "?".into(),
+            vulnerable: "⚠".into(),
+            newer: "→".into(),
+        }
+    }
+}
+
+impl Indicators {
+    fn from_json(value: Option<&Value>) -> Self {
+        let mut out = Self::default();
+        let Some(map) = value.and_then(Value::as_object) else {
+            return out;
+        };
+        for (key, glyph) in [
+            ("latest", &mut out.latest),
+            ("update", &mut out.update),
+            ("checking", &mut out.checking),
+            ("failed", &mut out.failed),
+            ("unreadable", &mut out.unreadable),
+            ("vulnerable", &mut out.vulnerable),
+            ("newer", &mut out.newer),
+        ] {
+            if let Some(text) = map.get(key).and_then(Value::as_str) {
+                text.clone_into(glyph);
+            }
+        }
+        out
+    }
+}
 
 /// Server settings; every field has a default, so a missing or partial section still works.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,6 +77,18 @@ pub(crate) struct Settings {
     pub(crate) install: HashMap<String, String>,
     /// Extra file globs keyed to the file type id that reads them.
     pub(crate) files: HashMap<String, String>,
+    pub(crate) indicators: Indicators,
+    /// When prereleases show, only those whose prerelease part holds one of these tags; empty
+    /// keeps every prerelease.
+    pub(crate) prerelease_tags: Vec<String>,
+    /// The severity of the diagnostic each outdated dependency gets; `None` gives none.
+    pub(crate) update_severity: Option<DiagnosticSeverity>,
+    /// Whether a summary lens heads each manifest.
+    pub(crate) stats: bool,
+    /// The file type and registry ids to read; empty reads every one.
+    pub(crate) file_types: Vec<String>,
+    /// Globs of paths a workspace update skips.
+    pub(crate) workspace_exclude: Vec<String>,
 }
 
 impl Default for Settings {
@@ -46,6 +108,12 @@ impl Default for Settings {
             authorization: HashMap::new(),
             install: HashMap::new(),
             files: HashMap::new(),
+            indicators: Indicators::default(),
+            prerelease_tags: Vec::new(),
+            update_severity: Some(DiagnosticSeverity::INFORMATION),
+            stats: false,
+            file_types: Vec::new(),
+            workspace_exclude: Vec::new(),
         }
     }
 }
@@ -83,6 +151,18 @@ impl Settings {
             authorization: strings(section, "authorization"),
             install: strings(section, "install"),
             files: strings(section, "files"),
+            indicators: Indicators::from_json(section.get("indicators")),
+            prerelease_tags: list(section, "prereleaseTags"),
+            update_severity: match section.get("updateSeverity").and_then(Value::as_str) {
+                Some("off") => None,
+                Some("hint") => Some(DiagnosticSeverity::HINT),
+                Some("warning") => Some(DiagnosticSeverity::WARNING),
+                Some("error") => Some(DiagnosticSeverity::ERROR),
+                _ => base.update_severity,
+            },
+            stats: flag("stats", base.stats),
+            file_types: list(section, "fileTypes"),
+            workspace_exclude: list(section, "workspaceExclude"),
         }
     }
 }
@@ -96,6 +176,22 @@ fn strings(section: &Value, key: &str) -> HashMap<String, String> {
             map.iter()
                 .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned())))
                 .filter(|(_, v)| !v.trim().is_empty())
+                .collect()
+        })
+}
+
+/// A string-list setting without blank entries; other value types are skipped.
+fn list(section: &Value, key: &str) -> Vec<String> {
+    section
+        .get(key)
+        .and_then(Value::as_array)
+        .map_or_default(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
                 .collect()
         })
 }

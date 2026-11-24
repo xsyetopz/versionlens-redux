@@ -3,13 +3,30 @@
 use lsp_server::ErrorCode;
 use lsp_types::{Position, Range, Uri};
 use serde_json::{Value, json};
+use std::borrow::Cow;
 
 use super::{Doc, Server, key, param};
 use crate::registry;
 use crate::render::{self, Lines, State, View};
-use crate::version::{Req, plan};
+use crate::version::{Req, Version, plan};
 
 impl Server {
+    /// The versions without the prereleases the `prereleaseTags` setting leaves out.
+    fn tagged_prereleases<'v>(&self, versions: &'v [Version]) -> Cow<'v, [Version]> {
+        let tags = &self.settings.prerelease_tags;
+        if tags.is_empty() {
+            return Cow::Borrowed(versions);
+        }
+        versions
+            .iter()
+            .filter(|v| {
+                let tag = v.tag.to_ascii_lowercase();
+                !v.is_prerelease() || tags.iter().any(|t| tag.contains(&t.to_ascii_lowercase()))
+            })
+            .cloned()
+            .collect()
+    }
+
     pub(super) fn views<'a>(&'a self, doc: &'a Doc) -> Vec<View<'a>> {
         let lines = Lines::new(&doc.text);
         doc.deps
@@ -24,7 +41,7 @@ impl Server {
                         None => State::Unreadable,
                         Some(req) => match plan(
                             &req,
-                            &found.versions,
+                            &self.tagged_prereleases(&found.versions),
                             found.tagged.as_ref(),
                             self.settings.prereleases,
                         ) {
@@ -74,11 +91,16 @@ impl Server {
                     return Ok(Value::Null);
                 };
                 let show = on && self.settings.code_lens;
-                json!(if show {
-                    render::lenses(&doc.uri, &self.views(doc), doc.file.insert)
-                } else {
-                    Vec::new()
-                })
+                if !show {
+                    return Ok(json!([]));
+                }
+                let (views, glyphs) = (self.views(doc), &self.settings.indicators);
+                let insert = doc.file.insert;
+                let stats = self.settings.stats;
+                let head = stats.then(|| render::stats(&doc.uri, &views, insert, glyphs));
+                let mut lenses: Vec<_> = head.flatten().into_iter().collect();
+                lenses.extend(render::lenses(&doc.uri, &views, insert, glyphs));
+                json!(lenses)
             }
             "textDocument/inlayHint" => {
                 let p: lsp_types::InlayHintParams = param(params).map_err(bad)?;
@@ -91,7 +113,7 @@ impl Server {
                     .filter(|v| p.range.start <= v.range.end && v.range.start <= p.range.end)
                     .collect();
                 json!(if on && self.settings.inlay_hints {
-                    render::hints(&views)
+                    render::hints(&views, &self.settings.indicators)
                 } else {
                     Vec::new()
                 })

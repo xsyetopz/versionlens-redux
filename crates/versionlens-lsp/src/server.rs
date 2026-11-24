@@ -415,6 +415,8 @@ impl Server {
         if settings == self.settings {
             return;
         }
+        let reread = settings.files != self.settings.files
+            || settings.file_types != self.settings.file_types;
         let refetch = settings.registries != self.settings.registries
             || settings.authorization != self.settings.authorization
             || settings.github_token != self.settings.github_token;
@@ -440,6 +442,16 @@ impl Server {
         if refetch {
             self.cache.clear();
         }
+        if reread {
+            let docs: Vec<(Uri, String, bool)> = self
+                .docs
+                .values()
+                .map(|d| (d.uri.clone(), d.text.clone(), d.open))
+                .collect();
+            for (uri, text, open) in docs {
+                self.open(&uri, text, open);
+            }
+        }
         self.schedule_all();
         self.dirty = Some(Instant::now());
     }
@@ -452,6 +464,14 @@ impl Server {
                 MessageType::LOG,
                 format!("{path}: not a supported manifest; skipped"),
             );
+            // A settings change can stop reading a manifest; its diagnostics go with it.
+            if self.docs.remove(uri.as_str()).is_some() {
+                self.status.remove(uri.as_str());
+                self.notify(
+                    "textDocument/publishDiagnostics",
+                    json!({ "uri": uri, "diagnostics": [] }),
+                );
+            }
             return;
         };
         let started = Instant::now();
@@ -488,20 +508,24 @@ impl Server {
     }
 
     /// The file type for a path: a `files` setting glob first, then the catalog.
+    /// Limited to the `fileTypes` setting's file type and registry ids when it lists any.
     fn file_type(&self, path: &str) -> Option<&'static FileType> {
+        let only = &self.settings.file_types;
         self.settings
             .files
             .iter()
             .filter(|(glob, _)| path_matches(glob, path))
             .find_map(|(_, id)| by_id(id))
             .or_else(|| file_type(path))
+            .filter(|f| only.is_empty() || only.iter().any(|id| id == f.id || id == f.registry))
     }
 
     fn flush(&mut self) {
         self.dirty = None;
         for doc in self.docs.values().filter(|d| d.open) {
             let diagnostics = if self.settings.enabled {
-                render::diagnostics(&self.views(doc))
+                let severity = self.settings.update_severity;
+                render::diagnostics(&self.views(doc), doc.file.insert, severity)
             } else {
                 Vec::new()
             };

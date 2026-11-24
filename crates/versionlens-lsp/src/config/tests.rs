@@ -24,3 +24,23 @@ fn reads_string_maps_and_drops_blank_values() {
     assert_eq!(settings.install.len(), 1);
     assert_eq!(settings.files["deps/*.txt"], "requirements");
 }
+
+#[test]
+fn reads_indicators_lists_and_severity() {
+    let settings = Settings::from_json(&json!({
+        "indicators": { "latest": "🟢", "update": 1 },
+        "prereleaseTags": ["beta", " ", 2],
+        "updateSeverity": "off",
+        "fileTypes": ["npm"],
+    }));
+    assert_eq!(settings.indicators.latest, "🟢");
+    assert_eq!(settings.indicators.update, "↑");
+    assert_eq!(settings.prerelease_tags, ["beta"]);
+    assert_eq!(settings.update_severity, None);
+    assert_eq!(settings.file_types, ["npm"]);
+    let default = Settings::from_json(&json!({}));
+    assert_eq!(
+        default.update_severity,
+        Some(DiagnosticSeverity::INFORMATION)
+    );
+}

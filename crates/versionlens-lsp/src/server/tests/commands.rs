@@ -254,3 +254,77 @@ fn installs_when_a_save_changes_dependencies() {
     client.stop();
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn heads_lenses_with_stats_and_uses_custom_indicators() {
+    let mut opts = options();
+    opts["stats"] = json!(true);
+    opts["indicators"] = json!({ "update": "^^", "latest": "ok" });
+    let (client, _) = Client::ready(&opts);
+    let lenses = client.request(
+        2,
+        "textDocument/codeLens",
+        json!({ "textDocument": { "uri": URI } }),
+    );
+    let lenses = lenses.response_result.unwrap();
+    let titles: Vec<&str> = lenses
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| l["command"]["title"].as_str().unwrap())
+        .collect();
+    assert_eq!(titles[0], "2 dependencies · ^^ 1 outdated");
+    assert!(titles.contains(&"^^ major 2.0.0"), "{titles:?}");
+    assert!(titles.contains(&"ok latest 2.0.0"), "{titles:?}");
+    client.stop();
+}
+
+#[test]
+fn reports_outdated_dependencies_at_the_configured_severity() {
+    let mut opts = options();
+    opts["updateSeverity"] = json!("hint");
+    // Diagnostics go out before the status that `ready` waits for.
+    let client = Client::with(&opts);
+    client.open(URI, MANIFEST);
+    let published = client.next(|m| match m {
+        Message::Notification(n)
+            if n.method == "textDocument/publishDiagnostics"
+                && n.params["diagnostics"]
+                    .as_array()
+                    .is_some_and(|d| !d.is_empty()) =>
+        {
+            Some(n.params.clone())
+        }
+        _ => None,
+    });
+    let diagnostic = &published["diagnostics"][0];
+    assert_eq!(diagnostic["severity"], 4);
+    assert_eq!(diagnostic["message"], "zod can update to major 2.0.0");
+    client.stop();
+}
+
+#[test]
+fn offers_only_prereleases_with_a_configured_tag() {
+    let mut opts = options();
+    opts["prereleases"] = json!(true);
+    opts["prereleaseTags"] = json!(["rc"]);
+    let (client, status) = Client::ready(&opts);
+    // 2.1.0-beta.1 is left out, so axios ^2.0.0 stays current.
+    assert_eq!(status["outdated"], 1);
+    client.stop();
+}
+
+#[test]
+fn reads_only_the_configured_file_types() {
+    let mut opts = options();
+    opts["fileTypes"] = json!(["cargo"]);
+    let client = Client::with(&opts);
+    client.open(URI, MANIFEST);
+    let lenses = client.request(
+        2,
+        "textDocument/codeLens",
+        json!({ "textDocument": { "uri": URI } }),
+    );
+    assert_eq!(lenses.response_result.unwrap(), Value::Null);
+    client.stop();
+}
