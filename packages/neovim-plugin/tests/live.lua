@@ -185,6 +185,60 @@ check(":VersionLens refresh reaches the server log", function()
   end)
 end)
 
+check("versionlens/status reaches the statusline and follows the toggles", function()
+  local status = require("versionlens.status")
+  wait("a status for the buffer", function()
+    return status.get(reqs) ~= nil
+  end)
+  wait("the dependencies to be counted", function()
+    return (status.get(reqs).dependencies or 0) == 2
+  end)
+  assert(versionlens.statusline(reqs):find("◉", 1, true), versionlens.statusline(reqs))
+  vim.cmd("VersionLens prereleases show")
+  wait("prereleases on", function()
+    return status.get(reqs).prereleases == true
+  end)
+  assert(versionlens.statusline(reqs):find("β", 1, true), versionlens.statusline(reqs))
+  vim.cmd("VersionLens prereleases hide")
+  wait("prereleases off", function()
+    return status.get(reqs).prereleases == false
+  end)
+  vim.cmd("VersionLens hide")
+  wait("versions hidden", function()
+    return status.get(reqs).enabled == false
+  end)
+  assert(versionlens.statusline(reqs):find("◌", 1, true), versionlens.statusline(reqs))
+  vim.cmd("VersionLens show")
+  wait("versions shown", function()
+    return status.get(reqs).enabled == true
+  end)
+end)
+
+check("the menu opens through vim.ui.select and runs the chosen command", function()
+  local status = require("versionlens.status")
+  local shown
+  local select = vim.ui.select
+  vim.ui.select = function(items, _, on_choice)
+    shown = items
+    for _, item in ipairs(items) do
+      if item.label == "Hide versions" then
+        return on_choice(item)
+      end
+    end
+    on_choice(nil)
+  end
+  vim.cmd("VersionLens")
+  vim.ui.select = select
+  assert(shown and #shown > 0, "no menu entries")
+  wait("versions hidden by the menu", function()
+    return status.get(reqs).enabled == false
+  end)
+  vim.cmd("VersionLens show")
+  wait("versions shown", function()
+    return status.get(reqs).enabled == true
+  end)
+end)
+
 check(":VersionLens log opens the server log", function()
   vim.cmd("VersionLens log")
   assert(

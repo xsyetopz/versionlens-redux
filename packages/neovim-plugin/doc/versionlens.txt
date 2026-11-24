@@ -7,7 +7,8 @@ CONTENTS                                                         *versionlens*
   2. Server ...................................... |versionlens-server|
   3. Setup ....................................... |versionlens-setup|
   4. Commands .................................... |versionlens-commands|
-  5. Health ...................................... |versionlens-health|
+  5. Status ...................................... |versionlens-status|
+  6. Health ...................................... |versionlens-health|
 
 ==============================================================================
 1. INTRODUCTION                                            *versionlens-intro*
@@ -49,14 +50,53 @@ The plugin calls `setup()` when it loads, unless
     autostart = true,
     codelens = true,
     inlay_hints = true,
+    ascii = false,
+    glyphs = {},
+    winbar = false,
     settings = {},
     on_attach = nil,
   })
 <
+`ascii`       Use ASCII instead of Unicode glyphs in the status component.
+`glyphs`      Override single glyphs by name (see |versionlens-status|).
+`winbar`      Set each manifest window's 'winbar' to the status component
+              when it is empty.
+
+                                                       *versionlens-settings*
 `settings` holds the server settings, the VS Code `versionlens.*` keys
-without the prefix: `enabled`, `codeLens`, `inlayHints`, `prereleases`,
-`vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`,
-`githubToken`, and `registries` (registry id to URL template, for mirrors).
+without the prefix. Unknown keys and wrong types are reported at `setup()`.
+
+  Booleans     `enabled`, `codeLens`, `inlayHints`, `prereleases`,
+               `vulnerabilities`, `strictSsl`, `stats` (a summary lens
+               above each manifest)
+  Numbers      `timeoutMs`, `concurrency`, `cacheMinutes`
+  Strings      `githubToken`, `updateSeverity` (`off`, `hint`, `info`,
+               `warning`, or `error`: the diagnostic each outdated
+               dependency gets; default `info`)
+  Lists        `prereleaseTags` (only prereleases with one of these tags),
+               `fileTypes` (only these file type or registry ids),
+               `workspaceExclude` (globs a workspace update skips)
+  Maps         `registries` (registry id to URL template, for mirrors),
+               `authorization` (URL prefix to Authorization header),
+               `install` (file type or registry id to shell command, run
+               when a save changes the dependencies),
+               `files` (extra glob to file type id),
+               `indicators` (glyph per state: `latest`, `update`,
+               `checking`, `failed`, `unreadable`, `vulnerable`, `newer`)
+
+Example: >lua
+
+  require("versionlens").setup({
+    settings = {
+      prereleases = false,
+      timeoutMs = 10000,
+      registries = { npm = "https://npm.example.com/{name}" },
+      authorization = { ["https://npm.example.com/"] = "Bearer TOKEN" },
+      install = { npm = "bun install" },
+      files = { ["deps/*.list"] = "requirements" },
+    },
+  })
+<
 Calling `setup()` again sends the new settings to running servers, with no
 restart.
 
@@ -64,16 +104,61 @@ restart.
 4. COMMANDS                                             *versionlens-commands*
 
                                                                 *:VersionLens*
-:VersionLens refresh       Fetch the current buffer's versions again.
-:VersionLens updateAll     Update every dependency in the buffer.
-:VersionLens toggle        Show or hide lenses and hints.
-:VersionLens clearCache    Drop cached registry answers.
-:VersionLens restart       Restart the server.
-:VersionLens log           Show the server's log messages.
-:VersionLens info          Show the server command.
+:VersionLens
+    Open a |vim.ui.select()| menu of what applies to the current buffer,
+    from its status: hide or show versions and prereleases, update at each
+    level while dependencies are outdated, sort, install, refresh, update the
+    workspace, clear the cache, log, restart, info.
+
+:VersionLens {subcommand} [{argument}]
+    All subcommands complete with <Tab>.
+
+  show, hide, toggle                Show or hide versions in the buffer.
+  prereleases [show|hide|toggle]    Prerelease versions; default toggle.
+  update [latest|major|minor|patch] Update every dependency in the buffer.
+  workspace [level]                 Update every manifest in the workspace.
+  sort                              Sort the manifest's dependencies.
+  install                           Run the manifest's install command.
+  refresh                           Fetch the buffer's versions again.
+  clear-cache                       Drop cached registry answers.
+  log                               Show the server's log messages.
+  restart                           Restart the server.
+  info                              Show the server command and status.
+
+`updateAll`, `clearCache`, and `output` are accepted as aliases of `update`,
+`clear-cache`, and `log`.
 
 ==============================================================================
-5. HEALTH                                                 *versionlens-health*
+5. STATUS                                                  *versionlens-status*
+
+The server sends `versionlens/status` for each open manifest. The plugin keeps
+the latest one per buffer; |versionlens.statusline()| renders it: >lua
+
+  require("versionlens").statusline()
+<
+For lualine: `lualine_x = { require("versionlens").statusline }`. For the
+built-in line: >vim
+
+  set statusline+=%{%v:lua.require'versionlens'.statusline()%}
+  set winbar=%{%v:lua.require'versionlens'.statusline()%}
+<
+or set `winbar = true` in |versionlens.setup()|.
+
+  Unicode  ASCII  Meaning
+  ◉        VL     versions shown
+  ◌        vl-    versions hidden
+  ⠋ ...    | / -  working (spinner)
+  ↑N       ^N     N dependencies outdated
+  ✗N       xN     N lookups failed
+  ⚠N       !N     N vulnerable
+  ✓        ok     all up to date
+  β        pre    prereleases on
+
+Override a glyph with `glyphs = { outdated = "U" }`. Names: `shown`, `hidden`,
+`ok`, `outdated`, `failed`, `vulnerable`, `prereleases`, `spinner` (list).
+
+==============================================================================
+6. HEALTH                                                 *versionlens-health*
 
 `:checkhealth versionlens` checks the Neovim version, that the server runs,
 and how many file patterns it reports.

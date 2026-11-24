@@ -43,31 +43,63 @@ require("versionlens").setup({
   autostart = true,
   codelens = true,
   inlay_hints = true,
+  ascii = false,        -- ASCII glyphs in the status component
+  glyphs = {},          -- override single glyphs, e.g. { outdated = "U" }
+  winbar = false,       -- show the status in each manifest window's winbar
   settings = {          -- the VS Code `versionlens.*` settings, without the prefix
     prereleases = false,
     vulnerabilities = true,
     timeoutMs = 10000,
     registries = { npm = "https://npm.example.com/{name}" },
+    authorization = { ["https://npm.example.com/"] = "Bearer TOKEN" },
+    install = { npm = "bun install" },
+    files = { ["deps/*.list"] = "requirements" },
   },
   on_attach = nil,      -- function(client, bufnr)
 })
 ```
 
-Settings: `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, `registries`. `githubToken` falls back to `$GITHUB_TOKEN` and `$GH_TOKEN`. Calling `setup()` again sends the new settings to running servers, with no restart.
+Settings: booleans `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `strictSsl`, `stats`; numbers `timeoutMs`, `concurrency`, `cacheMinutes`; strings `githubToken`, `updateSeverity` (`off`, `hint`, `info`, `warning`, `error`); lists `prereleaseTags`, `fileTypes`, `workspaceExclude`; maps `registries` (registry id to URL template), `authorization` (URL prefix to Authorization header), `install` (file type or registry id to shell command, run when a save changes the dependencies), `files` (extra glob to file type id), `indicators` (glyph per state: `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`). Unknown keys and wrong types are reported by `setup()`. `githubToken` falls back to `$GITHUB_TOKEN` and `$GH_TOKEN`. Calling `setup()` again sends the new settings to running servers, with no restart.
 
 ## Commands
 
-`:VersionLens <subcommand>`:
+`:VersionLens` with no argument opens a `vim.ui.select` menu of what applies to the current buffer (show or hide, prereleases, update levels while dependencies are outdated, sort, install, refresh, workspace update, and more). `:VersionLens <subcommand>` completes with `<Tab>`:
 
-- `refresh`: fetch the current buffer's versions again.
-- `updateAll`: update every dependency in the buffer to its latest version.
-- `toggle`: show or hide lenses and hints.
-- `clearCache`: drop cached registry answers.
-- `restart`: restart the server.
+- `show`, `hide`, `toggle`: show or hide versions in the buffer.
+- `prereleases [show|hide|toggle]`: prerelease versions; default `toggle`.
+- `update [latest|major|minor|patch]`: update every dependency in the buffer; default `latest`.
+- `workspace [level]`: update every manifest in the workspace.
+- `sort`: sort the manifest's dependencies.
+- `install`: run the manifest's install command.
+- `refresh`: fetch the buffer's versions again.
+- `clear-cache`: drop cached registry answers.
 - `log`: show the server's log messages.
-- `info`: show the server command.
+- `restart`: restart the server.
+- `info`: show the server command and the buffer's status.
 
-Per-dependency updates are code actions (`vim.lsp.buf.code_action()`) and code lenses (`vim.lsp.codelens.run()`). `:checkhealth versionlens` checks the server.
+`updateAll`, `clearCache`, and `output` still work as aliases. Per-dependency updates are code actions (`vim.lsp.buf.code_action()`) and code lenses (`vim.lsp.codelens.run()`). `:checkhealth versionlens` checks the server.
+
+## Status Line
+
+The server reports each manifest's state with `versionlens/status`. `require("versionlens").statusline()` renders it for the current buffer, for example `◉ ↑3 ⚠1 β`:
+
+| Unicode | ASCII | Meaning |
+| --- | --- | --- |
+| `◉` | `VL` | versions shown |
+| `◌` | `vl-` | versions hidden |
+| `⠋` ... | `\|/-` | working (spinner) |
+| `↑N` | `^N` | N dependencies outdated |
+| `✗N` | `xN` | N lookups failed |
+| `⚠N` | `!N` | N vulnerable |
+| `✓` | `ok` | all up to date |
+| `β` | `pre` | prereleases on |
+
+```lua
+-- lualine
+sections = { lualine_x = { require("versionlens").statusline } }
+-- built-in statusline or winbar
+vim.o.winbar = "%{%v:lua.require'versionlens'.statusline()%}" -- or setup({ winbar = true })
+```
 
 ## Development
 

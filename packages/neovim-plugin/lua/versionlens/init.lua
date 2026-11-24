@@ -8,7 +8,13 @@ M.defaults = {
   autostart = true,
   codelens = true,
   inlay_hints = true,
+  -- Statusline glyphs: ASCII instead of Unicode, and per-glyph overrides (see versionlens.status).
+  ascii = false,
+  glyphs = {},
+  -- Set each window's winbar to the status component when it is empty.
+  winbar = false,
   -- The `versionlens` settings section, as in VS Code: { prereleases = true, timeoutMs = 5000, ... }.
+  -- Keys: see :help versionlens-settings.
   settings = {},
   on_attach = nil,
 }
@@ -61,7 +67,8 @@ local function to_pattern(glob)
   return "/" .. escaped .. "$"
 end
 
---- Lua patterns for every manifest the server reads, asked from the server once.
+--- Lua patterns for every manifest the server reads, asked from the server once, plus the
+--- globs of the `files` setting.
 function M.patterns(cmd)
   if patterns then
     return patterns
@@ -73,6 +80,10 @@ function M.patterns(cmd)
     error(("%s --file-types failed: %s"):format(cmd[1], result.stderr or result.stdout or ""))
   end
   patterns = vim.tbl_map(to_pattern, decoded.globs)
+  local files = M.config and M.config.settings and M.config.settings.files or {}
+  for glob in pairs(files) do
+    table.insert(patterns, to_pattern(glob))
+  end
   return patterns
 end
 
@@ -104,12 +115,22 @@ local function on_attach(client, bufnr)
   if M.config.inlay_hints then
     vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
   end
+  if M.config.winbar then
+    for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+      if vim.wo[win].winbar == "" then
+        vim.wo[win].winbar = "%{%v:lua.require'versionlens'.statusline()%}"
+      end
+    end
+  end
   if M.config.on_attach then
     M.config.on_attach(client, bufnr)
   end
 end
 
 local handlers = {
+  ["versionlens/status"] = function(_, params)
+    require("versionlens.status").set(params)
+  end,
   ["window/logMessage"] = function(_, params)
     record(params.message)
     return vim.NIL
@@ -176,13 +197,12 @@ local function clients(bufnr)
   return vim.lsp.get_clients({ bufnr = bufnr, name = name })
 end
 
-local function execute(command, bufnr)
-  local client = clients(bufnr)[1]
+local function execute(command, arguments, bufnr)
+  local client = clients(bufnr)[1] or vim.lsp.get_clients({ name = name })[1]
   if not client then
-    notify("not running for this buffer", vim.log.levels.WARN)
+    notify("not running; open a manifest first", vim.log.levels.WARN)
     return
   end
-  local arguments = command == "versionlens.clearCache" and {} or { vim.uri_from_bufnr(bufnr) }
   client:request(
     "workspace/executeCommand",
     { command = command, arguments = arguments },
@@ -204,40 +224,123 @@ local function show_log()
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, M.messages)
 end
 
---- Subcommands of :VersionLens.
-M.actions = {
-  refresh = function(bufnr)
-    execute("versionlens.refresh", bufnr)
-  end,
-  updateAll = function(bufnr)
-    execute("versionlens.updateAll", bufnr)
-  end,
-  toggle = function(bufnr)
-    execute("versionlens.toggle", bufnr)
-  end,
-  clearCache = function(bufnr)
-    execute("versionlens.clearCache", bufnr)
-  end,
-  restart = function(bufnr)
-    for _, client in ipairs(clients(bufnr)) do
-      client:stop()
+local function restart(bufnr)
+  for _, client in ipairs(clients(bufnr)) do
+    client:stop()
+  end
+  patterns = nil
+  require("versionlens.status").reset()
+  vim.defer_fn(function()
+    M.start(bufnr)
+  end, 200)
+end
+
+local function info(bufnr)
+  local cmd = M.cmd()
+  local status = require("versionlens.status").get(bufnr)
+  local lines = { cmd and table.concat(cmd, " ") or "server not found" }
+  if status then
+    table.insert(
+      lines,
+      ("dependencies %d, outdated %d, failed %d, vulnerable %d, shown %s, prereleases %s"):format(
+        status.dependencies or 0,
+        status.outdated or 0,
+        status.failed or 0,
+        status.vulnerable or 0,
+        tostring(status.enabled),
+        tostring(status.prereleases)
+      )
+    )
+  end
+  notify(table.concat(lines, "\n"))
+end
+
+--- Runs the :VersionLens line `text` for bufnr; returns false when it does not parse.
+function M.run(text, bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local commands = require("versionlens.commands")
+  local spec, err = commands.parse(text)
+  if not spec then
+    notify(err, vim.log.levels.ERROR)
+    return false
+  end
+  if spec.name == "log" then
+    show_log()
+  elseif spec.name == "restart" then
+    restart(bufnr)
+  elseif spec.name == "info" then
+    info(bufnr)
+  else
+    local command, arguments = commands.request(spec, vim.uri_from_bufnr(bufnr))
+    execute(command, arguments, bufnr)
+  end
+  return true
+end
+
+--- Picks a command that applies to the buffer's status, like the VS Code overflow menu.
+function M.menu(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local entries = require("versionlens.commands").menu(require("versionlens.status").get(bufnr))
+  vim.ui.select(entries, {
+    prompt = "VersionLens",
+    format_item = function(entry)
+      return entry.label
+    end,
+  }, function(entry)
+    if entry then
+      M.run(entry.command, bufnr)
     end
-    patterns = nil
-    vim.defer_fn(function()
-      M.start(bufnr)
-    end, 200)
-  end,
-  log = show_log,
-  info = function()
-    local cmd = M.cmd()
-    notify(cmd and table.concat(cmd, " ") or "server not found")
-  end,
-}
+  end)
+end
+
+--- Statusline or winbar text: glyphs and counts for the current buffer.
+function M.statusline(bufnr)
+  return require("versionlens.status").statusline(bufnr, M.config)
+end
+
+--- Problems in a settings table: unknown keys and wrong value types, one string each.
+function M.validate_settings(settings)
+  local kinds = {
+    enabled = "boolean",
+    codeLens = "boolean",
+    inlayHints = "boolean",
+    prereleases = "boolean",
+    vulnerabilities = "boolean",
+    strictSsl = "boolean",
+    timeoutMs = "number",
+    concurrency = "number",
+    cacheMinutes = "number",
+    githubToken = "string",
+    registries = "table",
+    authorization = "table",
+    install = "table",
+    files = "table",
+    indicators = "table",
+    prereleaseTags = "table",
+    updateSeverity = "string",
+    stats = "boolean",
+    fileTypes = "table",
+    workspaceExclude = "table",
+  }
+  local problems = {}
+  for key, value in pairs(settings) do
+    if not kinds[key] then
+      table.insert(problems, "unknown setting " .. key)
+    elseif type(value) ~= kinds[key] then
+      table.insert(problems, ("setting %s must be a %s"):format(key, kinds[key]))
+    end
+  end
+  table.sort(problems)
+  return problems
+end
 
 --- Configures the plugin, registers :VersionLens, and starts on manifest buffers.
 --- Running servers receive the new settings at once.
 function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
+  for _, problem in ipairs(M.validate_settings(M.config.settings)) do
+    notify(problem, vim.log.levels.WARN)
+  end
   patterns = nil
   for _, client in ipairs(vim.lsp.get_clients({ name = name })) do
     -- vim.lsp.start reuses a running client, so its settings would otherwise stay the old ones.
@@ -245,17 +348,17 @@ function M.setup(opts)
     client:notify("workspace/didChangeConfiguration", { settings = client.settings })
   end
   vim.api.nvim_create_user_command("VersionLens", function(args)
-    local action = M.actions[args.args]
-    if not action then
-      notify("unknown subcommand " .. args.args, vim.log.levels.ERROR)
-      return
+    if args.args == "" then
+      M.menu()
+    else
+      M.run(args.args)
     end
-    action(vim.api.nvim_get_current_buf())
   end, {
-    nargs = 1,
+    nargs = "*",
     force = true,
-    complete = function()
-      return vim.tbl_keys(M.actions)
+    desc = "VersionLens commands; no argument opens a menu",
+    complete = function(arglead, cmdline)
+      return require("versionlens.commands").complete(arglead, cmdline)
     end,
   })
   local group = vim.api.nvim_create_augroup("VersionLens", { clear = true })
