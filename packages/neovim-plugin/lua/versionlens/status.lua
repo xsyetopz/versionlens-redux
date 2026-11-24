@@ -37,6 +37,10 @@ M.indicators = {
     newer = "→",
     satisfies = "◐",
     noMatch = "○",
+    directory = "▸",
+    build = "≌",
+    yanked = "✗",
+    deprecated = "◐",
   },
   ascii = {
     latest = "ok",
@@ -48,6 +52,10 @@ M.indicators = {
     newer = "->",
     satisfies = "~",
     noMatch = "-",
+    directory = "dir",
+    build = "=",
+    yanked = "x",
+    deprecated = "~",
   },
 }
 

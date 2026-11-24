@@ -43,12 +43,13 @@ fn reads_hxml_libraries() {
 }
 
 #[test]
-fn reads_package_json_and_skips_local_specs() {
+fn reads_package_json_and_local_paths() {
     let text = r#"{"dependencies":{"a":"^1.0.0","b":"workspace:*","c":"file:../c","d":"github:x/y"},"packageManager":"bun@1.4.3"}"#;
     assert_eq!(
         deps("package.json", text),
-        pairs(&[("a", "^1.0.0"), ("bun", "1.4.3")])
+        pairs(&[("a", "^1.0.0"), ("c", "file:../c"), ("bun", "1.4.3")])
     );
+    assert_eq!(registries("package.json", text)[1].1, DIRECTORY);
 }
 
 #[test]
@@ -56,7 +57,7 @@ fn reads_cargo_tables_and_targets() {
     let text = "[dependencies]\nserde = { version = \"1\" }\nlocal = { path = \"../x\" }\n[target.'cfg(unix)'.dependencies]\nlibc = \"0.2\"\n";
     assert_eq!(
         deps("Cargo.toml", text),
-        pairs(&[("serde", "1"), ("libc", "0.2")])
+        pairs(&[("serde", "1"), ("local", "../x"), ("libc", "0.2")])
     );
 }
 
@@ -365,6 +366,27 @@ fn reads_pipeline_and_package_manager_files() {
 fn reads_cargo_config_patches() {
     let text =
         "[patch.crates-io]\nserde = { version = \"1.0.200\" }\nlocal = { path = \"../local\" }\n";
-    one(".cargo/config.toml", text, "serde", "1.0.200");
-    one("a/.cargo/config", text, "serde", "1.0.200");
+    let both = pairs(&[("serde", "1.0.200"), ("local", "../local")]);
+    assert_eq!(deps(".cargo/config.toml", text), both);
+    assert_eq!(deps("a/.cargo/config", text), both);
+}
+
+#[test]
+fn reads_local_paths_as_directories() {
+    for (req, path) in [
+        ("file:../c", "../c"),
+        ("file:///opt/c", "/opt/c"),
+        ("link:./c", "./c"),
+        ("portal:~/c", "~/c"),
+    ] {
+        assert_eq!(local_path(req), Some(path), "{req}");
+    }
+    for req in ["^1.0.0", "file:", "//host/c", "workspace:*"] {
+        assert_eq!(local_path(req), None, "{req}");
+    }
+    let cargo = "[dependencies]\nlocal = { path = \"../local\" }\nserde = \"1\"\n";
+    assert_eq!(
+        registries("Cargo.toml", cargo),
+        named(&[("local", DIRECTORY), ("serde", "cargo")])
+    );
 }

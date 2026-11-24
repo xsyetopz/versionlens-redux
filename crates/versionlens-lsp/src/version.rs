@@ -430,6 +430,26 @@ pub(crate) struct Plan {
     /// What the bulk updates move the requirement's floor to, oldest first: its newest patch,
     /// its newest minor, and the latest.
     pub(crate) steps: Vec<Version>,
+    /// The other builds of the resolved version, such as `20.1.0-bookworm` beside `20.1.0-alpine`.
+    pub(crate) builds: Vec<Version>,
+    /// The yanked version the requirement resolves to when no listed version matches.
+    pub(crate) yanked: Option<Version>,
+    /// The registry marks the resolved version deprecated.
+    pub(crate) deprecated: bool,
+}
+
+impl Plan {
+    /// Applies the registry's yanked and deprecated marks: as the original 1.x did, a requirement
+    /// that only yanked versions satisfy resolves to the newest of them.
+    pub(crate) fn mark(&mut self, req: &Req, yanked: &[Version], deprecated: &[Version]) {
+        if self.resolved.is_none() {
+            self.yanked = yanked.iter().filter(|v| req.matches(v)).max().cloned();
+        }
+        self.deprecated = self
+            .resolved
+            .as_ref()
+            .is_some_and(|r| deprecated.iter().any(|d| d.raw == r.raw));
+    }
 }
 
 /// Plans updates for `req` from the versions a registry lists. `tagged` is the registry's own
@@ -456,9 +476,28 @@ pub(crate) fn plan(
         satisfied: req.matches(latest),
         picks: suggest(&pool, latest, resolved, floor),
         steps: steps(&pool, latest, floor),
+        builds: resolved.map_or_default(|r| builds(versions, r)),
+        yanked: None,
+        deprecated: false,
         resolved: resolved.cloned(),
         latest: latest.clone(),
     })
+}
+
+/// The listed releases with the numbers of `resolved` but another suffix: the builds a Docker tag
+/// or a `+build` version can switch between.
+fn builds(versions: &[Version], resolved: &Version) -> Vec<Version> {
+    let suffix = split(&resolved.raw).2;
+    let len = resolved.nums.len();
+    versions
+        .iter()
+        .filter(|v| {
+            !v.is_prerelease()
+                && (0..len.max(v.nums.len())).all(|i| v.num(i) == resolved.num(i))
+                && split(&v.raw).2 != suffix
+        })
+        .cloned()
+        .collect()
 }
 
 fn steps(pool: &[&Version], latest: &Version, floor: Option<&Version>) -> Vec<Version> {

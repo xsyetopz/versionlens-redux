@@ -1,11 +1,9 @@
 //! Every package registry as one data row: where its version list lives and how to read it.
 //! Supporting a new registry means adding a row here.
 
-use serde_json::Value;
-
-use crate::extract::regex;
 use crate::version::Bare;
 
+mod parse;
 mod tools;
 
 /// How a registry response lists versions.
@@ -23,7 +21,7 @@ pub(crate) enum Parse {
     /// The first capture group of each match.
     Regex(&'static str),
     /// Custom reader for formats neither covers.
-    Fn(fn(&str, &str) -> Vec<String>),
+    Fn(fn(&str, &str) -> Versions),
 }
 
 /// A package registry.
@@ -38,13 +36,20 @@ pub(crate) struct Registry {
     /// The OSV ecosystem name, where OSV tracks this registry.
     pub(crate) osv: Option<&'static str>,
     pub(crate) accept: &'static str,
+    /// The field that marks a JSON version entry yanked, such as JSR's `yanked`; empty for none.
+    pub(crate) yanked: &'static str,
+    /// The field that marks a JSON version entry deprecated, such as npm's `deprecated`.
+    pub(crate) deprecated: &'static str,
 }
 
-/// The versions a registry lists for one package, plus its own idea of the latest.
+/// The versions a registry lists for one package, plus its own idea of the latest. Yanked
+/// versions are listed apart; deprecated ones stay in `list` and are named again in `deprecated`.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Versions {
     pub(crate) list: Vec<String>,
     pub(crate) latest: Option<String>,
+    pub(crate) yanked: Vec<String>,
+    pub(crate) deprecated: Vec<String>,
 }
 
 const fn json(
@@ -66,6 +71,8 @@ const fn json(
         bare,
         osv,
         accept: "application/json",
+        yanked: "",
+        deprecated: "",
     }
 }
 
@@ -83,21 +90,27 @@ const fn text(
         bare,
         osv,
         accept: "*/*",
+        yanked: "",
+        deprecated: "",
     }
 }
 
 const MAVEN_VERSIONS: &str = r"<version>([^<]+)</version>";
 
 pub(crate) static REGISTRIES: &[Registry] = &[
-    text(
-        "cargo",
-        "https://index.crates.io/{cargo}",
-        r#""vers":"([^"]+)"[^\n]*"yanked":false"#,
-        Bare::Caret,
-        Some("crates.io"),
-    ),
+    Registry {
+        parse: Parse::Fn(parse::cargo),
+        ..text(
+            "cargo",
+            "https://index.crates.io/{cargo}",
+            "",
+            Bare::Caret,
+            Some("crates.io"),
+        )
+    },
     Registry {
         accept: "application/vnd.npm.install-v1+json",
+        deprecated: "deprecated",
         parse: Parse::Json {
             at: "versions",
             field: "@key",
@@ -113,6 +126,7 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         )
     },
     Registry {
+        yanked: "yanked",
         parse: Parse::Json {
             at: "versions",
             field: "@key",
@@ -128,6 +142,7 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         )
     },
     Registry {
+        deprecated: "deprecated",
         parse: Parse::Json {
             at: "versions",
             field: "@key",
@@ -185,6 +200,7 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         None,
     ),
     Registry {
+        yanked: "retracted",
         parse: Parse::Json {
             at: "versions",
             field: "version",
@@ -261,7 +277,7 @@ pub(crate) static REGISTRIES: &[Registry] = &[
     ),
     Registry {
         accept: "*/*",
-        parse: Parse::Fn(helm),
+        parse: Parse::Fn(parse::helm),
         ..json("helm", "{source}/index.yaml", "", "", Bare::Exact, None)
     },
     json(
@@ -497,109 +513,6 @@ fn cargo_path(name: &str) -> String {
             name.get(2..4).unwrap_or_default()
         ),
     }
-}
-
-impl Registry {
-    /// Reads a response body into versions.
-    ///
-    /// # Errors
-    /// Explains a body that is not the expected shape.
-    pub(crate) fn parse(&self, body: &str, name: &str) -> Result<Versions, String> {
-        let list = match &self.parse {
-            // With two groups, the first names the package, for pages that also link other packages.
-            Parse::Regex(pattern) => regex(pattern)
-                .captures_iter(body)
-                .filter_map(|c| match (c.get_group(1), c.get_group(2)) {
-                    (Some(owner), Some(version)) => {
-                        (&body[owner.range()] == name).then(|| body[version.range()].to_owned())
-                    }
-                    (Some(version), None) => Some(body[version.range()].to_owned()),
-                    _ => None,
-                })
-                .collect(),
-            Parse::Fn(read) => read(body, name),
-            Parse::Json { at, field, latest } => {
-                let root: Value =
-                    serde_json::from_str(body).map_err(|e| format!("invalid JSON: {e}"))?;
-                let node =
-                    pointer(&root, at, name).ok_or_else(|| format!("no `{at}` in the response"))?;
-                let latest = pointer(&root, latest, name)
-                    .filter(|_| !latest.is_empty())
-                    .and_then(Value::as_str)
-                    .map(str::to_owned);
-                return Ok(Versions {
-                    list: elements(node, field),
-                    latest,
-                });
-            }
-        };
-        Ok(Versions { list, latest: None })
-    }
-}
-
-fn pointer<'a>(root: &'a Value, path: &str, name: &str) -> Option<&'a Value> {
-    path.split('/')
-        .filter(|s| !s.is_empty())
-        .try_fold(root, |node, seg| {
-            let seg = if seg == "{name}" { name } else { seg };
-            match node {
-                Value::Array(items) => items.get(seg.parse::<usize>().ok()?),
-                _ => node.get(seg),
-            }
-        })
-}
-
-fn elements(node: &Value, field: &str) -> Vec<String> {
-    let text = |v: &Value| {
-        v.as_str()
-            .map(str::to_owned)
-            .or_else(|| v.as_number().map(ToString::to_string))
-    };
-    let pick = |v: &Value| {
-        if field.is_empty() {
-            text(v)
-        } else {
-            field.split('|').find_map(|f| v.get(f).and_then(text))
-        }
-    };
-    match node {
-        Value::Object(map) if field == "@key" => map.keys().cloned().collect(),
-        Value::Object(map) => map.values().filter_map(pick).collect(),
-        Value::Array(items) => items.iter().filter_map(pick).collect(),
-        other => text(other).into_iter().collect(),
-    }
-}
-
-/// A Helm repository index lists every chart; this reads the `version` of each entry of one.
-fn helm(body: &str, name: &str) -> Vec<String> {
-    let header = format!("{name}:");
-    let mut lines = body
-        .lines()
-        .skip_while(|l| l.trim_start() != header || l.len() - l.trim_start().len() > 2)
-        .skip(1);
-    let mut item = None;
-    let mut out = Vec::new();
-    for line in lines.by_ref() {
-        let indent = line.len() - line.trim_start().len();
-        let content = line.trim_start();
-        if content.is_empty() {
-            continue;
-        }
-        if indent <= 2 && !content.starts_with('-') {
-            break;
-        }
-        let (at, content) = match content.strip_prefix("- ") {
-            Some(rest) => (indent + 2, rest),
-            None => (indent, content),
-        };
-        let item_indent = *item.get_or_insert(at);
-        if at == item_indent
-            && let Some(version) = content.strip_prefix("version:")
-        {
-            out.push(version.trim().trim_matches(['"', '\'']).to_owned());
-        }
-    }
-    out
 }
 
 #[cfg(test)]

@@ -105,6 +105,23 @@ const withActiveUri: Middleware["executeCommand"] = async (
 	args,
 	next
 ) => {
+	// The original's build lens opened a quick pick; other editors get the server's message prompt.
+	const given: unknown[] = args;
+	const [uri, range, pkg, builds] = given;
+	if (name === "versionlens.build" && Array.isArray(builds)) {
+		const picked = await window.showQuickPick(builds.map(String), {
+			placeHolder: `Choose a build for ${String(pkg)}`
+		});
+		if (picked === undefined) {
+			return null;
+		}
+		const updated: unknown = await next("versionlens.update", [
+			uri,
+			range,
+			picked
+		]);
+		return updated;
+	}
 	const strings: unknown[] = args.map((arg: unknown) =>
 		arg instanceof Uri ? arg.toString() : arg
 	);

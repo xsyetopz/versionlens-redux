@@ -43,6 +43,16 @@ Zed extensions cannot add toolbar buttons or palette commands (`zed_extension_ap
 - Install dependencies, when `install` holds a command for the manifest.
 - Show or hide versions, show or hide prereleases, refresh versions, and clear the cache.
 
+The remaining VS Code commands map to Zed built-ins and settings:
+
+| VS Code | Zed |
+| --- | --- |
+| Restart server | `editor: restart language server` |
+| Show output, show error | `dev: open language server logs`, server `versionlens` |
+| Add or remove authentication | `authorization` in `lsp.versionlens.settings` |
+| Change build (`≌` lens) | Zed asks which build in a prompt and applies the choice |
+| Open a local dependency (`📁` lens) | Opens the directory with the system handler |
+
 Per-dependency updates are quick fixes in the same menu, and code lenses when they are on. With `"stats": true`, a summary lens above each manifest shows its dependency, outdated, failed, and vulnerable counts, the counterpart of the VS Code title icons.
 
 ## Development

@@ -158,7 +158,7 @@ impl Http {
         let versions = registry
             .parse(&body, name)
             .map_err(|e| format!("{url}: {e}"))?;
-        if versions.list.is_empty() {
+        if versions.list.is_empty() && versions.yanked.is_empty() {
             return Err(format!("{url}: lists no versions for {name}"));
         }
         Ok(versions)

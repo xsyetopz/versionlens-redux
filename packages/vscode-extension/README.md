@@ -84,7 +84,7 @@ The server lists the files it reads in its initialize result, and the extension 
 | `versionlens.authorization` | `{}` | `Authorization` header per registry URL prefix. **Add url authentication** keeps headers in secret storage instead. |
 | `versionlens.install` | `{}` | Shell command per file type or registry id, run in the manifest's folder when a save changes the dependencies and from **Run custom install task**. |
 | `versionlens.files` | `{}` | Extra manifests: glob to file type id, such as `{"deps/*.list": "requirements"}`. |
-| `versionlens.indicators` | glyphs | Glyph per state in lenses and hints: `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`, `satisfies`, `noMatch`. |
+| `versionlens.indicators` | glyphs | Glyph per state in lenses and hints: `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`, `satisfies`, `noMatch`, `directory`, `build`, `yanked`, `deprecated`. |
 | `versionlens.prereleaseTags` | `[]` | Offer only prereleases with one of these tags; empty offers all. |
 | `versionlens.updateSeverity` | `info` | Diagnostic severity for an outdated dependency: `off`, `hint`, `info`, `warning`, or `error`. |
 | `versionlens.stats` | `false` | A summary lens above each manifest. |

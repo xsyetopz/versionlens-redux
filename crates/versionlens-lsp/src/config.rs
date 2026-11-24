@@ -20,6 +20,14 @@ pub(crate) struct Indicators {
     pub(crate) satisfies: String,
     /// The registry lists no version the requirement allows.
     pub(crate) no_match: String,
+    /// Leads a local dependency's path.
+    pub(crate) directory: String,
+    /// Leads the lens that switches between builds of the resolved version.
+    pub(crate) build: String,
+    /// The requirement resolves only to a yanked version.
+    pub(crate) yanked: String,
+    /// The registry marks the resolved version deprecated.
+    pub(crate) deprecated: String,
 }
 
 /// The original 1.x glyphs, which GUI editors show as is; terminal editors such as Neovim send
@@ -36,6 +44,10 @@ impl Default for Indicators {
             newer: "→".into(),
             satisfies: "🟡".into(),
             no_match: "⚪".into(),
+            directory: "📁".into(),
+            build: "≌".into(),
+            yanked: "🔴".into(),
+            deprecated: "🟡".into(),
         }
     }
 }
@@ -56,6 +68,10 @@ impl Indicators {
             ("newer", &mut out.newer),
             ("satisfies", &mut out.satisfies),
             ("noMatch", &mut out.no_match),
+            ("directory", &mut out.directory),
+            ("build", &mut out.build),
+            ("yanked", &mut out.yanked),
+            ("deprecated", &mut out.deprecated),
         ] {
             if let Some(text) = map.get(key).and_then(Value::as_str) {
                 text.clone_into(glyph);

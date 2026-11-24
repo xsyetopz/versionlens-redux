@@ -21,6 +21,12 @@ pub(crate) enum State {
     Failed(String),
     /// The registry answered, but the requirement is not a range this server reads.
     Unreadable,
+    /// A dependency on a local directory or file: the path as written, and its `file://` URI when
+    /// the path exists.
+    Directory {
+        path: String,
+        target: Option<String>,
+    },
     Planned {
         plan: Box<Plan>,
         /// The requirement's floor, which update levels count from.
@@ -194,9 +200,27 @@ pub(crate) fn lenses(
                 "{} unreadable requirement",
                 glyphs.unreadable
             ))),
+            State::Directory {
+                path,
+                target: Some(target),
+            } => out.push(lens(
+                format!("{} file://{path}", glyphs.directory),
+                "versionlens.open",
+                vec![json!(target)],
+            )),
+            State::Directory { path, target: None } => {
+                out.push(open(format!("{} not found {path}", glyphs.failed)));
+            }
             State::Planned { plan, .. } => {
                 let choices = picks(view, insert);
                 out.push(open(status(plan, choices.is_empty(), glyphs)));
+                if let Some(command) = build_command(uri, view, insert, glyphs) {
+                    out.push(CodeLens {
+                        range: view.range,
+                        command: Some(command),
+                        data: None,
+                    });
+                }
                 for (label, text) in choices {
                     out.push(CodeLens {
                         range: view.range,
@@ -218,7 +242,11 @@ pub(crate) fn lenses(
 /// The status lens that leads a dependency's updates, as the original 1.x drew it: what the
 /// requirement resolves to now, against the latest version.
 fn status(plan: &Plan, current: bool, glyphs: &Indicators) -> String {
+    if let Some(v) = &plan.yanked {
+        return format!("{} yanked {}", glyphs.yanked, v.raw);
+    }
     match &plan.resolved {
+        Some(v) if plan.deprecated => format!("{} deprecated {}", glyphs.deprecated, v.raw),
         None => format!("{} no match", glyphs.no_match),
         // Already on the latest, with nothing left to move.
         Some(v) if *v >= plan.latest && current => format!("{} latest {}", glyphs.latest, v.raw),
@@ -226,6 +254,30 @@ fn status(plan: &Plan, current: bool, glyphs: &Indicators) -> String {
         Some(v) if *v >= plan.latest => format!("{} satisfies latest {}", glyphs.latest, v.raw),
         Some(v) => format!("{} satisfies {}", glyphs.satisfies, v.raw),
     }
+}
+
+/// The original's `change build` lens: it asks which build of the resolved version to switch to.
+fn build_command(uri: &Uri, view: &View<'_>, insert: &str, glyphs: &Indicators) -> Option<Command> {
+    let State::Planned { plan, .. } = &view.state else {
+        return None;
+    };
+    let mut choices: Vec<String> = Vec::new();
+    for build in &plan.builds {
+        let text = replacement(&view.dep.req, build, insert);
+        if text != view.dep.req && !choices.contains(&text) {
+            choices.push(text);
+        }
+    }
+    (!choices.is_empty()).then(|| Command {
+        title: format!("{} change build", glyphs.build),
+        command: "versionlens.build".into(),
+        arguments: Some(vec![
+            json!(uri),
+            json!(view.range),
+            json!(view.dep.name),
+            json!(choices),
+        ]),
+    })
 }
 
 fn short(error: &str) -> &str {
@@ -248,8 +300,8 @@ pub(crate) fn hints(views: &[View<'_>], glyphs: &Indicators) -> Vec<InlayHint> {
                     glyphs.latest.clone()
                 }
                 State::Planned { plan, .. } => format!("{} {}", glyphs.newer, plan.latest.raw),
-                State::Failed(_) => glyphs.failed.clone(),
-                State::Pending | State::Unreadable => return None,
+                State::Failed(_) | State::Directory { target: None, .. } => glyphs.failed.clone(),
+                State::Pending | State::Unreadable | State::Directory { .. } => return None,
             };
             Some(InlayHint {
                 position: view.range.end,
@@ -271,6 +323,11 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
         State::Pending => "Checking the registry…".to_owned(),
         State::Failed(error) => format!("Lookup failed: `{error}`"),
         State::Unreadable => format!("`{}` is not a version range VersionLens reads.", dep.req),
+        State::Directory {
+            target: Some(target),
+            ..
+        } => format!("Local dependency at <{target}>"),
+        State::Directory { path, .. } => format!("`{path}` does not exist"),
         State::Planned { plan, current, .. } => {
             let current = current.as_ref().map_or("none", |v| v.raw.as_str());
             format!(
@@ -409,7 +466,12 @@ pub(crate) fn stats(
     }
     let count = |test: &dyn Fn(&View<'_>) -> bool| views.iter().filter(|v| test(v)).count();
     let outdated = count(&|v| !picks(v, insert).is_empty());
-    let failed = count(&|v| matches!(v.state, State::Failed(_)));
+    let failed = count(&|v| {
+        matches!(
+            v.state,
+            State::Failed(_) | State::Directory { target: None, .. }
+        )
+    });
     let vulnerable = count(&|v| !v.vulns.is_empty());
     let pending = count(&|v| matches!(v.state, State::Pending));
     let mut parts = vec![format!("{} dependencies", views.len())];

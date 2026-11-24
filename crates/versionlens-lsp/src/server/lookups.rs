@@ -73,15 +73,17 @@ impl Server {
                                 found.list.len()
                             ),
                         );
-                        let mut versions: Vec<Version> = found
-                            .list
-                            .iter()
-                            .filter_map(|v| Version::parse(v))
-                            .collect();
-                        versions.sort();
+                        let parse = |list: &[String]| -> Vec<Version> {
+                            let mut out: Vec<Version> =
+                                list.iter().filter_map(|v| Version::parse(v)).collect();
+                            out.sort();
+                            out
+                        };
                         Ok(Arc::new(Found {
-                            versions,
+                            versions: parse(&found.list),
                             tagged: found.latest.as_deref().and_then(Version::parse),
+                            yanked: parse(&found.yanked),
+                            deprecated: parse(&found.deprecated),
                         }))
                     }
                     Err(error) => {

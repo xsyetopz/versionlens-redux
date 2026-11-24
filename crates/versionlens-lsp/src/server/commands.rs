@@ -35,14 +35,26 @@ impl Server {
         let need_uri = || uri.clone().ok_or_else(|| bad("expected the manifest uri"));
         match command {
             "versionlens.update" => {
-                let [uri, range, text] = args else {
+                let [Value::String(uri), range, Value::String(text)] = args else {
                     return Err(bad("expected [uri, range, text]"));
                 };
-                let edit = json!({ "changes": { uri.as_str().unwrap_or_default(): [{ "range": range, "newText": text }] } });
+                self.replace(uri, range, text);
+            }
+            "versionlens.build" => {
+                let [
+                    Value::String(uri),
+                    range,
+                    Value::String(name),
+                    Value::Array(choices),
+                ] = args
+                else {
+                    return Err(bad("expected [uri, range, name, builds]"));
+                };
+                let actions: Vec<Value> = choices.iter().map(|t| json!({ "title": t })).collect();
                 self.request(
-                    "workspace/applyEdit",
-                    json!({ "label": "Update dependency", "edit": edit }),
-                    Pending::Ignore,
+                    "window/showMessageRequest",
+                    json!({ "type": MessageType::INFO, "message": format!("Choose a build for {name}"), "actions": actions }),
+                    Pending::Build(uri.clone(), range.clone()),
                 );
             }
             "versionlens.updateAll" => {
@@ -109,6 +121,16 @@ impl Server {
             }
         }
         Ok(())
+    }
+
+    /// Replaces a requirement through the editor, which keeps the change undoable.
+    pub(super) fn replace(&mut self, uri: &str, range: &Value, text: &str) {
+        let edit = json!({ "changes": { uri: [{ "range": range, "newText": text }] } });
+        self.request(
+            "workspace/applyEdit",
+            json!({ "label": "Update dependency", "edit": edit }),
+            Pending::Ignore,
+        );
     }
 
     /// Shows, hides, or toggles the versions or the prereleases.

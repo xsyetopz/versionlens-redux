@@ -56,18 +56,19 @@ tasks.processResources {
     }
 }
 
+// Without the property the plugin ships no server and finds one through VERSIONLENS_LSP, its
+// settings, or PATH, as local GUI runs do.
 tasks.prepareSandbox {
-    val staged = binaries
-    doFirst {
-        staged.orNull?.let { dir ->
+    binaries.orNull?.let { dir ->
+        doFirst {
             check(dir.listFiles().orEmpty().isNotEmpty()) {
                 "versionlensBinariesDir $dir has no servers"
             }
         }
-    }
-    from(staged) {
-        into(pluginName.map { "$it/bin" })
-        filePermissions { unix("rwxr-xr-x") }
+        from(dir) {
+            into(pluginName.map { "$it/bin" })
+            filePermissions { unix("rwxr-xr-x") }
+        }
     }
 }
 

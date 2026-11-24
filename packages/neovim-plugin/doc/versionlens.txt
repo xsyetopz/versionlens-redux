@@ -86,7 +86,8 @@ without the prefix. Unknown keys and wrong types are reported at `setup()`.
                `files` (extra glob to file type id),
                `indicators` (glyph per state: `latest`, `update`,
                `checking`, `failed`, `unreadable`, `vulnerable`, `newer`,
-               `satisfies`, `noMatch`),
+               `satisfies`, `noMatch`, `directory`, `build`, `yanked`,
+               `deprecated`),
                `providers` (registry id to a table of `cacheMinutes`,
                `strictSsl`, `prereleaseTags` that override the global
                value for that registry)

@@ -140,3 +140,29 @@ fn renders_in_the_users_style() {
     assert_eq!(v("v1.2.3").render("1.0.0", true), "1.2.3");
     assert_eq!(level(Some(&v("1.2.3")), &v("1.3.0")), "minor");
 }
+
+#[test]
+fn marks_yanked_and_deprecated_resolutions() {
+    let req = Req::parse("^2.0.0", Bare::Exact).unwrap();
+    let mut plan = plan(&req, &versions(&["1.0.0", "1.1.0"]), None, false).unwrap();
+    plan.mark(&req, &versions(&["2.0.0", "2.1.0", "3.0.0"]), &[]);
+    assert_eq!(plan.yanked.map(|y| y.raw), Some("2.1.0".into()));
+    let req = Req::parse("^1.0.0", Bare::Exact).unwrap();
+    let mut plan = plan_of(&req, &["1.0.0", "1.1.0"]);
+    plan.mark(&req, &[], &versions(&["1.1.0"]));
+    assert!(plan.deprecated && plan.yanked.is_none());
+}
+
+fn plan_of(req: &Req, list: &[&str]) -> Plan {
+    plan(req, &versions(list), None, false).unwrap()
+}
+
+#[test]
+fn lists_other_builds_of_the_resolved_version() {
+    let req = Req::parse("1.0.0", Bare::Prefix).unwrap();
+    let found = plan_of(&req, &["1.0.0", "1.0.0+build.2", "1.0.0-rc.1", "1.0.1"]);
+    let mut all: Vec<String> = found.builds.into_iter().map(|b| b.raw).collect();
+    all.extend(found.resolved.map(|r| r.raw));
+    all.sort();
+    assert_eq!(all, ["1.0.0", "1.0.0+build.2"]);
+}

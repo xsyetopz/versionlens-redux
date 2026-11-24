@@ -104,6 +104,9 @@ fn status_follows_the_original_wording() {
         resolved: resolved.map(v),
         picks: Vec::new(),
         steps: Vec::new(),
+        builds: Vec::new(),
+        yanked: None,
+        deprecated: false,
     };
     let (sat, latest, none) = (&glyphs.satisfies, &glyphs.latest, &glyphs.no_match);
     assert_eq!(
@@ -121,5 +124,90 @@ fn status_follows_the_original_wording() {
     assert_eq!(
         status(&plan(Some("2.1.0")), true, &glyphs),
         format!("{latest} latest 2.1.0")
+    );
+}
+
+fn planned(req: &str, list: &[&str]) -> (Dep, Plan) {
+    let dep = Dep {
+        name: "a".into(),
+        req: req.into(),
+        span: 0..req.len(),
+        registry: "docker",
+        source: None,
+    };
+    let versions: Vec<Version> = list.iter().map(|t| v(t)).collect();
+    let parsed = Req::parse(req, version::Bare::Prefix).unwrap();
+    (dep, version::plan(&parsed, &versions, None, false).unwrap())
+}
+
+fn view(dep: &Dep, state: State) -> View<'_> {
+    View {
+        dep,
+        range: Range::default(),
+        state,
+        vulns: &[],
+        page: "https://registry".into(),
+    }
+}
+
+fn titles(dep: &Dep, state: State) -> Vec<String> {
+    let uri: Uri = "file:///p/package.json".parse().unwrap();
+    lenses(&uri, &[view(dep, state)], "", &Indicators::default())
+        .into_iter()
+        .filter_map(|l| l.command.map(|c| c.title))
+        .collect()
+}
+
+#[test]
+fn status_reports_yanked_and_deprecated_first() {
+    let glyphs = Indicators::default();
+    let (_, mut plan) = planned("1", &["1.0.0", "2.0.0"]);
+    plan.deprecated = true;
+    assert_eq!(
+        status(&plan, false, &glyphs),
+        format!("{} deprecated 1.0.0", glyphs.deprecated)
+    );
+    plan.yanked = Some(v("0.9.0"));
+    assert_eq!(
+        status(&plan, false, &glyphs),
+        format!("{} yanked 0.9.0", glyphs.yanked)
+    );
+}
+
+#[test]
+fn offers_the_other_builds_of_the_resolved_version() {
+    let (dep, plan) = planned(
+        "20-alpine",
+        &["20.1.0-alpine", "20.1.0-bookworm", "22.0.0-alpine"],
+    );
+    let uri: Uri = "file:///p/Dockerfile".parse().unwrap();
+    let state = State::Planned {
+        plan: Box::new(plan),
+        current: None,
+    };
+    let command = build_command(&uri, &view(&dep, state), "", &Indicators::default()).unwrap();
+    assert_eq!(command.command, "versionlens.build");
+    assert_eq!(command.arguments.unwrap()[3], json!(["20.1.0-bookworm"]));
+}
+
+#[test]
+fn directory_lenses_open_the_path_or_report_it_missing() {
+    let glyphs = Indicators::default();
+    let (dep, _) = planned("1", &["1.0.0"]);
+    let found = State::Directory {
+        path: "../c".into(),
+        target: Some("file:///c".into()),
+    };
+    assert_eq!(
+        titles(&dep, found),
+        [format!("{} file://../c", glyphs.directory)]
+    );
+    let missing = State::Directory {
+        path: "../c".into(),
+        target: None,
+    };
+    assert_eq!(
+        titles(&dep, missing),
+        [format!("{} not found ../c", glyphs.failed)]
     );
 }

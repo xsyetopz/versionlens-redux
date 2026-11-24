@@ -352,3 +352,54 @@ fn reads_only_the_configured_file_types() {
     assert_eq!(lenses.response_result.unwrap(), Value::Null);
     client.stop();
 }
+
+#[test]
+fn asks_for_a_build_and_applies_the_choice() {
+    let client = Client::with(&options());
+    let range =
+        json!({ "start": { "line": 2, "character": 12 }, "end": { "line": 2, "character": 18 } });
+    let args = json!([URI, range, "zod", ["1.0.0+b1", "1.0.0+b2"]]);
+    let params = json!({ "command": "versionlens.build", "arguments": args });
+    let request = Request::new(2.into(), "workspace/executeCommand".into(), params);
+    client.conn.sender.send(request.into()).unwrap();
+    let asked = client.next(|m| match m {
+        Message::Request(r) if r.method == "window/showMessageRequest" => Some(r.clone()),
+        _ => None,
+    });
+    assert_eq!(asked.params["message"], "Choose a build for zod");
+    assert_eq!(asked.params["actions"][1]["title"], "1.0.0+b2");
+    let choice = Response::new_ok(asked.id, json!({ "title": "1.0.0+b2" }));
+    client.conn.sender.send(choice.into()).unwrap();
+    let edit = client.next(|m| match m {
+        Message::Request(r) if r.method == "workspace/applyEdit" => Some(r.params.clone()),
+        _ => None,
+    });
+    assert_eq!(new_texts(&edit, URI), ["1.0.0+b2"]);
+    client.stop();
+}
+
+#[test]
+fn links_local_dependencies_to_their_directory() {
+    let dir = std::env::temp_dir().join(format!("versionlens-dir-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("app")).unwrap();
+    std::fs::create_dir_all(dir.join("lib")).unwrap();
+    let uri = workspace::file_uri(&dir.join("app/package.json").to_string_lossy());
+    let client = Client::with(&options());
+    client.open(
+        &uri,
+        r#"{"dependencies":{"lib":"file:../lib","gone":"link:../gone"}}"#,
+    );
+    let lenses = client.request(
+        2,
+        "textDocument/codeLens",
+        json!({ "textDocument": { "uri": uri } }),
+    );
+    let lenses = lenses.response_result.unwrap();
+    let found = &lenses[0]["command"];
+    assert_eq!(found["title"], "📁 file://../lib");
+    let target = workspace::file_uri(&dir.join("app/../lib").to_string_lossy());
+    assert_eq!(found["arguments"], json!([target]));
+    assert_eq!(lenses[1]["command"]["title"], "🔴 not found ../gone");
+    client.stop();
+    std::fs::remove_dir_all(dir).unwrap();
+}

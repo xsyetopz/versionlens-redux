@@ -45,7 +45,7 @@ When none runs, the plugin shows one notification and writes the reason to the l
 | Authorization | `URL prefix=header value` lines; stored in the IDE password safe |
 | Install commands | `file type or registry id=shell command` lines, run when a save changes the dependencies |
 | Extra files | `glob=file type id` lines |
-| Indicators | `state=glyph` lines for `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`, `satisfies`, `noMatch` |
+| Indicators | `state=glyph` lines for `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`, `satisfies`, `noMatch`, `directory`, `build`, `yanked`, `deprecated` |
 
 Applying the page sends the new settings to every running server. Changing the server path restarts it.
 

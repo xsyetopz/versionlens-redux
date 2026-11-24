@@ -27,8 +27,7 @@ const PROVIDERS: &[(&str, &str, &str)] = &[
 /// in `registries`, and its extraction rules live in the catalog.
 const UNREAD: &[&str] = &["apiUrl", "dependencyProperties", "nuget"];
 
-/// Original indicator names and the glyph each became; the others name states this rewrite
-/// does not draw.
+/// Original indicator names and the glyph each became; `SatisfiesLatest` shares `latest`.
 const INDICATORS: &[(&str, &str)] = &[
     ("Latest", "latest"),
     ("Updateable", "update"),
@@ -36,6 +35,10 @@ const INDICATORS: &[(&str, &str)] = &[
     ("UpdateableVulnerable", "vulnerable"),
     ("Match", "satisfies"),
     ("NoMatch", "noMatch"),
+    ("Directory", "directory"),
+    ("Build", "build"),
+    ("Yanked", "yanked"),
+    ("Deprecated", "deprecated"),
 ];
 
 /// Fills every setting the section leaves unset from its original key, when that is present.

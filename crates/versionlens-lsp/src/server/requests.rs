@@ -5,7 +5,9 @@ use lsp_types::{Position, Range, Uri};
 use serde_json::{Value, json};
 use std::borrow::Cow;
 
+use super::workspace::file_uri;
 use super::{Doc, Server, key, param};
+use crate::extract::{DIRECTORY, Dep, local_path};
 use crate::registry;
 use crate::render::{self, Lines, State, View};
 use crate::version::{Req, Version, plan};
@@ -31,32 +33,39 @@ impl Server {
             .collect()
     }
 
+    fn state(&self, doc: &Doc, dep: &Dep) -> State {
+        if dep.registry == DIRECTORY {
+            return directory(&doc.path, &dep.req);
+        }
+        let found = match self.cache.get(&key(dep)).map(|e| &e.result) {
+            None => return State::Pending,
+            Some(Err(error)) => return State::Failed(error.clone()),
+            Some(Ok(found)) => found,
+        };
+        let Some(req) = registry::get(dep.registry).and_then(|r| Req::parse(&dep.req, r.bare))
+        else {
+            return State::Unreadable;
+        };
+        let versions = self.tagged_prereleases(dep.registry, &found.versions);
+        let tagged = found.tagged.as_ref();
+        match plan(&req, &versions, tagged, self.settings.prereleases) {
+            Some(mut plan) => {
+                plan.mark(&req, &found.yanked, &found.deprecated);
+                State::Planned {
+                    plan: Box::new(plan),
+                    current: req.floor().cloned(),
+                }
+            }
+            None => State::Failed("no released versions".into()),
+        }
+    }
+
     pub(super) fn views<'a>(&'a self, doc: &'a Doc) -> Vec<View<'a>> {
         let lines = Lines::new(&doc.text);
         doc.deps
             .iter()
             .map(|dep| {
-                let state = match self.cache.get(&key(dep)).map(|e| &e.result) {
-                    None => State::Pending,
-                    Some(Err(error)) => State::Failed(error.clone()),
-                    Some(Ok(found)) => match registry::get(dep.registry)
-                        .and_then(|r| Req::parse(&dep.req, r.bare))
-                    {
-                        None => State::Unreadable,
-                        Some(req) => match plan(
-                            &req,
-                            &self.tagged_prereleases(dep.registry, &found.versions),
-                            found.tagged.as_ref(),
-                            self.settings.prereleases,
-                        ) {
-                            Some(plan) => State::Planned {
-                                plan: Box::new(plan),
-                                current: req.floor().cloned(),
-                            },
-                            None => State::Failed("no released versions".into()),
-                        },
-                    },
-                };
+                let state = self.state(doc, dep);
                 let vulns = self
                     .query(dep)
                     .and_then(|q| self.vulns.get(&q))
@@ -179,5 +188,32 @@ impl Server {
             }
         };
         Ok(result)
+    }
+}
+
+/// A local dependency: its path as written, and its `file://` URI when it exists beside the
+/// manifest at `manifest`.
+fn directory(manifest: &str, req: &str) -> State {
+    let path = local_path(req).unwrap_or(req);
+    let full = match path.strip_prefix("~/") {
+        Some(rest) => std::env::home_dir().map(|home| home.join(rest)),
+        // Cargo reads paths in `.cargo/config.toml` from the directory that holds `.cargo`.
+        None => std::path::Path::new(manifest)
+            .parent()
+            .map(|dir| {
+                if dir.ends_with(".cargo") {
+                    dir.parent().unwrap_or(dir)
+                } else {
+                    dir
+                }
+            })
+            .map(|dir| dir.join(path)),
+    };
+    let target = full
+        .filter(|p| p.exists())
+        .map(|p| file_uri(&p.to_string_lossy()));
+    State::Directory {
+        path: path.to_owned(),
+        target,
     }
 }

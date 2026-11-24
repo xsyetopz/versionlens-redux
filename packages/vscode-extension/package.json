@@ -177,6 +177,11 @@
 				"category": "VersionLens"
 			},
 			{
+				"command": "versionlens.build",
+				"title": "Choose a build",
+				"category": "VersionLens"
+			},
+			{
 				"command": "versionlens.restart",
 				"title": "Restart language server",
 				"category": "VersionLens"
@@ -247,6 +252,10 @@
 				},
 				{
 					"command": "versionlens.open",
+					"when": "false"
+				},
+				{
+					"command": "versionlens.build",
 					"when": "false"
 				},
 				{
@@ -504,6 +513,22 @@
 						"noMatch": {
 							"type": "string",
 							"default": "⚪"
+						},
+						"directory": {
+							"type": "string",
+							"default": "📁"
+						},
+						"build": {
+							"type": "string",
+							"default": "≌"
+						},
+						"yanked": {
+							"type": "string",
+							"default": "🔴"
+						},
+						"deprecated": {
+							"type": "string",
+							"default": "🟡"
 						}
 					},
 					"additionalProperties": false,

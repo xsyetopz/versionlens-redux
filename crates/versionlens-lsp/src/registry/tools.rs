@@ -3,7 +3,7 @@
 
 use serde_json::Value;
 
-use super::{Parse, Registry, json, text};
+use super::{Parse, Registry, Versions, json, text};
 use crate::version::Bare;
 
 pub(super) static ROWS: &[Registry] = &[
@@ -106,30 +106,32 @@ pub(super) const PAGES: &[(&str, &str)] = &[
 ];
 
 /// The Go release feed names versions `go1.22.1`; requirements and `.go-version` drop the prefix.
-fn go_releases(body: &str, _name: &str) -> Vec<String> {
+fn go_releases(body: &str, _name: &str) -> Versions {
     let Ok(Value::Array(items)) = serde_json::from_str::<Value>(body) else {
-        return Vec::new();
+        return Versions::default();
     };
     items
         .iter()
         .filter_map(|item| item.get("version")?.as_str()?.strip_prefix("go"))
         .map(str::to_owned)
-        .collect()
+        .collect::<Vec<_>>()
+        .into()
 }
 
 /// Terraform's provider endpoint lists `versions`; its module endpoint nests them in `modules`.
-pub(super) fn terraform(body: &str, _name: &str) -> Vec<String> {
+pub(super) fn terraform(body: &str, _name: &str) -> Versions {
     let Ok(root) = serde_json::from_str::<Value>(body) else {
-        return Vec::new();
+        return Versions::default();
     };
     let versions = root
         .get("versions")
         .or_else(|| root.pointer("/modules/0/versions"));
     let Some(items) = versions.and_then(Value::as_array) else {
-        return Vec::new();
+        return Versions::default();
     };
     items
         .iter()
         .filter_map(|item| item.get("version")?.as_str().map(str::to_owned))
-        .collect()
+        .collect::<Vec<_>>()
+        .into()
 }

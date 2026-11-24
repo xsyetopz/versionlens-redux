@@ -28,13 +28,14 @@ fn reads_string_maps_and_drops_blank_values() {
 #[test]
 fn reads_indicators_lists_and_severity() {
     let settings = Settings::from_json(&json!({
-        "indicators": { "latest": "ok", "update": 1 },
+        "indicators": { "latest": "ok", "update": 1, "build": "b" },
         "prereleaseTags": ["beta", " ", 2],
         "updateSeverity": "off",
         "fileTypes": ["npm"],
     }));
     assert_eq!(settings.indicators.latest, "ok");
     assert_eq!(settings.indicators.update, Indicators::default().update);
+    assert_eq!(settings.indicators.build, "b");
     assert_eq!(settings.prerelease_tags, ["beta"]);
     assert_eq!(settings.update_severity, None);
     assert_eq!(settings.file_types, ["npm"]);
@@ -64,7 +65,7 @@ fn reads_the_original_settings_under_their_new_names() {
         "caching": { "duration": 3 },
         "http": { "strictSSL": false },
         "suggestions": { "showOnStartup": false, "showPrereleasesOnStartup": true,
-            "indicators": { "Latest": "🟢", "Match": "🟡" } },
+            "indicators": { "Latest": "🟢", "Match": "🟡", "Directory": "D", "Yanked": "Y" } },
         "enabledProviders": ["golang", "npm"],
         "golang": { "caching": { "duration": 0 }, "prereleaseTagFilter": ["beta"] },
         "npm": { "onSaveChanges": "npm install", "files": "**/{package.json,deps/*.json}" },
@@ -73,6 +74,13 @@ fn reads_the_original_settings_under_their_new_names() {
     assert_eq!(settings.cache, Duration::from_secs(180));
     assert!(!settings.strict_ssl && !settings.enabled && settings.prereleases);
     assert_eq!(settings.indicators.latest, "🟢");
+    assert_eq!(
+        (
+            settings.indicators.directory.as_str(),
+            settings.indicators.yanked.as_str()
+        ),
+        ("D", "Y")
+    );
     assert_eq!(settings.file_types, ["go", "npm"]);
     assert_eq!(settings.cache_for("go"), Duration::ZERO);
     assert_eq!(settings.prerelease_tags_for("go"), ["beta"]);

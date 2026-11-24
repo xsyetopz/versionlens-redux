@@ -56,6 +56,24 @@ fn path_matches(pattern: &str, path: &[String]) -> bool {
         && parts.next().is_none()
 }
 
+/// The registry id of dependencies on a local directory or file, which need no lookup.
+pub(crate) const DIRECTORY: &str = "directory";
+
+/// The local path a requirement names, such as npm's `file:../a` or a `../a` path, if it names one.
+pub(crate) fn local_path(req: &str) -> Option<&str> {
+    const SCHEMES: &[&str] = &["file://", "file:", "link:", "portal:"];
+    SCHEMES
+        .iter()
+        .find_map(|s| req.strip_prefix(s))
+        .or_else(|| {
+            ["./", "../", "/", "~/"]
+                .iter()
+                .any(|p| req.starts_with(p))
+                .then_some(req)
+        })
+        .filter(|path| !path.is_empty() && !path.starts_with("//"))
+}
+
 /// Requirements a registry cannot answer: paths, URLs, git refs, workspace links, and templating.
 fn is_registry_req(req: &str) -> bool {
     const LOCAL: &[&str] = &[
@@ -132,6 +150,9 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
         }
     }
     for dep in &mut deps {
+        if local_path(&dep.req).is_some() {
+            dep.registry = DIRECTORY;
+        }
         if let Some(var) = dep.req.strip_prefix("${").and_then(|r| r.strip_suffix('}'))
             && let Some(leaf) = leaves
                 .iter()
@@ -142,7 +163,9 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
         }
     }
     deps.retain(|d| {
-        !d.name.is_empty() && is_package(&d.name, d.registry) && is_registry_req(&d.req)
+        !d.name.is_empty()
+            && is_package(&d.name, d.registry)
+            && (d.registry == DIRECTORY || is_registry_req(&d.req))
     });
     deps.sort_by_key(|d| (d.span.start, d.span.end));
     deps.dedup_by_key(|d| d.span.clone());
@@ -156,13 +179,14 @@ fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>)
             continue;
         };
         let tail = &leaf.path[depth + 1..];
-        if path_matches(map, head) && (tail.is_empty() || tail == ["version"]) {
-            let span = leaf.span.clone();
+        // A `path` entry, as Cargo and Pub write local dependencies, names a directory.
+        let local = tail == ["path"];
+        if path_matches(map, head) && (tail.is_empty() || tail == ["version"] || local) {
             deps.push(Dep {
                 name: name.clone(),
                 req: leaf.value.clone(),
-                span,
-                registry,
+                span: leaf.span.clone(),
+                registry: if local { DIRECTORY } else { registry },
                 source: None,
             });
         }

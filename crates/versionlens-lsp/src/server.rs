@@ -35,6 +35,7 @@ const COMMANDS: &[&str] = &[
     "versionlens.showPrereleases",
     "versionlens.hidePrereleases",
     "versionlens.open",
+    "versionlens.build",
 ];
 /// Lookups finishing within this window share one refresh.
 const COALESCE: Duration = Duration::from_millis(120);
@@ -44,6 +45,8 @@ type Key = (&'static str, String, Option<String>);
 struct Found {
     versions: Vec<Version>,
     tagged: Option<Version>,
+    yanked: Vec<Version>,
+    deprecated: Vec<Version>,
 }
 
 struct Entry {
@@ -72,6 +75,8 @@ enum Pending {
     Config,
     Progress(String),
     Ignore,
+    /// A build picker: the manifest uri and requirement range the chosen build replaces.
+    Build(String, Value),
 }
 
 #[derive(Default)]
@@ -319,6 +324,11 @@ impl Server {
                         self.configure(result.get(0).unwrap_or(&Value::Null));
                     }
                     (Some(Pending::Progress(token)), Ok(_)) => self.begin_progress(&token),
+                    (Some(Pending::Build(uri, range)), Ok(choice)) => {
+                        if let Some(text) = choice.get("title").and_then(Value::as_str) {
+                            self.replace(&uri, &range, text);
+                        }
+                    }
                     (_, Err(error)) => self.log(
                         MessageType::WARNING,
                         format!("editor rejected a request: {}", error.message),

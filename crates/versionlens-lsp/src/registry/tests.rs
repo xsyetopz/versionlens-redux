@@ -1,3 +1,4 @@
+use super::parse::helm;
 use super::tools::terraform;
 use super::*;
 
@@ -40,14 +41,16 @@ fn parses_each_response_shape() {
     let parse = |id: &str, body: &str, name: &str| get(id).unwrap().parse(body, name).unwrap();
     let npm = parse(
         "npm",
-        r#"{"versions":{"1.0.0":{},"2.0.0":{}},"dist-tags":{"latest":"1.0.0"}}"#,
+        r#"{"versions":{"1.0.0":{"deprecated":"use b"},"2.0.0":{"deprecated":""}},"dist-tags":{"latest":"1.0.0"}}"#,
         "x",
     );
     assert_eq!(
         npm,
         Versions {
             list: vec!["1.0.0".into(), "2.0.0".into()],
-            latest: Some("1.0.0".into())
+            latest: Some("1.0.0".into()),
+            yanked: Vec::new(),
+            deprecated: vec!["1.0.0".into()],
         }
     );
     assert_eq!(
@@ -70,7 +73,22 @@ fn parses_each_response_shape() {
         ["1.0.0", "0.9"]
     );
     let cargo = "{\"vers\":\"1.0.0\",\"yanked\":false}\n{\"vers\":\"1.1.0\",\"yanked\":true}\n";
-    assert_eq!(parse("cargo", cargo, "x").list, ["1.0.0"]);
+    let cargo = parse("cargo", cargo, "x");
+    assert_eq!(
+        (cargo.list, cargo.yanked),
+        (vec!["1.0.0".to_owned()], vec!["1.1.0".to_owned()])
+    );
+    let jsr = parse(
+        "jsr",
+        r#"{"versions":{"1.0.0":{},"1.1.0":{"yanked":true}}}"#,
+        "x",
+    );
+    assert_eq!(
+        (jsr.list, jsr.yanked),
+        (vec!["1.0.0".to_owned()], vec!["1.1.0".to_owned()])
+    );
+    let pub_dev = r#"{"versions":[{"version":"1.0.0"},{"version":"1.1.0","retracted":true}]}"#;
+    assert_eq!(parse("pub", pub_dev, "x").yanked, ["1.1.0"]);
     assert_eq!(
         parse("go", "v1.0.0\nv1.1.0\n", "x").list,
         ["v1.0.0", "v1.1.0"]
@@ -83,7 +101,7 @@ fn parses_each_response_shape() {
 #[test]
 fn reads_helm_index_entries() {
     let index = "apiVersion: v1\nentries:\n  other:\n  - version: 9.9.9\n  redis:\n  - apiVersion: v2\n    version: 17.1.0\n    dependencies:\n    - name: common\n      version: 2.0.0\n  - version: \"17.0.0\"\n  zed:\n  - version: 1.0.0\n";
-    assert_eq!(helm(index, "redis"), ["17.1.0", "17.0.0"]);
+    assert_eq!(helm(index, "redis").list, ["17.1.0", "17.0.0"]);
 }
 
 #[test]
@@ -157,17 +175,19 @@ fn terraform_reads_providers_and_modules() {
         terraform(
             r#"{"versions":[{"version":"5.0.0"},{"version":"4.9.0"}]}"#,
             "hashicorp/aws"
-        ),
+        )
+        .list,
         ["5.0.0", "4.9.0"]
     );
     assert_eq!(
         terraform(
             r#"{"modules":[{"versions":[{"version":"3.0.0"}]}]}"#,
             "a/b/c"
-        ),
+        )
+        .list,
         ["3.0.0"]
     );
-    assert_eq!(terraform("not json", "a/b"), Vec::<String>::new());
+    assert_eq!(terraform("not json", "a/b").list, Vec::<String>::new());
     assert_eq!(
         expand("{tf}", "hashicorp/aws", None).unwrap(),
         "providers/hashicorp/aws"
