@@ -88,6 +88,9 @@ struct Server {
     runtime: tokio::runtime::Runtime,
     http: Http,
     settings: Settings,
+    /// `enabled` and `prereleases` as last configured; the show and prerelease commands
+    /// override them until the setting itself changes.
+    configured: (bool, bool),
     caps: Caps,
     docs: HashMap<String, Doc>,
     cache: HashMap<Key, Entry>,
@@ -199,6 +202,7 @@ fn serve(conn: Connection) -> Result<(), String> {
         conn,
         runtime,
         http,
+        configured: (settings.enabled, settings.prereleases),
         settings,
         caps,
         docs: HashMap::new(),
@@ -399,7 +403,15 @@ impl Server {
     }
 
     fn configure(&mut self, value: &Value) {
-        let settings = Settings::from_json(value);
+        let mut settings = Settings::from_json(value);
+        let configured = (settings.enabled, settings.prereleases);
+        if configured.0 == self.configured.0 {
+            settings.enabled = self.settings.enabled;
+        }
+        if configured.1 == self.configured.1 {
+            settings.prereleases = self.settings.prereleases;
+        }
+        self.configured = configured;
         if settings == self.settings {
             return;
         }

@@ -122,6 +122,13 @@ fn reports_status_and_switches_versions_and_prereleases() {
             .is_ok()
     );
     client.status(|s| s["enabled"] == false);
+    // An unrelated settings change keeps the versions hidden.
+    let mut changed = options();
+    changed["timeoutMs"] = json!(3000);
+    client.notify(
+        "workspace/didChangeConfiguration",
+        json!({ "settings": { "versionlens": changed } }),
+    );
     let lenses = client.request(
         3,
         "textDocument/codeLens",
