@@ -17,24 +17,69 @@
                              instance="com.versionlens.jetbrains.SettingsPage"/>
     <toolWindow id="VersionLens" anchor="bottom" icon="/META-INF/pluginIcon.svg"
                 factoryClass="com.versionlens.jetbrains.LogWindow"/>
+    <editorNotificationProvider implementation="com.versionlens.jetbrains.ToolbarProvider"/>
     <notificationGroup id="VersionLens" displayType="BALLOON"/>
   </extensions>
 
   <actions>
+    <action id="versionlens.toggle" class="com.versionlens.jetbrains.ToggleVersionsAction" text="Show or Hide Versions"/>
+    <action id="versionlens.togglePrereleases" class="com.versionlens.jetbrains.TogglePrereleasesAction" text="Toggle Prereleases"/>
+    <action id="versionlens.updateAll.latest" class="com.versionlens.jetbrains.UpdateAllLatestAction" text="Update All Dependencies: Latest"/>
+    <action id="versionlens.updateAll.major" class="com.versionlens.jetbrains.UpdateAllMajorAction" text="Update All Dependencies: Major"/>
+    <action id="versionlens.updateAll.minor" class="com.versionlens.jetbrains.UpdateAllMinorAction" text="Update All Dependencies: Minor"/>
+    <action id="versionlens.updateAll.patch" class="com.versionlens.jetbrains.UpdateAllPatchAction" text="Update All Dependencies: Patch"/>
+    <action id="versionlens.updateWorkspace.latest" class="com.versionlens.jetbrains.UpdateWorkspaceLatestAction" text="Update Workspace Dependencies: Latest"/>
+    <action id="versionlens.updateWorkspace.major" class="com.versionlens.jetbrains.UpdateWorkspaceMajorAction" text="Update Workspace Dependencies: Major"/>
+    <action id="versionlens.updateWorkspace.minor" class="com.versionlens.jetbrains.UpdateWorkspaceMinorAction" text="Update Workspace Dependencies: Minor"/>
+    <action id="versionlens.updateWorkspace.patch" class="com.versionlens.jetbrains.UpdateWorkspacePatchAction" text="Update Workspace Dependencies: Patch"/>
+    <action id="versionlens.sort" class="com.versionlens.jetbrains.SortAction" text="Sort Dependencies"/>
+    <action id="versionlens.install" class="com.versionlens.jetbrains.InstallAction" text="Install Dependencies"/>
+    <action id="versionlens.refresh" class="com.versionlens.jetbrains.RefreshAction" text="Refresh Versions"/>
+    <action id="versionlens.clearCache" class="com.versionlens.jetbrains.ClearCacheAction" text="Clear Cache"/>
+    <action id="versionlens.restart" class="com.versionlens.jetbrains.RestartAction" text="Restart Server"/>
+    <action id="versionlens.showOutput" class="com.versionlens.jetbrains.ShowLogAction" text="Show VersionLens Log"/>
+    <group id="versionlens.updateAllMenu" text="Update All Dependencies" popup="true">
+      <reference ref="versionlens.updateAll.latest"/>
+      <reference ref="versionlens.updateAll.major"/>
+      <reference ref="versionlens.updateAll.minor"/>
+      <reference ref="versionlens.updateAll.patch"/>
+    </group>
+    <group id="versionlens.updateWorkspaceMenu" text="Update Workspace Dependencies" popup="true">
+      <reference ref="versionlens.updateWorkspace.latest"/>
+      <reference ref="versionlens.updateWorkspace.major"/>
+      <reference ref="versionlens.updateWorkspace.minor"/>
+      <reference ref="versionlens.updateWorkspace.patch"/>
+    </group>
+    <group id="versionlens.more" class="com.versionlens.jetbrains.MoreGroup">
+      <reference ref="versionlens.updateAllMenu"/>
+      <reference ref="versionlens.updateWorkspaceMenu"/>
+      <separator/>
+      <reference ref="versionlens.sort"/>
+      <reference ref="versionlens.install"/>
+      <separator/>
+      <reference ref="versionlens.refresh"/>
+      <reference ref="versionlens.clearCache"/>
+      <reference ref="versionlens.showOutput"/>
+    </group>
+    <group id="versionlens.toolbar">
+      <reference ref="versionlens.toggle"/>
+      <reference ref="versionlens.togglePrereleases"/>
+      <reference ref="versionlens.more"/>
+    </group>
     <group id="VersionLens" text="VersionLens" popup="true">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
-      <action id="versionlens.refresh" class="com.versionlens.jetbrains.RefreshAction"
-              text="Refresh Versions"/>
-      <action id="versionlens.updateAll" class="com.versionlens.jetbrains.UpdateAllAction"
-              text="Update All Dependencies"/>
-      <action id="versionlens.toggle" class="com.versionlens.jetbrains.ToggleAction"
-              text="Show or Hide Versions"/>
-      <action id="versionlens.clearCache" class="com.versionlens.jetbrains.ClearCacheAction"
-              text="Clear Cache"/>
-      <action id="versionlens.restart" class="com.versionlens.jetbrains.RestartAction"
-              text="Restart Server"/>
-      <action id="versionlens.showOutput" class="com.versionlens.jetbrains.ShowLogAction"
-              text="Show Log"/>
+      <reference ref="versionlens.toggle"/>
+      <reference ref="versionlens.togglePrereleases"/>
+      <separator/>
+      <reference ref="versionlens.updateAllMenu"/>
+      <reference ref="versionlens.updateWorkspaceMenu"/>
+      <reference ref="versionlens.sort"/>
+      <reference ref="versionlens.install"/>
+      <separator/>
+      <reference ref="versionlens.refresh"/>
+      <reference ref="versionlens.clearCache"/>
+      <reference ref="versionlens.restart"/>
+      <reference ref="versionlens.showOutput"/>
     </group>
   </actions>
 </idea-plugin>

@@ -2,6 +2,7 @@ package com.versionlens.jetbrains
 
 import com.google.gson.JsonObject
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.ide.ActivityTracker
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.eclipse.lsp4j.ConfigurationItem
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.MessageParams
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 
 /** Starts versionlens-lsp when the project opens a manifest it reads. */
 internal class Provider : LspIntegrationProvider {
@@ -27,6 +29,25 @@ internal class Provider : LspIntegrationProvider {
         if (file.isInLocalFileSystem && Client.supports(project, file)) {
             clientStarter.ensureClientStarted(Client(project))
         }
+    }
+}
+
+/** The LSP client that also receives the server's custom `versionlens/status` notification. */
+internal class StatusClient(private val project: Project, handler: LspServerNotificationsHandler) :
+    Lsp4jClient(
+        // The server's window/logMessage lines go to the VersionLens tool window.
+        object : LspServerNotificationsHandler by handler {
+            override fun logMessage(params: MessageParams) {
+                Log.of(project).add(params.message)
+                handler.logMessage(params)
+            }
+        },
+    ) {
+    /** Caches the status and refreshes the toolbar actions that show it. */
+    @JsonNotification("versionlens/status")
+    fun status(params: JsonObject) {
+        Status.parse(params)?.let(StatusCache.of(project)::put)
+        ActivityTracker.getInstance().inc()
     }
 }
 
@@ -43,16 +64,10 @@ internal class Client(project: Project) : ProjectWideLspClientDescriptor(project
     override fun getWorkspaceConfiguration(item: ConfigurationItem): Any? =
         if (item.section == "versionlens") Settings.get().json() else null
 
-    // The server's window/logMessage lines go to the VersionLens tool window.
+    // The server's window/logMessage lines go to the VersionLens tool window, and its
+    // versionlens/status notifications to the status cache the toolbar reads.
     override fun createLsp4jClient(handler: LspServerNotificationsHandler): Lsp4jClient =
-        Lsp4jClient(
-            object : LspServerNotificationsHandler by handler {
-                override fun logMessage(params: MessageParams) {
-                    Log.of(project).add(params.message)
-                    handler.logMessage(params)
-                }
-            },
-        )
+        StatusClient(project, handler)
 
     companion object {
         private val reported = AtomicBoolean()
@@ -85,6 +100,12 @@ internal class Client(project: Project) : ProjectWideLspClientDescriptor(project
             }
         }
 
+        /** The newest server status of [file], or null before the server reported it. */
+        fun statusOf(project: Project, file: VirtualFile): Status? {
+            val client = running(project).firstOrNull() ?: return null
+            return StatusCache.of(project).get(client.descriptor.getFileUri(file))
+        }
+
         /** The running clients of [project]. */
         fun running(project: Project): Collection<LspClient> =
             LspClientManager.getInstance(project).getClients(Provider::class.java)
@@ -103,6 +124,7 @@ internal class Client(project: Project) : ProjectWideLspClientDescriptor(project
         /** Restarts the server in [project], asking it for its file types again. */
         fun restart(project: Project) {
             Server.reset()
+            StatusCache.of(project).clear()
             reported.set(false)
             LspClientManager.getInstance(project)
                 .stopAndRestartClientsIfNeeded(Provider::class.java)

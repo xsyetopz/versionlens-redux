@@ -35,20 +35,28 @@ When none runs, the plugin shows one notification and writes the reason to the l
 | Concurrent requests | 32 |
 | Cache (minutes) | 60 |
 | GitHub token | empty; stored in the IDE password safe, falls back to `GITHUB_TOKEN`, then `GH_TOKEN` |
-| Registries | `{}`; a JSON object of URL templates per registry id, such as `{"npm": "https://npm.example.com/{enc}"}` |
+| Summary lens above each manifest | off |
+| Outdated dependency severity | info; `off`, `hint`, `info`, `warning`, or `error` |
+| Prerelease tags | empty; comma-separated tags such as `rc, beta`, empty allows all |
+| File types | empty; comma-separated file type or registry ids, empty reads all |
+| Workspace exclude | empty; comma-separated globs a workspace update skips |
+| Registries | `registry id=URL template` lines, such as `npm=https://npm.example.com/{enc}` |
+| Authorization | `URL prefix=header value` lines; stored in the IDE password safe |
+| Install commands | `file type or registry id=shell command` lines, run when a save changes the dependencies |
+| Extra files | `glob=file type id` lines |
+| Indicators | `state=glyph` lines for `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer` |
 
 Applying the page sends the new settings to every running server. Changing the server path restarts it.
 
-## Actions
+## Toolbar and Actions
 
-**Tools | VersionLens** has these actions, and each one is also in Find Action:
+Each manifest the server reads gets an editor toolbar, as in the VS Code editor title bar:
 
-- **Refresh Versions**
-- **Update All Dependencies**
-- **Show or Hide Versions**
-- **Clear Cache**
-- **Restart Server**
-- **Show Log**: opens the VersionLens tool window, which shows the server's log messages.
+- The versions toggle: blue when versions are shown, grey when hidden, orange while lookups run, red when lookups failed (a click opens the log).
+- The prerelease toggle.
+- **More**: update all dependencies or the whole workspace to latest, major, minor, or patch; sort dependencies; run the install command; refresh; clear the cache; show the log.
+
+**Tools | VersionLens** holds the same actions plus **Restart Server**, and each one is also in Find Action.
 
 ## Build
 
