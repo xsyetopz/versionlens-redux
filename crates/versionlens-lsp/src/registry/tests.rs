@@ -1,3 +1,4 @@
+use super::tools::terraform;
 use super::*;
 
 #[test]
@@ -83,4 +84,105 @@ fn parses_each_response_shape() {
 fn reads_helm_index_entries() {
     let index = "apiVersion: v1\nentries:\n  other:\n  - version: 9.9.9\n  redis:\n  - apiVersion: v2\n    version: 17.1.0\n    dependencies:\n    - name: common\n      version: 2.0.0\n  - version: \"17.0.0\"\n  zed:\n  - version: 1.0.0\n";
     assert_eq!(helm(index, "redis"), ["17.1.0", "17.0.0"]);
+}
+
+#[test]
+fn reads_runtime_and_tool_registries() {
+    let parse = |id: &str, body: &str, name: &str| get(id).unwrap().parse(body, name).unwrap().list;
+    assert_eq!(
+        parse(
+            "golang",
+            r#"[{"version":"go1.22.1"},{"version":"go1.21.0"}]"#,
+            "golang"
+        ),
+        ["1.22.1", "1.21.0"]
+    );
+    assert_eq!(
+        parse(
+            "python",
+            r#"[{"version":"3.12.1"},{"version":"3.11.7"}]"#,
+            "python"
+        ),
+        ["3.12.1", "3.11.7"]
+    );
+    assert_eq!(
+        parse(
+            "rust",
+            "Version 1.80.0 (2024-07-25)\n===\nVersion 1.79.0 (2024-06-13)\n",
+            "rust"
+        ),
+        ["1.80.0", "1.79.0"]
+    );
+    assert_eq!(
+        parse(
+            "ruby",
+            "- version: 3.3.0\n  date: x\n- version: 3.2.2\n",
+            "ruby"
+        ),
+        ["3.3.0", "3.2.2"]
+    );
+    assert_eq!(
+        parse(
+            "terraform-cli",
+            r#"{"versions":{"1.9.0":{},"1.8.5":{}}}"#,
+            "terraform"
+        ),
+        ["1.8.5", "1.9.0"]
+    );
+    assert_eq!(
+        parse(
+            "luarocks",
+            r#"{"repository":{"luasocket":{"3.0-1":[],"2.0-1":[]}}}"#,
+            "luasocket"
+        ),
+        ["2.0-1", "3.0-1"]
+    );
+    assert_eq!(
+        parse("elm", r#"{"1.0.0":1,"1.1.0":2}"#, "elm/core"),
+        ["1.0.0", "1.1.0"]
+    );
+    assert_eq!(
+        parse(
+            "xmake",
+            "add_versions(\"1.2.3\", \"h\")\nadd_versions(\"github:2.0\", \"h\")",
+            "zlib"
+        ),
+        ["1.2.3", "2.0"]
+    );
+}
+
+#[test]
+fn terraform_reads_providers_and_modules() {
+    assert_eq!(
+        terraform(
+            r#"{"versions":[{"version":"5.0.0"},{"version":"4.9.0"}]}"#,
+            "hashicorp/aws"
+        ),
+        ["5.0.0", "4.9.0"]
+    );
+    assert_eq!(
+        terraform(
+            r#"{"modules":[{"versions":[{"version":"3.0.0"}]}]}"#,
+            "a/b/c"
+        ),
+        ["3.0.0"]
+    );
+    assert_eq!(terraform("not json", "a/b"), Vec::<String>::new());
+    assert_eq!(
+        expand("{tf}", "hashicorp/aws", None).unwrap(),
+        "providers/hashicorp/aws"
+    );
+    assert_eq!(
+        expand("{tf}", "terraform-aws-modules/vpc/aws", None).unwrap(),
+        "modules/terraform-aws-modules/vpc/aws"
+    );
+}
+
+#[test]
+fn aliases_tool_names_to_registries() {
+    assert_eq!(alias("terraform"), Some("terraform-cli"));
+    assert_eq!(alias("pipx"), Some("pypi"));
+    assert_eq!(alias("python"), Some("python"));
+    assert_eq!(alias("npm"), Some("npm"));
+    assert_eq!(alias("nonsense"), None);
 }

@@ -87,10 +87,17 @@ fn is_registry_req(req: &str) -> bool {
         || LOCAL.iter().any(|p| req.starts_with(p)))
 }
 
-/// Names that are platforms or toolchains rather than packages.
+/// Names that are platforms or toolchains rather than packages. The check is per registry because
+/// `python` is a runtime in a `PyPI` requirement but the package itself in `.python-version`.
 fn is_package(name: &str, registry: &str) -> bool {
-    !(matches!(name, "php" | "python" | "julia" | "R")
-        || name.contains('$')
+    !(matches!(
+        (registry, name),
+        ("composer", "php")
+            | ("pypi", "python")
+            | ("julia", "julia")
+            | ("cran", "R")
+            | ("luarocks", "lua")
+    ) || name.contains('$')
         || (registry == "composer"
             && (name.starts_with("ext-")
                 || name.starts_with("lib-")

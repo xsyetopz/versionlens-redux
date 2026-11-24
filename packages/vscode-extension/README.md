@@ -28,9 +28,9 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 
 | Registry | Files |
 | --- | --- |
-| crates.io | `Cargo.toml` |
-| npm | `package.json`, `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `.nvmrc`, `.node-version`, `.bun-version` |
-| JSR and npm | `deno.json`, `deno.jsonc`, `import_map.json` |
+| crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables) |
+| npm | `package.json`, `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `.nvmrc`, `.node-version`, `.bun-version` |
+| JSR and npm | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
 | Unity | `Packages/manifest.json` |
 | Packagist | `composer.json` |
 | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in` |
@@ -38,14 +38,14 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | RubyGems | `Gemfile`, `*.gemspec` |
 | CocoaPods | `Podfile` |
 | pub.dev | `pubspec.yaml`, `pubspec_overrides.yaml` |
-| NuGet | `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies` |
-| Maven Central | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `build.sbt`, `deps.edn` |
+| NuGet | `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `project.json`, `global.json` |
+| Maven Central | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `build.sbt`, `deps.edn`, `.mvn/extensions.xml`, `*.main.kts` |
 | Clojars | `project.clj` |
 | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
-| Julia General | `Project.toml`, `JuliaProject.toml` |
+| Julia General | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
 | Haxelib | `haxelib.json`, `*.hxml` |
-| Docker registries | `Dockerfile`, `Containerfile`, Compose files, `kustomization.yaml` |
-| GitHub tags | workflows and `action.yml`, `Package.swift`, `Cartfile`, `CMakeLists.txt`, `*.cmake` |
+| Docker registries | `Dockerfile`, `Containerfile`, `*.dockerfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, `devcontainer.json`, GitLab CI and CircleCI configs |
+| GitHub tags | workflows (including nested folders), `.github/actions/**`, `action.yml`, `Package.swift`, `Cartfile`, `Cartfile.private`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
 | Helm repositories | `Chart.yaml` |
 | Ansible Galaxy | `requirements.yml`, `galaxy.yml` |
 | Terraform Registry | `*.tf`, `*.tofu` |
@@ -56,7 +56,10 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | MetaCPAN | `cpanfile` |
 | DUB | `dub.json`, `dub.selections.json`, `dub.sdl` |
 | opam | `opam`, `*.opam`, `dune-project` |
-| Hackage | `*.cabal`, `cabal.project` |
+| Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
+| Runtimes | `rust-toolchain`, `rust-toolchain.toml`, `.ruby-version`, `.python-version`, `.terraform-version`, `.tool-versions`, `mise.toml`, `gradle-wrapper.properties` |
+| LuaRocks | `*.rockspec` |
+| xmake repository | `xmake.lua` |
 
 The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server.
 

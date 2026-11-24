@@ -6,6 +6,8 @@ use serde_json::Value;
 use crate::extract::regex;
 use crate::version::Bare;
 
+mod tools;
+
 /// How a registry response lists versions.
 #[derive(Debug)]
 pub(crate) enum Parse {
@@ -270,14 +272,17 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Exact,
         None,
     ),
-    json(
-        "terraform",
-        "https://registry.terraform.io/v1/providers/{name}/versions",
-        "versions",
-        "version",
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        parse: Parse::Fn(tools::terraform),
+        ..json(
+            "terraform",
+            "https://registry.terraform.io/v1/{tf}/versions",
+            "",
+            "",
+            Bare::Exact,
+            None,
+        )
+    },
     json(
         "bazel",
         "https://bcr.bazel.build/modules/{name}/metadata.json",
@@ -369,10 +374,7 @@ const PAGES: &[(&str, &str)] = &[
         "galaxy",
         "https://galaxy.ansible.com/ui/repo/published/{ns}/{short}/",
     ),
-    (
-        "terraform",
-        "https://registry.terraform.io/providers/{name}",
-    ),
+    ("terraform", "https://registry.terraform.io/{tf}"),
     ("bazel", "https://registry.bazel.build/modules/{name}"),
     ("vcpkg", "https://vcpkg.io/en/package/{name}"),
     ("conan", "https://conan.io/center/recipes/{name}"),
@@ -387,6 +389,7 @@ const PAGES: &[(&str, &str)] = &[
 pub(crate) fn page(id: &str, name: &str) -> String {
     let template = PAGES
         .iter()
+        .chain(tools::PAGES)
         .find(|(key, _)| *key == id)
         .map_or("https://osv.dev/list?q={name}", |(_, t)| t);
     expand(template, name, None)
@@ -395,18 +398,26 @@ pub(crate) fn page(id: &str, name: &str) -> String {
 
 /// The registry with this id.
 pub(crate) fn get(id: &str) -> Option<&'static Registry> {
-    REGISTRIES.iter().find(|r| r.id == id)
+    REGISTRIES.iter().chain(tools::ROWS).find(|r| r.id == id)
 }
 
 /// Maps a registry named inside a requirement, such as deno's `npm:` prefix, to its row.
 pub(crate) fn alias(name: &str) -> Option<&'static str> {
-    get(name).map(|r| r.id)
+    // Tool-version files name tools differently from the registries that answer for them.
+    const TOOLS: &[(&str, &str)] = &[("terraform", "terraform-cli"), ("pipx", "pypi")];
+    TOOLS
+        .iter()
+        .find(|(tool, _)| *tool == name)
+        .and_then(|(_, id)| get(id))
+        .or_else(|| get(name))
+        .map(|r| r.id)
 }
 
 /// Fills a URL template. Placeholders: `{name}`, `{lower}`, `{enc}` (npm scope escaping),
 /// `{go}` (module case escaping), `{cargo}` (sparse index path), `{path}` (Maven group path),
 /// `{ns}`/`{short}` (the halves of `ns.name`), `{first}`/`{First}` (first letter),
-/// `{docker}` (Docker Hub repository), and `{source}` (the repository the manifest names).
+/// `{tf}` (Terraform provider or module path), `{docker}` (Docker Hub repository), and
+/// `{source}` (the repository the manifest names).
 ///
 /// # Errors
 /// Names a placeholder that cannot be filled for this package.
@@ -436,6 +447,14 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
         ("{path}", format!("{}/{artifact}", group.replace('.', "/"))),
         ("{ns}", ns.to_owned()),
         ("{short}", short.to_owned()),
+        (
+            "{tf}",
+            if name.matches('/').count() >= 2 {
+                format!("modules/{name}")
+            } else {
+                format!("providers/{name}")
+            },
+        ),
         ("{first}", first.clone()),
         ("{First}", first.to_uppercase()),
     ] {

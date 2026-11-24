@@ -1,5 +1,5 @@
 //! Every supported manifest as one data row: the files it covers, how to read it, and which
-//! registry answers for its dependencies. Supporting a new file type means adding a row to `FILE_TYPES` in `catalog/rows.rs`.
+//! registry answers for its dependencies. Supporting a new file type means adding a row to the matching module in `catalog/rows/`.
 
 use crate::extract::Rule;
 use crate::flatten::Format;
@@ -9,7 +9,7 @@ mod rows;
 pub(crate) use rows::FILE_TYPES;
 
 /// A kind of manifest.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct FileType {
     pub(crate) id: &'static str,
     /// Matched against the end of the path, case-insensitively; `*` matches within one segment.
@@ -49,18 +49,26 @@ fn glob(pattern: &str, text: &str) -> bool {
     }
 }
 
+/// Matches path segments against pattern segments from the end; a `**` segment spans any
+/// number of directories, so `.github/workflows/**/*.yml` reaches nested workflow folders.
+fn tail_matches(parts: &[&str], segments: &[&str]) -> bool {
+    match parts.split_last() {
+        None => true,
+        Some((&"**", rest)) => (0..=segments.len()).any(|n| tail_matches(rest, &segments[..n])),
+        Some((part, rest)) => match segments.split_last() {
+            Some((segment, before)) => glob(part, segment) && tail_matches(rest, before),
+            None => false,
+        },
+    }
+}
+
 /// Whether `pattern` matches the end of `path`, case-insensitively, segment by segment.
 pub(crate) fn path_matches(pattern: &str, path: &str) -> bool {
     let lower = path.replace('\\', "/").to_ascii_lowercase();
     let pattern = pattern.to_ascii_lowercase();
     let segments: Vec<&str> = lower.split('/').collect();
     let parts: Vec<&str> = pattern.split('/').collect();
-    segments.len() >= parts.len()
-        && parts
-            .iter()
-            .rev()
-            .zip(segments.iter().rev())
-            .all(|(p, s)| glob(p, s))
+    tail_matches(&parts, &segments)
 }
 
 impl FileType {
