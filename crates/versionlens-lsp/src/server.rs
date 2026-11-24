@@ -15,10 +15,10 @@ use crate::catalog::{FileType, file_type};
 use crate::config::Settings;
 use crate::extract::{Dep, extract};
 use crate::http::Http;
-use crate::osv::{self, Query};
-use crate::registry::{self, Registry};
+use crate::osv::Query;
+use crate::registry;
 use crate::render;
-use crate::version::{Req, Version};
+use crate::version::Version;
 
 const COMMANDS: &[&str] = &[
     "versionlens.update",
@@ -28,8 +28,6 @@ const COMMANDS: &[&str] = &[
     "versionlens.toggle",
     "versionlens.open",
 ];
-/// How long a failed lookup is remembered before the next edit retries it.
-const RETRY: Duration = Duration::from_secs(60);
 /// Lookups finishing within this window share one refresh.
 const COALESCE: Duration = Duration::from_millis(120);
 
@@ -431,160 +429,6 @@ impl Server {
         self.dirty = Some(Instant::now());
     }
 
-    fn schedule_all(&mut self) {
-        let uris: Vec<String> = self.docs.keys().cloned().collect();
-        for uri in uris {
-            self.schedule(&uri);
-        }
-    }
-
-    fn schedule(&mut self, uri: &str) {
-        let Some(doc) = self.docs.get(uri) else {
-            return;
-        };
-        let ttl = self.settings.cache;
-        let wanted: Vec<Key> = doc.deps.iter().map(key).collect();
-        for key in wanted {
-            let fresh = self
-                .cache
-                .get(&key)
-                .is_some_and(|e| e.at.elapsed() < if e.result.is_ok() { ttl } else { RETRY });
-            let Some(registry) = registry::get(key.0) else {
-                continue;
-            };
-            if fresh || !self.inflight.insert(key.clone()) {
-                continue;
-            }
-            self.fetch(registry, key);
-        }
-        self.start_progress();
-        self.check_vulns(uri);
-    }
-
-    fn fetch(&self, registry: &'static Registry, key: Key) {
-        let (http, tx) = (self.http.clone(), self.events.0.clone());
-        self.runtime.spawn(async move {
-            let started = Instant::now();
-            let result = http.versions(registry, &key.1, key.2.as_deref()).await;
-            drop(tx.send(Event::Fetched(key, result, started.elapsed())));
-        });
-    }
-
-    fn event(&mut self, event: Event) {
-        match event {
-            Event::Fetched(key, result, took) => {
-                self.inflight.remove(&key);
-                let result = match result {
-                    Ok(found) => {
-                        self.log(
-                            MessageType::LOG,
-                            format!(
-                                "{} {}: {} versions in {took:?}",
-                                key.0,
-                                key.1,
-                                found.list.len()
-                            ),
-                        );
-                        let mut versions: Vec<Version> = found
-                            .list
-                            .iter()
-                            .filter_map(|v| Version::parse(v))
-                            .collect();
-                        versions.sort();
-                        Ok(Arc::new(Found {
-                            versions,
-                            tagged: found.latest.as_deref().and_then(Version::parse),
-                        }))
-                    }
-                    Err(error) => {
-                        self.log(
-                            MessageType::WARNING,
-                            format!("{} {}: {error}", key.0, key.1),
-                        );
-                        Err(error)
-                    }
-                };
-                self.cache.insert(
-                    key,
-                    Entry {
-                        at: Instant::now(),
-                        result,
-                    },
-                );
-                let uris: Vec<String> = self.docs.keys().cloned().collect();
-                for uri in uris {
-                    self.check_vulns(&uri);
-                }
-            }
-            Event::Osv(queries, result) => {
-                for query in &queries {
-                    self.osv_inflight.remove(query);
-                }
-                match result {
-                    Ok(ids) => self.vulns.extend(queries.into_iter().zip(ids)),
-                    Err(error) => {
-                        self.log(
-                            MessageType::ERROR,
-                            format!("vulnerability check failed: {error}"),
-                        );
-                        if !self.osv_warned {
-                            self.osv_warned = true;
-                            let text = format!(
-                                "VersionLens could not check vulnerabilities: {error}. Details are in the VersionLens output."
-                            );
-                            self.notify(
-                                "window/showMessage",
-                                json!({ "type": MessageType::WARNING, "message": text }),
-                            );
-                        }
-                    }
-                }
-            }
-        }
-        self.dirty.get_or_insert_with(Instant::now);
-    }
-
-    /// Asks OSV about a document once every lookup it needs has finished.
-    fn check_vulns(&mut self, uri: &str) {
-        let Some(doc) = self.docs.get(uri) else {
-            return;
-        };
-        if !self.settings.vulnerabilities
-            || doc.deps.iter().any(|d| self.inflight.contains(&key(d)))
-        {
-            return;
-        }
-        let queries: Vec<Query> = doc
-            .deps
-            .iter()
-            .filter_map(|dep| self.query(dep))
-            .filter(|q| !self.vulns.contains_key(q) && !self.osv_inflight.contains(q))
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect();
-        if queries.is_empty() {
-            return;
-        }
-        self.osv_inflight.extend(queries.iter().cloned());
-        let (http, tx) = (self.http.clone(), self.events.0.clone());
-        self.runtime.spawn(async move {
-            let result = osv::query(&http, &queries).await;
-            drop(tx.send(Event::Osv(queries, result)));
-        });
-    }
-
-    fn query(&self, dep: &Dep) -> Option<Query> {
-        let ecosystem = registry::get(dep.registry)?.osv?;
-        let found = self.cache.get(&key(dep))?.result.as_ref().ok()?;
-        let req = Req::parse(&dep.req, registry::get(dep.registry)?.bare)?;
-        let version = render::current(&req, &found.versions)?;
-        Some(Query {
-            ecosystem,
-            name: dep.name.clone(),
-            version: version.raw,
-        })
-    }
-
     fn flush(&mut self) {
         self.dirty = None;
         for doc in self.docs.values() {
@@ -607,51 +451,9 @@ impl Server {
         self.report_progress();
         self.run_deferred_updates();
     }
-
-    fn start_progress(&mut self) {
-        if self.caps.progress && self.progress.is_none() && !self.inflight.is_empty() {
-            let token = format!("versionlens/{}", self.next_id + 1);
-            self.progress = Some((token.clone(), false, self.inflight.len()));
-            self.request(
-                "window/workDoneProgress/create",
-                json!({ "token": token }),
-                Pending::Progress(token),
-            );
-        } else if let Some((_, _, total)) = &mut self.progress {
-            *total = (*total).max(self.inflight.len());
-        }
-    }
-
-    fn begin_progress(&mut self, token: &str) {
-        if let Some((current, started, total)) = &mut self.progress
-            && current == token
-        {
-            *started = true;
-            let value = json!({ "kind": "begin", "title": "VersionLens", "message": format!("checking {total} packages"), "percentage": 0 });
-            self.notify("$/progress", json!({ "token": token, "value": value }));
-        }
-    }
-
-    fn report_progress(&mut self) {
-        let Some((token, started, total)) = self.progress.clone() else {
-            return;
-        };
-        if self.inflight.is_empty() {
-            self.progress = None;
-            if started {
-                self.notify(
-                    "$/progress",
-                    json!({ "token": token, "value": { "kind": "end", "message": "done" } }),
-                );
-            }
-        } else if started {
-            let done = total.saturating_sub(self.inflight.len());
-            let value = json!({ "kind": "report", "message": format!("{done}/{total}"), "percentage": done * 100 / total.max(1) });
-            self.notify("$/progress", json!({ "token": token, "value": value }));
-        }
-    }
 }
 
+mod lookups;
 mod requests;
 
 #[cfg(test)]
