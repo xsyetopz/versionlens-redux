@@ -1,8 +1,11 @@
 package com.versionlens.jetbrains
 
 import com.intellij.codeInsight.intention.IntentionManager
+import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
@@ -25,7 +28,9 @@ import com.intellij.testFramework.junit5.fixture.moduleFixture
 import com.intellij.testFramework.junit5.fixture.projectFixture
 import com.intellij.testFramework.junit5.fixture.psiFileFixture
 import com.intellij.testFramework.junit5.fixture.sourceRootFixture
+import com.intellij.ui.AnimatedIcon
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Dispatchers
@@ -87,6 +92,7 @@ class LiveTest {
         notes.get().let { open(project, it) }
         assertTrue(!logged(project, "notes.txt"), "other files never reach the server")
         settings(project, client, file)
+        toolbar(project, client, file, notes.get())
         actions(project, client, file, editor)
     }
 
@@ -100,19 +106,66 @@ class LiveTest {
         println("PASS settings apply without a restart")
     }
 
+    // The editor toolbar mirrors the VS Code title icons: shown only on manifests, icons that
+    // follow
+    // the server's status, and the update levels and tools in the More popup.
+    private fun toolbar(project: Project, client: LspClient, file: PsiFile, other: PsiFile) {
+        val provider = ToolbarProvider()
+        assertTrue(
+            provider.collectNotificationData(project, file.virtualFile) != null,
+            "toolbar on the manifest",
+        )
+        assertTrue(
+            provider.collectNotificationData(project, other.virtualFile) == null,
+            "no toolbar on other files",
+        )
+        until("an idle status for the manifest") {
+            Client.statusOf(project, file.virtualFile)?.takeIf { !it.busy && it.enabled }
+        }
+        assertTrue(Icons.progress is AnimatedIcon, "the busy icon animates")
+        assertEquals(Icons.active, update(project, file, "versionlens.toggle").icon)
+        run(project, file, "versionlens.toggle")
+        until("the toggle icon turns inactive") {
+            hints(client, file).isEmpty() &&
+                update(project, file, "versionlens.toggle").icon == Icons.inactive
+        }
+        run(project, file, "versionlens.toggle")
+        until("the toggle icon turns active") {
+            update(project, file, "versionlens.toggle").icon == Icons.active
+        }
+        assertEquals(Icons.tagInactive, update(project, file, "versionlens.togglePrereleases").icon)
+        run(project, file, "versionlens.togglePrereleases")
+        until("the prerelease tag icon turns on") {
+            update(project, file, "versionlens.togglePrereleases").icon == Icons.tagActive
+        }
+        run(project, file, "versionlens.togglePrereleases")
+        until("the prerelease tag icon turns off") {
+            update(project, file, "versionlens.togglePrereleases").icon == Icons.tagInactive
+        }
+        val more =
+            (ActionManager.getInstance().getAction("versionlens.more") as ActionGroup)
+                .getChildren(null)
+                .mapNotNull { ActionManager.getInstance().getId(it) }
+        assertTrue(
+            more.containsAll(listOf("versionlens.updateAllMenu", "versionlens.sort")),
+            "More holds the update levels and sort: $more",
+        )
+        println("PASS toolbar: icons follow the status; More holds $more")
+    }
+
     private fun actions(project: Project, client: LspClient, file: PsiFile, editor: Editor) {
         run(project, file, "versionlens.toggle")
         until("toggle hides the hints") {
-            logged(project, "VersionLens hidden") && hints(client, file).isEmpty()
+            logged(project, "versions hidden") && hints(client, file).isEmpty()
         }
         run(project, file, "versionlens.toggle")
         until("toggle shows them again") {
-            logged(project, "VersionLens shown") && hints(client, file).size == 2
+            logged(project, "versions shown") && hints(client, file).size == 2
         }
         run(project, file, "versionlens.clearCache")
         run(project, file, "versionlens.refresh")
         until("clearCache and refresh run") { logged(project, "command versionlens.refresh") }
-        run(project, file, "versionlens.updateAll")
+        run(project, file, "versionlens.updateAll.latest")
         until("updateAll edits the document") { !editor.document.text.contains("==2.31.0") }
         println("PASS updateAll: ${editor.document.text.trim().replace("\n", " | ")}")
         run(project, file, "versionlens.showOutput")
@@ -125,17 +178,23 @@ class LiveTest {
         println("PASS actions")
     }
 
-    private fun run(project: Project, file: PsiFile, id: String) {
+    private fun event(project: Project, file: PsiFile, id: String): AnActionEvent {
         val action = ActionManager.getInstance().getAction(id) ?: error("$id is not registered")
         val context =
             SimpleDataContext.builder()
                 .add(CommonDataKeys.PROJECT, project)
                 .add(CommonDataKeys.VIRTUAL_FILE, file.virtualFile)
                 .build()
-        val event = TestActionEvent.createTestEvent(action, context)
-        action.update(event)
+        return TestActionEvent.createTestEvent(action, context).also { action.update(it) }
+    }
+
+    private fun update(project: Project, file: PsiFile, id: String): Presentation =
+        event(project, file, id).presentation
+
+    private fun run(project: Project, file: PsiFile, id: String) {
+        val event = event(project, file, id)
         assertTrue(event.presentation.isEnabled, "$id is enabled")
-        action.actionPerformed(event)
+        ActionManager.getInstance().getAction(id).actionPerformed(event)
     }
 
     private fun open(project: Project, file: PsiFile): Editor =

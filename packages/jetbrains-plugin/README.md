@@ -52,7 +52,7 @@ Applying the page sends the new settings to every running server. Changing the s
 
 Each manifest the server reads gets an editor toolbar, as in the VS Code editor title bar:
 
-- The versions toggle: blue when versions are shown, grey when hidden, orange while lookups run, red when lookups failed (a click opens the log).
+- The versions toggle: blue when versions are shown, grey when hidden, orange with spinning arrows while lookups run, red when lookups failed (a click opens the log).
 - The prerelease toggle.
 - **More**: update all dependencies or the whole workspace to latest, major, minor, or patch; sort dependencies; run the install command; refresh; clear the cache; show the log.
 

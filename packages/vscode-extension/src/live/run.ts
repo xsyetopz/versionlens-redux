@@ -2,14 +2,10 @@
 // live registries and OSV. `just vscode-live` builds this file and launches VS Code with it.
 import {
 	type CodeAction,
-	type CodeLens,
 	commands,
 	ConfigurationTarget,
-	type Diagnostic,
 	extensions,
 	type Hover,
-	type InlayHint,
-	languages,
 	MarkdownString,
 	Position,
 	Range,
@@ -19,67 +15,18 @@ import {
 	workspace
 } from "vscode";
 
-const failures: string[] = [];
-const all = new Range(0, 0, 1000, 0);
-
-const report = (name: string, ok: boolean, detail = ""): void => {
-	console.info(
-		`${ok ? "PASS" : "FAIL"} ${name}${detail === "" ? "" : ` — ${detail}`}`
-	);
-	if (!ok) {
-		failures.push(name);
-	}
-};
-
-const sleep = async (ms: number): Promise<void> => {
-	await new Promise((resolve) => {
-		setTimeout(resolve, ms);
-	});
-};
-
-/** Polls `probe` every 100 ms until it holds or `timeout` passes. */
-const eventually = (
-	probe: () => Promise<boolean>,
-	timeout = 15_000
-): Promise<boolean> => {
-	const end = Date.now() + timeout;
-	const attempt = async (): Promise<boolean> => {
-		if (await probe()) {
-			return true;
-		}
-		if (Date.now() > end) {
-			return false;
-		}
-		await sleep(100);
-		return attempt();
-	};
-	return attempt();
-};
-
-const hints = (uri: Uri): Thenable<InlayHint[]> =>
-	commands.executeCommand<InlayHint[]>(
-		"vscode.executeInlayHintProvider",
-		uri,
-		all
-	);
-const lenses = (uri: Uri): Thenable<CodeLens[]> =>
-	commands.executeCommand<CodeLens[]>(
-		"vscode.executeCodeLensProvider",
-		uri,
-		100
-	);
-const label = (hint: InlayHint): string =>
-	typeof hint.label === "string"
-		? hint.label
-		: hint.label.map((part) => part.value).join("");
-const hintCount = (uri: Uri, count: number) => async (): Promise<boolean> => {
-	const found = await hints(uri);
-	return found.length === count;
-};
-const ours = (uri: Uri): Diagnostic[] =>
-	languages
-		.getDiagnostics(uri)
-		.filter(({ source }) => source === "VersionLens");
+import { type Keys, menus } from "./menus.ts";
+import {
+	eventually,
+	failures,
+	hintCount,
+	hints,
+	label,
+	lenses,
+	ours,
+	report,
+	sleep
+} from "./probe.ts";
 
 const features = async (manifest: Uri, other: Uri): Promise<void> => {
 	const started = Date.now();
@@ -100,6 +47,13 @@ const features = async (manifest: Uri, other: Uri): Promise<void> => {
 	const hxml = Uri.joinPath(manifest, "..", "libraries.hxml");
 	await workspace.openTextDocument(hxml);
 	report("libraries.hxml hints", await eventually(hintCount(hxml, 2)));
+	// The original matched `dockerfile` and `*.dockerfile`; globs match regardless of case.
+	const dockerfile = Uri.joinPath(manifest, "..", "dockerfile");
+	await workspace.openTextDocument(dockerfile);
+	report(
+		"lowercase dockerfile hints",
+		await eventually(hintCount(dockerfile, 1))
+	);
 	const otherHints = await hints(other);
 	report(
 		"other files get nothing",
@@ -235,7 +189,12 @@ export const run = async (): Promise<void> => {
 	if (root === undefined || logs === undefined) {
 		throw new Error("open the live workspace and set VERSIONLENS_LIVE_LOGS");
 	}
-	await extensions.getExtension("xsyetopz.versionlens-redux")?.activate();
+	const api: { contextKeys: Keys } | undefined = await extensions
+		.getExtension<{ contextKeys: Keys }>("xsyetopz.versionlens-redux")
+		?.activate();
+	if (api === undefined) {
+		throw new Error("the extension did not activate");
+	}
 	const manifest = Uri.joinPath(root, "requirements.txt");
 	const other = Uri.joinPath(root, "main.ts");
 	const editor = await window.showTextDocument(
@@ -245,6 +204,7 @@ export const run = async (): Promise<void> => {
 	await features(manifest, other);
 	await assists(manifest);
 	await settings(manifest);
+	await menus(editor, api.contextKeys);
 	await palette(editor);
 	await sleep(500);
 	await output(logs);

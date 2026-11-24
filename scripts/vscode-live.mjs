@@ -19,6 +19,7 @@ await Bun.write(
 	join(workspace, "libraries.hxml"),
 	"-lib heaps:1.10.0\n-lib format\n"
 );
+await Bun.write(join(workspace, "dockerfile"), "FROM alpine:3.18\n");
 await Bun.write(join(workspace, "main.ts"), "export const x = 1;\n");
 const build = await Bun.build({
 	entrypoints: ["packages/vscode-extension/src/live/run.ts"],

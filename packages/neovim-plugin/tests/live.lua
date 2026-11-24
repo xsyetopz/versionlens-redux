@@ -80,16 +80,15 @@ check("requirements.txt attaches and gets an inlay hint per dependency", functio
 end)
 
 check("requests 2.31.0 gets its OSV advisories, not a failed check", function()
+  -- A failed OSV check is logged and shown as a message, never a diagnostic, so only the
+  -- advisory's own code proves the check ran.
   wait("an advisory diagnostic", function()
     for _, d in ipairs(vim.diagnostic.get(reqs)) do
-      if d.lnum == 0 and d.source == "VersionLens" and d.code ~= "update-available" then
+      if d.lnum == 0 and d.source == "VersionLens" and d.code == "vulnerable" then
         return true
       end
     end
   end)
-  for _, d in ipairs(vim.diagnostic.get(reqs)) do
-    assert(d.code ~= "vulnerability-check-failed", d.message)
-  end
 end)
 
 check("hover describes the dependency", function()

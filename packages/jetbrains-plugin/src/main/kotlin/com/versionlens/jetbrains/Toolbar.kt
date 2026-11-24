@@ -7,13 +7,18 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.toolbarLayout.ToolbarLayoutStrategy
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.ui.AnimatedIcon
 import com.intellij.ui.EditorNotificationProvider
 import com.intellij.util.ui.JBUI
+import java.awt.Component
+import java.awt.Graphics
+import java.awt.Graphics2D
 import java.util.function.Function
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -25,10 +30,41 @@ internal object Icons {
 
     val active = load("toggle_active")
     val inactive = load("toggle_inactive")
-    val progress = load("toggle_progress")
+    private val mark = load("progress_mark")
+    private val arrows = load("progress_arrows")
+
+    // The VS Code icon spins its arrows around (7.5, 8) every 1.8 s; twelve frames of 150 ms match.
+    val progress: Icon =
+        AnimatedIcon(150, *Array<Icon>(12) { RotatedLayer(mark, arrows, it * 30.0) })
     val death = load("toggle_death")
     val tagActive = load("tag_active")
     val tagInactive = load("tag_inactive")
+}
+
+/** Paints [base], then [layer] turned by [degrees] around the VS Code icon's rotation centre. */
+private class RotatedLayer(
+    private val base: Icon,
+    private val layer: Icon,
+    private val degrees: Double,
+) : Icon {
+    override fun getIconWidth(): Int = base.iconWidth
+
+    override fun getIconHeight(): Int = base.iconHeight
+
+    override fun paintIcon(c: Component?, g: Graphics, x: Int, y: Int) {
+        base.paintIcon(c, g, x, y)
+        val turned = g.create() as Graphics2D
+        try {
+            turned.rotate(
+                Math.toRadians(degrees),
+                x + iconWidth * 7.5 / 16,
+                y + iconHeight * 8.0 / 16,
+            )
+            layer.paintIcon(c, turned, x, y)
+        } finally {
+            turned.dispose()
+        }
+    }
 }
 
 /** Shows or hides the versions; its icon shows the server state: busy, failed, shown, or hidden. */
@@ -111,6 +147,8 @@ internal class ToolbarProvider : EditorNotificationProvider, DumbAware {
                 ActionManager.getInstance()
                     .createActionToolbar("VersionLensEditorToolbar", group as ActionGroup, true)
             toolbar.targetComponent = editor.component
+            // Three buttons, the last a popup, stay on one line however narrow the editor is.
+            toolbar.layoutStrategy = ToolbarLayoutStrategy.NOWRAP_STRATEGY
             JPanel(java.awt.BorderLayout()).apply {
                 border = JBUI.Borders.empty()
                 add(toolbar.component, java.awt.BorderLayout.WEST)
