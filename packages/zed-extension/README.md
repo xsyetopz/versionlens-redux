@@ -29,9 +29,21 @@ Zed starts language servers per language, not per file name. The extension regis
 }
 ```
 
-The keys are `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, and `registries`. The [VS Code README](../vscode-extension/README.md#settings) describes each one. A change applies without a restart.
+The keys are those of the [VS Code settings](../vscode-extension/README.md#settings): `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, `registries`, `authorization`, `install`, `files`, `indicators`, `prereleaseTags`, `updateSeverity`, `stats`, `fileTypes`, and `workspaceExclude`. A change applies without a restart.
 
-Zed shows inlay hints only when `inlay_hints.enabled` is on, and code lenses only when `"code_lens": "on"` (or `"menu"`) is in the user settings; Zed's default is `"off"`. The update quick fixes are in the code actions menu.
+Zed shows inlay hints only when `inlay_hints.enabled` is on, and code lenses only when `"code_lens": "on"` (or `"menu"`) is in the user settings; Zed's default is `"off"`.
+
+## Commands
+
+Zed extensions cannot add toolbar buttons or palette commands, so the server offers every VS Code command as a code action in the code actions menu (`editor: toggle code actions`, `cmd-.` or `ctrl-.`), titled `VersionLens: …`:
+
+- Update the file's dependencies to latest, major, minor, or patch, when one of them is outdated.
+- Update the workspace's dependencies at each level.
+- Sort dependencies, when the manifest has a sortable block.
+- Install dependencies, when `install` holds a command for the manifest.
+- Show or hide versions, show or hide prereleases, refresh versions, and clear the cache.
+
+Per-dependency updates are quick fixes in the same menu, and code lenses when they are on. With `"stats": true`, a summary lens above each manifest shows its dependency, outdated, failed, and vulnerable counts, the counterpart of the VS Code title icons.
 
 ## Development
 
