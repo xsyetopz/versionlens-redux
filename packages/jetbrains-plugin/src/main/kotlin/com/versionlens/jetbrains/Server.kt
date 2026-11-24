@@ -87,13 +87,17 @@ internal object Server {
         return Regex("(^|/)" + segments.removeSuffix("/") + "$", RegexOption.IGNORE_CASE)
     }
 
-    /** Patterns for every manifest the server at [path] reads, asked from it once per path. */
+    /** The patterns already asked from the server at [path], or null before [patterns] ran. */
+    fun known(path: String): List<Regex>? = cached?.takeIf { it.first == path }?.second
+
+    /**
+     * Patterns for every manifest the server at [path] reads, asked from it once per path. This
+     * runs the server and waits for it, so callers stay off the EDT and out of read actions.
+     */
     fun patterns(path: String): List<Regex> {
-        cached
-            ?.takeIf { it.first == path }
-            ?.let {
-                return it.second
-            }
+        known(path)?.let {
+            return it
+        }
         val output = ExecUtil.execAndGetOutput(GeneralCommandLine(path, "--file-types"), 10_000)
         if (output.exitCode != 0) {
             throw ExecutionException(

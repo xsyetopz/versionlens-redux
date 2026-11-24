@@ -5,6 +5,7 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.ide.ActivityTracker
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.Lsp4jClient
@@ -13,6 +14,7 @@ import com.intellij.platform.lsp.api.LspClientManager
 import com.intellij.platform.lsp.api.LspIntegrationProvider
 import com.intellij.platform.lsp.api.LspServerNotificationsHandler
 import com.intellij.platform.lsp.api.ProjectWideLspClientDescriptor
+import com.intellij.ui.EditorNotifications
 import java.util.concurrent.atomic.AtomicBoolean
 import org.eclipse.lsp4j.ConfigurationItem
 import org.eclipse.lsp4j.DidChangeConfigurationParams
@@ -71,23 +73,45 @@ internal class Client(project: Project) : ProjectWideLspClientDescriptor(project
 
     companion object {
         private val reported = AtomicBoolean()
+        private val loading = AtomicBoolean()
 
-        /** Whether the server reads [file]; a missing server is reported once per session. */
+        /**
+         * Whether the server reads [file]; a missing server is reported once per session. The IDE
+         * asks inside a read action, where running the server to learn its file types is an error,
+         * so the first ask answers false and learns them in the background.
+         */
         fun supports(project: Project, file: VirtualFile): Boolean {
             val path = Server.path()
-            return try {
-                    path != null && Server.matches(Server.patterns(path), file.path)
+            if (path == null) {
+                report(
+                    project,
+                    "versionlens-lsp not found; set its path in Settings | Tools | VersionLens",
+                )
+                return false
+            }
+            val patterns = Server.known(path)
+            if (patterns == null) load(project, path)
+            return patterns != null && Server.matches(patterns, file.path)
+        }
+
+        // Once the file types are known, the restart asks fileOpened again for every open file,
+        // and the editor toolbars, which answered no while loading, are built again.
+        private fun load(project: Project, path: String) {
+            if (!loading.compareAndSet(false, true)) return
+            ApplicationManager.getApplication().executeOnPooledThread {
+                try {
+                    Server.patterns(path)
+                    if (!project.isDisposed) {
+                        LspClientManager.getInstance(project)
+                            .stopAndRestartClientsIfNeeded(Provider::class.java)
+                        EditorNotifications.getInstance(project).updateAllNotifications()
+                    }
                 } catch (e: Exception) {
                     report(project, "cannot run $path: ${e.message}")
-                    false
+                } finally {
+                    loading.set(false)
                 }
-                .also {
-                    if (path == null)
-                        report(
-                            project,
-                            "versionlens-lsp not found; set its path in Settings | Tools | VersionLens",
-                        )
-                }
+            }
         }
 
         private fun report(project: Project, message: String) {
