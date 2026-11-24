@@ -1,14 +1,13 @@
 #!/usr/bin/env bun
-// Runs packages/vscode-extension/src/live/run.ts in a real, isolated VS Code window against the
-// live registries. VSCODE_BIN overrides the macOS application path.
+// Runs packages/vscode-extension/src/live/run.ts in a real, isolated, hidden VS Code instance
+// against the live registries. VSCODE_BIN overrides the macOS application path.
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 
-const code =
-	process.env["VSCODE_BIN"] ??
-	"/Applications/Visual Studio Code.app/Contents/MacOS/Code";
+import { hidden } from "./vscode-window.mjs";
+
 const root = await mkdtemp(join(tmpdir(), "versionlens-live-"));
 const workspace = join(root, "workspace");
 await Bun.write(
@@ -40,9 +39,8 @@ if (!build.success) {
 	throw new AggregateError(build.logs, "live test build failed");
 }
 const logs = join(root, "logs");
-const child = Bun.spawn(
+const out = await hidden(
 	[
-		code,
 		`--extensionDevelopmentPath=${resolve("packages/vscode-extension")}`,
 		`--extensionTestsPath=${join(root, "tests", "run.js")}`,
 		`--user-data-dir=${join(root, "user")}`,
@@ -54,12 +52,9 @@ const child = Bun.spawn(
 		"--new-window",
 		workspace
 	],
-	{
-		env: { ...process.env, VERSIONLENS_LIVE_LOGS: logs },
-		stderr: "ignore",
-		stdout: "inherit"
-	}
+	{ VERSIONLENS_LIVE_LOGS: logs }
 );
-const exitCode = await child.exited;
 await rm(root, { force: true, recursive: true });
-process.exitCode = exitCode;
+process.stdout.write(out);
+// `open` drops VS Code's exit code; run.ts prints this line only when every check passed.
+process.exitCode = out.includes("LIVE OK") ? 0 : 1;

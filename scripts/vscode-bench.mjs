@@ -1,16 +1,15 @@
 #!/usr/bin/env bun
 // Compares cold starts of the original VersionLens 1.x (installed from the Marketplace) and this
-// extension: each sample is a fresh VS Code window and user profile on the same manifest, and the
-// two alternate so network drift lands on both. VERSIONLENS_BENCH_RUNS sets the samples per side.
+// extension: each sample is a fresh, hidden VS Code instance and user profile on the same
+// manifest, and the two alternate so network drift lands on both. VERSIONLENS_BENCH_RUNS sets the
+// samples per side.
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 
-const app =
-	process.env["VSCODE_BIN"] ??
-	"/Applications/Visual Studio Code.app/Contents/MacOS/Code";
-const cli = join(app, "..", "..", "Resources", "app", "bin", "code");
+import { cli, hidden } from "./vscode-window.mjs";
+
 const runs = Number(process.env["VERSIONLENS_BENCH_RUNS"] ?? "7");
 const root = await mkdtemp(join(tmpdir(), "versionlens-bench-"));
 
@@ -51,7 +50,7 @@ if (!build.success) {
 }
 
 /**
- * One cold start: a fresh profile and window, returning the milliseconds the window printed.
+ * One cold start: a fresh profile and hidden instance, returning the milliseconds it printed.
  *
  * @param {"original" | "rewrite"} side
  * @param {number} index
@@ -69,23 +68,17 @@ const sample = async (side, index) => {
 		join(workspace, ".vscode", "settings.json"),
 		JSON.stringify({ "versionlens.suggestions.showOnStartup": true })
 	);
-	const child = Bun.spawn(
-		[
-			app,
-			`--extensionDevelopmentPath=${sides[side]}`,
-			`--extensionTestsPath=${join(root, "tests", "bench.js")}`,
-			`--user-data-dir=${join(run, "user")}`,
-			`--extensions-dir=${join(run, "extensions")}`,
-			"--disable-workspace-trust",
-			"--skip-welcome",
-			"--skip-release-notes",
-			"--new-window",
-			workspace
-		],
-		{ stderr: "ignore", stdout: "pipe" }
-	);
-	const out = await new Response(child.stdout).text();
-	await child.exited;
+	const out = await hidden([
+		`--extensionDevelopmentPath=${sides[side]}`,
+		`--extensionTestsPath=${join(root, "tests", "bench.js")}`,
+		`--user-data-dir=${join(run, "user")}`,
+		`--extensions-dir=${join(run, "extensions")}`,
+		"--disable-workspace-trust",
+		"--skip-welcome",
+		"--skip-release-notes",
+		"--new-window",
+		workspace
+	]);
 	const line = out.split("\n").find((text) => text.startsWith("BENCH "));
 	if (line === undefined) {
 		throw new Error(`${side} run ${index} printed no result:\n${out}`);

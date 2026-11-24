@@ -236,4 +236,6 @@ export const run = async (): Promise<void> => {
 	if (failures.length > 0) {
 		throw new Error(`failed: ${failures.join(", ")}`);
 	}
+	// The launcher reads this line as the verdict, since `open` drops VS Code's exit code.
+	console.info("LIVE OK");
 };
