@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
 // Compares cold starts of the original VersionLens 1.x (installed from the Marketplace) and this
-// extension: each sample is a fresh, hidden VS Code instance and user profile on the same
-// manifest, and the two alternate so network drift lands on both. VERSIONLENS_BENCH_RUNS sets the
-// samples per side.
+// extension: each sample is a fresh VS Code instance and user profile on the same manifest, and
+// the two alternate so network drift lands on both. VERSIONLENS_BENCH_RUNS sets the samples per
+// side. `just vscode-bench` runs it in the Linux container, off screen.
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 
-import { cli, hidden } from "./vscode-window.mjs";
+import { cli, instance } from "./vscode-instance.mjs";
 
 const runs = Number(process.env["VERSIONLENS_BENCH_RUNS"] ?? "7");
 const root = await mkdtemp(join(tmpdir(), "versionlens-bench-"));
@@ -68,7 +68,7 @@ const sample = async (side, index) => {
 		join(workspace, ".vscode", "settings.json"),
 		JSON.stringify({ "versionlens.suggestions.showOnStartup": true })
 	);
-	const out = await hidden([
+	const { stdout: out } = await instance([
 		`--extensionDevelopmentPath=${sides[side]}`,
 		`--extensionTestsPath=${join(root, "tests", "bench.js")}`,
 		`--user-data-dir=${join(run, "user")}`,

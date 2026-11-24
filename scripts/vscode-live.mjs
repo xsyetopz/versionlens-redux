@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
-// Runs packages/vscode-extension/src/live/run.ts in a real, isolated, hidden VS Code instance
-// against the live registries. VSCODE_BIN overrides the macOS application path.
+// Runs packages/vscode-extension/src/live/run.ts in a real, isolated VS Code instance against the
+// live registries; `just vscode-live` runs it in the Linux container, off screen.
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 
-import { hidden } from "./vscode-window.mjs";
+import { instance } from "./vscode-instance.mjs";
 
 const root = await mkdtemp(join(tmpdir(), "versionlens-live-"));
 const workspace = join(root, "workspace");
@@ -39,7 +39,7 @@ if (!build.success) {
 	throw new AggregateError(build.logs, "live test build failed");
 }
 const logs = join(root, "logs");
-const out = await hidden(
+const { exitCode, stdout } = await instance(
 	[
 		`--extensionDevelopmentPath=${resolve("packages/vscode-extension")}`,
 		`--extensionTestsPath=${join(root, "tests", "run.js")}`,
@@ -55,6 +55,5 @@ const out = await hidden(
 	{ VERSIONLENS_LIVE_LOGS: logs }
 );
 await rm(root, { force: true, recursive: true });
-process.stdout.write(out);
-// `open` drops VS Code's exit code; run.ts prints this line only when every check passed.
-process.exitCode = out.includes("LIVE OK") ? 0 : 1;
+process.stdout.write(stdout);
+process.exitCode = exitCode;

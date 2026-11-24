@@ -70,7 +70,11 @@ just verify
 
 `just verify` is broad and slow: it builds every editor package. Do not run it in the background unless someone explicitly asked for that.
 
-`just vscode-live` packages the extension and drives it in an isolated VS Code window against the live registries and OSV: hints, lenses, quick fixes, hovers, diagnostics, settings, every palette command, restart, and the Output log. It needs a desktop session and the network, so `just verify` leaves it out. Set `VSCODE_BIN` when VS Code is not at the macOS default path.
+`just vscode-live` builds the extension and drives it in an isolated VS Code against the live registries and OSV: hints, lenses, quick fixes, hovers, diagnostics, settings, every palette command, the original 1.x command ids and settings, restart, and the Output log.
+
+`just vscode-bench` installs the original 1.x extension from the Marketplace. It then times cold starts of both extensions on the same `requirements.txt`, in alternating fresh instances, from opening the file until every dependency line has a resolved version lens.
+
+Both run VS Code for Linux in a Docker container (`scripts/vscode-container`), under Xvfb. VS Code on macOS brings its window to the front however it is launched, and the virtual display keeps it off the desktop. They need Docker and the network, so `just verify` leaves them out.
 
 `just jetbrains-live` builds the server and runs `LiveTest` in a headless IntelliJ IDEA, using the plugin's own client against the live registries and OSV: hints, diagnostics, the update intention, hover, settings, every action, and restart. It needs the network and no desktop. Other test runs skip `LiveTest`.
 

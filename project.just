@@ -14,13 +14,24 @@ safe-remotes:
 package:
     bun run package
 
-# Drive the extension in a real VS Code window against the live registries; needs a desktop and the network.
-vscode-live: package
-    bun scripts/vscode-live.mjs
+# Drive the extension in a real VS Code against the live registries; needs Docker and the network.
+vscode-live: (vscode-container "scripts/vscode-live.mjs")
 
-# Time cold starts of the original 1.x extension against this one in fresh VS Code windows; needs the network.
-vscode-bench: package
-    bun scripts/vscode-bench.mjs
+# Time cold starts of the original 1.x extension against this one; needs Docker and the network.
+vscode-bench: (vscode-container "scripts/vscode-bench.mjs")
+
+# Run a VS Code script in a Linux container under Xvfb: VS Code on macOS brings its window in
+# front whatever its launcher asks, and the virtual display keeps it off the desktop. Named
+# volumes keep the Rust toolchain, the crates, and the Linux build between runs.
+[private]
+vscode-container script:
+    bun run build
+    docker build -q -t versionlens-vscode scripts/vscode-container
+    docker run --rm --init -v "{{justfile_directory()}}:/work" -w /work \
+        -v versionlens-rustup:/usr/local/rustup -v versionlens-cargo:/usr/local/cargo/registry \
+        -v versionlens-target:/target -e CARGO_TARGET_DIR=/target -e VERSIONLENS_BENCH_RUNS \
+        -e VERSIONLENS_LSP=/target/release/versionlens-lsp versionlens-vscode \
+        sh -c 'cargo build -q --release -p versionlens-lsp && xvfb-run -a bun {{script}}'
 
 # Drive the JetBrains plugin in a headless IntelliJ IDEA against the live registries; needs the network.
 jetbrains-live:
