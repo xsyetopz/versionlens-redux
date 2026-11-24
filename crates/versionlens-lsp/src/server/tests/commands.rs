@@ -223,6 +223,28 @@ fn updates_every_manifest_in_the_workspace() {
     std::fs::remove_dir_all(root).unwrap();
 }
 
+#[test]
+fn skips_workspace_manifests_an_exclude_glob_matches() {
+    let root = std::env::temp_dir().join(format!("versionlens-wsx-{}", std::process::id()));
+    for dir in ["app", "examples/demo"] {
+        std::fs::create_dir_all(root.join(dir)).unwrap();
+        std::fs::write(root.join(dir).join("package.json"), MANIFEST).unwrap();
+    }
+    let mut opts = options();
+    opts["workspaceExclude"] = json!(["examples/**"]);
+    let client = Client::init(json!({
+        "capabilities": {},
+        "rootUri": workspace::file_uri(&root.to_string_lossy()),
+        "initializationOptions": { "versionlens": opts },
+    }));
+    let edit = client.edit(2, "versionlens.updateWorkspace", &json!(["major"]));
+    let manifest = workspace::file_uri(&root.join("app/package.json").to_string_lossy());
+    let changes = edit["edit"]["changes"].as_object().unwrap();
+    assert_eq!(changes.keys().collect::<Vec<_>>(), [&manifest]);
+    client.stop();
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[cfg(unix)]
 #[test]
 fn installs_when_a_save_changes_dependencies() {

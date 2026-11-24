@@ -75,8 +75,9 @@ pub(super) fn folders(params: &Value) -> Vec<String> {
     }
 }
 
-/// Collects files under `dir` into `out`, skipping package and build directories.
-fn walk(dir: &Path, out: &mut Vec<PathBuf>, visited: &mut usize) {
+/// Collects files under `dir` into `out`, skipping package and build directories and every
+/// directory or file an `exclude` glob matches.
+fn walk(dir: &Path, exclude: &[String], out: &mut Vec<PathBuf>, visited: &mut usize) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -91,13 +92,21 @@ fn walk(dir: &Path, out: &mut Vec<PathBuf>, visited: &mut usize) {
         let Ok(kind) = entry.file_type() else {
             continue;
         };
+        let path = entry.path();
+        let text = path.to_string_lossy();
+        if exclude
+            .iter()
+            .any(|glob| crate::catalog::path_matches(glob, &text))
+        {
+            continue;
+        }
         if kind.is_dir() {
             let hidden = name.starts_with('.') && !HIDDEN_KEEP.contains(&name.as_ref());
             if !hidden && !SKIP.contains(&name.as_ref()) {
-                walk(&entry.path(), out, visited);
+                walk(&path, exclude, out, visited);
             }
         } else if kind.is_file() {
-            out.push(entry.path());
+            out.push(path);
         }
     }
 }
@@ -121,7 +130,8 @@ impl Server {
         let mut files = Vec::new();
         let mut visited = 0;
         for folder in &self.folders {
-            walk(Path::new(folder), &mut files, &mut visited);
+            let exclude = &self.settings.workspace_exclude;
+            walk(Path::new(folder), exclude, &mut files, &mut visited);
         }
         if visited >= MAX_FILES {
             self.log(
