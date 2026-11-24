@@ -164,6 +164,24 @@ const palette = async (editor: TextEditor): Promise<void> => {
 	);
 };
 
+// Keybindings written for the original extension call its command ids.
+const originals = async (manifest: Uri): Promise<void> => {
+	const count = async (): Promise<number> => {
+		const shown = await lenses(manifest);
+		return shown.length;
+	};
+	await commands.executeCommand("versionlens.editor.onHideVersionLenses");
+	report(
+		"original onHideVersionLenses hides lenses",
+		await eventually(async () => (await count()) === 0, 5000)
+	);
+	await commands.executeCommand("versionlens.editor.onShowVersionLenses");
+	report(
+		"original onShowVersionLenses shows them",
+		await eventually(async () => (await count()) > 0, 5000)
+	);
+};
+
 const output = async (logs: string): Promise<void> => {
 	const directory = Uri.file(
 		`${logs}/window1/exthost/xsyetopz.versionlens-redux`
@@ -180,6 +198,12 @@ const output = async (logs: string): Promise<void> => {
 		)
 	);
 	report("output has no errors", !log.includes("[error]"));
+	report(
+		"original settings reach the server",
+		log.includes(
+			"not read, no counterpart in this version: versionlens.cargo.apiUrl"
+		)
+	);
 };
 
 /** Entry point VS Code calls for `--extensionTestsPath`; a thrown error fails the run. */
@@ -206,6 +230,7 @@ export const run = async (): Promise<void> => {
 	await settings(manifest);
 	await menus(editor, api.contextKeys);
 	await palette(editor);
+	await originals(manifest);
 	await sleep(500);
 	await output(logs);
 	if (failures.length > 0) {

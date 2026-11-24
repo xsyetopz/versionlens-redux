@@ -7,6 +7,7 @@ import {
 	window
 } from "vscode";
 
+import { ALIASES } from "./aliases.ts";
 import { parseStored } from "./authorization.ts";
 import { LEVEL_COMMANDS } from "./levels.ts";
 
@@ -106,7 +107,8 @@ export interface Host {
 
 /**
  * Registers the commands the client runs itself: the per-level update commands the menus call,
- * url authentication, the error and progress icons, the output, and restart.
+ * url authentication, the error and progress icons, the output, restart, and the original
+ * command ids.
  */
 export const registerCommands = (host: Host): Disposable[] => {
 	const showOutput = (): void => {
@@ -141,6 +143,11 @@ export const registerCommands = (host: Host): Disposable[] => {
 					level
 				);
 			})
+		),
+		...Object.entries(ALIASES).map(([old, current]) =>
+			commands.registerCommand(old, (...args: unknown[]) =>
+				commands.executeCommand(current, ...args)
+			)
 		)
 	];
 };
