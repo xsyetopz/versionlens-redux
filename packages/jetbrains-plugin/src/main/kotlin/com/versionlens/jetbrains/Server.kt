@@ -77,11 +77,15 @@ internal object Server {
     /**
      * Converts a server glob, where `*` stays within one path segment, to a regex over `/` paths.
      */
-    fun pattern(glob: String): Regex =
-        Regex(
-            "(^|/)" + glob.split("*").joinToString("[^/]*") { Regex.escape(it) } + "$",
-            RegexOption.IGNORE_CASE,
-        )
+    fun pattern(glob: String): Regex {
+        // `**` spans any number of directories, `*` stays within one, as the server matches.
+        val segments =
+            glob.split("/").joinToString("") { part ->
+                if (part == "**") "(?:[^/]+/)*"
+                else part.split("*").joinToString("[^/]*") { Regex.escape(it) } + "/"
+            }
+        return Regex("(^|/)" + segments.removeSuffix("/") + "$", RegexOption.IGNORE_CASE)
+    }
 
     /** Patterns for every manifest the server at [path] reads, asked from it once per path. */
     fun patterns(path: String): List<Regex> {

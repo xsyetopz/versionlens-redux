@@ -38,6 +38,14 @@ check("server globs become segment-anchored patterns", function()
     versionlens.supports("/p/libraries.hxml", patterns),
     "versionlens.supports('/p/libraries.hxml', patterns)"
   )
+  for _, workflow in ipairs({ "/p/.github/workflows/ci.yml", "/p/.GitHub/workflows/a/b.yaml" }) do
+    assert(versionlens.supports(workflow, patterns), "versionlens.supports('" .. workflow .. "')")
+  end
+  assert(versionlens.supports("/p/dockerfile", patterns), "lowercase dockerfile")
+  assert(
+    not versionlens.supports("/p/workflows/ci.yml", patterns),
+    "not versionlens.supports('/p/workflows/ci.yml', patterns)"
+  )
   assert(
     not versionlens.supports("/p/notes.txt", patterns),
     "not versionlens.supports('/p/notes.txt', patterns)"

@@ -19,6 +19,15 @@ class ServerTest {
     }
 
     @Test
+    fun doubleStarSpansAnyNumberOfDirectories() {
+        val patterns = listOf(Server.pattern(".github/workflows/**/*.yml"))
+
+        assertTrue(Server.matches(patterns, "/repo/.github/workflows/ci.yml"))
+        assertTrue(Server.matches(patterns, "/repo/.GitHub/workflows/a/b/ci.yml"))
+        assertFalse(Server.matches(patterns, "/repo/workflows/ci.yml"))
+    }
+
+    @Test
     fun releaseTriplesFollowOsArchAndLibc() {
         assertEquals("aarch64-apple-darwin", Server.triple("Mac OS X", "aarch64", false))
         assertEquals("x86_64-pc-windows-msvc", Server.triple("Windows 11", "amd64", false))

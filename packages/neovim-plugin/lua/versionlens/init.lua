@@ -61,13 +61,38 @@ function M.cmd()
   return nil
 end
 
--- A server glob such as `requirements/*.txt` becomes a Lua pattern anchored at a path segment.
+-- A server glob such as `.github/workflows/**/*.yml` becomes one Lua pattern per path segment,
+-- with `**` kept as is for any number of directories, as the server matches it.
 local function to_pattern(glob)
-  local escaped = glob:lower():gsub("[%^%$%(%)%%%.%[%]%+%-%?]", "%%%0"):gsub("%*", "[^/]*")
-  return "/" .. escaped .. "$"
+  local parts = {}
+  for part in glob:lower():gmatch("[^/]+") do
+    if part == "**" then
+      table.insert(parts, part)
+    else
+      local escaped = part:gsub("[%^%$%(%)%%%.%[%]%+%-%?]", "%%%0"):gsub("%*", "[^/]*")
+      table.insert(parts, "^" .. escaped .. "$")
+    end
+  end
+  return parts
 end
 
---- Lua patterns for every manifest the server reads, asked from the server once, plus the
+-- Whether the glob parts up to `p` match the path segments up to `s`, from the end.
+local function tail_matches(parts, p, segments, s)
+  if p == 0 then
+    return true
+  end
+  if parts[p] == "**" then
+    for n = s, 0, -1 do
+      if tail_matches(parts, p - 1, segments, n) then
+        return true
+      end
+    end
+    return false
+  end
+  return s > 0 and segments[s]:find(parts[p]) ~= nil and tail_matches(parts, p - 1, segments, s - 1)
+end
+
+--- Segment patterns for every manifest the server reads, asked from the server once, plus the
 --- globs of the `files` setting.
 function M.patterns(cmd)
   if patterns then
@@ -89,9 +114,9 @@ end
 
 --- Whether the server reads the file at path.
 function M.supports(path, list)
-  local normalized = "/" .. path:gsub("\\", "/"):lower()
-  for _, pattern in ipairs(list) do
-    if normalized:find(pattern) then
+  local segments = vim.split(path:gsub("\\", "/"):lower(), "/", { plain = true })
+  for _, parts in ipairs(list) do
+    if tail_matches(parts, #parts, segments, #segments) then
       return true
     end
   end

@@ -3,9 +3,7 @@ import process from "node:process";
 
 import {
 	commands,
-	type DocumentFilter,
 	type ExtensionContext,
-	languages,
 	type LogOutputChannel,
 	type TextDocument,
 	type TextEditor,
@@ -22,10 +20,11 @@ import {
 
 import { withAuthorization } from "./authorization.ts";
 import { registerCommands, storedAuthorization } from "./commands.ts";
+import { globRegex, matchesAny } from "./globs.ts";
 import { contextKeys, parseStatus, type Status } from "./status.ts";
 
 let client: LanguageClient | undefined;
-const manifestFilters = new WeakMap<LanguageClient, DocumentFilter[]>();
+const manifestGlobs = new WeakMap<LanguageClient, RegExp[]>();
 /** The latest `versionlens/status` per manifest uri. */
 const statuses = new Map<string, Status>();
 
@@ -58,12 +57,12 @@ const advertisedGlobs = (experimental: unknown): string[] => {
 };
 
 /** The globs of the `versionlens.files` setting, which the server reads as extra manifests. */
-const configuredGlobs = (): DocumentFilter[] =>
+const configuredGlobs = (): RegExp[] =>
 	Object.keys(
 		workspace
 			.getConfiguration("versionlens")
 			.get<Record<string, string>>("files") ?? {}
-	).map((glob) => ({ pattern: `**/${glob}`, scheme: "file" }));
+	).map((glob) => globRegex(glob));
 
 /** Sets the editor title menu context keys from the active editor's manifest status. */
 const showStatus = (editor?: TextEditor): void => {
@@ -85,14 +84,18 @@ const isManifest = (document: TextDocument): boolean => {
 	if (client?.initializeResult === undefined) {
 		return false;
 	}
-	let filters = manifestFilters.get(client);
-	if (filters === undefined) {
-		filters = advertisedGlobs(
+	let globs = manifestGlobs.get(client);
+	if (globs === undefined) {
+		globs = advertisedGlobs(
 			client.initializeResult.capabilities.experimental
-		).map((glob) => ({ pattern: `**/${glob}`, scheme: "file" }));
-		manifestFilters.set(client, filters);
+		).map((glob) => globRegex(glob));
+		manifestGlobs.set(client, globs);
 	}
-	return languages.match([...filters, ...configuredGlobs()], document) > 0;
+	// VS Code's own glob matching is case-sensitive; the server's, and the original's, are not.
+	return (
+		document.uri.scheme === "file" &&
+		matchesAny([...globs, ...configuredGlobs()], document.uri.fsPath)
+	);
 };
 
 // Menus pass the file's Uri and the palette passes nothing; the server reads uri strings and
@@ -207,12 +210,19 @@ const stop = async (): Promise<void> => {
 	await running?.stop();
 };
 
+/** What the extension exports to other extensions and to the live test. */
+export interface Api {
+	/** The editor title menu context keys for a file uri, from the server's latest status. */
+	contextKeys: (uri: string) => Record<string, boolean>;
+}
+
 /**
  * Starts the VersionLens language server for the manifests it supports.
  *
  * @param context Extension context that owns the commands and the output channel.
+ * @returns The context keys per file, as the editor title menus see them.
  */
-export const activate = async (context: ExtensionContext): Promise<void> => {
+export const activate = async (context: ExtensionContext): Promise<Api> => {
 	const output = window.createOutputChannel("VersionLens", { log: true });
 	const restart = async (): Promise<void> => {
 		await stop();
@@ -243,6 +253,7 @@ export const activate = async (context: ExtensionContext): Promise<void> => {
 		})
 	);
 	await start(context, output);
+	return { contextKeys: (uri) => contextKeys(statuses.get(uri)) };
 };
 
 /** Stops the language server. */
