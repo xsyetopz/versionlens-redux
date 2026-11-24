@@ -29,6 +29,8 @@ import com.intellij.testFramework.junit5.fixture.projectFixture
 import com.intellij.testFramework.junit5.fixture.psiFileFixture
 import com.intellij.testFramework.junit5.fixture.sourceRootFixture
 import com.intellij.ui.AnimatedIcon
+import java.awt.image.BufferedImage
+import java.awt.image.BufferedImage.TYPE_INT_ARGB
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -109,6 +111,32 @@ class LiveTest {
     // The editor toolbar mirrors the VS Code title icons: shown only on manifests, icons that
     // follow
     // the server's status, and the update levels and tools in the More popup.
+    /** Paints the busy icon's frames at 2x and checks the arrows turn inside its square. */
+    private fun spinsInPlace() {
+        val (scale, margin, size) = Triple(2.0, 16, 32)
+        val frames = mutableSetOf<List<Int>>()
+        repeat(12) {
+            val image = BufferedImage(size + 2 * margin, size + 2 * margin, TYPE_INT_ARGB)
+            val g = image.createGraphics()
+            g.translate(margin, margin)
+            g.scale(scale, scale)
+            Icons.progress.paintIcon(null, g, 0, 0)
+            g.dispose()
+            val outside =
+                (0 until image.width).sumOf { x ->
+                    (0 until image.height).count { y ->
+                        val far =
+                            maxOf(margin - x, x - margin - size, margin - y, y - margin - size)
+                        far > 2 && image.getRGB(x, y) ushr 24 != 0
+                    }
+                }
+            assertEquals(0, outside, "spinner frame ${it + 1} paints outside its icon")
+            frames += image.getRGB(0, 0, image.width, image.height, null, 0, image.width).toList()
+            Thread.sleep(150)
+        }
+        assertTrue(frames.size > 1, "the spinner frames differ")
+    }
+
     private fun toolbar(project: Project, client: LspClient, file: PsiFile, other: PsiFile) {
         val provider = ToolbarProvider()
         assertTrue(
@@ -123,6 +151,7 @@ class LiveTest {
             Client.statusOf(project, file.virtualFile)?.takeIf { !it.busy && it.enabled }
         }
         assertTrue(Icons.progress is AnimatedIcon, "the busy icon animates")
+        spinsInPlace()
         assertEquals(Icons.active, update(project, file, "versionlens.toggle").icon)
         run(project, file, "versionlens.toggle")
         until("the toggle icon turns inactive") {

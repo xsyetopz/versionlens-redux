@@ -47,9 +47,10 @@ private class RotatedLayer(
     private val layer: Icon,
     private val degrees: Double,
 ) : Icon {
-    override fun getIconWidth(): Int = base.iconWidth
+    // Both layers are 16 px SVGs; a loaded icon can report 1 px before its first paint.
+    override fun getIconWidth(): Int = JBUI.scale(16)
 
-    override fun getIconHeight(): Int = base.iconHeight
+    override fun getIconHeight(): Int = JBUI.scale(16)
 
     override fun paintIcon(c: Component?, g: Graphics, x: Int, y: Int) {
         base.paintIcon(c, g, x, y)
