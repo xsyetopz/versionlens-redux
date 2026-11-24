@@ -8,17 +8,26 @@ import {
 	languages,
 	type LogOutputChannel,
 	type TextDocument,
+	type TextEditor,
+	Uri,
 	window,
 	workspace
 } from "vscode";
 import {
 	DidChangeConfigurationNotification,
 	LanguageClient,
-	type LanguageClientOptions
+	type LanguageClientOptions,
+	type Middleware
 } from "vscode-languageclient/node";
+
+import { withAuthorization } from "./authorization.ts";
+import { registerCommands, storedAuthorization } from "./commands.ts";
+import { contextKeys, parseStatus, type Status } from "./status.ts";
 
 let client: LanguageClient | undefined;
 const manifestFilters = new WeakMap<LanguageClient, DocumentFilter[]>();
+/** The latest `versionlens/status` per manifest uri. */
+const statuses = new Map<string, Status>();
 
 const nonEmpty = (value: string | undefined): string | undefined => {
 	const trimmed = value?.trim();
@@ -48,6 +57,25 @@ const advertisedGlobs = (experimental: unknown): string[] => {
 		: [];
 };
 
+/** The globs of the `versionlens.files` setting, which the server reads as extra manifests. */
+const configuredGlobs = (): DocumentFilter[] =>
+	Object.keys(
+		workspace
+			.getConfiguration("versionlens")
+			.get<Record<string, string>>("files") ?? {}
+	).map((glob) => ({ pattern: `**/${glob}`, scheme: "file" }));
+
+/** Sets the editor title menu context keys from the active editor's manifest status. */
+const showStatus = (editor?: TextEditor): void => {
+	const status =
+		editor === undefined
+			? undefined
+			: statuses.get(editor.document.uri.toString());
+	for (const [key, value] of Object.entries(contextKeys(status))) {
+		void commands.executeCommand("setContext", key, value);
+	}
+};
+
 /**
  * Whether the server reads this document; other files never leave the editor.
  * The client opens already-visible documents inside `start()`, so the filters come from the
@@ -64,10 +92,41 @@ const isManifest = (document: TextDocument): boolean => {
 		).map((glob) => ({ pattern: `**/${glob}`, scheme: "file" }));
 		manifestFilters.set(client, filters);
 	}
-	return languages.match(filters, document) > 0;
+	return languages.match([...filters, ...configuredGlobs()], document) > 0;
 };
 
-const clientOptions = (output: LogOutputChannel): LanguageClientOptions => ({
+// Menus pass the file's Uri and the palette passes nothing; the server reads uri strings and
+// acts on the active editor's file when none is given.
+const withActiveUri: Middleware["executeCommand"] = async (
+	name,
+	args,
+	next
+) => {
+	const strings: unknown[] = args.map((arg: unknown) =>
+		arg instanceof Uri ? arg.toString() : arg
+	);
+	const active = window.activeTextEditor?.document.uri.toString();
+	const hasUri = strings.some(
+		(arg) => typeof arg === "string" && arg.includes(":")
+	);
+	const result: unknown = await next(
+		name,
+		hasUri || active === undefined ? strings : [active, ...strings]
+	);
+	return result;
+};
+
+// The server answers an empty notification by pulling `workspace/configuration`.
+const reconfigure = async (): Promise<void> => {
+	await client?.sendNotification(DidChangeConfigurationNotification.type, {
+		settings: null
+	});
+};
+
+const clientOptions = (
+	context: ExtensionContext,
+	output: LogOutputChannel
+): LanguageClientOptions => ({
 	documentSelector: [{ scheme: "file" }],
 	middleware: {
 		didChange: async (event, next) => {
@@ -80,14 +139,22 @@ const clientOptions = (output: LogOutputChannel): LanguageClientOptions => ({
 				await next(document);
 			}
 		},
-		// Palette commands carry no arguments; the server acts on the active editor's file.
-		executeCommand: async (name, args, next) => {
-			const uri = window.activeTextEditor?.document.uri.toString();
-			const result: unknown = await next(
-				name,
-				args.length === 0 && uri !== undefined ? [uri] : args
-			);
-			return result;
+		executeCommand: withActiveUri,
+		// Authentication added with the "Add url authentication" command lives in secret
+		// storage, not in settings.json, and joins the section here.
+		workspace: {
+			configuration: async (params, token, next) => {
+				const result = await next(params, token);
+				if (!Array.isArray(result)) {
+					return result;
+				}
+				const stored = await storedAuthorization(context.secrets);
+				return result.map((section: unknown, index: number) =>
+					params.items[index]?.section === "versionlens"
+						? withAuthorization(section, stored)
+						: section
+				);
+			}
 		}
 	},
 	outputChannel: output
@@ -102,10 +169,20 @@ const start = async (
 		"versionlens",
 		"VersionLens",
 		{ args: ["--stdio"], command },
-		clientOptions(output)
+		clientOptions(context, output)
 	);
 	output.info(`starting ${command}`);
 	client = started;
+	started.onNotification("versionlens/status", (params: unknown) => {
+		const status = parseStatus(params);
+		if (status === undefined) {
+			return;
+		}
+		statuses.set(status.uri, status);
+		if (window.activeTextEditor?.document.uri.toString() === status.uri) {
+			showStatus(window.activeTextEditor);
+		}
+	});
 	try {
 		await started.start();
 	} catch (error) {
@@ -125,6 +202,8 @@ const start = async (
 const stop = async (): Promise<void> => {
 	const running = client;
 	client = undefined;
+	statuses.clear();
+	showStatus();
 	await running?.stop();
 };
 
@@ -141,19 +220,25 @@ export const activate = async (context: ExtensionContext): Promise<void> => {
 	};
 	context.subscriptions.push(
 		output,
-		commands.registerCommand("versionlens.showOutput", () => {
-			output.show();
+		...registerCommands({
+			output,
+			reconfigure,
+			restart,
+			secrets: context.secrets
 		}),
-		commands.registerCommand("versionlens.restart", restart),
+		window.onDidChangeActiveTextEditor(showStatus),
+		workspace.onDidCloseTextDocument((document) => {
+			statuses.delete(document.uri.toString());
+		}),
 		workspace.onDidChangeConfiguration(async (event) => {
-			if (event.affectsConfiguration("versionlens.serverPath")) {
+			// New `files` globs change which open documents reach the server.
+			if (
+				event.affectsConfiguration("versionlens.serverPath") ||
+				event.affectsConfiguration("versionlens.files")
+			) {
 				await restart();
 			} else if (event.affectsConfiguration("versionlens")) {
-				// The server answers an empty notification by pulling `workspace/configuration`.
-				await client?.sendNotification(
-					DidChangeConfigurationNotification.type,
-					{ settings: null }
-				);
+				await reconfigure();
 			}
 		})
 	);

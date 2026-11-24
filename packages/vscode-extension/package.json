@@ -34,48 +34,213 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "versionlens.refresh",
-				"title": "Refresh Versions",
-				"category": "VersionLens"
+				"command": "versionlens.show",
+				"title": "Show release versions",
+				"category": "VersionLens",
+				"icon": {
+					"dark": "images/icons/toggle-inactive.svg",
+					"light": "images/icons/toggle-inactive-light.svg"
+				}
 			},
 			{
-				"command": "versionlens.updateAll",
-				"title": "Update All Dependencies in File",
-				"category": "VersionLens"
+				"command": "versionlens.hide",
+				"title": "Hide release versions",
+				"category": "VersionLens",
+				"icon": "images/icons/toggle-active.svg"
 			},
 			{
 				"command": "versionlens.toggle",
-				"title": "Toggle Version Lenses",
+				"title": "Toggle release versions",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.showError",
+				"title": "An error has occurred. Click to see the log for details.",
+				"category": "VersionLens",
+				"icon": "images/icons/toggle-death.svg"
+			},
+			{
+				"command": "versionlens.progress",
+				"title": "Analyzing dependencies...",
+				"category": "VersionLens",
+				"enablement": "false",
+				"icon": "images/icons/toggle-active-progress.svg"
+			},
+			{
+				"command": "versionlens.showPrereleases",
+				"title": "Show prerelease versions",
+				"category": "VersionLens",
+				"icon": {
+					"dark": "images/icons/tag-inactive.svg",
+					"light": "images/icons/tag-inactive-light.svg"
+				}
+			},
+			{
+				"command": "versionlens.hidePrereleases",
+				"title": "Hide prerelease versions",
+				"category": "VersionLens",
+				"icon": "images/icons/tag-active.svg"
+			},
+			{
+				"command": "versionlens.togglePrereleases",
+				"title": "Toggle prerelease versions",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.refresh",
+				"title": "Refresh versions",
 				"category": "VersionLens"
 			},
 			{
 				"command": "versionlens.clearCache",
-				"title": "Clear Cache",
+				"title": "Clear cache",
 				"category": "VersionLens"
 			},
 			{
-				"command": "versionlens.showOutput",
-				"title": "Show Output",
+				"command": "versionlens.addAuthentication",
+				"title": "Add url authentication",
 				"category": "VersionLens"
 			},
 			{
-				"command": "versionlens.restart",
-				"title": "Restart Server",
+				"command": "versionlens.removeAuthentication",
+				"title": "Remove url authentication",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.install",
+				"title": "Run custom install task",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.sort",
+				"title": "Sort dependencies alphabetically",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateAll",
+				"title": "Update dependencies",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateAll.latest",
+				"title": "Update dependencies to latest",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateAll.major",
+				"title": "Update dependencies (major-only)",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateAll.minor",
+				"title": "Update dependencies (minor-only)",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateAll.patch",
+				"title": "Update dependencies (patch-only)",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateWorkspace",
+				"title": "Update dependencies in workspace",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateWorkspace.latest",
+				"title": "Update dependencies in workspace to latest",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateWorkspace.major",
+				"title": "Update dependencies in workspace (major-only)",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateWorkspace.minor",
+				"title": "Update dependencies in workspace (minor-only)",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.updateWorkspace.patch",
+				"title": "Update dependencies in workspace (patch-only)",
 				"category": "VersionLens"
 			},
 			{
 				"command": "versionlens.update",
-				"title": "Update Dependency",
+				"title": "Update dependency",
 				"category": "VersionLens"
 			},
 			{
 				"command": "versionlens.open",
-				"title": "Open Package Page",
+				"title": "Open package page",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.restart",
+				"title": "Restart language server",
+				"category": "VersionLens"
+			},
+			{
+				"command": "versionlens.showOutput",
+				"title": "Show language server output",
 				"category": "VersionLens"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "versionlens.show",
+					"when": "versionlens.show == false && versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.hide",
+					"when": "versionlens.show && versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.toggle",
+					"when": "versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.showPrereleases",
+					"when": "versionlens.showPrereleases == false && versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.hidePrereleases",
+					"when": "versionlens.showPrereleases && versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.togglePrereleases",
+					"when": "versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.refresh",
+					"when": "versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.install",
+					"when": "versionlens.showCustomInstall && versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.sort",
+					"when": "versionlens.showSortAlphabetically && versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.showError",
+					"when": "false"
+				},
+				{
+					"command": "versionlens.progress",
+					"when": "false"
+				},
+				{
+					"command": "versionlens.updateAll",
+					"when": "false"
+				},
+				{
+					"command": "versionlens.updateWorkspace",
+					"when": "false"
+				},
 				{
 					"command": "versionlens.update",
 					"when": "false"
@@ -83,6 +248,104 @@
 				{
 					"command": "versionlens.open",
 					"when": "false"
+				},
+				{
+					"command": "versionlens.updateAll.latest",
+					"when": "versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.updateAll.major",
+					"when": "versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.updateAll.minor",
+					"when": "versionlens.providerActive"
+				},
+				{
+					"command": "versionlens.updateAll.patch",
+					"when": "versionlens.providerActive"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "versionlens.show",
+					"when": "versionlens.show == false && versionlens.providerBusy == false && versionlens.providerError == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "navigation@1"
+				},
+				{
+					"command": "versionlens.hide",
+					"when": "versionlens.show && versionlens.providerBusy == false && versionlens.providerError == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "navigation@1"
+				},
+				{
+					"command": "versionlens.showError",
+					"when": "versionlens.providerError && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "navigation@1"
+				},
+				{
+					"command": "versionlens.progress",
+					"when": "versionlens.providerBusy && versionlens.providerError == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "navigation@1"
+				},
+				{
+					"command": "versionlens.showPrereleases",
+					"when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "navigation@1.1"
+				},
+				{
+					"command": "versionlens.hidePrereleases",
+					"when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "navigation@1.1"
+				},
+				{
+					"command": "versionlens.show",
+					"when": "versionlens.show == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens@1"
+				},
+				{
+					"command": "versionlens.hide",
+					"when": "versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens@1"
+				},
+				{
+					"command": "versionlens.showPrereleases",
+					"when": "versionlens.showPrereleases == false && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens@2"
+				},
+				{
+					"command": "versionlens.hidePrereleases",
+					"when": "versionlens.showPrereleases && versionlens.show && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens@2"
+				},
+				{
+					"command": "versionlens.install",
+					"when": "versionlens.showCustomInstall && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens_tool@0"
+				},
+				{
+					"command": "versionlens.sort",
+					"when": "versionlens.showSortAlphabetically && versionlens.providerBusy == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens_tool@1"
+				},
+				{
+					"command": "versionlens.updateAll.latest",
+					"when": "versionlens.providerBusy == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens_update@0"
+				},
+				{
+					"command": "versionlens.updateAll.major",
+					"when": "versionlens.providerBusy == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens_update@1"
+				},
+				{
+					"command": "versionlens.updateAll.minor",
+					"when": "versionlens.providerBusy == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens_update@2"
+				},
+				{
+					"command": "versionlens.updateAll.patch",
+					"when": "versionlens.providerBusy == false && versionlens.providerActive && textCompareEditorVisible == false",
+					"group": "secondary_versionlens_update@3"
 				}
 			]
 		},
@@ -150,6 +413,107 @@
 						"type": "string"
 					},
 					"markdownDescription": "URL template per registry id, for mirrors and private registries, such as `{\"npm\": \"https://npm.example.com/{enc}\"}`."
+				},
+				"versionlens.authorization": {
+					"type": "object",
+					"default": {},
+					"additionalProperties": {
+						"type": "string"
+					},
+					"markdownDescription": "`Authorization` header per registry URL prefix, such as `{\"https://npm.example.com/\": \"Bearer TOKEN\"}`. The **Add url authentication** command keeps headers in secret storage instead."
+				},
+				"versionlens.install": {
+					"type": "object",
+					"default": {},
+					"additionalProperties": {
+						"type": "string"
+					},
+					"markdownDescription": "Shell command per file type or registry id, such as `{\"npm\": \"bun install\"}`. It runs in the manifest's folder when a save changes the dependencies, and from **Run custom install task**."
+				},
+				"versionlens.files": {
+					"type": "object",
+					"default": {},
+					"additionalProperties": {
+						"type": "string"
+					},
+					"markdownDescription": "Extra manifests: glob to file type id, such as `{\"deps/*.list\": \"requirements\"}`."
+				},
+				"versionlens.indicators": {
+					"type": "object",
+					"default": {},
+					"properties": {
+						"latest": {
+							"type": "string",
+							"default": "✓"
+						},
+						"update": {
+							"type": "string",
+							"default": "↑"
+						},
+						"checking": {
+							"type": "string",
+							"default": "⋯"
+						},
+						"failed": {
+							"type": "string",
+							"default": "✗"
+						},
+						"unreadable": {
+							"type": "string",
+							"default": "?"
+						},
+						"vulnerable": {
+							"type": "string",
+							"default": "⚠"
+						},
+						"newer": {
+							"type": "string",
+							"default": "→"
+						}
+					},
+					"additionalProperties": false,
+					"markdownDescription": "Glyph shown before each version state in code lenses and inlay hints."
+				},
+				"versionlens.prereleaseTags": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"markdownDescription": "Offer only prereleases with one of these tags, such as `[\"rc\", \"beta\"]`; empty offers every tag."
+				},
+				"versionlens.updateSeverity": {
+					"type": "string",
+					"enum": [
+						"off",
+						"hint",
+						"info",
+						"warning",
+						"error"
+					],
+					"default": "info",
+					"description": "Diagnostic severity for each outdated dependency."
+				},
+				"versionlens.stats": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show a summary code lens above each manifest: dependencies, outdated, failed, and vulnerable."
+				},
+				"versionlens.fileTypes": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"markdownDescription": "Read only these file type or registry ids, such as `[\"npm\", \"cargo\"]`; empty reads every file type."
+				},
+				"versionlens.workspaceExclude": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"markdownDescription": "Globs the workspace update skips, such as `[\"examples/**\"]`."
 				},
 				"versionlens.serverPath": {
 					"type": "string",

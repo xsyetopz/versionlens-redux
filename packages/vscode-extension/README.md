@@ -18,9 +18,11 @@ VersionLens Redux shows dependency versions, update actions, and vulnerability d
 - **Inlay hints** after each dependency show the newest version, or `✓` when it is current.
 - **Code lenses** above each dependency offer the updates that apply: the newest version the range allows, the latest release, and a prerelease when `versionlens.prereleases` is on.
 - **Hovers** show the requirement, the resolved and latest versions, a link to the registry page, and any OSV advisories.
-- **Diagnostics** warn about versions with known OSV.dev vulnerabilities.
-- **Quick fixes** apply an update from the light bulb.
-- **Commands**: Refresh Versions, Update All Dependencies in File, Toggle Version Lenses, Clear Cache, Restart Server, and Show Output.
+- **Diagnostics** warn about versions with known OSV.dev vulnerabilities, and mark each outdated dependency at `versionlens.updateSeverity`.
+- **Quick fixes** apply an update from the light bulb; **source actions** update, sort, and switch the whole file.
+- **Editor title icons** on each manifest: show or hide release versions, show or hide prerelease versions, a spinner while lookups run, and an error icon that opens the log when a lookup fails.
+- **Editor title menu (`...`)**: show or hide versions and prereleases, run the custom install task, sort dependencies alphabetically, and update dependencies to latest, major-only, minor-only, or patch-only.
+- **Commands** in the palette: everything in the menu, plus refresh versions, clear cache, update dependencies in the workspace at each level, add and remove url authentication, restart the language server, and show its output.
 
 A failed lookup shows `✗` with its reason on the dependency's line, and the output channel logs it.
 
@@ -78,10 +80,19 @@ The server lists the files it reads in its initialize result, and the extension 
 | `versionlens.strictSsl` | `true` | Reject registries whose TLS certificate does not verify. |
 | `versionlens.githubToken` | empty | Token for GitHub tag lookups. Falls back to `GITHUB_TOKEN`, then `GH_TOKEN`. |
 | `versionlens.registries` | `{}` | URL template per registry id, for mirrors and private registries, such as `{"npm": "https://npm.example.com/{enc}"}`. |
+| `versionlens.authorization` | `{}` | `Authorization` header per registry URL prefix. **Add url authentication** keeps headers in secret storage instead. |
+| `versionlens.install` | `{}` | Shell command per file type or registry id, run in the manifest's folder when a save changes the dependencies and from **Run custom install task**. |
+| `versionlens.files` | `{}` | Extra manifests: glob to file type id, such as `{"deps/*.list": "requirements"}`. |
+| `versionlens.indicators` | glyphs | Glyph per state in lenses and hints: `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`. |
+| `versionlens.prereleaseTags` | `[]` | Offer only prereleases with one of these tags; empty offers all. |
+| `versionlens.updateSeverity` | `info` | Diagnostic severity for an outdated dependency: `off`, `hint`, `info`, `warning`, or `error`. |
+| `versionlens.stats` | `false` | A summary lens above each manifest. |
+| `versionlens.fileTypes` | `[]` | Read only these file type or registry ids; empty reads all. |
+| `versionlens.workspaceExclude` | `[]` | Globs the workspace update skips, such as `["examples/**"]`. |
 | `versionlens.serverPath` | empty | A `versionlens-lsp` binary to run instead of the bundled one. `VERSIONLENS_LSP` takes precedence. |
 | `versionlens.trace.server` | `off` | Log LSP traffic to the output channel. |
 
-A changed setting applies without a restart, and the output channel logs it. Changing `versionlens.serverPath` restarts the server.
+A changed setting applies without a restart, and the output channel logs it. Changing `versionlens.serverPath` or `versionlens.files` restarts the server.
 
 ## Troubleshooting
 
