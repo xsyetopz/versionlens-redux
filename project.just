@@ -62,3 +62,17 @@ jetbrains-gui:
         -v versionlens-target:/target -e CARGO_TARGET_DIR=/target versionlens-jetbrains-gui \
         sh -c 'cargo build -q --release -p versionlens-lsp && sh scripts/jetbrains-gui/run.sh \
         packages/jetbrains-plugin/build/distributions/versionlens-redux-jetbrains-plugin-*.zip target/jetbrains-gui'
+
+# Zed draws into Xvfb through Mesa's software Vulkan, so no window reaches the desktop; screenshots,
+# the server traffic, and Zed's log go to target/zed-gui.
+# Drive the Zed extension in Zed under Xvfb: lenses, hints, and the code actions menu; needs Docker and the network.
+zed-gui:
+    cargo build --manifest-path packages/zed-extension/Cargo.toml --release --locked
+    docker build -q -t versionlens-vscode scripts/vscode-container
+    docker build -q -t versionlens-jetbrains-gui scripts/jetbrains-gui
+    docker build -q -t versionlens-zed-gui scripts/zed-gui
+    docker run --rm --init -v "{{justfile_directory()}}:/work" -w /work -v versionlens-zed:/zed \
+        -v versionlens-rustup:/usr/local/rustup -v versionlens-cargo:/usr/local/cargo/registry \
+        -v versionlens-target:/target -e CARGO_TARGET_DIR=/target -e ZED_REFRESH versionlens-zed-gui \
+        sh -c 'cargo build -q --release -p versionlens-lsp && sh scripts/zed-gui/run.sh \
+        packages/zed-extension/target/wasm32-wasip2/release/versionlens_zed_extension.wasm target/zed-gui'
