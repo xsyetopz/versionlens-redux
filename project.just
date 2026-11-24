@@ -18,6 +18,10 @@ package:
 vscode-live: package
     bun scripts/vscode-live.mjs
 
+# Time cold starts of the original 1.x extension against this one in fresh VS Code windows; needs the network.
+vscode-bench: package
+    bun scripts/vscode-bench.mjs
+
 # Drive the JetBrains plugin in a headless IntelliJ IDEA against the live registries; needs the network.
 jetbrains-live:
     cargo build -p versionlens-lsp
