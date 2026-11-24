@@ -53,7 +53,7 @@ require("versionlens").setup({
 })
 ```
 
-Settings: `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, `registries`. `githubToken` falls back to `$GITHUB_TOKEN` and `$GH_TOKEN`.
+Settings: `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`, `githubToken`, `registries`. `githubToken` falls back to `$GITHUB_TOKEN` and `$GH_TOKEN`. Calling `setup()` again sends the new settings to running servers, with no restart.
 
 ## Commands
 

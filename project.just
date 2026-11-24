@@ -23,6 +23,10 @@ jetbrains-live:
     cargo build -p versionlens-lsp
     just jvm::gradle :jetbrains-plugin:test --tests com.versionlens.jetbrains.LiveTest -PversionlensLiveServer={{justfile_directory()}}/target/debug/versionlens-lsp --rerun
 
+# Drive the Neovim plugin in a headless Neovim against the live registries; needs the network.
+neovim-live:
+    make -C packages/neovim-plugin live
+
 # Check the release scripts, the extension build and tests, the Neovim plugin, and the editor packages.
 project-verify:
     bun run test:release

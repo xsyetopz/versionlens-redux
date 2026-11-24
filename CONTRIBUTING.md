@@ -74,6 +74,8 @@ just verify
 
 `just jetbrains-live` builds the server and runs `LiveTest` in a headless IntelliJ IDEA, using the plugin's own client against the live registries and OSV: hints, diagnostics, the update intention, hover, settings, every action, and restart. It needs the network and no desktop. Other test runs skip `LiveTest`.
 
+`just neovim-live` builds the server and runs `packages/neovim-plugin/tests/live.lua` in a headless Neovim against the live registries and OSV: hints, advisories, hover, the lens that opens the package page, the update code action, every `:VersionLens` subcommand, settings pushed by `setup()`, restart, and `libraries.hxml`. It needs the network, so `just verify` runs only the offline `tests/run.lua`.
+
 ## Pull Requests
 
 A good pull request includes:

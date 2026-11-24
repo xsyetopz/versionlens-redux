@@ -127,6 +127,13 @@ if not vim.lsp.codelens.enable then
   end
 end
 
+-- The server reads the `versionlens` section; an empty table must encode as a JSON object.
+local function server_settings()
+  return {
+    versionlens = vim.tbl_isempty(M.config.settings) and vim.empty_dict() or M.config.settings,
+  }
+end
+
 --- Starts or reuses the server for bufnr when it is a supported manifest.
 function M.start(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
@@ -153,8 +160,7 @@ function M.start(bufnr)
   if not M.supports(path, list) then
     return
   end
-  local settings =
-    { versionlens = vim.tbl_isempty(M.config.settings) and vim.empty_dict() or M.config.settings }
+  local settings = server_settings()
   return vim.lsp.start({
     name = name,
     cmd = vim.list_extend(vim.deepcopy(cmd), { "--stdio" }),
@@ -229,9 +235,15 @@ M.actions = {
 }
 
 --- Configures the plugin, registers :VersionLens, and starts on manifest buffers.
+--- Running servers receive the new settings at once.
 function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
   patterns = nil
+  for _, client in ipairs(vim.lsp.get_clients({ name = name })) do
+    -- vim.lsp.start reuses a running client, so its settings would otherwise stay the old ones.
+    client.settings = server_settings()
+    client:notify("workspace/didChangeConfiguration", { settings = client.settings })
+  end
   vim.api.nvim_create_user_command("VersionLens", function(args)
     local action = M.actions[args.args]
     if not action then

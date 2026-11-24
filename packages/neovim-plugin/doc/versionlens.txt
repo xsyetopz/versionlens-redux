@@ -57,6 +57,8 @@ The plugin calls `setup()` when it loads, unless
 without the prefix: `enabled`, `codeLens`, `inlayHints`, `prereleases`,
 `vulnerabilities`, `timeoutMs`, `concurrency`, `cacheMinutes`, `strictSsl`,
 `githubToken`, and `registries` (registry id to URL template, for mirrors).
+Calling `setup()` again sends the new settings to running servers, with no
+restart.
 
 ==============================================================================
 4. COMMANDS                                             *versionlens-commands*

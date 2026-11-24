@@ -1,7 +1,7 @@
 NVIM ?= nvim
 SERVER ?= $(abspath ../../target/debug/versionlens-lsp)
 
-.PHONY: lint test check
+.PHONY: lint test live check
 
 lint:
 	stylua --check lua plugin tests
@@ -10,5 +10,10 @@ lint:
 test:
 	cargo build -p versionlens-lsp --locked
 	$(NVIM) --headless --clean -l tests/run.lua "$(SERVER)"
+
+# Needs the network: the checks read the live registries and OSV.
+live:
+	cargo build -p versionlens-lsp --locked
+	$(NVIM) --headless --clean -l tests/live.lua "$(SERVER)"
 
 check: lint test
