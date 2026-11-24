@@ -50,7 +50,7 @@ impl Server {
                             self.settings.prereleases,
                         ) {
                             Some(plan) => State::Planned {
-                                plan,
+                                plan: Box::new(plan),
                                 current: req.floor().cloned(),
                             },
                             None => State::Failed("no released versions".into()),

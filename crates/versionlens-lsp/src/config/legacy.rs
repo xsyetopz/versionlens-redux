@@ -34,6 +34,8 @@ const INDICATORS: &[(&str, &str)] = &[
     ("Updateable", "update"),
     ("Error", "failed"),
     ("UpdateableVulnerable", "vulnerable"),
+    ("Match", "satisfies"),
+    ("NoMatch", "noMatch"),
 ];
 
 /// Fills every setting the section leaves unset from its original key, when that is present.

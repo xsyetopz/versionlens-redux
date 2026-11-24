@@ -422,6 +422,8 @@ pub(crate) struct Plan {
     pub(crate) latest: Version,
     /// The requirement already allows the latest version.
     pub(crate) satisfied: bool,
+    /// The newest version the requirement allows, or `None` when it allows none.
+    pub(crate) resolved: Option<Version>,
     /// Newer versions worth offering, oldest first: newest patch, newest minor, latest.
     pub(crate) picks: Vec<Version>,
 }
@@ -462,6 +464,11 @@ pub(crate) fn plan(
     picks.dedup_by(|a, b| a.raw == b.raw);
     Some(Plan {
         satisfied: req.matches(&latest),
+        resolved: pool
+            .iter()
+            .filter(|v| req.matches(v))
+            .max()
+            .map(|v| (*v).clone()),
         latest,
         picks,
     })

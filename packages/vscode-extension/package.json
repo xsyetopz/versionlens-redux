@@ -496,6 +496,14 @@
 						"newer": {
 							"type": "string",
 							"default": "→"
+						},
+						"satisfies": {
+							"type": "string",
+							"default": "◐"
+						},
+						"noMatch": {
+							"type": "string",
+							"default": "○"
 						}
 					},
 					"additionalProperties": false,

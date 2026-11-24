@@ -22,7 +22,8 @@ pub(crate) enum State {
     /// The registry answered, but the requirement is not a range this server reads.
     Unreadable,
     Planned {
-        plan: Plan,
+        plan: Box<Plan>,
+        /// The requirement's floor, which update levels count from.
         current: Option<Version>,
     },
 }
@@ -144,7 +145,7 @@ fn update_command(title: String, uri: &Uri, view: &View<'_>, text: &str) -> Comm
 
 /// The updates a view offers: label, version level, and replacement text.
 pub(crate) fn picks(view: &View<'_>, insert: &str) -> Vec<(String, String)> {
-    let State::Planned { plan, current } = &view.state else {
+    let State::Planned { plan, current, .. } = &view.state else {
         return Vec::new();
     };
     plan.picks
@@ -194,12 +195,7 @@ pub(crate) fn lenses(
             ))),
             State::Planned { plan, .. } => {
                 let choices = picks(view, insert);
-                if choices.is_empty() {
-                    out.push(open(format!(
-                        "{} latest {}",
-                        glyphs.latest, plan.latest.raw
-                    )));
-                }
+                out.push(open(status(plan, choices.is_empty(), glyphs)));
                 for (label, text) in choices {
                     out.push(CodeLens {
                         range: view.range,
@@ -216,6 +212,19 @@ pub(crate) fn lenses(
         }
     }
     out
+}
+
+/// The status lens that leads a dependency's updates, as the original 1.x drew it: what the
+/// requirement resolves to now, against the latest version.
+fn status(plan: &Plan, current: bool, glyphs: &Indicators) -> String {
+    match &plan.resolved {
+        None => format!("{} no match", glyphs.no_match),
+        // Already on the latest, with nothing left to move.
+        Some(v) if *v >= plan.latest && current => format!("{} latest {}", glyphs.latest, v.raw),
+        // Resolves to the latest, though the requirement still admits older versions.
+        Some(v) if *v >= plan.latest => format!("{} satisfies latest {}", glyphs.latest, v.raw),
+        Some(v) => format!("{} satisfies {}", glyphs.satisfies, v.raw),
+    }
 }
 
 fn short(error: &str) -> &str {
@@ -261,7 +270,7 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
         State::Pending => "Checking the registry…".to_owned(),
         State::Failed(error) => format!("Lookup failed: `{error}`"),
         State::Unreadable => format!("`{}` is not a version range VersionLens reads.", dep.req),
-        State::Planned { plan, current } => {
+        State::Planned { plan, current, .. } => {
             let current = current.as_ref().map_or("none", |v| v.raw.as_str());
             format!(
                 "Requires `{}` · from `{current}` · latest `{}`",

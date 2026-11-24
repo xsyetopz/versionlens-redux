@@ -82,7 +82,8 @@ without the prefix. Unknown keys and wrong types are reported at `setup()`.
                when a save changes the dependencies),
                `files` (extra glob to file type id),
                `indicators` (glyph per state: `latest`, `update`,
-               `checking`, `failed`, `unreadable`, `vulnerable`, `newer`),
+               `checking`, `failed`, `unreadable`, `vulnerable`, `newer`,
+               `satisfies`, `noMatch`),
                `providers` (registry id to a table of `cacheMinutes`,
                `strictSsl`, `prereleaseTags` that override the global
                value for that registry)

@@ -187,7 +187,7 @@ internal class SettingsPage : BoundConfigurable("VersionLens") {
         lines(
             "Indicators:",
             settings::indicators,
-            "state=glyph; states: latest, update, checking, failed, unreadable, vulnerable, newer",
+            "state=glyph; states: latest, update, checking, failed, unreadable, vulnerable, newer, satisfies, noMatch",
         )
     }
 

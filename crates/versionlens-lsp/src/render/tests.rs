@@ -77,7 +77,7 @@ fn bulk_updates_pick_the_named_level() {
         dep: &dep,
         range: Range::default(),
         state: State::Planned {
-            plan: crate::version::plan(&req, &versions, None, false).unwrap(),
+            plan: Box::new(crate::version::plan(&req, &versions, None, false).unwrap()),
             current: req.floor().cloned(),
         },
         vulns: &[],
@@ -93,4 +93,32 @@ fn bulk_updates_pick_the_named_level() {
     assert_eq!(text("major"), ["^2.1.0"]);
     assert_eq!(text("minor"), ["^1.4.0"]);
     assert_eq!(text("patch"), ["^1.2.5"]);
+}
+
+#[test]
+fn status_follows_the_original_wording() {
+    let glyphs = Indicators::default();
+    let plan = |resolved: Option<&str>| Plan {
+        latest: v("2.1.0"),
+        satisfied: false,
+        resolved: resolved.map(v),
+        picks: Vec::new(),
+    };
+    let (sat, latest, none) = (&glyphs.satisfies, &glyphs.latest, &glyphs.no_match);
+    assert_eq!(
+        status(&plan(None), false, &glyphs),
+        format!("{none} no match")
+    );
+    assert_eq!(
+        status(&plan(Some("1.4.0")), false, &glyphs),
+        format!("{sat} satisfies 1.4.0")
+    );
+    assert_eq!(
+        status(&plan(Some("2.1.0")), false, &glyphs),
+        format!("{latest} satisfies latest 2.1.0")
+    );
+    assert_eq!(
+        status(&plan(Some("2.1.0")), true, &glyphs),
+        format!("{latest} latest 2.1.0")
+    );
 }

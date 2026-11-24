@@ -298,6 +298,7 @@ fn heads_lenses_with_stats_and_uses_custom_indicators() {
     assert_eq!(titles[0], "2 dependencies · ^^ 1 outdated");
     assert!(titles.contains(&"^^ major 2.0.0"), "{titles:?}");
     assert!(titles.contains(&"ok latest 2.0.0"), "{titles:?}");
+    assert!(titles.contains(&"◐ satisfies 1.2.0"), "{titles:?}");
     client.stop();
 }
 

@@ -16,6 +16,10 @@ pub(crate) struct Indicators {
     pub(crate) unreadable: String,
     pub(crate) vulnerable: String,
     pub(crate) newer: String,
+    /// The requirement allows a listed version, but not the latest.
+    pub(crate) satisfies: String,
+    /// The registry lists no version the requirement allows.
+    pub(crate) no_match: String,
 }
 
 impl Default for Indicators {
@@ -28,6 +32,8 @@ impl Default for Indicators {
             unreadable: "?".into(),
             vulnerable: "⚠".into(),
             newer: "→".into(),
+            satisfies: "◐".into(),
+            no_match: "○".into(),
         }
     }
 }
@@ -46,6 +52,8 @@ impl Indicators {
             ("unreadable", &mut out.unreadable),
             ("vulnerable", &mut out.vulnerable),
             ("newer", &mut out.newer),
+            ("satisfies", &mut out.satisfies),
+            ("noMatch", &mut out.no_match),
         ] {
             if let Some(text) = map.get(key).and_then(Value::as_str) {
                 text.clone_into(glyph);
