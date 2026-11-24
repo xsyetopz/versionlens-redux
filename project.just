@@ -49,3 +49,16 @@ project-verify:
     bun run test:extension
     bun run package:editors
     make -C packages/neovim-plugin test
+
+# The IDE draws into Xvfb, so no window reaches the desktop; screenshots and the IDE log go to
+# target/jetbrains-gui, and the IDE version is the one the plugin builds against.
+# Drive the JetBrains plugin GUI in IntelliJ IDEA under Xvfb with lookups held pending; needs Docker and the network.
+jetbrains-gui:
+    just jvm::gradle :jetbrains-plugin:buildPlugin
+    docker build -q -t versionlens-vscode scripts/vscode-container
+    docker build -q -t versionlens-jetbrains-gui scripts/jetbrains-gui
+    docker run --rm --init -v "{{justfile_directory()}}:/work" -w /work -v versionlens-idea:/idea \
+        -v versionlens-rustup:/usr/local/rustup -v versionlens-cargo:/usr/local/cargo/registry \
+        -v versionlens-target:/target -e CARGO_TARGET_DIR=/target versionlens-jetbrains-gui \
+        sh -c 'cargo build -q --release -p versionlens-lsp && sh scripts/jetbrains-gui/run.sh \
+        packages/jetbrains-plugin/build/distributions/versionlens-redux-jetbrains-plugin-*.zip target/jetbrains-gui'
