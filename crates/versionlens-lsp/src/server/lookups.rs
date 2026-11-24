@@ -104,6 +104,7 @@ impl Server {
                     self.check_vulns(&uri);
                 }
             }
+            Event::Installed(uri, result) => self.install_done(&uri, result),
             Event::Osv(queries, result) => {
                 for query in &queries {
                     self.osv_inflight.remove(query);
@@ -137,7 +138,8 @@ impl Server {
         let Some(doc) = self.docs.get(uri) else {
             return;
         };
-        if !self.settings.vulnerabilities
+        if !doc.open
+            || !self.settings.vulnerabilities
             || doc.deps.iter().any(|d| self.inflight.contains(&key(d)))
         {
             return;

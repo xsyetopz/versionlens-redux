@@ -271,13 +271,12 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
 /// and the other `IntelliJ` IDEs hides `quickfix` actions that come without a diagnostic.
 pub(crate) const ACTION_KIND: &str = "refactor.rewrite";
 
-/// Whether a request limited to `only` kinds accepts [`ACTION_KIND`]; kinds are dot-separated
-/// prefixes, so `refactor` accepts `refactor.rewrite`.
-pub(crate) fn wants_actions(only: Option<&[CodeActionKind]>) -> bool {
+/// Whether a request limited to `only` kinds accepts `kind`; kinds are dot-separated prefixes,
+/// so `refactor` accepts `refactor.rewrite`.
+pub(crate) fn wants(kind: &str, only: Option<&[CodeActionKind]>) -> bool {
     only.is_none_or(|only| {
         only.iter().any(|k| {
-            ACTION_KIND
-                .strip_prefix(k.as_str())
+            kind.strip_prefix(k.as_str())
                 .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
         })
     })
@@ -299,21 +298,30 @@ pub(crate) fn actions(uri: &Uri, views: &[View<'_>], insert: &str) -> Vec<CodeAc
     out
 }
 
-/// Every dependency moved to its latest version, as one edit.
-pub(crate) fn update_all(uri: &Uri, views: &[View<'_>], insert: &str) -> Option<WorkspaceEdit> {
-    let edits: Vec<TextEdit> = views
+/// The bulk update levels: `latest` moves every dependency to its newest version, and `major`,
+/// `minor`, and `patch` move only the dependencies whose update of that size exists.
+pub(crate) const LEVELS: &[&str] = &["latest", "major", "minor", "patch"];
+
+/// The edits that move each dependency by `level`, one of [`LEVELS`].
+pub(crate) fn updates(views: &[View<'_>], insert: &str, level: &str) -> Vec<TextEdit> {
+    views
         .iter()
         .filter_map(|view| {
-            picks(view, insert).pop().map(|(_, new_text)| TextEdit {
+            let mut picks = picks(view, insert);
+            let pick = if level == "latest" {
+                picks.pop()
+            } else {
+                // Labels read "<level> <version>".
+                picks
+                    .into_iter()
+                    .find(|(label, _)| label.split(' ').next() == Some(level))
+            };
+            pick.map(|(_, new_text)| TextEdit {
                 range: view.range,
                 new_text,
             })
         })
-        .collect();
-    (!edits.is_empty()).then(|| WorkspaceEdit {
-        changes: Some(HashMap::from([(uri.clone(), edits)])),
-        ..WorkspaceEdit::default()
-    })
+        .collect()
 }
 
 pub(crate) fn diagnostics(views: &[View<'_>]) -> Vec<Diagnostic> {

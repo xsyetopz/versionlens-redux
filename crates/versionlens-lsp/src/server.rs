@@ -11,7 +11,7 @@ use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestI
 use lsp_types::{MessageType, Uri};
 use serde_json::{Value, json};
 
-use crate::catalog::{FileType, file_type};
+use crate::catalog::{FileType, by_id, file_type, path_matches};
 use crate::config::Settings;
 use crate::extract::{Dep, extract};
 use crate::http::Http;
@@ -23,9 +23,17 @@ use crate::version::Version;
 const COMMANDS: &[&str] = &[
     "versionlens.update",
     "versionlens.updateAll",
+    "versionlens.updateWorkspace",
+    "versionlens.sort",
+    "versionlens.install",
     "versionlens.refresh",
     "versionlens.clearCache",
     "versionlens.toggle",
+    "versionlens.show",
+    "versionlens.hide",
+    "versionlens.togglePrereleases",
+    "versionlens.showPrereleases",
+    "versionlens.hidePrereleases",
     "versionlens.open",
 ];
 /// Lookups finishing within this window share one refresh.
@@ -49,11 +57,15 @@ struct Doc {
     text: String,
     file: &'static FileType,
     deps: Vec<Dep>,
+    /// Open in the editor; `false` for manifests a workspace update read from disk.
+    open: bool,
 }
 
 enum Event {
     Fetched(Key, Result<registry::Versions, String>, Duration),
     Osv(Vec<Query>, Result<Vec<Vec<String>>, String>),
+    /// An install command finished: the manifest uri and the command's outcome.
+    Installed(String, Result<String, String>),
 }
 
 enum Pending {
@@ -80,8 +92,18 @@ struct Server {
     docs: HashMap<String, Doc>,
     cache: HashMap<Key, Entry>,
     inflight: HashSet<Key>,
-    /// Manifests whose `updateAll` waits for their lookups to finish.
-    update_after: HashSet<String>,
+    /// Manifests whose `updateAll` waits for their lookups to finish, with its level.
+    update_after: HashMap<String, &'static str>,
+    /// The level of a workspace update waiting for its lookups.
+    workspace_update: Option<&'static str>,
+    /// Workspace folder paths, scanned by workspace updates.
+    folders: Vec<String>,
+    /// The last `versionlens/status` sent per manifest, so only changes are sent.
+    status: HashMap<String, Value>,
+    /// The dependency list each manifest had when last installed or opened.
+    installed: HashMap<String, Vec<(String, String)>>,
+    /// Manifests whose install command is running.
+    installing: HashSet<String>,
     vulns: HashMap<Query, Vec<String>>,
     osv_inflight: HashSet<Query>,
     osv_warned: bool,
@@ -136,13 +158,14 @@ pub(crate) fn run() -> Result<(), String> {
 fn serve(conn: Connection) -> Result<(), String> {
     let (id, params) = conn.initialize_start().map_err(|e| e.to_string())?;
     let capabilities = json!({
-        "textDocumentSync": { "openClose": true, "change": 2 },
+        "textDocumentSync": { "openClose": true, "change": 2, "save": { "includeText": false } },
         "codeLensProvider": { "resolveProvider": false },
         "inlayHintProvider": true,
         "hoverProvider": true,
-        "codeActionProvider": { "codeActionKinds": [render::ACTION_KIND] },
+        "codeActionProvider": { "codeActionKinds": [render::ACTION_KIND, status::SOURCE_KIND] },
         "executeCommandProvider": { "commands": COMMANDS },
         "experimental": { "fileTypes": crate::catalog::globs() },
+        "workspace": { "workspaceFolders": { "supported": true, "changeNotifications": true } },
     });
     let info = json!({ "name": "versionlens", "version": env!("CARGO_PKG_VERSION") });
     conn.initialize_finish(
@@ -181,7 +204,12 @@ fn serve(conn: Connection) -> Result<(), String> {
         docs: HashMap::new(),
         cache: HashMap::new(),
         inflight: HashSet::new(),
-        update_after: HashSet::new(),
+        update_after: HashMap::new(),
+        workspace_update: None,
+        folders: workspace::folders(&params),
+        status: HashMap::new(),
+        installed: HashMap::new(),
+        installing: HashSet::new(),
         vulns: HashMap::new(),
         osv_inflight: HashSet::new(),
         osv_warned: false,
@@ -315,7 +343,15 @@ impl Server {
             },
             "textDocument/didOpen" => {
                 let p: lsp_types::DidOpenTextDocumentParams = param(params)?;
-                self.open(&p.text_document.uri, p.text_document.text);
+                self.open(&p.text_document.uri, p.text_document.text, true);
+            }
+            "textDocument/didSave" => {
+                let p: lsp_types::DidSaveTextDocumentParams = param(params)?;
+                self.saved(p.text_document.uri.as_str());
+            }
+            "workspace/didChangeWorkspaceFolders" => {
+                let p: lsp_types::DidChangeWorkspaceFoldersParams = param(params)?;
+                self.change_folders(&p.event);
             }
             "textDocument/didChange" => {
                 let p: lsp_types::DidChangeTextDocumentParams = param(params)?;
@@ -333,11 +369,14 @@ impl Server {
                         None => text = change.text,
                     }
                 }
-                self.open(&uri, text);
+                self.open(&uri, text, true);
             }
             "textDocument/didClose" => {
                 let p: lsp_types::DidCloseTextDocumentParams = param(params)?;
-                if self.docs.remove(p.text_document.uri.as_str()).is_some() {
+                let uri = p.text_document.uri.as_str();
+                self.status.remove(uri);
+                self.installed.remove(uri);
+                if self.docs.remove(uri).is_some() {
                     self.notify(
                         "textDocument/publishDiagnostics",
                         json!({ "uri": p.text_document.uri, "diagnostics": [] }),
@@ -365,6 +404,7 @@ impl Server {
             return;
         }
         let refetch = settings.registries != self.settings.registries
+            || settings.authorization != self.settings.authorization
             || settings.github_token != self.settings.github_token;
         match Http::new(settings.clone()) {
             Ok(http) => self.http = http,
@@ -392,9 +432,10 @@ impl Server {
         self.dirty = Some(Instant::now());
     }
 
-    fn open(&mut self, uri: &Uri, text: String) {
+    /// Reads a manifest the editor opened or changed, or with `open` false one read from disk.
+    fn open(&mut self, uri: &Uri, text: String, open: bool) {
         let path = decode(uri.as_str().trim_start_matches("file://"));
-        let Some(file) = file_type(&path) else {
+        let Some(file) = self.file_type(&path) else {
             self.log(
                 MessageType::LOG,
                 format!("{path}: not a supported manifest; skipped"),
@@ -404,7 +445,7 @@ impl Server {
         let started = Instant::now();
         let deps = extract(file, &text);
         let first = !self.docs.contains_key(uri.as_str());
-        if first {
+        if first && open {
             self.log(
                 MessageType::INFO,
                 format!(
@@ -423,15 +464,30 @@ impl Server {
                 text,
                 file,
                 deps,
+                open,
             },
         );
+        if open && !self.installed.contains_key(uri.as_str()) {
+            self.installed
+                .insert(uri.as_str().to_owned(), signature(&self.docs[uri.as_str()]));
+        }
         self.schedule(uri.as_str());
         self.dirty = Some(Instant::now());
     }
 
+    /// The file type for a path: a `files` setting glob first, then the catalog.
+    fn file_type(&self, path: &str) -> Option<&'static FileType> {
+        self.settings
+            .files
+            .iter()
+            .filter(|(glob, _)| path_matches(glob, path))
+            .find_map(|(_, id)| by_id(id))
+            .or_else(|| file_type(path))
+    }
+
     fn flush(&mut self) {
         self.dirty = None;
-        for doc in self.docs.values() {
+        for doc in self.docs.values().filter(|d| d.open) {
             let diagnostics = if self.settings.enabled {
                 render::diagnostics(&self.views(doc))
             } else {
@@ -450,11 +506,23 @@ impl Server {
         }
         self.report_progress();
         self.run_deferred_updates();
+        self.send_status();
     }
 }
 
+/// A manifest's dependencies and requirements, compared across saves to decide on an install.
+fn signature(doc: &Doc) -> Vec<(String, String)> {
+    doc.deps
+        .iter()
+        .map(|d| (d.name.clone(), d.req.clone()))
+        .collect()
+}
+
+mod commands;
 mod lookups;
 mod requests;
+mod status;
+mod workspace;
 
 #[cfg(test)]
 mod tests;

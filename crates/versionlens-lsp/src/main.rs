@@ -10,6 +10,7 @@ mod osv;
 mod registry;
 mod render;
 mod server;
+mod sort;
 mod version;
 
 use std::io::Write;

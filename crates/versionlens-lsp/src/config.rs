@@ -20,6 +20,13 @@ pub(crate) struct Settings {
     pub(crate) github_token: Option<String>,
     /// Per-registry URL template overrides, keyed by registry id, for mirrors and private registries.
     pub(crate) registries: HashMap<String, String>,
+    /// `Authorization` header values keyed by URL prefix, for private registries.
+    pub(crate) authorization: HashMap<String, String>,
+    /// Shell commands keyed by file type or registry id, run in the manifest's directory when a
+    /// save changes its dependencies and by `versionlens.install`.
+    pub(crate) install: HashMap<String, String>,
+    /// Extra file globs keyed to the file type id that reads them.
+    pub(crate) files: HashMap<String, String>,
 }
 
 impl Default for Settings {
@@ -36,6 +43,9 @@ impl Default for Settings {
             strict_ssl: true,
             github_token: None,
             registries: HashMap::new(),
+            authorization: HashMap::new(),
+            install: HashMap::new(),
+            files: HashMap::new(),
         }
     }
 }
@@ -69,16 +79,25 @@ impl Settings {
                     .iter()
                     .find_map(|k| std::env::var(k).ok())
             }),
-            registries: section
-                .get("registries")
-                .and_then(Value::as_object)
-                .map_or_default(|map| {
-                    map.iter()
-                        .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned())))
-                        .collect()
-                }),
+            registries: strings(section, "registries"),
+            authorization: strings(section, "authorization"),
+            install: strings(section, "install"),
+            files: strings(section, "files"),
         }
     }
+}
+
+/// A string-to-string object setting; other value types are skipped.
+fn strings(section: &Value, key: &str) -> HashMap<String, String> {
+    section
+        .get(key)
+        .and_then(Value::as_object)
+        .map_or_default(|map| {
+            map.iter()
+                .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned())))
+                .filter(|(_, v)| !v.trim().is_empty())
+                .collect()
+        })
 }
 
 #[cfg(test)]

@@ -14,6 +14,12 @@ impl Client {
     }
 
     fn with(options: &Value) -> Self {
+        Self::init(
+            json!({ "capabilities": {}, "initializationOptions": { "versionlens": options } }),
+        )
+    }
+
+    fn init(params: Value) -> Self {
         let (server, conn) = Connection::memory();
         let server = thread::spawn(move || serve(server));
         let mut client = Self {
@@ -21,13 +27,8 @@ impl Client {
             server,
             init: Value::Null,
         };
-        let options = json!({ "versionlens": options });
         client.init = client
-            .request(
-                1,
-                "initialize",
-                json!({ "capabilities": {}, "initializationOptions": options }),
-            )
+            .request(1, "initialize", params)
             .response_result
             .unwrap();
         client.notify("initialized", json!({}));
@@ -232,3 +233,5 @@ fn updates_all_after_pending_lookups_and_names_failures() {
     );
     client.stop();
 }
+
+mod commands;

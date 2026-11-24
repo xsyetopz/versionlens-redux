@@ -61,10 +61,12 @@ impl Http {
             let response = request.send().await.map_err(|e| chain(&e))?;
             let status = response.status();
             if !status.is_success() {
-                let hint = if status.as_u16() == 403 && url.contains("api.github.com") {
-                    " (rate limited; set GITHUB_TOKEN or versionlens.githubToken)"
-                } else {
-                    ""
+                let hint = match status.as_u16() {
+                    403 if url.contains("api.github.com") => {
+                        " (rate limited; set GITHUB_TOKEN or versionlens.githubToken)"
+                    }
+                    401 | 403 => " (add credentials for this URL with versionlens.authorization)",
+                    _ => "",
                 };
                 return Err(format!("HTTP {status}{hint}"));
             }
@@ -85,7 +87,16 @@ impl Http {
     /// Names the URL with the failure: connection, status, or deadline.
     pub(crate) async fn get(&self, url: &str, accept: &str) -> Result<String, String> {
         let mut request = self.client.get(url).header(header::ACCEPT, accept);
-        if url.starts_with("https://api.github.com/")
+        // The longest matching prefix wins, so a host-wide value can be narrowed per path.
+        let configured = self
+            .settings
+            .authorization
+            .iter()
+            .filter(|(prefix, _)| url.starts_with(prefix.as_str()))
+            .max_by_key(|(prefix, _)| prefix.len());
+        if let Some((_, value)) = configured {
+            request = request.header(header::AUTHORIZATION, value);
+        } else if url.starts_with("https://api.github.com/")
             && let Some(token) = &self.settings.github_token
         {
             request = request.bearer_auth(token);

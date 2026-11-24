@@ -49,24 +49,29 @@ fn glob(pattern: &str, text: &str) -> bool {
     }
 }
 
+/// Whether `pattern` matches the end of `path`, case-insensitively, segment by segment.
+pub(crate) fn path_matches(pattern: &str, path: &str) -> bool {
+    let lower = path.replace('\\', "/").to_ascii_lowercase();
+    let pattern = pattern.to_ascii_lowercase();
+    let segments: Vec<&str> = lower.split('/').collect();
+    let parts: Vec<&str> = pattern.split('/').collect();
+    segments.len() >= parts.len()
+        && parts
+            .iter()
+            .rev()
+            .zip(segments.iter().rev())
+            .all(|(p, s)| glob(p, s))
+}
+
 impl FileType {
     pub(crate) fn matches(&self, path: &str) -> bool {
-        let lower = path.replace('\\', "/").to_ascii_lowercase();
-        let segments: Vec<&str> = lower.split('/').collect();
-        self.globs.iter().any(|pattern| {
-            let parts: Vec<String> = pattern
-                .to_ascii_lowercase()
-                .split('/')
-                .map(str::to_owned)
-                .collect();
-            segments.len() >= parts.len()
-                && parts
-                    .iter()
-                    .rev()
-                    .zip(segments.iter().rev())
-                    .all(|(p, s)| glob(p, s))
-        })
+        self.globs.iter().any(|pattern| path_matches(pattern, path))
     }
+}
+
+/// The file type with this id.
+pub(crate) fn by_id(id: &str) -> Option<&'static FileType> {
+    FILE_TYPES.iter().find(|f| f.id == id)
 }
 
 /// The file type for a path; the first matching row wins.

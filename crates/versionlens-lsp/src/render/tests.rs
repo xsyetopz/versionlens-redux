@@ -48,13 +48,49 @@ fn offers_updates_only_to_matching_kinds() {
             .map(|k| CodeActionKind::from(k.to_string()))
             .collect::<Vec<_>>()
     };
-    assert!(wants_actions(None));
-    assert!(wants_actions(Some(&kinds(&["refactor"]))));
-    assert!(wants_actions(Some(&kinds(&[
-        "quickfix",
-        "refactor.rewrite"
-    ]))));
-    assert!(!wants_actions(Some(&kinds(&["quickfix"]))));
-    assert!(!wants_actions(Some(&kinds(&["refactor.re"]))));
-    assert!(!wants_actions(Some(&kinds(&["source.organizeImports"]))));
+    assert!(wants(ACTION_KIND, None));
+    assert!(wants(ACTION_KIND, Some(&kinds(&["refactor"]))));
+    assert!(wants(
+        ACTION_KIND,
+        Some(&kinds(&["quickfix", "refactor.rewrite"]))
+    ));
+    assert!(!wants(ACTION_KIND, Some(&kinds(&["quickfix"]))));
+    assert!(!wants(ACTION_KIND, Some(&kinds(&["refactor.re"]))));
+    assert!(!wants(
+        ACTION_KIND,
+        Some(&kinds(&["source.organizeImports"]))
+    ));
+}
+
+#[test]
+fn bulk_updates_pick_the_named_level() {
+    let dep = Dep {
+        name: "a".into(),
+        req: "^1.2.0".into(),
+        span: 0..6,
+        registry: "npm",
+        source: None,
+    };
+    let versions: Vec<Version> = ["1.2.0", "1.2.5", "1.4.0", "2.1.0"].map(v).into();
+    let req = Req::parse("^1.2.0", crate::version::Bare::Exact).unwrap();
+    let view = View {
+        dep: &dep,
+        range: Range::default(),
+        state: State::Planned {
+            plan: crate::version::plan(&req, &versions, None, false).unwrap(),
+            current: req.floor().cloned(),
+        },
+        vulns: &[],
+        page: String::new(),
+    };
+    let text = |level| {
+        updates(std::slice::from_ref(&view), "", level)
+            .into_iter()
+            .map(|e| e.new_text)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(text("latest"), ["^2.1.0"]);
+    assert_eq!(text("major"), ["^2.1.0"]);
+    assert_eq!(text("minor"), ["^1.4.0"]);
+    assert_eq!(text("patch"), ["^1.2.5"]);
 }
