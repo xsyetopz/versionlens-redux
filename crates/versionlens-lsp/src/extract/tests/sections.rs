@@ -1095,6 +1095,25 @@ const SECTIONS: &[(&str, &str, &str, &str, &str, &str)] = &[
         "b",
         "1.0.0",
     ),
+    // A recipe's `requirements()` and `build_requirements()` methods call `self.requires` and
+    // `self.tool_requires`: docs.conan.io/2/reference/conanfile/methods/requirements.html and
+    // build_requirements.html, whose `self.tool_requires("cmake/3.23.5")` this reads.
+    (
+        "conan",
+        "self.requires",
+        "conanfile.py",
+        "    def requirements(self):\n        self.requires(\"zlib/1.3.1\")\n",
+        "zlib",
+        "1.3.1",
+    ),
+    (
+        "conan",
+        "self.tool_requires",
+        "conanfile.py",
+        "    def build_requirements(self):\n        self.tool_requires(\"cmake/3.23.5\")\n",
+        "cmake",
+        "3.23.5",
+    ),
     // vcpkg
     (
         "vcpkg",
