@@ -29,6 +29,8 @@ pub(crate) enum State {
     },
     /// A dependency on a source no registry answers, such as a git repository, with its kind.
     Source(String),
+    /// A manifest's own version, with each next release's label and replacement text.
+    Own(Vec<(String, String)>),
     Planned {
         plan: Box<Plan>,
         /// The requirement's floor, which update levels count from.
@@ -214,6 +216,16 @@ pub(crate) fn lenses(
                 out.push(open(format!("{} not found {path}", glyphs.failed)));
             }
             State::Source(label) => out.push(open(label.clone())),
+            State::Own(next) => out.extend(next.iter().map(|(label, text)| CodeLens {
+                range: view.range,
+                command: Some(update_command(
+                    format!("{} {label}", glyphs.update),
+                    uri,
+                    view,
+                    text,
+                )),
+                data: None,
+            })),
             State::Planned { plan, .. } => {
                 let choices = picks(view, insert);
                 out.push(open(status(plan, choices.is_empty(), glyphs)));
@@ -309,7 +321,11 @@ pub(crate) fn hints(views: &[View<'_>], glyphs: &Indicators) -> Vec<InlayHint> {
                 }
                 State::Planned { plan, .. } => format!("{} {}", glyphs.newer, plan.latest.raw),
                 State::Failed(_) | State::Directory { target: None, .. } => glyphs.failed.clone(),
-                State::Pending | State::Unreadable | State::Directory { .. } | State::Source(_) => {
+                State::Pending
+                | State::Unreadable
+                | State::Directory { .. }
+                | State::Source(_)
+                | State::Own(_) => {
                     return None;
                 }
             };
@@ -339,6 +355,7 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
         } => format!("Local dependency at <{target}>"),
         State::Directory { path, .. } => format!("`{path}` does not exist"),
         State::Source(label) => format!("Pinned to a {label}: `{}`", dep.req),
+        State::Own(_) => format!("Project version `{}`", dep.req),
         State::Planned { plan, current, .. } => {
             let current = current.as_ref().map_or("none", |v| v.raw.as_str());
             format!(
@@ -350,9 +367,14 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
     let vulns = view.vulns.iter().fold(String::new(), |text, id| {
         text + "\n\n⚠ [" + id + "](https://osv.dev/vulnerability/" + id + ")"
     });
+    let page = if view.page.is_empty() {
+        String::new()
+    } else {
+        format!(" · [registry page]({})", view.page)
+    };
     let text = format!(
-        "**{}** · {} · [registry page]({})\n\n{status}{vulns}",
-        dep.name, dep.registry, view.page
+        "**{}** · {}{page}\n\n{status}{vulns}",
+        dep.name, dep.registry
     );
     Hover {
         contents: HoverContents::Markup(MarkupContent {
@@ -472,6 +494,11 @@ pub(crate) fn stats(
     insert: &str,
     glyphs: &Indicators,
 ) -> Option<CodeLens> {
+    // A manifest's own version is not a dependency.
+    let views: Vec<&View<'_>> = views
+        .iter()
+        .filter(|v| !matches!(v.state, State::Own(_)))
+        .collect();
     if views.is_empty() {
         return None;
     }

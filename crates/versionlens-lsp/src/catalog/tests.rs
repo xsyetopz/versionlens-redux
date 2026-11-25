@@ -2,7 +2,7 @@ use regex_automata::meta::Regex;
 
 use super::*;
 use crate::extract::Rule::{Lines, Spec, Via};
-use crate::extract::extract;
+use crate::extract::{PROJECT, SOURCE, extract};
 use crate::registry;
 
 #[test]
@@ -28,7 +28,12 @@ fn every_row_names_a_known_registry_and_valid_regexes() {
             file.registry
         );
         for mut rule in file.rules {
-            if let Via(_, inner) = rule {
+            if let Via(id, inner) = rule {
+                assert!(
+                    registry::get(id).is_some() || [PROJECT, SOURCE].contains(id),
+                    "{} sends a rule to {id}",
+                    file.id
+                );
                 rule = inner;
             }
             if let Spec(_, pattern) | Lines(pattern) = rule
@@ -269,8 +274,9 @@ const RENAMED: &[(&str, &str, &str)] = &[
     ("Nvmrc", "node", "1.0.0"),
 ];
 
-/// Cases still unread, each named in CHANGELOG.md: a manifest's own version is not a
-/// dependency; Julia manifests pin registered packages by `git-tree-sha1`, which the case lacks
+/// Cases still unread, each named in CHANGELOG.md: master looked a `jsr.json`'s own name up on
+/// JSR, where upstream offers a manifest's own version local increments and reads no
+/// `jsr.json` version at all; Julia manifests pin registered packages by `git-tree-sha1`, which the case lacks
 /// as a standard library would; and bare nimble names need the Nim package list.
 const UNREAD: &[&str] = &["JsrJson", "JuliaManifestToml", "Nimble"];
 

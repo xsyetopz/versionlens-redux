@@ -247,3 +247,18 @@ fn source_lenses_name_the_source_and_count_as_neither_failed_nor_outdated() {
         .unwrap();
     assert_eq!(summary.title, "1 dependencies");
 }
+
+#[test]
+fn project_versions_offer_their_next_releases_and_are_not_counted() {
+    let glyphs = Indicators::default();
+    let (dep, _) = planned("1", &["1.0.0"]);
+    let own = || State::Own(vec![("patch 1.0.1".into(), "1.0.1".into())]);
+    assert_eq!(
+        titles(&dep, own()),
+        [format!("{} patch 1.0.1", glyphs.update)]
+    );
+    let views = [view(&dep, own())];
+    assert!(hints(&views, &glyphs).is_empty());
+    let uri: Uri = "file:///p/package.json".parse().unwrap();
+    assert!(stats(&uri, &views, "", &glyphs).is_none());
+}

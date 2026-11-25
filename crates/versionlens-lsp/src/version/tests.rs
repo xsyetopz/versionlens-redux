@@ -166,3 +166,31 @@ fn lists_other_builds_of_the_resolved_version() {
     all.sort();
     assert_eq!(all, ["1.0.0", "1.0.0+build.2"]);
 }
+
+#[test]
+fn increments_a_project_version_as_semver_inc_does() {
+    let labels = |own: &str| -> Vec<String> {
+        increments(own)
+            .into_iter()
+            .map(|(label, text)| format!("{label} {text}"))
+            .collect()
+    };
+    assert_eq!(
+        labels("1.2.3"),
+        ["major 2.0.0", "minor 1.3.0", "patch 1.2.4"]
+    );
+    assert_eq!(
+        labels("v0.9"),
+        ["major v1.0.0", "minor v0.10.0", "patch v0.9.1"]
+    );
+    assert_eq!(labels("dev"), ["major 1.0.0", "minor 0.1.0", "patch 0.0.1"]);
+    assert_eq!(
+        labels("2.0.0-beta.1+build.5"),
+        ["release 2.0.0", "prerelease 2.0.0-beta.2"]
+    );
+    assert_eq!(
+        labels("1.0-SNAPSHOT"),
+        ["release 1.0.0", "prerelease 1.0.0-SNAPSHOT.0"]
+    );
+    assert_eq!(labels("1.0.0-3"), ["release 1.0.0", "prerelease 1.0.0-4"]);
+}

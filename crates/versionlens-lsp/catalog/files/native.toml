@@ -16,6 +16,7 @@ globs = ['Cargo.toml']
 format = 'toml'
 registry = 'cargo'
 rules = [
+    { spec = 'package.version', pattern = '${OWN}', via = 'project' },
     { keys = 'dependencies' },
     { keys = 'dev-dependencies' },
     { keys = 'build-dependencies' },

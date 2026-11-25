@@ -7,10 +7,10 @@ use std::borrow::Cow;
 
 use super::workspace::file_uri;
 use super::{Doc, Server, key, param};
-use crate::extract::{DIRECTORY, Dep, SOURCE, local_path};
+use crate::extract::{DIRECTORY, Dep, PROJECT, SOURCE, local_path};
 use crate::registry;
 use crate::render::{self, Lines, State, View};
-use crate::version::{Req, Version, plan};
+use crate::version::{Req, Version, increments, plan};
 
 impl Server {
     /// The versions without the prereleases the registry's `prereleaseTags` leave out.
@@ -39,6 +39,14 @@ impl Server {
         }
         if dep.registry == SOURCE {
             return State::Source(dep.source.clone().unwrap_or_default());
+        }
+        if dep.registry == PROJECT {
+            return State::Own(
+                increments(&dep.req)
+                    .into_iter()
+                    .map(|(label, text)| (format!("{label} {text}"), text))
+                    .collect(),
+            );
         }
         let found = match self.cache.get(&key(dep)).map(|e| &e.result) {
             None => return State::Pending,
@@ -78,8 +86,7 @@ impl Server {
                     range: lines.range(&dep.span),
                     state,
                     vulns,
-                    page: source_page(dep)
-                        .unwrap_or_else(|| registry::page(dep.registry, &dep.name)),
+                    page: page(dep),
                 }
             })
             .collect()
@@ -197,12 +204,19 @@ impl Server {
 
 /// A local dependency: its path as written, and its `file://` URI when it exists beside the
 /// manifest at `manifest`.
+/// The page a dependency's lens opens: none for a manifest's own version, the source itself for
+/// a fixed source, and otherwise the registry's package page.
+fn page(dep: &Dep) -> String {
+    match dep.registry {
+        PROJECT => String::new(),
+        SOURCE => source_page(dep).unwrap_or_else(|| registry::page(dep.registry, &dep.name)),
+        _ => registry::page(dep.registry, &dep.name),
+    }
+}
+
 /// The web address of a fixed source: its URL, without a `git+` prefix or a `#ref`, or the
 /// repository a `github:owner/repo` shorthand names.
 fn source_page(dep: &Dep) -> Option<String> {
-    if dep.registry != SOURCE {
-        return None;
-    }
     let req = dep.req.trim();
     let req = req.strip_prefix("git+").unwrap_or(req);
     let url = req.split('#').next().unwrap_or(req);

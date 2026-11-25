@@ -77,6 +77,10 @@ pub(crate) fn local_path(req: &str) -> Option<&str> {
         .filter(|path| !path.is_empty() && !path.starts_with("//"))
 }
 
+/// The registry id of a manifest's own version, which gets the next releases as updates, as
+/// upstream's project version lenses offer, rather than a lookup.
+pub(crate) const PROJECT: &str = "project";
+
 /// The registry id of dependencies on a source no registry answers, such as a git repository or a
 /// tarball URL. They need no lookup; their lens names the source, as the fork's master did.
 pub(crate) const SOURCE: &str = "source";

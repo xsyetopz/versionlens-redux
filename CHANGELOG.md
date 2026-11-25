@@ -19,6 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - JSON files whose top level holds a `package.json` section (`dependencies`, `devDependencies`, `jspm`, `workspaces`, `pnpm`, and the rest) read as `package.json`, as the fork's master did. Opened files are tested by content; the workspace scan matches names only.
 - Dependencies no registry answers get a lens that names their source, as the fork's master showed them: git repositories (`git+`, `git@`, `ssh://`, `github:` shorthands, `.git` URLs, and GitHub, GitLab, and Bitbucket URLs), package URLs, `workspace:` packages, and `catalog:` entries. Cargo, Pub, Poetry, and uv `git` entries and uv `url` sources (`[tool.uv.sources]`) count too. The lens opens the repository or URL; these dependencies get no inlay hint and count as neither failed nor outdated.
 - GitHub requests with no `versionlens.githubToken`, `GITHUB_TOKEN`, or `GH_TOKEN` use the token `gh auth token --hostname github.com` prints, read once per session with a 2-second limit, as the fork's master did.
+- A manifest's own version (`version` in `package.json`, `composer.json`, and `pubspec.yaml`; `[package] version` in `Cargo.toml`; `[project] version` in `pyproject.toml`; `<project><version>` in `pom.xml`; `<Version>` and `<AssemblyVersion>` in .NET projects) gets lenses for its next major, minor, and patch release, or its release and next prerelease, as upstream's project version suggestions did. No registry is asked, and the lenses count as neither outdated nor failed.
 - Gradle `plugins { id 'name' version '1.0' }` entries resolve through the Gradle Plugin Portal's marker artifacts.
 - `constraints:` in `cabal.project`, one-line Terraform `required_providers` blocks and blocks that list `version` before `source`, and Nixpkgs release branches such as `github:NixOS/nixpkgs/nixos-24.05` are read.
 - `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases.
@@ -46,6 +47,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `deps.edn` and `project.clj` look in Clojars, then Maven Central, where `org.clojure/clojure` lives; their OSV queries use Maven's `group:artifact` names.
 - Maven and Clojure package links open pages that exist: Maven Central's artifact page and cljdoc.
 - ConanCenter dependencies no longer send OSV queries for an ecosystem OSV does not have; the GitLab Advisory Database answers them instead.
+
+### Known Gaps
+
+- Three of the fork's master checking-coverage cases stay unread. A `jsr.json`'s own name is not looked up on JSR, because upstream reads no `jsr.json` version. A `Manifest.toml` entry with no `git-tree-sha1` reads as a standard library. A bare `requires "name"` in a `.nimble` file names no version to check without the Nim package list.
 
 ## [0.6.3] - 2026-11-09
 

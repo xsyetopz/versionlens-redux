@@ -691,3 +691,55 @@ fn reads_layouts_master_read() {
         "24.05",
     );
 }
+
+/// Each manifest's own version, at the paths upstream's `dependencyProperties` list.
+#[test]
+fn reads_the_project_version_where_upstream_did() {
+    let own = |path: &str, text: &str| -> Vec<String> {
+        let file = file_type(path).unwrap_or_else(|| panic!("{path} not recognised"));
+        extract(file, text)
+            .into_iter()
+            .filter(|d| d.registry == PROJECT)
+            .map(|d| {
+                assert_eq!(text[d.span.clone()], d.req);
+                d.req
+            })
+            .collect()
+    };
+    let cases = [
+        (
+            "package.json",
+            r#"{"name":"a","version":"1.2.3","dependencies":{"b":"1"}}"#,
+        ),
+        (
+            "composer.json",
+            r#"{"version":"1.2.3","require":{"a/b":"1"}}"#,
+        ),
+        (
+            "pubspec.yaml",
+            "name: a\nversion: 1.2.3\ndependencies:\n  http: ^1.0.0\n",
+        ),
+        (
+            "Cargo.toml",
+            "[package]\nname = \"a\"\nversion = \"1.2.3\"\n[dependencies]\nserde = \"1\"\n",
+        ),
+        (
+            "pyproject.toml",
+            "[project]\nname = \"a\"\nversion = \"1.2.3\"\ndependencies = []\n",
+        ),
+        (
+            "pom.xml",
+            "<project><version>1.2.3</version><parent><version>9</version></parent></project>",
+        ),
+        (
+            "a.csproj",
+            "<Project><PropertyGroup><Version>1.2.3</Version></PropertyGroup></Project>",
+        ),
+    ];
+    for (path, text) in cases {
+        assert_eq!(own(path, text), ["1.2.3"], "{path}");
+    }
+    // A workspace-inherited version names no version of its own.
+    let inherited = "[package]\nversion.workspace = true\n";
+    assert_eq!(own("Cargo.toml", inherited), Vec::<String>::new());
+}

@@ -25,6 +25,7 @@ globs = ['pubspec.yaml', 'pubspec.yml', 'pubspec_overrides.yaml']
 format = 'yaml'
 registry = 'pub'
 rules = [
+    { spec = 'version', pattern = '${OWN}', via = 'project' },
     { keys = 'dependencies' },
     { keys = 'dev_dependencies' },
     { keys = 'dependency_overrides' },

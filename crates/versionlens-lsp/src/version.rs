@@ -564,5 +564,38 @@ fn suggest(
     picks
 }
 
+/// The next releases of a manifest's own version, as upstream's `getProjectVersionSuggestions`
+/// offers them through semver's `inc`: `major`, `minor`, and `patch` for a release, and for a
+/// prerelease its `release` and next `prerelease`. A version that does not parse counts as
+/// `0.0.0`, and missing segments count as `0`; the `v` prefix stays.
+pub(crate) fn increments(own: &str) -> Vec<(&'static str, String)> {
+    let own = own.trim();
+    let (prefix, _, suffix) = split(own);
+    let nums = Version::parse(own).map_or_else(Vec::new, |v| v.nums);
+    let [major, minor, patch] = [0, 1, 2].map(|i| nums.get(i).copied().unwrap_or(0));
+    let release = |m: u64, n: u64, p: u64| format!("{prefix}{m}.{n}.{p}");
+    let pre = suffix.split('+').next().unwrap_or_default();
+    let Some(pre) = pre.strip_prefix('-').filter(|p| !p.is_empty()) else {
+        return vec![
+            ("major", release(major + 1, 0, 0)),
+            ("minor", release(major, minor + 1, 0)),
+            ("patch", release(major, minor, patch + 1)),
+        ];
+    };
+    // semver bumps the last numeric identifier, or appends `.0` when there is none.
+    let next = match pre.rsplit_once('.') {
+        Some((head, last)) if last.parse::<u64>().is_ok() => {
+            format!("{head}.{}", last.parse::<u64>().unwrap_or(0) + 1)
+        }
+        _ if pre.parse::<u64>().is_ok() => (pre.parse::<u64>().unwrap_or(0) + 1).to_string(),
+        _ => format!("{pre}.0"),
+    };
+    let current = release(major, minor, patch);
+    vec![
+        ("release", current.clone()),
+        ("prerelease", format!("{current}-{next}")),
+    ]
+}
+
 #[cfg(test)]
 mod tests;
