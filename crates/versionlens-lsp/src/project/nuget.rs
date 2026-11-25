@@ -6,7 +6,8 @@
 //! `disabledPackageSources` turns a source off, `packageSourceCredentials` holds a
 //! `Username` and `ClearTextPassword` per source name (spaces written `_x0020_`), and
 //! `packageSourceMapping` routes package-id patterns to sources, the most specific pattern
-//! winning. Values expand `%NAME%`. When no file names a source, the sources
+//! winning. Values expand `%NAME%`. When no file names a source, the original
+//! `versionlens.dotnet.nuget.sources` setting gives them, and without it the sources
 //! `dotnet nuget list source --format Short` reports enabled (`E url`) are used instead, which
 //! covers machine-wide files this reader does not look for.
 
@@ -47,6 +48,13 @@ pub(super) fn config(dir: &Path, env: &Env) -> impl Fn(&Dep) -> Vec<Target> {
         if let Some(text) = read(file) {
             apply(&mut sources, &text, env);
         }
+    }
+    if sources.list.is_empty() {
+        sources.list = env
+            .nuget
+            .iter()
+            .map(|u| (String::new(), u.clone()))
+            .collect();
     }
     if sources.list.is_empty()
         && let Some(listed) = listed(dir, env)

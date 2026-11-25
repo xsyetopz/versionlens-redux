@@ -23,10 +23,6 @@ const PROVIDERS: &[(&str, &str, &str)] = &[
     ("ruby", "rubygems", "gemfile"),
 ];
 
-/// Original provider keys this rewrite has no counterpart for: its registry URLs are templates
-/// in `registries`, and its extraction rules live in the catalog.
-const UNREAD: &[&str] = &["apiUrl", "dependencyProperties", "nuget"];
-
 /// Original indicator names and the glyph each became; `SatisfiesLatest` shares `latest`.
 const INDICATORS: &[(&str, &str)] = &[
     ("Latest", "latest"),
@@ -130,10 +126,70 @@ fn provider(old: &Value, name: &str, registry: &str, file_type: &str, settings: 
             settings.files.entry(glob).or_insert_with(|| id.to_owned());
         }
     }
-    for key in UNREAD {
-        if old.get(key).is_some() {
-            settings.unread.push(format!("versionlens.{name}.{key}"));
+    if let Some(url) = old
+        .get("apiUrl")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|u| !u.is_empty())
+    {
+        match template(name, url) {
+            Some(template) => {
+                settings
+                    .registries
+                    .entry(registry.to_owned())
+                    .or_insert(template);
+            }
+            None => settings.unread.push(format!("versionlens.{name}.apiUrl")),
         }
+    }
+    // Upstream 1.3.0's nugetOptions.ts asks these service indexes in place of the sources
+    // `dotnet nuget list source` prints.
+    if let Some(nuget) = old.get("nuget") {
+        settings.nuget_sources = list(nuget, "sources");
+    }
+    // Upstream 1.3.0 read a manifest only at these paths; its `pypi` provider read pyproject.toml
+    // and Pipfile with them, and requirements.txt line by line.
+    if old.get("dependencyProperties").is_some() {
+        let paths = list(old, "dependencyProperties");
+        let types: &[&str] = match name {
+            "pypi" => &["pyproject", "pipfile"],
+            _ => std::slice::from_ref(&file_type),
+        };
+        for id in types {
+            settings
+                .properties
+                .entry((*id).to_owned())
+                .or_insert_with(|| paths.clone());
+        }
+    }
+}
+
+/// The `registries` template an original `apiUrl` stands for, built the way each provider of
+/// upstream 1.3.0 built its request URL from it: `{apiUrl}/{name}` in pubSuggestionProvider.ts,
+/// `{apiUrl}/{name}/info` in dubJsonClient.ts, `{apiUrl}/{name}.json` in packagistClient.ts,
+/// `{apiUrl}/{path}/maven-metadata.xml` in mavenHttpClient.ts, and a template with `{base-module}`
+/// or `{name}` in goHttpClient.ts and rubyHttpClient.ts. A Warehouse index, as pypi.org and
+/// test.pypi.org run, serves its `{base}/pypi/{name}/json` API beside the `{base}/simple/{name}/`
+/// index the `pypi` row reads (docs.pypi.org/api/). The default `crates.io` web API maps to the
+/// `cargo` row's own sparse index, and another host to `{apiUrl}/{name}/versions` as
+/// cratesClient.ts built it, whose answer the `cargo` reader also reads.
+fn template(name: &str, url: &str) -> Option<String> {
+    let base = url.trim_end_matches('/');
+    match name {
+        "pypi" => base
+            .strip_suffix("/pypi/{name}/json")
+            .map(|host| format!("{host}/simple/{{name}}/")),
+        "cargo" if base == "https://crates.io/api/v1/crates" => {
+            crate::registry::get("cargo").map(|r| r.url.to_owned())
+        }
+        "cargo" => Some(format!("{base}/{{name}}/versions")),
+        "pub" => Some(format!("{base}/{{name}}")),
+        "dub" => Some(format!("{base}/{{name}}/info")),
+        "composer" => Some(format!("{base}/{{name}}.json")),
+        "maven" => Some(format!("{base}/{{path}}/maven-metadata.xml")),
+        "golang" => Some(url.replace("{base-module}", "{go}")),
+        "ruby" => Some(url.to_owned()),
+        _ => None,
     }
 }
 

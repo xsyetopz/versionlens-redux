@@ -21,13 +21,18 @@ format = 'json'
 registry = 'npm'
 rules = [{ use = 'NPM_DEPS' }]
 
+# `.nvmrc` holds one version among comments, blank lines, and `key=value` lines nvm ignores, and
+# that version may be an alias: `lts/*` for the newest LTS line, `node` or `stable` for the newest
+# release (github.com/nvm-sh/nvm#nvmrc, `nvm_process_nvmrc_content` in nvm.sh).
 [[file]]
 id = 'node'
 globs = ['.nvmrc', '.node-version']
 format = 'text'
 registry = 'npm'
 rules = [
-    { lines = '${TOOL_VERSION}' },
+    { lines = '(?m)^[ \t]*v?(?P<version>\d[\w.]*)[ \t]*(?:#.*)?\r?$' },
+    { lines = '(?m)^[ \t]*(?P<channel>lts/\*)[ \t]*(?:#.*)?\r?$', via = 'nodejs-lts' },
+    { lines = '(?m)^[ \t]*(?P<channel>node|stable)[ \t]*(?:#.*)?\r?$' },
 ]
 
 # Bower's registry only names each package's Git repository; the packages it still serves
@@ -43,6 +48,10 @@ rules = [
     { keys = 'resolutions' },
 ]
 
+# oven-sh/setup-bun passes `.bun-version` through as its `bun-version`, which takes a version,
+# `latest`, or `canary` (src/utils.ts and the README's inputs table); npm's `bun` package tags the
+# canary build `canary` (dist-tags read 2026-11-25: `latest` 1.4.5, `canary`
+# 1.4.5-canary.20261125.1).
 [[file]]
 id = 'bun'
 globs = ['.bun-version']
@@ -50,6 +59,8 @@ format = 'text'
 registry = 'npm'
 rules = [
     { lines = '${TOOL_VERSION}' },
+    { lines = '\A(?:\s*#[^\n]*\n)*\s*(?P<channel>latest)[ \t]*(?:#[^\n]*)?\s*\z' },
+    { lines = '\A(?:\s*#[^\n]*\n)*\s*(?P<channel>canary)[ \t]*(?:#[^\n]*)?\s*\z', via = 'npm-canary' },
 ]
 
 [[file]]
@@ -70,8 +81,14 @@ rules = [
     # against JSR as the fork's master did, beside the local increments above.
     { lines = '(?s)\A\s*\{.*?"name"\s*:\s*"(?P<name>@[\w-]+/[\w.-]+)".*?"version"\s*:\s*"(?P<version>[^"]+)"' },
     { lines = '(?s)\A\s*\{.*?"version"\s*:\s*"(?P<version>[^"]+)".*?"name"\s*:\s*"(?P<name>@[\w-]+/[\w.-]+)"' },
-    { spec = 'imports.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
-    { spec = 'scopes.*.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
+    # A specifier without a version takes the newest: Deno 2.9.8 locks `jsr:@std/assert` as
+    # `jsr:@std/assert@*`, and rejects `jsr:@std/assert@` with "Empty version constraint".
+    { spec = 'imports.*', pattern = '${DENO_SPEC}' },
+    { spec = 'scopes.*.*', pattern = '${DENO_SPEC}' },
+    # A deno.land module URL without `@version` redirects to the newest release, as
+    # https://deno.land/std/mod.ts answers 302 to https://deno.land/std@0.224.0/mod.ts.
+    { spec = 'imports.*', pattern = '${DENO_LAND}', via = 'deno-land' },
+    { spec = 'scopes.*.*', pattern = '${DENO_LAND}', via = 'deno-land' },
 ]
 
 # Component names packages by GitHub repository, in `dependencies` and `development.dependencies`:
@@ -139,6 +156,9 @@ rules = [
     { spec = 'version', pattern = '${OWN}', via = 'project' },
     { keys = 'require' },
     { keys = 'require-dev' },
+    # The PHP version the package runs on, a platform package Packagist does not list:
+    # getcomposer.org/doc/01-basic-usage.md#platform-packages
+    { lines = '''"(?P<name>php)"\s*:\s*"(?P<version>[^"]+)"''', within = '''"require(?:-dev)?"\s*:\s*\{(?P<body>[^{}]*(?:\{[^{}]*\}[^{}]*)*)\}''', via = 'php' },
     # Constraints on other packages, which the fork's master read too:
     # getcomposer.org/doc/04-schema.md#conflict
     { keys = 'conflict' },
@@ -175,6 +195,11 @@ rules = [
     { keys = 'versions' },
     # A build configuration adds dependencies: dub.pm/dub-reference/configurations/
     { keys = 'configurations.*.dependencies' },
+    # A sub-package declared inline is a recipe of its own, with a required `name`, and may list
+    # dependencies and configurations: dub.pm/dub-reference/subpackages/. A path string in its
+    # place names a folder.
+    { keys = 'subPackages.#.dependencies' },
+    { keys = 'subPackages.#.configurations.*.dependencies' },
 ]
 
 [[file]]

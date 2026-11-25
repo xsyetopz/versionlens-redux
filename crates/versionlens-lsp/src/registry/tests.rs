@@ -133,6 +133,12 @@ fn parses_each_response_shape() {
         (cargo.list, cargo.yanked),
         (vec!["1.0.0".to_owned()], vec!["1.1.0".to_owned()])
     );
+    let api = r#"{"versions":[{"num":"1.1.0","yanked":true},{"num":"1.0.0","yanked":false}]}"#;
+    let api = parse("cargo", api, "x");
+    assert_eq!(
+        (api.list, api.yanked),
+        (vec!["1.0.0".to_owned()], vec!["1.1.0".to_owned()])
+    );
     let jsr = parse(
         "jsr",
         r#"{"versions":{"1.0.0":{},"1.1.0":{"yanked":true}}}"#,

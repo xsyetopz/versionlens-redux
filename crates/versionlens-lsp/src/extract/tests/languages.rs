@@ -196,7 +196,7 @@ fn reads_lake_reservoir_tags() {
 
 #[test]
 fn reads_v_module_ranges() {
-    // The range forms of V's vpm README; a bare module follows its default branch.
+    // The range forms of V's vpm README; a bare module reads with no version.
     let text = "Module {\n\tname: 'app'\n\tversion: '0.1.0'\n\tdependencies: [\n\t\t'vsl@^0.1.47',\n\t\t'nedpals.args@>=0.4.0 <0.6.0',\n\t\t'markdown',\n\t]\n}\n";
     expect(
         "v.mod",
@@ -204,6 +204,7 @@ fn reads_v_module_ranges() {
         &[
             ("vsl", "^0.1.47", "vpm"),
             ("nedpals.args", ">=0.4.0 <0.6.0", "vpm"),
+            ("markdown", "", "vpm"),
         ],
     );
 }

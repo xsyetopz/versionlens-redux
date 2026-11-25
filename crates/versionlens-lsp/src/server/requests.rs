@@ -36,7 +36,12 @@ impl Server {
 
     fn state(&self, doc: &Doc, dep: &Dep) -> State {
         if dep.registry == DIRECTORY {
-            return directory(&doc.path, &dep.req);
+            // A bare name in a `path` block, as a Gemfile writes, has its path as its source.
+            let path = match (&*dep.req, &dep.source) {
+                ("", Some(source)) => source,
+                _ => &dep.req,
+            };
+            return directory(&doc.path, path);
         }
         if dep.registry == SOURCE {
             return State::Source(dep.source.clone().unwrap_or_default());

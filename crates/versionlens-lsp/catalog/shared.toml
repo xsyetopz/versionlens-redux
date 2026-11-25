@@ -34,12 +34,39 @@ GITHUB_FRAGMENT ='github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?#(
 # write modules: developer.hashicorp.com/terraform/language/modules/sources#selecting-a-revision
 GITHUB_REF = 'github\.com[:/](?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?(?://[^?"\s]*)?\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)'
 
+# A Deno import of a JSR or npm package, with an optional version
+# (docs.deno.com/runtime/fundamentals/modules/), and a deno.land standard library or /x module URL.
+DENO_SPEC = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)(?:@(?P<version>.+))?$'
+DENO_LAND = '^https://deno\.land/(?:x/)?(?P<name>[\w-]+)(?:@(?P<version>[^/]+))?(?:/.*)?$'
+# An npm alias value, `npm:name@range` or a bare `npm:name`.
+NPM_ALIAS = '^npm:(?P<name>(?:@[\w.-]+/)?[\w.-]+)(?:@(?P<version>.*))?$'
+
+# An Erlang term tuple nested up to three deep, and the list of a `{deps, [...]}`,
+# `{plugins, [...]}` or `{project_plugins, [...]}` term, as rebar.config writes them:
+# rebar3.org/docs/configuration/dependencies/ and rebar3.org/docs/configuration/plugins/
+# The arguments of one `single_version_override(...)` call, whose values may hold one level of
+# parentheses.
+BAZEL_OVERRIDE = '(?-u:\b)single_version_override\((?P<body>(?:[^()]|\([^()]*\))*)\)'
+# The value of a Cabal dependency field: the rest of its line, then each blank, comment, or
+# indented line that holds an entry rather than starting another field (`name:` and a space) or a
+# conditional (cabal.readthedocs.io/en/stable/cabal-package-description-file.html).
+CABAL_DEPENDS = '(?m)^[ \t]*(?:(?:build|setup|build-tool)-depends|build-tools|constraints):(?P<body>[^\n]*(?:\n[ \t]*(?:--[^\n]*)?\r?$|\n[ \t]+(?:,|[A-Za-z][\w-]*(?:[ \t]*\r?$|[ \t]*[,<>=^&|(]|:[\w{]))[^\n]*)*)'
+ERL_TUPLE = '\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}'
+ERL_DEPS = '\{(?:deps|plugins|project_plugins),\s*\[(?P<body>[^\]]*)\]'
+
 [rules]
 NPM_DEPS = [
     { keys = 'dependencies' },
     { keys = 'devDependencies' },
     { keys = 'peerDependencies' },
     { keys = 'optionalDependencies' },
+    # An alias installs a package under another key: `"react-18": "npm:react@^18.0.0"`, or
+    # `"npm:react"` for its latest (docs.npmjs.com/cli/v10/using-npm/package-spec#aliases). The
+    # `keys` rules drop such a value, and these read the package it names.
+    { spec = 'dependencies.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'devDependencies.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'peerDependencies.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'optionalDependencies.*', pattern = '${NPM_ALIAS}' },
     { keys = 'resolutions' },
     { keys = 'overrides' },
     # A nested override pins a dependency only below its parent: `{"parent": {"child": "1.0.0"}}`.
@@ -61,11 +88,19 @@ NPM_DEPS = [
     { keys = 'volta' },
     # Name lists, read as the fork's master read them: bundleDependencies and its older spelling
     # (docs.npmjs.com/cli/v10/configuring-npm/package-json#bundledependencies), and Bun's
-    # trustedDependencies (bun.sh/docs/install/lifecycle#trusteddependencies).
-    { spec = 'bundleDependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
-    { spec = 'bundledDependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
-    { spec = 'trustedDependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    # trustedDependencies (bun.sh/docs/install/lifecycle#trusteddependencies). npm turns an
+    # object in bundleDependencies' place into its keys (npm/package-json lib/normalize.js,
+    # "translate from object"), so the `keys` rules read that form by name.
+    { spec = 'bundleDependencies.#', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'bundledDependencies.#', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { keys = 'bundleDependencies' },
+    { keys = 'bundledDependencies' },
+    { spec = 'trustedDependencies.#', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
     { spec = 'packageManager', pattern = '^(?P<name>[\w-]+)@(?P<version>[^+]+)' },
+    # `engines` names the runtime and package managers a package runs on, as the fork's master
+    # read it (docs.npmjs.com/cli/v10/configuring-npm/package-json#engines). Other keys, such as
+    # a VS Code extension's `vscode`, name hosts no npm package versions.
+    { lines = '"(?P<name>node|npm|pnpm|yarn|bun)"\s*:\s*"(?P<version>[^"]+)"', within = '(?s)"engines"\s*:\s*\{(?P<body>[^{}]*)\}' },
     # `devEngines` names its tools as `{"name": "pnpm", "version": "^9.0.0"}`, or a list of them.
     { record = 'devEngines.packageManager', name = 'name', version = 'version' },
     { record = 'devEngines.packageManager.*', name = 'name', version = 'version' },
@@ -95,11 +130,22 @@ PYPROJECT = [
     { keys = 'tool.poetry.dependencies' },
     { keys = 'tool.poetry.dev-dependencies' },
     { keys = 'tool.poetry.group.*.dependencies' },
+    # Poetry lists the Python versions a package runs on as a dependency named `python`, which
+    # PyPI does not answer: python-poetry.org/docs/pyproject/#dependencies-and-dependency-groups
+    { lines = '''(?m)^[ \t]*(?P<name>python)[ \t]*=[ \t]*["'](?P<version>[^"'\n]+)["']''', within = '''(?m)^\[tool\.poetry(?:\.group\.[\w-]+)?\.(?:dev-)?dependencies\][^\n]*\n(?P<body>(?:[^\[\n][^\n]*\n|\n)*)''', via = 'python' },
+    { lines = '''(?m)^\[tool\.poetry(?:\.group\.[\w-]+)?\.(?:dev-)?dependencies\.(?P<name>python)\][^\n]*\n(?:[^\[\n][^\n]*\n|\n)*?[ \t]*version[ \t]*=[ \t]*["'](?P<version>[^"'\n]+)["']''', via = 'python' },
     # uv sources point a dependency at git, a URL, or a path: docs.astral.sh/uv/concepts/projects/dependencies/#dependency-sources
     { keys = 'tool.uv.sources' },
 ]
 NUGET = [
-    { record = 'Project.ItemGroup.PackageReference', name = '@Include|@Update', version = '@Version|Version' },
+    # Central package management sets a version in Directory.Packages.props, which a project may
+    # override with `VersionOverride`, and leaves `PackageReference` without one:
+    # learn.microsoft.com/en-us/nuget/consume-packages/central-package-management
+    { record = 'Project.ItemGroup.PackageReference', name = '@Include|@Update', version = '@Version|Version|@VersionOverride|VersionOverride' },
+    # A reference with no `Version` or `VersionOverride`, as attribute or child, reads with no
+    # requirement. No attribute or child of a `PackageReference` other than those two starts `Ve`:
+    # learn.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files
+    { lines = '''<PackageReference(?:\s+(?:Include|Update)\s*=\s*["'](?P<name>[\w.-]+)["']|\s+(?:[A-UW-Za-z]|V[a-df-z])[\w.:-]*\s*=\s*(?:"[^"]*"|'[^']*'))+\s*(?:/>|>(?:\s*<(?:[A-UW-Za-z]|V[a-df-z])[\w.-]*>[^<]*</[\w.-]+>|\s*<!--(?:[^-]|-[^-])*-->)*\s*</PackageReference>)''' },
     { record = 'Project.ItemGroup.PackageVersion', name = '@Include|@Update', version = '@Version|Version' },
     { record = 'Project.ItemGroup.GlobalPackageReference', name = '@Include|@Update', version = '@Version|Version' },
     { record = 'Project.ItemGroup.DotNetCliToolReference', name = '@Include|@Update', version = '@Version|Version' },

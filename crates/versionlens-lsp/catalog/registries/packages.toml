@@ -30,6 +30,20 @@ accept = 'application/vnd.npm.install-v1+json'
 deprecated = 'deprecated'
 page = 'https://www.npmjs.com/package/{name}'
 
+# npm's `canary` dist-tag, which a `.bun-version` of `canary` follows: the newest version is the
+# one the tag names, prereleases included.
+[[registry]]
+id = 'npm-canary'
+url = 'https://registry.npmjs.org/{enc}'
+json = 'versions'
+field = '@key'
+latest = 'dist-tags/canary'
+bare = 'exact'
+osv = 'npm'
+accept = 'application/vnd.npm.install-v1+json'
+deprecated = 'deprecated'
+page = 'https://www.npmjs.com/package/{name}?activeTab=versions'
+
 [[registry]]
 id = 'jsr'
 url = 'https://jsr.io/{name}/meta.json'
@@ -42,6 +56,20 @@ osv_name = 'https://jsr.io/{name}'
 upstream = 'href="${GITHUB_URL}'
 yanked = 'yanked'
 page = 'https://jsr.io/{name}'
+
+# deno.land's standard library and /x modules: each one's releases at
+# cdn.deno.land/{name}/meta/versions.json, and the GitHub repository a release was uploaded from
+# in its meta.json's `upload_options`, whose GIT advisories OSV files, as for oakserver/oak.
+[[registry]]
+id = 'deno-land'
+url = 'https://cdn.deno.land/{name}/meta/versions.json'
+json = 'versions'
+latest = 'latest'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://cdn.deno.land/{name}/versions/{version}/meta/meta.json'
+upstream = '"repository":"(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)"'
+page = 'https://deno.land/x/{name}'
 
 [[registry]]
 id = 'unity'

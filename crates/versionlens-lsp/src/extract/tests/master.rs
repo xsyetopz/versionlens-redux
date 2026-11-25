@@ -115,6 +115,7 @@ version = \"0.1.0\"
             ("Dates", "1.11.0", "julia-stdlib"),
             ("LibCURL_jll", "8.6.0+0", "julia"),
             ("Example", "1.2.3", "julia"),
+            ("dev/Local", "dev/Local", "directory"),
         ],
     );
 }
@@ -377,7 +378,9 @@ spotless = "com.diffplug.spotless:6.25.0"
         "gradle/libs.versions.toml",
         text,
         &[
+            ("org.jetbrains.kotlin.jvm", "2.0.0", "gradle-plugins"),
             ("org.jetbrains.kotlin:kotlin-stdlib", "2.0.0", "maven"),
+            ("org.jetbrains.kotlin:kotlin-test", "2.0.0", "maven"),
             ("com.squareup.okio:okio", "3.9.0", "maven"),
             ("com.android.application", "8.5.0", "gradle-plugins"),
             ("com.google.guava:guava", "33.0.0-jre", "maven"),

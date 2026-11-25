@@ -7,6 +7,11 @@ format = 'text'
 registry = 'nuget'
 rules = [
     { lines = '(?m)^[ \t]*nuget[ \t]+(?P<name>[\w.-]+)[ \t]+(?P<version>(?:[~><=]+[ \t]*)?\d[\w.-]*)' },
+    # A line whose next word is neither a version nor an operator takes `>= 0` and reads the rest
+    # as options, such as `prerelease` or `copy_local: false`: Paket's `(|Package|_|)` in
+    # src/Paket.Core/Dependencies/DependenciesFileParser.fs, and "Omitting the version constraint"
+    # at fsprojects.github.io/Paket/nuget-dependencies.html.
+    { lines = '(?m)^[ \t]*nuget[ \t]+(?P<name>[\w.-]+)(?:[ \t]+[^\d~><=\s][^\n]*)?[ \t]*\r?$' },
 ]
 
 # `paket.references` names a project's packages; their versions live in `paket.dependencies`.
@@ -52,7 +57,9 @@ registry = 'maven'
 rules = [
     # A classifier, `g:a:1.0:jdk8`, or an artifact type, `g:a:1.0@aar`, may follow the version:
     # docs.gradle.org/current/userguide/dependency_management_terminology.html
-    { lines = '''["'](?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)(?::[\w.-]+)?(?:@\w+)?["']''' },
+    # A version may come from a variable, `"g:a:$v"` or `"g:a:${v}"`, which buildSrc or
+    # gradle.properties often defines (docs.gradle.org/current/userguide/build_environment.html).
+    { lines = '''["'](?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+|\$\{?[\w.]+\}?)(?::[\w.-]+)?(?:@\w+)?["']''' },
     # A plugins block names each plugin by id: `id 'org.example' version '1.0'` in Groovy,
     # `id("org.example") version "1.0"` in Kotlin; docs.gradle.org/current/userguide/plugins.html.
     { lines = '''(?-u:\b)id[ \t(]*["'](?P<name>[\w.-]+)["'][ \t)]*version[ \t(]*["'](?P<version>[^"'$]+)["']''', via = 'gradle-plugins' },
@@ -65,6 +72,11 @@ rules = [
     # The fork's master read map entries in any order; `name` before `group` is the other order
     # builds write.
     { lines = '''name[ \t]*[:=][ \t]*["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*group[ \t]*[:=][ \t]*["'](?P<group>[\w.-]+)["'][ \t]*,[ \t]*version[ \t]*[:=][ \t]*["'](?P<version>[^"'$]+)["']''' },
+    # A configuration may name another project of the build, `implementation project(':lib')`,
+    # or local files, `files('libs/a.jar')` or `fileTree('libs')`, which the fork's master read
+    # as local (crates/versionlens-parsers/src/gradle/build.rs, `parse_local_dependency_line`):
+    # docs.gradle.org/current/userguide/declaring_dependencies_basics.html
+    { lines = '''(?m)^[ \t]*\w+[ \t(]+(?:project|files|fileTree)\([ \t]*(?:(?:path|dir)[ \t]*[:=][ \t]*)?["'](?P<name>(?P<version>[^"']+))["']''', via = 'directory' },
 ]
 
 [[file]]
@@ -98,8 +110,9 @@ registry = 'maven'
 rules = [
     { lines = '"(?P<group>[\w.-]+)"[ \t]*%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"' },
     # `%%` appends the Scala binary version to the artifact, `cats-core_2.13`, which the build's
-    # `scalaVersion` gives: www.scala-sbt.org/1.x/docs/Library-Dependencies.html. A build that names
-    # no literal version stays unread, as Maven Central has no artifact without the suffix. `%%%`
+    # `scalaVersion` gives: www.scala-sbt.org/1.x/docs/Library-Dependencies.html. A file that sets
+    # none takes it from the build's other `.sbt` files or its sbt version, which src/project/sbt.rs
+    # appends to the text these rules read. `%%%`
     # adds the Scala.js or Native platform, which plugins elsewhere choose, so it stays unread.
     { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.10\.[^"]*".*\z', suffix = '_2.10' },
     { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.11\.[^"]*".*\z', suffix = '_2.11' },

@@ -2,6 +2,25 @@
 # answer for tool-version files such as `.python-version` and `.tool-versions`. See packages.toml
 # for the row format.
 
+# A dated nightly or beta toolchain is the date its channel was built; the channel's date file
+# names the newest, `2026-11-25` for nightly on 2026-11-25
+# (static.rust-lang.org/dist/channel-rust-nightly-date.txt, which rustup's channel manifests sit
+# beside). OSV's GIT advisories for rust-lang/rust name release tags and commits, not dates, so a
+# dated toolchain has no OSV package.
+[[registry]]
+id = 'rust-nightly'
+url = 'https://static.rust-lang.org/dist/channel-rust-nightly-date.txt'
+regex = '(\d{4}-\d\d-\d\d)'
+bare = 'exact'
+page = 'https://rust-lang.github.io/rustup/concepts/channels.html'
+
+[[registry]]
+id = 'rust-beta'
+url = 'https://static.rust-lang.org/dist/channel-rust-beta-date.txt'
+regex = '(\d{4}-\d\d-\d\d)'
+bare = 'exact'
+page = 'https://rust-lang.github.io/rustup/concepts/channels.html'
+
 [[registry]]
 id = 'rust'
 url = 'https://raw.githubusercontent.com/rust-lang/rust/master/RELEASES.md'
@@ -138,6 +157,21 @@ osv = 'Bitnami'
 osv_name = 'python'
 page = 'https://www.python.org/downloads/'
 
+# endoflife.date lists each PHP release series with its newest patch, `"latest": "8.5.13"`, as
+# php.net's release pages announce them (endoflife.date/php), so Composer's platform requirement
+# `"php": "^8.3"` (getcomposer.org/doc/01-basic-usage.md#platform-packages) gets each series'
+# newest release, as the .NET SDK row does. Packagist has no `php` package: repo.packagist.org/p2/php.json
+# answers 404.
+[[registry]]
+id = 'php'
+url = 'https://endoflife.date/api/php.json'
+json = ''
+field = 'latest'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'php'
+page = 'https://www.php.net/releases/'
+
 [[registry]]
 id = 'ruby'
 url = 'https://raw.githubusercontent.com/ruby/www.ruby-lang.org/master/_data/releases.yml'
@@ -152,6 +186,18 @@ id = 'nodejs'
 url = 'https://nodejs.org/dist/index.json'
 json = ''
 field = 'version'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'node'
+page = 'https://nodejs.org/en/about/previous-releases'
+
+# The Node.js releases on an LTS line, whose `lts` names the line's codename where other
+# releases give `false` (nodejs.org/dist/index.json). nvm's `lts/*` picks the newest of them
+# from the same column of index.tab (nvm.sh `nvm_ls_remote_index_tab`).
+[[registry]]
+id = 'nodejs-lts'
+url = 'https://nodejs.org/dist/index.json'
+regex = '"version":"v(\d+\.\d+\.\d+)"[^{}]*"lts":"'
 bare = 'prefix'
 osv = 'Bitnami'
 osv_name = 'node'

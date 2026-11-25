@@ -17,7 +17,7 @@ fn looked_up(root: &Path, path: &str, env: &Env) -> Vec<(String, String, Result<
     let path = root.join(path);
     let text = std::fs::read_to_string(&path).unwrap();
     let file = file_type_of(path.to_str().unwrap(), &text).unwrap();
-    let mut deps = super::super::extract(file, &path, &text);
+    let mut deps = super::super::extract(file, &path, &text, env);
     resolve(&path, &text, &mut deps, env);
     // The checks ask whether each route answers, not how fast, so the client waits 60s.
     let http = Http::new(Settings {

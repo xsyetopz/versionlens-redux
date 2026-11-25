@@ -40,7 +40,9 @@ fn every_row_names_known_registry_and_valid_regexes() {
                 rule = inner;
             }
             if let Within(block, inner) = rule {
-                assert!(Regex::new(block).is_ok(), "{}: {block}", file.id);
+                if let Err(error) = Regex::new(block) {
+                    panic!("{}: {block}: {error}", file.id);
+                }
                 rule = inner;
             }
             if let Spec(_, pattern) | Lines(pattern) = rule
@@ -81,7 +83,7 @@ fn matches_restored_and_added_globs() {
 /// Each file upstream `VersionLens` 1.3.0 (`gitlab.com/versionlens/vscode-versionlens`) and this
 /// fork's multi-crate `master` read, with the row that reads it now, so dropping or moving a row
 /// one of them served fails here.
-const PRIOR_FILES: &[(&str, &str)] = &[
+pub(crate) const PRIOR_FILES: &[(&str, &str)] = &[
     // Upstream 1.3.0 provider defaults.
     ("package.json", "npm"),
     ("deno.json", "deno"),

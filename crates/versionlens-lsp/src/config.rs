@@ -117,6 +117,12 @@ pub(crate) struct Settings {
     pub(crate) workspace_exclude: Vec<String>,
     /// Overrides keyed by registry id, as the original's per-provider settings were.
     pub(crate) providers: HashMap<String, Provider>,
+    /// `NuGet` v3 service indexes for a project whose `nuget.config` files name no source, from
+    /// the original `versionlens.dotnet.nuget.sources`.
+    pub(crate) nuget_sources: Vec<String>,
+    /// Dotted paths keyed by file type id, from the original `versionlens.{provider}.dependencyProperties`:
+    /// a manifest of that type is read only under them, and at the objects they name.
+    pub(crate) properties: HashMap<String, Vec<String>>,
     /// Original 1.x keys found in the section that have no counterpart, named for the log.
     pub(crate) unread: Vec<String>,
 }
@@ -153,6 +159,8 @@ impl Default for Settings {
             file_types: Vec::new(),
             workspace_exclude: Vec::new(),
             providers: HashMap::new(),
+            nuget_sources: Vec::new(),
+            properties: HashMap::new(),
             unread: Vec::new(),
         }
     }
@@ -200,6 +208,8 @@ impl Settings {
             file_types: list(section, "fileTypes"),
             workspace_exclude: list(section, "workspaceExclude"),
             providers: providers(section),
+            nuget_sources: Vec::new(),
+            properties: HashMap::new(),
             unread: Vec::new(),
         };
         legacy::apply(section, &mut settings);

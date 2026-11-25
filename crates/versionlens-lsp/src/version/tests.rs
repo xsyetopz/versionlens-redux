@@ -150,6 +150,31 @@ fn plan_keeps_variant_and_tagged_latest() {
 }
 
 #[test]
+fn plan_follows_prerelease_tag_up_to_it() {
+    // Arrange
+    let bun = versions(&[
+        "1.4.5",
+        "1.4.5-canary.20261124.1",
+        "1.4.5-canary.20261125.1",
+        "1.4.6-canary.20261126.1",
+    ]);
+    let canary = v("1.4.5-canary.20261125.1");
+
+    // Act
+    let plan = plan(
+        &Req::parse("", Bare::Exact).unwrap(),
+        &bun,
+        Some(&canary),
+        false,
+    )
+    .unwrap();
+
+    // Assert
+    assert_eq!(plan.latest.raw, "1.4.5-canary.20261125.1");
+    assert!(plan.satisfied);
+}
+
+#[test]
 fn renders_in_users_style() {
     assert_eq!(v("5.0.0").render("v4", false), "v5");
     assert_eq!(v("22.11.0-alpine").render("20-alpine", false), "22-alpine");

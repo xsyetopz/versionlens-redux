@@ -11,7 +11,8 @@
 # source? }, or { lines }, each with an optional `via` registry, `prefix` and `suffix` that names start and
 # end with, and `within` regex that limits a text rule to what it matches, or to its first group (all
 # of it where it captures a `suffix`, which then ends each name), or { use } for a list
-# in shared.toml.
+# in shared.toml. A dotted path's `*` segment matches any key or list index, and `#` only a
+# list index.
 # Patterns may name a shared pattern as ${NAME}. A glob two rows share belongs to the earlier
 # row, and the groups load in the order of GROUPS in src/catalog.rs.
 
@@ -35,6 +36,11 @@ rules = [
     # `[patch.<registry>]` overrides a crate, mostly with git or a path, as the fork's master read
     # it: doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section
     { keys = 'patch.*' },
+    # A member's `foo = { workspace = true }` or `foo.workspace = true` takes the version the
+    # workspace root's `[workspace.dependencies]` gives, which the root's own lens shows, as the
+    # fork's master named it `workspace:true`:
+    # doc.rust-lang.org/cargo/reference/specifying-dependencies.html#inheriting-a-dependency-from-a-workspace
+    { lines = '''(?m)^[ \t]*(?P<name>[A-Za-z0-9_-]+)(?:\.|[ \t]*=[ \t]*\{[^}\n]*?(?-u:\b))(?P<source>workspace)[ \t]*=[ \t]*true''', within = '''(?m)^[ \t]*\[(?:[^\]\n]*\.)?(?:dev-|build-)?dependencies\][^\n]*(?P<body>(?:\r?\n(?:[ \t]*[^\[\s][^\n]*|[ \t]*))*)''', via = 'source' },
 ]
 
 # Resolved crates. Read from this repository's own Cargo.lock, whose crates.io entries name the
@@ -100,8 +106,11 @@ format = 'text'
 registry = 'bazel'
 rules = [
     { lines = 'bazel_dep\(\s*name\s*=\s*"(?P<name>[^"]+)"\s*,\s*version\s*=\s*"(?P<version>[^"]+)"' },
-    # Overrides, as the fork's master read them: bazel.build/rules/lib/globals/module.
-    { lines = 'single_version_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*version\s*=\s*"(?P<version>[^"]+)"' },
+    # Overrides, as the fork's master read them: bazel.build/rules/lib/globals/module. Keyword
+    # arguments come in any order, and `patches` lists may sit between the two, as in
+    # github.com/bazelbuild/bazel/blob/master/MODULE.bazel.
+    { lines = '(?s)(?-u:\b)module_name\s*=\s*"(?P<name>[^"]+)".*?(?-u:\b)version\s*=\s*"(?P<version>[^"]+)"', within = '${BAZEL_OVERRIDE}' },
+    { lines = '(?s)(?-u:\b)version\s*=\s*"(?P<version>[^"]+)".*?(?-u:\b)module_name\s*=\s*"(?P<name>[^"]+)"', within = '${BAZEL_OVERRIDE}' },
     # `multiple_version_override(module_name, versions)` keeps several versions in the graph; master
     # asked it for a `version` it never has (bazel.build/rules/lib/globals/module). A match takes one
     # module name, so each rule reads the nth of the first four versions.
@@ -126,6 +135,10 @@ rules = [
     { record = 'features.*.dependencies.*', name = 'name', version = 'version>=' },
     { spec = 'features.*.dependencies.*', pattern = '^(?P<name>[a-z0-9]+(?:-[a-z0-9]+)*)$' },
     { record = 'overrides.*', name = 'name', version = 'version|version-semver|version-string|version-date' },
+    # An object without `version>=`, `{ "name": "openssl", "platform": "!windows" }`, takes the
+    # baseline's version; its other fields are `default-features`, `features`, `host`, and
+    # `platform`, on the page above.
+    { lines = '''\{\s*"name"\s*:\s*"(?P<name>[a-z0-9]+(?:-[a-z0-9]+)*)"(?:\s*,\s*"(?:default-features|features|host|platform)"\s*:\s*(?:"[^"]*"|true|false|\[[^\]]*\]))*\s*\}''' },
 ]
 
 # Conan names a requirement `name/version`: a line under conanfile.txt's `[requires]`, and in
@@ -220,18 +233,20 @@ globs = ['CMakeLists.txt', '*.cmake']
 format = 'text'
 registry = 'github'
 rules = [
-    { lines = '''gh:(?P<name>[\w.-]+/[\w.-]+?)#(?P<version>v?\d[\w.-]*)["\s)]''' },
-    { lines = 'gh:(?P<name>[\w.-]+/[\w.-]+?)(?:#[^"@\s)]*)?@(?P<version>v?\d[\w.-]*)' },
-    { lines = 'GITHUB_REPOSITORY\s+"?(?P<name>[\w.-]+/[\w.-]+?)"?(?:\s[^)]*?)?\s(?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)' },
-    { lines = '[\s(](?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)"?\s[^)]*?GITHUB_REPOSITORY\s+"?(?P<name>[\w.-]+/[\w.-]+?)"?\s' },
-    { lines = 'GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?(?:\s[^)]*?)?\s(?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)' },
-    { lines = '[\s(](?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)"?\s[^)]*?GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?\s' },
-    { lines = '${GITHUB_ARCHIVE}' },
-    { lines = '${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
-    { lines = '${GITHUB_RELEASE}' },
+    # Each call starts on a line with no `#` before it, so a commented-out call stays unread, as the
+    # fork's master skipped it: cmake.org/cmake/help/latest/manual/cmake-language.7.html#line-comment
+    { lines = '''(?m)^[^#\n]*?gh:(?P<name>[\w.-]+/[\w.-]+?)#(?P<version>v?\d[\w.-]*)["\s)]''' },
+    { lines = '(?m)^[^#\n]*?gh:(?P<name>[\w.-]+/[\w.-]+?)(?:#[^"@\s)]*)?@(?P<version>v?\d[\w.-]*)' },
+    { lines = '(?m)^[^#\n]*?GITHUB_REPOSITORY\s+"?(?P<name>[\w.-]+/[\w.-]+?)"?(?:\s[^)]*?)?\s(?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)' },
+    { lines = '(?m)^[^#\n]*?[\s(](?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)"?\s[^)]*?GITHUB_REPOSITORY\s+"?(?P<name>[\w.-]+/[\w.-]+?)"?\s' },
+    { lines = '(?m)^[^#\n]*?GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?(?:\s[^)]*?)?\s(?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)' },
+    { lines = '(?m)^[^#\n]*?[\s(](?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)"?\s[^)]*?GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?\s' },
+    { lines = '(?m)^[^#\n]*?${GITHUB_ARCHIVE}' },
+    { lines = '(?m)^[^#\n]*?${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
+    { lines = '(?m)^[^#\n]*?${GITHUB_RELEASE}' },
     # Hunter pins a package in cmake/Hunter/config.cmake with `hunter_config(name VERSION v)`:
     # hunter.readthedocs.io/en/latest/reference/user-modules/hunter_config.html
-    { lines = 'hunter_config\(\s*(?P<name>[A-Za-z][\w.-]*)\s(?:[^)]*?\s)?VERSION\s+"?(?P<version>\d[\w.-]*)', via = 'hunter' },
+    { lines = '(?m)^[^#\n]*?hunter_config\(\s*(?P<name>[A-Za-z][\w.-]*)\s(?:[^)]*?\s)?VERSION\s+"?(?P<version>\d[\w.-]*)', via = 'hunter' },
 ]
 
 # PlatformIO names a platform `platformio/name@spec` or `name @ spec`, and `lib_deps` lists one
@@ -239,9 +254,11 @@ rules = [
 # comparisons follow semver: docs.platformio.org (projectconf/sections/env/options/platform/
 # platform.rst, library/lib_deps.rst). `platform_packages` lists tools the same way, so tools,
 # whose names start `toolchain-`, `framework-`, or `tool-`, are read first: the earlier rule keeps
-# a span two rules match. A spec joins constraints with commas, `~5.6,!=5.4`. An owner-less name is
-# a framework built-in, such as SPI or ESP8266WiFi, which the registry's search does not list
-# (api.registry.platformio.org/v3/search?query=name:SPI, 2026-11-25), so it is not read.
+# a span two rules match. A spec joins constraints with commas, `~5.6,!=5.4`. An owner-less name
+# with a spec, `ArduinoJson @ ^7`, is found by the registry's name search, as `arduino` finds
+# Arduino libraries (api.registry.platformio.org/v3/search?query=name:"ArduinoJson" lists
+# bblanchon/library/ArduinoJson, 2026-11-25). A framework built-in, such as SPI or ESP8266WiFi,
+# takes no spec, and the search lists none (query=name:"SPI" answers total 0).
 [[file]]
 id = 'platformio'
 globs = ['platformio.ini']
@@ -251,6 +268,7 @@ rules = [
     { lines = '(?m)^[ \t]*platform[ \t]*=[ \t]*(?:platformio/)?(?P<name>[\w-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*(?:,[ \t]*[~^<>=!]+[ \t]*\d[^\s;,]*)*)', via = 'platformio-platform' },
     { lines = '(?m)^[ \t]*(?:platform_packages[ \t]*=[ \t]*)?(?P<name>[\w.-]+/(?:toolchain|framework|tool)-[\w.+-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*(?:,[ \t]*[~^<>=!]+[ \t]*\d[^\s;,]*)*)', via = 'platformio-tool' },
     { lines = '(?m)^[ \t]*(?:lib_deps[ \t]*=[ \t]*)?(?P<name>[\w.-]+/[\w.+-]+(?:[ \t]+[\w.+-]+)*?)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*(?:,[ \t]*[~^<>=!]+[ \t]*\d[^\s;,]*)*)' },
+    { lines = '(?m)^[ \t]*(?:lib_deps[ \t]*=[ \t]*)?(?P<name>[\w.+-]+(?:[ \t]+[\w.+-]+)*?)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*(?:,[ \t]*[~^<>=!]+[ \t]*\d[^\s;,]*)*)', via = 'arduino' },
 ]
 
 # An Arduino library.properties lists `depends=Name, Other Name (>=1.0.0)`: comma-separated library
@@ -311,15 +329,30 @@ rules = [
     { keys = 'patch.*' },
 ]
 
+# A toolchain is `<channel>[-<date>][-<host>]`, where the channel is `stable`, `beta`, `nightly`,
+# or a release, `1.75.0-x86_64-apple-darwin`: rust-lang.github.io/rustup/concepts/toolchains.html.
+# rust-toolchain.toml gives it as `[toolchain] channel`, and the legacy `rust-toolchain` file as its
+# one line: rust-lang.github.io/rustup/overrides.html#the-toolchain-file. The TOML form is read as
+# TOML so that an escaped channel, `"nightly\u002d2026\u002d09\u002d01"`, reads as its value; a
+# legacy file is not TOML and yields no keys, which leaves it to the `lines` rules.
 [[file]]
 id = 'rust'
 globs = ['rust-toolchain', 'rust-toolchain.toml']
-format = 'text'
+format = 'toml'
 registry = 'rust'
 rules = [
-    # A channel may name a host after the release, `1.75.0-x86_64-apple-darwin`:
-    # rust-lang.github.io/rustup/concepts/toolchains.html
-    { lines = '''(?m)^[ \t]*(?:channel[ \t]*=[ \t]*["'])?(?P<version>\d+\.\d+(?:\.\d+)?)(?:-[\w-]+)?["']?[ \t]*(?:#.*)?\r?$''' },
+    { spec = 'toolchain.channel', pattern = '^(?P<version>\d+\.\d+(?:\.\d+)?)(?:-[\w-]+)?$' },
+    { spec = 'toolchain.channel', pattern = '^nightly-(?P<version>\d{4}-\d\d-\d\d)(?:-[\w-]+)?$', via = 'rust-nightly' },
+    { spec = 'toolchain.channel', pattern = '^beta-(?P<version>\d{4}-\d\d-\d\d)(?:-[\w-]+)?$', via = 'rust-beta' },
+    { spec = 'toolchain.channel', pattern = '^(?P<channel>stable)(?:-[a-z][\w-]*)?$' },
+    { spec = 'toolchain.channel', pattern = '^(?P<channel>nightly)(?:-[a-z][\w-]*)?$', via = 'rust-nightly' },
+    { spec = 'toolchain.channel', pattern = '^(?P<channel>beta)(?:-[a-z][\w-]*)?$', via = 'rust-beta' },
+    { lines = '''\A\s*(?P<version>\d+\.\d+(?:\.\d+)?)(?:-[\w-]+)?\s*\z''' },
+    { lines = '''\A\s*nightly-(?P<version>\d{4}-\d\d-\d\d)(?:-[\w-]+)?\s*\z''', via = 'rust-nightly' },
+    { lines = '''\A\s*beta-(?P<version>\d{4}-\d\d-\d\d)(?:-[\w-]+)?\s*\z''', via = 'rust-beta' },
+    { lines = '''\A\s*(?P<channel>stable)(?:-[a-z][\w-]*)?\s*\z''' },
+    { lines = '''\A\s*(?P<channel>nightly)(?:-[a-z][\w-]*)?\s*\z''', via = 'rust-nightly' },
+    { lines = '''\A\s*(?P<channel>beta)(?:-[a-z][\w-]*)?\s*\z''', via = 'rust-beta' },
 ]
 
 [[file]]
@@ -369,7 +402,10 @@ globs = ['xmake.lua']
 format = 'text'
 registry = 'xmake'
 rules = [
-    { lines = '''add_requires\([^)\n]*?["'](?P<name>[A-Za-z][\w.+-]*)[ \t]+(?P<version>\d[\w.*]*)["']''' },
+    # Each string `add_requires` lists is one package, `"name version"` or a bare name for the
+    # newest, as the fork's master read `add_requires("zlib 1.3.1", "fmt 10.2.1")`; a line
+    # comment, `--`, keeps the call unread: xmake.io/api/description/global-interfaces.html#add-requires
+    { lines = '''(?:^|,)\s*["'](?P<name>[A-Za-z][\w.+-]*)(?:[ \t]+(?P<version>\d[\w.*]*))?["']''', within = '''(?m)^[ \t]*add_requires\((?P<body>[^)]*)\)''' },
 ]
 
 [[file]]

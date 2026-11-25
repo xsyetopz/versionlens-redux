@@ -89,11 +89,7 @@ pub(super) fn projects(leaves: &[Leaf]) -> Vec<Dep> {
             span: revision.span.clone(),
             registry,
             source,
-            index: None,
-            targets: Vec::new(),
-            pinned: false,
-            precise: false,
-            min: false,
+            ..Dep::default()
         });
     }
     deps

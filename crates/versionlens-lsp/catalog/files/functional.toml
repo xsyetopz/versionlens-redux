@@ -6,15 +6,24 @@ globs = ['Gemfile', 'gems.rb', '*.gemspec']
 format = 'text'
 registry = 'rubygems'
 rules = [
+    # A bare gem inside a `path` or `git` block comes from that block's directory or repository,
+    # not from the gem server (bundler.io/guides/gemfile.html), as the fork's master read it
+    # (crates/versionlens-parsers/src/gemfile.rs, `current_block_requirement`). These come first
+    # so they keep the gem's place over the bare-gem rule below.
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''', within = '''(?ms)^[ \t]*path[ \t(]+["'](?P<source>[^"']+)["'][^\n]*?[ \t]do[ \t]*\r?$(?P<body>.*?)^[ \t]*end(?-u:\b)''', via = 'directory' },
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''', within = '''(?ms)^[ \t]*git[ \t(]+["'](?P<source>[^"']+)["'][^\n]*?[ \t]do[ \t]*\r?$(?P<body>.*?)^[ \t]*end(?-u:\b)''' },
     { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
     # The forms the fork's master read beside a version (bundler.io/guides/gemfile.html): a bare
-    # gem, with only `require`, `group`, or `platforms` options, takes any version; `path` names
-    # a directory, `git` a repository, and `github` a repository whose `tag` GitHub answers.
-    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''' },
+    # gem, with only `require`, `group`, `platforms`, or `source` options, takes any version;
+    # `path` names a directory, `git` a repository, and `github` a repository whose `tag` GitHub
+    # answers, or whose default branch Bundler checks out where no `tag`, `branch`, or `ref`
+    # follows (bundler.io/guides/git.html).
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?|source)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''' },
     { lines = '''(?m)^[ \t]*gem[ \t(]+["'](?P<name>[^"']+)["'][^\n#]*?[ \t,](?:path:|:path[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'directory' },
     { lines = '''(?m)^[ \t]*gem[ \t(]+["'](?P<name>[^"']+)["'][^\n#]*?[ \t,](?:git:|:git[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''' },
     { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][^\n#]*?[ \t,](?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n#]*?[ \t,](?:tag:|:tag[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'github' },
     { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][^\n#]*?[ \t,](?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n#]*?[ \t,](?:branch:|:branch[ \t]*=>|ref:|:ref[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'source' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][ \t]*,[ \t]*(?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>(?P<version>[\w.-]+/[\w.-]+))["'](?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?|submodules)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*\)?[ \t]*(?:#[^\n]*)?\r?$''', via = 'source' },
 ]
 
 # Each section's `specs:` lists a resolved gem at four spaces, `name (1.0.0)` or with a platform,
@@ -37,6 +46,14 @@ format = 'text'
 registry = 'cocoapods'
 rules = [
     { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+    # A pod with no requirement takes the newest, and its options pick where it comes from: a
+    # `:path` directory, a `:git` repository at a `:tag`, `:branch`, or `:commit`, or a `:podspec`
+    # URL, as the fork's master read them: guides.cocoapods.org/syntax/podfile.html#pod
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'][^"']+["'][^\n#]*?(?::path[ \t]*=>|path:)[ \t]*["'](?P<name>(?P<version>[^"']+))["']''', via = 'directory' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'][^"']+["'][^\n#]*?(?::git[ \t]*=>|git:)[ \t]*["']https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["'][^\n#]*?(?::tag[ \t]*=>|tag:)[ \t]*["'](?P<version>[^"']+)["']''', via = 'github' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'][^\n#]*?(?::git[ \t]*=>|git:)[ \t]*["'](?P<version>[^"']+)["'](?:[ \t]*,[ \t]*(?::(?:branch|commit)[ \t]*=>|(?:branch|commit):)[ \t]*["'][^"']*["'])*[ \t]*(?:#[^\n]*)?\r?$''', via = 'source' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'][^\n#]*?(?::podspec[ \t]*=>|podspec:)[ \t]*["'](?P<version>[^"']+)["']''', via = 'source' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'](?:[ \t]*,[ \t]*:?(?:source|configurations?|modular_headers|inhibit_warnings|testspecs|appspecs|subspecs|project_name)[ \t]*(?:=>|:)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''' },
     { lines = '''(?m)^[ \t]*\w+\.dependency[ \t]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
 ]
 
@@ -63,9 +80,12 @@ rules = [
     { lines = '\{:(?P<name>\w+),[ \t]*"(?P<version>[^"]+)"' },
     # Git, GitHub, and path dependencies, as the fork's master read them:
     # hexdocs.pm/mix/Mix.Tasks.Deps.html#module-dependency-definition-options
-    { lines = '\{:(?P<name>\w+),[ \t]*git:[ \t]*"(?P<version>[^"]+)"' },
-    { lines = '\{:(?P<name>\w+),[ \t]*github:[ \t]*"(?P<version>[^"]+)"', via = 'source' },
-    { lines = '\{:(?P<name>\w+),[ \t]*path:[ \t]*"(?P<version>[^"]+)"', via = 'directory' },
+    { lines = '\{:(?P<name>\w+),\s*git:[ \t]*"(?P<version>[^"]+)"' },
+    { lines = '\{:(?P<name>\w+),\s*github:[ \t]*"(?P<version>[^"]+)"', via = 'source' },
+    { lines = '\{:(?P<name>\w+),\s*path:[ \t]*"(?P<version>[^"]+)"', via = 'directory' },
+    # `in_umbrella: true` points at the umbrella's sibling app `../name`:
+    # hexdocs.pm/mix/Mix.Tasks.Deps.html#module-dependency-definition-options
+    { lines = '\{:(?P<name>\w+),\s*(?P<source>in_umbrella):\s*true' },
 ]
 
 [[file]]
@@ -73,8 +93,18 @@ id = 'rebar'
 globs = ['rebar.config']
 format = 'text'
 registry = 'hex'
+# Each rule reads one element of a `{deps, [...]}` list, at the top level or in a profile. An
+# element is a bare package `rebar`, `{rebar, "1.0.0"}`, a package under another Hex name
+# `{rebar, {pkg, rebar_fork}}` or `{rebar, "1.0.0", {pkg, rebar_fork}}`, or a source
+# `{rebar, {git | git_subdir | hg, "url", ...}}`: rebar3.org/docs/configuration/dependencies/.
+# Each `lines` regex consumes any other element whole with ${ERL_TUPLE}, so the `{tag, "3.0.0"}`
+# inside a source never reads as a package.
 rules = [
-    { lines = '\{(?P<name>\w+),[ \t]*"(?P<version>[^"]+)"\}' },
+    { lines = '''\{(?P<name>[a-z]\w*),\s*"(?P<version>[^"]+)"\s*\}|${ERL_TUPLE}''', within = '${ERL_DEPS}' },
+    { lines = '''\{[a-z]\w*,\s*"(?P<version>[^"]+)",\s*\{pkg,\s*(?P<name>[a-z]\w*)\s*\}\s*\}|${ERL_TUPLE}''', within = '${ERL_DEPS}' },
+    { lines = '''\{[a-z]\w*,\s*\{pkg,\s*(?P<name>[a-z]\w*)\s*\}\s*\}|${ERL_TUPLE}''', within = '${ERL_DEPS}' },
+    { lines = '''\{(?P<name>[a-z]\w*),\s*\{(?:git|git_subdir|hg),\s*"(?P<version>[^"]+)"''', within = '${ERL_DEPS}' },
+    { lines = '''${ERL_TUPLE}|(?P<name>[a-z]\w*)''', within = '${ERL_DEPS}' },
 ]
 
 [[file]]
@@ -120,6 +150,8 @@ rules = [
     # LibCURL_jll, are registered in General, where OSV's Julia advisories name them.
     { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+_jll)\]\]\r?\n(?:[^\[\np\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
     { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+)\]\]\r?\n(?:[^\[\np\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"', via = 'julia-stdlib' },
+    # A package under development has the `path` it was checked out to: pkgdocs.julialang.org/v1/toml-files/
+    { lines = '(?m)^\[\[(?:deps\.)?[\w.-]+\]\]\r?\n(?:[^\[\n][^\n]*\n)*?path[ \t]*=[ \t]*"(?P<name>(?P<version>[^"]+))"', via = 'directory' },
 ]
 
 [[file]]
@@ -233,9 +265,15 @@ format = 'text'
 registry = 'hackage'
 rules = [
     { lines = '(?m)^version:[ \t]*(?P<version>\d[\d.]*)', via = 'project' },
-    # A library's, setup script's, and build tool's dependencies, a tool as `package:executable`:
-    # cabal.readthedocs.io/en/stable/cabal-package-description-file.html#pkg-field-build-tool-depends
-    { lines = '(?m)(?:(?:build|setup|build-tool)-depends:|build-tools:|constraints:|,|^)[ \t]*(?P<name>[A-Za-z][\w-]*)(?::[A-Za-z][\w-]*)?[ \t]+(?P<version>(?:\^>=|>=|==)[ \t]*\d[\d.]*)' },
+    # A library's, setup script's, and build tool's dependencies, a tool as `package:executable`,
+    # read inside those fields only, so `tested-with: GHC ==9.6` stays out:
+    # cabal.readthedocs.io/en/stable/cabal-package-description-file.html#pkg-field-build-depends
+    { lines = '(?m)(?:\A|,|^)[ \t]*(?P<name>[A-Za-z][\w-]*)(?::[A-Za-z][\w-]*)?[ \t]+(?P<version>(?:\^>=|>=|==)[ \t]*\d[\d.]*)', within = '${CABAL_DEPENDS}' },
+    # An entry without a constraint takes any version, as the fork's master read it: one ending
+    # its line after the field or a comma, as leading-comma lists write each entry, and one a comma
+    # follows, as trailing-comma lists do (github.com/haskell/aeson/blob/master/aeson.cabal).
+    { lines = '(?:\A|,)\s*(?P<name>[A-Za-z][\w-]*)(?::(?:\{[^}]*\}|[\w-]+))?[ \t]*(?:--[^\n]*)?(?:\r?\n|\z)', within = '${CABAL_DEPENDS}' },
+    { lines = '(?:\A|[,\s])[ \t]*(?P<name>[A-Za-z][\w-]*)(?::(?:\{[^}]*\}|[\w-]+))?[ \t]*,', within = '${CABAL_DEPENDS}' },
     { lines = '(?m)^[ \t]*with-compiler:[ \t]*(?P<name>ghc)-(?P<version>\d[\d.]*)', via = 'ghc' },
     # Stack's `extra-deps` entries read `- package-1.2.3`, `- ./local/path`, or a git repository
     # pinned to a `commit`: docs.haskellstack.org/en/stable/configure/yaml/project/#extra-deps
@@ -258,7 +296,12 @@ globs = ['*.rockspec']
 format = 'text'
 registry = 'luarocks'
 rules = [
-    { lines = '''["'](?P<name>[A-Za-z][\w.-]*)[ \t]*(?P<version>(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*)["']''' },
+    # A dependency joins constraints with commas, `"lua >= 5.1, < 5.5"`:
+    # github.com/luarocks/luarocks/wiki/Rockspec-format#dependency-information
+    # `lua` names the interpreter, which no rock holds (luarocks.org/manifest-5.4.json lists no `lua`);
+    # its releases are the tags of github.com/lua/lua, `v5.5.1` among them.
+    { lines = '''["'](?P<name>lua)[ \t]*(?P<version>(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*(?:[ \t]*,[ \t]*(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*)*)["']''', via = 'github', prefix = 'lua/' },
+    { lines = '''["'](?P<name>[A-Za-z][\w.-]*)[ \t]*(?P<version>(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*(?:[ \t]*,[ \t]*(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*)*)["']''' },
 ]
 
 [[file]]
@@ -270,6 +313,10 @@ rules = [
     # Nixpkgs pins release branches, `github:NixOS/nixpkgs/nixos-24.05`, named for its tags.
     { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)/(?:nixos-|nixpkgs-|release-)?(?P<version>v?\d[\w.-]*)' },
     { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)' },
+    # A branch, `github:NixOS/nixpkgs/nixos-unstable`, shows its head commit, and a `path:` input is
+    # a local flake: nix.dev/manual/nix/stable/command-ref/new-cli/nix3-flake.html#flake-references
+    { lines = '''github:(?P<name>[\w.-]+/[\w.-]+)(?:/|\?ref=)(?P<version>${GIT_REF})["?&]''', via = 'git-ref', prefix = 'github.com/' },
+    { lines = '''["']path:(?P<name>(?P<version>[^"'?]+))''', via = 'directory' },
 ]
 
 # flake.lock records each input's `original` reference, its keys sorted, beside the commit it
@@ -418,14 +465,15 @@ rules = [
 ]
 
 # V's v.mod lists `dependencies` as `'module@range'` strings, the same as `v install` takes, which
-# select semver Git tags; a bare module tracks its default branch and is not read:
-# github.com/vlang/v, cmd/tools/vpm/README.md "Semantic version ranges".
+# select semver Git tags; a bare module tracks its default branch, so its lens shows the newest
+# release, the tag to pin it to: github.com/vlang/v, cmd/tools/vpm/README.md "Semantic version
+# ranges". A bare name counts only inside the `dependencies` list, beside `name` and `version`.
 [[file]]
 id = 'vmod'
 globs = ['v.mod']
 format = 'text'
 registry = 'vpm'
-rules = [{ lines = '''['"](?P<name>[A-Za-z_][\w.]*)@(?P<version>[^'"\r\n]+)['"]''' }]
+rules = [{ lines = '''['"](?P<name>[A-Za-z_][\w.]*)(?:@(?P<version>[^'"\r\n]+))?['"]''', within = '''dependencies[ \t]*:[ \t]*\[([^\]]*)\]''' }]
 
 # Lake's lake-manifest.json records each git package's `url` and the `inputRev` its lakefile asked
 # for, beside the resolved commit `rev`: leanprover-community/mathlib4's lake-manifest.json. A

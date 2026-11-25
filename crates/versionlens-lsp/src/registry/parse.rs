@@ -122,14 +122,25 @@ fn elements(node: &Value, field: &str, keep: &dyn Fn(&Value) -> bool) -> Vec<Str
     }
 }
 
-/// The crates.io index holds one JSON line per release; yanked releases go to their own list.
+/// The crates.io index holds one JSON line per release with its `vers`. A crates.io-compatible
+/// web API answers `{apiUrl}/{name}/versions` with one object whose `versions[]` carry `num`, the
+/// shape upstream 1.3.0's cratesClient.ts read. Yanked releases go to their own list.
 pub(super) fn cargo(body: &str, _name: &str) -> Versions {
+    let entries = serde_json::from_str::<Value>(body)
+        .ok()
+        .and_then(|v| v.get("versions")?.as_array().cloned())
+        .unwrap_or_else(|| {
+            body.lines()
+                .filter_map(|l| serde_json::from_str(l).ok())
+                .collect()
+        });
     let mut out = Versions::default();
-    for entry in body
-        .lines()
-        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
-    {
-        let Some(vers) = entry.get("vers").and_then(Value::as_str) else {
+    for entry in entries {
+        let Some(vers) = entry
+            .get("vers")
+            .or_else(|| entry.get("num"))
+            .and_then(Value::as_str)
+        else {
             continue;
         };
         let list = if marked(&entry, "yanked") {

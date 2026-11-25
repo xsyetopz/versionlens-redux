@@ -32,10 +32,13 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | --- | --- | --- |
 | crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables), `Cargo.lock` |
 | npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `rescript.json` and `bsconfig.json` (names only; the version lives in `package.json`), `.bun-version`, `npm:` entries of `.prototools`, and the resolved versions in `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` |
-| Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions`, `mise.toml`, and `.prototools`, `node-version` of `actions/setup-node` |
+| Node.js releases | Bitnami (`node`) | `.nvmrc` (with its `lts/*`, `node`, and `stable` aliases), `.node-version`, `node` in `.tool-versions`, `mise.toml`, and `.prototools`, `node-version` of `actions/setup-node`, and `engines.node` in `package.json` |
 | JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc`, and the published package's own `name` |
+| deno.land modules | GIT (the GitHub repository a release was uploaded from) | `https://deno.land/std/…` and `/x/…` imports in `deno.json` and `import_map.json`, with or without `@version` |
+| npm `canary` dist-tag | npm | a `.bun-version` of `canary` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json`, `composer.lock` |
+| PHP releases, through endoflife.date | Bitnami (`php`) | `php` in `composer.json` `require` and `require-dev` |
 | PEAR and PECL channels | | `package.xml`, `package2.xml` (PEAR 2.0 `package` and `extension` dependencies) |
 | Homebrew formulae and casks | | `Brewfile`, `.Brewfile`, `Brewfile.*` `brew` and `cask` entries (names only; Homebrew pins no versions, so each lens shows the current stable release) |
 | Hunter | | `hunter_config(name VERSION v)` in `*.cmake` |
@@ -104,6 +107,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Temurin Java feature releases | Bitnami (`java`) | the `java-version` input of `setup-java` |
 | Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, their `.tool-versions` and `mise.toml` entries, and the `python-version` and `ruby-version` inputs of workflow setup actions |
 | Rust and Terraform releases | GIT (`rust-lang/rust`, `hashicorp/terraform`) | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, `rust-version` in `Cargo.toml`, and their `.tool-versions` and `mise.toml` entries |
+| Rust `nightly` and `beta` channel dates | | `nightly-2026-11-01` and `beta-2026-11-01` toolchains, against the date each channel last built |
 
 The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for Helm or Conan, so Helm chart versions report the CVEs that Artifact Hub's Trivy scans find in the images they deploy, and Conan versions report the GitLab Advisory Database entries whose range holds them. Registries outside OSV that name a package's GitHub repository have it looked up, and OSV's GIT ecosystem is asked about that repository at the version; a package that names no GitHub repository gets no check. Docker Hub and OCI images are asked about by the application they package in OSV's Bitnami ecosystem, so an image from any other publisher gets no check. Unity packages name only Unity's own git host, so they get no vulnerability check. Set `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` to the user agent and `cf_clearance` cookie of a browser that passed the npmjs.com challenge, and the live check sends them to npmjs.com. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
 
@@ -167,8 +171,11 @@ A `settings.json` written for the original extension keeps working; a key of thi
 | `versionlens.<provider>.caching.duration`, `.http.strictSSL`, `.prereleaseTagFilter` | `providers.<registry id>` |
 | `versionlens.<provider>.onSaveChanges` | `install` for the provider's file type |
 | `versionlens.<provider>.files` | `files`, one entry per `{a,b}` alternative |
+| `versionlens.<provider>.apiUrl` | `registries` for the provider's registry, built the way the provider built its request URL; `pypi` maps a Warehouse `{base}/pypi/{name}/json` to `{base}/simple/{name}/` |
+| `versionlens.<provider>.dependencyProperties` | Read only those paths of the provider's manifest, and the keys of a listed object no catalog rule covers; `pypi` applies to `pyproject.toml` and `Pipfile` |
+| `versionlens.dotnet.nuget.sources` | The NuGet service indexes asked in place of `dotnet nuget list source` |
 
-The output channel names any `versionlens.<provider>.apiUrl`, `.dependencyProperties`, or `versionlens.dotnet.nuget.sources` it finds: registry URLs are now templates in `versionlens.registries`, and the catalog holds the dependency rules. Every original command id, such as `versionlens.editor.onShowVersionLenses`, still runs its replacement, so old keybindings work.
+The output channel names a `versionlens.cargo.apiUrl` other than the default `https://crates.io/api/v1/crates`: the crates.io web API answers in a format the `cargo` row does not read, so set a sparse index in `versionlens.registries` instead. Every original command id, such as `versionlens.editor.onShowVersionLenses`, still runs its replacement, so old keybindings work.
 
 A changed setting applies without a restart, and the output channel logs it. Changing `versionlens.serverPath` or `versionlens.files` restarts the server.
 

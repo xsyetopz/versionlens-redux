@@ -19,6 +19,7 @@ mod mill;
 mod npm;
 mod nuget;
 mod python;
+mod sbt;
 
 /// A registry URL template a dependency's versions are fetched from, with the `Authorization`
 /// header value the project's configuration gives it.
@@ -41,12 +42,17 @@ impl Target {
     }
 }
 
+/// A command run in a folder, giving its trimmed output when it succeeds.
+pub(crate) type Run = fn(&Path, &str, &[&str]) -> Option<String>;
+
 /// What the readers see of the machine: environment variables, the home directory, and a way to
 /// run a command in a directory. Tests replace all three so no reader touches the user's files.
 pub(crate) struct Env {
     pub(crate) vars: HashMap<String, String>,
     pub(crate) home: Option<PathBuf>,
-    pub(crate) run: fn(&Path, &str, &[&str]) -> Option<String>,
+    pub(crate) run: Run,
+    /// `NuGet` service indexes the settings give for a project whose `nuget.config` names none.
+    pub(crate) nuget: Vec<String>,
 }
 
 impl Env {
@@ -61,6 +67,7 @@ impl Env {
             vars,
             home,
             run: crate::http::run_in,
+            nuget: Vec::new(),
         }
     }
 
@@ -81,14 +88,18 @@ fn read(path: &Path) -> Option<String> {
 }
 
 /// The dependencies of the manifest at `path`, read with what its project keeps elsewhere: a
-/// Mill module's Scala version from the file that defines the trait it extends, and the GitLab
+/// Mill module's Scala version from the file that defines the trait it extends, an sbt file's
+/// from the build's other files or its sbt version, else the installed launcher's, and the GitLab
 /// instance a pipeline's `$CI_SERVER_FQDN` names from the workspace's git remote. The version is
-/// appended to the text the rules see, so the Mill row's `within` blocks read it, and a match
+/// appended to the text the rules see, so the Mill and sbt rows' `within` blocks read it, and a match
 /// inside the appended line is dropped.
-pub(crate) fn extract(file: &FileType, path: &Path, text: &str) -> Vec<Dep> {
-    if file.id == "mill"
-        && let Some(line) = mill::inherited(path, text)
-    {
+pub(crate) fn extract(file: &FileType, path: &Path, text: &str, env: &Env) -> Vec<Dep> {
+    let inherited = match file.id {
+        "mill" => mill::inherited(path, text),
+        "sbt" => sbt::inherited(path, text, env.run),
+        _ => None,
+    };
+    if let Some(line) = inherited {
         let joined = format!("{text}\n{line}\n");
         let mut deps = crate::extract::extract(file, &joined);
         deps.retain(|d| d.span.end <= text.len());

@@ -28,8 +28,11 @@ fn patient() -> Http {
 const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("cargo", "time", None, Some("0.1.43")),
     ("npm", "lodash", None, Some("4.17.15")),
+    ("npm-canary", "bun", None, Some("1.1.29")),
     ("jsr", "@std/path", None, None),
     ("jsr", "@hono/hono", None, Some("4.0.0")),
+    ("deno-land", "std", None, None),
+    ("deno-land", "oak", None, Some("v12.6.1")),
     ("unity", "com.unity.textmeshpro", None, None),
     ("pypi", "jinja2", None, Some("2.10")),
     ("composer", "symfony/http-kernel", None, Some("v4.4.0")),
@@ -99,9 +102,13 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("puppet", "puppetlabs:apache", None, Some("1.0.0")),
     ("chef", "nginx", None, Some("2.0.0")),
     ("rust", "rust", None, Some("1.77.1")),
+    ("rust-nightly", "rust", None, None),
+    ("rust-beta", "rust", None, None),
     ("python", "python", None, Some("3.8.0")),
     ("ruby", "ruby", None, Some("3.0.0")),
+    ("php", "php", None, Some("8.1.0")),
     ("nodejs", "node", None, Some("20.0.0")),
+    ("nodejs-lts", "node", None, Some("20.0.0")),
     ("ghc", "ghc", None, Some("9.2.1")),
     ("golang", "golang", None, Some("1.20.0")),
     ("terraform-cli", "terraform", None, Some("1.0.0")),
@@ -385,6 +392,29 @@ fn conan_range_resolves_inside_range() {
         .max()
         .unwrap();
     assert_eq!(resolved.raw, newest_three.raw);
+}
+
+/// A crates.io-compatible web API answers at the template an original `cargo.apiUrl` becomes,
+/// `{apiUrl}/{name}/versions` (src/config/legacy.rs), in the shape the `cargo` reader reads.
+#[test]
+#[ignore = "needs the network"]
+fn cargo_api_url_lists_versions() {
+    // Arrange
+    let template = "https://crates.io/api/v1/crates/{name}/versions";
+    let http = Http::new(Settings {
+        timeout: Duration::from_secs(60),
+        registries: [("cargo".to_owned(), template.to_owned())].into(),
+        ..Settings::default()
+    })
+    .unwrap();
+
+    // Act
+    let found = block_on(http.versions(get("cargo").unwrap(), "time", None, &[], &[]))
+        .expect("crates.io's web API lists time");
+
+    // Assert
+    eprintln!("cargo api time: {} versions", found.list.len());
+    assert!(found.list.iter().any(|v| v == "0.1.43"), "{found:?}");
 }
 
 /// A Racket package's versions are the tags of the repository its catalog entry names, on that

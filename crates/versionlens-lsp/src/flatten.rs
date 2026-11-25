@@ -99,7 +99,10 @@ fn json(text: &str, out: &mut Out) {
                 parent,
             ),
             Value::NumberLit(lit) => out.leaf(lit.value, lit.range.start..lit.range.end, parent),
-            Value::BooleanLit(_) | Value::NullKeyword(_) => {}
+            // A flag names its key with no version, as package.json's object-form
+            // `bundleDependencies` does: npm/package-json lib/normalize.js reads `Object.keys`.
+            Value::BooleanLit(lit) => out.leaf("", lit.range.start..lit.range.start, parent),
+            Value::NullKeyword(_) => {}
         }
     }
     let options = jsonc_parser::ParseOptions::default();
@@ -167,131 +170,6 @@ fn toml(text: &str, out: &mut Out) {
     if let Ok(doc) = toml_edit::Document::parse(text) {
         item(doc.as_item(), text, 0, out);
     }
-}
-
-struct Frame {
-    indent: usize,
-    id: usize,
-    item: bool,
-    items: usize,
-    depth: usize,
-}
-
-/// Block-style YAML by indentation. Tolerates the half-typed documents an editor sends, which a
-/// strict parser would reject wholesale; flow collections and block scalars are skipped.
-fn yaml(text: &str, out: &mut Out) {
-    let mut stack: Vec<Frame> = Vec::new();
-    let mut block: Option<usize> = None;
-    let mut offset = 0;
-    for line in text.split_inclusive('\n') {
-        let start = offset;
-        offset += line.len();
-        let body = line.trim_end_matches(['\n', '\r']);
-        let indent = body.len() - body.trim_start_matches(' ').len();
-        let content = &body[indent..];
-        if content.is_empty() || content.starts_with('#') || content.starts_with("---") {
-            continue;
-        }
-        if let Some(level) = block {
-            if indent > level {
-                continue;
-            }
-            block = None;
-        }
-        let (mut indent, mut content) = (indent, content);
-        let mut is_item = content == "-" || content.starts_with("- ");
-        loop {
-            while stack
-                .last()
-                .is_some_and(|f| f.indent > indent || (f.indent == indent && (f.item || !is_item)))
-            {
-                if let Some(frame) = stack.pop() {
-                    out.path.truncate(frame.depth);
-                }
-            }
-            if !is_item {
-                break;
-            }
-            let index = stack.last_mut().map_or(0, |f| {
-                f.items += 1;
-                f.items - 1
-            });
-            let depth = out.path.len();
-            out.path.push(index.to_string());
-            let id = out.id();
-            stack.push(Frame {
-                indent,
-                id,
-                item: true,
-                items: 0,
-                depth,
-            });
-            let rest = content[1..].trim_start_matches(' ');
-            indent += content.len() - rest.len();
-            content = rest;
-            is_item = content.starts_with("- ");
-        }
-        if content.is_empty() {
-            continue;
-        }
-        let parent = stack.last().map_or(0, |f| f.id);
-        let at = start + (body.len() - content.len());
-        if let Some((key, value_at)) = key_value(content) {
-            let raw = scalar(&content[value_at..]);
-            let depth = out.path.len();
-            out.path.push(key.to_owned());
-            // An anchor alone, `x-common: &common`, names the mapping the lines below it hold:
-            // yaml.org/spec/1.2.2/#692-node-anchors
-            if raw.is_empty() || (raw.starts_with('&') && !raw.contains([' ', '\t'])) {
-                let id = out.id();
-                stack.push(Frame {
-                    indent,
-                    id,
-                    item: false,
-                    items: 0,
-                    depth,
-                });
-                continue;
-            }
-            if raw.starts_with(['|', '>']) {
-                block = Some(indent);
-            } else if !raw.starts_with(['[', '{', '&', '*']) {
-                let begin = at + value_at;
-                let span = unquote(text, begin..begin + raw.len());
-                out.leaf(&text[span.clone()], span, parent);
-            }
-            out.path.truncate(depth);
-        } else {
-            let raw = scalar(content);
-            let span = unquote(text, at..at + raw.len());
-            out.leaf(&text[span.clone()], span, parent);
-        }
-    }
-}
-
-/// Splits `key: value`, returning the key and the byte offset of the value within `content`.
-fn key_value(content: &str) -> Option<(&str, usize)> {
-    let (key, after) =
-        if let Some(quote) = content.chars().next().filter(|c| *c == '"' || *c == '\'') {
-            let close = content[1..].find(quote)? + 1;
-            (&content[1..close], close + 1)
-        } else {
-            let colon = content
-                .find(": ")
-                .or_else(|| content.strip_suffix(':').map(str::len))?;
-            (&content[..colon], colon)
-        };
-    let rest = content[after..].strip_prefix(':')?;
-    let value_at = content.len() - rest.trim_start().len();
-    Some((key.trim(), value_at))
-}
-
-/// The scalar text at the start of `raw`, without a trailing comment or whitespace.
-fn scalar(raw: &str) -> &str {
-    if let Some(quote) = raw.chars().next().filter(|c| *c == '"' || *c == '\'') {
-        return raw[1..].find(quote).map_or(raw, |end| &raw[..end + 2]);
-    }
-    raw.find(" #").map_or(raw, |end| &raw[..end]).trim_end()
 }
 
 /// `key = value` lines under `[section]` headers, as `Config::MVP` reads them for the
@@ -391,6 +269,10 @@ fn xml(text: &str, out: &mut Out) {
         last = whole.end();
     }
 }
+
+mod yaml;
+
+use yaml::yaml;
 
 #[cfg(test)]
 mod tests;

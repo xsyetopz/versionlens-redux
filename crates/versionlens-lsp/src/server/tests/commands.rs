@@ -403,3 +403,27 @@ fn links_local_dependencies_to_their_directory() {
     client.stop();
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn links_gems_in_path_block_to_its_directory() {
+    // Arrange: a Gemfile whose bare gem sits in a `path` block.
+    let dir = std::env::temp_dir().join(format!("versionlens-gem-dir-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("vendor/local")).unwrap();
+    let uri = workspace::file_uri(&dir.join("Gemfile").to_string_lossy());
+    let client = Client::with(&options());
+    client.open(&uri, "path \"vendor/local\" do\n  gem \"local_one\"\nend\n");
+
+    // Act
+    let lenses = client.request(
+        2,
+        "textDocument/codeLens",
+        json!({ "textDocument": { "uri": uri } }),
+    );
+
+    // Assert
+    let lenses = lenses.response_result.unwrap();
+    let target = workspace::file_uri(&dir.join("vendor/local").to_string_lossy());
+    assert_eq!(lenses[0]["command"]["arguments"], json!([target]));
+    client.stop();
+    std::fs::remove_dir_all(dir).unwrap();
+}

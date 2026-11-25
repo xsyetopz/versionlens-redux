@@ -9,8 +9,10 @@ insert = ':'
 rules = [
     { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)(?:[^\w./-]|\z)' },
     # An untagged image means its `latest` tag, as the fork's master read it; a lens offers a tag.
-    # A name an earlier `AS` gave is a build stage, and `scratch` no image, so both stay out.
-    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)(?:[ \t]+AS[ \t]+[\w.-]+)?[ \t]*\r?$' },
+    # A name an earlier `AS` gave is a build stage, and `scratch` no image, so both stay out. An
+    # image pinned only by digest, `FROM ubuntu@sha256:…`, offers a tag the same way:
+    # docs.docker.com/reference/dockerfile/#from
+    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)(?:@sha256:[0-9a-f]+)?(?:[ \t]+AS[ \t]+[\w.-]+)?[ \t]*\r?$' },
 ]
 
 [[file]]
@@ -23,9 +25,16 @@ rules = [
     { spec = 'services.*.image', pattern = '${DOCKER}' },
     # Untagged images, and a tag pinned to a digest, as the fork's master read them, and the
     # `x-` extension blocks that services merge in: docs.docker.com/reference/compose-file/extension/
-    { spec = 'services.*.image', pattern = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)$' },
+    { spec = 'services.*.image', pattern = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)(?:@sha256:[0-9a-f]+)?$' },
     { spec = 'services.*.image', pattern = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)@sha256:[0-9a-f]+$' },
     { spec = '*.image', pattern = '${DOCKER}' },
+    # A service built from a context, `build: ./web` or `build: { context: ./web }`, links to that
+    # directory as the fork's master did (crates/versionlens-parsers/src/docker/compose_yaml/build.rs);
+    # a context that is a URL names a repository: docs.docker.com/reference/compose-file/build/#context
+    { spec = 'services.*.build', pattern = '^(?P<name>(?P<version>[^:]+))$', via = 'directory' },
+    { spec = 'services.*.build.context', pattern = '^(?P<name>(?P<version>[^:]+))$', via = 'directory' },
+    { spec = 'services.*.build', pattern = '^(?P<name>(?P<version>(?:\w+://|git@)\S+))$' },
+    { spec = 'services.*.build.context', pattern = '^(?P<name>(?P<version>(?:\w+://|git@)\S+))$' },
 ]
 
 [[file]]
@@ -34,7 +43,12 @@ globs = ['kustomization.yaml', 'kustomization.yml', 'Kustomization']
 format = 'yaml'
 registry = 'docker'
 rules = [
-    { record = 'images.*', name = 'name', version = 'newTag' },
+    # `newName` replaces the image `name` matches, and `newTag` is a tag of that new image:
+    # kubectl.docs.kubernetes.io/references/kustomize/kustomization/images/
+    { record = 'images.*', name = 'newName|name', version = 'newTag' },
+    # A `digest` in place of `newTag` pins the image by content, as `FROM redis@sha256:…` does in
+    # a Dockerfile, and reads with no tag; the same page writes `name` then `digest`.
+    { lines = '''(?m)^[ \t]*-[ \t]+name:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)["']?[ \t]*\r?\n[ \t]+digest:''' },
 ]
 
 [[file]]
@@ -53,6 +67,11 @@ rules = [
     { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION}' },
     { spec = 'jobs.*.uses', pattern = '${ACTION}' },
     { spec = 'runs.steps.*.uses', pattern = '${ACTION}' },
+    # A local action or reusable workflow, `./.github/workflows/shared.yml`, links to its file, as the
+    # fork's master read it: docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsuses
+    { spec = 'jobs.*.steps.*.uses', pattern = '^(?P<name>(?P<version>\./\S*))$', via = 'directory' },
+    { spec = 'jobs.*.uses', pattern = '^(?P<name>(?P<version>\./\S*))$', via = 'directory' },
+    { spec = 'runs.steps.*.uses', pattern = '^(?P<name>(?P<version>\./\S*))$', via = 'directory' },
     { lines = '${IMAGE_LINE}', via = 'docker' },
     { lines = '''(?m)uses:[ \t]*["']?docker://(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)''', via = 'docker' },
     # The runtime a setup action installs, from its `<tool>-version` input, as the fork's master
@@ -246,6 +265,11 @@ rules = [
     { lines = 'source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
     { lines = 'version[ \t]*=[ \t]*"(?P<version>[^"]+)"\s*source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"' },
     { lines = '${GITHUB_REF}', via = 'github' },
+    # A requirement may be a bare constraint, `random = "~> 3.6"`, whose source is `hashicorp/` and
+    # the local name: developer.hashicorp.com/terraform/language/providers/requirements
+    # (v0.12-Compatible Provider Requirements). An object entry matches without a name, so its keys
+    # stay with the rules above.
+    { lines = '''(?m)^[ \t]*(?:[\w-]+[ \t]*=[ \t]*\{[^{}]*\}|(?P<name>[\w-]+)[ \t]*=[ \t]*"(?P<version>[^"]+)")''', within = '''required_providers\s*\{(?P<body>(?:[^{}]|\{[^{}]*\})*)\}''', prefix = 'hashicorp/' },
 ]
 
 # A unit's `terraform { source }` names a registry module as `tfr://[host]/ns/name/provider`

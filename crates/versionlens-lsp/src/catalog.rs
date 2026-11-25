@@ -256,4 +256,4 @@ pub(crate) fn globs_json() -> String {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

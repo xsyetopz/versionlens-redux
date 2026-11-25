@@ -31,6 +31,7 @@ pub(super) fn config(dir: &Path, env: &Env) -> impl Fn(&Dep) -> Vec<Target> {
         vars,
         home: env.home.clone(),
         run: env.run,
+        nuget: env.nuget.clone(),
     };
     let user = env
         .var("NPM_CONFIG_USERCONFIG")

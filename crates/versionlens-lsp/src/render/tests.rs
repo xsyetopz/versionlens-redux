@@ -1,3 +1,4 @@
+use super::lenses::{build_command, short, status};
 use super::*;
 use crate::git_ref::Ref;
 

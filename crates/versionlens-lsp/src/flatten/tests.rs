@@ -58,6 +58,42 @@ fn reads_yaml_mappings_behind_anchor() {
 }
 
 #[test]
+fn reads_yaml_flow_collections() {
+    // Arrange: yaml.org/spec/1.2.2/#74-flow-collection-styles, across lines and with comments.
+    let text = "dependencies: {http: ^1.0.0, 'path': \"1.9.0\", bare: }\nchannels: [conda-forge]\nlist:\n  - [numpy=1.26, {pip: [requests==2.31.0]}] # c\nnext: {a: [\n    x, # c\n    y]}\nafter: 2.0.0\n";
+
+    // Act
+    let leaves = flatten(Format::Yaml, text);
+
+    // Assert
+    check(Format::Yaml, text, "dependencies.http", "^1.0.0");
+    check(Format::Yaml, text, "dependencies.path", "1.9.0");
+    assert_eq!(find(&leaves, "dependencies.bare").value, "");
+    check(Format::Yaml, text, "channels.0", "conda-forge");
+    check(Format::Yaml, text, "list.0.0", "numpy=1.26");
+    check(Format::Yaml, text, "list.0.1.pip.0", "requests==2.31.0");
+    check(Format::Yaml, text, "next.a.1", "y");
+    check(Format::Yaml, text, "after", "2.0.0");
+    assert_eq!(
+        find(&leaves, "dependencies.http").parent,
+        find(&leaves, "dependencies.path").parent
+    );
+}
+
+#[test]
+fn reads_block_yaml_below_unclosed_flow_collection() {
+    // Arrange: an editor's buffer while `{` is being typed.
+    let text = "dependencies: {http: ^1.0.0\ndev_dependencies:\n  lints: ^5.0.0\n";
+
+    // Act
+    let leaves = flatten(Format::Yaml, text);
+
+    // Assert
+    assert!(leaves.iter().all(|l| l.path[0] != "dependencies"));
+    check(Format::Yaml, text, "dev_dependencies.lints", "^5.0.0");
+}
+
+#[test]
 fn reads_xml_elements_and_attributes() {
     let text = "<?xml version=\"1.0\"?>\n<Project><!-- <x/> --><ItemGroup><PackageReference Include=\"A\" Version=\"1.0\" />\n<PackageReference Include=\"B\"><Version> 2.0 </Version></PackageReference></ItemGroup></Project>";
     let leaves = flatten(Format::Xml, text);

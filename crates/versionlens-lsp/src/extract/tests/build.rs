@@ -124,7 +124,7 @@ fn reads_hunter_config_versions() {
 #[test]
 fn reads_platformio_platforms_tools_and_libraries() {
     // esphome/esphome's platformio.ini, with the lib_deps forms of the PlatformIO docs.
-    let text = "[common:esp8266-arduino]\nplatform = platformio/espressif8266@4.2.1\nplatform_packages =\n    platformio/framework-arduinoespressif8266@~3.30102.0\n    pioarduino/framework-espidf@https://github.com/pioarduino/esp-idf/releases/download/v6.1.1/esp-idf-v6.1.1.tar.xz\nlib_deps =\n    ${common:arduino.lib_deps}\n    ; owner-based declaration\n    knolleary/PubSubClient\n    fastled/FastLED@3.9.16                ; fastled_base\n    ESP8266WiFi                           ; wifi (Arduino built-in)\n    bblanchon/ArduinoJson @ ~5.6,!=5.4\n    adafruit/Adafruit GFX Library @ ^1.11.9\n\n[env:exact]\nplatform = espressif32 @ 6.5.0\nlib_deps = google/googletest@^1.15.2\n";
+    let text = "[common:esp8266-arduino]\nplatform = platformio/espressif8266@4.2.1\nplatform_packages =\n    platformio/framework-arduinoespressif8266@~3.30102.0\n    pioarduino/framework-espidf@https://github.com/pioarduino/esp-idf/releases/download/v6.1.1/esp-idf-v6.1.1.tar.xz\nlib_deps =\n    ${common:arduino.lib_deps}\n    ; owner-based declaration\n    knolleary/PubSubClient\n    fastled/FastLED@3.9.16                ; fastled_base\n    ESP8266WiFi                           ; wifi (Arduino built-in)\n    bblanchon/ArduinoJson @ ~5.6,!=5.4\n    adafruit/Adafruit GFX Library @ ^1.11.9\n    ArduinoJson @ ^7.4.0\n\n[env:exact]\nplatform = espressif32 @ 6.5.0\nlib_deps = google/googletest@^1.15.2\n";
     expect(
         "platformio.ini",
         text,
@@ -138,6 +138,7 @@ fn reads_platformio_platforms_tools_and_libraries() {
             ("fastled/FastLED", "3.9.16", "platformio"),
             ("bblanchon/ArduinoJson", "~5.6,!=5.4", "platformio"),
             ("adafruit/Adafruit GFX Library", "^1.11.9", "platformio"),
+            ("ArduinoJson", "^7.4.0", "arduino"),
             ("espressif32", "6.5.0", "platformio-platform"),
             ("google/googletest", "^1.15.2", "platformio"),
         ],

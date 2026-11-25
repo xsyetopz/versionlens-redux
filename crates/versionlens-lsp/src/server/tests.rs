@@ -31,6 +31,7 @@ impl Client {
             vars: HashMap::new(),
             home: None,
             run: |_, _, _| None,
+            nuget: Vec::new(),
         };
         let server = thread::spawn(move || serve(server, stored, env));
         let mut client = Self {
