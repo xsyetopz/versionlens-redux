@@ -549,6 +549,21 @@ osv_name = 'https://vpm.vlang.io/api/packages/{name}'
 upstream = '"url":\s*"${GITHUB_URL}'
 page = 'https://vpm.vlang.io/packages/{name}'
 
+# Nimble finds a bare package name in nim-lang/packages' packages.json, whose entry gives the
+# repository Nimble installs the tags of, as `"name": "jester", "url": "https://github.com/dom96/
+# jester/"`; a name matches case-insensitively, as Nimble's `normalize` compares, though not
+# across underscores: nim-lang/nimble's src/nimblepkg/packageinfo.nim. The list is about 1 MB.
+[[registry]]
+id = 'nimble'
+url = 'https://api.github.com/repos/{upstream}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://raw.githubusercontent.com/nim-lang/packages/master/packages.json'
+upstream = '(?i)"name":\s*"{name}",\s*"url":\s*"${GITHUB_URL}'
+page = 'https://nimble.directory/pkg/{lower}'
+
 # The Alire index keeps one `name-version.toml` per release under `index/{first two letters}/name`
 # on its default branch, so the GitHub contents listing names every version:
 # github.com/alire-project/alire-index, doc/catalog-format-spec.md in alire-project/alire. OSV

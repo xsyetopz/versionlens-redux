@@ -50,7 +50,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - Gradle map notation (`group:, name:, version:`), `kotlin("jvm") version`, and catalog `version.ref` and `[plugins]`
   - Swift `.exact`, branch, revision, non-GitHub, and `path:` packages
   - Zig `.path` dependencies
-  - Nimble `#head` requirements
+  - Nimble `#head` requirements, and bare package names (`requires "chronos >= 4.0"`), found in nim-lang/packages and checked against the package's GitHub tags with GIT advisories; `nim` itself checks against nim-lang/nim
   - Helm `file://`, repository-alias, and `oci://` chart repositories
   - `package.json` `bundleDependencies`, `bundledDependencies`, and `trustedDependencies`
   - The `node-version`, `bun-version`, `python-version`, `ruby-version`, and `go-version` inputs of workflow setup actions
@@ -82,7 +82,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Known Gaps
 
-- Three of the fork's master checking-coverage cases stay unread. A `jsr.json`'s own name is not looked up on JSR, because upstream reads no `jsr.json` version. A `Manifest.toml` entry with no `git-tree-sha1` reads as a standard library. A bare `requires "name"` in a `.nimble` file names no version to check without the Nim package list.
+- Two of the fork's master checking-coverage cases stay unread. A `jsr.json`'s own name is not looked up on JSR: its `version` gets upstream's local increments, and a lookup on the name would offer an edit that appends a version to the name. A `Manifest.toml` entry with no `git-tree-sha1` reads as a standard library.
 
 ## [0.6.3] - 2026-11-09
 

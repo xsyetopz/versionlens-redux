@@ -1,5 +1,5 @@
 //! Build systems: CPM.cmake, `FetchContent`, Hunter, `PlatformIO`, ESP-IDF components, Mill, fpm, Boss,
-//! Buck2, Pants, west, Alire, and Arduino.
+//! Buck2, Pants, west, Alire, Arduino, and Nimble.
 //! Fixtures are excerpts of the real files or docs each row cites.
 
 use super::expect;
@@ -193,6 +193,26 @@ fn reads_arduino_library_depends() {
             ("Adafruit SleepyDog Library", "", "arduino"),
             ("ArduinoHttpClient", ">=0.6.0", "arduino"),
             ("ArduinoBearSSL", "", "arduino"),
+        ],
+    );
+}
+
+#[test]
+fn reads_nimble_package_names() {
+    // status-im/nim-chronos's chronos.nimble and karaxnim/karax's karax.nimble; `nim` is the
+    // compiler, and a `skipDirs` list is not read.
+    let text = "version       = \"4.4.0\"\ndescription   = \"Networking framework with async/await support\"\nskipDirs      = @[\"tests\"]\n\nrequires \"nim >= 1.6.16\",\n         \"bearssl >= 0.2.13\",\n         \"stew >= 0.5.0\"\nrequires \"ws\"\nrequires \"dotenv >= 2.0.0\"\nrequires \"foo 1.0.0\"\nrequires \"https://github.com/user/pkg#head\"\nbin = @[\"karax/tools/karun\"]\n";
+    expect(
+        "chronos.nimble",
+        text,
+        &[
+            ("nim-lang/nim", ">= 1.6.16", "github"),
+            ("bearssl", ">= 0.2.13", "nimble"),
+            ("stew", ">= 0.5.0", "nimble"),
+            ("ws", "", "nimble"),
+            ("dotenv", ">= 2.0.0", "nimble"),
+            ("foo", "1.0.0", "nimble"),
+            ("https://github.com/user/pkg", "head", "source"),
         ],
     );
 }

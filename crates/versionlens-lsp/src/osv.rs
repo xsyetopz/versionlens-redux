@@ -24,6 +24,8 @@ pub(crate) struct Query {
     /// The registry's [`crate::registry::Registry::upstream`]: where set, `name` is the URL of a
     /// document that names the repository to ask about.
     pub(crate) upstream: &'static str,
+    /// The dependency's own name, which `{name}` in `upstream` stands for.
+    pub(crate) package: String,
 }
 
 /// The vulnerability ids affecting each query, in order.

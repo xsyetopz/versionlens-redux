@@ -187,6 +187,7 @@ impl Server {
             name: name.replace("{version}", &version.raw),
             version: version.raw,
             upstream: registry.upstream,
+            package: dep.name.clone(),
         })
     }
 

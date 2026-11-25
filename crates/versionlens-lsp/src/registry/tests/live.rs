@@ -125,6 +125,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("raku", "JSON::Fast", None, None),
     ("arduino", "ArduinoHttpClient", None, None),
     ("arduino", "Adafruit SleepyDog Library", None, None),
+    ("nimble", "jester", None, Some("v0.4.3")),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
@@ -299,12 +300,13 @@ fn osv_reports_each_ecosystem() {
         .filter_map(|&(id, name, source, vulnerable)| {
             let registry = get(id).unwrap();
             let (ecosystem, version) = (registry.osv?, vulnerable?.to_owned());
-            let name = expand(registry.osv_name, name, source).unwrap();
+            let url = expand(registry.osv_name, name, source).unwrap();
             let query = Query {
                 ecosystem,
-                name: name.replace("{version}", &version),
+                name: url.replace("{version}", &version),
                 version,
                 upstream: registry.upstream,
+                package: name.to_owned(),
             };
             Some((id, query))
         })

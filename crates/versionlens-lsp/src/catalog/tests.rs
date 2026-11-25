@@ -277,11 +277,12 @@ const RENAMED: &[(&str, &str, &str)] = &[
     ("Nvmrc", "node", "1.0.0"),
 ];
 
-/// Cases still unread, each named in CHANGELOG.md: master looked a `jsr.json`'s own name up on
-/// JSR, where upstream offers a manifest's own version local increments and reads no
-/// `jsr.json` version at all; Julia manifests pin registered packages by `git-tree-sha1`, which the case lacks
-/// as a standard library would; and bare nimble names need the Nim package list.
-const UNREAD: &[&str] = &["JsrJson", "JuliaManifestToml", "Nimble"];
+/// Cases still unread, each named in CHANGELOG.md. Master looked a `jsr.json`'s own name up on
+/// JSR, but upstream's local increments own that version's span, and a lookup spanning the name
+/// would offer an edit that appends a version to it (`render::replacement` of an empty
+/// requirement). Julia manifests pin registered packages by `git-tree-sha1`, which the case
+/// lacks as a standard library would.
+const UNREAD: &[&str] = &["JsrJson", "JuliaManifestToml"];
 
 #[test]
 fn reads_what_master_checked_in_each_manifest_kind() {

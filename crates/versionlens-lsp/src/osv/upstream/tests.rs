@@ -3,7 +3,7 @@ use crate::registry::get;
 
 /// The repository URL a registry's upstream pattern finds in a document excerpt.
 fn repo(id: &str, text: &str) -> Option<String> {
-    found(get(id).unwrap().upstream, text)
+    found(get(id).unwrap().upstream, "", text)
 }
 
 #[test]

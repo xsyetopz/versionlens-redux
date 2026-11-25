@@ -5,8 +5,8 @@
 use tokio::task::JoinSet;
 
 use super::Query;
-use crate::extract::regex;
 use crate::http::Http;
+use crate::registry::upstream_of;
 
 /// Each query as OSV can answer it: an upstream query renamed to its repository's URL, or `None`
 /// where the registry names no GitHub repository for the package.
@@ -39,24 +39,19 @@ async fn repository(http: &Http, query: Query) -> Result<Option<Query>, String> 
         _ => version,
     }
     .to_owned();
-    Ok(found(query.upstream, &text).map(|name| Query {
-        name,
-        version,
-        upstream: "",
-        ..query
-    }))
+    Ok(
+        found(query.upstream, &query.package, &text).map(|name| Query {
+            name,
+            version,
+            upstream: "",
+            ..query
+        }),
+    )
 }
 
-/// The URL of the GitHub repository the pattern finds in a registry document.
-pub(super) fn found(pattern: &'static str, text: &str) -> Option<String> {
-    let caps = regex(pattern).captures_iter(text).next()?;
-    let group = |name| caps.get_group_by_name(name).map(|s| &text[s.range()]);
-    let repo = group("repo")?;
-    Some(format!(
-        "https://github.com/{}/{}",
-        group("owner")?,
-        repo.strip_suffix(".git").unwrap_or(repo)
-    ))
+/// The URL of the GitHub repository the pattern finds in a registry document about `package`.
+pub(super) fn found(pattern: &str, package: &str, text: &str) -> Option<String> {
+    upstream_of(pattern, package, text).map(|repo| format!("https://github.com/{repo}"))
 }
 
 #[cfg(test)]

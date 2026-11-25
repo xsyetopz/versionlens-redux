@@ -311,6 +311,11 @@ rules = [
     # `name#head` and `url#branch` follow a moving branch, as the fork's master labeled them:
     # nim-lang.github.io/nimble/create-packages.html#dependencies
     { lines = '"(?P<name>(?:https?://)?[\w./:-]+)#(?P<version>[\w./-]+)"', via = 'source' },
+    # A bare name is a package of nim-lang/packages, `requires "jester >= 0.5", "karax"` with an
+    # optional `==`, `>=`, `>`, `<=`, `<`, `^=`, or `~=` version, a bare one exact; `nim` is the
+    # compiler, whose releases are nim-lang/Nim's tags: nim-lang/nimble's src/nimblepkg/version.nim.
+    { lines = '(?m)(?:^[ \t]*requires\s*\(?\s*|,[ \t]*(?:\r?\n[ \t]*)?)"(?P<name>nim)[ \t]*(?P<version>(?:==|>=|<=|\^=|~=|>|<)?[ \t]*\d[\w.]*)"', via = 'github', prefix = 'nim-lang/' },
+    { lines = '(?m)(?:^[ \t]*requires\s*\(?\s*|,[ \t]*(?:\r?\n[ \t]*)?)"(?P<name>[A-Za-z][\w]*)(?:[ \t]*(?P<version>(?:==|>=|<=|\^=|~=|>|<)?[ \t]*\d[\w.]*))?"', via = 'nimble' },
 ]
 
 [[file]]

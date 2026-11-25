@@ -45,6 +45,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | mooncakes.io | GIT (the GitHub repository the module's `repository` names) | `moon.mod.json` `deps` |
 | PureScript Registry | GIT (the package's GitHub location) | `spago.yaml` dependencies with a range |
 | VPM, the tags of the GitHub repository it names | GIT (that repository) | `v.mod` `dependencies` |
+| nim-lang/packages, the tags of the GitHub repository it names | GIT (that repository) | `*.nimble` `requires` package names |
 | Alire index | | `alire.toml` `[[depends-on]]` |
 | Idris pack collections | | `pack.toml` `collection` |
 | raku.land | | `META6.json` `depends`, `build-depends`, and `test-depends` |
