@@ -120,7 +120,7 @@ globs = ['*.cabal', 'cabal.project', 'stack.yaml', 'stack.yml']
 format = 'text'
 registry = 'hackage'
 rules = [
-    { lines = '(?m)(?:build-depends:|,|^)[ \t]*(?P<name>[A-Za-z][\w-]*)[ \t]+(?P<version>(?:\^>=|>=|==)[ \t]*\d[\d.]*)' },
+    { lines = '(?m)(?:build-depends:|constraints:|,|^)[ \t]*(?P<name>[A-Za-z][\w-]*)[ \t]+(?P<version>(?:\^>=|>=|==)[ \t]*\d[\d.]*)' },
     { lines = '(?m)^[ \t]*with-compiler:[ \t]*(?P<name>ghc)-(?P<version>\d[\d.]*)', via = 'ghc' },
     # Stack's `extra-deps` entries read `- package-1.2.3`.
     { lines = '(?m)^[ \t]*-[ \t]+(?P<name>[A-Za-z][\w-]*?)-(?P<version>\d+(?:\.\d+)*)(?:@\S+)?[ \t]*(?:#.*)?\r?$' },
@@ -141,7 +141,8 @@ globs = ['flake.nix']
 format = 'text'
 registry = 'github'
 rules = [
-    { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)/(?P<version>v?\d[\w.-]*)' },
+    # Nixpkgs pins release branches, `github:NixOS/nixpkgs/nixos-24.05`, named for its tags.
+    { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)/(?:nixos-|nixpkgs-|release-)?(?P<version>v?\d[\w.-]*)' },
     { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)' },
 ]
 

@@ -50,9 +50,15 @@ check("server globs become segment-anchored patterns", function()
     not versionlens.supports("/p/notes.txt", patterns),
     "not versionlens.supports('/p/notes.txt', patterns)"
   )
+  -- Every JSON file reaches the server, which reads one as npm only when its keys look like a
+  -- package.json; a name-only match cannot see the content.
   assert(
-    not versionlens.supports("/p/mypackage.json", patterns),
-    "not versionlens.supports('/p/mypackage.json', patterns)"
+    versionlens.supports("/p/mypackage.json", patterns),
+    "versionlens.supports('/p/mypackage.json', patterns)"
+  )
+  assert(
+    not versionlens.supports("/p/mypackage.yml", patterns),
+    "not versionlens.supports('/p/mypackage.yml', patterns)"
   )
 end)
 

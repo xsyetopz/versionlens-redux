@@ -142,7 +142,8 @@ impl Server {
         let mut read = 0;
         for file in files {
             let path = file.to_string_lossy().replace('\\', "/");
-            if self.file_type(&path).is_none() {
+            // By name only: reading every JSON file to test its content would slow the scan.
+            if self.file_type(&path, None).is_none() {
                 continue;
             }
             let uri = file_uri(&path);

@@ -11,7 +11,7 @@ use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestI
 use lsp_types::{MessageType, Uri};
 use serde_json::{Value, json};
 
-use crate::catalog::{FileType, by_id, file_type, path_matches};
+use crate::catalog::{FileType, by_id, file_type, file_type_of, path_matches};
 use crate::config::Settings;
 use crate::extract::{Dep, extract};
 use crate::http::Http;
@@ -497,7 +497,10 @@ impl Server {
     /// Reads a manifest the editor opened or changed, or with `open` false one read from disk.
     fn open(&mut self, uri: &Uri, text: String, open: bool) {
         let path = decode(uri.as_str().trim_start_matches("file://"));
-        let Some(file) = self.file_type(&path) else {
+        // Untitled buffers, git revisions, and notebook cells have no folder to resolve
+        // registry settings and local paths against.
+        let on_disk = uri.as_str().starts_with("file:");
+        let Some(file) = self.file_type(&path, Some(&text)).filter(|_| on_disk) else {
             self.log(
                 MessageType::LOG,
                 format!("{path}: not a supported manifest; skipped"),
@@ -545,16 +548,17 @@ impl Server {
         self.dirty = Some(Instant::now());
     }
 
-    /// The file type for a path: a `files` setting glob first, then the catalog.
-    /// Limited to the `fileTypes` setting's file type and registry ids when it lists any.
-    fn file_type(&self, path: &str) -> Option<&'static FileType> {
+    /// The file type for a path: a `files` setting glob first, then the catalog, by content too
+    /// when the text is at hand. Limited to the `fileTypes` setting's file type and registry
+    /// ids when it lists any.
+    fn file_type(&self, path: &str, text: Option<&str>) -> Option<&'static FileType> {
         let only = &self.settings.file_types;
         self.settings
             .files
             .iter()
             .filter(|(glob, _)| path_matches(glob, path))
             .find_map(|(_, id)| by_id(id))
-            .or_else(|| file_type(path))
+            .or_else(|| text.map_or_else(|| file_type(path), |text| file_type_of(path, text)))
             .filter(|f| only.is_empty() || only.iter().any(|id| id == f.id || id == f.registry))
     }
 

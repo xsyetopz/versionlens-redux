@@ -22,6 +22,8 @@ rules = [
 [[file]]
 id = 'nuget'
 globs = ['*.csproj', '*.fsproj', '*.vbproj', '*.props', '*.targets', 'packages.config']
+# Restore and build write generated .props and .targets under obj/ and bin/.
+exclude = ['obj/**', 'bin/**']
 format = 'xml'
 registry = 'nuget'
 rules = [{ use = 'NUGET' }]
@@ -49,6 +51,9 @@ format = 'text'
 registry = 'maven'
 rules = [
     { lines = '''["'](?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)["']''' },
+    # A plugins block names each plugin by id: `id 'org.example' version '1.0'` in Groovy,
+    # `id("org.example") version "1.0"` in Kotlin; docs.gradle.org/current/userguide/plugins.html.
+    { lines = '''(?-u:\b)id[ \t(]*["'](?P<name>[\w.-]+)["'][ \t)]*version[ \t(]*["'](?P<version>[^"'$]+)["']''', via = 'gradle-plugins' },
 ]
 
 [[file]]

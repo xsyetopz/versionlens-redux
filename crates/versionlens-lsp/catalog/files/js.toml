@@ -7,6 +7,20 @@ format = 'json'
 registry = 'npm'
 rules = [{ use = 'NPM_DEPS' }]
 
+# Any other JSON file whose top level holds a package.json section, such as a web module's
+# `web-module.json` with `dependencies` or `jspm`, reads as package.json does.
+[[file]]
+id = 'npm'
+globs = ['*.json', '*.jsonc']
+content = [
+    'dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies',
+    'bundledDependencies', 'bundleDependencies', 'overrides', 'packageManager', 'jspm', 'pnpm',
+    'workspaces',
+]
+format = 'json'
+registry = 'npm'
+rules = [{ use = 'NPM_DEPS' }]
+
 [[file]]
 id = 'node'
 globs = ['.nvmrc', '.node-version']

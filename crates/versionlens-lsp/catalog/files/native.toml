@@ -1,7 +1,9 @@
 # Systems and native toolchains.
 #
 # Each [[file]] row is one kind of manifest: `globs` matched against the end of a path,
-# case-insensitively, the `format` that reads it (json, toml, yaml, xml, or text), the `registry`
+# case-insensitively, with optional `exclude` globs that rule a path out and `content`, top-level
+# keys of which the document must hold one (such a row matches only after every row that
+# matches by name has failed), the `format` that reads it (json, toml, yaml, xml, or text), the `registry`
 # that answers for its dependencies, an optional `insert` written before a version added to a
 # bare name, and `rules`: { keys }, { spec, pattern }, { record, name, version, source? }, or
 # { lines }, each with an optional `via` registry, or { use } for a list in shared.toml.

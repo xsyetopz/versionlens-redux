@@ -115,7 +115,8 @@ globs = ['*.tf', '*.tofu']
 format = 'text'
 registry = 'terraform'
 rules = [
-    { lines = '(?m)source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"[ \t]*\r?\n[ \t]*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+    { lines = 'source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+    { lines = 'version[ \t]*=[ \t]*"(?P<version>[^"]+)"\s*source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"' },
 ]
 
 [[file]]

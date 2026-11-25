@@ -16,6 +16,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Helm charts report the CVEs Artifact Hub's Trivy scans find in the images a chart version deploys, and Conan packages report GitLab Advisory Database entries whose range holds their version.
 - Docker Hub and OCI images report vulnerabilities through OSV's Bitnami ecosystem, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages. JSR, CocoaPods, conda-forge, Haxelib, Elm, Ansible Galaxy, Puppet Forge, Chef Supermarket, Terraform, Bazel, vcpkg, MetaCPAN, DUB, LuaRocks, and xmake packages, and Rust and Terraform releases, report vulnerabilities through OSV's GIT ecosystem for the GitHub repository their registry names.
 - More manifests: `bower.json`, `paket.references`, Kubernetes manifests (`k8s/`, `kubernetes/`, `manifests/`, `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`), and Helm `values.yaml` images.
+- JSON files whose top level holds a `package.json` section (`dependencies`, `devDependencies`, `jspm`, `workspaces`, `pnpm`, and the rest) read as `package.json`, as the fork's master did. Opened files are tested by content; the workspace scan matches names only.
+- Gradle `plugins { id 'name' version '1.0' }` entries resolve through the Gradle Plugin Portal's marker artifacts.
+- `constraints:` in `cabal.project`, one-line Terraform `required_providers` blocks and blocks that list `version` before `source`, and Nixpkgs release branches such as `github:NixOS/nixpkgs/nixos-24.05` are read.
+- `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases.
 - `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
 
 ### Changed
@@ -30,6 +34,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Generated `.props` and `.targets` under `obj/` and `bin/` are no longer read as NuGet manifests, and untitled buffers, git revisions, and other non-`file:` documents are no longer read at all.
 - Lowercase `dockerfile` and `*.dockerfile` names, which upstream reads, reach the server in editors whose globs match case-sensitively.
 - LuaRocks hovers link to the LuaRocks search for the module; `/modules/<name>` is a user page, which 404s for most modules.
 - Every dependency property upstream 1.3.0 reads is read again: nested npm and pnpm `overrides`, pnpm `packageExtensions`, MSBuild SDKs in `<Project Sdk="Name/1.0">` and `<Sdk>`, and `DotNetCliToolReference`. `devEngines` runtimes and package managers are read too.

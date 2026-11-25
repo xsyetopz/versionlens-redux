@@ -593,3 +593,45 @@ fn reads_dev_engines_runtime_and_package_manager() {
         pairs(&[("node", ">=20.0.0"), ("pnpm", "^9.0.0")])
     );
 }
+
+#[test]
+fn reads_gradle_plugins_from_the_plugin_portal() {
+    let groovy = "plugins {\n  id 'java'\n  id 'org.springframework.boot' version '3.2.0'\n}\n";
+    assert_eq!(
+        registries("settings.gradle", groovy),
+        named(&[("org.springframework.boot", "gradle-plugins")])
+    );
+    let kotlin = "plugins {\n    id(\"com.diffplug.spotless\") version \"6.25.0\" apply false\n    id(\"x\") version \"$v\"\n}\n";
+    assert_eq!(
+        deps("build.gradle.kts", kotlin),
+        pairs(&[("com.diffplug.spotless", "6.25.0")])
+    );
+}
+
+#[test]
+fn reads_layouts_master_read() {
+    one(
+        "cabal.project",
+        "packages: .\nconstraints: aeson == 2.2.1.0\n",
+        "aeson",
+        "== 2.2.1.0",
+    );
+    one(
+        "main.tf",
+        "terraform { required_providers { aws = { source = \"hashicorp/aws\" version = \"~> 5.0\" } } }\n",
+        "hashicorp/aws",
+        "~> 5.0",
+    );
+    one(
+        "main.tf",
+        "required_providers {\n  aws = {\n    version = \"~> 5.0\"\n    source  = \"hashicorp/aws\"\n  }\n}\n",
+        "hashicorp/aws",
+        "~> 5.0",
+    );
+    one(
+        "flake.nix",
+        "{ inputs.nixpkgs.url = \"github:NixOS/nixpkgs/nixos-24.05\"; }\n",
+        "NixOS/nixpkgs",
+        "24.05",
+    );
+}

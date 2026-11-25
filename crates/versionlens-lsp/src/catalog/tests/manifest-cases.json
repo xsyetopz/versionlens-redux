@@ -1,0 +1,520 @@
+[
+	{
+		"kind": "CargoToml",
+		"path": "cargo/Cargo.toml",
+		"text": "[dependencies]\nfoo = \"1.0.0\"\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "CargoConfigToml",
+		"path": "cargo-config/.cargo/config.toml",
+		"text": "[patch.crates-io]\nfoo = { version = \"1.0.0\" }\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "ComposerJson",
+		"path": "composer/composer.json",
+		"text": "{\"require\":{\"foo/bar\":\"1.0.0\"}}\n",
+		"package": "foo/bar",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "DenoJson",
+		"path": "deno/deno.json",
+		"text": "{\"imports\":{\"@foo/bar\":\"jsr:@foo/bar@1.0.0\"}}\n",
+		"package": "@foo/bar",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "DenoImportMapJson",
+		"path": "deno-import/import_map.json",
+		"text": "{\"imports\":{\"@foo/bar\":\"jsr:@foo/bar@1.0.0\"}}\n",
+		"package": "@foo/bar",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "JsrJson",
+		"path": "jsr/jsr.json",
+		"text": "{\"name\":\"@foo/bar\",\"version\":\"1.0.0\"}\n",
+		"package": "@foo/bar",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "DotnetProjectJson",
+		"path": "dotnet-json/project.json",
+		"text": "{\"dependencies\":{\"Foo\":\"1.0.0\"}}\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "DotnetToolsJson",
+		"path": "dotnet-tools/.config/dotnet-tools.json",
+		"text": "{\"version\":1,\"isRoot\":true,\"tools\":{\"Foo\":{\"version\":\"1.0.0\",\"commands\":[\"foo\"]}}}\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "DotnetXml",
+		"path": "dotnet-xml/app.csproj",
+		"text": "<Project><ItemGroup><PackageReference Include=\"Foo\" Version=\"1.0.0\" /></ItemGroup></Project>\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "PaketDependencies",
+		"path": "paket-deps/paket.dependencies",
+		"text": "source https://api.nuget.org/v3/index.json\nnuget Foo 1.0.0\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "PaketReferences",
+		"path": "paket-refs/paket.references",
+		"text": "Foo\n",
+		"package": "Foo",
+		"requirement": ""
+	},
+	{
+		"kind": "DockerComposeYaml",
+		"path": "compose/compose.yaml",
+		"text": "services:\n  app:\n    image: platform/app:1.0.0\n",
+		"package": "platform/app",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "Dockerfile",
+		"path": "dockerfile/Dockerfile",
+		"text": "FROM platform/app:1.0.0\n",
+		"package": "platform/app",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "KustomizationYaml",
+		"path": "kustomize/kustomization.yaml",
+		"text": "images:\n  - name: platform/app\n    newTag: 1.0.0\n",
+		"package": "platform/app",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "DubJson",
+		"path": "dub-json/dub.json",
+		"text": "{\"dependencies\":{\"foo\":\"1.0.0\"}}\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "DubSdl",
+		"path": "dub-sdl/dub.sdl",
+		"text": "dependency \"foo\" version=\"1.0.0\"\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "Gemfile",
+		"path": "gemfile/Gemfile",
+		"text": "source 'https://rubygems.org'\ngem 'foo', '1.0.0'\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "RubyGemspec",
+		"path": "gemspec/demo.gemspec",
+		"text": "Gem::Specification.new do |spec|\n  spec.add_dependency 'foo', '1.0.0'\nend\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "GoMod",
+		"path": "go/go.mod",
+		"text": "module example.test/demo\n\nrequire example.test/foo v1.0.0\n",
+		"package": "example.test/foo",
+		"requirement": "v1.0.0"
+	},
+	{
+		"kind": "MavenPomXml",
+		"path": "maven/pom.xml",
+		"text": "<project><dependencies><dependency><groupId>example.test</groupId><artifactId>foo</artifactId><version>1.0.0</version></dependency></dependencies></project>\n",
+		"package": "example.test:foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "GradleBuild",
+		"path": "gradle/build.gradle",
+		"text": "dependencies {\n  implementation 'example.test:foo:1.0.0'\n}\n",
+		"package": "example.test:foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "GradleSettings",
+		"path": "gradle-settings/settings.gradle",
+		"text": "pluginManagement {\n  plugins {\n    id 'example.foo' version '1.0.0'\n  }\n}\n",
+		"package": "example.foo:example.foo.gradle.plugin",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "GradleVersionCatalogToml",
+		"path": "gradle-catalog/gradle/libs.versions.toml",
+		"text": "[libraries]\nfoo = { module = \"example.test:foo\", version = \"1.0.0\" }\n",
+		"package": "example.test:foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "SbtBuild",
+		"path": "sbt/build.sbt",
+		"text": "libraryDependencies += \"example.test\" % \"foo\" % \"1.0.0\"\n",
+		"package": "example.test:foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "ClojureDepsEdn",
+		"path": "clojure/deps.edn",
+		"text": "{:deps {example.test/foo {:mvn/version \"1.0.0\"}}}\n",
+		"package": "example.test:foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "LeiningenProjectClj",
+		"path": "lein/project.clj",
+		"text": "(defproject demo \"0.1.0\" :dependencies [[example.test/foo \"1.0.0\"]])\n",
+		"package": "example.test:foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "MixExs",
+		"path": "mix/mix.exs",
+		"text": "defmodule Demo.MixProject do\n  use Mix.Project\n  defp deps, do: [{:foo, \"1.0.0\"}]\nend\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "RebarConfig",
+		"path": "rebar/rebar.config",
+		"text": "{deps, [{foo, \"1.0.0\"}]}.\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "GleamToml",
+		"path": "gleam/gleam.toml",
+		"text": "[dependencies]\nfoo = \"1.0.0\"\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "Opam",
+		"path": "opam/demo.opam",
+		"text": "opam-version: \"2.0\"\ndepends: [\"foo\" {= \"1.0.0\"}]\n",
+		"package": "foo",
+		"requirement": "= 1.0.0"
+	},
+	{
+		"kind": "DuneProject",
+		"path": "dune/dune-project",
+		"text": "(lang dune 3.17)\n(package (name demo) (depends (foo (= 1.0.0))))\n",
+		"package": "foo",
+		"requirement": "= 1.0.0"
+	},
+	{
+		"kind": "Cabal",
+		"path": "cabal/demo.cabal",
+		"text": "cabal-version: 3.0\nname: demo\nlibrary\n  build-depends: foo == 1.0.0\n",
+		"package": "foo",
+		"requirement": "== 1.0.0"
+	},
+	{
+		"kind": "CabalProject",
+		"path": "cabal-project/cabal.project",
+		"text": "packages: .\nconstraints: foo == 1.0.0\n",
+		"package": "foo",
+		"requirement": "== 1.0.0"
+	},
+	{
+		"kind": "StackYaml",
+		"path": "stack/stack.yaml",
+		"text": "extra-deps:\n  - foo-1.0.0\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "JuliaProjectToml",
+		"path": "julia-project/Project.toml",
+		"text": "[deps]\nFoo = \"00000000-0000-0000-0000-000000000001\"\n[compat]\nFoo = \"1.0.0\"\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "JuliaManifestToml",
+		"path": "julia-manifest/Manifest.toml",
+		"text": "[[deps.Foo]]\nuuid = \"00000000-0000-0000-0000-000000000001\"\nversion = \"1.0.0\"\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "RDescription",
+		"path": "r-description/DESCRIPTION",
+		"text": "Package: demo\nVersion: 0.1.0\nImports: foo (== 1.0.0)\n",
+		"package": "foo",
+		"requirement": "== 1.0.0"
+	},
+	{
+		"kind": "RenvLock",
+		"path": "renv/renv.lock",
+		"text": "{\"Packages\":{\"foo\":{\"Package\":\"foo\",\"Version\":\"1.0.0\",\"Source\":\"Repository\",\"Repository\":\"CRAN\"}}}\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "ConanfileTxt",
+		"path": "conan-txt/conanfile.txt",
+		"text": "[requires]\nfoo/1.0.0\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "ConanfilePy",
+		"path": "conan-py/conanfile.py",
+		"text": "from conan import ConanFile\nclass Demo(ConanFile):\n    requires = \"foo/1.0.0\"\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "VcpkgJson",
+		"path": "vcpkg/vcpkg.json",
+		"text": "{\"dependencies\":[{\"name\":\"foo\",\"version>=\":\"1.0.0\"}]}\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "Cmake",
+		"path": "cmake/CMakeLists.txt",
+		"text": "FetchContent_Declare(foo GIT_REPOSITORY https://github.com/example/foo.git GIT_TAG 1.0.0)\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "XmakeLua",
+		"path": "xmake/xmake.lua",
+		"text": "add_requires(\"foo 1.0.0\")\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "MesonWrap",
+		"path": "meson/subprojects/foo.wrap",
+		"text": "[wrap-git]\nurl = https://github.com/example/foo/archive/refs/tags/1.0.0.tar.gz\ndirectory = foo-1.0.0\n",
+		"package": "foo-1.0.0",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "BazelWorkspace",
+		"path": "bazel-workspace/WORKSPACE",
+		"text": "http_archive(name = \"foo\", urls = [\"https://github.com/example/foo/archive/refs/tags/1.0.0.tar.gz\"])\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "SwiftPackage",
+		"path": "swift/Package.swift",
+		"text": "import PackageDescription\nlet package = Package(name: \"Demo\", dependencies: [.package(url: \"https://github.com/example/foo.git\", exact: \"1.0.0\")])\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "Cartfile",
+		"path": "carthage/Cartfile",
+		"text": "github \"example/foo\" ~> 1.0\n",
+		"package": "example/foo",
+		"requirement": "~> 1.0"
+	},
+	{
+		"kind": "ZigBuildZon",
+		"path": "zig/build.zig.zon",
+		"text": ".{ .name = \"demo\", .version = \"0.1.0\", .dependencies = .{ .foo = .{ .url = \"https://github.com/example/foo/archive/refs/tags/1.0.0.tar.gz\" } } }\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "Nimble",
+		"path": "nim/demo.nimble",
+		"text": "requires \"foo 1.0.0\"\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "LuaRockspec",
+		"path": "luarocks/demo-1.0.0-1.rockspec",
+		"text": "package = \"demo\"\nversion = \"1.0.0-1\"\ndependencies = { \"foo == 1.0.0\" }\n",
+		"package": "foo",
+		"requirement": "== 1.0.0"
+	},
+	{
+		"kind": "Cpanfile",
+		"path": "cpan/cpanfile",
+		"text": "requires 'Foo', '1.0.0';\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "HaxelibJson",
+		"path": "haxelib/haxelib.json",
+		"text": "{\"name\":\"demo\",\"version\":\"0.1.0\",\"dependencies\":{\"foo\":\"1.0.0\"}}\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "TerraformTf",
+		"path": "terraform/main.tf",
+		"text": "terraform { required_providers { foo = { source = \"example/foo\" version = \"1.0.0\" } } }\n",
+		"package": "example/foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "HelmChartYaml",
+		"path": "helm/Chart.yaml",
+		"text": "apiVersion: v2\nname: demo\nversion: 0.1.0\ndependencies:\n  - name: foo\n    version: 1.0.0\n    repository: https://example.test/charts\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "AnsibleGalaxyRequirementsYaml",
+		"path": "ansible/requirements.yml",
+		"text": "collections:\n  - name: example.foo\n    version: 1.0.0\n",
+		"package": "example.foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "BazelModule",
+		"path": "bazel-module/MODULE.bazel",
+		"text": "module(name = \"demo\", version = \"0.1.0\")\nbazel_dep(name = \"foo\", version = \"1.0.0\")\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "NixFlake",
+		"path": "nix/flake.nix",
+		"text": "{\n  inputs = {\n    nixpkgs.url = \"github:NixOS/nixpkgs/nixos-23.11\";\n  };\n}\n",
+		"package": "NixOS/nixpkgs",
+		"requirement": "23.11"
+	},
+	{
+		"kind": "UnityProjectManifestJson",
+		"path": "unity/Packages/manifest.json",
+		"text": "{\"dependencies\":{\"com.example.foo\":\"1.0.0\"}}\n",
+		"package": "com.example.foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "CocoaPodsPodfile",
+		"path": "cocoapods/Podfile",
+		"text": "source 'https://cdn.cocoapods.org/'\npod 'Foo', '1.0.0'\n",
+		"package": "Foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "NpmPackageJson",
+		"path": "npm-json/package.json",
+		"text": "{\"dependencies\":{\"foo\":\"1.0.0\"}}\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "NpmPackageJson5",
+		"path": "npm-json5/package.json5",
+		"text": "{'dependencies':{'foo':'1.0.0'}}\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "NpmPackageYaml",
+		"path": "npm-yaml/package.yaml",
+		"text": "dependencies:\n  foo: 1.0.0\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "PnpmYaml",
+		"path": "pnpm/pnpm-workspace.yaml",
+		"text": "catalog:\n  foo: 1.0.0\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "PythonPipfile",
+		"path": "pipfile/Pipfile",
+		"text": "[packages]\nfoo = \"==1.0.0\"\n",
+		"package": "foo",
+		"requirement": "==1.0.0"
+	},
+	{
+		"kind": "PythonPyprojectToml",
+		"path": "pyproject/pyproject.toml",
+		"text": "[project]\ndependencies = [\"foo==1.0.0\"]\n",
+		"package": "foo",
+		"requirement": "==1.0.0"
+	},
+	{
+		"kind": "PythonRequirementsTxt",
+		"path": "requirements/requirements.txt",
+		"text": "foo==1.0.0\n",
+		"package": "foo",
+		"requirement": "==1.0.0"
+	},
+	{
+		"kind": "PubspecOverridesYaml",
+		"path": "pub-overrides/pubspec_overrides.yaml",
+		"text": "dependency_overrides:\n  foo: 1.0.0\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "PubspecYaml",
+		"path": "pub/pubspec.yaml",
+		"text": "name: demo\ndependencies:\n  foo: 1.0.0\n",
+		"package": "foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "GitHubActions",
+		"path": "github/.github/workflows/ci.yml",
+		"text": "jobs:\n  build:\n    steps:\n      - uses: example/foo@v1.0.0\n",
+		"package": "example/foo",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "Nvmrc",
+		"path": "nvm/.nvmrc",
+		"text": "v1.0.0\n",
+		"package": "node",
+		"requirement": "v1.0.0"
+	},
+	{
+		"kind": "NodeVersion",
+		"path": "node/.node-version",
+		"text": "1.0.0\n",
+		"package": "node",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "BunVersion",
+		"path": "bun/.bun-version",
+		"text": "1.0.0\n",
+		"package": "bun",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "RustToolchain",
+		"path": "rust/rust-toolchain",
+		"text": "1.0.0\n",
+		"package": "rust",
+		"requirement": "1.0.0"
+	},
+	{
+		"kind": "RustToolchainToml",
+		"path": "rust-toml/rust-toolchain.toml",
+		"text": "[toolchain]\nchannel = \"1.0.0\"\n",
+		"package": "rust",
+		"requirement": "1.0.0"
+	}
+]

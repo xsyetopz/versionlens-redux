@@ -124,6 +124,15 @@ bare = 'exact'
 osv = 'Maven'
 page = 'https://central.sonatype.com/artifact/{group}/{artifact}'
 
+# Gradle resolves a plugin id through its marker artifact `{id}:{id}.gradle.plugin` on the Plugin
+# Portal; docs.gradle.org/current/userguide/plugins.html#sec:plugin_markers.
+[[registry]]
+id = 'gradle-plugins'
+url = 'https://plugins.gradle.org/m2/{path}.gradle.plugin/maven-metadata.xml'
+regex = '<version>([^<]+)</version>'
+bare = 'exact'
+page = 'https://plugins.gradle.org/plugin/{name}'
+
 # Leiningen writes `group/artifact`, and a bare `name` for `name/name`; OSV wants `group:artifact`.
 # Leiningen and the Clojure CLI search Maven Central too, where `org.clojure/clojure` lives.
 # cljdoc covers Clojars and Maven Central alike, as the Clojure tools search both.

@@ -6,7 +6,7 @@ use std::sync::LazyLock;
 
 use crate::data::{self, Row};
 use crate::extract::Rule;
-use crate::flatten::Format;
+use crate::flatten::{Format, flatten};
 
 /// The file groups in matching order: a glob two rows share belongs to the earlier row.
 static GROUPS: &[(&str, &str)] = &[
@@ -49,6 +49,11 @@ pub(crate) struct FileType {
     pub(crate) rules: &'static [Rule],
     /// Written before a version added to a bare name, such as `==` in requirements.txt.
     pub(crate) insert: &'static str,
+    /// Globs that rule a path out, such as the generated files .NET writes under `obj/`.
+    pub(crate) exclude: &'static [&'static str],
+    /// Top-level keys of which the document must hold one; a row with any matches only by
+    /// content, after every row that matches by name has failed.
+    pub(crate) content: &'static [&'static str],
 }
 
 fn load() -> Result<Vec<FileType>, String> {
@@ -63,7 +68,9 @@ fn load() -> Result<Vec<FileType>, String> {
 
 /// One `[[file]]` row.
 fn file(row: &Row) -> Result<FileType, String> {
-    row.only(&["id", "globs", "format", "registry", "insert", "rules"])?;
+    row.only(&[
+        "id", "globs", "exclude", "content", "format", "registry", "insert", "rules",
+    ])?;
     let format = match row.need("format")? {
         "json" => Format::Json,
         "toml" => Format::Toml,
@@ -96,6 +103,8 @@ fn file(row: &Row) -> Result<FileType, String> {
         registry: row.need("registry")?,
         rules: rules.leak(),
         insert: row.text("insert")?,
+        exclude: row.list("exclude")?.leak(),
+        content: row.list("content")?.leak(),
     })
 }
 
@@ -161,8 +170,27 @@ pub(crate) fn path_matches(pattern: &str, path: &str) -> bool {
 }
 
 impl FileType {
+    /// Whether the path alone selects this row; a content row never matches by path.
     pub(crate) fn matches(&self, path: &str) -> bool {
+        self.content.is_empty() && self.candidate(path)
+    }
+
+    /// Whether the globs take the path and no exclude rules it out.
+    fn candidate(&self, path: &str) -> bool {
         self.globs.iter().any(|pattern| path_matches(pattern, path))
+            && !self
+                .exclude
+                .iter()
+                .any(|pattern| path_matches(pattern, path))
+    }
+
+    /// Whether the document has one of the row's `content` keys at its top level.
+    fn holds(&self, text: &str) -> bool {
+        flatten(self.format, text).iter().any(|leaf| {
+            leaf.path
+                .first()
+                .is_some_and(|key| self.content.contains(&key.as_str()))
+        })
     }
 }
 
@@ -174,6 +202,17 @@ pub(crate) fn by_id(id: &str) -> Option<&'static FileType> {
 /// The file type for a path; the first matching row wins.
 pub(crate) fn file_type(path: &str) -> Option<&'static FileType> {
     FILE_TYPES.iter().find(|f| f.matches(path))
+}
+
+/// The file type for a document: [`file_type`] by path, else the first content row whose globs
+/// take the path and whose keys the text holds, so `web-module.json` with `dependencies` reads
+/// as npm while a `tsconfig.json` stays unread.
+pub(crate) fn file_type_of(path: &str, text: &str) -> Option<&'static FileType> {
+    file_type(path).or_else(|| {
+        FILE_TYPES
+            .iter()
+            .find(|f| !f.content.is_empty() && f.candidate(path) && f.holds(text))
+    })
 }
 
 /// Every glob, for editors that pick which files to send to the server.

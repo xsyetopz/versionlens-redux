@@ -150,6 +150,35 @@ fn advertises_globs_and_ignores_other_files() {
 }
 
 #[test]
+fn reads_package_shaped_json_and_only_files_on_disk() {
+    let client = Client::start();
+    let text = "{ \"dependencies\": { \"left-pad\": \"1.3.0\" } }\n";
+    for uri in [
+        "file:///p/web-module.json",
+        "untitled:/p/package.json",
+        "git:/p/package.json",
+    ] {
+        client.open(uri, text);
+    }
+    let lenses = |id, uri: &str| {
+        client
+            .request(
+                id,
+                "textDocument/codeLens",
+                json!({ "textDocument": { "uri": uri } }),
+            )
+            .response_result
+            .unwrap()
+            .as_array()
+            .map_or(0, Vec::len)
+    };
+    assert_eq!(lenses(2, "file:///p/web-module.json"), 1);
+    assert_eq!(lenses(3, "untitled:/p/package.json"), 0);
+    assert_eq!(lenses(4, "git:/p/package.json"), 0);
+    client.stop();
+}
+
+#[test]
 fn applies_incremental_changes() {
     let client = Client::start();
     let uri = "file:///p/requirements.txt";

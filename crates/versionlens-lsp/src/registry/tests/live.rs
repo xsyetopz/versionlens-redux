@@ -31,6 +31,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
         None,
         Some("2.14.1"),
     ),
+    ("gradle-plugins", "org.springframework.boot", None, None),
     ("clojars", "org.clojure/clojure", None, Some("1.8.0")),
     ("clojars", "ring/ring-core", None, None),
     ("hex", "plug", None, Some("1.3.0")),
