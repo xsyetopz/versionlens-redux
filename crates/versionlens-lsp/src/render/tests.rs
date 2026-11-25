@@ -232,3 +232,18 @@ fn directory_lenses_open_the_path_or_report_it_missing() {
         [format!("{} not found ../c", glyphs.failed)]
     );
 }
+
+#[test]
+fn source_lenses_name_the_source_and_count_as_neither_failed_nor_outdated() {
+    let glyphs = Indicators::default();
+    let (dep, _) = planned("1", &["1.0.0"]);
+    let source = || State::Source("git repository".into());
+    assert_eq!(titles(&dep, source()), ["git repository"]);
+    let views = [view(&dep, source())];
+    assert!(hints(&views, &glyphs).is_empty());
+    let uri: Uri = "file:///p/package.json".parse().unwrap();
+    let summary = stats(&uri, &views, "", &glyphs)
+        .and_then(|l| l.command)
+        .unwrap();
+    assert_eq!(summary.title, "1 dependencies");
+}

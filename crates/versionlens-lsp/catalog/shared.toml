@@ -60,6 +60,8 @@ PYPROJECT = [
     { keys = 'tool.poetry.dependencies' },
     { keys = 'tool.poetry.dev-dependencies' },
     { keys = 'tool.poetry.group.*.dependencies' },
+    # uv sources point a dependency at git, a URL, or a path: docs.astral.sh/uv/concepts/projects/dependencies/#dependency-sources
+    { keys = 'tool.uv.sources' },
 ]
 NUGET = [
     { record = 'Project.ItemGroup.PackageReference', name = '@Include|@Update', version = '@Version|Version' },

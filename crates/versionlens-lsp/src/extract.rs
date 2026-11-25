@@ -77,6 +77,56 @@ pub(crate) fn local_path(req: &str) -> Option<&str> {
         .filter(|path| !path.is_empty() && !path.starts_with("//"))
 }
 
+/// The registry id of dependencies on a source no registry answers, such as a git repository or a
+/// tarball URL. They need no lookup; their lens names the source, as the fork's master did.
+pub(crate) const SOURCE: &str = "source";
+
+/// The kind of source a requirement names when no registry answers it, labeled as the fork's
+/// master labeled it: hosted URLs, `.git` paths, and SSH forms are git repositories, other URLs
+/// are package URLs, and `workspace:` and `catalog:` point inside the repository.
+pub(crate) fn source_label(req: &str) -> Option<&'static str> {
+    const GIT: &[&str] = &[
+        "git+",
+        "git@",
+        "git://",
+        "ssh://",
+        "github:",
+        "gitlab:",
+        "bitbucket:",
+    ];
+    const HOSTS: &[&str] = &["github.com", "gitlab.com", "bitbucket.org"];
+    let req = req.trim();
+    let lower = req.to_ascii_lowercase();
+    let host = ["https://", "http://"]
+        .iter()
+        .find_map(|scheme| lower.strip_prefix(scheme))
+        .and_then(|rest| rest.split('/').next());
+    let bare = lower.split(['#', '?']).next().unwrap_or(&lower);
+    if GIT.iter().any(|p| lower.starts_with(p))
+        || std::path::Path::new(bare)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("git"))
+        || host.is_some_and(|h| HOSTS.contains(&h) && !is_archive(bare))
+    {
+        Some("git repository")
+    } else if host.is_some() {
+        Some("package URL")
+    } else if lower.starts_with("workspace:") {
+        Some("workspace package")
+    } else if lower.starts_with("catalog:") {
+        Some("catalog entry")
+    } else {
+        None
+    }
+}
+
+/// A release download or archive on a git host, which is a package URL rather than a repository.
+fn is_archive(url: &str) -> bool {
+    [".tar.gz", ".tgz", ".zip", ".tar.bz2", ".tar.xz", ".whl"]
+        .iter()
+        .any(|ext| url.ends_with(ext))
+}
+
 /// Requirements a registry cannot answer: paths, URLs, git refs, workspace links, and templating.
 fn is_registry_req(req: &str) -> bool {
     const LOCAL: &[&str] = &[
@@ -163,6 +213,11 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
     for dep in &mut deps {
         if local_path(&dep.req).is_some() {
             dep.registry = DIRECTORY;
+        } else if dep.registry != SOURCE
+            && let Some(label) = source_label(&dep.req)
+        {
+            dep.registry = SOURCE;
+            dep.source = Some(label.to_owned());
         }
         if let Some(var) = dep.req.strip_prefix("${").and_then(|r| r.strip_suffix('}'))
             && let Some(leaf) = leaves
@@ -176,7 +231,7 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
     deps.retain(|d| {
         !d.name.is_empty()
             && is_package(&d.name, d.registry)
-            && (d.registry == DIRECTORY || is_registry_req(&d.req))
+            && ([DIRECTORY, SOURCE].contains(&d.registry) || is_registry_req(&d.req))
     });
     deps.sort_by_key(|d| (d.span.start, d.span.end));
     deps.dedup_by_key(|d| d.span.clone());
@@ -190,17 +245,26 @@ fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>)
             continue;
         };
         let tail = &leaf.path[depth + 1..];
-        // A `path` entry, as Cargo and Pub write local dependencies, names a directory.
-        let local = tail == ["path"];
-        if path_matches(map, head) && (tail.is_empty() || tail == ["version"] || local) {
-            deps.push(Dep {
-                name: name.clone(),
-                req: leaf.value.clone(),
-                span: leaf.span.clone(),
-                registry: if local { DIRECTORY } else { registry },
-                source: None,
-            });
+        if !path_matches(map, head) {
+            continue;
         }
+        // A `path` entry, as Cargo and Pub write local dependencies, names a directory. A `git`
+        // entry, as Cargo, Pub (`git.url` in its long form), and uv write them, names a
+        // repository, and uv's `url` an archive.
+        let (registry, source) = match tail.iter().map(String::as_str).collect::<Vec<_>>()[..] {
+            [] | ["version"] => (registry, None),
+            ["path"] => (DIRECTORY, None),
+            ["git"] | ["git", "url"] => (SOURCE, Some("git repository")),
+            ["url"] if source_label(&leaf.value).is_some() => (SOURCE, source_label(&leaf.value)),
+            _ => continue,
+        };
+        deps.push(Dep {
+            name: name.clone(),
+            req: leaf.value.clone(),
+            span: leaf.span.clone(),
+            registry,
+            source: source.map(str::to_owned),
+        });
     }
 }
 

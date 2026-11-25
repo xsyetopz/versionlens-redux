@@ -49,9 +49,65 @@ fn reads_package_json_and_local_paths() {
     let text = r#"{"dependencies":{"a":"^1.0.0","b":"workspace:*","c":"file:../c","d":"github:x/y"},"packageManager":"bun@1.4.3"}"#;
     assert_eq!(
         deps("package.json", text),
-        pairs(&[("a", "^1.0.0"), ("c", "file:../c"), ("bun", "1.4.3")])
+        pairs(&[
+            ("a", "^1.0.0"),
+            ("b", "workspace:*"),
+            ("c", "file:../c"),
+            ("d", "github:x/y"),
+            ("bun", "1.4.3")
+        ])
     );
-    assert_eq!(registries("package.json", text)[1].1, DIRECTORY);
+    assert_eq!(
+        registries("package.json", text),
+        named(&[
+            ("a", "npm"),
+            ("b", SOURCE),
+            ("c", DIRECTORY),
+            ("d", SOURCE),
+            ("bun", "npm")
+        ])
+    );
+}
+
+/// The label each source dependency carries, as the fork's master's `non_registry` module named it.
+fn sources(path: &str, text: &str) -> Vec<(String, String)> {
+    let file = file_type(path).unwrap_or_else(|| panic!("{path} not recognised"));
+    extract(file, text)
+        .into_iter()
+        .filter(|d| d.registry == SOURCE)
+        .map(|d| (d.name, d.source.unwrap_or_default()))
+        .collect()
+}
+
+#[test]
+fn labels_git_url_workspace_and_catalog_sources() {
+    let npm = r#"{"dependencies":{"a":"git+ssh://git@example.com/a.git#v1","b":"https://github.com/x/b","c":"https://github.com/x/c/archive/v1.tar.gz","d":"https://example.com/d.tgz","e":"workspace:^","f":"catalog:","g":"npm:h@1","i":"${VERSION}"}}"#;
+    assert_eq!(
+        sources("package.json", npm),
+        pairs(&[
+            ("a", "git repository"),
+            ("b", "git repository"),
+            ("c", "package URL"),
+            ("d", "package URL"),
+            ("e", "workspace package"),
+            ("f", "catalog entry")
+        ])
+    );
+    let cargo = "[dependencies]\nregex = { git = \"https://example.com/regex\", tag = \"1.0\" }\nserde = \"1\"\n";
+    assert_eq!(
+        sources("Cargo.toml", cargo),
+        pairs(&[("regex", "git repository")])
+    );
+    let pubspec = "dependencies:\n  kittens:\n    git:\n      url: https://example.com/kittens\n      ref: main\n  http: ^1.0.0\n";
+    assert_eq!(
+        sources("pubspec.yaml", pubspec),
+        pairs(&[("kittens", "git repository")])
+    );
+    let uv = "[project]\ndependencies = [\"httpx\", \"foo\", \"bar\"]\n[tool.uv.sources]\nhttpx = { git = \"https://github.com/encode/httpx\", tag = \"0.27.0\" }\nfoo = { url = \"https://example.com/foo-1.0.tar.gz\" }\nbar = { workspace = true }\n";
+    assert_eq!(
+        sources("pyproject.toml", uv),
+        pairs(&[("httpx", "git repository"), ("foo", "package URL")])
+    );
 }
 
 #[test]

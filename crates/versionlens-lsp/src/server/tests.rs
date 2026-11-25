@@ -179,6 +179,41 @@ fn reads_package_shaped_json_and_only_files_on_disk() {
 }
 
 #[test]
+fn names_fixed_sources_and_links_their_repository() {
+    let client = Client::start();
+    let uri = "file:///p/package.json";
+    let text = r#"{ "dependencies": { "a": "github:x/a#v1", "b": "git+https://example.com/b.git#main" } }"#;
+    client.open(uri, text);
+    let lenses = client
+        .request(
+            2,
+            "textDocument/codeLens",
+            json!({ "textDocument": { "uri": uri } }),
+        )
+        .response_result
+        .unwrap();
+    let found: Vec<(&str, &str)> = lenses
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|l| {
+            let command = l.get("command")?;
+            let title = command["title"].as_str()?;
+            let page = command.pointer("/arguments/0")?.as_str()?;
+            title.ends_with("repository").then_some((title, page))
+        })
+        .collect();
+    assert_eq!(
+        found,
+        [
+            ("git repository", "https://github.com/x/a"),
+            ("git repository", "https://example.com/b")
+        ]
+    );
+    client.stop();
+}
+
+#[test]
 fn applies_incremental_changes() {
     let client = Client::start();
     let uri = "file:///p/requirements.txt";

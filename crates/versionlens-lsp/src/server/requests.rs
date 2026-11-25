@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 use super::workspace::file_uri;
 use super::{Doc, Server, key, param};
-use crate::extract::{DIRECTORY, Dep, local_path};
+use crate::extract::{DIRECTORY, Dep, SOURCE, local_path};
 use crate::registry;
 use crate::render::{self, Lines, State, View};
 use crate::version::{Req, Version, plan};
@@ -36,6 +36,9 @@ impl Server {
     fn state(&self, doc: &Doc, dep: &Dep) -> State {
         if dep.registry == DIRECTORY {
             return directory(&doc.path, &dep.req);
+        }
+        if dep.registry == SOURCE {
+            return State::Source(dep.source.clone().unwrap_or_default());
         }
         let found = match self.cache.get(&key(dep)).map(|e| &e.result) {
             None => return State::Pending,
@@ -75,7 +78,8 @@ impl Server {
                     range: lines.range(&dep.span),
                     state,
                     vulns,
-                    page: registry::page(dep.registry, &dep.name),
+                    page: source_page(dep)
+                        .unwrap_or_else(|| registry::page(dep.registry, &dep.name)),
                 }
             })
             .collect()
@@ -193,6 +197,29 @@ impl Server {
 
 /// A local dependency: its path as written, and its `file://` URI when it exists beside the
 /// manifest at `manifest`.
+/// The web address of a fixed source: its URL, without a `git+` prefix or a `#ref`, or the
+/// repository a `github:owner/repo` shorthand names.
+fn source_page(dep: &Dep) -> Option<String> {
+    if dep.registry != SOURCE {
+        return None;
+    }
+    let req = dep.req.trim();
+    let req = req.strip_prefix("git+").unwrap_or(req);
+    let url = req.split('#').next().unwrap_or(req);
+    if url.starts_with("https://") || url.starts_with("http://") {
+        return Some(url.trim_end_matches(".git").to_owned());
+    }
+    let (host, path) = req.split_once(':')?;
+    let host = match host {
+        "github" => "github.com",
+        "gitlab" => "gitlab.com",
+        "bitbucket" => "bitbucket.org",
+        _ => return None,
+    };
+    let path = path.split('#').next().unwrap_or(path);
+    Some(format!("https://{host}/{path}"))
+}
+
 fn directory(manifest: &str, req: &str) -> State {
     let path = local_path(req).unwrap_or(req);
     let full = match path.strip_prefix("~/") {

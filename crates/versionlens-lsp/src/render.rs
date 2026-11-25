@@ -27,6 +27,8 @@ pub(crate) enum State {
         path: String,
         target: Option<String>,
     },
+    /// A dependency on a source no registry answers, such as a git repository, with its kind.
+    Source(String),
     Planned {
         plan: Box<Plan>,
         /// The requirement's floor, which update levels count from.
@@ -211,6 +213,7 @@ pub(crate) fn lenses(
             State::Directory { path, target: None } => {
                 out.push(open(format!("{} not found {path}", glyphs.failed)));
             }
+            State::Source(label) => out.push(open(label.clone())),
             State::Planned { plan, .. } => {
                 let choices = picks(view, insert);
                 out.push(open(status(plan, choices.is_empty(), glyphs)));
@@ -306,7 +309,9 @@ pub(crate) fn hints(views: &[View<'_>], glyphs: &Indicators) -> Vec<InlayHint> {
                 }
                 State::Planned { plan, .. } => format!("{} {}", glyphs.newer, plan.latest.raw),
                 State::Failed(_) | State::Directory { target: None, .. } => glyphs.failed.clone(),
-                State::Pending | State::Unreadable | State::Directory { .. } => return None,
+                State::Pending | State::Unreadable | State::Directory { .. } | State::Source(_) => {
+                    return None;
+                }
             };
             Some(InlayHint {
                 position: view.range.end,
@@ -333,6 +338,7 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
             ..
         } => format!("Local dependency at <{target}>"),
         State::Directory { path, .. } => format!("`{path}` does not exist"),
+        State::Source(label) => format!("Pinned to a {label}: `{}`", dep.req),
         State::Planned { plan, current, .. } => {
             let current = current.as_ref().map_or("none", |v| v.raw.as_str());
             format!(
