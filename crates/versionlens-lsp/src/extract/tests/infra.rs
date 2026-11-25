@@ -312,13 +312,14 @@ fn reads_brewfile_formulae_and_casks_by_name() {
 fn reads_gitlab_components_and_included_project_tags() {
     // docs.gitlab.com/ci/components/ "Use a component" and docs.gitlab.com/ci/yaml/
     // `include:project`: a tag or a partial version is read, a branch, a SHA, and `~latest` not.
-    let text = "include:\n  - component: $CI_SERVER_FQDN/my-org/security-components/secret-detection@1.0.0\n  - component: gitlab.com/components/opentofu/full-pipeline@2\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@~latest\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@e3262fdd0914fa823210cdb79a8c421e2cef79d8\n  - project: 'my-group/my-project'\n    ref: refs/tags/v1.0.0\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/my-subgroup/my-project-2'\n    file:\n      - '/templates/.builds.yml'\n    ref: 2.3.1\n  - project: 'my-group/my-project'\n    ref: main\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/other'\n    ref: 787123b47f14b552955ca2786bc9542ae66fee5b\nimage: node:20.11\n";
+    let text = "include:\n  - component: $CI_SERVER_FQDN/my-org/security-components/secret-detection@1.0.0\n  - component: gitlab.com/components/opentofu/full-pipeline@2\n  - component: gitlab.example.com:8443/platform/ci/deploy@1.4\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@~latest\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@e3262fdd0914fa823210cdb79a8c421e2cef79d8\n  - project: 'my-group/my-project'\n    ref: refs/tags/v1.0.0\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/my-subgroup/my-project-2'\n    file:\n      - '/templates/.builds.yml'\n    ref: 2.3.1\n  - project: 'my-group/my-project'\n    ref: main\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/other'\n    ref: 787123b47f14b552955ca2786bc9542ae66fee5b\nimage: node:20.11\n";
     expect(
         ".gitlab-ci.yml",
         text,
         &[
             ("my-org/security-components", "1.0.0", "gitlab"),
-            ("components/opentofu", "2", "gitlab"),
+            ("gitlab.com/components/opentofu", "2", "gitlab-host"),
+            ("gitlab.example.com:8443/platform/ci", "1.4", "gitlab-host"),
             ("my-group/my-project", "v1.0.0", "gitlab"),
             ("my-group/my-subgroup/my-project-2", "2.3.1", "gitlab"),
             ("node", "20.11", "docker"),

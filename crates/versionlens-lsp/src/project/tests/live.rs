@@ -134,6 +134,60 @@ fn each_configured_registry_answers() {
     assert_answered("settings.xml", &looked_up(&root, "maven/pom.xml", &none));
 }
 
+#[test]
+#[ignore = "needs the network"]
+fn reaches_artifactory_and_nexus_feeds() {
+    // repo.jenkins-ci.org answers `X-JFrog-Version: Artifactory/7`, with an npm remote at
+    // `api/npm/npm/` and Maven at `public/`; repository.apache.org answers `Server: Nexus/2`.
+    let artifactory = project(
+        "artifactory",
+        &[
+            (
+                "npm/package.json",
+                r#"{ "dependencies": { "lodash": "4.17.21" } }"#,
+            ),
+            (
+                "npm/.npmrc",
+                "registry=https://repo.jenkins-ci.org/artifactory/api/npm/npm/\n",
+            ),
+            (
+                "maven/pom.xml",
+                "<project><dependencies><dependency><groupId>org.jenkins-ci.main</groupId><artifactId>jenkins-core</artifactId><version>2.400</version></dependency></dependencies></project>",
+            ),
+            (
+                "home/.m2/settings.xml",
+                "<settings><mirrors><mirror><id>jenkins</id><mirrorOf>*</mirrorOf><url>https://repo.jenkins-ci.org/public/</url></mirror></mirrors></settings>",
+            ),
+        ],
+    );
+    let none = env(&artifactory, &[]);
+    assert_answered(
+        "artifactory npm",
+        &looked_up(&artifactory, "npm/package.json", &none),
+    );
+    assert_answered(
+        "artifactory maven",
+        &looked_up(&artifactory, "maven/pom.xml", &none),
+    );
+    let nexus = project(
+        "nexus",
+        &[
+            (
+                "maven/pom.xml",
+                "<project><dependencies><dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><version>3.12.0</version></dependency></dependencies></project>",
+            ),
+            (
+                "home/.m2/settings.xml",
+                "<settings><mirrors><mirror><id>apache</id><mirrorOf>central</mirrorOf><url>https://repository.apache.org/content/groups/public/</url></mirror></mirrors></settings>",
+            ),
+        ],
+    );
+    assert_answered(
+        "nexus maven",
+        &looked_up(&nexus, "maven/pom.xml", &env(&nexus, &[])),
+    );
+}
+
 /// A registry's answers: the path suffix each body answers, with `{url}` naming the server.
 type Routes = Vec<(&'static str, String)>;
 

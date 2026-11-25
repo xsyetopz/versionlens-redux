@@ -279,7 +279,8 @@ pub(crate) fn upstream_of(pattern: &str, name: &str, text: &str) -> Option<Strin
 /// `{ns}`/`{short}` (the halves of `ns.name`), `{first}`/`{First}` (first letter),
 /// `{first2}` (first two letters), `{tf}` (Terraform provider or module path), `{docker}` (Docker
 /// Hub repository),
-/// `{host}`/`{repo}` (an image's registry host and the path after it), and
+/// `{host}`/`{repo}` (an image's registry host and the path after it), `{repo_enc}` (that path
+/// with `/` escaped, as GitLab's API takes a project), and
 /// `{source}` (the repository the manifest names). A registry URL's `{upstream}` is filled first,
 /// by [`upstream_of`].
 ///
@@ -337,11 +338,13 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
         };
         url = url.replace("{docker}", &repo);
     }
-    if url.contains("{host}") || url.contains("{repo}") {
+    if url.contains("{host}") || url.contains("{repo}") || url.contains("{repo_enc}") {
         let host = image_host(name).ok_or_else(|| format!("{name} names no registry host"))?;
+        let repo = &name[host.len() + 1..];
         url = url
             .replace("{host}", host)
-            .replace("{repo}", &name[host.len() + 1..]);
+            .replace("{repo_enc}", &repo.replace('/', "%2f"))
+            .replace("{repo}", repo);
     }
     if url.contains("{app}") {
         let app = image_app(name).ok_or_else(|| format!("{name} names no known application"))?;

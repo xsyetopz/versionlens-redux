@@ -348,9 +348,11 @@ rules = [
     { spec = '*.services.*', pattern = '${DOCKER}' },
     { spec = '*.services.*.name', pattern = '${DOCKER}' },
     # A CI/CD component is `<host>/<project path>/<component>@<version>`, the version a tag or a
-    # partial `1.2`; a SHA, a branch, and `~latest` stay out: docs.gitlab.com/ci/components/. Only
-    # gitlab.com answers, so `$CI_SERVER_FQDN` is read as gitlab.com.
-    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?(?:\$CI_SERVER_FQDN|gitlab\.com)/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab' },
+    # partial `1.2`; a SHA, a branch, and `~latest` stay out: docs.gitlab.com/ci/components/. The
+    # file cannot say which instance `$CI_SERVER_FQDN` is, so it is read as gitlab.com; a written
+    # host, gitlab.com or self-hosted, is asked itself.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?(?P<name>[\w-]+(?:\.[\w-]+)+(?::\d+)?/[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab-host' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?\$CI_SERVER_FQDN/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab' },
     # `include:project` with a tag `ref`, short or under `refs/tags/`, as the items it lists come;
     # a branch or a SHA stays out: docs.gitlab.com/ci/yaml/ `include:project`.
     { lines = '''(?m)^[ \t]*(?:-[ \t]*)?project:[ \t]*["']?(?P<name>[\w.-]+(?:/[\w.-]+)+)["']?[ \t]*(?:#.*)?\r?\n(?:[ \t]+[^-\s][^\n]*\r?\n|[ \t]+-[ \t]+["'/][^\n]*\r?\n)*?[ \t]+ref:[ \t]*["']?(?:refs/tags/)?(?P<version>v?\d+(?:\.\d+)+(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab' },

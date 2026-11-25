@@ -161,8 +161,21 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("homebrew", "postgresql@16", None, None),
     ("homebrew-cask", "firefox", None, None),
     ("gitlab", "components/opentofu", None, None),
-    ("forgejo", "data.forgejo.org/actions/checkout", None, None),
+    ("gitlab", "libtiff/libtiff", None, Some("v4.0.9")),
+    (
+        "gitlab-host",
+        "gitlab.freedesktop.org/dbus/dbus",
+        None,
+        Some("dbus-1.12.0"),
+    ),
+    (
+        "forgejo",
+        "data.forgejo.org/actions/checkout",
+        None,
+        Some("v3"),
+    ),
     ("bitbucket", "atlassian/aws-s3-deploy", None, None),
+    ("bitbucket", "b_c/jose4j", None, Some("jose4j-0.9.2")),
     ("circleci-orb", "circleci/node", None, None),
 ];
 
@@ -178,7 +191,9 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
 /// in any repository whose URL names typst, moonbit, purescript, or `ansible-role`, and none in
 /// the samples' own repositories, such as `vibe-d/vibe.d`, `sous-chefs/nginx`, and `elm/core`. The
 /// GIT ranges under `vlang/v` and `haxefoundation/haxe` are the compilers, not vpm or haxelib
-/// packages. Their samples check only that the route answers and names a repository.
+/// packages. GIT/all.zip names no repository on codeberg.org, code.forgejo.org, or gitea.com, so
+/// `forgejo` has none either. Their samples check only that the route answers and names a
+/// repository.
 const NO_KNOWN_ADVISORY: &[&str] = &[
     "julia-stdlib",
     "dub",
@@ -192,6 +207,7 @@ const NO_KNOWN_ADVISORY: &[&str] = &[
     "reservoir",
     "typst-compiler",
     "galaxy-role",
+    "forgejo",
 ];
 
 /// How many times a page behind a bot challenge is asked before the check fails.

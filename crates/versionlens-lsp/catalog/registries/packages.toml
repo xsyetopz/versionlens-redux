@@ -233,20 +233,40 @@ page = 'https://github.com/{group}/{artifact}'
 
 # A GitLab CI/CD component or included file is a gitlab.com project, versioned by its tags, which
 # `1` and `1.2` select the newest of: docs.gitlab.com/ci/components/ "Component versions". The
-# tags API takes the project path URL-encoded: docs.gitlab.com/api/tags/. No advisory database
-# files CI/CD components.
+# tags API takes the project path URL-encoded: docs.gitlab.com/api/tags/. OSV's GIT
+# ecosystem keys ranges by repository URL and holds 116 gitlab.com repositories (GIT/all.zip,
+# read 2026-11-25), such as libtiff/libtiff.
 [[registry]]
 id = 'gitlab'
 url = 'https://gitlab.com/api/v4/projects/{enc}/repository/tags?per_page=100'
 json = ''
 field = 'name'
 bare = 'prefix'
+osv = 'GIT'
+osv_name = 'gitlab.com/{name}'
 page = 'https://gitlab.com/{name}'
+
+# A GitLab project on the host its name starts with, gitlab.com or a self-hosted instance, such
+# as a component a pipeline names by host: docs.gitlab.com/ci/components/. The tags API is the
+# same on every instance (docs.gitlab.com/api/tags/), and OSV's GIT ecosystem keys ranges by the
+# repository URL; GIT/all.zip, read 2026-11-25, holds 100 projects on gitlab.freedesktop.org,
+# gitlab.gnome.org, and salsa.debian.org alone.
+[[registry]]
+id = 'gitlab-host'
+url = 'https://{host}/api/v4/projects/{repo_enc}/repository/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = '{host}/{repo}'
+page = 'https://{host}/{repo}'
 
 # A Forgejo Actions `uses:` names a repository on a Forgejo host, `data.forgejo.org` unless the
 # workflow gives a URL: forgejo/docs, docs/admin/config-cheat-sheet.md `DEFAULT_ACTIONS_URL`. A
 # name is `host/owner/repo`, listed by the Forgejo tags API (`/api/v1/repos/{owner}/{repo}/tags`).
-# No advisory database files Forgejo-hosted actions. data.forgejo.org serves the API but answers
+# OSV's GIT ecosystem keys ranges by repository URL, so a project on any Forgejo host is asked
+# for; its GIT/all.zip, read 2026-11-25, holds none on codeberg.org, code.forgejo.org, or
+# gitea.com yet. data.forgejo.org serves the API but answers
 # 403 to a repository page; code.forgejo.org lists the same tags and shows the repository.
 [[registry]]
 id = 'forgejo'
@@ -255,25 +275,32 @@ json = ''
 field = 'name'
 bare = 'prefix'
 paged = true
+osv = 'GIT'
+osv_name = '{host}/{repo}'
 page = 'https://{host}/{repo}'
 pages = { 'data.forgejo.org' = 'https://code.forgejo.org/{repo}' }
 
 # A Bitbucket Pipelines `pipe:` names a Bitbucket repository at a tag; its `pipe.yml` names the
 # image the tag runs: support.atlassian.com/bitbucket-cloud/docs/what-are-pipes/, and
 # bitbucket.org/atlassian/aws-s3-deploy/raw/master/pipe.yml. Newest tags first:
-# developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/. No advisory database files pipes.
+# developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/. OSV's GIT ecosystem holds
+# 14 bitbucket.org repositories (GIT/all.zip, read 2026-11-25), such as b_c/jose4j, though no pipe.
 [[registry]]
 id = 'bitbucket'
 url = 'https://api.bitbucket.org/2.0/repositories/{name}/refs/tags?pagelen=100&sort=-target.date&fields=values.name'
 json = 'values'
 field = 'name'
 bare = 'exact'
-page = 'https://bitbucket.org/{name}'
+osv = 'GIT'
+osv_name = 'bitbucket.org/{name}'
+# A repository's own page redirects to the landing page its owner picks, which for b_c/jose4j is
+# a wiki that answers 404; the source view always answers.
+page = 'https://bitbucket.org/{name}/src'
 
 # A CircleCI orb, `namespace/orb@1.2.3`, where `1.2` and `1` take the newest patch or minor:
 # circleci/circleci-docs, docs/orbs/modules/use/pages/orb-concepts.adoc. CircleCI lists an orb's
 # versions only through its GraphQL endpoint, which answers a GET with 404, so this one posts.
-# No advisory database files orbs.
+# No advisory database files orbs: OSV's GIT/all.zip, read 2026-11-25, names no orb repository.
 [[registry]]
 id = 'circleci-orb'
 url = 'https://circleci.com/graphql-unstable'
