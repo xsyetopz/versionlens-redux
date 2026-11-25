@@ -4,7 +4,7 @@
 
 use std::time::Duration;
 
-use super::super::tools::ROWS;
+use super::super::tools::{self, ROWS};
 use super::*;
 use crate::config::Settings;
 use crate::http::Http;
@@ -49,6 +49,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
         None,
     ),
     ("github", "madler/zlib", None, Some("v1.2.11")),
+    ("swift", "vapor/vapor", None, Some("4.0.0")),
     (
         "helm",
         "prometheus",
@@ -69,16 +70,21 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("puppet", "puppetlabs:stdlib", None, None),
     ("chef", "nginx", None, None),
     ("rust", "rust", None, None),
-    ("python", "python", None, None),
-    ("ruby", "ruby", None, None),
+    ("python", "python", None, Some("3.8.0")),
+    ("ruby", "ruby", None, Some("3.0.0")),
+    ("nodejs", "node", None, Some("20.0.0")),
+    ("ghc", "ghc", None, Some("9.2.1")),
     ("golang", "golang", None, Some("1.20.0")),
     ("terraform-cli", "terraform", None, None),
-    ("gradle-dist", "gradle", None, None),
+    ("gradle-dist", "gradle", None, Some("7.0.0")),
     ("conda", "numpy", None, None),
     ("elm", "elm/core", None, None),
     ("luarocks", "luasocket", None, None),
     ("xmake", "zlib", None, None),
 ];
+
+/// How many times a page behind a bot challenge is asked before the check fails.
+const CHALLENGE_RETRIES: u64 = 6;
 
 fn block_on<F: Future>(work: F) -> F::Output {
     tokio::runtime::Builder::new_multi_thread()
@@ -111,6 +117,27 @@ fn samples_cover_every_registry() {
     assert!(silent.is_empty(), "no vulnerable sample for {silent:?}");
 }
 
+/// Every page template, host-specific ones included, is one a sample opens, so the live page
+/// check covers each link the server can show.
+#[test]
+fn samples_open_every_page_template() {
+    let opened: Vec<String> = SAMPLES
+        .iter()
+        .map(|&(id, name, ..)| page(id, name))
+        .collect();
+    let unopened: Vec<&str> = PAGES
+        .iter()
+        .chain(tools::PAGES)
+        .map(|&(key, template)| (key, template.split('{').next().unwrap_or(template)))
+        .filter(|(_, stem)| !opened.iter().any(|url| url.starts_with(stem)))
+        .map(|(key, _)| key)
+        .collect();
+    assert!(
+        unopened.is_empty(),
+        "no sample opens the page for {unopened:?}"
+    );
+}
+
 #[test]
 #[ignore = "needs the network"]
 fn every_registry_lists_versions() {
@@ -140,6 +167,8 @@ fn every_registry_lists_versions() {
 #[test]
 #[ignore = "needs the network"]
 fn every_package_page_resolves() {
+    // Run alone, the test builds the first client, so it installs the provider `Http::new` would.
+    drop(rustls::crypto::ring::default_provider().install_default());
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (versionlens live check)")
         .timeout(Duration::from_secs(30))
@@ -151,13 +180,25 @@ fn every_package_page_resolves() {
             .map(|&(id, name, ..)| {
                 let (client, url) = (client.clone(), page(id, name));
                 tokio::spawn(async move {
-                    match client.get(&url).header("accept", "text/html").send().await {
-                        Ok(response) if response.status().is_success() => None,
-                        // npmjs.com sits behind a bot wall that answers some requests 403.
-                        Ok(response) if response.status() == 403 && id == "npm" => None,
-                        Ok(response) => Some(format!("{id} {url}: HTTP {}", response.status())),
-                        Err(e) => Some(format!("{id} {url}: {}", crate::http::chain(&e))),
+                    // A Cloudflare challenge, as npmjs.com sends some requests, says nothing about
+                    // the page, so it is asked again until the page itself answers.
+                    let mut last = String::new();
+                    for attempt in 0..CHALLENGE_RETRIES {
+                        tokio::time::sleep(Duration::from_secs(attempt)).await;
+                        match client.get(&url).header("accept", "text/html").send().await {
+                            Ok(response) if response.status().is_success() => return None,
+                            Ok(response) if response.headers().contains_key("cf-mitigated") => {
+                                last = format!("{id} {url}: Cloudflare challenge on every try");
+                            }
+                            Ok(response) => {
+                                return Some(format!("{id} {url}: HTTP {}", response.status()));
+                            }
+                            Err(e) => {
+                                return Some(format!("{id} {url}: {}", crate::http::chain(&e)));
+                            }
+                        }
                     }
+                    Some(last)
                 })
             })
             .collect();

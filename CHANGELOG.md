@@ -11,11 +11,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Images on any OCI registry resolve, not only Docker Hub: MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, registry.gitlab.com, and private hosts, with the anonymous token a public registry's `WWW-Authenticate` challenge issues and every `Link` page of tags.
 - GitHub tag dependencies (workflows, Swift, Carthage, CMake, Zig, Nim, Meson, Bazel, pre-commit, flakes) report vulnerabilities through OSV's GIT ecosystem, and `.go-version` and mise Go pins through OSV's Go `stdlib`.
 - New manifests: conda `environment.yml` (its `pip:` list through PyPI), `setup.cfg`, `setup.py`, `tox.ini`, JSPM `npm:` and `github:` values in `package.json`, `ivy.xml`, `Gopkg.toml`, `glide.yaml`, `shard.yml`, `Mintfile`, `Puppetfile` (Puppet Forge), `Berksfile` and `metadata.rb` (Chef Supermarket), `Earthfile`, workflow `container:`, `services:`, and `docker://` images, and Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod images.
-- `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package.
+- Runtime pins report vulnerabilities: Node.js, Python, Ruby, and Gradle through OSV's Bitnami ecosystem, Go through `stdlib`, and GHC through OSV's GHC ecosystem. The `go` and `toolchain` lines of `go.mod`, `node` in `.tool-versions` and `mise.toml`, and `with-compiler:` in `cabal.project` resolve against those releases.
+- `Package.swift` dependencies report vulnerabilities through OSV's SwiftURL ecosystem.
+- More manifests: `bower.json`, `paket.references`, Kubernetes manifests (`k8s/`, `kubernetes/`, `manifests/`, `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`), and Helm `values.yaml` images.
+- `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried until the page itself answers.
 
 ### Changed
 
-- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,200 lines of Rust outside tests (tokei), 1,500 of them file-type and registry rows, and no file above 641 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
+- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,300 lines of Rust outside tests (tokei), 1,900 of them in the file-type rows and the registry modules, and no file above 654 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
 - Every editor takes its file globs from the server, so VS Code, JetBrains, and Neovim pick up a new file type with no change of their own. JetBrains and Neovim run `versionlens-lsp --file-types`; VS Code reads `capabilities.experimental.fileTypes` from the initialize result and sends the server only those files.
 - OSV checks send one `querybatch` request per document instead of one request per dependency. Registry requests share one pooled HTTP/2 client, capped by `versionlens.concurrency` and limited by `versionlens.timeoutMs`.
 - Quick fixes come from results already in memory, so they no longer wait on the network.

@@ -14,21 +14,49 @@ pub(super) static ROWS: &[Registry] = &[
         Bare::Prefix,
         None,
     ),
-    json(
-        "python",
-        "https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json",
-        "",
-        "version",
-        Bare::Prefix,
-        None,
-    ),
-    text(
-        "ruby",
-        "https://raw.githubusercontent.com/ruby/www.ruby-lang.org/master/_data/releases.yml",
-        r"(?m)^- version: (\d\S*)",
-        Bare::Prefix,
-        None,
-    ),
+    // OSV's Bitnami ecosystem carries the runtimes' own CVEs, under each product's name.
+    Registry {
+        osv_name: "python",
+        ..json(
+            "python",
+            "https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json",
+            "",
+            "version",
+            Bare::Prefix,
+            Some("Bitnami"),
+        )
+    },
+    Registry {
+        osv_name: "ruby",
+        ..text(
+            "ruby",
+            "https://raw.githubusercontent.com/ruby/www.ruby-lang.org/master/_data/releases.yml",
+            r"(?m)^- version: (\d\S*)",
+            Bare::Prefix,
+            Some("Bitnami"),
+        )
+    },
+    Registry {
+        osv_name: "node",
+        ..json(
+            "nodejs",
+            "https://nodejs.org/dist/index.json",
+            "",
+            "version",
+            Bare::Prefix,
+            Some("Bitnami"),
+        )
+    },
+    Registry {
+        osv_name: "ghc",
+        ..text(
+            "ghc",
+            "https://downloads.haskell.org/~ghc/",
+            r#"href="(\d+\.\d+\.\d+)/""#,
+            Bare::Prefix,
+            Some("GHC"),
+        )
+    },
     Registry {
         parse: Parse::Fn(go_releases),
         osv_name: "stdlib",
@@ -49,14 +77,17 @@ pub(super) static ROWS: &[Registry] = &[
         Bare::Prefix,
         None,
     ),
-    json(
-        "gradle-dist",
-        "https://services.gradle.org/versions/all",
-        "",
-        "version",
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "gradle",
+        ..json(
+            "gradle-dist",
+            "https://services.gradle.org/versions/all",
+            "",
+            "version",
+            Bare::Exact,
+            Some("Bitnami"),
+        )
+    },
     json(
         "conda",
         "https://api.anaconda.org/package/conda-forge/{name}",
@@ -94,6 +125,8 @@ pub(super) const PAGES: &[(&str, &str)] = &[
     ("rust", "https://www.rust-lang.org/tools/install"),
     ("python", "https://www.python.org/downloads/"),
     ("ruby", "https://www.ruby-lang.org/en/downloads/"),
+    ("nodejs", "https://nodejs.org/en/about/previous-releases"),
+    ("ghc", "https://www.haskell.org/ghc/"),
     ("golang", "https://go.dev/dl/"),
     ("terraform-cli", "https://releases.hashicorp.com/terraform/"),
     ("gradle-dist", "https://gradle.org/releases/"),

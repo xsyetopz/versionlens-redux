@@ -90,6 +90,44 @@ pub(super) static ROWS: &[FileType] = &[
         "docker",
         &[Lines(IMAGE_LINE)],
     ),
+    // Kubernetes manifests have no fixed name; these are the folders and suffixes that hold them.
+    row(
+        "kubernetes",
+        &[
+            "k8s/**/*.yaml",
+            "k8s/**/*.yml",
+            "kubernetes/**/*.yaml",
+            "kubernetes/**/*.yml",
+            "manifests/**/*.yaml",
+            "manifests/**/*.yml",
+            "deploy/**/*.yaml",
+            "deploy/**/*.yml",
+            "*.k8s.yaml",
+            "*.k8s.yml",
+            "skaffold.yaml",
+            "tilt.yaml",
+        ],
+        Text,
+        "docker",
+        &[Lines(IMAGE_LINE)],
+    ),
+    // Helm chart values split an image into `repository` and `tag`, at the top or under a component.
+    row(
+        "helm-values",
+        &[
+            "values.yaml",
+            "values.yml",
+            "values-*.yaml",
+            "values.*.yaml",
+        ],
+        Yaml,
+        "docker",
+        &[
+            Lines(IMAGE_LINE),
+            Record("image", "repository", "tag", ""),
+            Record("*.image", "repository", "tag", ""),
+        ],
+    ),
     row(
         "puppetfile",
         &["Puppetfile"],

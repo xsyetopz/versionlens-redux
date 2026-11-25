@@ -1,7 +1,7 @@
 //! Ruby, Dart, BEAM, Julia, R, Perl, OCaml, and Haskell manifests.
 
 use crate::catalog::{FileType, row};
-use crate::extract::Rule::{Keys, Lines, Record};
+use crate::extract::Rule::{Keys, Lines, Record, Via};
 use crate::flatten::Format::{Json, Text, Toml, Yaml};
 
 pub(super) static ROWS: &[FileType] = &[
@@ -129,6 +129,10 @@ pub(super) static ROWS: &[FileType] = &[
         &[
             Lines(
                 r"(?m)(?:build-depends:|,|^)[ \t]*(?P<name>[A-Za-z][\w-]*)[ \t]+(?P<version>(?:\^>=|>=|==)[ \t]*\d[\d.]*)",
+            ),
+            Via(
+                "ghc",
+                &Lines(r"(?m)^[ \t]*with-compiler:[ \t]*(?P<name>ghc)-(?P<version>\d[\d.]*)"),
             ),
             // Stack's `extra-deps` entries read `- package-1.2.3`.
             Lines(

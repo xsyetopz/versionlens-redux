@@ -133,6 +133,18 @@ const fn text(
 
 const MAVEN_VERSIONS: &str = r"<version>([^<]+)</version>";
 
+const GITHUB: Registry = Registry {
+    osv_name: "github.com/{name}",
+    ..json(
+        "github",
+        "https://api.github.com/repos/{name}/tags?per_page=100",
+        "",
+        "name",
+        Bare::Prefix,
+        Some("GIT"),
+    )
+};
+
 pub(crate) static REGISTRIES: &[Registry] = &[
     Registry {
         parse: Parse::Fn(parse::cargo),
@@ -326,16 +338,12 @@ pub(crate) static REGISTRIES: &[Registry] = &[
     },
     // OSV's GitHub Actions ecosystem has no version order, so a versioned query never matches;
     // its GIT ecosystem matches the repository's exact tag, for actions and C/C++ sources alike.
+    GITHUB,
+    // Swift packages are GitHub repositories; OSV files their advisories under SwiftURL.
     Registry {
-        osv_name: "github.com/{name}",
-        ..json(
-            "github",
-            "https://api.github.com/repos/{name}/tags?per_page=100",
-            "",
-            "name",
-            Bare::Prefix,
-            Some("GIT"),
-        )
+        id: "swift",
+        osv: Some("SwiftURL"),
+        ..GITHUB
     },
     Registry {
         accept: "*/*",
@@ -477,6 +485,7 @@ const PAGES: &[(&str, &str)] = &[
         "https://gitlab.com/{repo}/container_registry",
     ),
     ("github", "https://github.com/{name}"),
+    ("swift", "https://github.com/{name}"),
     (
         "helm",
         "https://artifacthub.io/packages/search?ts_query_web={name}",
@@ -519,14 +528,15 @@ pub(crate) fn page(id: &str, name: &str) -> String {
 }
 
 /// The registry that answers for this name: Docker Hub's own API lists only its images, so an image
-/// that names another host, such as `ghcr.io/owner/image`, goes to that host's OCI registry.
+/// that names another host, such as `ghcr.io/owner/image`, goes to that host's OCI registry. A
+/// `node` pin in `.nvmrc`, `.tool-versions`, or volta names the runtime, not npm's `node` package.
 pub(crate) fn route(registry: &'static Registry, name: &str) -> &'static Registry {
-    match image_host(name) {
-        Some(host) if registry.id == "docker" && host != "docker.io" => {
-            get("oci").unwrap_or(registry)
-        }
-        _ => registry,
-    }
+    let id = match (registry.id, image_host(name)) {
+        ("docker", Some(host)) if host != "docker.io" => "oci",
+        ("npm", _) if name == "node" => "nodejs",
+        _ => return registry,
+    };
+    get(id).unwrap_or(registry)
 }
 
 /// The registry host an image names, such as `ghcr.io` of `ghcr.io/owner/image`.

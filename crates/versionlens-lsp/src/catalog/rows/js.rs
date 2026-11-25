@@ -20,6 +20,19 @@ pub(super) static ROWS: &[FileType] = &[
         "npm",
         &[Lines(TOOL_VERSION)],
     ),
+    // Bower's registry only names each package's Git repository; the packages it still serves
+    // publish the same versions to npm.
+    row(
+        "bower",
+        &["bower.json"],
+        Json,
+        "npm",
+        &[
+            Keys("dependencies"),
+            Keys("devDependencies"),
+            Keys("resolutions"),
+        ],
+    ),
     row(
         "bun",
         &[".bun-version"],

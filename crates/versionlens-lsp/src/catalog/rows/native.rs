@@ -2,7 +2,7 @@
 
 use super::shared::{GITHUB_ARCHIVE, GITHUB_FRAGMENT, GITHUB_RELEASE};
 use crate::catalog::{FileType, row};
-use crate::extract::Rule::{Keys, Lines, Record};
+use crate::extract::Rule::{Keys, Lines, Record, Via};
 use crate::flatten::Format::{Json, Text, Toml, Yaml};
 
 pub(super) static ROWS: &[FileType] = &[
@@ -26,9 +26,16 @@ pub(super) static ROWS: &[FileType] = &[
         &["go.mod", "go.work"],
         Text,
         "go",
-        &[Lines(
-            r"(?m)^(?:require[ \t]+|[ \t]+)(?P<name>[\w.~-]+\.[\w.~/-]+)[ \t]+(?P<version>v\d[^\s]*)",
-        )],
+        &[
+            Lines(
+                r"(?m)^(?:require[ \t]+|[ \t]+)(?P<name>[\w.~-]+\.[\w.~/-]+)[ \t]+(?P<version>v\d[^\s]*)",
+            ),
+            // The `go` and `toolchain` directives pin the Go release itself.
+            Via(
+                "golang",
+                &Lines(r"(?m)^(?:go[ \t]+|toolchain[ \t]+go)(?P<version>\d[\w.]*)[ \t]*\r?$"),
+            ),
+        ],
     ),
     // dep and Glide, the Go package managers before modules.
     row(
@@ -116,7 +123,7 @@ pub(super) static ROWS: &[FileType] = &[
         "swift",
         &["Package.swift"],
         Text,
-        "github",
+        "swift",
         &[Lines(
             r#"\.package\(\s*url:\s*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*(?:from:|exact:|\.upToNextMajor\(from:|\.upToNextMinor\(from:)\s*"(?P<version>[^"]+)""#,
         )],

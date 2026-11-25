@@ -56,6 +56,9 @@ fn expands_placeholders() {
     assert_eq!(route(docker, "ghcr.io/a/b").id, "oci");
     assert_eq!(route(docker, "docker.io/a/b").id, "docker");
     assert_eq!(route(docker, "bitnami/redis").id, "docker");
+    let npm = get("npm").unwrap();
+    assert_eq!(route(npm, "node").id, "nodejs");
+    assert_eq!(route(npm, "lodash").id, "npm");
     assert_eq!(
         page("docker", "quay.io/a/b"),
         "https://quay.io/repository/a/b"

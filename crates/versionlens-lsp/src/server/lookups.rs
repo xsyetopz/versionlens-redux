@@ -177,7 +177,7 @@ impl Server {
     }
 
     pub(super) fn query(&self, dep: &Dep) -> Option<Query> {
-        let registry = registry::get(dep.registry)?;
+        let registry = registry::route(registry::get(dep.registry)?, &dep.name);
         let found = self.cache.get(&key(dep))?.result.as_ref().ok()?;
         let req = Req::parse(&dep.req, registry.bare)?;
         let version = render::current(&req, &found.versions)?;

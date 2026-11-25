@@ -31,25 +31,28 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Registry | OSV advisories | Files |
 | --- | --- | --- |
 | crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables) |
-| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `.nvmrc`, `.node-version`, `.bun-version` |
+| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `.bun-version` |
+| Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions` and `mise.toml` |
 | JSR and npm | npm | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json` |
 | PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml` |
 | conda-forge | | `environment.yml`, `environment.yaml`, `pixi.toml` |
 | Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
+| Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions` and `mise.toml` |
 | RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec` |
 | CocoaPods | | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
-| NuGet | NuGet | `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `project.json`, `global.json` |
+| NuGet | NuGet | `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json` |
 | Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, `ivy.xml`, `.mvn/extensions.xml`, `*.main.kts` |
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
 | Haxelib | | `haxelib.json`, `*.hxml` |
 | Elm packages | | `elm.json` |
-| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs |
-| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Package.swift`, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
+| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs |
+| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
+| Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
 | Helm repositories | | `Chart.yaml` |
 | Ansible Galaxy | | `requirements.yml`, `galaxy.yml` |
 | Puppet Forge | | `Puppetfile` |
@@ -63,9 +66,11 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | DUB | | `dub.json`, `dub.selections.json`, `dub.sdl` |
 | opam | opam | `opam`, `*.opam`, `dune-project` |
 | Hackage | Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
+| GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project` |
 | LuaRocks | | `*.rockspec` |
 | xmake repository | | `xmake.lua` |
-| Runtimes and tools | Go (`stdlib`) for Go | `rust-toolchain`, `rust-toolchain.toml`, `.go-version`, `.ruby-version`, `.python-version`, `.terraform-version`, `.tool-versions`, `mise.toml`, `gradle-wrapper.properties` |
+| Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, and their `.tool-versions` and `mise.toml` entries |
+| Rust and Terraform releases | | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, and their `.tool-versions` and `mise.toml` entries |
 
 The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for the registries with an empty advisories cell, so their versions get no vulnerability check. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
 

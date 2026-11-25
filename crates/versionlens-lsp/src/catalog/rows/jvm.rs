@@ -15,6 +15,14 @@ pub(super) static ROWS: &[FileType] = &[
             r"(?m)^[ \t]*nuget[ \t]+(?P<name>[\w.-]+)[ \t]+(?P<version>(?:[~><=]+[ \t]*)?\d[\w.-]*)",
         )],
     ),
+    // `paket.references` names a project's packages; their versions live in `paket.dependencies`.
+    row(
+        "paket-references",
+        &["paket.references"],
+        Text,
+        "nuget",
+        &[Lines(r"(?m)^[ \t]*(?P<name>[A-Za-z_][\w.-]*)[ \t]*\r?$")],
+    ),
     row(
         "nuget",
         &[

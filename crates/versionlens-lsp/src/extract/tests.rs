@@ -533,3 +533,52 @@ fn reads_images_from_ci_files() {
         ])
     );
 }
+
+#[test]
+fn reads_toolchain_directives_as_their_own_registry() {
+    let gomod = "module example.com/app\n\ngo 1.22.1\n\ntoolchain go1.23.4\n\nrequire golang.org/x/text v0.14.0\n";
+    assert_eq!(
+        registries("go.mod", gomod),
+        named(&[
+            ("go", "golang"),
+            ("go", "golang"),
+            ("golang.org/x/text", "go")
+        ])
+    );
+    assert_eq!(
+        registries("cabal.project", "packages: .\nwith-compiler: ghc-9.6.4\n"),
+        named(&[("ghc", "ghc")])
+    );
+}
+
+#[test]
+fn reads_bower_and_kubernetes_manifests() {
+    one(
+        "bower.json",
+        r#"{"name": "app", "dependencies": {"jquery": "~3.7.1"}}"#,
+        "jquery",
+        "~3.7.1",
+    );
+    let deployment = "apiVersion: apps/v1\nkind: Deployment\nspec:\n  template:\n    spec:\n      containers:\n        - name: web\n          image: nginx:1.27\n        - image: \"ghcr.io/org/app:v2.0.1\"\n";
+    assert_eq!(
+        deps("k8s/base/deployment.yaml", deployment),
+        pairs(&[("nginx", "1.27"), ("ghcr.io/org/app", "v2.0.1")])
+    );
+    let values = "image:\n  repository: bitnami/redis\n  tag: 7.2.4\nmetrics:\n  image:\n    repository: prom/statsd-exporter\n    tag: v0.26.0\n";
+    assert_eq!(
+        deps("charts/app/values.yaml", values),
+        pairs(&[
+            ("bitnami/redis", "7.2.4"),
+            ("prom/statsd-exporter", "v0.26.0")
+        ])
+    );
+}
+
+#[test]
+fn reads_paket_references_without_versions() {
+    let references = "Newtonsoft.Json\n// a comment\ngroup Build\nFAKE\n";
+    assert_eq!(
+        deps("paket.references", references),
+        pairs(&[("Newtonsoft.Json", ""), ("FAKE", "")])
+    );
+}
