@@ -3,6 +3,17 @@
 
 use crate::version::Bare;
 
+/// An [`Registry::upstream`] pattern for a GitHub URL that follows `before`, up to its closing
+/// quote, without a `.git` suffix or trailing slash.
+macro_rules! github {
+    ($before:literal) => {
+        concat!(
+            $before,
+            r#"https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?""#
+        )
+    };
+}
+
 mod parse;
 mod tools;
 
@@ -38,6 +49,10 @@ pub(crate) struct Registry {
     /// The package name OSV knows, as an [`expand`] template: GIT names a repository by URL, and
     /// Go names its toolchain `stdlib`.
     pub(crate) osv_name: &'static str,
+    /// A regex with `owner` and `repo` groups that finds the package's GitHub repository in the
+    /// document `osv_name` names, whose GIT advisories OSV then reports; empty where `osv_name`
+    /// is the OSV name itself. `{version}` in `osv_name` names the version asked about.
+    pub(crate) upstream: &'static str,
     pub(crate) accept: &'static str,
     /// The field that marks a JSON version entry yanked, such as JSR's `yanked`; empty for none.
     pub(crate) yanked: &'static str,
@@ -99,6 +114,7 @@ const fn json(
         bare,
         osv,
         osv_name: "{name}",
+        upstream: "",
         accept: "application/json",
         yanked: "",
         deprecated: "",
@@ -122,6 +138,7 @@ const fn text(
         bare,
         osv,
         osv_name: "{name}",
+        upstream: "",
         accept: "*/*",
         yanked: "",
         deprecated: "",
@@ -180,13 +197,15 @@ pub(crate) static REGISTRIES: &[Registry] = &[
             field: "@key",
             latest: "latest",
         },
+        osv_name: "https://jsr.io/{name}",
+        upstream: github!(r#"href=""#),
         ..json(
             "jsr",
             "https://jsr.io/{name}/meta.json",
             "",
             "",
             Bare::Exact,
-            None,
+            Some("GIT"),
         )
     },
     Registry {
@@ -239,14 +258,18 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Exact,
         Some("RubyGems"),
     ),
-    json(
-        "cocoapods",
-        "https://trunk.cocoapods.org/api/v1/pods/{name}",
-        "versions",
-        "name",
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "https://trunk.cocoapods.org/api/v1/pods/{name}/specs/latest",
+        upstream: github!(r#""git":\s*""#),
+        ..json(
+            "cocoapods",
+            "https://trunk.cocoapods.org/api/v1/pods/{name}",
+            "versions",
+            "name",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
     Registry {
         yanked: "retracted",
         parse: Parse::Json {
@@ -306,34 +329,42 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Caret,
         Some("Julia"),
     ),
-    text(
-        "haxelib",
-        "https://lib.haxe.org/p/{name}/versions/",
-        r"haxelib install \S+ ([0-9][\w.+-]*)",
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "https://lib.haxe.org/p/{name}/",
+        upstream: github!(r#"github-user-website"[^\n]*?href=""#),
+        ..text(
+            "haxelib",
+            "https://lib.haxe.org/p/{name}/versions/",
+            r"haxelib install \S+ ([0-9][\w.+-]*)",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
+    // OSV has no image ecosystem; its Bitnami ecosystem files the advisories of the application
+    // an image's tag versions, such as nginx in `nginx:1.20.0-alpine`.
     Registry {
         filtered: "https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100&name={filter}",
+        osv_name: "{app}",
         ..json(
             "docker",
             "https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100",
             "results",
             "name",
             Bare::Prefix,
-            None,
+            Some("Bitnami"),
         )
     },
     // An image on any registry but Docker Hub, through the OCI distribution API; see [`route`].
     Registry {
         paged: true,
+        osv_name: "{app}",
         ..json(
             "oci",
             "https://{host}/v2/{repo}/tags/list?n=1000",
             "tags",
             "",
             Bare::Prefix,
-            None,
+            Some("Bitnami"),
         )
     },
     // OSV's GitHub Actions ecosystem has no version order, so a versioned query never matches;
@@ -359,41 +390,55 @@ pub(crate) static REGISTRIES: &[Registry] = &[
             Some(crate::osv::ARTIFACT_HUB),
         )
     },
-    json(
-        "galaxy",
-        "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{ns}/{short}/versions/?limit=100",
-        "data",
-        "version",
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{ns}/{short}/versions/{version}/",
+        upstream: github!(r#""repository":\s*""#),
+        ..json(
+            "galaxy",
+            "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{ns}/{short}/versions/?limit=100",
+            "data",
+            "version",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
     Registry {
         parse: Parse::Fn(tools::terraform),
+        osv_name: "https://registry.terraform.io/v1/{tf}",
+        upstream: github!(r#""source":\s*""#),
         ..json(
             "terraform",
             "https://registry.terraform.io/v1/{tf}/versions",
             "",
             "",
             Bare::Exact,
-            None,
+            Some("GIT"),
         )
     },
-    json(
-        "bazel",
-        "https://bcr.bazel.build/modules/{name}/metadata.json",
-        "versions",
-        "",
-        Bare::Exact,
-        None,
-    ),
-    json(
-        "vcpkg",
-        "https://raw.githubusercontent.com/microsoft/vcpkg/master/versions/{first}-/{name}.json",
-        "versions",
-        "version|version-semver|version-string|version-date",
-        Bare::Min,
-        None,
-    ),
+    Registry {
+        osv_name: "https://bcr.bazel.build/modules/{name}/metadata.json",
+        upstream: r#""github:(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)""#,
+        ..json(
+            "bazel",
+            "https://bcr.bazel.build/modules/{name}/metadata.json",
+            "versions",
+            "",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
+    Registry {
+        osv_name: "https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/{name}/portfile.cmake",
+        upstream: r"REPO[ \t]+(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)\s",
+        ..json(
+            "vcpkg",
+            "https://raw.githubusercontent.com/microsoft/vcpkg/master/versions/{first}-/{name}.json",
+            "versions",
+            "version|version-semver|version-string|version-date",
+            Bare::Min,
+            Some("GIT"),
+        )
+    },
     Registry {
         // OSV has no Conan ecosystem; the GitLab Advisory Database files advisories by slug.
         osv_name: "conan/{name}",
@@ -413,22 +458,30 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Min,
         Some("CRAN"),
     ),
-    json(
-        "cpan",
-        "https://fastapi.metacpan.org/v1/download_url/{name}",
-        "version",
-        "",
-        Bare::Min,
-        None,
-    ),
-    json(
-        "dub",
-        "https://code.dlang.org/api/packages/{name}/info",
-        "versions",
-        "version",
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "https://fastapi.metacpan.org/v1/release/{dist}",
+        upstream: github!(r#""web"\s*:\s*""#),
+        ..json(
+            "cpan",
+            "https://fastapi.metacpan.org/v1/download_url/{name}",
+            "version",
+            "",
+            Bare::Min,
+            Some("GIT"),
+        )
+    },
+    Registry {
+        osv_name: "https://code.dlang.org/api/packages/{name}/info",
+        upstream: r#""kind":"github","owner":"(?P<owner>[^"]+)","project":"(?P<repo>[^"]+)""#,
+        ..json(
+            "dub",
+            "https://code.dlang.org/api/packages/{name}/info",
+            "versions",
+            "version",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
     json(
         "hackage",
         "https://hackage.haskell.org/package/{name}/preferred",
@@ -445,22 +498,30 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Some("opam"),
     ),
     // Puppetfile names a module `owner/name` or `owner-name`; extraction joins it as `owner:name`.
-    json(
-        "puppet",
-        "https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference",
-        "releases",
-        "version",
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference",
+        upstream: github!(r#""source":\s*""#),
+        ..json(
+            "puppet",
+            "https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference",
+            "releases",
+            "version",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
     // Supermarket lists each version as a URL; `latest_version` is skipped by its `:` before the quote.
-    text(
-        "chef",
-        "https://supermarket.chef.io/api/v1/cookbooks/{name}",
-        r#"[\[,]"[^"]*/versions/([^"]+)""#,
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "https://supermarket.chef.io/api/v1/cookbooks/{name}",
+        upstream: github!(r#""source_url":\s*""#),
+        ..text(
+            "chef",
+            "https://supermarket.chef.io/api/v1/cookbooks/{name}",
+            r#"[\[,]"[^"]*/versions/([^"]+)""#,
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
 ];
 
 const PAGES: &[(&str, &str)] = &[
@@ -595,6 +656,7 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
         ("{name}", name.to_owned()),
         ("{lower}", lower.clone()),
         ("{enc}", name.replace('/', "%2f")),
+        ("{dist}", name.replace("::", "-")),
         (
             "{go}",
             name.chars()
@@ -641,6 +703,10 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
             .replace("{host}", host)
             .replace("{repo}", &name[host.len() + 1..]);
     }
+    if url.contains("{app}") {
+        let app = image_app(name).ok_or_else(|| format!("{name} names no known application"))?;
+        url = url.replace("{app}", app);
+    }
     if url.contains("{source}") {
         let source = source
             .filter(|s| s.starts_with("http"))
@@ -648,6 +714,27 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
         url = url.replace("{source}", source.trim_end_matches('/'));
     }
     Ok(url)
+}
+
+/// The application an image packages, in OSV's Bitnami names, where the image's name says which:
+/// official images, Bitnami's and `HashiCorp`'s, and images named after their publisher, such as
+/// `grafana/grafana`. A `myorg/nginx` tag need not version nginx, so it gets none.
+fn image_app(name: &str) -> Option<&str> {
+    let repo = image_host(name).map_or(name, |host| &name[host.len() + 1..]);
+    let repo = repo.strip_prefix("docker/").unwrap_or(repo);
+    let app = match repo.rsplit_once('/') {
+        None => repo,
+        Some(("library" | "bitnami" | "hashicorp", app)) => app,
+        Some((owner, app)) if owner.rsplit('/').next() == Some(app) => app,
+        Some(_) => return None,
+    };
+    Some(match app {
+        "httpd" => "apache",
+        "postgres" => "postgresql",
+        "mongo" => "mongodb",
+        "openjdk" | "eclipse-temurin" | "amazoncorretto" => "java",
+        app => app,
+    })
 }
 
 fn cargo_path(name: &str) -> String {

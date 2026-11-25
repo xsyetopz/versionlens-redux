@@ -7,13 +7,16 @@ use super::{Parse, Registry, Versions, json, text};
 use crate::version::Bare;
 
 pub(super) static ROWS: &[Registry] = &[
-    text(
-        "rust",
-        "https://raw.githubusercontent.com/rust-lang/rust/master/RELEASES.md",
-        r"(?m)^Version (\d+\.\d+\.\d+) \(",
-        Bare::Prefix,
-        None,
-    ),
+    Registry {
+        osv_name: "https://github.com/rust-lang/rust",
+        ..text(
+            "rust",
+            "https://raw.githubusercontent.com/rust-lang/rust/master/RELEASES.md",
+            r"(?m)^Version (\d+\.\d+\.\d+) \(",
+            Bare::Prefix,
+            Some("GIT"),
+        )
+    },
     // OSV's Bitnami ecosystem carries the runtimes' own CVEs, under each product's name.
     Registry {
         osv_name: "python",
@@ -69,14 +72,17 @@ pub(super) static ROWS: &[Registry] = &[
             Some("Go"),
         )
     },
-    json(
-        "terraform-cli",
-        "https://releases.hashicorp.com/terraform/index.json",
-        "versions",
-        "@key",
-        Bare::Prefix,
-        None,
-    ),
+    Registry {
+        osv_name: "https://github.com/hashicorp/terraform",
+        ..json(
+            "terraform-cli",
+            "https://releases.hashicorp.com/terraform/index.json",
+            "versions",
+            "@key",
+            Bare::Prefix,
+            Some("GIT"),
+        )
+    },
     Registry {
         osv_name: "gradle",
         ..json(
@@ -88,37 +94,52 @@ pub(super) static ROWS: &[Registry] = &[
             Some("Bitnami"),
         )
     },
-    json(
-        "conda",
-        "https://api.anaconda.org/package/conda-forge/{name}",
-        "versions",
-        "",
-        Bare::Prefix,
-        None,
-    ),
-    json(
-        "elm",
-        "https://package.elm-lang.org/packages/{name}/releases.json",
-        "",
-        "@key",
-        Bare::Exact,
-        None,
-    ),
-    json(
-        "luarocks",
-        "https://luarocks.org/manifest.json",
-        "repository/{name}",
-        "@key",
-        Bare::Exact,
-        None,
-    ),
-    text(
-        "xmake",
-        "https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua",
-        r#"add_versions\("(?:[a-z]+:)?([^"]+)""#,
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        osv_name: "https://api.anaconda.org/package/conda-forge/{name}",
+        upstream: github!(r#""dev_url":\s*""#),
+        ..json(
+            "conda",
+            "https://api.anaconda.org/package/conda-forge/{name}",
+            "versions",
+            "",
+            Bare::Prefix,
+            Some("GIT"),
+        )
+    },
+    Registry {
+        osv_name: "https://github.com/{name}",
+        ..json(
+            "elm",
+            "https://package.elm-lang.org/packages/{name}/releases.json",
+            "",
+            "@key",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
+    Registry {
+        osv_name: "https://luarocks.org/{name}-{version}.rockspec",
+        upstream: r#"url\s*=\s*['"](?:git\+)?(?:https?|git)://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?['"]"#,
+        ..json(
+            "luarocks",
+            "https://luarocks.org/manifest.json",
+            "repository/{name}",
+            "@key",
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
+    Registry {
+        osv_name: "https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua",
+        upstream: r#""https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?["/]"#,
+        ..text(
+            "xmake",
+            "https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua",
+            r#"add_versions\("(?:[a-z]+:)?([^"]+)""#,
+            Bare::Exact,
+            Some("GIT"),
+        )
+    },
 ];
 
 pub(super) const PAGES: &[(&str, &str)] = &[
@@ -135,7 +156,7 @@ pub(super) const PAGES: &[(&str, &str)] = &[
         "elm",
         "https://package.elm-lang.org/packages/{name}/latest/",
     ),
-    ("luarocks", "https://luarocks.org/modules/{name}"),
+    ("luarocks", "https://luarocks.org/search?q={name}"),
     ("xmake", "https://xmake.io/#/package/remote_package"),
 ];
 

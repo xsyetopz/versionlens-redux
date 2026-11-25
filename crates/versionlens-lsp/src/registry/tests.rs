@@ -21,6 +21,24 @@ fn pages_docker_tags_by_number_and_variant() {
 }
 
 #[test]
+fn names_the_application_an_image_packages() {
+    let app = |name| expand("{app}", name, None).ok();
+    assert_eq!(app("nginx").as_deref(), Some("nginx"));
+    assert_eq!(app("library/postgres").as_deref(), Some("postgresql"));
+    assert_eq!(app("bitnami/redis").as_deref(), Some("redis"));
+    assert_eq!(app("grafana/grafana").as_deref(), Some("grafana"));
+    assert_eq!(
+        app("quay.io/prometheus/prometheus").as_deref(),
+        Some("prometheus")
+    );
+    assert_eq!(
+        app("public.ecr.aws/docker/library/httpd").as_deref(),
+        Some("apache")
+    );
+    assert_eq!(app("myorg/nginx"), None);
+}
+
+#[test]
 fn expands_placeholders() {
     assert_eq!(expand("{cargo}", "Serde", None).unwrap(), "se/rd/serde");
     assert_eq!(expand("{cargo}", "syn", None).unwrap(), "3/s/syn");

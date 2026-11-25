@@ -14,7 +14,10 @@ const API: &str = "https://artifacthub.io/api/v1";
 /// Fetches an Artifact Hub document; `None` where Artifact Hub lists no such repository,
 /// chart, or report.
 async fn hub(http: &Http, path: &str) -> Result<Option<Value>, String> {
-    match http.json(&format!("{API}/{path}")).await {
+    match http
+        .text(&format!("{API}/{path}"), "application/json")
+        .await
+    {
         Err(e) if e.contains("HTTP 404") => Ok(None),
         fetched => serde_json::from_str(&fetched?)
             .map(Some)

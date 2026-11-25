@@ -10,6 +10,7 @@ const BATCH: usize = 1000;
 
 mod artifact_hub;
 mod gitlab;
+pub(crate) mod upstream;
 
 pub(crate) use artifact_hub::ARTIFACT_HUB;
 pub(crate) use gitlab::GITLAB;
@@ -20,6 +21,9 @@ pub(crate) struct Query {
     pub(crate) ecosystem: &'static str,
     pub(crate) name: String,
     pub(crate) version: String,
+    /// The registry's [`crate::registry::Registry::upstream`]: where set, `name` is the URL of a
+    /// document that names the repository to ask about.
+    pub(crate) upstream: &'static str,
 }
 
 /// The vulnerability ids affecting each query, in order.
@@ -27,17 +31,25 @@ pub(crate) struct Query {
 /// # Errors
 /// Reports a failed request or an unexpected response.
 pub(crate) async fn query(http: &Http, queries: &[Query]) -> Result<Vec<Vec<String>>, String> {
-    let osv: Vec<&Query> = queries
+    ids(http, &upstream::resolve(http, queries).await?).await
+}
+
+/// The advisory ids for queries whose upstream repository is already resolved; a `None`, a
+/// package whose registry names no repository, has none.
+pub(crate) async fn ids(http: &Http, asked: &[Option<Query>]) -> Result<Vec<Vec<String>>, String> {
+    let osv: Vec<&Query> = asked
         .iter()
+        .flatten()
         .filter(|q| ![ARTIFACT_HUB, GITLAB].contains(&q.ecosystem))
         .collect();
     let mut osv_ids = batch(http, &osv).await?.into_iter();
-    let mut out = Vec::with_capacity(queries.len());
-    for query in queries {
-        out.push(match query.ecosystem {
-            ARTIFACT_HUB => artifact_hub::ids(http, query).await?,
-            GITLAB => gitlab::ids(http, query).await?,
-            _ => osv_ids.next().unwrap_or_default(),
+    let mut out = Vec::with_capacity(asked.len());
+    for query in asked {
+        out.push(match query {
+            None => Vec::new(),
+            Some(q) if q.ecosystem == ARTIFACT_HUB => artifact_hub::ids(http, q).await?,
+            Some(q) if q.ecosystem == GITLAB => gitlab::ids(http, q).await?,
+            Some(_) => osv_ids.next().unwrap_or_default(),
         });
     }
     Ok(out)

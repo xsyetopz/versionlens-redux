@@ -16,12 +16,14 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("cargo", "time", None, Some("0.1.43")),
     ("npm", "lodash", None, Some("4.17.15")),
     ("jsr", "@std/path", None, None),
+    ("jsr", "@hono/hono", None, Some("4.0.0")),
     ("unity", "com.unity.textmeshpro", None, None),
     ("pypi", "jinja2", None, Some("2.10")),
     ("composer", "symfony/http-kernel", None, Some("v4.4.0")),
     ("go", "golang.org/x/text", None, Some("v0.3.5")),
     ("rubygems", "nokogiri", None, Some("1.10.0")),
     ("cocoapods", "Alamofire", None, None),
+    ("cocoapods", "SQLCipher", None, Some("4.0.0")),
     ("pub", "http", None, Some("0.13.0")),
     ("nuget", "Newtonsoft.Json", None, Some("12.0.1")),
     (
@@ -34,10 +36,15 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("clojars", "ring/ring-core", None, None),
     ("hex", "plug", None, Some("1.3.0")),
     ("julia", "HTTP", None, Some("0.9.0")),
-    ("haxelib", "hxcpp", None, None),
-    ("docker", "node", None, None),
+    ("haxelib", "hxcpp", None, Some("4.3.2")),
+    ("docker", "node", None, Some("20.0.0")),
     ("oci", "mcr.microsoft.com/dotnet/sdk", None, None),
-    ("oci", "quay.io/prometheus/prometheus", None, None),
+    (
+        "oci",
+        "quay.io/prometheus/prometheus",
+        None,
+        Some("v2.40.0"),
+    ),
     ("oci", "ghcr.io/home-assistant/home-assistant", None, None),
     ("oci", "registry.k8s.io/pause", None, None),
     ("oci", "gcr.io/distroless/static", None, None),
@@ -56,32 +63,44 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
         Some("https://prometheus-community.github.io/helm-charts"),
         Some("25.0.0"),
     ),
-    ("galaxy", "community.general", None, None),
+    ("galaxy", "community.general", None, Some("1.0.0")),
     ("terraform", "hashicorp/aws", None, None),
+    ("terraform", "hashicorp/vault", None, Some("2.0.0")),
     ("terraform", "terraform-aws-modules/vpc/aws", None, None),
     ("bazel", "rules_go", None, None),
+    ("bazel", "zlib", None, Some("1.2.11")),
     ("vcpkg", "fmt", None, None),
+    ("vcpkg", "zlib", None, Some("1.2.11")),
     ("conan", "openssl", None, Some("1.1.1f")),
     ("cran", "commonmark", None, Some("1.7")),
     ("cpan", "Moose", None, None),
-    ("dub", "vibe-d", None, None),
+    ("cpan", "DBI", None, Some("1.640")),
+    ("dub", "vibe-d", None, Some("0.9.0")),
     ("hackage", "aeson", None, Some("1.0.0.0")),
     ("opam", "tls", None, Some("0.1.0")),
     ("puppet", "puppetlabs:stdlib", None, None),
-    ("chef", "nginx", None, None),
-    ("rust", "rust", None, None),
+    ("puppet", "puppetlabs:apache", None, Some("1.0.0")),
+    ("chef", "nginx", None, Some("2.0.0")),
+    ("rust", "rust", None, Some("1.77.1")),
     ("python", "python", None, Some("3.8.0")),
     ("ruby", "ruby", None, Some("3.0.0")),
     ("nodejs", "node", None, Some("20.0.0")),
     ("ghc", "ghc", None, Some("9.2.1")),
     ("golang", "golang", None, Some("1.20.0")),
-    ("terraform-cli", "terraform", None, None),
+    ("terraform-cli", "terraform", None, Some("1.0.0")),
     ("gradle-dist", "gradle", None, Some("7.0.0")),
     ("conda", "numpy", None, None),
-    ("elm", "elm/core", None, None),
+    ("conda", "zlib", None, Some("1.2.11")),
+    ("elm", "elm/core", None, Some("1.0.2")),
     ("luarocks", "luasocket", None, None),
-    ("xmake", "zlib", None, None),
+    ("luarocks", "lua-resty-jwt", None, Some("0.2.0-0")),
+    ("xmake", "zlib", None, Some("v1.2.11")),
 ];
+
+/// Registries whose advisory route works but whose packages have no advisory on file that a
+/// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
+/// packages, or hxcpp. Their samples check only that the route answers and names a repository.
+const NO_KNOWN_ADVISORY: &[&str] = &["dub", "chef", "elm", "haxelib"];
 
 /// How many times a page behind a bot challenge is asked before the check fails.
 const CHALLENGE_RETRIES: u64 = 10;
@@ -227,24 +246,36 @@ fn npm_clearance(url: &str) -> Option<(String, String)> {
 #[test]
 #[ignore = "needs the network"]
 fn osv_reports_each_ecosystem() {
-    let queries: Vec<Query> = SAMPLES
+    let (ids, queries): (Vec<&str>, Vec<Query>) = SAMPLES
         .iter()
         .filter_map(|&(id, name, source, vulnerable)| {
             let registry = get(id).unwrap();
-            Some(Query {
-                ecosystem: registry.osv?,
-                name: expand(registry.osv_name, name, source).unwrap(),
-                version: vulnerable?.to_owned(),
-            })
+            let (ecosystem, version) = (registry.osv?, vulnerable?.to_owned());
+            let name = expand(registry.osv_name, name, source).unwrap();
+            let query = Query {
+                ecosystem,
+                name: name.replace("{version}", &version),
+                version,
+                upstream: registry.upstream,
+            };
+            Some((id, query))
         })
-        .collect();
+        .unzip();
     let http = Http::new(Settings::default()).unwrap();
-    let results = block_on(osv::query(&http, &queries)).unwrap();
-    let silent: Vec<String> = queries
+    let resolved = block_on(osv::upstream::resolve(&http, &queries)).unwrap();
+    let unnamed: Vec<&str> = queries
         .iter()
-        .zip(&results)
-        .filter(|(_, ids)| ids.is_empty())
-        .map(|(q, _)| format!("{} {}@{}", q.ecosystem, q.name, q.version))
+        .zip(&resolved)
+        .filter(|(_, r)| r.is_none())
+        .map(|(q, _)| q.name.as_str())
+        .collect();
+    assert!(unnamed.is_empty(), "no repository found in {unnamed:?}");
+    let results = block_on(osv::ids(&http, &resolved)).unwrap();
+    let silent: Vec<String> = ids
+        .iter()
+        .zip(queries.iter().zip(&results))
+        .filter(|(id, (_, found))| found.is_empty() && !NO_KNOWN_ADVISORY.contains(id))
+        .map(|(_, (q, _))| format!("{} {}@{}", q.ecosystem, q.name, q.version))
         .collect();
     assert!(silent.is_empty(), "OSV reports nothing for {silent:?}");
 }

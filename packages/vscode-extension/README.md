@@ -33,46 +33,46 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables) |
 | npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `.bun-version` |
 | Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions` and `mise.toml` |
-| JSR and npm | npm | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
+| JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json` |
 | PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml` |
-| conda-forge | | `environment.yml`, `environment.yaml`, `pixi.toml` |
+| conda-forge | GIT (the GitHub repository its `dev_url` names) | `environment.yml`, `environment.yaml`, `pixi.toml` |
 | Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
 | Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions` and `mise.toml` |
 | RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec` |
-| CocoaPods | | `Podfile`, `*.podspec` |
+| CocoaPods | GIT (the GitHub repository the podspec's `source` names) | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
 | NuGet | NuGet | MSBuild SDKs and packages in `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json` |
 | Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, `ivy.xml`, `.mvn/extensions.xml`, `*.main.kts` |
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
-| Haxelib | | `haxelib.json`, `*.hxml` |
-| Elm packages | | `elm.json` |
-| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs |
+| Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
+| Elm packages | GIT (`github.com/author/package`) | `elm.json` |
+| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs |
 | GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
 | Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
 | Helm repositories | Artifact Hub image scans | `Chart.yaml` |
-| Ansible Galaxy | | `requirements.yml`, `galaxy.yml` |
-| Puppet Forge | | `Puppetfile` |
-| Chef Supermarket | | `Berksfile`, `metadata.rb` |
-| Terraform Registry | | `*.tf`, `*.tofu`, `.terraform.lock.hcl` |
-| Bazel Central Registry | | `MODULE.bazel` |
-| vcpkg | | `vcpkg.json` |
+| Ansible Galaxy | GIT (the GitHub repository the collection version's `repository` names) | `requirements.yml`, `galaxy.yml` |
+| Puppet Forge | GIT (the GitHub repository the module's `source` names) | `Puppetfile` |
+| Chef Supermarket | GIT (the GitHub repository the cookbook's `source_url` names) | `Berksfile`, `metadata.rb` |
+| Terraform Registry | GIT (the GitHub repository the provider or module's `source` names) | `*.tf`, `*.tofu`, `.terraform.lock.hcl` |
+| Bazel Central Registry | GIT (the GitHub repository the module's `github:` repository names) | `MODULE.bazel` |
+| vcpkg | GIT (the GitHub repository the port's `vcpkg_from_github` names) | `vcpkg.json` |
 | ConanCenter | GitLab Advisory Database | `conanfile.txt`, `conanfile.py` |
 | CRAN | CRAN | `DESCRIPTION`, `renv.lock` |
-| MetaCPAN | | `cpanfile` |
-| DUB | | `dub.json`, `dub.selections.json`, `dub.sdl` |
+| MetaCPAN | GIT (the GitHub repository the release's `repository` names) | `cpanfile` |
+| DUB | GIT (the GitHub repository the package names) | `dub.json`, `dub.selections.json`, `dub.sdl` |
 | opam | opam | `opam`, `*.opam`, `dune-project` |
 | Hackage | Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
 | GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project` |
-| LuaRocks | | `*.rockspec` |
-| xmake repository | | `xmake.lua` |
+| LuaRocks | GIT (the GitHub repository the rockspec's `source.url` names) | `*.rockspec` |
+| xmake repository | GIT (the GitHub repository the package's `xmake.lua` names) | `xmake.lua` |
 | Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, and their `.tool-versions` and `mise.toml` entries |
-| Rust and Terraform releases | | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, and their `.tool-versions` and `mise.toml` entries |
+| Rust and Terraform releases | GIT (`rust-lang/rust`, `hashicorp/terraform`) | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, and their `.tool-versions` and `mise.toml` entries |
 
-The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for Helm or Conan, so Helm chart versions report the CVEs that Artifact Hub's Trivy scans find in the images they deploy, and Conan versions report the GitLab Advisory Database entries whose range holds them. No public advisory source covers the registries with an empty advisories cell, so their versions get no vulnerability check. Set `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` to the user agent and `cf_clearance` cookie of a browser that passed the npmjs.com challenge, and the live check sends them to npmjs.com. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
+The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for Helm or Conan, so Helm chart versions report the CVEs that Artifact Hub's Trivy scans find in the images they deploy, and Conan versions report the GitLab Advisory Database entries whose range holds them. Registries outside OSV that name a package's GitHub repository have it looked up, and OSV's GIT ecosystem is asked about that repository at the version; a package that names no GitHub repository gets no check. Docker Hub and OCI images are asked about by the application they package in OSV's Bitnami ecosystem, so an image from any other publisher gets no check. Unity packages name only Unity's own git host, so they get no vulnerability check. Set `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` to the user agent and `cf_clearance` cookie of a browser that passed the npmjs.com challenge, and the live check sends them to npmjs.com. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
 
 ## Settings
 

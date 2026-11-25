@@ -181,10 +181,12 @@ impl Server {
         let found = self.cache.get(&key(dep))?.result.as_ref().ok()?;
         let req = Req::parse(&dep.req, registry.bare)?;
         let version = render::current(&req, &found.versions)?;
+        let name = registry::expand(registry.osv_name, &dep.name, dep.source.as_deref()).ok()?;
         Some(Query {
             ecosystem: registry.osv?,
-            name: registry::expand(registry.osv_name, &dep.name, dep.source.as_deref()).ok()?,
+            name: name.replace("{version}", &version.raw),
             version: version.raw,
+            upstream: registry.upstream,
         })
     }
 

@@ -195,12 +195,12 @@ impl Http {
         self.send(request, url, configured.is_none()).await
     }
 
-    /// Fetches a JSON document as text.
+    /// Fetches a document as text.
     ///
     /// # Errors
     /// Names the URL with the failure.
-    pub(crate) async fn json(&self, url: &str) -> Result<String, String> {
-        let fetched = self.get(&self.client, url, "application/json").await;
+    pub(crate) async fn text(&self, url: &str, accept: &str) -> Result<String, String> {
+        let fetched = self.get(&self.client, url, accept).await;
         fetched.map(|(body, _)| body)
     }
 

@@ -14,12 +14,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Runtime pins report vulnerabilities: Node.js, Python, Ruby, and Gradle through OSV's Bitnami ecosystem, Go through `stdlib`, and GHC through OSV's GHC ecosystem. The `go` and `toolchain` lines of `go.mod`, `node` in `.tool-versions` and `mise.toml`, and `with-compiler:` in `cabal.project` resolve against those releases.
 - `Package.swift` dependencies report vulnerabilities through OSV's SwiftURL ecosystem.
 - Helm charts report the CVEs Artifact Hub's Trivy scans find in the images a chart version deploys, and Conan packages report GitLab Advisory Database entries whose range holds their version.
+- Docker Hub and OCI images report vulnerabilities through OSV's Bitnami ecosystem, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages. JSR, CocoaPods, conda-forge, Haxelib, Elm, Ansible Galaxy, Puppet Forge, Chef Supermarket, Terraform, Bazel, vcpkg, MetaCPAN, DUB, LuaRocks, and xmake packages, and Rust and Terraform releases, report vulnerabilities through OSV's GIT ecosystem for the GitHub repository their registry names.
 - More manifests: `bower.json`, `paket.references`, Kubernetes manifests (`k8s/`, `kubernetes/`, `manifests/`, `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`), and Helm `values.yaml` images.
 - `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
 
 ### Changed
 
-- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,500 lines of Rust outside tests (tokei), 2,100 of them in the file-type rows and the registry modules, and no file above 667 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
+- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,700 lines of Rust outside tests (tokei), 2,200 of them in the file-type rows and the registry modules, and no file above 754 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
 - Every editor takes its file globs from the server, so VS Code, JetBrains, and Neovim pick up a new file type with no change of their own. JetBrains and Neovim run `versionlens-lsp --file-types`; VS Code reads `capabilities.experimental.fileTypes` from the initialize result and sends the server only those files.
 - OSV checks send one `querybatch` request per document instead of one request per dependency. Registry requests share one pooled HTTP/2 client, capped by `versionlens.concurrency` and limited by `versionlens.timeoutMs`.
 - Quick fixes come from results already in memory, so they no longer wait on the network.
@@ -29,6 +30,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- LuaRocks hovers link to the LuaRocks search for the module; `/modules/<name>` is a user page, which 404s for most modules.
 - Every dependency property upstream 1.3.0 reads is read again: nested npm and pnpm `overrides`, pnpm `packageExtensions`, MSBuild SDKs in `<Project Sdk="Name/1.0">` and `<Sdk>`, and `DotNetCliToolReference`. `devEngines` runtimes and package managers are read too.
 - `requirements.txt`, `requirements/*.txt`, `*constraints*.txt`, and `*.hxml` files are recognised.
 - VS Code commands act on the active manifest, and the VersionLens output channel logs the server path, each applied setting, and every failed request.
