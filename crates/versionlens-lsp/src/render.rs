@@ -294,6 +294,11 @@ pub(crate) fn hints(views: &[View<'_>], glyphs: &Indicators) -> Vec<InlayHint> {
         .iter()
         .filter_map(|view| {
             let label = match &view.state {
+                // A yanked or deprecated resolution outranks any update, as in the status lens.
+                State::Planned { plan, .. } if plan.yanked.is_some() => glyphs.yanked.clone(),
+                State::Planned { plan, .. } if plan.deprecated && plan.resolved.is_some() => {
+                    glyphs.deprecated.clone()
+                }
                 State::Planned { plan, .. }
                     if plan.picks.is_empty() || plan.satisfied && view.dep.req.is_empty() =>
                 {

@@ -175,6 +175,27 @@ fn status_reports_yanked_and_deprecated_first() {
 }
 
 #[test]
+fn hints_warn_of_yanked_and_deprecated_resolutions() {
+    let glyphs = Indicators::default();
+    let (dep, mut plan) = planned("2", &["1.0.0", "2.0.0"]);
+    let label = |plan: &Plan| {
+        let state = State::Planned {
+            plan: Box::new(plan.clone()),
+            current: None,
+        };
+        match hints(&[view(&dep, state)], &glyphs).remove(0).label {
+            InlayHintLabel::String(text) => text,
+            InlayHintLabel::LabelParts(_) => unreachable!(),
+        }
+    };
+    assert_eq!(label(&plan), glyphs.latest);
+    plan.deprecated = true;
+    assert_eq!(label(&plan), glyphs.deprecated);
+    plan.yanked = Some(v("1.9.0"));
+    assert_eq!(label(&plan), glyphs.yanked);
+}
+
+#[test]
 fn offers_the_other_builds_of_the_resolved_version() {
     let (dep, plan) = planned(
         "20-alpine",
