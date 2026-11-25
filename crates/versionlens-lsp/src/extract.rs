@@ -27,9 +27,10 @@ pub(crate) enum Rule {
     /// A rule whose dependencies come from another registry, such as the `pip:` list inside a
     /// conda `environment.yml`.
     Via(&'static str, &'static Self),
-    /// A rule whose dependency names lack a fixed head the manifest leaves out, such as
-    /// `org.jetbrains.kotlin.` before the `jvm` of Gradle's `kotlin("jvm")`.
-    Prefix(&'static str, &'static Self),
+    /// A rule whose dependency names lack a fixed head or tail the manifest leaves out, such as
+    /// `org.jetbrains.kotlin.` before the `jvm` of Gradle's `kotlin("jvm")`, or `_2.13` after the
+    /// artifact of sbt's `%%`, which the build's Scala version gives.
+    Affix(&'static str, &'static str, &'static Self),
     /// A rule read only inside each match of a regex, or of its first group where it has one,
     /// because a bare name means a dependency only in its list: `"lwt"` in an opam `depends`
     /// list, not in `tags`. Regexes have no lookbehind, so a lines rule alone cannot tell them
@@ -203,6 +204,8 @@ fn is_package(name: &str, registry: &str) -> bool {
             | ("cran", "R")
             | ("luarocks", "lua")
             | ("esp", "idf")
+            // `FROM scratch` starts an empty image: docs.docker.com/build/building/base-images/
+            | ("docker", "scratch")
     ) || name.contains('$')
         // An ESP component is `namespace/name`; idf_component.yml's row reads each name once as
         // written and once under the default `espressif/`, and this keeps the one that fits.
@@ -250,16 +253,17 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                 };
                 deps.extend(extract(&inner, text));
             }
-            Rule::Prefix(prefix, rule) => {
+            Rule::Affix(prefix, suffix, rule) => {
                 let inner = FileType {
                     rules: std::slice::from_ref(rule),
                     ..*file
                 };
-                // A prefix completes a registry's package name; a local or git package keeps
+                // An affix completes a registry's package name; a local or git package keeps
                 // the name the manifest gives it.
                 deps.extend(extract(&inner, text).into_iter().map(|mut dep| {
                     if ![DIRECTORY, SOURCE].contains(&dep.registry) {
                         dep.name.insert_str(0, prefix);
+                        dep.name.push_str(suffix);
                     }
                     dep
                 }));
@@ -287,6 +291,18 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
     for dep in &mut deps {
         settle(dep, file.pinned, &leaves);
     }
+    // An untagged `FROM build` may name an earlier stage, `FROM golang:1.22 AS build`, and no
+    // image: docs.docker.com/build/building/multi-stage/. A regex cannot refer back to a stage
+    // name, so the names are gathered here.
+    let stages: Vec<&str> = regex(r"(?mi)^[ \t]*FROM[ \t][^\n]*?[ \t]AS[ \t]+([\w.-]+)")
+        .captures_iter(text)
+        .filter_map(|c| c.get_group(1).map(|s| &text[s.range()]))
+        .collect();
+    deps.retain(|d| {
+        !(d.registry == "docker"
+            && d.req.is_empty()
+            && stages.iter().any(|s| s.eq_ignore_ascii_case(&d.name)))
+    });
     deps.retain(|d| {
         !d.name.is_empty()
             && is_package(&d.name, d.registry)
@@ -350,10 +366,15 @@ fn settle(dep: &mut Dep, pinned: bool, leaves: &[Leaf]) {
         let label = source_label(&dep.name).unwrap_or("git reference");
         dep.source = Some(label.to_owned());
     }
+    // A Gradle catalog's version may be a rich one, `foo = { strictly = "1.0" }`, whose
+    // `require`, `strictly`, or `prefer` holds it:
+    // docs.gradle.org/current/userguide/version_catalogs.html#sec:common-changes
     if let Some(var) = dep.req.strip_prefix("${").and_then(|r| r.strip_suffix('}'))
-        && let Some(leaf) = leaves
-            .iter()
-            .find(|l| l.path.last().is_some_and(|k| k == var))
+        && let Some(leaf) = leaves.iter().find(|l| match &l.path[..] {
+            [.., key] if key == var => true,
+            [.., key, kind] => key == var && ["require", "strictly", "prefer"].contains(&&**kind),
+            _ => false,
+        })
     {
         dep.req.clone_from(&leaf.value);
         dep.span = leaf.span.clone();

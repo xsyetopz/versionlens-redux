@@ -71,6 +71,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases; `src/extract/tests/sections.rs` reads each of 184 dependency sections the two baselines read, and `src/extract/tests/fixtures.rs` reads master's eleven checked-in manifest fixtures whole; every `[[file]]` row has a fixture test of what it extracts.
 - `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
 
+- `Brewfile` `brew` and `cask` entries through formulae.brew.sh, and ReScript `rescript.json` and `bsconfig.json` dependency names through npm.
+
 ### Changed
 
 - Rewrote the language server as one crate, `versionlens-lsp`, of about 5,200 lines of Rust outside tests (tokei), and no file above 603 lines. Each file type and each registry is one row of an embedded TOML catalog, about 1,300 lines in `crates/versionlens-lsp/catalog/`: file types in `files/`, registries in `registries/`, and the patterns rows share in `shared.toml`.
@@ -83,6 +85,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Every form the fork's master parsers read inside a shared file type is read again: sbt `%%` with the `scalaVersion`'s binary suffix (`cats-core_2.13`); Gradle classifiers, `@aar` types, `name`-first map entries, and catalog `require`/`strictly`/`prefer` versions; untagged `FROM` and compose images outside build stages, tags pinned to a digest, and compose `x-` blocks, including those behind a YAML anchor; `.nvmrc` comments; versionless gems and gemspec dependencies, and `path`, `git`, and `github` gems; go.work `use` directories; `deps.edn` coordinates without a group, with a classifier, keys in any order, `:local/root`, and `:git/tag`; Leiningen's `defproject` version and quoted names; Carthage GitHub URLs and quoted references; parenthesized requirements; and Rust channels with a host. `FROM localhost:5000/app` no longer reads as `localhost` at version `5000`.
+- A bare name in a file type with no version prefix, as `"a"` in npm `bundleDependencies`, no longer offers an update that would write `a2.0.0`; its lens shows the latest version only.
 - Generated `.props` and `.targets` under `obj/` and `bin/` are no longer read as NuGet manifests, and untitled buffers, git revisions, and other non-`file:` documents are no longer read at all.
 - Lowercase `dockerfile` and `*.dockerfile` names, which upstream reads, reach the server in editors whose globs match case-sensitively.
 - LuaRocks hovers link to the LuaRocks search for the module; `/modules/<name>` is a user page, which 404s for most modules.

@@ -6,8 +6,8 @@
 # matches by name has failed), the `format` that reads it (json, toml, yaml, xml, ini, or
 # text), the `registry` that answers for its dependencies, an optional `insert` written before a version added to a
 # bare name, `pinned = true` where each version is the exact one installed, as in a lockfile, and `rules`: { keys }, { spec, pattern }, { record, name, version, source? }, or
-# { lines }, each with an optional `via` registry, `prefix` that names start with, and `within`
-# regex that limits a text rule to what it matches, or to its first group, or { use } for a list
+# { lines }, each with an optional `via` registry, `prefix` and `suffix` that names start and
+# end with, and `within` regex that limits a text rule to what it matches, or to its first group, or { use } for a list
 # in shared.toml.
 # Patterns may name a shared pattern as ${NAME}. A glob two rows share belongs to the earlier
 # row, and the groups load in the order of GROUPS in src/catalog.rs.
@@ -60,6 +60,8 @@ rules = [
     # go.dev/ref/mod#go-mod-file-replace
     { lines = '''=>[ \t]*["`]?(?P<name>[\w.~-]+\.[\w.~/-]+)["`]?[ \t]+["`]?(?P<version>v\d[^\s"`]*)''' },
     { lines = '''(?m)^(?:replace[ \t]+|[ \t]+)["`]?(?P<name>[\w.~-]+\.[\w.~/-]+)["`]?(?:[ \t]+["`]?v[^\s"`]*["`]?)?[ \t]*=>[ \t]*["`]?(?P<version>\.{0,2}/[^\s"`]*)''' },
+    # A go.work `use` names a module directory: go.dev/ref/mod#go-work-file-use
+    { lines = '''(?m)^(?:use[ \t]+|[ \t]+)["`]?(?P<name>(?P<version>\.{1,2}(?:/[^\s"`]*)?))["`]?[ \t]*(?://[^\n]*)?\r?$''', via = 'directory' },
     # The `go` and `toolchain` directives pin the Go release itself.
     { lines = '(?m)^(?:go[ \t]+|toolchain[ \t]+go)(?P<version>\d[\w.]*)[ \t]*\r?$', via = 'golang' },
 ]
@@ -160,6 +162,10 @@ format = 'text'
 registry = 'github'
 rules = [
     { lines = '(?m)^[ \t]*github[ \t]+"(?P<name>[\w.-]+/[\w.-]+)"[ \t]+"?(?P<version>(?:~>|>=|==)?[ \t]*v?\d[\w.-]*)' },
+    # A GitHub repository by URL, under `github` or `git`, and a quoted branch, tag, or commit,
+    # which the fork's master read too: github.com/Carthage/Carthage/blob/master/Documentation/Artifacts.md#cartfile
+    { lines = '(?m)^[ \t]*git(?:hub)?[ \t]+"(?:https?://github\.com/|git@github\.com:)(?P<name>[\w.-]+/[\w.-]+?)(?:\.git)?/?"[ \t]+"?(?P<version>(?:~>|>=|==)?[ \t]*v?\d[\w.-]*)' },
+    { lines = '(?m)^[ \t]*git(?:hub)?[ \t]+"(?:https?://github\.com/|git@github\.com:)?(?P<name>[\w.-]+/[\w.-]+?)(?:\.git)?/?"[ \t]+"(?P<version>[^"\n]+)"', via = 'source' },
 ]
 
 [[file]]
@@ -282,7 +288,9 @@ globs = ['rust-toolchain', 'rust-toolchain.toml']
 format = 'text'
 registry = 'rust'
 rules = [
-    { lines = '''(?m)^[ \t]*(?:channel[ \t]*=[ \t]*["'])?(?P<version>\d+\.\d+(?:\.\d+)?)["']?[ \t]*(?:#.*)?\r?$''' },
+    # A channel may name a host after the release, `1.75.0-x86_64-apple-darwin`:
+    # rust-lang.github.io/rustup/concepts/toolchains.html
+    { lines = '''(?m)^[ \t]*(?:channel[ \t]*=[ \t]*["'])?(?P<version>\d+\.\d+(?:\.\d+)?)(?:-[\w-]+)?["']?[ \t]*(?:#.*)?\r?$''' },
 ]
 
 [[file]]

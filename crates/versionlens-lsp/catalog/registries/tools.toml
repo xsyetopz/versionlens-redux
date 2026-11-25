@@ -194,3 +194,20 @@ osv_name = 'https://raw.githubusercontent.com/xmake-io/xmake-repo/master/package
 upstream = '"https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?["/]'
 page = 'https://xmake.io/#/package/remote_package'
 
+
+# Homebrew's JSON API: a formula's current `versions.stable` and a cask's `version`. Homebrew is a
+# rolling release, so this is the one version it installs: docs.brew.sh/Querying-Brew and
+# formulae.brew.sh/docs/api/. OSV has no Homebrew ecosystem.
+[[registry]]
+id = 'homebrew'
+url = 'https://formulae.brew.sh/api/formula/{name}.json'
+json = 'versions/stable'
+bare = 'exact'
+page = 'https://formulae.brew.sh/formula/{name}'
+
+[[registry]]
+id = 'homebrew-cask'
+url = 'https://formulae.brew.sh/api/cask/{name}.json'
+json = 'version'
+bare = 'exact'
+page = 'https://formulae.brew.sh/cask/{name}'

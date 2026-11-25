@@ -9,7 +9,8 @@ PEP508_URL = '^[ \t]*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)[ \t]*(?:\[[^\]\n]*\])?
 DOCKER ='^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$'
 IMAGE_LINE = '''(?m)^[ \t]*(?:-[ \t]*)?(?:image|container)[ \t]*:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$'''
 ACTION = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$'
-TOOL_VERSION = '\A\s*v?(?P<version>\d[\w.]*)\s*\z'
+# `#` starts a comment, which nvm skips in `.nvmrc`: github.com/nvm-sh/nvm#nvmrc
+TOOL_VERSION = '\A(?:\s*#[^\n]*\n)*\s*v?(?P<version>\d[\w.]*)[ \t]*(?:#[^\n]*)?\s*\z'
 MAVEN_SPEC = '^(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)$'
 # A tag archive's version is digits then a `.` or `-` part, so a commit archive such as
 # `archive/5d73…f8.tar.gz` is not read as one.

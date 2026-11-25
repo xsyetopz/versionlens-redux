@@ -101,3 +101,17 @@ rules = [
     { spec = 'image', pattern = '${DOCKER}' },
 ]
 
+
+# A Brewfile names formulae and casks with no version, since Homebrew installs only the current
+# one: `brew "ruby"`, `brew "postgresql@16", restart_service: true`, `cask "firefox"`
+# (docs.brew.sh/Brew-Bundle-and-Brewfile). Each lens shows that current version and offers no
+# edit. A tap-qualified name, `user/tap/formula`, is not in the core API and is left unread.
+[[file]]
+id = 'brewfile'
+globs = ['Brewfile', '.Brewfile', 'Brewfile.*']
+format = 'text'
+registry = 'homebrew'
+rules = [
+    { lines = '''(?m)^[ \t]*brew[ \t]+["'](?P<name>[\w.+@-]+)["']''' },
+    { lines = '''(?m)^[ \t]*cask[ \t]+["'](?P<name>[\w.+@-]+)["']''', via = 'homebrew-cask' },
+]

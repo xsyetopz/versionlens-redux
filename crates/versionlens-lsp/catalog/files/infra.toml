@@ -5,8 +5,12 @@ id = 'dockerfile'
 globs = ['Dockerfile', 'dockerfile', '*.Dockerfile', '*.dockerfile', 'Dockerfile.*', 'Containerfile', 'Earthfile']
 format = 'text'
 registry = 'docker'
+insert = ':'
 rules = [
-    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)' },
+    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)(?:[^\w./-]|\z)' },
+    # An untagged image means its `latest` tag, as the fork's master read it; a lens offers a tag.
+    # A name an earlier `AS` gave is a build stage, and `scratch` no image, so both stay out.
+    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)(?:[ \t]+AS[ \t]+[\w.-]+)?[ \t]*\r?$' },
 ]
 
 [[file]]
@@ -14,8 +18,14 @@ id = 'compose'
 globs = ['compose.yaml', 'compose.yml', 'compose.*.yaml', 'compose.*.yml', 'docker-compose*.yaml', 'docker-compose*.yml', '*.compose.yaml', '*.compose.yml']
 format = 'yaml'
 registry = 'docker'
+insert = ':'
 rules = [
     { spec = 'services.*.image', pattern = '${DOCKER}' },
+    # Untagged images, and a tag pinned to a digest, as the fork's master read them, and the
+    # `x-` extension blocks that services merge in: docs.docker.com/reference/compose-file/extension/
+    { spec = 'services.*.image', pattern = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)$' },
+    { spec = 'services.*.image', pattern = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)@sha256:[0-9a-f]+$' },
+    { spec = '*.image', pattern = '${DOCKER}' },
 ]
 
 [[file]]

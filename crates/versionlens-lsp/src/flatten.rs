@@ -240,7 +240,9 @@ fn yaml(text: &str, out: &mut Out) {
             let raw = scalar(&content[value_at..]);
             let depth = out.path.len();
             out.path.push(key.to_owned());
-            if raw.is_empty() {
+            // An anchor alone, `x-common: &common`, names the mapping the lines below it hold:
+            // yaml.org/spec/1.2.2/#692-node-anchors
+            if raw.is_empty() || (raw.starts_with('&') && !raw.contains([' ', '\t'])) {
                 let id = out.id();
                 stack.push(Frame {
                     indent,

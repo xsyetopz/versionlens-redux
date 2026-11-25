@@ -115,12 +115,12 @@ fn file(row: &Row) -> Result<FileType, String> {
 
 /// One rule: `keys`, `spec` with its `pattern`, `record` with its `name`, `version`, and
 /// optional `source` fields, or `lines`. A `within` regex limits it to the text that regex matches,
-/// a `via` names the registry its dependencies go to, and a `prefix` the text their names start
-/// with.
+/// a `via` names the registry its dependencies go to, and a `prefix` and `suffix` the text their
+/// names start and end with.
 fn rule(entry: &Row) -> Result<Rule, String> {
     entry.only(&[
         "keys", "spec", "pattern", "record", "name", "version", "source", "lines", "within", "via",
-        "prefix",
+        "prefix", "suffix",
     ])?;
     let rule = if let Some(path) = entry.opt("keys")? {
         Rule::Keys(path)
@@ -142,9 +142,13 @@ fn rule(entry: &Row) -> Result<Rule, String> {
         Some(block) => Rule::Within(block, Box::leak(Box::new(rule))),
         None => rule,
     };
-    let rule = match entry.opt("prefix")? {
-        Some(prefix) => Rule::Prefix(prefix, Box::leak(Box::new(rule))),
-        None => rule,
+    let rule = match (entry.opt("prefix")?, entry.opt("suffix")?) {
+        (None, None) => rule,
+        (prefix, suffix) => Rule::Affix(
+            prefix.unwrap_or_default(),
+            suffix.unwrap_or_default(),
+            Box::leak(Box::new(rule)),
+        ),
     };
     Ok(match entry.opt("via")? {
         Some(registry) => Rule::Via(registry, Box::leak(Box::new(rule))),

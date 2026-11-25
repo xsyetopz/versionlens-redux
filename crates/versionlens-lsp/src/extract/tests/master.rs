@@ -12,7 +12,7 @@ fn found(path: &str, text: &str) -> Vec<(String, String, &'static str)> {
         .collect()
 }
 
-fn expect(path: &str, text: &str, want: &[(&str, &str, &str)]) {
+pub(super) fn expect(path: &str, text: &str, want: &[(&str, &str, &str)]) {
     let want: Vec<(String, String, &str)> = want
         .iter()
         .map(|(n, r, g)| ((*n).to_owned(), (*r).to_owned(), *g))

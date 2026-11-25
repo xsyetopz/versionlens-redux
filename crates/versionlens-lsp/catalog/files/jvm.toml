@@ -50,7 +50,9 @@ globs = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle
 format = 'text'
 registry = 'maven'
 rules = [
-    { lines = '''["'](?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)["']''' },
+    # A classifier, `g:a:1.0:jdk8`, or an artifact type, `g:a:1.0@aar`, may follow the version:
+    # docs.gradle.org/current/userguide/dependency_management_terminology.html
+    { lines = '''["'](?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)(?::[\w.-]+)?(?:@\w+)?["']''' },
     # A plugins block names each plugin by id: `id 'org.example' version '1.0'` in Groovy,
     # `id("org.example") version "1.0"` in Kotlin; docs.gradle.org/current/userguide/plugins.html.
     { lines = '''(?-u:\b)id[ \t(]*["'](?P<name>[\w.-]+)["'][ \t)]*version[ \t(]*["'](?P<version>[^"'$]+)["']''', via = 'gradle-plugins' },
@@ -60,6 +62,9 @@ rules = [
     # Map notation: `implementation group: 'g', name: 'a', version: '1.0'`, or with `=` in Kotlin:
     # docs.gradle.org/current/userguide/declaring_dependencies.html
     { lines = '''group[ \t]*[:=][ \t]*["'](?P<group>[\w.-]+)["'][ \t]*,[ \t]*name[ \t]*[:=][ \t]*["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*version[ \t]*[:=][ \t]*["'](?P<version>[^"'$]+)["']''' },
+    # The fork's master read map entries in any order; `name` before `group` is the other order
+    # builds write.
+    { lines = '''name[ \t]*[:=][ \t]*["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*group[ \t]*[:=][ \t]*["'](?P<group>[\w.-]+)["'][ \t]*,[ \t]*version[ \t]*[:=][ \t]*["'](?P<version>[^"'$]+)["']''' },
 ]
 
 [[file]]
@@ -77,6 +82,10 @@ rules = [
     { lines = '''\{[^}\n]*?[{ \t,]module[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''' },
     { lines = '''\{[^}\n]*?[{ \t,]group[ \t]*=[ \t]*"(?P<group>[^"]+)"[^}\n]*?[{ \t,]name[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''' },
     { lines = '''\{[^}\n]*?[{ \t,]id[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''', via = 'gradle-plugins' },
+    # A rich version keeps it in `require`, `strictly`, or `prefer`, inline or dotted, as the
+    # fork's master read them: docs.gradle.org/current/userguide/version_catalogs.html#sec:common-changes
+    { lines = '''\{[^}\n]*?[{ \t,]module[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:[ \t]*=[ \t]*\{[ \t]*|\.)(?:require|strictly|prefer)[ \t]*=[ \t]*"(?P<version>[^"]+)"''' },
+    { lines = '''\{[^}\n]*?[{ \t,]group[ \t]*=[ \t]*"(?P<group>[^"]+)"[^}\n]*?[{ \t,]name[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:[ \t]*=[ \t]*\{[ \t]*|\.)(?:require|strictly|prefer)[ \t]*=[ \t]*"(?P<version>[^"]+)"''' },
     { record = 'plugins.*', name = 'id', version = 'version', via = 'gradle-plugins' },
     { spec = 'plugins.*', pattern = '^(?P<name>[\w.-]+):(?P<version>[^:]+)$', via = 'gradle-plugins' },
 ]
@@ -88,6 +97,15 @@ format = 'text'
 registry = 'maven'
 rules = [
     { lines = '"(?P<group>[\w.-]+)"[ \t]*%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"' },
+    # `%%` appends the Scala binary version to the artifact, `cats-core_2.13`, which the build's
+    # `scalaVersion` gives: www.scala-sbt.org/1.x/docs/Library-Dependencies.html. A build that names
+    # no literal version stays unread, as Maven Central has no artifact without the suffix. `%%%`
+    # adds the Scala.js or Native platform, which plugins elsewhere choose, so it stays unread.
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.10\.[^"]*".*\z', suffix = '_2.10' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.11\.[^"]*".*\z', suffix = '_2.11' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.12\.[^"]*".*\z', suffix = '_2.12' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.13\.[^"]*".*\z', suffix = '_2.13' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"3\.[^"]*".*\z', suffix = '_3' },
 ]
 
 # Mill writes a Java dependency `mvn"org:name:version"`, `ivy"…"` before Mill 1.0, with
@@ -108,7 +126,12 @@ globs = ['deps.edn']
 format = 'text'
 registry = 'clojars'
 rules = [
-    { lines = '(?P<name>[\w.-]+/[\w.-]+)\s+\{\s*:mvn/version\s+"(?P<version>[^"]+)"' },
+    # Any key may come first in a coordinate map, a name may leave out its group, and `$` adds a
+    # classifier; `:local/root` names a directory and `:git/tag` or `:git/sha` a git revision:
+    # clojure.org/reference/deps_edn#deps_coords
+    { lines = '(?P<name>[\w.-]+(?:/[\w.-]+)?)(?:\$[\w.-]+)?\s+\{[^{}]*?:mvn/version\s+"(?P<version>[^"]+)"' },
+    { lines = '(?P<name>[\w.-]+(?:/[\w.-]+)?)\s+\{[^{}]*?:local/root\s+"(?P<version>[^"]+)"', via = 'directory' },
+    { lines = '(?P<name>[\w.-]+(?:/[\w.-]+)?)\s+\{[^{}]*?:git/(?:tag|sha)\s+"(?P<version>[^"]+)"', via = 'source' },
 ]
 
 [[file]]
@@ -164,7 +187,10 @@ globs = ['project.clj']
 format = 'text'
 registry = 'clojars'
 rules = [
-    { lines = '\[(?P<name>[\w.-]+(?:/[\w.-]+)?)\s+"(?P<version>[^"]+)"' },
+    # A name may be quoted, and `defproject` gives the project's own version:
+    # codeberg.org/leiningen/leiningen/src/branch/main/sample.project.clj
+    { lines = '\["?(?P<name>[\w.-]+(?:/[\w.-]+)?)"?\s+"(?P<version>[^"]+)"' },
+    { lines = '\(defproject\s+[\w.-]+(?:/[\w.-]+)?\s+"(?P<version>v?\d[\w.+-]*)"', via = 'project' },
 ]
 
 [[file]]

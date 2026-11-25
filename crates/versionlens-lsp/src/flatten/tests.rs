@@ -49,6 +49,15 @@ fn reads_yaml_maps_lists_and_quotes() {
 }
 
 #[test]
+fn reads_yaml_mappings_behind_an_anchor() {
+    let text =
+        "x-common: &common\n  image: redis:7.2\nservices:\n  a:\n    <<: *common\n    tag: &t v1\n";
+    check(Format::Yaml, text, "x-common.image", "redis:7.2");
+    let leaves = flatten(Format::Yaml, text);
+    assert!(leaves.iter().all(|l| l.path.join(".") != "services.a.tag"));
+}
+
+#[test]
 fn reads_xml_elements_and_attributes() {
     let text = "<?xml version=\"1.0\"?>\n<Project><!-- <x/> --><ItemGroup><PackageReference Include=\"A\" Version=\"1.0\" />\n<PackageReference Include=\"B\"><Version> 2.0 </Version></PackageReference></ItemGroup></Project>";
     let leaves = flatten(Format::Xml, text);

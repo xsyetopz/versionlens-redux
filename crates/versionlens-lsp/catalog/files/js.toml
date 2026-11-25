@@ -86,6 +86,23 @@ rules = [
     { keys = 'development.dependencies' },
 ]
 
+# rescript.json, and bsconfig.json before it, list ReScript packages by name; npm installs them
+# from package.json, and the compiler finds them in node_modules. `bs-dependencies` and
+# `bs-dev-dependencies` are the deprecated spellings:
+# rescript-lang.org/docs/manual/build-configuration. Each lens shows the npm latest and offers no
+# edit, as the version belongs to package.json.
+[[file]]
+id = 'rescript'
+globs = ['rescript.json', 'bsconfig.json']
+format = 'json'
+registry = 'npm'
+rules = [
+    { spec = 'dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'dev-dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'bs-dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'bs-dev-dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+]
+
 # PEAR 2.0 package.xml: `package` dependencies come from the PEAR channel and `extension` ones
 # from PECL, each with a `min` or `recommended` version:
 # pear.php.net/manual/en/guide.developers.package2.dependencies.php, and the package.xml of

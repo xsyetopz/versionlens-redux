@@ -276,3 +276,18 @@ fn reads_circleci_docker_images() {
         ],
     );
 }
+
+#[test]
+fn reads_brewfile_formulae_and_casks_by_name() {
+    // docs.brew.sh/Brew-Bundle-and-Brewfile; taps and tap-qualified names are not in the core API.
+    let text = "tap \"apple/apple\"\nbrew \"ruby\"\nbrew \"postgresql@16\", restart_service: true\nbrew \"user/tap/tool\"\ncask \"firefox\"\nmas \"Refined GitHub\", id: 1519867270\nvscode \"editorconfig.editorconfig\"\n";
+    expect(
+        "Brewfile",
+        text,
+        &[
+            ("ruby", "", "homebrew"),
+            ("postgresql@16", "", "homebrew"),
+            ("firefox", "", "homebrew-cask"),
+        ],
+    );
+}

@@ -31,12 +31,13 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Registry | OSV advisories | Files |
 | --- | --- | --- |
 | crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables), `Cargo.lock` |
-| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `.bun-version`, `npm:` entries of `.prototools`, and the resolved versions in `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` |
+| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `rescript.json` and `bsconfig.json` (names only; the version lives in `package.json`), `.bun-version`, `npm:` entries of `.prototools`, and the resolved versions in `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` |
 | Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions`, `mise.toml`, and `.prototools`, `node-version` of `actions/setup-node` |
 | JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc`, and the published package's own `name` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json`, `composer.lock` |
 | PEAR and PECL channels | | `package.xml`, `package2.xml` (PEAR 2.0 `package` and `extension` dependencies) |
+| Homebrew formulae and casks | | `Brewfile`, `.Brewfile`, `Brewfile.*` `brew` and `cask` entries (names only; Homebrew pins no versions, so each lens shows the current stable release) |
 | Hunter | | `hunter_config(name VERSION v)` in `*.cmake` |
 | PlatformIO Registry | GIT (libraries, by their repository) | `platformio.ini` `platform`, `platform_packages`, and `lib_deps` |
 | ESP Component Registry | | `idf_component.yml` (`namespace/name`, `espressif` by default) |
@@ -102,7 +103,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 
 The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for Helm or Conan, so Helm chart versions report the CVEs that Artifact Hub's Trivy scans find in the images they deploy, and Conan versions report the GitLab Advisory Database entries whose range holds them. Registries outside OSV that name a package's GitHub repository have it looked up, and OSV's GIT ecosystem is asked about that repository at the version; a package that names no GitHub repository gets no check. Docker Hub and OCI images are asked about by the application they package in OSV's Bitnami ecosystem, so an image from any other publisher gets no check. Unity packages name only Unity's own git host, so they get no vulnerability check. Set `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` to the user agent and `cf_clearance` cookie of a browser that passed the npmjs.com challenge, and the live check sends them to npmjs.com. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
 
-Three manifests stay unread because no version comparison has data to work with. A `Brewfile` pins no versions (Homebrew's Brew-Bundle-and-Brewfile.md), and formulae.brew.sh answers one stable version per formula, with no Homebrew ecosystem in OSV. Racket's `info.rkt` names packages whose pkgs.racket-lang.org record keys `versions` by Racket release, so it carries no package release history. `rescript.json` lists its `dependencies` as bare names that ReScript finds in `node_modules` (its build-schema.json), and the `package.json` beside it holds their versions.
+Racket's `info.rkt` stays unread because no version comparison has data to work with: its pkgs.racket-lang.org record keys `versions` by Racket release, so it carries no package release history. A bare name, as in a `Brewfile`, `rescript.json`, or npm `bundleDependencies`, shows its latest version and offers no edit, as the file has no place for one.
 
 ## Settings
 

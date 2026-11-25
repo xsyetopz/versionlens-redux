@@ -6,13 +6,29 @@ fn v(text: &str) -> Version {
 
 #[test]
 fn replaces_in_the_users_style() {
-    assert_eq!(replacement("^1.2.3", &v("1.4.0"), ""), "^1.4.0");
-    assert_eq!(replacement("~> 1.2", &v("2.1.0"), ""), "~> 2.1");
-    assert_eq!(replacement(">=4.2, <5", &v("5.1"), ""), ">=5.1");
-    assert_eq!(replacement("v4", &v("v5.0.0"), ""), "v5");
-    assert_eq!(replacement("", &v("2.0"), "=="), "==2.0");
-    assert_eq!(replacement("[1.0,2.0)", &v("3.0"), ""), "[3.0]");
-    assert_eq!(replacement("20-alpine", &v("22.1-alpine"), ""), "22-alpine");
+    assert_eq!(
+        replacement("^1.2.3", &v("1.4.0"), "").as_deref(),
+        Some("^1.4.0")
+    );
+    assert_eq!(
+        replacement("~> 1.2", &v("2.1.0"), "").as_deref(),
+        Some("~> 2.1")
+    );
+    assert_eq!(
+        replacement(">=4.2, <5", &v("5.1"), "").as_deref(),
+        Some(">=5.1")
+    );
+    assert_eq!(replacement("v4", &v("v5.0.0"), "").as_deref(), Some("v5"));
+    assert_eq!(replacement("", &v("2.0"), "==").as_deref(), Some("==2.0"));
+    assert_eq!(replacement("", &v("2.0"), ""), None);
+    assert_eq!(
+        replacement("[1.0,2.0)", &v("3.0"), "").as_deref(),
+        Some("[3.0]")
+    );
+    assert_eq!(
+        replacement("20-alpine", &v("22.1-alpine"), "").as_deref(),
+        Some("22-alpine")
+    );
 }
 
 #[test]
@@ -267,4 +283,20 @@ fn project_versions_offer_their_next_releases_and_are_not_counted() {
     assert!(hints(&views, &glyphs).is_empty());
     let uri: Uri = "file:///p/package.json".parse().unwrap();
     assert!(stats(&uri, &views, "", &glyphs).is_none());
+}
+
+#[test]
+fn offers_no_update_where_a_bare_name_has_no_place_for_a_version() {
+    let (mut dep, plan) = planned("", &["1.0.0", "2.0.0"]);
+    dep.span = 0..0;
+    let view = view(
+        &dep,
+        State::Planned {
+            plan: Box::new(plan),
+            current: None,
+        },
+    );
+    assert_eq!(picks(&view, "").len(), 0);
+    assert_eq!(updates(std::slice::from_ref(&view), "", "latest").len(), 0);
+    assert_eq!(picks(&view, "==")[0].1, "==2.0.0");
 }

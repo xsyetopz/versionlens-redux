@@ -1,7 +1,7 @@
 use regex_automata::meta::Regex;
 
 use super::*;
-use crate::extract::Rule::{Lines, Prefix, Spec, Via, Within};
+use crate::extract::Rule::{Affix, Lines, Spec, Via, Within};
 use crate::extract::{DIRECTORY, PROJECT, SOURCE, extract};
 use crate::registry;
 
@@ -36,7 +36,7 @@ fn every_row_names_a_known_registry_and_valid_regexes() {
                 );
                 rule = inner;
             }
-            if let Prefix(_, inner) = rule {
+            if let Affix(_, _, inner) = rule {
                 rule = inner;
             }
             if let Within(block, inner) = rule {

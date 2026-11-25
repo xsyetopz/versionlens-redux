@@ -137,6 +137,8 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("dotnet-sdk", "dotnet", None, Some("8.0.100")),
     ("temurin", "java", None, Some("17")),
     ("galaxy-role", "geerlingguy.java", None, Some("1.9.6")),
+    ("homebrew", "postgresql@16", None, None),
+    ("homebrew-cask", "firefox", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a

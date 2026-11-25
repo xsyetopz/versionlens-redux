@@ -251,3 +251,18 @@ fn reads_pixi_dependency_tables() {
         ],
     );
 }
+
+#[test]
+fn reads_rescript_package_names() {
+    // rescript-lang.org/docs/manual/build-configuration: the versions live in package.json.
+    let text = r#"{"name":"app","sources":{"dir":"src"},"dependencies":["@rescript/react"],"dev-dependencies":["rescript-vitest"],"bs-dependencies":["@glennsl/rescript-json-combinators"]}"#;
+    expect(
+        "rescript.json",
+        text,
+        &[
+            ("@rescript/react", "", "npm"),
+            ("rescript-vitest", "", "npm"),
+            ("@glennsl/rescript-json-combinators", "", "npm"),
+        ],
+    );
+}

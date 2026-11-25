@@ -7,6 +7,14 @@ format = 'text'
 registry = 'rubygems'
 rules = [
     { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+    # The forms the fork's master read beside a version (bundler.io/guides/gemfile.html): a bare
+    # gem, with only `require`, `group`, or `platforms` options, takes any version; `path` names
+    # a directory, `git` a repository, and `github` a repository whose `tag` GitHub answers.
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'](?P<name>[^"']+)["'][^\n#]*?[ \t,](?:path:|:path[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'directory' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'](?P<name>[^"']+)["'][^\n#]*?[ \t,](?:git:|:git[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][^\n#]*?[ \t,](?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n#]*?[ \t,](?:tag:|:tag[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'github' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][^\n#]*?[ \t,](?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n#]*?[ \t,](?:branch:|:branch[ \t]*=>|ref:|:ref[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'source' },
 ]
 
 # Each section's `specs:` lists a resolved gem at four spaces, `name (1.0.0)` or with a platform,
