@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::Duration;
 
 use reqwest::{Client, RequestBuilder, Response, StatusCode, Url, header};
 use tokio::sync::Semaphore;
@@ -103,16 +104,12 @@ impl Http {
         let _permit = self.permits.acquire().await.map_err(|e| e.to_string())?;
         let work = async {
             let retry = request.try_clone().filter(|_| anonymous);
-            let mut response = request.send().await.map_err(|e| chain(&e))?;
+            let mut response = paced(request).await?;
             if response.status() == StatusCode::UNAUTHORIZED
                 && let Some(retry) = retry
                 && let Some(token) = self.anonymous_token(&response).await
             {
-                response = retry
-                    .bearer_auth(token)
-                    .send()
-                    .await
-                    .map_err(|e| chain(&e))?;
+                response = paced(retry.bearer_auth(token)).await?;
             }
             let status = response.status();
             if !status.is_success() {
@@ -137,7 +134,38 @@ impl Http {
             )),
         }
     }
+}
 
+/// Sends `request`, and again after each 429 whose `Retry-After` asks for at most five seconds,
+/// up to three times. A 429 without `Retry-After` waits one second: ECR Public serves anonymous
+/// clients one request a second, so the later pages of a tag list arrive throttled. A longer wait,
+/// or an HTTP-date, is reported as the 429 instead, since a lens should not hang on it.
+async fn paced(mut request: RequestBuilder) -> Result<Response, String> {
+    let mut tries = 0;
+    loop {
+        let again = request.try_clone();
+        let response = request.send().await.map_err(|e| chain(&e))?;
+        let wait = (response.status() == StatusCode::TOO_MANY_REQUESTS && tries < 3)
+            .then(|| retry_after(&response))
+            .flatten();
+        let (Some(wait), Some(again)) = (wait, again) else {
+            return Ok(response);
+        };
+        tries += 1;
+        tokio::time::sleep(wait).await;
+        request = again;
+    }
+}
+
+fn retry_after(response: &Response) -> Option<Duration> {
+    let seconds = match response.headers().get(header::RETRY_AFTER) {
+        None => 1,
+        Some(value) => value.to_str().ok()?.trim().parse().ok()?,
+    };
+    (seconds <= 5).then(|| Duration::from_secs(seconds))
+}
+
+impl Http {
     async fn anonymous_token(&self, response: &Response) -> Option<String> {
         let challenge = response
             .headers()
