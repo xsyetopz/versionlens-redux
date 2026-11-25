@@ -416,3 +416,55 @@ url = 'https://pecl.php.net/rest/r/{lower}/allreleases.xml'
 regex = '<v>([^<]+)</v>'
 bare = 'min'
 page = 'https://pecl.php.net/package/{name}'
+
+# Hunter keeps each package's versions as `hunter_add_version(... VERSION "1.72.0-p0" ...)` in
+# cmake/projects/<name>/hunter.cmake of github.com/cpp-pm/hunter.
+[[registry]]
+id = 'hunter'
+url = 'https://raw.githubusercontent.com/cpp-pm/hunter/master/cmake/projects/{name}/hunter.cmake'
+regex = 'VERSION\s+"([^"]+)"'
+bare = 'exact'
+page = 'https://hunter.readthedocs.io/en/latest/packages/pkg/{name}.html'
+
+# The PlatformIO Registry answers /v3/packages/<owner>/<type>/<name>, as platformio-core's
+# registry client (platformio/registry/client.py) asks it; a library names its repository.
+[[registry]]
+id = 'platformio'
+url = 'https://api.registry.platformio.org/v3/packages/{group}/library/{artifact}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://api.registry.platformio.org/v3/packages/{group}/library/{artifact}'
+upstream = '"repository_url":\s*"${GITHUB_URL}'
+page = 'https://registry.platformio.org/libraries/{group}/{artifact}'
+
+[[registry]]
+id = 'platformio-platform'
+url = 'https://api.registry.platformio.org/v3/packages/platformio/platform/{name}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+page = 'https://registry.platformio.org/platforms/platformio/{name}'
+
+[[registry]]
+id = 'platformio-tool'
+url = 'https://api.registry.platformio.org/v3/packages/{group}/tool/{artifact}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+page = 'https://registry.platformio.org/tools/{group}/{artifact}'
+
+# The ESP Component Registry lists a component's versions, `~1` marking a rebuilt release, and
+# dates the ones it yanked: components.espressif.com/api/components/espressif/led_strip.
+[[registry]]
+id = 'esp'
+url = 'https://components.espressif.com/api/components/{group}/{artifact}'
+json = 'versions'
+field = 'version'
+yanked = 'yanked_at'
+bare = 'exact'
+page = 'https://components.espressif.com/components/{group}/{artifact}'

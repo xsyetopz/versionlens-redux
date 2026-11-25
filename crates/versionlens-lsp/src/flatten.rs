@@ -293,10 +293,11 @@ fn scalar(raw: &str) -> &str {
 }
 
 /// `key = value` lines under `[section]` headers, as `Config::MVP` reads them for the
-/// `dist.ini` of `Dist::Zilla`: a header's ` / ` separates the plugin from its name, so `[Prereqs / TestRequires]`
-/// becomes the path `Prereqs.TestRequires`, and `;` starts a comment at a line's start or after a
-/// space: <https://metacpan.org/pod/Config::MVP::Reader::INI>. A line rule cannot tell which
-/// section a line sits in, as the regex crate has no lookbehind and its matches do not overlap.
+/// `dist.ini` of `Dist::Zilla`: a header's ` / ` separates the plugin from its name, so
+/// `[Prereqs / TestRequires]` becomes the path `Prereqs.TestRequires`, and `;` starts a comment
+/// at a line's start or after a space: <https://metacpan.org/pod/Config::MVP::Reader::INI>. A line
+/// rule cannot tell which section a line sits in, as the regex crate has no lookbehind and its
+/// matches do not overlap.
 fn ini(text: &str, out: &mut Out) {
     let mut section = 0;
     let mut offset = 0;

@@ -168,14 +168,62 @@ rules = [
     { lines = '\.package\(\s*(?:name:\s*"[^"]*"\s*,\s*)?path:\s*"(?P<name>(?P<version>[^"]+))"', via = 'directory' },
 ]
 
+# CPM.cmake and FetchContent. CPM's shorthand is `gh:owner/repo#tag` or `gh:owner/repo@version`,
+# with an optional commit before the version (`#commit@version`); its named form gives
+# `GITHUB_REPOSITORY` or `GIT_REPOSITORY` and `GIT_TAG` or `VERSION`, whose tag defaults to
+# `v(VERSION)`, in any order within one call; and a `URL` may name a GitHub archive or release:
+# github.com/cpm-cmake/CPM.cmake (README.md), as TheLartians/ModernCppStarter writes `GIT_TAG`
+# before `GITHUB_REPOSITORY`. FetchContent_Declare takes the same `GIT_REPOSITORY`, `GIT_TAG`,
+# and `URL`: cmake.org/cmake/help/latest/module/FetchContent.html. A gap stops at the call's `)`.
 [[file]]
 id = 'cmake'
 globs = ['CMakeLists.txt', '*.cmake']
 format = 'text'
 registry = 'github'
 rules = [
-    { lines = 'gh:(?P<name>[\w.-]+/[\w.-]+)#(?P<version>v?\d[\w.-]*)' },
-    { lines = 'GIT_REPOSITORY\s+https://github\.com/(?P<name>[\w.-]+/[\w-]+)(?:\.git)?\s+GIT_TAG\s+(?P<version>v?\d[\w.-]*)' },
+    { lines = '''gh:(?P<name>[\w.-]+/[\w.-]+?)#(?P<version>v?\d[\w.-]*)["\s)]''' },
+    { lines = 'gh:(?P<name>[\w.-]+/[\w.-]+?)(?:#[^"@\s)]*)?@(?P<version>v?\d[\w.-]*)' },
+    { lines = 'GITHUB_REPOSITORY\s+"?(?P<name>[\w.-]+/[\w.-]+?)"?(?:\s[^)]*?)?\s(?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)' },
+    { lines = '[\s(](?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)"?\s[^)]*?GITHUB_REPOSITORY\s+"?(?P<name>[\w.-]+/[\w.-]+?)"?\s' },
+    { lines = 'GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?(?:\s[^)]*?)?\s(?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)' },
+    { lines = '[\s(](?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)"?\s[^)]*?GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?\s' },
+    { lines = '${GITHUB_ARCHIVE}' },
+    { lines = '${GITHUB_RELEASE}' },
+    # Hunter pins a package in cmake/Hunter/config.cmake with `hunter_config(name VERSION v)`:
+    # hunter.readthedocs.io/en/latest/reference/user-modules/hunter_config.html
+    { lines = 'hunter_config\(\s*(?P<name>[A-Za-z][\w.-]*)\s(?:[^)]*?\s)?VERSION\s+"?(?P<version>\d[\w.-]*)', via = 'hunter' },
+]
+
+# PlatformIO names a platform `platformio/name@spec` or `name @ spec`, and `lib_deps` lists one
+# library a line as `owner/name @ spec`, where a bare version is exact and `^`, `~`, and
+# comparisons follow semver: docs.platformio.org (projectconf/sections/env/options/platform/
+# platform.rst, library/lib_deps.rst). `platform_packages` lists tools the same way, so tools,
+# whose names start `toolchain-`, `framework-`, or `tool-`, are read first: the earlier rule keeps
+# a span two rules match. Owner-less library names and comma-separated lists are not read.
+[[file]]
+id = 'platformio'
+globs = ['platformio.ini']
+format = 'text'
+registry = 'platformio'
+rules = [
+    { lines = '(?m)^[ \t]*platform[ \t]*=[ \t]*(?:platformio/)?(?P<name>[\w-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)', via = 'platformio-platform' },
+    { lines = '(?m)^[ \t]*(?:platform_packages[ \t]*=[ \t]*)?(?P<name>[\w.-]+/(?:toolchain|framework|tool)-[\w.+-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)', via = 'platformio-tool' },
+    { lines = '(?m)^[ \t]*(?:lib_deps[ \t]*=[ \t]*)?(?P<name>[\w.-]+/[\w.+-]+(?:[ \t]+[\w.+-]+)*?)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)' },
+]
+
+# ESP-IDF components list registry dependencies as `namespace/name: spec` or with a `version`
+# key; a name without a namespace is in `espressif`, and `idf` pins ESP-IDF itself:
+# docs.espressif.com/projects/idf-component-manager (reference/manifest_file.rst). Each name is
+# read under `espressif/` first and as written second; a span both reads keep belongs to the
+# first, and a name with two namespaces is no package.
+[[file]]
+id = 'idf-component'
+globs = ['idf_component.yml']
+format = 'yaml'
+registry = 'esp'
+rules = [
+    { keys = 'dependencies', prefix = 'espressif/' },
+    { keys = 'dependencies' },
 ]
 
 [[file]]

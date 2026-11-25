@@ -90,6 +90,18 @@ rules = [
     { lines = '"(?P<group>[\w.-]+)"[ \t]*%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"' },
 ]
 
+# Mill writes a Java dependency `mvn"org:name:version"`, `ivy"…"` before Mill 1.0, with
+# `;attribute=value` after it; a Scala one's `::` appends the Scala version to the artifact, which
+# the build alone gives, so it is not read: mill-build.org (fundamentals/library-deps.adoc).
+[[file]]
+id = 'mill'
+globs = ['*.mill', 'build.sc']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '(?:mvn|ivy)"(?P<group>[\w.-]+):(?P<name>[\w.-]+):(?P<version>\d[^";]*)[";]' },
+]
+
 [[file]]
 id = 'deps-edn'
 globs = ['deps.edn']

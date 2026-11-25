@@ -180,7 +180,11 @@ fn is_package(name: &str, registry: &str) -> bool {
             | ("julia", "julia")
             | ("cran", "R")
             | ("luarocks", "lua")
+            | ("esp", "idf")
     ) || name.contains('$')
+        // An ESP component is `namespace/name`; idf_component.yml's row reads each name once as
+        // written and once under the default `espressif/`, and this keeps the one that fits.
+        || (registry == "esp" && name.matches('/').count() > 1)
         // A Perl module never starts with `-`; dist.ini's `-phase` and `-relationship` configure
         // the Prereqs plugin itself.
         || (registry == "cpan" && name.starts_with('-'))
@@ -228,8 +232,12 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                     rules: std::slice::from_ref(rule),
                     ..*file
                 };
+                // A prefix completes a registry's package name; a local or git package keeps
+                // the name the manifest gives it.
                 deps.extend(extract(&inner, text).into_iter().map(|mut dep| {
-                    dep.name.insert_str(0, prefix);
+                    if ![DIRECTORY, SOURCE].contains(&dep.registry) {
+                        dep.name.insert_str(0, prefix);
+                    }
                     dep
                 }));
             }

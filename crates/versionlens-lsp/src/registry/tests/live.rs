@@ -107,6 +107,12 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("spack", "zlib", None, None),
     ("pear", "Console_Table", None, None),
     ("pecl", "igbinary", None, None),
+    ("hunter", "Boost", None, None),
+    ("platformio", "bblanchon/ArduinoJson", None, None),
+    ("platformio", "knolleary/PubSubClient", None, Some("2.6")),
+    ("platformio-platform", "espressif32", None, None),
+    ("platformio-tool", "platformio/toolchain-xtensa", None, None),
+    ("esp", "espressif/led_strip", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
