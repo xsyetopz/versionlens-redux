@@ -19,7 +19,7 @@ fn matches_trailing_segments_case_insensitively() {
 }
 
 #[test]
-fn every_row_names_a_known_registry_and_valid_regexes() {
+fn every_row_names_known_registry_and_valid_regexes() {
     for file in FILE_TYPES.iter() {
         assert!(
             registry::get(file.registry).is_some(),
@@ -235,7 +235,7 @@ const PRIOR_UNREAD: &[&str] = &[
 ];
 
 #[test]
-fn reads_every_file_upstream_and_master_read_with_the_same_row() {
+fn reads_every_file_upstream_and_master_read_with_same_row() {
     let wrong: Vec<String> = PRIOR_FILES
         .iter()
         .filter_map(|(path, want)| {

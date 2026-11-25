@@ -12,7 +12,7 @@ fn sorted(path: &str, text: &str, commas: bool) -> String {
 }
 
 #[test]
-fn sorts_json_entries_and_keeps_the_last_entry_without_a_comma() {
+fn sorts_json_entries_and_keeps_last_entry_without_comma() {
     let text = "{\n  \"dependencies\": {\n    \"zod\": \"^3.0.0\",\n    \"Axios\": \"^1.0.0\",\n    \"lodash\": \"^4.0.0\"\n  }\n}\n";
     let want = "{\n  \"dependencies\": {\n    \"Axios\": \"^1.0.0\",\n    \"lodash\": \"^4.0.0\",\n    \"zod\": \"^3.0.0\"\n  }\n}\n";
     assert_eq!(sorted("package.json", text, true), want);

@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use super::workspace::file_uri;
 use super::{Doc, Server, key, param};
 use crate::extract::{DIRECTORY, Dep, PROJECT, SOURCE, local_path};
+use crate::git_ref::{self, GIT_REF};
 use crate::registry;
 use crate::render::{self, Lines, State, View};
 use crate::version::{Req, Version, increments, plan};
@@ -53,6 +54,10 @@ impl Server {
             Some(Err(error)) => return State::Failed(error.clone()),
             Some(Ok(found)) => found,
         };
+        if dep.registry == GIT_REF {
+            return git_ref::resolve(&dep.req, &found.refs)
+                .map_or_else(State::Failed, State::Commit);
+        }
         let Some(req) = registry::get(dep.registry).and_then(|r| Req::parse(&dep.req, dep.bare(r)))
         else {
             return State::Unreadable;

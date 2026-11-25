@@ -245,6 +245,7 @@ fn reads_setup_action_runtime_versions() {
             ("java", "21", "temurin"),
             ("actions/setup-dotnet", "v4", "github"),
             ("dotnet", "8.0.404", "dotnet-sdk"),
+            ("github.com/dtolnay/rust-toolchain", "master", "git-ref"),
             ("rust", "1.83.0", "rust"),
         ],
     );
@@ -309,19 +310,45 @@ fn reads_brewfile_formulae_and_casks_by_name() {
 }
 
 #[test]
-fn reads_gitlab_components_and_included_project_tags() {
-    // docs.gitlab.com/ci/components/ "Use a component" and docs.gitlab.com/ci/yaml/
-    // `include:project`: a tag or a partial version is read, a branch, a SHA, and `~latest` not.
+fn reads_gitlab_components_and_included_project_refs() {
+    // docs.gitlab.com/ci/components/ "Component versions" and docs.gitlab.com/ci/yaml/
+    // `include:project`: a tag or a partial version is a version, a branch or a SHA a git ref,
+    // and `~latest` stays out. A component on `$CI_SERVER_FQDN`, and every included project, as
+    // those are on the pipeline's own instance, keeps the variable, which `project::extract`
+    // fills in.
     let text = "include:\n  - component: $CI_SERVER_FQDN/my-org/security-components/secret-detection@1.0.0\n  - component: gitlab.com/components/opentofu/full-pipeline@2\n  - component: gitlab.example.com:8443/platform/ci/deploy@1.4\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@~latest\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@e3262fdd0914fa823210cdb79a8c421e2cef79d8\n  - project: 'my-group/my-project'\n    ref: refs/tags/v1.0.0\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/my-subgroup/my-project-2'\n    file:\n      - '/templates/.builds.yml'\n    ref: 2.3.1\n  - project: 'my-group/my-project'\n    ref: main\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/other'\n    ref: 787123b47f14b552955ca2786bc9542ae66fee5b\nimage: node:20.11\n";
     expect(
         ".gitlab-ci.yml",
         text,
         &[
-            ("my-org/security-components", "1.0.0", "gitlab"),
+            (
+                "$CI_SERVER_FQDN/my-org/security-components",
+                "1.0.0",
+                "gitlab-host",
+            ),
             ("gitlab.com/components/opentofu", "2", "gitlab-host"),
             ("gitlab.example.com:8443/platform/ci", "1.4", "gitlab-host"),
-            ("my-group/my-project", "v1.0.0", "gitlab"),
-            ("my-group/my-subgroup/my-project-2", "2.3.1", "gitlab"),
+            (
+                "$CI_SERVER_FQDN/my-org/ruby",
+                "e3262fdd0914fa823210cdb79a8c421e2cef79d8",
+                "git-ref",
+            ),
+            (
+                "$CI_SERVER_FQDN/my-group/my-project",
+                "v1.0.0",
+                "gitlab-host",
+            ),
+            (
+                "$CI_SERVER_FQDN/my-group/my-subgroup/my-project-2",
+                "2.3.1",
+                "gitlab-host",
+            ),
+            ("$CI_SERVER_FQDN/my-group/my-project", "main", "git-ref"),
+            (
+                "$CI_SERVER_FQDN/my-group/other",
+                "787123b47f14b552955ca2786bc9542ae66fee5b",
+                "git-ref",
+            ),
             ("node", "20.11", "docker"),
         ],
     );
@@ -417,6 +444,61 @@ fn reads_buildkite_plugins() {
                 "github",
             ),
             ("golang", "1.22", "docker"),
+        ],
+    );
+}
+
+#[test]
+fn reads_branch_and_commit_refs_in_ci_files() {
+    // A branch or a full SHA in place of a tag, in GitHub Actions
+    // (docs.github.com/en/actions/reference/security/secure-use), Forgejo Actions, and Buildkite
+    // (buildkite/docs, pages/pipelines/integrations/plugins/using.md); `v4` stays a version, and a
+    // SHA starting with a digit is not taken for one.
+    let sha = "8ade135a41bc03ea155e62e844d188df1ea18608";
+    let workflow = format!(
+        "jobs:\n  build:\n    steps:\n      - uses: actions/checkout@{sha}\n      - uses: dtolnay/rust-toolchain@stable\n      - uses: actions/setup-node@v4\n  call:\n    uses: org/repo/.github/workflows/ci.yml@main\n"
+    );
+    expect(
+        ".github/workflows/ci.yml",
+        &workflow,
+        &[
+            ("github.com/actions/checkout", sha, "git-ref"),
+            ("github.com/dtolnay/rust-toolchain", "stable", "git-ref"),
+            ("actions/setup-node", "v4", "github"),
+            ("github.com/org/repo", "main", "git-ref"),
+        ],
+    );
+    let forgejo = format!(
+        "jobs:\n  test:\n    steps:\n      - uses: actions/checkout@main\n      - uses: https://code.forgejo.org/actions/setup-go@{sha}\n      - uses: actions/cache@v4\n"
+    );
+    expect(
+        ".forgejo/workflows/test.yml",
+        &forgejo,
+        &[
+            ("data.forgejo.org/actions/checkout", "main", "git-ref"),
+            ("code.forgejo.org/actions/setup-go", sha, "git-ref"),
+            ("data.forgejo.org/actions/cache", "v4", "forgejo"),
+        ],
+    );
+    let pipeline = format!(
+        "steps:\n  - plugins:\n      - docker-compose#master:\n          run: app\n      - my-org/linter#{sha}: ~\n      - https://gitlab.com/my-org/my-plugin.git#main: ~\n      - shellcheck#v1.4.0: ~\n"
+    );
+    expect(
+        ".buildkite/pipeline.yml",
+        &pipeline,
+        &[
+            (
+                "github.com/buildkite-plugins/docker-compose-buildkite-plugin",
+                "master",
+                "git-ref",
+            ),
+            ("github.com/my-org/linter-buildkite-plugin", sha, "git-ref"),
+            ("gitlab.com/my-org/my-plugin", "main", "git-ref"),
+            (
+                "buildkite-plugins/shellcheck-buildkite-plugin",
+                "v1.4.0",
+                "github",
+            ),
         ],
     );
 }

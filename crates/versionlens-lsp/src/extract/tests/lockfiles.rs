@@ -154,7 +154,7 @@ fn reads_gemfile_lock_specs() {
 }
 
 #[test]
-fn locked_versions_resolve_to_themselves_not_a_registry_range() {
+fn locked_versions_resolve_to_themselves_not_registry_range() {
     let text = "[[package]]\nname = \"time\"\nversion = \"0.3.0\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\n";
     let file = file_type("Cargo.lock").expect("Cargo.lock is recognised");
     let manifest = file_type("Cargo.toml").expect("Cargo.toml is recognised");

@@ -9,7 +9,7 @@ use crate::http::Http;
 use crate::registry::upstream_of;
 
 /// Each query as OSV can answer it: an upstream query renamed to its repository's URL, or `None`
-/// where the registry names no GitHub repository for the package.
+/// where the registry names no repository for the package.
 pub(crate) async fn resolve(http: &Http, queries: &[Query]) -> Result<Vec<Option<Query>>, String> {
     let mut tasks = JoinSet::new();
     for (index, query) in queries.iter().enumerate() {
@@ -49,9 +49,15 @@ async fn repository(http: &Http, query: Query) -> Result<Option<Query>, String> 
     )
 }
 
-/// The URL of the GitHub repository the pattern finds in a registry document about `package`.
+/// The URL of the repository the pattern finds in a registry document about `package`: on the
+/// host it captures, or on GitHub.
 pub(super) fn found(pattern: &str, package: &str, text: &str) -> Option<String> {
-    upstream_of(pattern, package, text).map(|repo| format!("https://github.com/{repo}"))
+    let host = if pattern.contains("(?P<host>") {
+        ""
+    } else {
+        "github.com/"
+    };
+    upstream_of(pattern, package, text).map(|repo| format!("https://{host}{repo}"))
 }
 
 #[cfg(test)]

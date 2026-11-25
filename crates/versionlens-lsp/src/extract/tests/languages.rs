@@ -14,7 +14,7 @@ fn reads_typst_preview_imports() {
 }
 
 #[test]
-fn reads_a_typst_package_version_and_its_compiler() {
+fn reads_typst_package_version_and_its_compiler() {
     // cetz 0.3.4's typst.toml from github.com/typst/packages, trimmed to its version lines.
     let text = "[package]\nname = \"cetz\"\nversion = \"0.3.4\"\ncompiler = \"0.13.0\"\nentrypoint = \"src/lib.typ\"\n";
     expect(
@@ -109,19 +109,41 @@ fn reads_qlfile_tags() {
 }
 
 #[test]
-fn reads_the_racket_release_an_info_rkt_needs() {
+fn reads_racket_release_info_rkt_needs() {
     // The quoted, `list`, and deprecated forms from docs.racket-lang.org/pkg/metadata.html, and
-    // the bracketed one threading-lib's info.rkt writes; an unversioned package or another
-    // package's bound has no catalog version to compare.
+    // the bracketed one threading-lib's info.rkt writes; an unversioned package has no span.
     for text in [
         "#lang info\n(define deps\n  '([\"base\" #:version \"8.2\"]))\n",
-        "#lang info\n(define deps '((\"base\" #:version \"8.2\") \"rackunit-lib\" (\"threading-lib\" #:version \"2.0\")))\n",
         "#lang info\n(define deps (list (list \"base\" '#:version \"8.2\")))\n",
         "#lang info\n(define build-deps '((\"base\" \"8.2\")))\n",
     ] {
         expect("info.rkt", text, &[("base", "8.2", "racket")]);
     }
     expect("info.rkt", "#lang info\n(define deps '(\"base\"))\n", &[]);
+}
+
+#[test]
+fn reads_catalog_packages_info_rkt_needs() {
+    // lexi-lambda/threading's threading/info.rkt, then a `#:platform` before the version
+    // (docs.racket-lang.org/pkg/metadata.html) and a list mixing every form.
+    let threading = "#lang info\n\n(define version \"2.0\")\n\n(define deps\n  '([\"threading-doc\" #:version \"2.0\"]\n    [\"threading-lib\" #:version \"2.0\"]))\n(define build-deps\n  '())\n";
+    expect(
+        "info.rkt",
+        threading,
+        &[
+            ("threading-doc", "2.0", "racket-pkg"),
+            ("threading-lib", "2.0", "racket-pkg"),
+        ],
+    );
+    expect(
+        "info.rkt",
+        "#lang info\n(define deps '((\"base\" #:version \"8.2\") \"rackunit-lib\" (\"unix-socket-lib\" #:platform 'unix #:version \"1.1\") (\"gui-lib\" \"1.3\")))\n",
+        &[
+            ("base", "8.2", "racket"),
+            ("unix-socket-lib", "1.1", "racket-pkg"),
+            ("gui-lib", "1.3", "racket-pkg"),
+        ],
+    );
 }
 
 #[test]

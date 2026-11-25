@@ -681,7 +681,7 @@ fn reads_dev_engines_runtime_and_package_manager() {
 }
 
 #[test]
-fn reads_gradle_plugins_from_the_plugin_portal() {
+fn reads_gradle_plugins_from_plugin_portal() {
     let groovy = "plugins {\n  id 'java'\n  id 'org.springframework.boot' version '3.2.0'\n}\n";
     assert_eq!(
         registries("settings.gradle", groovy),
@@ -724,7 +724,7 @@ fn reads_layouts_master_read() {
 
 /// Each manifest's own version, at the paths upstream's `dependencyProperties` list.
 #[test]
-fn reads_the_project_version_where_upstream_did() {
+fn reads_project_version_where_upstream_did() {
     let own = |path: &str, text: &str| -> Vec<String> {
         let file = file_type(path).unwrap_or_else(|| panic!("{path} not recognised"));
         extract(file, text)
@@ -777,7 +777,7 @@ fn reads_the_project_version_where_upstream_did() {
 /// The requirement forms master's `non_registry` module answered without a registry
 /// (origin/master crates/versionlens-engine/src/non_registry/{git.rs,local_path/requirement.rs}).
 #[test]
-fn labels_every_source_form_master_answered_without_a_registry() {
+fn labels_every_source_form_master_answered_without_registry() {
     for req in [
         "git+https://example.com/a.git",
         "git@example.com:o/a.git",

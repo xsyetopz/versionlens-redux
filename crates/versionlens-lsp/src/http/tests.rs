@@ -75,7 +75,7 @@ fn list(registry: &'static Registry, filters: &[&str]) -> Vec<String> {
 }
 
 #[test]
-fn joins_the_filtered_pages_without_repeats() {
+fn joins_filtered_pages_without_repeats() {
     let docker = docker_at(&hub());
     assert_eq!(
         list(docker, &["20", "alpine"]),
@@ -128,7 +128,7 @@ fn graphql() -> String {
 }
 
 #[test]
-fn posts_the_body_a_registry_names() {
+fn posts_body_registry_names() {
     let orbs = registry::get("circleci-orb").unwrap();
     let url = graphql();
     let local = Box::leak(Box::new(Registry {
@@ -193,7 +193,7 @@ fn fetch(url: &str) -> (Result<String, String>, Duration) {
 }
 
 #[test]
-fn waits_out_a_short_rate_limit() {
+fn waits_out_short_rate_limit() {
     // ECR Public serves anonymous clients one request a second and answers 429 past it.
     let (url, count) = throttling(2, None);
     let (body, took) = fetch(&url);
@@ -207,7 +207,7 @@ fn waits_out_a_short_rate_limit() {
 }
 
 #[test]
-fn reports_a_long_or_lasting_rate_limit() {
+fn reports_long_or_lasting_rate_limit() {
     let (url, count) = throttling(1, Some("120"));
     let (body, took) = fetch(&url);
     assert!(body.is_err_and(|e| e.contains("429")));
@@ -237,7 +237,7 @@ fn github_limit(settings: Settings) -> Result<u64, String> {
 /// counts them against the signed-in limit; a setting outranks it. Needs a signed-in `gh`.
 #[test]
 #[ignore = "needs the network and a signed-in gh"]
-fn live_github_uses_the_gh_token_after_the_setting() {
+fn live_github_uses_gh_token_after_setting() {
     assert!(gh::run("gh", &["auth", "token", "--hostname", "github.com"]).is_some());
     let signed_in = github_limit(Settings::default());
     let bogus = github_limit(Settings {

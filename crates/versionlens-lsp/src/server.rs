@@ -14,7 +14,7 @@ use serde_json::{Value, json};
 
 use crate::catalog::{FileType, by_id, file_type, file_type_of, path_matches};
 use crate::config::Settings;
-use crate::extract::{Dep, extract};
+use crate::extract::Dep;
 use crate::http::Http;
 use crate::osv::Query;
 use crate::project::{self, Env};
@@ -54,6 +54,8 @@ type Key = (
 
 struct Found {
     versions: Vec<Version>,
+    /// The references a `git-ref` lookup lists, as captured; empty for every other registry.
+    refs: Vec<String>,
     tagged: Option<Version>,
     yanked: Vec<Version>,
     deprecated: Vec<Version>,
@@ -534,7 +536,7 @@ impl Server {
             return;
         };
         let started = Instant::now();
-        let mut deps = extract(file, &text);
+        let mut deps = project::extract(file, Path::new(&path), &text);
         project::resolve(Path::new(&path), &text, &mut deps, &self.env);
         let first = !self.docs.contains_key(uri.as_str());
         if first && open {

@@ -49,7 +49,7 @@ fn reads_yaml_maps_lists_and_quotes() {
 }
 
 #[test]
-fn reads_yaml_mappings_behind_an_anchor() {
+fn reads_yaml_mappings_behind_anchor() {
     let text =
         "x-common: &common\n  image: redis:7.2\nservices:\n  a:\n    <<: *common\n    tag: &t v1\n";
     check(Format::Yaml, text, "x-common.image", "redis:7.2");

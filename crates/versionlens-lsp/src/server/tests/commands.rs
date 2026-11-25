@@ -201,7 +201,7 @@ fn offers_commands_as_source_actions() {
 }
 
 #[test]
-fn updates_every_manifest_in_the_workspace() {
+fn updates_every_manifest_in_workspace() {
     let root = std::env::temp_dir().join(format!("versionlens-ws-{}", std::process::id()));
     let nested = root.join("app");
     std::fs::create_dir_all(root.join("node_modules/x")).unwrap();
@@ -224,7 +224,7 @@ fn updates_every_manifest_in_the_workspace() {
 }
 
 #[test]
-fn skips_workspace_manifests_an_exclude_glob_matches() {
+fn skips_workspace_manifests_exclude_glob_matches() {
     let root = std::env::temp_dir().join(format!("versionlens-wsx-{}", std::process::id()));
     for dir in ["app", "examples/demo"] {
         std::fs::create_dir_all(root.join(dir)).unwrap();
@@ -247,7 +247,7 @@ fn skips_workspace_manifests_an_exclude_glob_matches() {
 
 #[cfg(unix)]
 #[test]
-fn installs_when_a_save_changes_dependencies() {
+fn installs_when_save_changes_dependencies() {
     let dir = std::env::temp_dir().join(format!("versionlens-install-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let uri = workspace::file_uri(&dir.join("package.json").to_string_lossy());
@@ -304,7 +304,7 @@ fn heads_lenses_with_stats_and_uses_custom_indicators() {
 }
 
 #[test]
-fn reports_outdated_dependencies_at_the_configured_severity() {
+fn reports_outdated_dependencies_at_configured_severity() {
     let mut opts = options();
     opts["updateSeverity"] = json!("hint");
     // Diagnostics go out before the status that `ready` waits for.
@@ -328,7 +328,7 @@ fn reports_outdated_dependencies_at_the_configured_severity() {
 }
 
 #[test]
-fn offers_only_prereleases_with_a_configured_tag() {
+fn offers_only_prereleases_with_configured_tag() {
     let mut opts = options();
     opts["prereleases"] = json!(true);
     opts["prereleaseTags"] = json!(["rc"]);
@@ -339,7 +339,7 @@ fn offers_only_prereleases_with_a_configured_tag() {
 }
 
 #[test]
-fn reads_only_the_configured_file_types() {
+fn reads_only_configured_file_types() {
     let mut opts = options();
     opts["fileTypes"] = json!(["cargo"]);
     let client = Client::with(&opts);
@@ -354,7 +354,7 @@ fn reads_only_the_configured_file_types() {
 }
 
 #[test]
-fn asks_for_a_build_and_applies_the_choice() {
+fn asks_for_build_and_applies_choice() {
     let client = Client::with(&options());
     let range =
         json!({ "start": { "line": 2, "character": 12 }, "end": { "line": 2, "character": 18 } });

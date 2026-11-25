@@ -84,7 +84,7 @@ fn suggested(req: &str, list: &[Version]) -> Vec<String> {
 }
 
 #[test]
-fn suggests_as_the_original_does() {
+fn suggests_as_original_does() {
     let list = versions(&[
         "1.2.3", "1.2.9", "1.4.0", "2.0.0", "2.1.0", "3.0.0", "3.0.2",
     ]);
@@ -150,7 +150,7 @@ fn plan_keeps_variant_and_tagged_latest() {
 }
 
 #[test]
-fn renders_in_the_users_style() {
+fn renders_in_users_style() {
     assert_eq!(v("5.0.0").render("v4", false), "v5");
     assert_eq!(v("22.11.0-alpine").render("20-alpine", false), "22-alpine");
     assert_eq!(v("1.9.0").render("1.2", false), "1.9");
@@ -178,7 +178,7 @@ fn plan_of(req: &Req, list: &[&str]) -> Plan {
 }
 
 #[test]
-fn lists_other_builds_of_the_resolved_version() {
+fn lists_other_builds_of_resolved_version() {
     let req = Req::parse("1.0.0", Bare::Prefix).unwrap();
     let found = plan_of(&req, &["1.0.0", "1.0.0+build.2", "1.0.0-rc.1", "1.0.1"]);
     let mut all: Vec<String> = found.builds.into_iter().map(|b| b.raw).collect();
@@ -188,7 +188,7 @@ fn lists_other_builds_of_the_resolved_version() {
 }
 
 #[test]
-fn increments_a_project_version_as_semver_inc_does() {
+fn increments_project_version_as_semver_inc_does() {
     let labels = |own: &str| -> Vec<String> {
         increments(own)
             .into_iter()

@@ -67,7 +67,7 @@ class LiveTest {
     private val editors = project.fileEditorManagerFixture()
 
     @Test
-    fun drivesTheServerFromTheIde(): Unit =
+    fun drivesServerFromIde(): Unit =
         timeoutRunBlocking(3.minutes, context = Dispatchers.EDT) {
             writeIntentReadAction { drive() }
         }

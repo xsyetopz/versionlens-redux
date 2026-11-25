@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 class SectionTest {
     @Test
-    fun linesSplitOnTheFirstEqualsAndSkipComments() {
+    fun linesSplitOnFirstEqualsAndSkipComments() {
         val map =
             Section.parseMap(
                 """

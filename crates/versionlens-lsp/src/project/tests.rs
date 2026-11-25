@@ -55,7 +55,7 @@ fn target(url: &str, auth: Option<&str>) -> (String, Option<String>) {
 }
 
 #[test]
-fn reads_the_npmrc_chain_with_scopes_auth_and_variables() {
+fn reads_npmrc_chain_with_scopes_auth_and_variables() {
     let root = project(
         "npm",
         &[
@@ -129,7 +129,7 @@ fn reads_the_npmrc_chain_with_scopes_auth_and_variables() {
 }
 
 #[test]
-fn npm_auth_needs_a_whole_path_segment_and_the_default_registry_needs_no_target() {
+fn npm_auth_needs_whole_path_segment_and_default_registry_needs_no_target() {
     let root = project(
         "npm-host",
         &[
@@ -456,7 +456,7 @@ fn reads_cargo_registries_replacement_and_tokens() {
 /// Without one it stops with "authenticated registries require a credential-provider to be
 /// configured" and sends neither the `credentials.toml` token nor `CARGO_REGISTRIES_<NAME>_TOKEN`.
 #[test]
-fn sends_a_cargo_token_only_through_the_cargo_token_provider() {
+fn sends_cargo_token_only_through_cargo_token_provider() {
     let files = |name: &str, config: &str| {
         let config =
             format!("[registries.my]\nindex = \"sparse+https://cargo.example/index/\"\n{config}");
@@ -514,7 +514,7 @@ fn sends_a_cargo_token_only_through_the_cargo_token_provider() {
 }
 
 #[test]
-fn reads_the_maven_mirror_of_central_and_its_server() {
+fn reads_maven_mirror_of_central_and_its_server() {
     let root = project(
         "maven",
         &[
@@ -559,6 +559,192 @@ fn substitutes_known_variables_and_keeps_unknown_ones() {
     assert_eq!(substitute("%A%/%B%", "%", "%", &env), "1/%B%");
     assert_eq!(unbase64("cGFzcw==").as_deref(), Some("pass"));
     assert_eq!(base64(b"pass"), "cGFzcw==");
+}
+
+/// Each dependency of the Mill file at `path` under `root`, as `(name, version)`.
+fn mill_deps(root: &Path, path: &str) -> Vec<(String, String)> {
+    let path = root.join(path);
+    let text = std::fs::read_to_string(&path).unwrap();
+    let file = file_type_of(path.to_str().unwrap(), &text).unwrap();
+    super::extract(file, &path, &text)
+        .into_iter()
+        .map(|d| (d.name, text[d.span].to_owned()))
+        .collect()
+}
+
+#[test]
+fn mill_module_takes_scala_version_from_root_build() {
+    // com-lihaoyi/mill, example/large/multifile/10-multi-file-builds.
+    let root = project(
+        "mill-multi",
+        &[
+            (
+                "build.mill",
+                "package build\nimport mill.*, scalalib.*\n\ntrait MyModule extends ScalaModule {\n  def scalaVersion = \"3.7.4\"\n}\n",
+            ),
+            (
+                "foo/package.mill",
+                "package build.foo\nimport mill.*, scalalib.*\n\nobject `package` extends build.MyModule {\n  def moduleDeps = Seq(build.bar.qux.mymodule)\n  def mvnDeps = Seq(mvn\"com.lihaoyi::mainargs:0.7.8\")\n}\n",
+            ),
+            ("bar/package.mill", "package build.bar\n"),
+            (
+                "bar/qux/package.mill",
+                "package build.bar.qux\nimport mill.*, scalalib.*\n\nobject mymodule extends build.MyModule {\n  def mvnDeps = Seq(mvn\"com.lihaoyi::scalatags:0.13.1\")\n}\n",
+            ),
+        ],
+    );
+    assert_eq!(
+        mill_deps(&root, "foo/package.mill"),
+        [("com.lihaoyi:mainargs_3".to_owned(), "0.7.8".to_owned())]
+    );
+    assert_eq!(
+        mill_deps(&root, "bar/qux/package.mill"),
+        [("com.lihaoyi:scalatags_3".to_owned(), "0.13.1".to_owned())]
+    );
+}
+
+#[test]
+fn mill_module_takes_named_scala_version_from_helper_file() {
+    // com-lihaoyi/mill, example/large/multifile/11-helper-files, with a dependency added to foo.
+    let root = project(
+        "mill-helper",
+        &[
+            (
+                "build.mill",
+                "package build\nimport mill.*, scalalib.*\n\nobject `package` extends MyModule\n",
+            ),
+            (
+                "util.mill",
+                "package build\nimport mill.*, scalalib.*\n\ndef myScalaVersion = \"2.13.16\"\n\ntrait MyModule extends ScalaModule {\n  def scalaVersion = myScalaVersion\n}\n",
+            ),
+            (
+                "foo/versions.mill",
+                "package build.foo\n\ndef myProjectVersion = \"0.0.1\"\n",
+            ),
+            (
+                "foo/package.mill",
+                "package build.foo\nimport mill.*, scalalib.*\nobject `package` extends build.MyModule {\n  def mvnDeps = Seq(mvn\"org.typelevel::cats-core:2.13.0\", mvn\"org.scalamacros:::paradise:2.1.1\")\n}\n",
+            ),
+        ],
+    );
+    assert_eq!(
+        mill_deps(&root, "foo/package.mill"),
+        [
+            (
+                "org.typelevel:cats-core_2.13".to_owned(),
+                "2.13.0".to_owned()
+            ),
+            (
+                "org.scalamacros:paradise_2.13.16".to_owned(),
+                "2.1.1".to_owned()
+            ),
+        ]
+    );
+}
+
+#[test]
+fn mill_file_outside_build_reads_only_java_dependencies() {
+    let root = project(
+        "mill-alone",
+        &[(
+            "sub/package.mill",
+            "object foo extends JavaModule {\n  def mvnDeps = Seq(mvn\"com.google.guava:guava:33.0.0-jre\", mvn\"com.lihaoyi::os-lib:0.11.4\")\n}\n",
+        )],
+    );
+    assert_eq!(
+        mill_deps(&root, "sub/package.mill"),
+        [("com.google.guava:guava".to_owned(), "33.0.0-jre".to_owned())]
+    );
+}
+
+/// Each dependency of `.gitlab-ci.yml` under `root`, as `(name, version, registry)`.
+fn pipeline_deps(root: &Path) -> Vec<(String, String, &'static str)> {
+    let path = root.join(".gitlab-ci.yml");
+    let text = std::fs::read_to_string(&path).unwrap();
+    let file = file_type_of(path.to_str().unwrap(), &text).unwrap();
+    super::extract(file, &path, &text)
+        .into_iter()
+        .map(|d| (d.name, text[d.span].to_owned(), d.registry))
+        .collect()
+}
+
+#[test]
+fn ci_server_fqdn_component_resolves_on_remote_gitlab_instance() {
+    // docs.gitlab.com/ci/components/ "Use a component", in a clone of a self-hosted project.
+    let pipeline = "include:\n  - component: $CI_SERVER_FQDN/my-org/security-components/secret-detection@1.0.0\n";
+    let root = project(
+        "gitlab-self",
+        &[
+            (".gitlab-ci.yml", pipeline),
+            (
+                ".git/config",
+                "[remote \"origin\"]\n\turl = git@gitlab.example.com:my-org/app.git\n",
+            ),
+        ],
+    );
+    assert_eq!(
+        pipeline_deps(&root),
+        [(
+            "gitlab.example.com/my-org/security-components".to_owned(),
+            "1.0.0".to_owned(),
+            "gitlab-host"
+        )]
+    );
+    for (name, config) in [
+        (
+            "gitlab-com",
+            Some("[remote \"origin\"]\n\turl = https://gitlab.com/my-org/app.git\n"),
+        ),
+        (
+            "gitlab-github",
+            Some("[remote \"origin\"]\n\turl = https://github.com/my-org/app.git\n"),
+        ),
+        ("gitlab-none", None),
+    ] {
+        let mut files = vec![(".gitlab-ci.yml", pipeline)];
+        files.extend(config.map(|c| (".git/config", c)));
+        let root = project(name, &files);
+        // A temporary folder may itself sit inside a clone; only one without a remote counts.
+        if config.is_none() && git::remote_host(&root).is_some() {
+            continue;
+        }
+        assert_eq!(
+            pipeline_deps(&root),
+            [(
+                "my-org/security-components".to_owned(),
+                "1.0.0".to_owned(),
+                "gitlab"
+            )],
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn worktree_takes_repository_remote() {
+    let root = project(
+        "gitlab-worktree",
+        &[
+            (
+                "repo/.git/config",
+                "[remote \"origin\"]\n\turl = https://code.example.net:8443/my-org/app.git\n",
+            ),
+            ("repo/.git/worktrees/wt/commondir", "../..\n"),
+            ("wt/.git", "gitdir: ../repo/.git/worktrees/wt\n"),
+            (
+                "wt/.gitlab-ci.yml",
+                "include:\n  - component: $CI_SERVER_FQDN/ci/deploy/run@2.1\n",
+            ),
+        ],
+    );
+    assert_eq!(
+        pipeline_deps(&root.join("wt")),
+        [(
+            "code.example.net:8443/ci/deploy".to_owned(),
+            "2.1".to_owned(),
+            "gitlab-host"
+        )]
+    );
 }
 
 mod live;

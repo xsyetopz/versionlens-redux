@@ -6,6 +6,7 @@ mod config;
 mod data;
 mod extract;
 mod flatten;
+mod git_ref;
 mod http;
 mod osv;
 mod project;

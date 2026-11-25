@@ -249,6 +249,7 @@ pub(crate) fn alias(name: &str) -> Option<&'static str> {
 }
 
 /// The `owner/repo` a registry's `upstream` pattern finds in the document its `osv_name` names,
+/// or `host/owner/repo` where the pattern captures a `host`,
 /// with `{name}` in the pattern standing for the package name, so a search page's one exact hit
 /// is the match: VPM's `"url"` names a GitHub repository, a raku.land search a `zef:auth/name`,
 /// and a `PlatformIO` search an `owner/library/name` download.
@@ -266,11 +267,17 @@ pub(crate) fn upstream_of(pattern: &str, name: &str, text: &str) -> Option<Strin
     let caps = found.captures_iter(text).next()?;
     let group = |key| caps.get_group_by_name(key).map(|s| &text[s.range()]);
     let repo = group("repo")?;
-    Some(format!(
+    let repo = format!(
         "{}/{}",
         group("owner")?,
         repo.strip_suffix(".git").unwrap_or(repo)
-    ))
+    );
+    // A pattern with a `host` group names a repository on any host, as a Racket package's source
+    // may be on GitLab or Codeberg; the others name a GitHub one.
+    Some(match group("host") {
+        Some(host) => format!("{host}/{repo}"),
+        None => repo,
+    })
 }
 
 /// Fills a URL template. Placeholders: `{name}`, `{lower}`, `{enc}` (npm scope escaping),

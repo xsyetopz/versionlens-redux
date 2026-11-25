@@ -7,7 +7,7 @@
 use super::master::expect;
 
 #[test]
-fn reads_sbt_double_percent_with_the_scala_binary_version() {
+fn reads_sbt_double_percent_with_scala_binary_version() {
     let text = "ThisBuild / scalaVersion := \"2.13.12\"\nlibraryDependencies ++= Seq(\n  \"org.typelevel\" %% \"cats-core\" % \"2.9.0\",\n  \"com.lihaoyi\" %%% \"upickle\" % \"3.1.0\",\n  \"org.slf4j\" % \"slf4j-api\" % \"2.0.9\"\n)\n";
     expect(
         "build.sbt",
@@ -95,7 +95,7 @@ fn reads_node_versions_after_comments() {
 }
 
 #[test]
-fn reads_gems_without_a_version_and_from_sources() {
+fn reads_gems_without_version_and_from_sources() {
     let text = "gem \"rails\"\ngem 'rspec', group: :test, require: false\ngem \"local\", path: \"../local\"\ngem \"edge\", git: \"https://github.com/o/edge.git\"\ngem \"tagged\", github: \"o/tagged\", tag: \"v1.2.0\"\ngem \"branchy\", :github => \"o/branchy\", :branch => \"main\"\ngem \"private\", source: \"https://gems.example.com\"\n";
     expect(
         "Gemfile",
@@ -222,7 +222,7 @@ fn reads_stack_snapshots_of_every_kind() {
 }
 
 #[test]
-fn keeps_the_opam_operator_outside_the_span() {
+fn keeps_opam_operator_outside_span() {
     // opam.ocaml.org/doc/Manual.html#Filtered-package-formulas: `{>= "1.0"}` is a lower bound,
     // and `{= "1.0"}` or a bare constraint-free version pins, as the fork's master read `= 1.0.0`.
     use crate::version::Bare;
@@ -247,7 +247,7 @@ fn keeps_the_opam_operator_outside_the_span() {
 }
 
 #[test]
-fn reads_rust_channels_with_a_host() {
+fn reads_rust_channels_with_host() {
     expect(
         "rust-toolchain.toml",
         "[toolchain]\nchannel = \"1.75.0-x86_64-apple-darwin\"\n",

@@ -9,6 +9,11 @@ PEP508_URL = '^[ \t]*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)[ \t]*(?:\[[^\]\n]*\])?
 DOCKER ='^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$'
 IMAGE_LINE = '''(?m)^[ \t]*(?:-[ \t]*)?(?:image|container)[ \t]*:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$'''
 ACTION = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$'
+# A branch or a full commit SHA in place of a version tag. A branch here starts with a letter
+# other than `v`, or with `v` and no digit, so `v4` and `1.2.0` stay tags; GitHub takes only a
+# full-length SHA as immutable: docs.github.com/en/actions/reference/security/secure-use.
+GIT_REF = '[0-9a-f]{40}|(?:[A-Za-uw-z_]|v[A-Za-z_./-])[\w./-]*'
+ACTION_REF = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>${GIT_REF})$'
 # `#` starts a comment, which nvm skips in `.nvmrc`: github.com/nvm-sh/nvm#nvmrc
 TOOL_VERSION = '\A(?:\s*#[^\n]*\n)*\s*v?(?P<version>\d[\w.]*)[ \t]*(?:#[^\n]*)?\s*\z'
 MAVEN_SPEC = '^(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)$'

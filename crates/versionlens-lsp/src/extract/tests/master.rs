@@ -50,7 +50,7 @@ fn reads_composer_conflict_replace_and_provide() {
 }
 
 #[test]
-fn reads_the_deno_and_jsr_version() {
+fn reads_deno_and_jsr_version() {
     let text = r#"{"version": "1.2.0", "imports": {"std": "jsr:@std/path@^1.0.0"}}"#;
     expect(
         "jsr.json",
@@ -60,7 +60,7 @@ fn reads_the_deno_and_jsr_version() {
 }
 
 #[test]
-fn checks_a_published_jsr_package_beside_its_increments() {
+fn checks_published_jsr_package_beside_its_increments() {
     let text = "{\n  \"name\": \"@luca/greet\",\n  \"version\": \"1.0.0\",\n  \"exports\": \"./mod.ts\"\n}\n";
     expect(
         "jsr.json",
@@ -431,7 +431,7 @@ fn reads_bundled_and_trusted_dependency_names() {
 }
 
 #[test]
-fn reads_jspm_maps_by_the_registry_each_value_names() {
+fn reads_jspm_maps_by_registry_each_value_names() {
     let text = r#"{"jspm": {"dependencies": {"lodash": "npm:lodash@^4.17.0", "repo": "github:owner/repo@1.0.0", "plain": "^2.0.0"}}}"#;
     expect(
         "package.json",

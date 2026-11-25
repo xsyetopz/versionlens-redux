@@ -106,7 +106,7 @@ fn workspace_configuration_returns_configured_settings() {
 }
 
 #[test]
-fn initialization_options_ask_for_the_authentication_actions() {
+fn initialization_options_ask_for_authentication_actions() {
     let settings = json!({"prereleases": true});
     assert_eq!(
         initialization_options(Some(settings)),

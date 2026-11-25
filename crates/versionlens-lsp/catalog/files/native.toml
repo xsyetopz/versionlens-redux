@@ -131,6 +131,12 @@ rules = [
 # Conan names a requirement `name/version`: a line under conanfile.txt's `[requires]`, and in
 # conanfile.py `requires = "zlib/1.3.1"`, `self.requires("zlib/1.3.1")`, or
 # `self.tool_requires("tool/1.1.1")`: docs.conan.io/2/reference/conanfile/methods/requirements.html
+# A version range sits in brackets, `openssl/[>=3 <4]`, `[~1.2]`, `[^1.2]`, `[1.2.*]`, or
+# alternatives joined by `||`, and options such as `include_prerelease` follow a comma:
+# docs.conan.io/2/tutorial/versioning/version_ranges.html and conan-io/conan,
+# conan/internal/model/version_range.py. The span holds the expression before the options, which
+# reads with the operators Conan shares: a bare version is exact, `~` bumps the minor of a
+# two-part version, and `^` the first nonzero part.
 [[file]]
 id = 'conan'
 globs = ['conanfile.txt', 'conanfile.py']
@@ -138,6 +144,7 @@ format = 'text'
 registry = 'conan'
 rules = [
     { lines = '''(?m)(?:^[ \t]*|requires\(\s*["']|["'])(?P<name>[a-z0-9][\w.+-]*)/(?P<version>\d[\w.+-]*)''' },
+    { lines = '''(?m)(?:^[ \t]*|requires\(\s*["']|["'])(?P<name>[a-z0-9][\w.+-]*)/\[[ \t]*(?P<version>[^\],\s](?:[^\],]*[^\],\s])?)[ \t]*(?:,[^\]]*)?\]''' },
 ]
 
 # A Spack environment lists specs as `name@version`, with variants after it, `@=` for an exact

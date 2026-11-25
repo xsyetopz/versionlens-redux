@@ -117,7 +117,9 @@ rules = [
 # `scalaVersion: 3.8.2` in example/scalalib/basic/1-simple/build.mill.yaml. A `:::` appends the
 # full Scala version, `mvn"org.scalamacros:::paradise:2.1.1"` (scalalib/dependencies.adoc), which
 # the `within` block's `suffix` group takes from the same `scalaVersion`. A module that inherits
-# its Scala version from another file has none to read, so its Scala dependencies stay unread.
+# its Scala version from another file of the build, as `foo/package.mill` extends the trait
+# `build.mill` defines in example/large/multifile/10-multi-file-builds, gets it from
+# src/project/mill.rs, which appends the setting to the text these rules read.
 [[file]]
 id = 'mill'
 globs = ['*.mill', 'build.sc', '*.mill.yaml']

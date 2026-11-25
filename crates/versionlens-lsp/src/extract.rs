@@ -214,7 +214,7 @@ fn is_package(name: &str, registry: &str) -> bool {
             | ("esp", "idf")
             // `FROM scratch` starts an empty image: docs.docker.com/build/building/base-images/
             | ("docker", "scratch")
-    ) || name.contains('$')
+    ) || (name.contains('$') && !is_instance_component(name, registry))
         // An ESP component is `namespace/name`; idf_component.yml's row reads each name once as
         // written and once under the default `espressif/`, and this keeps the one that fits.
         || (registry == "esp" && name.matches('/').count() > 1)
@@ -227,6 +227,16 @@ fn is_package(name: &str, registry: &str) -> bool {
                 || name.starts_with("composer-"))))
 }
 
+/// A GitLab component or included project on the pipeline's own instance, `$CI_SERVER_FQDN/group/project`, whose
+/// variable `project::extract` replaces with the workspace remote's host.
+pub(crate) fn is_instance_component(name: &str, registry: &str) -> bool {
+    ["gitlab-host", crate::git_ref::GIT_REF].contains(&registry) && name.starts_with(INSTANCE)
+}
+
+/// The variable a GitLab pipeline names its own instance by, with the `/` that follows it:
+/// <https://docs.gitlab.com/ci/variables/predefined_variables/>.
+pub(crate) const INSTANCE: &str = "$CI_SERVER_FQDN/";
+
 /// The dependencies `rule` finds, their names completed by `prefix` and `suffix`. An affix
 /// completes a registry's package name; a package its requirement turns local or git keeps the
 /// name the manifest gives it. A rule routed to a source on purpose, such as qlfile's
@@ -236,7 +246,7 @@ fn affix(file: &FileType, prefix: &str, suffix: &str, rule: &'static Rule, text:
         rules: std::slice::from_ref(rule),
         ..*file
     };
-    let mut deps = extract(&inner, text);
+    let mut deps = read(&inner, text);
     for dep in &mut deps {
         if dep.registry == file.registry || ![DIRECTORY, SOURCE].contains(&dep.registry) {
             dep.name.insert_str(0, prefix);
@@ -247,6 +257,25 @@ fn affix(file: &FileType, prefix: &str, suffix: &str, rule: &'static Rule, text:
 }
 
 pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
+    let mut deps = read(file, text);
+    // West projects join the manifest's remotes and defaults, which no single rule's match
+    // holds. Those that inherit `defaults.revision` share its span, so they join after the
+    // dedup of values two rules read.
+    if file.id == "west" {
+        let leaves = flatten(file.format, text);
+        let mut projects = west::projects(&leaves);
+        for dep in &mut projects {
+            settle(dep, file.pinned, &leaves);
+        }
+        projects.retain(|p| !deps.iter().any(|d| d.span == p.span && d.name == p.name));
+        deps.extend(projects);
+        deps.sort_by_key(|d| (d.span.start, d.span.end));
+    }
+    deps
+}
+
+/// The dependencies the file type's rules find, settled and deduplicated.
+fn read(file: &FileType, text: &str) -> Vec<Dep> {
     let leaves = flatten(file.format, text);
     let mut deps = Vec::new();
     for rule in file.rules {
@@ -278,7 +307,7 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                     rules: std::slice::from_ref(rule),
                     ..*file
                 };
-                deps.extend(extract(&inner, text));
+                deps.extend(read(&inner, text));
             }
             Rule::Affix(prefix, suffix, rule) => {
                 deps.extend(affix(file, prefix, suffix, rule, text));
@@ -297,23 +326,22 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                         continue;
                     };
                     let range = range.range();
-                    deps.extend(extract(&inner, &text[range.clone()]).into_iter().map(
-                        |mut dep| {
-                            dep.span = dep.span.start + range.start..dep.span.end + range.start;
-                            if let Some(suffix) = suffix
-                                && ![DIRECTORY, SOURCE].contains(&dep.registry)
-                            {
-                                dep.name.push_str(suffix);
-                            }
-                            dep
-                        },
-                    ));
+                    deps.extend(
+                        read(&inner, &text[range.clone()])
+                            .into_iter()
+                            .map(|mut dep| {
+                                dep.span = dep.span.start + range.start..dep.span.end + range.start;
+                                if let Some(suffix) = suffix
+                                    && ![DIRECTORY, SOURCE].contains(&dep.registry)
+                                {
+                                    dep.name.push_str(suffix);
+                                }
+                                dep
+                            }),
+                    );
                 }
             }
         }
-    }
-    if file.id == "west" {
-        deps.extend(west::projects(&leaves));
     }
     for dep in &mut deps {
         settle(dep, file.pinned, &leaves);
@@ -339,13 +367,15 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
     // A value two rules read keeps the narrower reading a registry answers: JSPM's
     // `github:owner/repo@1.0.0` is a git source to its map's `keys` rule and a GitHub release,
     // spanning `1.0.0`, to its `spec` rule.
+    // A git ref reading, such as GitLab's `ref: refs/tags/v1.0.0`, gives way to the tag inside it.
+    let loose = |d: &Dep| [SOURCE, crate::git_ref::GIT_REF].contains(&d.registry);
     let looked_up: Vec<Range<usize>> = deps
         .iter()
-        .filter(|d| d.registry != SOURCE && !d.span.is_empty())
+        .filter(|d| !loose(d) && !d.span.is_empty())
         .map(|d| d.span.clone())
         .collect();
     deps.retain(|d| {
-        d.registry != SOURCE
+        !loose(d)
             || !looked_up
                 .iter()
                 .any(|s| *s != d.span && d.span.start <= s.start && s.end <= d.span.end)

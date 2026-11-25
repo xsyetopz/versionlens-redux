@@ -12,6 +12,7 @@ use serde_json::json;
 
 use crate::config::Indicators;
 use crate::extract::Dep;
+use crate::git_ref::{self, Ref};
 use crate::version::{self, Plan, Req, Version};
 
 /// What is known about one dependency right now.
@@ -31,6 +32,8 @@ pub(crate) enum State {
     Source(String),
     /// A manifest's own version, with each next release's label and replacement text.
     Own(Vec<(String, String)>),
+    /// A branch, tag, or commit a CI file pins in place of a version.
+    Commit(Ref),
     Planned {
         plan: Box<Plan>,
         /// The requirement's floor, which update levels count from.
@@ -164,8 +167,14 @@ fn update_command(title: String, uri: &Uri, view: &View<'_>, text: &str) -> Comm
 /// The updates a view offers, newest first: the 1.x label with its version, and the
 /// replacement text.
 pub(crate) fn picks(view: &View<'_>, insert: &str) -> Vec<(String, String)> {
-    let State::Planned { plan, .. } = &view.state else {
-        return Vec::new();
+    let plan = match &view.state {
+        // A pinned commit behind its branch moves to the head.
+        State::Commit(found @ Ref::Pinned { branch, head, .. }) if found.lags(&view.dep.req) => {
+            let text = git_ref::replacement(&view.dep.req, head);
+            return vec![(format!("{branch} head {}", git_ref::short(head)), text)];
+        }
+        State::Planned { plan, .. } => plan,
+        _ => return Vec::new(),
     };
     plan.picks
         .iter()
@@ -222,6 +231,23 @@ pub(crate) fn lenses(
                 out.push(open(format!("{} not found {path}", glyphs.failed)));
             }
             State::Source(label) => out.push(open(label.clone())),
+            State::Commit(found) => {
+                out.push(open(commit_status(found, &view.dep.req, glyphs)));
+                out.extend(
+                    picks(view, insert)
+                        .into_iter()
+                        .map(|(label, text)| CodeLens {
+                            range: view.range,
+                            command: Some(update_command(
+                                format!("{} {label}", glyphs.update),
+                                uri,
+                                view,
+                                &text,
+                            )),
+                            data: None,
+                        }),
+                );
+            }
             State::Own(next) => out.extend(next.iter().map(|(label, text)| CodeLens {
                 range: view.range,
                 command: Some(update_command(
@@ -277,6 +303,29 @@ fn status(plan: &Plan, current: bool, glyphs: &Indicators) -> String {
     }
 }
 
+/// The status lens of a pinned reference: the head a branch runs, the commit a tag names, and
+/// whether a pinned commit is its branch's head or lags behind it.
+fn commit_status(found: &Ref, pin: &str, glyphs: &Indicators) -> String {
+    match found {
+        Ref::Branch { name, head } => format!("branch {name} head {}", git_ref::short(head)),
+        Ref::Tag { name, commit } => format!("tag {name} at {}", git_ref::short(commit)),
+        Ref::Pinned { branch, head, tag } => {
+            let tag = tag
+                .as_ref()
+                .map_or_else(String::new, |t| format!("tag {t} · "));
+            if found.lags(pin) {
+                format!(
+                    "{} {tag}behind {branch} head {}",
+                    glyphs.satisfies,
+                    git_ref::short(head)
+                )
+            } else {
+                format!("{} {tag}{branch} head", glyphs.latest)
+            }
+        }
+    }
+}
+
 /// The original's `change build` lens: it asks which build of the resolved version to switch to.
 fn build_command(uri: &Uri, view: &View<'_>, insert: &str, glyphs: &Indicators) -> Option<Command> {
     let State::Planned { plan, .. } = &view.state else {
@@ -328,11 +377,16 @@ pub(crate) fn hints(views: &[View<'_>], glyphs: &Indicators) -> Vec<InlayHint> {
                     glyphs.latest.clone()
                 }
                 State::Planned { plan, .. } => format!("{} {}", glyphs.newer, plan.latest.raw),
+                State::Commit(found @ Ref::Pinned { head, .. }) if found.lags(&view.dep.req) => {
+                    format!("{} {}", glyphs.newer, git_ref::short(head))
+                }
+                State::Commit(Ref::Pinned { .. }) => glyphs.latest.clone(),
                 State::Failed(_) | State::Directory { target: None, .. } => glyphs.failed.clone(),
                 State::Pending
                 | State::Unreadable
                 | State::Directory { .. }
                 | State::Source(_)
+                | State::Commit(_)
                 | State::Own(_) => {
                     return None;
                 }
@@ -364,6 +418,15 @@ pub(crate) fn hover(view: &View<'_>) -> Hover {
         State::Directory { path, .. } => format!("`{path}` does not exist"),
         State::Source(label) => format!("Pinned to a {label}: `{}`", dep.req),
         State::Own(_) => format!("Project version `{}`", dep.req),
+        State::Commit(Ref::Branch { name, head }) => format!("Branch `{name}` · head `{head}`"),
+        State::Commit(Ref::Tag { name, commit }) => format!("Tag `{name}` · commit `{commit}`"),
+        State::Commit(found @ Ref::Pinned { branch, head, .. }) => {
+            let stands = if found.lags(&dep.req) { "behind" } else { "at" };
+            format!(
+                "Pinned to commit `{}` · {stands} `{branch}` head `{head}`",
+                dep.req
+            )
+        }
         State::Planned { plan, current, .. } => {
             let current = current.as_ref().map_or("none", |v| v.raw.as_str());
             format!(

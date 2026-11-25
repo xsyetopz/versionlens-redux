@@ -10,6 +10,7 @@ use serde_json::json;
 
 use super::{Entry, Event, Found, Key, Pending, Server, key};
 use crate::extract::Dep;
+use crate::git_ref::GIT_REF;
 use crate::osv::{self, Query};
 use crate::registry::{self, Registry};
 use crate::render;
@@ -90,8 +91,14 @@ impl Server {
                             out.sort();
                             out
                         };
+                        let refs = if key.0 == GIT_REF {
+                            found.list.clone()
+                        } else {
+                            Vec::new()
+                        };
                         Ok(Arc::new(Found {
                             versions: parse(&found.list),
+                            refs,
                             tagged: found.latest.as_deref().and_then(Version::parse),
                             yanked: parse(&found.yanked),
                             deprecated: parse(&found.deprecated),

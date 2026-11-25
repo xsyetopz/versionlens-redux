@@ -280,6 +280,20 @@ osv_name = '{host}/{repo}'
 page = 'https://{host}/{repo}'
 pages = { 'data.forgejo.org' = 'https://code.forgejo.org/{repo}' }
 
+# A branch or commit a CI file pins in place of a tag, on the repository `host/owner/repo` names.
+# Git's smart HTTP lists every branch and tag with its commit, and the default branch as
+# `symref=HEAD:refs/heads/<name>` (git-scm.com/docs/http-protocol, "Smart Clients"); GitHub,
+# GitLab, code.forgejo.org, and data.forgejo.org each answered it for actions/checkout or
+# components/opentofu on 2026-11-25. Each line starts with a hex pkt-line length, so the 40-digit
+# match starts four digits in. src/git_ref.rs reads the captures.
+[[registry]]
+id = 'git-ref'
+url = 'https://{name}.git/info/refs?service=git-upload-pack'
+regex = '([0-9a-f]{40} (?:HEAD|refs/(?:heads|tags)/[^\s\x00]+)|symref=HEAD:refs/heads/[^\s\x00]+)'
+bare = 'exact'
+page = 'https://{name}'
+pages = { 'data.forgejo.org' = 'https://code.forgejo.org/{repo}' }
+
 # A Bitbucket Pipelines `pipe:` names a Bitbucket repository at a tag; its `pipe.yml` names the
 # image the tag runs: support.atlassian.com/bitbucket-cloud/docs/what-are-pipes/, and
 # bitbucket.org/atlassian/aws-s3-deploy/raw/master/pipe.yml. Newest tags first:

@@ -45,6 +45,11 @@ globs = ['.github/workflows/**/*.yml', '.github/workflows/**/*.yaml', '.github/a
 format = 'yaml'
 registry = 'github'
 rules = [
+    # A branch or commit SHA in place of a tag reads against the repository's own refs, first so
+    # that a SHA starting with a digit is not taken for a version.
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'github.com/' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'github.com/' },
+    { spec = 'runs.steps.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'github.com/' },
     { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION}' },
     { spec = 'jobs.*.uses', pattern = '${ACTION}' },
     { spec = 'runs.steps.*.uses', pattern = '${ACTION}' },
@@ -90,6 +95,11 @@ globs = ['.forgejo/workflows/*.yml', '.forgejo/workflows/*.yaml']
 format = 'yaml'
 registry = 'forgejo'
 rules = [
+    # A branch or commit SHA, on the host a URL names or on data.forgejo.org.
+    { spec = 'jobs.*.steps.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>${GIT_REF})$', via = 'git-ref' },
+    { spec = 'jobs.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>${GIT_REF})$', via = 'git-ref' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'data.forgejo.org/' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'data.forgejo.org/' },
     { spec = 'jobs.*.steps.*.uses', pattern = '^https://github\.com/(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$', via = 'github' },
     { spec = 'jobs.*.uses', pattern = '^https://github\.com/(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$', via = 'github' },
     { spec = 'jobs.*.steps.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$' },
@@ -109,6 +119,10 @@ globs = ['buildkite.yml', 'buildkite.yaml', '.buildkite/pipeline.yml', '.buildki
 format = 'text'
 registry = 'github'
 rules = [
+    # A branch or commit SHA after `#`, read against the plugin repository's refs.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>${GIT_REF})["']?(?::|[ \t\r]|$)''', via = 'git-ref', prefix = 'github.com/buildkite-plugins/', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+/[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>${GIT_REF})["']?(?::|[ \t\r]|$)''', via = 'git-ref', prefix = 'github.com/', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w-]+?)(?:\.git)?#(?P<version>${GIT_REF})["']?(?::|[ \t\r]|$)''', via = 'git-ref' },
     { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''', prefix = 'buildkite-plugins/', suffix = '-buildkite-plugin' },
     { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+/[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''', suffix = '-buildkite-plugin' },
     { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+?)(?:\.git)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''' },
@@ -347,15 +361,22 @@ rules = [
     { spec = '*.image.name', pattern = '${DOCKER}' },
     { spec = '*.services.*', pattern = '${DOCKER}' },
     { spec = '*.services.*.name', pattern = '${DOCKER}' },
-    # A CI/CD component is `<host>/<project path>/<component>@<version>`, the version a tag or a
-    # partial `1.2`; a SHA, a branch, and `~latest` stay out: docs.gitlab.com/ci/components/. The
-    # file cannot say which instance `$CI_SERVER_FQDN` is, so it is read as gitlab.com; a written
-    # host, gitlab.com or self-hosted, is asked itself.
+    # A CI/CD component is `<host>/<project path>/<component>@<version>`, the version a tag, a
+    # partial `1.2`, a commit SHA, or a branch name; `~latest` stays out:
+    # docs.gitlab.com/ci/components/ "Component versions". A written host, gitlab.com or
+    # self-hosted, is asked itself. `$CI_SERVER_FQDN` is the instance running the pipeline, which
+    # src/project/git.rs takes from the workspace's git remote, and gitlab.com where the workspace
+    # has none. A SHA or a branch reads against the project's refs, first so that a SHA starting
+    # with a digit is not taken for a version.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?(?P<name>[\w-]+(?:\.[\w-]+)+(?::\d+)?/[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>${GIT_REF})["']?[ \t]*(?:#.*)?\r?$''', via = 'git-ref' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?\$CI_SERVER_FQDN/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>${GIT_REF})["']?[ \t]*(?:#.*)?\r?$''', via = 'git-ref', prefix = '$CI_SERVER_FQDN/' },
     { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?(?P<name>[\w-]+(?:\.[\w-]+)+(?::\d+)?/[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab-host' },
-    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?\$CI_SERVER_FQDN/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab' },
-    # `include:project` with a tag `ref`, short or under `refs/tags/`, as the items it lists come;
-    # a branch or a SHA stays out: docs.gitlab.com/ci/yaml/ `include:project`.
-    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?project:[ \t]*["']?(?P<name>[\w.-]+(?:/[\w.-]+)+)["']?[ \t]*(?:#.*)?\r?\n(?:[ \t]+[^-\s][^\n]*\r?\n|[ \t]+-[ \t]+["'/][^\n]*\r?\n)*?[ \t]+ref:[ \t]*["']?(?:refs/tags/)?(?P<version>v?\d+(?:\.\d+)+(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?\$CI_SERVER_FQDN/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab-host', prefix = '$CI_SERVER_FQDN/' },
+    # `include:project` names a project "on the same GitLab instance", so on `$CI_SERVER_FQDN`,
+    # with a `ref` that is a tag, short or under `refs/tags/`, a branch, or a SHA, as the items it
+    # lists come: docs.gitlab.com/ci/yaml/ `include:project`.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?project:[ \t]*["']?(?P<name>[\w.-]+(?:/[\w.-]+)+)["']?[ \t]*(?:#.*)?\r?\n(?:[ \t]+[^-\s][^\n]*\r?\n|[ \t]+-[ \t]+["'/][^\n]*\r?\n)*?[ \t]+ref:[ \t]*["']?(?:refs/heads/)?(?P<version>${GIT_REF})["']?[ \t]*(?:#.*)?\r?$''', via = 'git-ref', prefix = '$CI_SERVER_FQDN/' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?project:[ \t]*["']?(?P<name>[\w.-]+(?:/[\w.-]+)+)["']?[ \t]*(?:#.*)?\r?\n(?:[ \t]+[^-\s][^\n]*\r?\n|[ \t]+-[ \t]+["'/][^\n]*\r?\n)*?[ \t]+ref:[ \t]*["']?(?:refs/tags/)?(?P<version>v?\d+(?:\.\d+)+(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab-host', prefix = '$CI_SERVER_FQDN/' },
 ]
 
 [[file]]

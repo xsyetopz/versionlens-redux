@@ -224,7 +224,7 @@ fn names_fixed_sources_and_links_their_repository() {
 }
 
 #[test]
-fn links_a_revision_only_source_to_the_repository_its_name_gives() {
+fn links_revision_only_source_to_repository_its_name_gives() {
     let client = Client::start();
     let uri = "file:///p/west.yml";
     let text = "manifest:\n  projects:\n    - name: hal\n      url: https://git.example.com/hal\n      revision: main\n";

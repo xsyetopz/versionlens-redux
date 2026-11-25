@@ -154,6 +154,10 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("julia-lang", "julia", None, None),
     ("r-lang", "R", None, None),
     ("racket", "base", None, None),
+    // OSV's CVE-2021-32773 files racket/racket, the repository net-lib's catalog source names,
+    // as affected at its v4.1 tag.
+    ("racket-pkg", "net-lib", None, Some("v4.1")),
+    ("racket-pkg", "threading-lib", None, None),
     ("deno-cli", "deno", None, Some("1.30.0")),
     ("dotnet-sdk", "dotnet", None, Some("8.0.100")),
     ("temurin", "java", None, Some("17")),
@@ -177,6 +181,9 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("bitbucket", "atlassian/aws-s3-deploy", None, None),
     ("bitbucket", "b_c/jose4j", None, Some("jose4j-0.9.2")),
     ("circleci-orb", "circleci/node", None, None),
+    ("git-ref", "github.com/actions/checkout", None, None),
+    ("git-ref", "gitlab.com/components/opentofu", None, None),
+    ("git-ref", "data.forgejo.org/actions/checkout", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
@@ -311,6 +318,99 @@ fn every_registry_lists_versions() {
     }
     let failures: Vec<&String> = answers.iter().filter_map(|a| a.as_ref().err()).collect();
     assert!(failures.is_empty(), "{failures:#?}");
+}
+
+/// A branch shows its head commit, and a commit pinned behind that head lags it, on the hosts
+/// GitHub Actions, GitLab components, Forgejo Actions, and Buildkite plugins name. actions/checkout
+/// tagged v4.1.0 at 8ade135 in 2023, and its main branch has moved on since.
+#[test]
+#[ignore = "needs the network"]
+fn git_refs_show_branch_head_and_lagging_pin() {
+    use crate::git_ref::{Ref, resolve};
+    let http = patient();
+    let refs = |name: &'static str| {
+        let found = block_on(http.versions(get("git-ref").unwrap(), name, None, &[], &[]));
+        found.unwrap_or_else(|e| panic!("{name}: {e}")).list
+    };
+    for (name, branch) in [
+        ("github.com/actions/checkout", "main"),
+        ("gitlab.com/components/opentofu", "main"),
+        ("data.forgejo.org/actions/checkout", "main"),
+        (
+            "github.com/buildkite-plugins/docker-buildkite-plugin",
+            "master",
+        ),
+    ] {
+        let found = resolve(branch, &refs(name));
+        eprintln!("{name}@{branch}: {found:?}");
+        assert!(
+            matches!(&found, Ok(Ref::Branch { head, .. }) if head.len() == 40),
+            "{name}@{branch}: {found:?}"
+        );
+    }
+    let pin = "8ade135a41bc03ea155e62e844d188df1ea18608";
+    let found = resolve(pin, &refs("github.com/actions/checkout")).unwrap();
+    eprintln!("actions/checkout@{pin}: {found:?}");
+    assert!(found.lags(pin));
+    assert!(
+        matches!(&found, Ref::Pinned { branch, tag: Some(tag), .. } if branch == "main" && tag == "v4.1.0")
+    );
+}
+
+/// A Conan range resolves to the newest version `ConanCenter` lists inside it, not its latest.
+#[test]
+#[ignore = "needs the network"]
+fn conan_range_resolves_inside_range() {
+    use crate::version::{Bare, Req, plan};
+    let found = block_on(patient().versions(get("conan").unwrap(), "openssl", None, &[], &[]))
+        .expect("ConanCenter lists openssl");
+    let mut versions: Vec<Version> = found
+        .list
+        .iter()
+        .filter_map(|v| Version::parse(v))
+        .collect();
+    versions.sort();
+    let req = Req::parse(">=3 <4", Bare::Exact).unwrap();
+    let plan = plan(&req, &versions, None, false).expect("a plan");
+    let resolved = plan.resolved.expect("a version inside the range");
+    eprintln!(
+        "conan openssl/[>=3 <4]: resolved {}, latest {}",
+        resolved.raw, plan.latest.raw
+    );
+    assert_eq!(resolved.nums.first(), Some(&3), "{}", resolved.raw);
+    let newest_three = versions
+        .iter()
+        .filter(|v| v.nums.first() == Some(&3))
+        .filter(|v| !v.is_prerelease())
+        .max()
+        .unwrap();
+    assert_eq!(resolved.raw, newest_three.raw);
+}
+
+/// A Racket package's versions are the tags of the repository its catalog entry names, on that
+/// repository's own host.
+#[test]
+#[ignore = "needs the network"]
+fn racket_package_lists_source_tags() {
+    let http = patient();
+    for (name, tag) in [
+        ("threading-lib", "v1.2"),
+        ("SSE", "v0.1"),
+        ("Rakka", "0.11.0"),
+    ] {
+        let found = block_on(http.versions(get("racket-pkg").unwrap(), name, None, &[], &[]))
+            .unwrap_or_else(|e| panic!("{name}: {e}"));
+        eprintln!("racket-pkg {name}: {:?}", found.list);
+        assert!(
+            found.list.iter().any(|t| t == tag),
+            "{name}: {:?}",
+            found.list
+        );
+        assert!(
+            !found.list.iter().any(|t| t.ends_with("^{}")),
+            "{name}: peeled tags"
+        );
+    }
 }
 
 #[test]

@@ -20,7 +20,7 @@ fn pages_docker_tags_by_number_and_variant() {
 }
 
 #[test]
-fn names_the_application_an_image_packages() {
+fn names_application_image_packages() {
     let app = |name| expand("{app}", name, None).ok();
     assert_eq!(app("nginx").as_deref(), Some("nginx"));
     assert_eq!(app("library/postgres").as_deref(), Some("postgresql"));
@@ -154,7 +154,7 @@ fn parses_each_response_shape() {
 }
 
 #[test]
-fn reads_an_index_that_answers_only_html() {
+fn reads_index_that_answers_only_html() {
     // PEP 691 lets a Simple index ignore the JSON `accept` and answer PEP 503 HTML, as PyTorch's
     // download.pytorch.org/whl/cpu/torch/ does; each file name holds its version.
     let html = r#"<h1>Links for torch</h1>

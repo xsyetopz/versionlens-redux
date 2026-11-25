@@ -36,16 +36,17 @@ fn reads_fetchcontent_repositories_and_archives() {
 }
 
 #[test]
-fn reads_a_whole_conan_recipe() {
+fn reads_whole_conan_recipe() {
     // docs.conan.io/2/reference/conanfile/attributes.html `requires` and `tool_requires`, and
     // methods/requirements.html and build_requirements.html: attributes, calls under a condition,
-    // and keyword arguments are read; a version range and the recipe's own version are not.
+    // keyword arguments, and a version range are read; the recipe's own version is not.
     let text = "from conan import ConanFile\n\nclass PkgRecipe(ConanFile):\n    name = \"pkg\"\n    version = \"1.0\"\n    requires = \"zlib/1.3.1\", \"openssl/[>=3 <4]\"\n    tool_requires = \"cmake/3.27.9\"\n\n    def requirements(self):\n        self.requires(\"fmt/10.2.1\")\n        if self.options.with_ssl:\n            self.requires(\"libcurl/8.6.0\", transitive_headers=True)\n\n    def build_requirements(self):\n        self.tool_requires(\"ninja/1.11.1\")\n        self.test_requires(\"gtest/1.14.0\")\n";
     expect(
         "conanfile.py",
         text,
         &[
             ("zlib", "1.3.1", "conan"),
+            ("openssl", ">=3 <4", "conan"),
             ("cmake", "3.27.9", "conan"),
             ("fmt", "10.2.1", "conan"),
             ("libcurl", "8.6.0", "conan"),
@@ -53,6 +54,58 @@ fn reads_a_whole_conan_recipe() {
             ("gtest", "1.14.0", "conan"),
         ],
     );
+}
+
+#[test]
+fn resolves_conan_ranges_to_newest_version_inside() {
+    use crate::version::{Bare, Req, Version, plan};
+    // docs.conan.io/2/tutorial/versioning/version_ranges.html: a range with options after its
+    // comma, a tilde, a caret, a wildcard, and alternatives.
+    let text = "[requires]\nopenssl/[>=3 <4]\nzlib/[~1.2, include_prerelease]\nfmt/[^10.1]\nboost/[1.83.*]\nlibpng/[>1.5 <1.6 || >=1.6.40]\n\n[tool_requires]\ncmake/3.27.9\n";
+    expect(
+        "conanfile.txt",
+        text,
+        &[
+            ("openssl", ">=3 <4", "conan"),
+            ("zlib", "~1.2", "conan"),
+            ("fmt", "^10.1", "conan"),
+            ("boost", "1.83.*", "conan"),
+            ("libpng", ">1.5 <1.6 || >=1.6.40", "conan"),
+            ("cmake", "3.27.9", "conan"),
+        ],
+    );
+    let listed = |list: &[&str]| -> Vec<Version> {
+        let mut out: Vec<Version> = list.iter().filter_map(|v| Version::parse(v)).collect();
+        out.sort();
+        out
+    };
+    for (req, list, want) in [
+        (
+            ">=3 <4",
+            &["1.1.1w", "3.0.13", "3.3.2", "4.0.0"][..],
+            "3.3.2",
+        ),
+        ("~1.2", &["1.2.11", "1.2.13", "1.3", "1.3.1"][..], "1.2.13"),
+        (
+            "^10.1",
+            &["9.1.0", "10.1.1", "10.2.1", "11.0.2"][..],
+            "10.2.1",
+        ),
+        ("1.83.*", &["1.82.0", "1.83.0", "1.84.0"][..], "1.83.0"),
+        (
+            ">1.5 <1.6 || >=1.6.40",
+            &["1.5.13", "1.6.39", "1.6.43"][..],
+            "1.6.43",
+        ),
+    ] {
+        let parsed = Req::parse(req, Bare::Exact).unwrap_or_else(|| panic!("{req} parses"));
+        let found = plan(&parsed, &listed(list), None, false).expect("a plan");
+        assert_eq!(
+            found.resolved.map(|v| v.raw),
+            Some(want.to_owned()),
+            "{req}"
+        );
+    }
 }
 
 #[test]
@@ -160,7 +213,7 @@ fn reads_mill_java_dependencies() {
 }
 
 #[test]
-fn reads_mill_scala_dependencies_with_the_scala_version() {
+fn reads_mill_scala_dependencies_with_scala_version() {
     // com-lihaoyi/mill's example/scalalib/basic/5-programmable/build.mill.
     let text = "object foo extends ScalaModule {\n  def scalaVersion = \"3.8.2\"\n  def mvnDeps = Seq(\n    mvn\"com.lihaoyi::scalatags:0.13.1\"\n  )\n}\n";
     expect(
@@ -255,6 +308,35 @@ fn reads_west_projects() {
             ("https://git.example.com/base2/proj6", "v2.0.0", "source"),
         ],
     );
+}
+
+#[test]
+fn west_projects_without_revision_inherit_defaults() {
+    // The west manifest docs' "Defaults" example: `defaults.revision` and `defaults.remote` fill
+    // in what a project leaves out, and a project's own revision, remote, or url outranks them.
+    let text = "manifest:\n  defaults:\n    remote: remote1\n    revision: v1.3\n\n  remotes:\n    - name: remote1\n      url-base: https://github.com/zephyrproject-rtos\n    - name: remote2\n      url-base: https://git.example.com/base2\n\n  projects:\n    - name: proj1\n      path: extra/project-1\n      revision: master\n    - name: proj2\n      repo-path: my-path\n      remote: remote2\n    - name: hal_nordic\n    - name: proj3\n      url: https://github.com/user/project-three\n    - name: proj4\n      url: https://github.com/user/project-four\n      revision: abcde413a111\n";
+    expect(
+        "west.yml",
+        text,
+        &[
+            ("https://git.example.com/base2/my-path", "v1.3", "source"),
+            ("zephyrproject-rtos/hal_nordic", "v1.3", "github"),
+            ("user/project-three", "v1.3", "github"),
+            (
+                "https://github.com/zephyrproject-rtos/proj1",
+                "master",
+                "source",
+            ),
+            (
+                "https://github.com/user/project-four",
+                "abcde413a111",
+                "source",
+            ),
+        ],
+    );
+    // Without `defaults.revision`, west checks out `master`, which the file does not write.
+    let bare = "manifest:\n  defaults:\n    remote: r\n  remotes:\n    - name: r\n      url-base: https://github.com/o\n  projects:\n    - name: p\n";
+    expect("west.yml", bare, &[]);
 }
 
 #[test]

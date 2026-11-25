@@ -1,11 +1,12 @@
 use super::*;
+use crate::git_ref::Ref;
 
 fn v(text: &str) -> Version {
     Version::parse(text).unwrap()
 }
 
 #[test]
-fn replaces_in_the_users_style() {
+fn replaces_in_users_style() {
     assert_eq!(
         replacement("^1.2.3", &v("1.4.0"), "", false).as_deref(),
         Some("^1.4.0")
@@ -38,7 +39,7 @@ fn replaces_in_the_users_style() {
 }
 
 #[test]
-fn writes_the_whole_version_for_a_precise_file_type() {
+fn writes_whole_version_for_precise_file_type() {
     assert_eq!(
         replacement("~> 1.0", &v("2.0.0"), "", true).as_deref(),
         Some("~> 2.0.0")
@@ -101,7 +102,7 @@ fn offers_updates_only_to_matching_kinds() {
 }
 
 #[test]
-fn bulk_updates_pick_the_named_level() {
+fn bulk_updates_pick_named_level() {
     let dep = Dep {
         name: "a".into(),
         req: "^1.2.0".into(),
@@ -139,7 +140,7 @@ fn bulk_updates_pick_the_named_level() {
 }
 
 #[test]
-fn status_follows_the_original_wording() {
+fn status_follows_original_wording() {
     let glyphs = Indicators::default();
     let plan = |resolved: Option<&str>| Plan {
         latest: v("2.1.0"),
@@ -244,7 +245,7 @@ fn hints_warn_of_yanked_and_deprecated_resolutions() {
 }
 
 #[test]
-fn offers_the_other_builds_of_the_resolved_version() {
+fn offers_other_builds_of_resolved_version() {
     let (dep, plan) = planned(
         "20-alpine",
         &["20.1.0-alpine", "20.1.0-bookworm", "22.0.0-alpine"],
@@ -260,7 +261,7 @@ fn offers_the_other_builds_of_the_resolved_version() {
 }
 
 #[test]
-fn directory_lenses_open_the_path_or_report_it_missing() {
+fn directory_lenses_open_path_or_report_it_missing() {
     let glyphs = Indicators::default();
     let (dep, _) = planned("1", &["1.0.0"]);
     let found = State::Directory {
@@ -282,7 +283,7 @@ fn directory_lenses_open_the_path_or_report_it_missing() {
 }
 
 #[test]
-fn source_lenses_name_the_source_and_count_as_neither_failed_nor_outdated() {
+fn source_lenses_name_source_and_count_as_neither_failed_nor_outdated() {
     let glyphs = Indicators::default();
     let (dep, _) = planned("1", &["1.0.0"]);
     let source = || State::Source("git repository".into());
@@ -312,7 +313,7 @@ fn project_versions_offer_their_next_releases_and_are_not_counted() {
 }
 
 #[test]
-fn offers_no_update_where_a_bare_name_has_no_place_for_a_version() {
+fn offers_no_update_where_bare_name_has_no_place_for_version() {
     let (mut dep, plan) = planned("", &["1.0.0", "2.0.0"]);
     dep.span = 0..0;
     let view = view(
@@ -325,4 +326,85 @@ fn offers_no_update_where_a_bare_name_has_no_place_for_a_version() {
     assert_eq!(picks(&view, "").len(), 0);
     assert_eq!(updates(std::slice::from_ref(&view), "", "latest").len(), 0);
     assert_eq!(picks(&view, "==")[0].1, "==2.0.0");
+}
+
+fn git_ref_dep(req: &str) -> Dep {
+    Dep {
+        name: "github.com/actions/checkout".into(),
+        req: req.into(),
+        span: 0..req.len(),
+        registry: git_ref::GIT_REF,
+        source: None,
+        index: None,
+        targets: Vec::new(),
+        pinned: false,
+        precise: false,
+        min: false,
+    }
+}
+
+const HEAD: &str = "f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a";
+
+#[test]
+fn branch_lens_shows_head_commit() {
+    let dep = git_ref_dep("main");
+    let state = State::Commit(Ref::Branch {
+        name: "main".into(),
+        head: HEAD.into(),
+    });
+
+    let shown = titles(&dep, state);
+
+    assert_eq!(shown, ["branch main head f548e57"]);
+}
+
+#[test]
+fn pinned_commit_behind_head_is_flagged_and_offers_head() {
+    let glyphs = Indicators::default();
+    let pin = "8ade135a41bc03ea155e62e844d188df1ea18608";
+    let dep = git_ref_dep(pin);
+    let state = || {
+        State::Commit(Ref::Pinned {
+            branch: "main".into(),
+            head: HEAD.into(),
+            tag: Some("v4.1.0".into()),
+        })
+    };
+    let uri: Uri = "file:///p/.github/workflows/ci.yml".parse().unwrap();
+
+    let shown = titles(&dep, state());
+    let views = [view(&dep, state())];
+    let outdated = diagnostics(&views, "", Some(DiagnosticSeverity::INFORMATION));
+    let summary = stats(&uri, &views, "", &glyphs)
+        .and_then(|l| l.command)
+        .unwrap();
+
+    assert_eq!(
+        shown,
+        [
+            format!("{} tag v4.1.0 · behind main head f548e57", glyphs.satisfies),
+            format!("{} main head f548e57", glyphs.update),
+        ]
+    );
+    assert_eq!(picks(&views[0], "")[0].1, HEAD);
+    assert_eq!(
+        outdated[0].message,
+        "github.com/actions/checkout can update to main head f548e57"
+    );
+    assert!(summary.title.contains("1 outdated"));
+}
+
+#[test]
+fn pinned_commit_at_head_is_current() {
+    let glyphs = Indicators::default();
+    let dep = git_ref_dep(HEAD);
+    let state = State::Commit(Ref::Pinned {
+        branch: "main".into(),
+        head: HEAD.into(),
+        tag: None,
+    });
+
+    let shown = titles(&dep, state);
+
+    assert_eq!(shown, [format!("{} main head", glyphs.latest)]);
 }

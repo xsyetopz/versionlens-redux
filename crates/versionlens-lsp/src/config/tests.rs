@@ -47,7 +47,7 @@ fn reads_indicators_lists_and_severity() {
 }
 
 #[test]
-fn providers_override_one_registry_and_keep_the_global_for_others() {
+fn providers_override_one_registry_and_keep_global_for_others() {
     let settings = Settings::from_json(&json!({
         "cacheMinutes": 10,
         "providers": { "npm": { "cacheMinutes": 1, "strictSsl": false, "prereleaseTags": ["rc"] } },
@@ -60,7 +60,7 @@ fn providers_override_one_registry_and_keep_the_global_for_others() {
 }
 
 #[test]
-fn reads_the_original_settings_under_their_new_names() {
+fn reads_original_settings_under_their_new_names() {
     let settings = Settings::from_json(&json!({ "versionlens": {
         "caching": { "duration": 3 },
         "http": { "strictSSL": false },
@@ -91,7 +91,7 @@ fn reads_the_original_settings_under_their_new_names() {
 }
 
 #[test]
-fn new_keys_win_over_the_original_ones() {
+fn new_keys_win_over_original_ones() {
     let settings = Settings::from_json(&json!({
         "cacheMinutes": 5,
         "caching": { "duration": 3 },
@@ -103,7 +103,7 @@ fn new_keys_win_over_the_original_ones() {
 }
 
 #[test]
-fn takes_the_github_token_from_the_setting_then_github_token_then_gh_token() {
+fn takes_github_token_from_setting_then_github_token_then_gh_token() {
     let env = |set: &'static [(&'static str, &'static str)]| {
         move |k: &str| {
             set.iter()

@@ -24,7 +24,7 @@ class TraceTest {
     }
 
     @Test
-    fun framerSkipsBodiesWhileOffAndPicksUpTheNextOne() {
+    fun framerSkipsBodiesWhileOffAndPicksUpNextOne() {
         var on = false
         val seen = mutableListOf<String>()
         val framer = Framer({ on }) { seen += it }
@@ -75,7 +75,7 @@ class TraceTest {
     }
 
     @Test
-    fun verboseAddsTheParamsOrResult() {
+    fun verboseAddsParamsOrResult() {
         val lines = mutableListOf<String>()
         val trace = Trace({ "verbose" }, lines::add)
 

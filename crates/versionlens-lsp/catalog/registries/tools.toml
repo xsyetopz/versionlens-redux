@@ -61,6 +61,25 @@ regex = 'releases/(\d+(?:\.\d+)+)/'
 bare = 'min'
 page = 'https://download.racket-lang.org/'
 
+# A Racket package from the package catalog, which records each package's `source` and no
+# versions: pkgs.racket-lang.org/pkg/threading-lib.json gives
+# `"source":"git://github.com/lexi-lambda/threading?path=threading-lib"`, and the catalog's
+# pkgs-all.json, read 2026-11-25, puts 2392 of 2849 sources on github.com, 131 on gitlab.com, and
+# 32 on codeberg.org. `{upstream}` takes the source's host and repository, and the repository's
+# tags are its versions, listed by git's smart HTTP protocol, which every one of those hosts
+# serves: git-scm.com/docs/http-protocol "Smart Clients", `refs/tags/<tag>` once and again peeled
+# as `<tag>^{}`. A `#:version` is a lower bound on the package's own `version`
+# (docs.racket-lang.org/pkg/metadata.html). OSV's GIT ecosystem keys ranges by the repository URL.
+[[registry]]
+id = 'racket-pkg'
+url = 'https://{upstream}.git/info/refs?service=git-upload-pack'
+regex = 'refs/tags/([^\s^]+)\n'
+bare = 'min'
+osv = 'GIT'
+osv_name = 'https://pkgs.racket-lang.org/pkg/{name}.json'
+upstream = '"source":"(?:git|https?|github)://(?P<host>[\w.-]+)/(?P<owner>[\w.~-]+)/(?P<repo>[\w.-]+?)(?:\.git)?(?:[/?#][^"]*)?"'
+page = 'https://pkgs.racket-lang.org/package/{name}'
+
 # R's releases from R-hub's rversions service, which `R (>= 4.3)` in a DESCRIPTION names.
 [[registry]]
 id = 'r-lang'

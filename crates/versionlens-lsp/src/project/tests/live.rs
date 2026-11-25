@@ -17,7 +17,7 @@ fn looked_up(root: &Path, path: &str, env: &Env) -> Vec<(String, String, Result<
     let path = root.join(path);
     let text = std::fs::read_to_string(&path).unwrap();
     let file = file_type_of(path.to_str().unwrap(), &text).unwrap();
-    let mut deps = extract(file, &text);
+    let mut deps = super::super::extract(file, &path, &text);
     resolve(&path, &text, &mut deps, env);
     // The checks ask whether each route answers, not how fast, so the client waits 60s.
     let http = Http::new(Settings {
@@ -53,6 +53,45 @@ fn assert_answered(kind: &str, found: &[(String, String, Result<usize, String>)]
         .filter(|(_, url, result)| url.is_empty() || !matches!(result, Ok(n) if *n > 0))
         .collect();
     assert!(failed.is_empty(), "{kind}: {failed:#?}");
+}
+
+#[test]
+#[ignore = "needs the network"]
+fn ci_server_fqdn_component_lists_tags_on_remote_instance() {
+    // GNOME's citemplates on gitlab.gnome.org publishes `templates/basic-release.yml` as a
+    // component, tagged `26.3`; gitlab.com's opentofu component stands in for a clone without a
+    // self-hosted remote.
+    let pipeline =
+        "include:\n  - component: $CI_SERVER_FQDN/GNOME/citemplates/basic-release@26.3\n";
+    let root = project(
+        "live-gitlab-gnome",
+        &[
+            (".gitlab-ci.yml", pipeline),
+            (
+                ".git/config",
+                "[remote \"origin\"]\n\turl = https://gitlab.gnome.org/GNOME/gnome-shell.git\n",
+            ),
+        ],
+    );
+    let found = looked_up(&root, ".gitlab-ci.yml", &env(&root, &[]));
+    eprintln!("gitlab.gnome.org: {found:?}");
+    assert!(
+        matches!(&found[..], [(name, _, Ok(n))] if name == "gitlab.gnome.org/GNOME/citemplates" && *n > 0),
+        "{found:?}"
+    );
+    let root = project(
+        "live-gitlab-com",
+        &[(
+            ".gitlab-ci.yml",
+            "include:\n  - component: $CI_SERVER_FQDN/components/opentofu/full-pipeline@2\n",
+        )],
+    );
+    let found = looked_up(&root, ".gitlab-ci.yml", &env(&root, &[]));
+    eprintln!("gitlab.com: {found:?}");
+    assert!(
+        matches!(&found[..], [(name, _, Ok(n))] if name == "components/opentofu" && *n > 0),
+        "{found:?}"
+    );
 }
 
 #[test]
@@ -245,7 +284,7 @@ fn token_registry(auth: &'static str, routes: Routes) -> (String, Seen) {
 
 #[test]
 #[ignore = "needs the network"]
-fn sends_the_npmrc_token_from_the_environment() {
+fn sends_npmrc_token_from_environment() {
     let packument = r#"{"versions":{"1.0.0":{},"1.1.0":{}},"dist-tags":{"latest":"1.1.0"}}"#;
     let (url, seen) = token_registry("Bearer s3cret", vec![("/@acme%2fui", packument.into())]);
     let host = url.trim_start_matches("http:");
@@ -291,7 +330,7 @@ fn sends_the_npmrc_token_from_the_environment() {
 /// in place of the 401 shows the token arrived.
 #[test]
 #[ignore = "needs the network and a signed-in gh"]
-fn sends_the_npmrc_token_to_github_packages() {
+fn sends_npmrc_token_to_github_packages() {
     let out = std::process::Command::new("gh")
         .args(["auth", "token", "--hostname", "github.com"])
         .output()
@@ -358,7 +397,7 @@ fn sends_the_npmrc_token_to_github_packages() {
 /// here the one under the `dotnet-home/` the CLI is given as `HOME`, and the lookup reaches it.
 #[test]
 #[ignore = "needs the dotnet CLI"]
-fn reaches_the_feed_dotnet_lists() {
+fn reaches_feed_dotnet_lists() {
     let routes = vec![
         (
             "/v3/index.json",
@@ -413,7 +452,7 @@ fn reaches_the_feed_dotnet_lists() {
 /// each password, and Cargo's token bare. Each reader's lookup must send the same and succeed.
 #[test]
 #[ignore = "needs the network"]
-fn sends_the_header_each_package_manager_sends() {
+fn sends_header_each_package_manager_sends() {
     let basic = "Basic dTpw";
     let cases: Vec<(&str, &str, &'static str, Routes)> = vec![
         (

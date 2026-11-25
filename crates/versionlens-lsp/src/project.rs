@@ -7,12 +7,15 @@
 use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 
+use crate::catalog::FileType;
 use crate::extract::Dep;
 use crate::flatten::{Format, Leaf, flatten};
 
 mod cargo;
 mod composer;
+mod git;
 mod maven;
+mod mill;
 mod npm;
 mod nuget;
 mod python;
@@ -75,6 +78,57 @@ impl Env {
 
 fn read(path: &Path) -> Option<String> {
     std::fs::read_to_string(path).ok()
+}
+
+/// The dependencies of the manifest at `path`, read with what its project keeps elsewhere: a
+/// Mill module's Scala version from the file that defines the trait it extends, and the GitLab
+/// instance a pipeline's `$CI_SERVER_FQDN` names from the workspace's git remote. The version is
+/// appended to the text the rules see, so the Mill row's `within` blocks read it, and a match
+/// inside the appended line is dropped.
+pub(crate) fn extract(file: &FileType, path: &Path, text: &str) -> Vec<Dep> {
+    if file.id == "mill"
+        && let Some(line) = mill::inherited(path, text)
+    {
+        let joined = format!("{text}\n{line}\n");
+        let mut deps = crate::extract::extract(file, &joined);
+        deps.retain(|d| d.span.end <= text.len());
+        return deps;
+    }
+    let mut deps = crate::extract::extract(file, text);
+    if file.id == "gitlab-ci" {
+        instance(path, &mut deps);
+    }
+    deps
+}
+
+/// Names each GitLab component on `$CI_SERVER_FQDN` by the host of the workspace's git remote,
+/// or as a gitlab.com project where there is none.
+fn instance(path: &Path, deps: &mut [Dep]) {
+    let mut host = None;
+    for dep in deps.iter_mut() {
+        let Some(project) = dep
+            .name
+            .strip_prefix(crate::extract::INSTANCE)
+            .map(str::to_owned)
+        else {
+            continue;
+        };
+        let host = host.get_or_insert_with(|| path.parent().and_then(git::remote_host));
+        // A repository on GitHub or Bitbucket runs GitLab pipelines through gitlab.com's CI/CD
+        // for external repositories (docs.gitlab.com/ci/ci_cd_for_external_repos/).
+        let other = ["gitlab.com", "github.com", "bitbucket.org"];
+        match host.as_deref() {
+            Some(host) if !other.contains(&host) => dep.name = format!("{host}/{project}"),
+            // A branch or SHA reads the refs of the project on gitlab.com.
+            _ if dep.registry == crate::git_ref::GIT_REF => {
+                dep.name = format!("gitlab.com/{project}");
+            }
+            _ => {
+                dep.name = project;
+                dep.registry = "gitlab";
+            }
+        }
+    }
 }
 
 /// Sets each dependency's [`Dep::targets`] from the configuration around the manifest at `path`,

@@ -7,7 +7,7 @@ fn repo(id: &str, text: &str) -> Option<String> {
 }
 
 #[test]
-fn finds_the_repository_each_registry_names() {
+fn finds_repository_each_registry_names() {
     let cases = [
         (
             "bazel",
@@ -60,7 +60,38 @@ fn finds_the_repository_each_registry_names() {
 }
 
 #[test]
-fn finds_nothing_where_the_registry_names_no_github_repository() {
+fn finds_racket_package_source_on_own_host() {
+    // pkgs.racket-lang.org/pkg/<name>.json, whose first `source` is the package's; the later ones
+    // belong to `versions`.
+    let cases = [
+        (
+            r#""source":"git://github.com/lexi-lambda/threading?path=threading-lib","tags":[],"versions":{"6.2":{"source":"http://racket-packages.s3-us-west-2.amazonaws.com/pkgs/empty.zip"}}"#,
+            "https://github.com/lexi-lambda/threading",
+        ),
+        (
+            r#""source":"https://gitlab.com/oquijano/sse.git""#,
+            "https://gitlab.com/oquijano/sse",
+        ),
+        (
+            r#""source":"https://codeberg.org/Trevoke/rakka.git#congruence""#,
+            "https://codeberg.org/Trevoke/rakka",
+        ),
+        (
+            r#""source":"github://github.com/owner/pkg/main""#,
+            "https://github.com/owner/pkg",
+        ),
+    ];
+    for (text, expected) in cases {
+        assert_eq!(
+            repo("racket-pkg", text).as_deref(),
+            Some(expected),
+            "{text}"
+        );
+    }
+}
+
+#[test]
+fn finds_nothing_where_registry_names_no_github_repository() {
     assert_eq!(
         repo("chef", r#""source_url":"https://gitlab.com/a/b""#),
         None

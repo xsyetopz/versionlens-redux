@@ -10,7 +10,7 @@ fixed_versions:
 "#;
 
 #[test]
-fn reports_an_advisory_only_inside_its_range() {
+fn reports_advisory_only_inside_its_range() {
     let at = |v: &str| affecting(ADVISORY, &Version::parse(v).unwrap());
     assert_eq!(at("1.1.1e").as_deref(), Some("CVE-2020-1967"));
     assert_eq!(at("1.1.1g"), None);

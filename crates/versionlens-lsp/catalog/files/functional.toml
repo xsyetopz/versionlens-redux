@@ -381,9 +381,10 @@ rules = [
 # `#:version`, or the deprecated bare version string: docs.racket-lang.org/pkg/metadata.html,
 # which recommends a versioned dependency on "base", the Racket release. Brackets work as
 # parentheses, `'(["base" #:version "6.3"])` in github.com/lexi-lambda/threading's
-# threading-lib/info.rkt. The package catalog
-# (pkgs.racket-lang.org/pkg/<name>) records checksums and no package versions, so other packages'
-# lower bounds have nothing to compare with and are not read.
+# threading-lib/info.rkt. Any other package names its catalog entry, and `racket-pkg` lists the
+# tags of the repository that entry's source names, as `["threading-lib" #:version "2.0"]` in
+# lexi-lambda/threading's threading/info.rkt; `#:platform` may come before the version. A
+# dependency without a version has no span to compare.
 [[file]]
 id = 'racket'
 globs = ['info.rkt']
@@ -391,6 +392,7 @@ format = 'text'
 registry = 'racket'
 rules = [
     { lines = '''[(\[][ \t]*(?:list[ \t]+)?"(?P<name>base)"[ \t\r\n]+(?:'?#:version[ \t\r\n]+)?"(?P<version>\d+(?:\.\d+)*)"''' },
+    { lines = '''[(\[][ \t]*(?:list[ \t]+)?"(?P<name>[\w-]+)"(?:[ \t\r\n]+'?#:platform[ \t\r\n]+[^\s()\[\]]+)?[ \t\r\n]+(?:'?#:version[ \t\r\n]+)?"(?P<version>\d+(?:\.\d+)*)"''', via = 'racket-pkg' },
 ]
 
 # Lake requires a git package at a `rev`, in lakefile.toml as `git` then `rev` and in lakefile.lean

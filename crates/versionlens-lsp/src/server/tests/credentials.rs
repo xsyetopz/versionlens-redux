@@ -114,7 +114,7 @@ fn sent(rx: &Receiver<String>, test: impl Fn(&str) -> bool) -> String {
 }
 
 #[test]
-fn adds_and_removes_url_authentication_through_prompts_and_the_stored_file() {
+fn adds_and_removes_url_authentication_through_prompts_and_stored_file() {
     let dir = std::env::temp_dir().join(format!("versionlens-auth-{}", std::process::id()));
     drop(std::fs::remove_dir_all(&dir));
     let path = dir.join("versionlens").join("authorization.json");
@@ -215,7 +215,7 @@ fn adds_and_removes_url_authentication_through_prompts_and_the_stored_file() {
 }
 
 #[test]
-fn keeps_the_authentication_actions_to_editors_that_ask() {
+fn keeps_authentication_actions_to_editors_that_ask() {
     let (url, _headers) = registry();
     let client = start(&url, None, false);
     let commands = &client.init["capabilities"]["executeCommandProvider"]["commands"];

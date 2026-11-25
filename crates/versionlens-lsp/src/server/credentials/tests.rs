@@ -35,7 +35,7 @@ fn turns_each_entry_kind_into_its_header() {
 }
 
 #[test]
-fn takes_a_registry_prefix_from_its_url_template() {
+fn takes_registry_prefix_from_its_url_template() {
     let settings = Settings::default();
     assert_eq!(prefix(&settings, "npm"), "https://registry.npmjs.org/");
     assert_eq!(prefix(&settings, "no-such-registry"), "https://");
@@ -47,7 +47,7 @@ fn takes_a_registry_prefix_from_its_url_template() {
 }
 
 #[test]
-fn puts_the_cursor_in_the_first_blank_or_on_a_bare_scheme() {
+fn puts_cursor_in_first_blank_or_on_bare_scheme() {
     let text = "{\n  \"a/\": \"x\",\n  \"https://b/\": {\n    \"password\": \"\",\n    \"user\": \"\"\n  }\n}\n";
     let at = cursor(text, "https://b/");
     assert_eq!(at["start"], json!({ "line": 3, "character": 17 }));
@@ -58,7 +58,7 @@ fn puts_the_cursor_in_the_first_blank_or_on_a_bare_scheme() {
 }
 
 #[test]
-fn reads_a_missing_file_as_empty_and_names_a_corrupt_one() {
+fn reads_missing_file_as_empty_and_names_corrupt_one() {
     let dir = std::env::temp_dir().join(format!("versionlens-stored-{}", std::process::id()));
     let path = dir.join("authorization.json");
     drop(std::fs::remove_dir_all(&dir));
