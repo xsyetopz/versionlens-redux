@@ -41,6 +41,22 @@ class SectionTest {
     }
 
     @Test
+    fun authenticationEntriesAreAddedReplacedAndRemoved() {
+        val stored = "# work\nhttps://a.example/=Bearer old"
+
+        val added = Section.withEntry(stored, "https://b.example/", "Basic dTpw")
+        val replaced = Section.withEntry(added, "https://a.example/", "Bearer new")
+        val removed = Section.without(replaced, listOf("https://b.example/"))
+
+        assertEquals("https://a.example/=Bearer old\nhttps://b.example/=Basic dTpw", added)
+        assertEquals(
+            mapOf("https://a.example/" to "Bearer new", "https://b.example/" to "Basic dTpw"),
+            Section.parseMap(replaced),
+        )
+        assertEquals("https://a.example/=Bearer new", removed)
+    }
+
+    @Test
     fun buildMergesSecretsWithPlainValues() {
         val section =
             Section.build(

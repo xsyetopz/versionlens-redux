@@ -38,6 +38,8 @@
     <action id="versionlens.clearCache" class="com.versionlens.jetbrains.ClearCacheAction" text="Clear Cache"/>
     <action id="versionlens.restart" class="com.versionlens.jetbrains.RestartAction" text="Restart Server"/>
     <action id="versionlens.showOutput" class="com.versionlens.jetbrains.ShowLogAction" text="Show VersionLens Log"/>
+    <action id="versionlens.addAuthentication" class="com.versionlens.jetbrains.AddAuthenticationAction" text="Add URL Authentication"/>
+    <action id="versionlens.removeAuthentication" class="com.versionlens.jetbrains.RemoveAuthenticationAction" text="Remove URL Authentication"/>
     <group id="versionlens.updateAllMenu" text="Update All Dependencies" popup="true">
       <reference ref="versionlens.updateAll.latest"/>
       <reference ref="versionlens.updateAll.major"/>
@@ -80,6 +82,9 @@
       <reference ref="versionlens.clearCache"/>
       <reference ref="versionlens.restart"/>
       <reference ref="versionlens.showOutput"/>
+      <separator/>
+      <reference ref="versionlens.addAuthentication"/>
+      <reference ref="versionlens.removeAuthentication"/>
     </group>
   </actions>
 </idea-plugin>

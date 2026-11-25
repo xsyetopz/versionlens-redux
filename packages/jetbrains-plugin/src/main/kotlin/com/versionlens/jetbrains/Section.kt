@@ -52,6 +52,17 @@ internal object Section {
         return map
     }
 
+    /** The authorization lines [text] with [url] sending [header], replacing an earlier entry. */
+    fun withEntry(text: String, url: String, header: String): String =
+        lines(parseMap(text) + (url to header))
+
+    /** The authorization lines [text] without the entries of [urls]. */
+    fun without(text: String, urls: Collection<String>): String =
+        lines(parseMap(text) - urls.toSet())
+
+    private fun lines(map: Map<String, String>): String =
+        map.entries.joinToString("\n") { "${it.key}=${it.value}" }
+
     /** Merges the plain [values] with the secrets from PasswordSafe into the server section. */
     fun build(values: Values, githubToken: String, authorization: String): JsonObject =
         JsonObject().apply {

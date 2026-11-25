@@ -57,7 +57,7 @@ Each manifest the server reads gets an editor toolbar, as in the VS Code editor 
 - The prerelease toggle.
 - **More**: update all dependencies or the whole workspace to latest, major, minor, or patch; sort dependencies; run the install command; refresh; clear the cache; show the log.
 
-**Tools | VersionLens** holds the same actions plus **Restart Server**, and each one is also in Find Action.
+**Tools | VersionLens** holds the same actions plus **Restart Server**, **Add URL Authentication**, and **Remove URL Authentication**, and each one is also in Find Action. The two authentication actions edit the Authorization lines of the settings page, kept in the IDE password safe, and send them to the running servers.
 
 ## Build
 

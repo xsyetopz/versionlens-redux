@@ -15,6 +15,9 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.TestDialog
+import com.intellij.openapi.ui.TestDialogManager
+import com.intellij.openapi.ui.TestInputDialog
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.platform.lsp.api.LspServerState
 import com.intellij.psi.PsiFile
@@ -31,6 +34,7 @@ import com.intellij.testFramework.junit5.fixture.sourceRootFixture
 import com.intellij.ui.AnimatedIcon
 import java.awt.image.BufferedImage
 import java.awt.image.BufferedImage.TYPE_INT_ARGB
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -197,6 +201,7 @@ class LiveTest {
         run(project, file, "versionlens.updateAll.latest")
         until("updateAll edits the document") { !editor.document.text.contains("==2.31.0") }
         println("PASS updateAll: ${editor.document.text.trim().replace("\n", " | ")}")
+        authentication(project, file)
         run(project, file, "versionlens.showOutput")
         val starts = Log.of(project).lines().count { "starting" in it }
         run(project, file, "versionlens.restart")
@@ -205,6 +210,45 @@ class LiveTest {
                 running(project) !== client
         }
         println("PASS actions")
+    }
+
+    /** Adds a bearer token through the action's dialogs, as a user answers them. */
+    private fun authentication(project: Project, file: PsiFile) {
+        val settings = Settings.get()
+        val before = settings.authorization
+        val url = "https://npm.example.com/"
+        val asked = mutableListOf<String>()
+        val input =
+            TestDialogManager.setTestInputDialog(
+                TestInputDialog { message ->
+                    asked += message
+                    if (message.startsWith("Registry URL")) url else "tok"
+                },
+            )
+        // Button 1 of the kind dialog is "Bearer token"; the closing info message takes any button.
+        val shown = CopyOnWriteArrayList<String>()
+        val dialog =
+            TestDialogManager.setTestDialog(
+                TestDialog { message ->
+                    shown += message
+                    if ("authenticates" in message) 1 else 0
+                },
+            )
+        try {
+            run(project, file, "versionlens.addAuthentication")
+            until("the header reaches the section sent to the server") {
+                settings.json().getAsJsonObject("authorization")?.get(url)?.asString == "Bearer tok"
+            }
+            until("the action confirms the saved header") {
+                shown.any { "authentication saved for $url" in it }
+            }
+            assertEquals(listOf("Registry URL prefix the header is sent to", "Token"), asked)
+            println("PASS addAuthentication: ${settings.json().getAsJsonObject("authorization")}")
+        } finally {
+            TestDialogManager.setTestInputDialog(input)
+            TestDialogManager.setTestDialog(dialog)
+            settings.authorization = before
+        }
     }
 
     private fun event(project: Project, file: PsiFile, id: String): AnActionEvent {
