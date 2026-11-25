@@ -88,3 +88,34 @@ fn joins_the_filtered_pages_without_repeats() {
     );
     assert_eq!(list(docker, &[]), ["26", "26-bookworm"]);
 }
+
+/// The core rate limit api.github.com reports to a client: 5000 an hour signed in, 60 anonymous.
+fn github_limit(settings: Settings) -> Result<u64, String> {
+    let http = Http::new(settings).unwrap();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let body =
+        runtime.block_on(http.text("https://api.github.com/rate_limit", "application/json"))?;
+    let json: serde_json::Value = serde_json::from_str(&body).map_err(|e| e.to_string())?;
+    json["resources"]["core"]["limit"]
+        .as_u64()
+        .ok_or_else(|| body.clone())
+}
+
+/// With no `githubToken` setting, requests to api.github.com carry `gh auth token`, so GitHub
+/// counts them against the signed-in limit; a setting outranks it. Needs a signed-in `gh`.
+#[test]
+#[ignore = "needs the network and a signed-in gh"]
+fn live_github_uses_the_gh_token_after_the_setting() {
+    assert!(gh::run("gh", &["auth", "token", "--hostname", "github.com"]).is_some());
+    let signed_in = github_limit(Settings::default());
+    let bogus = github_limit(Settings {
+        github_token: Some("not-a-token".into()),
+        ..Settings::default()
+    });
+    eprintln!("config github gh-token limit {signed_in:?}, bogus setting {bogus:?}");
+    assert_eq!(signed_in, Ok(5000));
+    assert!(bogus.is_err_and(|e| e.contains("401")));
+}

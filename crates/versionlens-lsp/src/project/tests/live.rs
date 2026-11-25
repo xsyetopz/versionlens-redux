@@ -5,6 +5,7 @@
 
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
+use std::sync::{Arc, Mutex};
 
 use super::*;
 use crate::config::Settings;
@@ -96,7 +97,7 @@ fn each_configured_registry_answers() {
             ),
             (
                 "cargo/.cargo/config.toml",
-                "[source.crates-io]\nreplace-with = \"rsproxy\"\n\n[source.rsproxy]\nregistry = \"sparse+https://rsproxy.cn/index/\"\n",
+                "[source.crates-io]\nreplace-with = \"tuna\"\n\n[source.tuna]\nregistry = \"sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/\"\n",
             ),
             ("cargo/Cargo.toml", "[dependencies]\nserde = \"1\"\n"),
             (
@@ -133,54 +134,69 @@ fn each_configured_registry_answers() {
     assert_answered("settings.xml", &looked_up(&root, "maven/pom.xml", &none));
 }
 
-/// A registry on this machine that answers an npm packument only to `Bearer s3cret`, and 401 to
-/// anything else; it serves `requests` requests and returns the `Authorization` header of each.
-fn token_registry(requests: usize) -> (String, std::thread::JoinHandle<Vec<String>>) {
+/// A registry's answers: the path suffix each body answers, with `{url}` naming the server.
+type Routes = Vec<(&'static str, String)>;
+
+/// Each request a registry saw: its path and its `Authorization` header.
+type Seen = Arc<Mutex<Vec<(String, String)>>>;
+
+/// A registry on this machine that answers only requests carrying `auth`, with the body of the
+/// first route whose suffix ends the path, and 401 otherwise, as a private registry does. It runs
+/// until the test ends.
+fn token_registry(auth: &'static str, routes: Routes) -> (String, Seen) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let url = format!("http://{}/", listener.local_addr().unwrap());
-    let server = std::thread::spawn(move || {
-        let mut seen = Vec::new();
-        for stream in listener.incoming().take(requests) {
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let seen = Arc::new(Mutex::new(Vec::new()));
+    let log = Arc::clone(&seen);
+    let routes: Vec<_> = routes
+        .into_iter()
+        .map(|(suffix, body)| (suffix, body.replace("{url}", &url)))
+        .collect();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
             let mut stream = stream.unwrap();
-            let mut auth = String::new();
             let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut request = String::new();
+            reader.read_line(&mut request).unwrap();
+            let path = request.split(' ').nth(1).unwrap_or_default().to_owned();
+            let mut sent = String::new();
             loop {
                 let mut line = String::new();
                 if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
                     break;
                 }
-                if let Some(value) = line.to_ascii_lowercase().strip_prefix("authorization:") {
-                    auth = value.trim().to_owned();
+                if let Some((name, value)) = line.split_once(':')
+                    && name.eq_ignore_ascii_case("authorization")
+                {
+                    value.trim().clone_into(&mut sent);
                 }
             }
-            let (status, body) = if auth == "bearer s3cret" {
-                (
-                    "200 OK",
-                    r#"{"versions":{"1.0.0":{},"1.1.0":{}},"dist-tags":{"latest":"1.1.0"}}"#,
-                )
-            } else {
-                ("401 Unauthorized", "{}")
+            let route = routes.iter().find(|(suffix, _)| path.ends_with(suffix));
+            let (status, body) = match route {
+                Some((_, body)) if sent == auth => ("200 OK", body.as_str()),
+                Some(_) => ("401 Unauthorized", ""),
+                None => ("404 Not Found", ""),
             };
             write!(
                 stream,
-                "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+                "HTTP/1.1 {status}\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
                 body.len()
             )
             .unwrap();
-            seen.push(auth);
+            log.lock().unwrap().push((path, sent));
         }
-        seen
     });
-    (url, server)
+    (url, seen)
 }
 
 #[test]
 #[ignore = "needs the network"]
-fn sends_the_configured_token_from_the_environment() {
-    let (url, server) = token_registry(2);
+fn sends_the_npmrc_token_from_the_environment() {
+    let packument = r#"{"versions":{"1.0.0":{},"1.1.0":{}},"dist-tags":{"latest":"1.1.0"}}"#;
+    let (url, seen) = token_registry("Bearer s3cret", vec![("/@acme%2fui", packument.into())]);
     let host = url.trim_start_matches("http:");
     let root = project(
-        "live-auth",
+        "live-npm-auth",
         &[
             (
                 "with/package.json",
@@ -188,21 +204,149 @@ fn sends_the_configured_token_from_the_environment() {
             ),
             (
                 "with/.npmrc",
-                &format!("@acme:registry={url}\n{host}:_authToken=${{ACME_TOKEN}}\n"),
+                &format!("@acme:registry={url}/\n{host}/:_authToken=${{ACME_TOKEN}}\n"),
             ),
             ("with/.env", "ACME_TOKEN=s3cret\n"),
             (
                 "without/package.json",
                 r#"{ "dependencies": { "@acme/ui": "1.0.0" } }"#,
             ),
-            ("without/.npmrc", &format!("@acme:registry={url}\n")),
+            ("without/.npmrc", &format!("@acme:registry={url}/\n")),
         ],
     );
     let with = looked_up(&root, "with/package.json", &env(&root, &[]));
     let without = looked_up(&root, "without/package.json", &env(&root, &[]));
-    let seen = server.join().unwrap();
     eprintln!("config npmrc-auth with: {with:?}\nconfig npmrc-auth without: {without:?}");
-    assert_eq!(seen, ["bearer s3cret", ""]);
+    assert_eq!(
+        seen.lock()
+            .unwrap()
+            .iter()
+            .map(|(_, a)| a.as_str())
+            .collect::<Vec<_>>(),
+        ["Bearer s3cret", ""]
+    );
     assert!(matches!(with[0].2, Ok(2)), "{with:?}");
     assert!(without[0].2.is_err(), "{without:?}");
+}
+
+/// What Composer 2.11.2, pip 26.2.2, `NuGet` 7.9.0 (`dotnet restore`), Maven 3.10.1, and Cargo
+/// 1.100.0 sent to a capturing server for these same configurations: `Basic dTpw` (`u:p`) from
+/// each password, and Cargo's token bare. Each reader's lookup must send the same and succeed.
+#[test]
+#[ignore = "needs the network"]
+fn sends_the_header_each_package_manager_sends() {
+    let basic = "Basic dTpw";
+    let cases: Vec<(&str, &str, &'static str, Routes)> = vec![
+        (
+            "composer",
+            "composer.json",
+            basic,
+            vec![("/p2/acme/lib.json", r#"{"packages":{"acme/lib":[{"version":"1.2.0"}]}}"#.into())],
+        ),
+        ("pip", "requirements.txt", basic, vec![("/simple/flask/", r#"{"versions":["3.0.0"]}"#.into())]),
+        (
+            "nuget",
+            "app.csproj",
+            basic,
+            // NuGet asks the service index where package versions live, then asks there.
+            vec![
+                (
+                    "/v3/index.json",
+                    r#"{"resources":[{"@id":"{url}/flat/","@type":"PackageBaseAddress/3.0.0"}]}"#.into(),
+                ),
+                ("/flat/contoso.core/index.json", r#"{"versions":["1.0.0"]}"#.into()),
+            ],
+        ),
+        (
+            "maven",
+            "pom.xml",
+            basic,
+            vec![(
+                "/g/a/maven-metadata.xml",
+                "<metadata><versioning><versions><version>1.0</version></versions></versioning></metadata>".into(),
+            )],
+        ),
+        (
+            "cargo",
+            "Cargo.toml",
+            "from-file",
+            vec![("/mi/ne/mine", r#"{"name":"mine","vers":"1.0.0","deps":[],"cksum":"0","features":{},"yanked":false}"#.into())],
+        ),
+    ];
+    for (kind, manifest, auth, routes) in cases {
+        let (url, seen) = token_registry(auth, routes);
+        let host = url.trim_start_matches("http://").to_owned();
+        let files = auth_files(kind, &url, &host);
+        let files: Vec<(&str, &str)> = files
+            .iter()
+            .map(|(p, t)| (p.as_str(), t.as_str()))
+            .collect();
+        let root = project(&format!("live-auth-{kind}"), &files);
+        let found = looked_up(&root, manifest, &env(&root, &[("MVN_PASSWORD", "p")]));
+        let sent: Vec<_> = seen.lock().unwrap().clone();
+        eprintln!("config {kind}-auth {found:?} sent {sent:?}");
+        assert!(
+            matches!(found.as_slice(), [(_, _, Ok(n))] if *n > 0),
+            "{kind}: {found:?} {sent:?}"
+        );
+        assert!(
+            !sent.is_empty() && sent.iter().all(|(_, a)| a == auth),
+            "{kind}: {sent:?}"
+        );
+    }
+}
+
+/// The project files that point `kind`'s reader at the registry at `url` with user `u` and
+/// password `p`, or Cargo's token `from-file`.
+fn auth_files(kind: &str, url: &str, host: &str) -> Vec<(String, String)> {
+    match kind {
+        "composer" => vec![
+            (
+                "composer.json".into(),
+                format!(r#"{{ "repositories": [{{ "type": "composer", "url": "{url}/" }}, {{ "packagist.org": false }}], "require": {{ "acme/lib": "^1.0" }} }}"#),
+            ),
+            (
+                "auth.json".into(),
+                format!(r#"{{ "http-basic": {{ "{host}": {{ "username": "u", "password": "p" }} }} }}"#),
+            ),
+        ],
+        "pip" => vec![(
+            "requirements.txt".into(),
+            format!("--index-url http://u:p@{host}/simple\nflask==3.0.0\n"),
+        )],
+        "nuget" => vec![
+            (
+                "nuget.config".into(),
+                format!(r#"<configuration><packageSources><clear /><add key="corp" value="{url}/v3/index.json" /></packageSources><packageSourceCredentials><corp><add key="Username" value="u" /><add key="ClearTextPassword" value="p" /></corp></packageSourceCredentials></configuration>"#),
+            ),
+            (
+                "app.csproj".into(),
+                r#"<Project><ItemGroup><PackageReference Include="Contoso.Core" Version="1.0.0" /></ItemGroup></Project>"#.into(),
+            ),
+        ],
+        "maven" => vec![
+            (
+                "home/.m2/settings.xml".into(),
+                format!("<settings><servers><server><id>corp</id><username>u</username><password>${{env.MVN_PASSWORD}}</password></server></servers><mirrors><mirror><id>corp</id><mirrorOf>external:*,!snapshots</mirrorOf><url>{url}/maven/</url></mirror></mirrors></settings>"),
+            ),
+            (
+                "pom.xml".into(),
+                "<project><dependencies><dependency><groupId>g</groupId><artifactId>a</artifactId><version>1.0</version></dependency></dependencies></project>".into(),
+            ),
+        ],
+        _ => vec![
+            (
+                ".cargo/config.toml".into(),
+                format!("[registries.my]\nindex = \"sparse+{url}/index/\"\n"),
+            ),
+            (
+                "home/.cargo/credentials.toml".into(),
+                "[registries.my]\ntoken = \"from-file\"\n".into(),
+            ),
+            (
+                "Cargo.toml".into(),
+                "[dependencies]\nmine = { version = \"1\", registry = \"my\" }\n".into(),
+            ),
+        ],
+    }
 }

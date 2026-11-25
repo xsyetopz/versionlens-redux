@@ -276,6 +276,26 @@ fn reads_composer_repositories_and_auth_json() {
 }
 
 #[test]
+fn keys_composer_auth_by_host_and_port() {
+    // Composer 2.11.2 sent auth.json's `127.0.0.1:PORT` credentials to a repository on that port,
+    // and none for a bare `127.0.0.1` key.
+    let repo = r#"{ "repositories": [{ "type": "composer", "url": "https://repo.example:8443/" }], "require": { "acme/lib": "^1.0" } }"#;
+    let read = |key: &str| {
+        let auth =
+            format!(r#"{{ "http-basic": {{ "{key}": {{ "username": "u", "password": "p" }} }} }}"#);
+        let root = project(
+            "composer-port",
+            &[("composer.json", repo), ("auth.json", &auth)],
+        );
+        targets(&root, "composer.json", &env(&root, &[]))[0].1[0]
+            .1
+            .clone()
+    };
+    assert_eq!(read("repo.example:8443"), Some(basic("u", "p")));
+    assert_eq!(read("repo.example"), None);
+}
+
+#[test]
 fn routes_python_dependencies_to_their_named_or_default_index() {
     let root = project(
         "python",

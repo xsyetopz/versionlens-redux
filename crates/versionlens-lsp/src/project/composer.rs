@@ -98,9 +98,14 @@ pub(super) fn config(dir: &Path, text: &str, env: &Env) -> impl Fn(&Dep) -> Vec<
     }
 }
 
+/// The `auth.json` key of a repository URL: its host, with the port when the URL names one, as
+/// Composer 2.11.2 sends `127.0.0.1:PORT` credentials to that port and ignores a bare host key.
 fn host(url: &str) -> &str {
     let rest = url.split_once("://").map_or(url, |(_, r)| r);
-    rest.split(['/', ':']).next().unwrap_or(rest)
+    let authority = rest.split('/').next().unwrap_or(rest);
+    authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, host)| host)
 }
 
 /// `(host, header)` pairs from an `auth.json` text.

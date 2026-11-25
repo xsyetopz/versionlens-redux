@@ -313,3 +313,65 @@ fn reads_what_master_checked_in_each_manifest_kind() {
     assert_eq!(cases.len(), 74);
     assert!(wrong.is_empty(), "{wrong:#?}");
 }
+
+/// Master edits that ours writes differently but that select the same versions, as
+/// (kind, master's edit, ours). An edit keeps the precision the user wrote. Carthage parses a
+/// missing patch as 0 and its `~>` checks only the major and `>=` (Source/CarthageKit/Version.swift:
+/// `patch ?? 0`, `case let .compatibleWith`), so `~> 2.0` and `~> 2.0.0` both select `>=2.0.0 <3`.
+const SAME_RANGE: &[(&str, &str, &str)] = &[("Cartfile", "~> 2.0.0", "~> 2.0")];
+
+/// Each master case updated to its `selected` (else `latest`) version gives master's edited file:
+/// its `expected_text`, else its text with `range_text` (else `requirement`) replaced by `edit`.
+/// The RENAMED cases name or span their dependency differently, and still edit the file the same.
+#[test]
+fn updates_each_master_case_to_masters_edited_file() {
+    use crate::render::replacement;
+    use crate::version::Version;
+    let cases: Vec<serde_json::Value> =
+        serde_json::from_str(include_str!("tests/manifest-cases.json")).expect("valid cases");
+    let mut wrong = Vec::new();
+    let mut checked = 0;
+    for case in &cases {
+        let field = |key: &str| case[key].as_str().unwrap_or_default();
+        let (kind, path, text) = (field("kind"), field("path"), field("text"));
+        if field("edit").is_empty() {
+            continue;
+        }
+        let old = Some(field("range_text"))
+            .filter(|t| !t.is_empty())
+            .unwrap_or(field("requirement"));
+        let edit = SAME_RANGE
+            .iter()
+            .find(|(k, master, _)| *k == kind && *master == field("edit"))
+            .map_or(field("edit"), |&(.., ours)| ours);
+        let want = case["expected_text"]
+            .as_str()
+            .map_or_else(|| text.replacen(old, edit, 1), str::to_owned);
+        let (name, req) = RENAMED.iter().find(|(k, ..)| *k == kind).map_or_else(
+            || (field("package"), field("requirement")),
+            |&(_, name, req)| (name, req),
+        );
+        let pick = Version::parse(
+            Some(field("selected"))
+                .filter(|s| !s.is_empty())
+                .unwrap_or(field("latest")),
+        )
+        .expect("a version");
+        let file = file_type_of(path, text);
+        let dep = file.and_then(|file| {
+            extract(file, text)
+                .into_iter()
+                .find(|d| d.name == name && d.req == req)
+        });
+        let got = dep.map(|d| {
+            let new = replacement(&d.req, &pick, "").unwrap_or_default();
+            format!("{}{new}{}", &text[..d.span.start], &text[d.span.end..])
+        });
+        checked += 1;
+        if got.as_deref() != Some(want.as_str()) {
+            wrong.push(format!("{kind}: want {want:?}\n  got {got:?}"));
+        }
+    }
+    eprintln!("master edits checked: {checked}");
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
