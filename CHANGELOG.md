@@ -30,6 +30,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Lowercase `dockerfile` and `*.dockerfile` names, which upstream reads, reach the server in editors whose globs match case-sensitively.
 - LuaRocks hovers link to the LuaRocks search for the module; `/modules/<name>` is a user page, which 404s for most modules.
 - Every dependency property upstream 1.3.0 reads is read again: nested npm and pnpm `overrides`, pnpm `packageExtensions`, MSBuild SDKs in `<Project Sdk="Name/1.0">` and `<Sdk>`, and `DotNetCliToolReference`. `devEngines` runtimes and package managers are read too.
 - `requirements.txt`, `requirements/*.txt`, `*constraints*.txt`, and `*.hxml` files are recognised.

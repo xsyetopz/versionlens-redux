@@ -10,7 +10,9 @@ pub(super) static ROWS: &[FileType] = &[
         "dockerfile",
         &[
             "Dockerfile",
+            "dockerfile",
             "*.Dockerfile",
+            "*.dockerfile",
             "Dockerfile.*",
             "Containerfile",
             "Earthfile",
