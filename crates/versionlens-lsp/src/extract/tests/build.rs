@@ -1,5 +1,5 @@
 //! Build systems: CPM.cmake, `FetchContent`, Hunter, `PlatformIO`, ESP-IDF components, Mill, fpm, Boss,
-//! Buck2, Pants, west, Alire, Arduino, and Nimble.
+//! Buck2, Pants, west, Alire, Arduino, Nimble, and Conan recipes.
 //! Fixtures are excerpts of the real files or docs each row cites.
 
 use super::expect;
@@ -31,6 +31,26 @@ fn reads_fetchcontent_repositories_and_archives() {
             ("nlohmann/json", "v3.11.3", "github"),
             ("lua/lua", "5.3.5", "github"),
             ("gabime/spdlog", "v1.12.0", "github"),
+        ],
+    );
+}
+
+#[test]
+fn reads_a_whole_conan_recipe() {
+    // docs.conan.io/2/reference/conanfile/attributes.html `requires` and `tool_requires`, and
+    // methods/requirements.html and build_requirements.html: attributes, calls under a condition,
+    // and keyword arguments are read; a version range and the recipe's own version are not.
+    let text = "from conan import ConanFile\n\nclass PkgRecipe(ConanFile):\n    name = \"pkg\"\n    version = \"1.0\"\n    requires = \"zlib/1.3.1\", \"openssl/[>=3 <4]\"\n    tool_requires = \"cmake/3.27.9\"\n\n    def requirements(self):\n        self.requires(\"fmt/10.2.1\")\n        if self.options.with_ssl:\n            self.requires(\"libcurl/8.6.0\", transitive_headers=True)\n\n    def build_requirements(self):\n        self.tool_requires(\"ninja/1.11.1\")\n        self.test_requires(\"gtest/1.14.0\")\n";
+    expect(
+        "conanfile.py",
+        text,
+        &[
+            ("zlib", "1.3.1", "conan"),
+            ("cmake", "3.27.9", "conan"),
+            ("fmt", "10.2.1", "conan"),
+            ("libcurl", "8.6.0", "conan"),
+            ("ninja", "1.11.1", "conan"),
+            ("gtest", "1.14.0", "conan"),
         ],
     );
 }
