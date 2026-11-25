@@ -464,7 +464,12 @@ fn every_package_page_resolves() {
                 let (client, url) = (client.clone(), page(id, name));
                 tokio::spawn(async move {
                     let clearance = npm_clearance(&url);
-                    let failed = pages::check(&client, &url, clearance, policy).await;
+                    // The registry document npmjs.com builds the page from, from registry.npmjs.org.
+                    let stand_in = url
+                        .starts_with("https://www.npmjs.com/package/")
+                        .then(|| format!("https://registry.npmjs.org/{name}"));
+                    let failed =
+                        pages::check(&client, &url, clearance, stand_in.as_deref(), policy).await;
                     failed.map(|why| format!("{id} {why}"))
                 })
             })

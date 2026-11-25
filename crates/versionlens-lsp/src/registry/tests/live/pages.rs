@@ -17,6 +17,28 @@ pub(super) struct Policy {
     pub(super) wait: Duration,
 }
 
+const CHALLENGED: &str = "Cloudflare challenge on every try";
+
+/// Asks for `url` as [`ask`] does, and when a Cloudflare challenge lasts every try, asks
+/// `stand_in` instead, a URL whose success shows the page exists. npmjs.com challenges every
+/// client that runs no browser script from some networks, and builds each package page from the
+/// registry document its stand-in names, so that document stands for the page.
+pub(super) async fn check(
+    client: &reqwest::Client,
+    url: &str,
+    clearance: Option<(String, String)>,
+    stand_in: Option<&str>,
+    policy: Policy,
+) -> Option<String> {
+    let why = ask(client, url, clearance, policy).await?;
+    match stand_in {
+        Some(other) if why.ends_with(CHALLENGED) => ask(client, other, None, policy)
+            .await
+            .map(|e| format!("{why}, and its stand-in {e}")),
+        _ => Some(why),
+    }
+}
+
 /// Asks for `url` until it answers with success, and returns why it did not otherwise.
 ///
 /// - Anubis, in front of code.forgejo.org, answers a `Mozilla` agent with a 202 proof-of-work page
@@ -27,7 +49,7 @@ pub(super) struct Policy {
 ///   connection say nothing about the page, so it is asked again; one that lasts every try fails.
 /// - A Cloudflare challenge (`cf-mitigated`) is asked again the same way.
 /// - Any other answer, such as a 404, fails at once.
-pub(super) async fn check(
+async fn ask(
     client: &reqwest::Client,
     url: &str,
     clearance: Option<(String, String)>,
@@ -58,7 +80,7 @@ pub(super) async fn check(
                 return None;
             }
             Ok(response) if response.headers().contains_key("cf-mitigated") => {
-                last = format!("{url}: Cloudflare challenge on every try");
+                last = format!("{url}: {CHALLENGED}");
             }
             Ok(response) if response.status().is_server_error() => {
                 last = format!("{url}: HTTP {} on every try", response.status());
@@ -99,8 +121,15 @@ async fn serve(
                 .find_map(|l| l.strip_prefix("user-agent: "))
                 .unwrap_or_default();
             let status = answer(served.fetch_add(1, Ordering::SeqCst), agent);
-            let reply =
-                format!("HTTP/1.1 {status} X\r\ncontent-length: 0\r\nconnection: close\r\n\r\n");
+            // Cloudflare marks the 403 of its challenge with `cf-mitigated: challenge`.
+            let mitigated = if status == 403 {
+                "cf-mitigated: challenge\r\n"
+            } else {
+                ""
+            };
+            let reply = format!(
+                "HTTP/1.1 {status} X\r\n{mitigated}content-length: 0\r\nconnection: close\r\n\r\n"
+            );
             stream.write_all(reply.as_bytes()).await.unwrap();
         }
     });
@@ -108,6 +137,11 @@ async fn serve(
 }
 
 fn run(answer: fn(usize, &str) -> u16) -> (Option<String>, usize) {
+    run_with_stand_in(answer, false)
+}
+
+/// Runs the check against a local server, whose own URL stands in for it when `stand_in` holds.
+fn run_with_stand_in(answer: fn(usize, &str) -> u16, stand_in: bool) -> (Option<String>, usize) {
     // Run alone, a test builds the first client, so it installs the provider `Http::new` would.
     drop(rustls::crypto::ring::default_provider().install_default());
     super::block_on(async {
@@ -116,7 +150,8 @@ fn run(answer: fn(usize, &str) -> u16) -> (Option<String>, usize) {
             tries: 4,
             wait: Duration::from_millis(5),
         };
-        let failed = check(&reqwest::Client::new(), &url, None, policy).await;
+        let other = stand_in.then_some(url.as_str());
+        let failed = check(&reqwest::Client::new(), &url, None, other, policy).await;
         (failed, count.load(std::sync::atomic::Ordering::SeqCst))
     })
 }
@@ -173,4 +208,31 @@ fn anubis_challenge_resolves_with_plain_agent() {
 
     // Assert
     assert_eq!((failed, asked), (None, 2));
+}
+
+#[test]
+fn lasting_cloudflare_challenge_resolves_through_stand_in() {
+    // Arrange: every try of the page is challenged, and the stand-in, asked fifth, answers.
+    let answer = |n, _: &str| if n < 4 { 403 } else { 200 };
+
+    // Act
+    let (failed, asked) = run_with_stand_in(answer, true);
+
+    // Assert
+    assert_eq!((failed, asked), (None, 5));
+}
+
+#[test]
+fn missing_stand_in_fails_challenged_page() {
+    // Arrange: the page is challenged every try, and its stand-in does not exist.
+    let answer = |n, _: &str| if n < 4 { 403 } else { 404 };
+
+    // Act
+    let (failed, asked) = run_with_stand_in(answer, true);
+
+    // Assert
+    let failed = failed.unwrap();
+    assert!(failed.contains(CHALLENGED), "{failed}");
+    assert!(failed.ends_with("HTTP 404 Not Found"), "{failed}");
+    assert_eq!(asked, 5);
 }
