@@ -3,6 +3,22 @@ use super::tools::terraform;
 use super::*;
 
 #[test]
+fn pages_docker_tags_by_number_and_variant() {
+    let docker = get("docker").unwrap();
+    assert_eq!(filters_of(docker, "20-alpine3.22"), ["20", "alpine"]);
+    assert_eq!(
+        filters_of(docker, "v1.25.3-bookworm-slim"),
+        ["1", "bookworm-slim"]
+    );
+    assert_eq!(filters_of(docker, "lts-alpine"), ["alpine"]);
+    assert_eq!(filters_of(docker, "20"), ["20"]);
+    assert_eq!(
+        filters_of(get("npm").unwrap(), "20.1.0-rc.1"),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
 fn expands_placeholders() {
     assert_eq!(expand("{cargo}", "Serde", None).unwrap(), "se/rd/serde");
     assert_eq!(expand("{cargo}", "syn", None).unwrap(), "3/s/syn");

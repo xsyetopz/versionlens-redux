@@ -40,6 +40,27 @@ pub(crate) struct Registry {
     pub(crate) yanked: &'static str,
     /// The field that marks a JSON version entry deprecated, such as npm's `deprecated`.
     pub(crate) deprecated: &'static str,
+    /// A URL template, with `{filter}` for each of [`filters_of`], whose versions join the first
+    /// page's; empty for none. Docker Hub lists tags newest first, 100 a page, so the tags of
+    /// `node:20-alpine` are only on pages filtered by `20` and by `alpine`.
+    pub(crate) filtered: &'static str,
+}
+
+/// The filters a requirement pages by, for a registry with filtered pages: its leading number
+/// and its variant, such as `20` and `alpine` of `20-alpine3.22`.
+pub(crate) fn filters_of(registry: &Registry, req: &str) -> Vec<String> {
+    if registry.filtered.is_empty() {
+        return Vec::new();
+    }
+    let req = req.trim_start_matches('v');
+    let digits: String = req.chars().take_while(char::is_ascii_digit).collect();
+    let variant = req.split_once('-').map_or("", |(_, rest)| {
+        rest.trim_end_matches(|c: char| c.is_ascii_digit() || c == '.')
+    });
+    [digits, variant.to_owned()]
+        .into_iter()
+        .filter(|f| !f.is_empty())
+        .collect()
 }
 
 /// The versions a registry lists for one package, plus its own idea of the latest. Yanked
@@ -73,6 +94,7 @@ const fn json(
         accept: "application/json",
         yanked: "",
         deprecated: "",
+        filtered: "",
     }
 }
 
@@ -92,6 +114,7 @@ const fn text(
         accept: "*/*",
         yanked: "",
         deprecated: "",
+        filtered: "",
     }
 }
 
@@ -259,14 +282,17 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Exact,
         None,
     ),
-    json(
-        "docker",
-        "https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100",
-        "results",
-        "name",
-        Bare::Prefix,
-        None,
-    ),
+    Registry {
+        filtered: "https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100&name={filter}",
+        ..json(
+            "docker",
+            "https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100",
+            "results",
+            "name",
+            Bare::Prefix,
+            None,
+        )
+    },
     json(
         "github",
         "https://api.github.com/repos/{name}/tags?per_page=100",

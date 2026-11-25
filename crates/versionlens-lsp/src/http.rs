@@ -130,15 +130,17 @@ impl Http {
         self.send(request, url).await
     }
 
-    /// Lists a package's versions from its registry, honouring a configured URL override.
+    /// Lists a package's versions from its registry, honouring a configured URL override. Each of
+    /// `filters` fetches the registry's filtered page alongside, and its versions join the list.
     ///
     /// # Errors
     /// Explains why the registry could not answer.
     pub(crate) async fn versions(
         &self,
-        registry: &Registry,
+        registry: &'static Registry,
         name: &str,
         source: Option<&str>,
+        filters: &[String],
     ) -> Result<Versions, String> {
         let template = self
             .settings
@@ -154,13 +156,38 @@ impl Http {
             }
             _ => &self.client,
         };
+        // Filtered pages belong to the registry's own host; an overridden URL points elsewhere.
+        let own = template == registry.url && !registry.filtered.is_empty();
+        let mut more = Vec::new();
+        for filter in filters.iter().filter(|_| own) {
+            let url = expand(registry.filtered, name, source)?.replace("{filter}", filter);
+            let (http, client) = (self.clone(), client.clone());
+            more.push(tokio::spawn(async move {
+                let body = http.get(&client, &url, registry.accept).await;
+                (url, body)
+            }));
+        }
         let body = self.get(client, &url, registry.accept).await?;
-        let versions = registry
+        let mut versions = registry
             .parse(&body, name)
             .map_err(|e| format!("{url}: {e}"))?;
+        for page in more {
+            let (url, body) = page.await.map_err(|e| e.to_string())?;
+            let extra = registry
+                .parse(&body?, name)
+                .map_err(|e| format!("{url}: {e}"))?;
+            for version in extra.list {
+                if !versions.list.contains(&version) {
+                    versions.list.push(version);
+                }
+            }
+        }
         if versions.list.is_empty() && versions.yanked.is_empty() {
             return Err(format!("{url}: lists no versions for {name}"));
         }
         Ok(versions)
     }
 }
+
+#[cfg(test)]
+mod tests;

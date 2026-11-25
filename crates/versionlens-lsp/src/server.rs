@@ -40,7 +40,9 @@ const COMMANDS: &[&str] = &[
 /// Lookups finishing within this window share one refresh.
 const COALESCE: Duration = Duration::from_millis(120);
 
-type Key = (&'static str, String, Option<String>);
+/// A lookup: the registry, the package, the repository the manifest names, and the filters
+/// the registry pages by ([`registry::filters_of`]).
+type Key = (&'static str, String, Option<String>, Vec<String>);
 
 struct Found {
     versions: Vec<Version>,
@@ -146,7 +148,8 @@ fn decode(text: &str) -> String {
 }
 
 fn key(dep: &Dep) -> Key {
-    (dep.registry, dep.name.clone(), dep.source.clone())
+    let filters = registry::get(dep.registry).map_or_default(|r| registry::filters_of(r, &dep.req));
+    (dep.registry, dep.name.clone(), dep.source.clone(), filters)
 }
 
 fn param<T: serde::de::DeserializeOwned>(value: Value) -> Result<T, String> {
