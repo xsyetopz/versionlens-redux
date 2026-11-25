@@ -52,8 +52,8 @@ project-verify:
 
 # The IDE draws into Xvfb, so no window reaches the desktop; screenshots and the IDE log go to
 # target/jetbrains-gui, and the IDE version is the one the plugin builds against.
-# Drive the JetBrains plugin GUI in IntelliJ IDEA under Xvfb with lookups held pending, and add and
-# remove URL authentication through its dialogs; needs Docker and the network.
+# Drive the JetBrains plugin GUI in IntelliJ IDEA under Xvfb with lookups held pending: URL
+# authentication through its dialogs, the trace, and the settings page; needs Docker and the network.
 jetbrains-gui:
     just jvm::gradle :jetbrains-plugin:buildPlugin
     docker build -q -t versionlens-vscode scripts/vscode-container

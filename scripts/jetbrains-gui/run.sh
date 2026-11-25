@@ -4,8 +4,9 @@
 # the plugin for an error or a freeze, when the server never starts, or when the editor toolbar
 # stays still while lookups are pending. Then it runs Add URL Authentication through Find Action and
 # its dialogs, and Remove URL Authentication through its picker, and checks the server received
-# the header and then lost it. Screenshots, the server's input, and the IDE log go to the output
-# directory.
+# the header and then lost it. It shows the traced LSP traffic, then changes two settings on the
+# settings page and checks the server received them. Screenshots, the server's input, and the IDE
+# log go to the output directory.
 # Usage: run.sh <plugin zip> <output directory>, from the repository root; the IDE is the release
 # the plugin builds against.
 set -eu
@@ -182,9 +183,30 @@ wait_for 30 gone || fail "the server still has the header after Remove URL Authe
 action "Show VersionLens Log" log
 sleep 3
 shot trace
+
+# Settings | Tools | VersionLens, VS Code's settings page: the dialog's search opens the page, the
+# timeout is typed over, a checkbox is ticked, and OK must bring the server both new values.
+for w in $(xdotool search --name '^proj'); do xdotool windowfocus --sync "$w" 2>/dev/null || true; done
+xdotool mousemove 600 400 click 1
+sleep 1
+xdotool key ctrl+alt+s
+sleep 6
+xdotool type --delay 30 "VersionLens"
+sleep 4
+shot settings-page
+xdotool mousemove 791 697 click 1
+xdotool key ctrl+a
+xdotool type --delay 30 2500
+xdotool mousemove 562 353 click 1
+sleep 1
+shot settings-changed
+xdotool mousemove 1072 825 click 1
+changed() { grep -q '"timeoutMs":2500' /cfg/lsp-in.log && grep -q '"prereleases":true' /cfg/lsp-in.log; }
+wait_for 30 changed || fail "the server never received the timeout and prereleases set on the settings page"
 cp /cfg/log/idea.log /cfg/lsp-in.log "$out/"
 if grep -q 'Plugin to blame: VersionLens' "$out/idea.log"; then
 	fail "the IDE blamed VersionLens; see $out/idea.log"
 fi
 echo "jetbrains-gui: server started, $frames distinct toolbar frames, URL authentication added" \
-	"through its dialogs and removed through its picker, no errors blamed on VersionLens"
+	"through its dialogs and removed through its picker, the trace shown, settings changed on" \
+	"the settings page reached the server, no errors blamed on VersionLens"
