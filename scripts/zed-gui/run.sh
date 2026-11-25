@@ -7,7 +7,8 @@
 #   3. every VersionLens command from the code actions menu, each answered without an error;
 #   4. a command from the command palette, through `editor: toggle code actions`;
 #   5. a command from the editor toolbar's Code Actions button;
-#   6. Add URL authentication: its prompt, the stored file it opens, the value typed and saved,
+#   6. the server's RPC messages in Zed's language server logs view, VS Code's trace.server;
+#   7. Add URL authentication: its prompt, the stored file it opens, the value typed and saved,
 #      and the server rereading it; then Remove URL authentication through its prompt.
 # A wrapper records the server's traffic; screenshots, the traffic, and Zed's log go to the output
 # directory.
@@ -235,7 +236,46 @@ toolbar_menu() {
 }
 choose clearCache toolbar_menu "the toolbar's Code Actions button"
 
-# 6. Add URL authentication asks how the registry authenticates, writes the stored file with a
+# 6. VS Code's versionlens.trace.server is Zed's language server logs view: pick the versionlens
+# server, turn on RPC Messages, move the cursor in compose.yaml so Zed asks for its actions, and
+# copy the view's text, which must hold that request and its answer.
+open_at /proj/compose.yaml:3:20
+sleep 2
+palette "dev: open language server logs"
+sleep 3
+xdotool mousemove 785 89 click 1
+sleep 1
+xdotool mousemove 745 117 click 1
+sleep 2
+shot trace-server
+xdotool mousemove 870 89 click 1
+sleep 1
+shot trace-menu
+xdotool mousemove 875 163 click 1
+sleep 2
+xdotool mousemove 400 196 click 1
+sleep 1
+xdotool key Up
+sleep 1
+xdotool key Down
+sleep 4
+shot trace-rpc
+xdotool mousemove 1000 600 click 1
+sleep 1
+xdotool key ctrl+a ctrl+c
+sleep 1
+xclip -o -selection clipboard >"$out/rpc-messages.txt" 2>/dev/null || true
+grep -q '^// Send:' "$out/rpc-messages.txt" && grep -q '^// Receive' "$out/rpc-messages.txt" &&
+	grep -q '"method":"textDocument/codeAction".*file:///proj/compose.yaml' "$out/rpc-messages.txt" ||
+	fail "the RPC Messages log never showed the code action request for compose.yaml"
+# Closing the view, its pane's only tab, gives step 7 the layout its prompt search expects, and
+# step 7 picks its commands from package.json's menus.
+xdotool key ctrl+w
+sleep 1
+open_at /proj/package.json:3:5
+sleep 2
+
+# 7. Add URL authentication asks how the registry authenticates, writes the stored file with a
 # blank to fill in, and opens it there; the last button is Header value.
 asked=$(sent window/showMessageRequest)
 before_prompt
@@ -274,4 +314,5 @@ if grep -i 'versionlens' "$out/Zed.log" | grep -q 'ERROR'; then
 	fail "Zed logged a VersionLens error; see $out/Zed.log"
 fi
 echo "zed-gui: statuses shown, build chosen from its prompt, every command ran from the code actions menu," \
-	"one each from the palette and the toolbar, URL authentication added and removed"
+	"one each from the palette and the toolbar, RPC messages traced," \
+	"URL authentication added and removed"

@@ -67,7 +67,7 @@ jetbrains-gui:
 # Zed draws into Xvfb through Mesa's software Vulkan, so no window reaches the desktop; screenshots,
 # the server traffic, and Zed's log go to target/zed-gui.
 # Drive the Zed extension in Zed under Xvfb: statuses, the build prompt, every command from the menu,
-# the palette, and the toolbar, and URL authentication; needs Docker and the network.
+# the palette, and the toolbar, URL authentication, and the RPC trace; needs Docker and the network.
 zed-gui:
     cargo build --manifest-path packages/zed-extension/Cargo.toml --target wasm32-wasip2 --release --locked
     docker build -q -t versionlens-vscode scripts/vscode-container
