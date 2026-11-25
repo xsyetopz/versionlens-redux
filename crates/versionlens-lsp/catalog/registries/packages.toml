@@ -257,6 +257,19 @@ osv_name = 'https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/c
 upstream = '"repository":\s*"${GITHUB_URL}'
 page = 'https://galaxy.ansible.com/ui/repo/published/{ns}/{short}/'
 
+# Standalone roles keep Galaxy's v1 API, whose role names its versions under
+# `summary_fields.versions` and its repository as `github_user` and `github_repo`.
+[[registry]]
+id = 'galaxy-role'
+url = 'https://galaxy.ansible.com/api/v1/roles/?owner__username={ns}&name={short}'
+json = 'results/0/summary_fields/versions'
+field = 'name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://galaxy.ansible.com/api/v1/roles/?owner__username={ns}&name={short}'
+upstream = '"github_user":\s*"(?P<owner>[\w.-]+)"[^{}]*?"github_repo":\s*"(?P<repo>[\w.-]+)"'
+page = 'https://galaxy.ansible.com/ui/standalone/roles/{ns}/{short}/'
+
 [[registry]]
 id = 'terraform'
 url = 'https://registry.terraform.io/v1/{tf}/versions'

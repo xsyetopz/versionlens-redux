@@ -30,6 +30,11 @@ pub(crate) enum Rule {
     /// A rule whose dependency names lack a fixed head the manifest leaves out, such as
     /// `org.jetbrains.kotlin.` before the `jvm` of Gradle's `kotlin("jvm")`.
     Prefix(&'static str, &'static Self),
+    /// A rule read only inside each match of a regex, or of its first group where it has one,
+    /// because a bare name means a dependency only in its list: `"lwt"` in an opam `depends`
+    /// list, not in `tags`. Regexes have no lookbehind, so a lines rule alone cannot tell them
+    /// apart.
+    Within(&'static str, &'static Self),
 }
 
 /// A dependency found in a manifest: what it is called, what it asks for, and where that is.
@@ -256,56 +261,100 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                     dep
                 }));
             }
+            Rule::Within(block, rule) => {
+                let inner = FileType {
+                    rules: std::slice::from_ref(rule),
+                    ..*file
+                };
+                for caps in regex(block).captures_iter(text) {
+                    let Some(range) = caps.get_group(1).or_else(|| caps.get_group(0)) else {
+                        continue;
+                    };
+                    let range = range.range();
+                    deps.extend(extract(&inner, &text[range.clone()]).into_iter().map(
+                        |mut dep| {
+                            dep.span = dep.span.start + range.start..dep.span.end + range.start;
+                            dep
+                        },
+                    ));
+                }
+            }
         }
     }
     for dep in &mut deps {
-        dep.pinned |= file.pinned;
-        // A Helm chart's `repository` may be a local chart, a `helm repo add` alias, or an OCI
-        // registry: helm.sh/docs/helm/helm_dependency/ and helm.sh/docs/topics/registries/
-        match dep.source.as_deref() {
-            Some(source) if local_path(source).is_some() => dep.registry = DIRECTORY,
-            Some(source) if source.starts_with('@') || source.starts_with("alias:") => {
-                dep.registry = SOURCE;
-                dep.source = Some("repository alias".to_owned());
-            }
-            Some(source) if let Some(repo) = source.strip_prefix("oci://") => {
-                dep.name = format!("{}/{}", repo.trim_end_matches('/'), dep.name);
-                dep.registry = "oci";
-            }
-            _ => {}
-        }
-        if dep.registry == DIRECTORY || local_path(&dep.req).is_some() {
-            dep.registry = DIRECTORY;
-        } else if dep.registry != SOURCE
-            && let Some(label) = source_label(&dep.req)
-        {
-            dep.registry = SOURCE;
-            dep.source = Some(label.to_owned());
-        }
-        // A `via = 'source'` row pins a branch or revision of the repository its name gives.
-        if dep.registry == SOURCE && dep.source.is_none() {
-            let label = source_label(&dep.name).unwrap_or("git reference");
-            dep.source = Some(label.to_owned());
-        }
-        if let Some(var) = dep.req.strip_prefix("${").and_then(|r| r.strip_suffix('}'))
-            && let Some(leaf) = leaves
-                .iter()
-                .find(|l| l.path.last().is_some_and(|k| k == var))
-        {
-            dep.req.clone_from(&leaf.value);
-            dep.span = leaf.span.clone();
-        }
+        settle(dep, file.pinned, &leaves);
     }
     deps.retain(|d| {
         !d.name.is_empty()
             && is_package(&d.name, d.registry)
             && ([DIRECTORY, SOURCE].contains(&d.registry) || is_registry_req(&d.req))
     });
+    // A value two rules read keeps the narrower reading a registry answers: JSPM's
+    // `github:owner/repo@1.0.0` is a git source to its map's `keys` rule and a GitHub release,
+    // spanning `1.0.0`, to its `spec` rule.
+    let looked_up: Vec<Range<usize>> = deps
+        .iter()
+        .filter(|d| d.registry != SOURCE && !d.span.is_empty())
+        .map(|d| d.span.clone())
+        .collect();
+    deps.retain(|d| {
+        d.registry != SOURCE
+            || !looked_up
+                .iter()
+                .any(|s| *s != d.span && d.span.start <= s.start && s.end <= d.span.end)
+    });
     deps.sort_by_key(|d| (d.span.start, d.span.end));
     // A manifest's own version keeps its local increments beside a lookup of the published
     // package, as `jsr.json` gets both upstream's increments and the fork's master's JSR lookup.
     deps.dedup_by(|a, b| a.span == b.span && (a.registry == PROJECT) == (b.registry == PROJECT));
     deps
+}
+
+/// Settles where a dependency resolves: a local or git source, a registry, or the key a
+/// `${ref}` names.
+fn settle(dep: &mut Dep, pinned: bool, leaves: &[Leaf]) {
+    dep.pinned |= pinned;
+    // A Helm chart's `repository` may be a local chart, a `helm repo add` alias, or an OCI
+    // registry: helm.sh/docs/helm/helm_dependency/ and helm.sh/docs/topics/registries/
+    match dep.source.as_deref() {
+        Some(source) if local_path(source).is_some() => dep.registry = DIRECTORY,
+        Some(source) if source.starts_with('@') || source.starts_with("alias:") => {
+            dep.registry = SOURCE;
+            dep.source = Some("repository alias".to_owned());
+        }
+        Some(source) if let Some(repo) = source.strip_prefix("oci://") => {
+            dep.name = format!("{}/{}", repo.trim_end_matches('/'), dep.name);
+            dep.registry = "oci";
+        }
+        // An Ansible role's `src` may name its git repository rather than a Galaxy role:
+        // docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-multiple-roles-from-a-file
+        Some(source) if source_label(source) == Some("git repository") => {
+            dep.registry = SOURCE;
+            dep.source = Some("git repository".to_owned());
+        }
+        _ => {}
+    }
+    if dep.registry == DIRECTORY || local_path(&dep.req).is_some() {
+        dep.registry = DIRECTORY;
+    } else if dep.registry != SOURCE
+        && let Some(label) = source_label(&dep.req)
+    {
+        dep.registry = SOURCE;
+        dep.source = Some(label.to_owned());
+    }
+    // A `via = 'source'` row pins a branch or revision of the repository its name gives.
+    if dep.registry == SOURCE && dep.source.is_none() {
+        let label = source_label(&dep.name).unwrap_or("git reference");
+        dep.source = Some(label.to_owned());
+    }
+    if let Some(var) = dep.req.strip_prefix("${").and_then(|r| r.strip_suffix('}'))
+        && let Some(leaf) = leaves
+            .iter()
+            .find(|l| l.path.last().is_some_and(|k| k == var))
+    {
+        dep.req.clone_from(&leaf.value);
+        dep.span = leaf.span.clone();
+    }
 }
 
 fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>) {

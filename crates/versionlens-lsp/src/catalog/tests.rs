@@ -1,7 +1,7 @@
 use regex_automata::meta::Regex;
 
 use super::*;
-use crate::extract::Rule::{Lines, Prefix, Spec, Via};
+use crate::extract::Rule::{Lines, Prefix, Spec, Via, Within};
 use crate::extract::{DIRECTORY, PROJECT, SOURCE, extract};
 use crate::registry;
 
@@ -37,6 +37,10 @@ fn every_row_names_a_known_registry_and_valid_regexes() {
                 rule = inner;
             }
             if let Prefix(_, inner) = rule {
+                rule = inner;
+            }
+            if let Within(block, inner) = rule {
+                assert!(Regex::new(block).is_ok(), "{}: {block}", file.id);
                 rule = inner;
             }
             if let Spec(_, pattern) | Lines(pattern) = rule
@@ -122,6 +126,9 @@ const PRIOR_FILES: &[(&str, &str)] = &[
     ("project.json", "dotnet-project-json"),
     ("packages.config", "nuget"),
     ("App.vbproj", "nuget"),
+    ("app.csproj", "nuget"),
+    ("app.fsproj", "nuget"),
+    ("app.vbproj", "nuget"),
     ("Directory.Packages.props", "nuget"),
     ("Directory.Build.targets", "nuget"),
     ("paket.dependencies", "paket"),
@@ -155,6 +162,10 @@ const PRIOR_FILES: &[(&str, &str)] = &[
     ("build.Dockerfile", "dockerfile"),
     ("build.dockerfile", "dockerfile"),
     ("DOCKERFILE", "dockerfile"),
+    ("build.DOCKERFILE", "dockerfile"),
+    ("DOCKER-COMPOSE.OVERRIDE.YML", "compose"),
+    ("SERVICE.COMPOSE.YML", "compose"),
+    (".YARNRC.YML", "pnpm"),
     ("docker-compose.override.yml", "compose"),
     ("docker-compose.prod.yaml", "compose"),
     ("compose.override.yaml", "compose"),

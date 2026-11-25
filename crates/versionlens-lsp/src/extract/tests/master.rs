@@ -192,8 +192,8 @@ fn reads_pubspec_workspace_folders() {
         "pubspec.yaml",
         text,
         &[
-            ("packages/shared", "", "directory"),
-            ("packages/client", "", "directory"),
+            ("packages/shared", "packages/shared", "directory"),
+            ("packages/client", "packages/client", "directory"),
             ("http", "^1.2.0", "pub"),
         ],
     );
@@ -428,4 +428,25 @@ fn reads_bundled_and_trusted_dependency_names() {
             ("esbuild", "", "npm"),
         ],
     );
+}
+
+#[test]
+fn reads_jspm_maps_by_the_registry_each_value_names() {
+    let text = r#"{"jspm": {"dependencies": {"lodash": "npm:lodash@^4.17.0", "repo": "github:owner/repo@1.0.0", "plain": "^2.0.0"}}}"#;
+    expect(
+        "package.json",
+        text,
+        &[
+            ("lodash", "^4.17.0", "npm"),
+            ("owner/repo", "1.0.0", "github"),
+            ("plain", "^2.0.0", "npm"),
+        ],
+    );
+}
+
+#[test]
+fn reads_opam_packages_only_in_their_lists() {
+    let text =
+        "opam-version: \"2.0\"\ntags: [\"web\" \"async\"]\ndepends: [\n  \"lwt\" {>= \"5.0\"}\n]\n";
+    expect("a.opam", text, &[("lwt", "5.0", "opam")]);
 }

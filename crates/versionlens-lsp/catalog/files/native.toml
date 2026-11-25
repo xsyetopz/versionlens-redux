@@ -6,8 +6,9 @@
 # matches by name has failed), the `format` that reads it (json, toml, yaml, xml, ini, or
 # text), the `registry` that answers for its dependencies, an optional `insert` written before a version added to a
 # bare name, `pinned = true` where each version is the exact one installed, as in a lockfile, and `rules`: { keys }, { spec, pattern }, { record, name, version, source? }, or
-# { lines }, each with an optional `via` registry and `prefix` that names start with, or { use }
-# for a list in shared.toml.
+# { lines }, each with an optional `via` registry, `prefix` that names start with, and `within`
+# regex that limits a text rule to what it matches, or to its first group, or { use } for a list
+# in shared.toml.
 # Patterns may name a shared pattern as ${NAME}. A glob two rows share belongs to the earlier
 # row, and the groups load in the order of GROUPS in src/catalog.rs.
 
@@ -91,6 +92,11 @@ format = 'text'
 registry = 'bazel'
 rules = [
     { lines = 'bazel_dep\(\s*name\s*=\s*"(?P<name>[^"]+)"\s*,\s*version\s*=\s*"(?P<version>[^"]+)"' },
+    # Overrides, as the fork's master read them: bazel.build/rules/lib/globals/module.
+    # `multiple_version_override` lists `versions` and master read none of it.
+    { lines = 'single_version_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*version\s*=\s*"(?P<version>[^"]+)"' },
+    { lines = 'git_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"[^)]*?commit\s*=\s*"(?P<version>[^"]+)"', via = 'source' },
+    { lines = 'local_path_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*path\s*=\s*"(?P<version>[^"]+)"', via = 'directory' },
 ]
 
 [[file]]

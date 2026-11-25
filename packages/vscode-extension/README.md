@@ -71,6 +71,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Helm repositories | Artifact Hub image scans | `Chart.yaml`, Argo CD `Application` charts (`argocd/`, `argo-cd/`, `clusters/`, and Kubernetes manifest folders) |
 | Artifact Hub | Artifact Hub image scans | `helmfile.yaml`, `helmfile.yaml.gotmpl`, `helmfile.d/*.yaml` (`repo/chart` releases), Flux `HelmRelease` charts |
 | Ansible Galaxy | GIT (the GitHub repository the collection version's `repository` names) | `requirements.yml`, `galaxy.yml` |
+| Ansible Galaxy roles | GIT (the role's `github_user`/`github_repo`) | `roles:` in `requirements.yml` |
 | Puppet Forge | GIT (the GitHub repository the module's `source` names) | `Puppetfile` |
 | Chef Supermarket | GIT (the GitHub repository the cookbook's `source_url` names) | `Berksfile`, `metadata.rb` |
 | Terraform Registry | GIT (the GitHub repository the provider or module's `source` names) | `*.tf`, `*.tofu`, `.terraform.lock.hcl`, `terragrunt.hcl`, `terragrunt.stack.hcl`, `Pulumi.yaml` `terraform-provider` and module parameters |
@@ -90,6 +91,12 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | LuaRocks | GIT (the GitHub repository the rockspec's `source.url` names) | `*.rockspec` |
 | xmake repository | GIT (the GitHub repository the package's `xmake.lua` names) | `xmake.lua` |
 | Typst releases | GIT (`typst/typst`) | `compiler` in `typst.toml` |
+| Stackage snapshots | | `resolver:` and `snapshot:` `lts-…` in `stack.yaml` |
+| Julia releases | | `julia` in a `Project.toml` `[compat]` |
+| R releases (R-hub) | | `R (>= …)` in a `DESCRIPTION` |
+| Deno releases | crates.io (`deno`) | the `deno-version` input of `setup-deno` |
+| .NET SDK releases, the newest of each channel | Bitnami (`dotnet-sdk`) | the `dotnet-version` input of `setup-dotnet` |
+| Temurin Java feature releases | Bitnami (`java`) | the `java-version` input of `setup-java` |
 | Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, their `.tool-versions` and `mise.toml` entries, and the `python-version` and `ruby-version` inputs of workflow setup actions |
 | Rust and Terraform releases | GIT (`rust-lang/rust`, `hashicorp/terraform`) | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, `rust-version` in `Cargo.toml`, and their `.tool-versions` and `mise.toml` entries |
 

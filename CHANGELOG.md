@@ -57,7 +57,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - Helm `file://`, repository-alias, and `oci://` chart repositories
   - `package.json` `bundleDependencies`, `bundledDependencies`, and `trustedDependencies`
   - The `node-version`, `bun-version`, `python-version`, `ruby-version`, and `go-version` inputs of workflow setup actions
-- `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases.
+  - The `deno-version`, `java-version`, and `dotnet-version` inputs of workflow setup actions and the `toolchain` of `rust-toolchain`, through Deno's release notes, Adoptium's feature releases, and the .NET release index
+  - Own versions of `gleam.toml`, `Project.toml`, `DESCRIPTION`, `*.opam`, `dune-project`, and `*.cabal`
+  - Gleam `dev_dependencies`, Julia `[sources]` and `julia` compat (Julia's release list), and Mix `git:`, `github:`, and `path:` deps
+  - R's own minimum (`R (>= 4.3)`) through R-hub's release list, and bare package names in `Depends`, `Imports`, `Suggests`, `LinkingTo`, and `Enhances`, including their continuation lines
+  - Packages in opam `depopts` and `conflicts`, and bare ones in `depends`, but not quoted words outside those lists such as `tags`; a conflict reads bare, since its bound names no version to move to
+  - `dune-project` constraints nested in `(and …)`, cabal `build-tool-depends`, `setup-depends`, and `build-tools`, and `stack.yaml` local paths, `git:`/`github:` entries, and its `lts-` resolver through Stackage
+  - cpanfile `recommends`, `suggests`, `conflicts`, and the phase `*_requires` calls, with or without a version
+  - Ansible `roles:` through Galaxy's role API, and a role's git `src`
+  - Bazel `single_version_override`, `git_override`, and `local_path_override`
+  - JSPM's `jspm.dependencies` and its other three maps
+- A catalog rule may take a `within` regex, which limits a text rule to what that regex matches, so a bare name counts only inside its list.
+- `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases; `src/extract/tests/sections.rs` reads each of 184 dependency sections the two baselines read, and `src/extract/tests/fixtures.rs` reads master's eleven checked-in manifest fixtures whole.
 - `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
 
 ### Changed

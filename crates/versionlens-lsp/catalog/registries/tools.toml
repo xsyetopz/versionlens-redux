@@ -23,6 +23,67 @@ osv = 'GIT'
 osv_name = 'https://github.com/typst/typst'
 page = 'https://typst.app/docs/changelog/'
 
+# Stackage names the newest snapshot of each LTS series, `{"lts-22":"lts-22.44",…}`, which a
+# stack.yaml `resolver: lts-22.43` moves to.
+[[registry]]
+id = 'stackage'
+url = 'https://www.stackage.org/download/snapshots.json'
+regex = '"lts-\d+":\s*"lts-(\d+\.\d+)"'
+bare = 'prefix'
+page = 'https://www.stackage.org/'
+
+# Julia's own release list, keyed by version, which `julia` in a Project.toml `[compat]` names.
+[[registry]]
+id = 'julia-lang'
+url = 'https://julialang-s3.julialang.org/bin/versions.json'
+json = ''
+field = '@key'
+bare = 'caret'
+page = 'https://julialang.org/downloads/'
+
+# R's releases from R-hub's rversions service, which `R (>= 4.3)` in a DESCRIPTION names.
+[[registry]]
+id = 'r-lang'
+url = 'https://api.r-hub.io/rversions/r-versions'
+json = ''
+field = 'version'
+bare = 'prefix'
+page = 'https://cran.r-project.org/'
+
+# Deno's release notes head each release `### 2.1.4 / 2024.12.11`; its advisories are filed
+# against the `deno` crate.
+[[registry]]
+id = 'deno-cli'
+url = 'https://raw.githubusercontent.com/denoland/deno/main/Releases.md'
+regex = '(?m)^### (\d+\.\d+\.\d+) /'
+bare = 'prefix'
+osv = 'crates.io'
+osv_name = 'deno'
+page = 'https://github.com/denoland/deno/releases'
+
+# The .NET release index gives each channel's newest SDK, `"latest-sdk": "8.0.404"`, so a
+# `dotnet-version` gets the newest SDK of each channel rather than every patch.
+[[registry]]
+id = 'dotnet-sdk'
+url = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json'
+json = 'releases-index'
+field = 'latest-sdk'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'dotnet-sdk'
+page = 'https://dotnet.microsoft.com/download/dotnet'
+
+# Adoptium lists the Java feature releases Temurin builds, `"available_releases": [8, 11, …]`,
+# the majors a setup-java `java-version` names.
+[[registry]]
+id = 'temurin'
+url = 'https://api.adoptium.net/v3/info/available_releases'
+json = 'available_releases'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'java'
+page = 'https://adoptium.net/temurin/releases/'
+
 # OSV's Bitnami ecosystem carries the runtimes' own CVEs, under each product's name.
 [[registry]]
 id = 'python'

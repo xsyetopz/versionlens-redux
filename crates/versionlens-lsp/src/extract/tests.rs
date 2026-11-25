@@ -2,11 +2,13 @@ use super::*;
 use crate::catalog::{file_type, file_type_of};
 
 mod build;
+mod fixtures;
 mod infra;
 mod languages;
 mod legacy;
 mod lockfiles;
 mod master;
+mod sections;
 mod upstream;
 
 fn deps(path: &str, text: &str) -> Vec<(String, String)> {

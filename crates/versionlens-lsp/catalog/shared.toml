@@ -18,7 +18,10 @@ GITHUB_RELEASE = 'github\.com/(?P<name>[\w.-]+/[\w.-]+)/releases/download/(?P<ve
 # A manifest's own version, which upstream's dependencyProperties list as `version`,
 # `project.version`, `package`, and `Project.PropertyGroup.Version` (upstream package.json, 1.3.0).
 OWN = '^(?P<version>v?\d[\w.+-]*)$'
-GITHUB_FRAGMENT = 'github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?#(?P<version>v?\d[\w.-]*)'
+# The value of an R DESCRIPTION's dependency field, with its indented continuation lines:
+# cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file
+R_DEPS = '(?m)^(?:Depends|Imports|Suggests|LinkingTo|Enhances):([^\n]*(?:\n[ \t]+[^\n]*)*)'
+GITHUB_FRAGMENT ='github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?#(?P<version>v?\d[\w.-]*)'
 # A go-getter source pinned by `?ref=`, with an optional `//subdir`, as Terraform and Terragrunt
 # write modules: developer.hashicorp.com/terraform/language/modules/sources#selecting-a-revision
 GITHUB_REF = 'github\.com[:/](?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?(?://[^?"\s]*)?\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)'
@@ -61,6 +64,11 @@ NPM_DEPS = [
     { record = 'devEngines.runtime', name = 'name', version = 'version' },
     { record = 'devEngines.runtime.*', name = 'name', version = 'version' },
     # JSPM names its registry in each value: `npm:lodash@^4.17.0`, `github:owner/repo@1.0.0`.
+    # Upstream's dependencyProperties list its four maps, whose plain ranges are npm's.
+    { keys = 'jspm.dependencies' },
+    { keys = 'jspm.devDependencies' },
+    { keys = 'jspm.peerDependencies' },
+    { keys = 'jspm.optionalDependencies' },
     { spec = 'jspm.*.*', pattern = '^npm:(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>.+)$' },
     { spec = 'jspm.*.*', pattern = '^github:(?P<name>[\w.-]+/[\w.-]+)@(?P<version>.+)$', via = 'github' },
 ]

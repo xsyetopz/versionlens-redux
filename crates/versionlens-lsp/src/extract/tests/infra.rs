@@ -215,3 +215,21 @@ fn reads_pulumi_packages() {
         ],
     );
 }
+
+#[test]
+fn reads_setup_action_runtime_versions() {
+    let text = "jobs:\n  build:\n    steps:\n      - uses: denoland/setup-deno@v2\n        with:\n          deno-version: v2.1.4\n      - uses: actions/setup-java@v4\n        with:\n          distribution: temurin\n          java-version: '21'\n      - uses: actions/setup-dotnet@v4\n        with:\n          dotnet-version: 8.0.404\n      - uses: dtolnay/rust-toolchain@master\n        with:\n          toolchain: 1.83.0\n";
+    expect(
+        ".github/workflows/ci.yml",
+        text,
+        &[
+            ("denoland/setup-deno", "v2", "github"),
+            ("deno", "2.1.4", "deno-cli"),
+            ("actions/setup-java", "v4", "github"),
+            ("java", "21", "temurin"),
+            ("actions/setup-dotnet", "v4", "github"),
+            ("dotnet", "8.0.404", "dotnet-sdk"),
+            ("rust", "1.83.0", "rust"),
+        ],
+    );
+}

@@ -44,6 +44,13 @@ rules = [
     { lines = '''(?m)^[ \t]+(?P<name>node|bun)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'npm' },
     { lines = '''(?m)^[ \t]+(?P<registry>(?P<name>python|ruby))-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''' },
     { lines = '''(?m)^[ \t]+(?P<name>go)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'golang' },
+    # github.com/denoland/setup-deno, actions/setup-java, actions/setup-dotnet, and the
+    # `toolchain` input of dtolnay/rust-toolchain and actions-rust-lang/setup-rust-toolchain,
+    # which master's github_actions/runtime.rs also read.
+    { lines = '''(?m)^[ \t]+(?P<name>deno)-version:[ \t]*["']?v?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'deno-cli' },
+    { lines = '''(?m)^[ \t]+(?P<name>java)-version:[ \t]*["']?(?P<version>\d[\w.+]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'temurin' },
+    { lines = '''(?m)^[ \t]+(?P<name>dotnet)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'dotnet-sdk' },
+    { lines = '''(?m)(?P<name>rust)-toolchain@\S*[ \t]*\r?\n[ \t]+with:[ \t]*\r?\n(?:[ \t]+[\w-]+:[^\n]*\n)*?[ \t]+toolchain:[ \t]*["']?(?P<version>\d+\.\d+(?:\.\d+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'rust' },
 ]
 
 # CI services and dev environments that name images under `image:` keys at any depth.
@@ -150,6 +157,10 @@ format = 'yaml'
 registry = 'galaxy'
 rules = [
     { record = 'collections.*', name = 'name', version = 'version' },
+    # A role is named `namespace.role` by `name` or `src`, or comes from the git repository its
+    # `src` gives, as the fork's master read them:
+    # docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-multiple-roles-from-a-file
+    { record = 'roles.*', name = 'name|src', version = 'version', source = 'src', via = 'galaxy-role' },
     { keys = 'dependencies' },
 ]
 

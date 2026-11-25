@@ -114,11 +114,13 @@ fn file(row: &Row) -> Result<FileType, String> {
 }
 
 /// One rule: `keys`, `spec` with its `pattern`, `record` with its `name`, `version`, and
-/// optional `source` fields, or `lines`. A `via` names the registry its dependencies go to, and a
-/// `prefix` the text their names start with.
+/// optional `source` fields, or `lines`. A `within` regex limits it to the text that regex matches,
+/// a `via` names the registry its dependencies go to, and a `prefix` the text their names start
+/// with.
 fn rule(entry: &Row) -> Result<Rule, String> {
     entry.only(&[
-        "keys", "spec", "pattern", "record", "name", "version", "source", "lines", "via", "prefix",
+        "keys", "spec", "pattern", "record", "name", "version", "source", "lines", "within", "via",
+        "prefix",
     ])?;
     let rule = if let Some(path) = entry.opt("keys")? {
         Rule::Keys(path)
@@ -135,6 +137,10 @@ fn rule(entry: &Row) -> Result<Rule, String> {
         Rule::Lines(pattern)
     } else {
         return Err(entry.error("a rule needs keys, spec, record, or lines"));
+    };
+    let rule = match entry.opt("within")? {
+        Some(block) => Rule::Within(block, Box::leak(Box::new(rule))),
+        None => rule,
     };
     let rule = match entry.opt("prefix")? {
         Some(prefix) => Rule::Prefix(prefix, Box::leak(Box::new(rule))),

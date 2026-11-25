@@ -130,11 +130,19 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("arduino", "ArduinoHttpClient", None, None),
     ("arduino", "Adafruit SleepyDog Library", None, None),
     ("nimble", "jester", None, Some("v0.4.3")),
+    ("stackage", "lts", None, None),
+    ("julia-lang", "julia", None, None),
+    ("r-lang", "R", None, None),
+    ("deno-cli", "deno", None, Some("1.30.0")),
+    ("dotnet-sdk", "dotnet", None, Some("8.0.100")),
+    ("temurin", "java", None, Some("17")),
+    ("galaxy-role", "geerlingguy.java", None, Some("1.9.6")),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
 /// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
-/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, `vlang/vsl`, or the Typst compiler, and OSV's Go ecosystem none for the
+/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, `vlang/vsl`, the Typst compiler, or the
+/// Ansible roles, whose repositories `geerlingguy` publishes, and OSV's Go ecosystem none for the
 /// Packer plugins `hashicorp` publishes, and OSV's Julia ecosystem none for the standard libraries
 /// outside the `_jll` ones, such as Dates and Statistics. Their samples check only that the route
 /// answers and names a repository.
@@ -149,6 +157,7 @@ const NO_KNOWN_ADVISORY: &[&str] = &[
     "purescript",
     "vpm",
     "typst-compiler",
+    "galaxy-role",
 ];
 
 /// How many times a page behind a bot challenge is asked before the check fails.
