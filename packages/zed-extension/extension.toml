@@ -16,25 +16,38 @@ language = "JSON"
 languages = [
   "C",
   "C#",
+  "C# Project File",
   "C++",
+  "Cabal",
   "Clojure",
   "CMake",
+  "Docker Compose",
   "Dockerfile",
+  "Dune",
+  "Earthfile",
   "Elixir",
   "Erlang",
   "Gleam",
   "Go",
   "Go Mod",
   "Go Work",
+  "Go YAML Template",
   "Groovy",
   "HCL",
+  "Helm",
+  "HXML",
+  "ini",
   "INI",
   "Java",
   "JavaScript",
   "JSON",
+  "JSON5",
   "JSONC",
   "Kotlin",
+  "Lean 4",
   "Lua",
+  "MSBuild File",
+  "Nim",
   "Nix",
   "OCaml",
   "Perl",
@@ -50,6 +63,8 @@ languages = [
   "TOML",
   "TSX",
   "TypeScript",
+  "Typst",
+  "V",
   "XML",
   "YAML",
   "Zig",
@@ -59,24 +74,38 @@ name = "VersionLens Redux Language Server"
 [language_servers.versionlens.language_ids]
 "C" = "c"
 "C#" = "csharp"
+"C# Project File" = "xml"
 "C++" = "cpp"
+"Cabal" = "cabal"
 "Clojure" = "clojure"
 "CMake" = "cmake"
+"Docker Compose" = "dockercompose"
 "Dockerfile" = "dockerfile"
+"Dune" = "dune"
+"Earthfile" = "earthfile"
 "Elixir" = "elixir"
 "Erlang" = "erlang"
 "Gleam" = "gleam"
 "Go" = "go"
 "Go Mod" = "go.mod"
 "Go Work" = "go.work"
+"Go YAML Template" = "yaml"
 "Groovy" = "groovy"
 "HCL" = "terraform"
+"Helm" = "helm"
+"HXML" = "hxml"
+"INI" = "ini"
+"ini" = "ini"
 "Java" = "java"
 "JavaScript" = "javascript"
 "JSON" = "json"
+"JSON5" = "json5"
 "JSONC" = "jsonc"
 "Kotlin" = "kotlin"
+"Lean 4" = "lean4"
 "Lua" = "lua"
+"MSBuild File" = "xml"
+"Nim" = "nim"
 "Nix" = "nix"
 "OCaml" = "ocaml"
 "Perl" = "perl"
@@ -92,6 +121,8 @@ name = "VersionLens Redux Language Server"
 "TOML" = "toml"
 "TSX" = "typescriptreact"
 "TypeScript" = "typescript"
+"Typst" = "typst"
+"V" = "v"
 "XML" = "xml"
 "YAML" = "yaml"
 "Zig" = "zig"

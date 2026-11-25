@@ -2,7 +2,10 @@
 # Drives the VersionLens extension in Zed under Xvfb against the live registries, the way a user
 # would, and fails on the first step that does not reach the server or show its answer:
 #   1. the lenses and hints of package.json, Cargo.toml, and compose.yaml, with the deprecated,
-#      directory, missing directory, yanked, and build statuses;
+#      directory, missing directory, yanked, and build statuses; compose.yaml opens as the
+#      dockerfile extension's Docker Compose language;
+#   1b. lockfiles: Cargo.lock's locked version as itself, a Julia Manifest.toml's advisories, and a
+#      yarn.lock, which Zed has no language for, through the README's Plain Text mapping;
 #   2. the build lens from the code actions menu, its prompt, and the choice written back;
 #   3. every VersionLens command from the code actions menu, each answered without an error;
 #   4. a command from the command palette, through `editor: toggle code actions`;
@@ -47,6 +50,9 @@ cat >/proj/package.json <<'J'
 J
 printf '[package]\nname = "probe"\nversion = "0.1.0"\n\n[dependencies]\nrand = "=0.7.1"\n' >/proj/Cargo.toml
 printf 'services:\n  web:\n    image: node:20-alpine\n' >/proj/compose.yaml
+printf '[[package]]\nname = "time"\nversion = "0.3.0"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n' >/proj/Cargo.lock
+printf '[[deps.LibCURL_jll]]\ndeps = ["Artifacts"]\nuuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"\nversion = "8.6.0+0"\n' >/proj/Manifest.toml
+printf 'lodash@^4.17.0:\n  version "4.17.20"\n' >/proj/yarn.lock
 # Zed applies a rewritten settings file at once; lenses start above the code and later move into
 # the code actions menu, where a script can choose them.
 write_settings() {
@@ -56,7 +62,8 @@ write_settings() {
   "inlay_hints": { "enabled": true },
   "toolbar": { "code_actions": true },
   "auto_update": false,
-  "auto_install_extensions": { "toml": true },
+  "auto_install_extensions": { "toml": true, "dockerfile": true },
+  "file_types": { "Plain Text": ["yarn.lock"] },
   "telemetry": { "diagnostics": false, "metrics": false },
   "restore_on_startup": "none",
   "session": { "trust_all_worktrees": true },
@@ -130,6 +137,20 @@ open_at /proj/compose.yaml:3:20
 wait_for 90 shows 'change build' || fail "node:20-alpine had no change build lens"
 sleep 3
 shot compose
+
+# 1b. A lockfile's version is the one installed, so time 0.3.0 satisfies only itself, and OSV checks
+# the version a manifest records.
+open_at /proj/Cargo.lock:3:12
+wait_for 90 shows 'satisfies 0.3.0' || fail "Cargo.lock's time 0.3.0 did not resolve to itself"
+open_at /proj/Manifest.toml:4:12
+wait_for 90 shows 'LibCURL_jll 8.6.0+0 has known vulnerabilities' ||
+	fail "Manifest.toml's LibCURL_jll 8.6.0+0 showed no advisories"
+open_at /proj/yarn.lock:2:12
+wait_for 90 shows 'lodash 4.17.20 has known vulnerabilities' || fail "yarn.lock never reached the server"
+sleep 3
+shot lockfiles
+open_at /proj/compose.yaml:3:20
+sleep 2
 
 # Opens the code actions menu (ctrl-., editor::ToggleCodeActions). Zed fills it from the actions it
 # fetched when the cursor moved, so the menu may bring no new request.

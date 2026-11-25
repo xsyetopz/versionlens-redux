@@ -13,10 +13,10 @@ The extension runs the first server it finds, with `--stdio`:
 
 ## Files
 
-Zed starts language servers per language, not per file name. The extension registers the server for the languages its manifests use, such as TOML, JSON, YAML, XML, Go Mod, Ruby, and Plain Text. Zed opens `*.txt` files, such as `requirements.txt`, as Plain Text. Some languages come from Zed extensions rather than from Zed itself: `Cargo.toml` and `pyproject.toml` need the `toml` extension, and a `Dockerfile` needs the `dockerfile` extension. Zed offers to install them when such a file opens. Zed starts no language server for a file it has no language for, such as `*.hxml`. Map such files to Plain Text in the user settings:
+Zed starts language servers per language, not per file name. The extension registers the server for the languages its manifests use, such as TOML, JSON, YAML, XML, Go Mod, Ruby, and Plain Text. Zed opens `*.txt` files, such as `requirements.txt`, as Plain Text. Some languages come from Zed extensions rather than from Zed itself: `Cargo.toml` and `pyproject.toml` need the `toml` extension, and a `Dockerfile` needs the `dockerfile` extension. Zed offers to install them when such a file opens. An extension can claim a manifest under a language of its own, so the list names those too: `csharp` opens `*.csproj` as C# Project File and `*.props` and `*.targets` as MSBuild File, `dockerfile` opens `compose.yaml` as Docker Compose, `helm` opens `helmfile.yaml` as Helm, and `nim`, `haxe`, `v`, `ocaml`, `haskell`, `lean4`, `typst`, `ini`, and `json5` claim `*.nimble`, `*.hxml`, `v.mod`, `dune-project`, `*.cabal`, `lakefile.lean`, `*.typ`, `*.ini`, and `package.json5`. Zed starts no language server for a file it has no language for, such as `yarn.lock`, `Gemfile.lock`, or `qlfile`. Map such files to Plain Text in the user settings:
 
 ```json
-{ "file_types": { "Plain Text": ["*.hxml"] } }
+{ "file_types": { "Plain Text": ["yarn.lock", "Gemfile.lock", "qlfile"] } }
 ```
 
 The server ignores every document that is not a manifest it reads.

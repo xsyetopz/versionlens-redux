@@ -57,6 +57,13 @@ class LiveTest {
     private val root = project.moduleFixture().sourceRootFixture()
     private val manifest = root.psiFileFixture("requirements.txt", "requests==2.31.0\nflask>=2.0\n")
     private val notes = root.psiFileFixture("notes.txt", "requests==2.31.0\n")
+    private val juliaLock =
+        root.psiFileFixture(
+            "Manifest.toml",
+            "[[deps.LibCURL_jll]]\nuuid = \"deac9b47-8bc7-5906-a0fe-35ac56dc84c0\"\nversion = \"8.6.0+0\"\n",
+        )
+    private val yarnLock =
+        root.psiFileFixture("yarn.lock", "lodash@^4.17.0:\n  version \"4.17.20\"\n")
     private val editors = project.fileEditorManagerFixture()
 
     @Test
@@ -95,11 +102,28 @@ class LiveTest {
             "hover names the package",
         )
         println("PASS hover")
+        lockfiles(project)
         notes.get().let { open(project, it) }
         assertTrue(!logged(project, "notes.txt"), "other files never reach the server")
         settings(project, client, file)
         toolbar(project, client, file, notes.get())
         actions(project, client, file, editor)
+    }
+
+    // A lockfile's version is the installed one, so OSV checks it rather than the newest release a
+    // range would allow; yarn.lock has no IDE language and reaches the server by its glob alone.
+    private fun lockfiles(project: Project) {
+        for ((file, want) in
+            listOf(
+                juliaLock.get() to "LibCURL_jll 8.6.0+0 has known vulnerabilities",
+                yarnLock.get() to "lodash 4.17.20 has known vulnerabilities",
+            )) {
+            val editor = open(project, file)
+            until("${file.name} shows $want") {
+                highlights(file, editor).any { it.startsWith(want) }
+            }
+            println("PASS ${file.name}")
+        }
     }
 
     private fun settings(project: Project, client: LspClient, file: PsiFile) {
