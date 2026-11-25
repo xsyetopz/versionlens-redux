@@ -88,11 +88,11 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | DUB | GIT (the GitHub repository the package names) | `dub.json`, `dub.selections.json`, `dub.sdl` |
 | opam | opam | `opam`, `*.opam`, `dune-project` |
 | Hackage | Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
-| GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project` |
+| GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project`, and `resolver:` or `snapshot: ghc-…` in `stack.yaml` |
 | LuaRocks | GIT (the GitHub repository the rockspec's `source.url` names) | `*.rockspec` |
 | xmake repository | GIT (the GitHub repository the package's `xmake.lua` names) | `xmake.lua` |
 | Typst releases | GIT (`typst/typst`) | `compiler` in `typst.toml` |
-| Stackage snapshots | | `resolver:` and `snapshot:` `lts-…` in `stack.yaml` |
+| Stackage snapshots | | `resolver:` and `snapshot:` `lts-…` and `nightly-…` in `stack.yaml`; a snapshot by URL or `github:` path is labelled as its source |
 | Julia releases | | `julia` in a `Project.toml` `[compat]` |
 | R releases (R-hub) | | `R (>= …)` in a `DESCRIPTION` |
 | Deno releases | crates.io (`deno`) | the `deno-version` input of `setup-deno` |

@@ -54,9 +54,23 @@ pub(crate) fn split(text: &str) -> (&str, &str, &str) {
         text.starts_with(['v', 'V']) && text[1..].starts_with(|c: char| c.is_ascii_digit()),
     );
     let rest = &text[skip..];
-    let mut end = rest
-        .find(|c: char| !(c.is_ascii_digit() || c == '.'))
-        .unwrap_or(rest.len());
+    let numeric = |from: usize| {
+        rest[from..]
+            .find(|c: char| !(c.is_ascii_digit() || c == '.'))
+            .map_or(rest.len(), |end| from + end)
+    };
+    let mut end = numeric(0);
+    // A date, `2024-01-31` or vcpkg's `2023-08-09.1`, is a release and not a `2024` prerelease:
+    // learn.microsoft.com/en-us/vcpkg/reference/vcpkg-json#version-date, and Stackage nightlies.
+    let date = rest.as_bytes().get(..10).is_some_and(|d| {
+        d.iter().enumerate().all(|(i, b)| match i {
+            4 | 7 => *b == b'-',
+            _ => b.is_ascii_digit(),
+        })
+    });
+    if end == 4 && date {
+        end = numeric(10);
+    }
     while rest[..end].ends_with('.') {
         end -= 1;
     }
@@ -71,7 +85,7 @@ impl Version {
             return None;
         }
         let nums = head
-            .split('.')
+            .split(['.', '-'])
             .map(|n| n.parse().ok())
             .collect::<Option<Vec<u64>>>()?;
         let tag = suffix

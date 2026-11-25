@@ -8,6 +8,7 @@ use super::*;
 use crate::config::Settings;
 use crate::http::Http;
 use crate::osv::{self, Query};
+use crate::version::Version;
 
 /// A registry id, a package it lists, the repository a manifest would name for it, and a
 /// version OSV reports a vulnerability for, where the registry has an OSV ecosystem.
@@ -131,6 +132,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("arduino", "Adafruit SleepyDog Library", None, None),
     ("nimble", "jester", None, Some("v0.4.3")),
     ("stackage", "lts", None, None),
+    ("stackage-nightly", "nightly", None, None),
     ("julia-lang", "julia", None, None),
     ("r-lang", "R", None, None),
     ("deno-cli", "deno", None, Some("1.30.0")),
@@ -228,26 +230,41 @@ fn samples_open_every_page_template() {
 #[ignore = "needs the network"]
 fn every_registry_lists_versions() {
     let http = Http::new(Settings::default()).unwrap();
-    let failures: Vec<String> = block_on(async {
+    let answers: Vec<Result<String, String>> = block_on(async {
         let tasks: Vec<_> = SAMPLES
             .iter()
             .map(|&(id, name, source, _)| {
                 let http = http.clone();
                 tokio::spawn(async move {
-                    http.versions(get(id).unwrap(), name, source, &[], &[])
+                    match http
+                        .versions(get(id).unwrap(), name, source, &[], &[])
                         .await
-                        .err()
-                        .map(|e| format!("{id} {name}: {e}"))
+                    {
+                        Ok(v) if v.list.is_empty() => Err(format!("{id} {name}: no versions")),
+                        Ok(v) => {
+                            let highest = v.list.iter().filter_map(|s| Version::parse(s)).max();
+                            Ok(format!(
+                                "{id} {name}: {} versions, highest {}",
+                                v.list.len(),
+                                highest.map_or_else(|| "?".to_owned(), |h| h.raw)
+                            ))
+                        }
+                        Err(e) => Err(format!("{id} {name}: {e}")),
+                    }
                 })
             })
             .collect();
-        let mut failures = Vec::new();
+        let mut answers = Vec::new();
         for task in tasks {
-            failures.extend(task.await.unwrap());
+            answers.push(task.await.unwrap());
         }
-        failures
+        answers
     });
-    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    for line in answers.iter().flatten() {
+        eprintln!("versions {line}");
+    }
+    let failures: Vec<&String> = answers.iter().filter_map(|a| a.as_ref().err()).collect();
+    assert!(failures.is_empty(), "{failures:#?}");
 }
 
 #[test]
@@ -339,6 +356,15 @@ fn osv_reports_each_ecosystem() {
         .collect();
     assert!(unnamed.is_empty(), "no repository found in {unnamed:?}");
     let results = block_on(osv::ids(&http, &resolved)).unwrap();
+    for (id, (q, found)) in ids.iter().zip(queries.iter().zip(&results)) {
+        let shown: Vec<&str> = found.iter().take(3).map(String::as_str).collect();
+        eprintln!(
+            "advisories {id} {}@{}: {} {shown:?}",
+            q.package,
+            q.version,
+            found.len()
+        );
+    }
     let silent: Vec<String> = ids
         .iter()
         .zip(queries.iter().zip(&results))

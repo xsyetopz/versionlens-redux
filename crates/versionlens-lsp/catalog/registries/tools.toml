@@ -32,6 +32,15 @@ regex = '"lts-\d+":\s*"lts-(\d+\.\d+)"'
 bare = 'prefix'
 page = 'https://www.stackage.org/'
 
+# The same index names the newest Stackage Nightly, `"nightly":"nightly-2026-11-25"`, which a
+# stack.yaml `snapshot: nightly-2026-05-29` moves to, as the fork's master looked it up.
+[[registry]]
+id = 'stackage-nightly'
+url = 'https://www.stackage.org/download/snapshots.json'
+regex = '"nightly":\s*"nightly-(\d{4}-\d{2}-\d{2})"'
+bare = 'prefix'
+page = 'https://www.stackage.org/nightly'
+
 # Julia's own release list, keyed by version, which `julia` in a Project.toml `[compat]` names.
 [[registry]]
 id = 'julia-lang'

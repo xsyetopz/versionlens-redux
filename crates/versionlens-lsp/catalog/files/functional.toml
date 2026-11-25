@@ -244,6 +244,11 @@ rules = [
     # The Stackage LTS snapshot, `resolver: lts-22.43` or `snapshot:` since Stack 3:
     # docs.haskellstack.org/en/stable/configure/yaml/project/#snapshot
     { lines = '(?m)^(?:resolver|snapshot):[ \t]*(?P<name>lts)-(?P<version>\d+\.\d+)', via = 'stackage' },
+    # A Nightly, a compiler alone, or a snapshot file by URL or GitHub path:
+    # docs.haskellstack.org/en/stable/topics/snapshot_location/
+    { lines = '(?m)^(?:resolver|snapshot):[ \t]*(?P<name>nightly)-(?P<version>\d{4}-\d{2}-\d{2})', via = 'stackage-nightly' },
+    { lines = '(?m)^(?:resolver|snapshot):[ \t]*(?P<name>ghc)-(?P<version>\d+\.\d+\.\d+)', via = 'ghc' },
+    { lines = '''(?m)^(?P<name>resolver|snapshot):[ \t]*(?:\r?\n[ \t]+url:[ \t]*)?["']?(?P<version>(?:https?://|github:)[^\s"']+)''', via = 'source' },
 ]
 
 [[file]]

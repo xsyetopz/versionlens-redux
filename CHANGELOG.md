@@ -85,6 +85,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Stack `nightly-YYYY-MM-DD` snapshots resolve against the newest Stackage Nightly, `ghc-X.Y.Z` snapshots against GHC's releases, and a snapshot given by URL or `github:` path is labelled as its source, as the fork's master read them.
+- Bazel `multiple_version_override` lists each of its first four `versions`; the fork's master asked it for a `version` key it never has.
+- Dates such as vcpkg's `version-date` `2024-01-31` read as releases, not as prereleases of `2024`, so a bare port name whose versions are all dates gets a latest version.
 - Every form the fork's master parsers read inside a shared file type is read again: sbt `%%` with the `scalaVersion`'s binary suffix (`cats-core_2.13`); Gradle classifiers, `@aar` types, `name`-first map entries, and catalog `require`/`strictly`/`prefer` versions; untagged `FROM` and compose images outside build stages, tags pinned to a digest, and compose `x-` blocks, including those behind a YAML anchor; `.nvmrc` comments; versionless gems and gemspec dependencies, and `path`, `git`, and `github` gems; go.work `use` directories; `deps.edn` coordinates without a group, with a classifier, keys in any order, `:local/root`, and `:git/tag`; Leiningen's `defproject` version and quoted names; Carthage GitHub URLs and quoted references; parenthesized requirements; and Rust channels with a host. `FROM localhost:5000/app` no longer reads as `localhost` at version `5000`.
 - A bare name in a file type with no version prefix, as `"a"` in npm `bundleDependencies`, no longer offers an update that would write `a2.0.0`; its lens shows the latest version only.
 - Generated `.props` and `.targets` under `obj/` and `bin/` are no longer read as NuGet manifests, and untitled buffers, git revisions, and other non-`file:` documents are no longer read at all.

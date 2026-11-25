@@ -183,6 +183,45 @@ fn reads_parenthesized_requirements() {
 }
 
 #[test]
+fn reads_each_version_bazel_lets_coexist() {
+    let text = "bazel_dep(name = \"protobuf\", version = \"27.0\")\nmultiple_version_override(\n    module_name = \"protobuf\",\n    versions = [\"21.7\", \"27.0\"],\n)\n";
+    expect(
+        "MODULE.bazel",
+        text,
+        &[
+            ("protobuf", "27.0", "bazel"),
+            ("protobuf", "21.7", "bazel"),
+            ("protobuf", "27.0", "bazel"),
+        ],
+    );
+}
+
+#[test]
+fn reads_stack_snapshots_of_every_kind() {
+    expect(
+        "stack.yaml",
+        "resolver: nightly-2026-05-29\n",
+        &[("nightly", "2026-05-29", "stackage-nightly")],
+    );
+    expect(
+        "stack.yaml",
+        "snapshot: ghc-9.10.3\n",
+        &[("ghc", "9.10.3", "ghc")],
+    );
+    let url = "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/43.yaml";
+    expect(
+        "stack.yaml",
+        &format!("snapshot:\n  url: {url}\n  size: 729011\n"),
+        &[("snapshot", url, "source")],
+    );
+    expect(
+        "stack.yaml",
+        "resolver: github:o/snaps:lts/1/2.yaml\n",
+        &[("resolver", "github:o/snaps:lts/1/2.yaml", "source")],
+    );
+}
+
+#[test]
 fn reads_rust_channels_with_a_host() {
     expect(
         "rust-toolchain.toml",

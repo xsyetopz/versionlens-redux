@@ -21,6 +21,22 @@ fn orders_numbers_prereleases_and_tags() {
 }
 
 #[test]
+fn reads_dates_as_release_numbers() {
+    assert!(!v("2024-01-01").is_prerelease());
+    assert_eq!(v("2024-01-01").nums, [2024, 1, 1]);
+    assert!(v("2024-02-01") > v("2024-01-31"));
+    assert_eq!(v("2023-08-09.1").nums, [2023, 8, 9, 1]);
+    assert_eq!(v("2024-01-02").render("2024-01-01", false), "2024-01-02");
+    let plan = plan(
+        &Req::parse("", Bare::Exact).unwrap(),
+        &versions(&["2024-01-01", "2024-02-01"]),
+        None,
+        false,
+    );
+    assert_eq!(plan.map(|p| p.latest.raw), Some("2024-02-01".to_owned()));
+}
+
+#[test]
 fn matches_requirement_dialects() {
     let cases = [
         ("^1.2.3", Bare::Exact, "1.9.0", true),

@@ -95,8 +95,14 @@ registry = 'bazel'
 rules = [
     { lines = 'bazel_dep\(\s*name\s*=\s*"(?P<name>[^"]+)"\s*,\s*version\s*=\s*"(?P<version>[^"]+)"' },
     # Overrides, as the fork's master read them: bazel.build/rules/lib/globals/module.
-    # `multiple_version_override` lists `versions` and master read none of it.
     { lines = 'single_version_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*version\s*=\s*"(?P<version>[^"]+)"' },
+    # `multiple_version_override(module_name, versions)` keeps several versions in the graph; master
+    # asked it for a `version` it never has (bazel.build/rules/lib/globals/module). A match takes one
+    # module name, so each rule reads the nth of the first four versions.
+    { lines = 'multiple_version_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*versions\s*=\s*\[\s*"(?P<version>[^"]+)"' },
+    { lines = 'multiple_version_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*versions\s*=\s*\[(?:\s*"[^"]*"\s*,){1}\s*"(?P<version>[^"]+)"' },
+    { lines = 'multiple_version_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*versions\s*=\s*\[(?:\s*"[^"]*"\s*,){2}\s*"(?P<version>[^"]+)"' },
+    { lines = 'multiple_version_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*versions\s*=\s*\[(?:\s*"[^"]*"\s*,){3}\s*"(?P<version>[^"]+)"' },
     { lines = 'git_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"[^)]*?commit\s*=\s*"(?P<version>[^"]+)"', via = 'source' },
     { lines = 'local_path_override\(\s*module_name\s*=\s*"(?P<name>[^"]+)"\s*,\s*path\s*=\s*"(?P<version>[^"]+)"', via = 'directory' },
 ]
