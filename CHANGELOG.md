@@ -68,7 +68,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - Bazel `single_version_override`, `git_override`, and `local_path_override`
   - JSPM's `jspm.dependencies` and its other three maps
 - A catalog rule may take a `within` regex, which limits a text rule to what that regex matches, so a bare name counts only inside its list.
-- `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases; `src/extract/tests/sections.rs` reads each of 184 dependency sections the two baselines read, and `src/extract/tests/fixtures.rs` reads master's eleven checked-in manifest fixtures whole.
+- `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases; `src/extract/tests/sections.rs` reads each of 184 dependency sections the two baselines read, and `src/extract/tests/fixtures.rs` reads master's eleven checked-in manifest fixtures whole; every `[[file]]` row has a fixture test of what it extracts.
 - `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
 
 ### Changed
@@ -95,6 +95,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Julia `_jll` packages are looked up under General's `jll/` folder, where they live; they failed with HTTP 404 before.
 - Zed starts the server for manifests that its extensions open under their own languages, read from each extension's `languages/*/config.toml`: C# Project File and MSBuild File (`*.csproj`, `*.props`, `*.targets`), Docker Compose, Earthfile, Helm and Go YAML Template (`helmfile.yaml`), Cabal, Dune, HXML, Lean 4, Nim, Typst, V, JSON5, and the `ini` extension's lowercase `ini`. These files got no lenses in Zed before.
 - A lockfile's version matches only itself, so the lens and OSV check the locked version: `Cargo.lock`'s `time 0.3.0` read as `^0.3.0` and showed the newest 0.3 release as satisfied, and a Julia `Manifest.toml`, now its own `julia-manifest` file type apart from `Project.toml` compat ranges, hid the advisories of the version it records.
+- Source lenses read the forms the fork's master read: a `path:` requirement is a local directory, and a GitHub, GitLab, or Bitbucket URL with a user or port, as `https://user@github.com:443/o/a`, is a git repository rather than a package URL. An empty `GITHUB_TOKEN` falls through to `GH_TOKEN`, then `gh auth token`.
 - ConanCenter dependencies no longer send OSV queries for an ecosystem OSV does not have; the GitLab Advisory Database answers them instead.
 
 ## [0.6.3] - 2026-11-09

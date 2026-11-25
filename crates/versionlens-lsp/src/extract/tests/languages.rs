@@ -1,4 +1,4 @@
-//! Language package managers: Typst, Wally, `MoonBit`, Spago, Corral, Qlot, Lake, and Raku META6.
+//! Language package managers: Typst, Wally, `MoonBit`, Spago, Corral, Qlot, Lake, Raku META6, Elm, Kotlin scripts, Maven extensions, uv.toml, and Pixi.
 //! Fixtures are excerpts of the real files or docs each row cites.
 
 use super::expect;
@@ -178,6 +178,76 @@ fn reads_raku_meta6_depends() {
         &[
             ("JSON::Fast", "0.19+", "raku"),
             ("System::Info", "", "raku"),
+        ],
+    );
+}
+
+#[test]
+fn reads_elm_direct_indirect_and_test_dependencies() {
+    // An application's elm.json, as `elm init` writes it: github.com/elm/compiler/blob/master/docs/elm.json/application.md
+    let text = r#"{"type":"application","source-directories":["src"],"elm-version":"0.19.1","dependencies":{"direct":{"elm/core":"1.0.5"},"indirect":{"elm/json":"1.1.3"}},"test-dependencies":{"direct":{"elm-explorations/test":"2.2.0"},"indirect":{"elm/random":"1.0.0"}}}"#;
+    expect(
+        "elm.json",
+        text,
+        &[
+            ("elm/core", "1.0.5", "elm"),
+            ("elm/json", "1.1.3", "elm"),
+            ("elm-explorations/test", "2.2.0", "elm"),
+            ("elm/random", "1.0.0", "elm"),
+        ],
+    );
+}
+
+#[test]
+fn reads_kotlin_script_depends_on() {
+    // kotlinlang.org/docs/custom-script-deps-tutorial.html: `@file:DependsOn("group:artifact:version")`.
+    let text = "@file:Repository(\"https://repo.maven.apache.org/maven2/\")\n@file:DependsOn(\"com.squareup.okhttp3:okhttp:4.12.0\")\nprintln(1)\n";
+    expect(
+        "build.main.kts",
+        text,
+        &[("com.squareup.okhttp3:okhttp", "4.12.0", "maven")],
+    );
+}
+
+#[test]
+fn reads_maven_core_extensions() {
+    // maven.apache.org/configure.html#mvn-extensions-xml-file
+    let text = "<extensions>\n  <extension>\n    <groupId>kr.motd.maven</groupId>\n    <artifactId>os-maven-plugin</artifactId>\n    <version>1.7.1</version>\n  </extension>\n</extensions>\n";
+    expect(
+        ".mvn/extensions.xml",
+        text,
+        &[("kr.motd.maven:os-maven-plugin", "1.7.1", "maven")],
+    );
+}
+
+#[test]
+fn reads_uv_toml_dependency_lists() {
+    // uv.toml holds the `[tool.uv]` settings at its top level: docs.astral.sh/uv/reference/settings/
+    let text = "dev-dependencies = [\"pytest>=8.0\"]\nconstraint-dependencies = [\"grpcio<1.65\"]\noverride-dependencies = [\"werkzeug==2.3.0\"]\n";
+    expect(
+        "uv.toml",
+        text,
+        &[
+            ("pytest", ">=8.0", "pypi"),
+            ("grpcio", "<1.65", "pypi"),
+            ("werkzeug", "==2.3.0", "pypi"),
+        ],
+    );
+}
+
+#[test]
+fn reads_pixi_dependency_tables() {
+    // pixi.sh/latest/reference/pixi_manifest/#dependencies
+    let text = "[workspace]\nname = \"app\"\nchannels = [\"conda-forge\"]\n\n[dependencies]\npython = \">=3.12\"\n\n[build-dependencies]\ncmake = \"3.29.*\"\n\n[host-dependencies]\nnumpy = \">=1.26\"\n\n[feature.test.dependencies]\npytest = \"*\"\n\n[target.linux-64.dependencies]\npatchelf = \"0.17.*\"\n";
+    expect(
+        "pixi.toml",
+        text,
+        &[
+            ("python", ">=3.12", "conda"),
+            ("cmake", "3.29.*", "conda"),
+            ("numpy", ">=1.26", "conda"),
+            ("pytest", "*", "conda"),
+            ("patchelf", "0.17.*", "conda"),
         ],
     );
 }

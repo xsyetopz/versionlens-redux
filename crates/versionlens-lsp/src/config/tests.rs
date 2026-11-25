@@ -101,3 +101,25 @@ fn new_keys_win_over_the_original_ones() {
     assert_eq!(settings.cache, Duration::from_secs(300));
     assert_eq!(settings.cache_for("go"), Duration::from_secs(120));
 }
+
+#[test]
+fn takes_the_github_token_from_the_setting_then_github_token_then_gh_token() {
+    let env = |set: &'static [(&'static str, &'static str)]| {
+        move |k: &str| {
+            set.iter()
+                .find(|(n, _)| *n == k)
+                .map(|(_, v)| (*v).to_owned())
+        }
+    };
+    let both = env(&[("GITHUB_TOKEN", "a"), ("GH_TOKEN", "b")]);
+    assert_eq!(
+        github_token(Some("s".to_owned()), both).as_deref(),
+        Some("s")
+    );
+    assert_eq!(github_token(None, both).as_deref(), Some("a"));
+    assert_eq!(
+        github_token(None, env(&[("GITHUB_TOKEN", ""), ("GH_TOKEN", "b")])).as_deref(),
+        Some("b")
+    );
+    assert_eq!(github_token(None, env(&[])), None);
+}

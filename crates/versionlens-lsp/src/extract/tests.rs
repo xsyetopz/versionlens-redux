@@ -772,3 +772,41 @@ fn reads_the_project_version_where_upstream_did() {
     let inherited = "[package]\nversion.workspace = true\n";
     assert_eq!(own("Cargo.toml", inherited), Vec::<String>::new());
 }
+
+/// The requirement forms master's `non_registry` module answered without a registry
+/// (origin/master crates/versionlens-engine/src/non_registry/{git.rs,local_path/requirement.rs}).
+#[test]
+fn labels_every_source_form_master_answered_without_a_registry() {
+    for req in [
+        "git+https://example.com/a.git",
+        "git@example.com:o/a.git",
+        "git://example.com/o/a",
+        "ssh://git@example.com/o/a",
+        "https://example.com/o/a.git",
+        "https://github.com/o/a",
+        "http://gitlab.com/o/a",
+        "https://bitbucket.org/o/a",
+        "https://user@github.com/o/a",
+        "https://github.com:443/o/a",
+    ] {
+        assert_eq!(source_label(req), Some("git repository"), "{req}");
+    }
+    assert_eq!(
+        source_label("https://example.com/a.tgz"),
+        Some("package URL")
+    );
+    assert_eq!(source_label("workspace:*"), Some("workspace package"));
+    assert_eq!(source_label("catalog:react18"), Some("catalog entry"));
+    for (req, path) in [
+        ("file:../a", "../a"),
+        ("link:../a", "../a"),
+        ("portal:../a", "../a"),
+        ("path:../a", "../a"),
+        ("/opt/a", "/opt/a"),
+        ("./a", "./a"),
+        ("../a", "../a"),
+        ("~/a", "~/a"),
+    ] {
+        assert_eq!(local_path(req), Some(path), "{req}");
+    }
+}

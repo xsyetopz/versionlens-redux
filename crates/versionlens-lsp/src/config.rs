@@ -182,11 +182,7 @@ impl Settings {
             concurrency: usize::try_from(number("concurrency", 32).clamp(1, 256)).unwrap_or(32),
             cache: Duration::from_secs(number("cacheMinutes", 60) * 60),
             strict_ssl: flag("strictSsl", base.strict_ssl),
-            github_token: token.or_else(|| {
-                ["GITHUB_TOKEN", "GH_TOKEN"]
-                    .iter()
-                    .find_map(|k| std::env::var(k).ok())
-            }),
+            github_token: github_token(token, |k| std::env::var(k).ok()),
             registries: strings(section, "registries"),
             authorization: strings(section, "authorization"),
             install: strings(section, "install"),
@@ -295,6 +291,16 @@ fn list(section: &Value, key: &str) -> Vec<String> {
 }
 
 mod legacy;
+
+/// The GitHub token: the `githubToken` setting, then `GITHUB_TOKEN`, then `GH_TOKEN`, as gh itself
+/// orders the two variables. `gh auth token` follows when all three are unset (`http::gh`).
+fn github_token(setting: Option<String>, var: impl Fn(&str) -> Option<String>) -> Option<String> {
+    setting.or_else(|| {
+        ["GITHUB_TOKEN", "GH_TOKEN"]
+            .iter()
+            .find_map(|k| var(k).filter(|t| !t.is_empty()))
+    })
+}
 
 #[cfg(test)]
 mod tests;

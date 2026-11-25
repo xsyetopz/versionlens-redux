@@ -1,5 +1,5 @@
 //! Infrastructure and environment manifests: Terraform modules, Terragrunt, Packer, helmfile,
-//! Argo CD, Flux, Vagrant, Snapcraft, Flatpak, proto, aqua, Devbox, Spack, Scoop, winget, and Pulumi.
+//! Argo CD, Flux, Vagrant, Snapcraft, Flatpak, proto, aqua, Devbox, Spack, Scoop, winget, Pulumi, Terraform locks, GitLab CI, and `CircleCI`.
 
 use super::expect;
 use crate::catalog::file_type_of;
@@ -230,6 +230,49 @@ fn reads_setup_action_runtime_versions() {
             ("actions/setup-dotnet", "v4", "github"),
             ("dotnet", "8.0.404", "dotnet-sdk"),
             ("rust", "1.83.0", "rust"),
+        ],
+    );
+}
+
+#[test]
+fn reads_terraform_lock_providers() {
+    // The lock file `terraform init` writes: developer.hashicorp.com/terraform/language/files/dependency-lock
+    let text = "provider \"registry.terraform.io/hashicorp/aws\" {\n  version     = \"5.31.0\"\n  constraints = \"~> 5.0\"\n  hashes = [\n    \"h1:abc=\",\n  ]\n}\n";
+    expect(
+        ".terraform.lock.hcl",
+        text,
+        &[("hashicorp/aws", "5.31.0", "terraform")],
+    );
+}
+
+#[test]
+fn reads_gitlab_ci_images_and_services() {
+    // docs.gitlab.com/ci/yaml/#image and #services, in their string and `name` forms.
+    let text = "image: node:20.11\nservices:\n  - postgres:16.1\n  - name: redis:7.2\ntest:\n  image:\n    name: ruby:3.3\n  services:\n    - mysql:8.0\n  script: [rake]\n";
+    expect(
+        ".gitlab-ci.yml",
+        text,
+        &[
+            ("node", "20.11", "docker"),
+            ("postgres", "16.1", "docker"),
+            ("redis", "7.2", "docker"),
+            ("ruby", "3.3", "docker"),
+            ("mysql", "8.0", "docker"),
+        ],
+    );
+}
+
+#[test]
+fn reads_circleci_docker_images() {
+    // circleci.com/docs/configuration-reference/#docker and #executors
+    let text = "version: 2.1\nexecutors:\n  py:\n    docker:\n      - image: cimg/python:3.12.1\njobs:\n  build:\n    docker:\n      - image: cimg/node:20.11.0\n      - image: cimg/postgres:16.1\n    steps: [checkout]\n";
+    expect(
+        ".circleci/config.yml",
+        text,
+        &[
+            ("cimg/python", "3.12.1", "docker"),
+            ("cimg/node", "20.11.0", "docker"),
+            ("cimg/postgres", "16.1", "docker"),
         ],
     );
 }

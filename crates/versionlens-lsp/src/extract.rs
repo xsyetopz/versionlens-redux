@@ -91,7 +91,7 @@ pub(crate) const DIRECTORY: &str = "directory";
 
 /// The local path a requirement names, such as npm's `file:../a` or a `../a` path, if it names one.
 pub(crate) fn local_path(req: &str) -> Option<&str> {
-    const SCHEMES: &[&str] = &["file://", "file:", "link:", "portal:"];
+    const SCHEMES: &[&str] = &["file://", "file:", "link:", "portal:", "path:"];
     SCHEMES
         .iter()
         .find_map(|s| req.strip_prefix(s))
@@ -131,7 +131,10 @@ pub(crate) fn source_label(req: &str) -> Option<&'static str> {
     let host = ["https://", "http://"]
         .iter()
         .find_map(|scheme| lower.strip_prefix(scheme))
-        .and_then(|rest| rest.split('/').next());
+        .and_then(|rest| rest.split('/').next())
+        // The authority may carry a user and a port: `https://user@github.com:443/o/a`.
+        .and_then(|authority| authority.rsplit('@').next())
+        .and_then(|host| host.split(':').next());
     let bare = lower.split(['#', '?']).next().unwrap_or(&lower);
     if GIT.iter().any(|p| lower.starts_with(p))
         || std::path::Path::new(bare)
