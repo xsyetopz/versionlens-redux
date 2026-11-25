@@ -314,12 +314,6 @@ fn reads_what_master_checked_in_each_manifest_kind() {
     assert!(wrong.is_empty(), "{wrong:#?}");
 }
 
-/// Master edits that ours writes differently but that select the same versions, as
-/// (kind, master's edit, ours). An edit keeps the precision the user wrote. Carthage parses a
-/// missing patch as 0 and its `~>` checks only the major and `>=` (Source/CarthageKit/Version.swift:
-/// `patch ?? 0`, `case let .compatibleWith`), so `~> 2.0` and `~> 2.0.0` both select `>=2.0.0 <3`.
-const SAME_RANGE: &[(&str, &str, &str)] = &[("Cartfile", "~> 2.0.0", "~> 2.0")];
-
 /// Each master case updated to its `selected` (else `latest`) version gives master's edited file:
 /// its `expected_text`, else its text with `range_text` (else `requirement`) replaced by `edit`.
 /// The RENAMED cases name or span their dependency differently, and still edit the file the same.
@@ -340,10 +334,7 @@ fn updates_each_master_case_to_masters_edited_file() {
         let old = Some(field("range_text"))
             .filter(|t| !t.is_empty())
             .unwrap_or(field("requirement"));
-        let edit = SAME_RANGE
-            .iter()
-            .find(|(k, master, _)| *k == kind && *master == field("edit"))
-            .map_or(field("edit"), |&(.., ours)| ours);
+        let edit = field("edit");
         let want = case["expected_text"]
             .as_str()
             .map_or_else(|| text.replacen(old, edit, 1), str::to_owned);
@@ -364,7 +355,7 @@ fn updates_each_master_case_to_masters_edited_file() {
                 .find(|d| d.name == name && d.req == req)
         });
         let got = dep.map(|d| {
-            let new = replacement(&d.req, &pick, "").unwrap_or_default();
+            let new = replacement(&d.req, &pick, "", d.precise).unwrap_or_default();
             format!("{}{new}{}", &text[..d.span.start], &text[d.span.end..])
         });
         checked += 1;

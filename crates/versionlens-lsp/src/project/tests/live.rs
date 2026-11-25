@@ -229,6 +229,77 @@ fn sends_the_npmrc_token_from_the_environment() {
     assert!(without[0].2.is_err(), "{without:?}");
 }
 
+/// GitHub Packages gets the token `.npmrc` reads from `${GITHUB_TOKEN}`, as its docs configure it:
+/// docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry
+/// Here that is the token `gh auth token` prints. Asked for `@github/catalyst`, the registry answers
+/// 401 to a request without one, 403 "does not match expected scopes" to a token without
+/// `read:packages` (curl, 2026-11-25), and the packument to a token with it, so a 403 or versions
+/// in place of the 401 shows the token arrived.
+#[test]
+#[ignore = "needs the network and a signed-in gh"]
+fn sends_the_npmrc_token_to_github_packages() {
+    let out = std::process::Command::new("gh")
+        .args(["auth", "token", "--hostname", "github.com"])
+        .output()
+        .unwrap();
+    let token = String::from_utf8(out.stdout).unwrap().trim().to_owned();
+    assert!(!token.is_empty(), "gh is not signed in");
+    let manifest = r#"{ "dependencies": { "@github/catalyst": "1.0.0" } }"#;
+    let root = project(
+        "live-github-packages",
+        &[
+            ("with/package.json", manifest),
+            (
+                "with/.npmrc",
+                "@github:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}\n",
+            ),
+            ("without/package.json", manifest),
+            (
+                "without/.npmrc",
+                "@github:registry=https://npm.pkg.github.com\n",
+            ),
+        ],
+    );
+    let with = looked_up(
+        &root,
+        "with/package.json",
+        &env(&root, &[("GITHUB_TOKEN", &token)]),
+    );
+    let without = looked_up(&root, "without/package.json", &env(&root, &[]));
+    let shown = |found: &[(String, String, Result<usize, String>)]| {
+        found
+            .iter()
+            .map(|(n, u, r)| {
+                format!(
+                    "{n} via {u}: {:?}",
+                    r.as_ref().map_err(|e| e.replace(&token, "***"))
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    eprintln!(
+        "config github-packages with: {:?}\nconfig github-packages without: {:?}",
+        shown(&with),
+        shown(&without)
+    );
+    assert!(
+        with[0].1.starts_with("https://npm.pkg.github.com"),
+        "{:?}",
+        shown(&with)
+    );
+    assert!(
+        matches!(&without[0].2, Err(e) if e.contains("401")),
+        "{:?}",
+        shown(&without)
+    );
+    assert!(
+        matches!(&with[0].2, Ok(n) if *n > 0)
+            || matches!(&with[0].2, Err(e) if e.contains("HTTP 403")),
+        "{:?}",
+        shown(&with)
+    );
+}
+
 /// What Composer 2.11.2, pip 26.2.2, `NuGet` 7.9.0 (`dotnet restore`), Maven 3.10.1, and Cargo
 /// 1.100.0 sent to a capturing server for these same configurations: `Basic dTpw` (`u:p`) from
 /// each password, and Cargo's token bare. Each reader's lookup must send the same and succeed.

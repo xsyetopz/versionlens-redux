@@ -53,6 +53,8 @@ pub(crate) struct Dep {
     pub(crate) targets: Vec<crate::project::Target>,
     /// The version is the one installed, from a `pinned` file type such as a lockfile.
     pub(crate) pinned: bool,
+    /// An update writes the whole version, from a `precise` file type such as Carthage's.
+    pub(crate) precise: bool,
     /// The manifest writes a lower-bound operator outside the span, which a rule captures as
     /// `min`, as opam's `{>= "1.0"}` keeps it outside the quoted version.
     pub(crate) min: bool,
@@ -296,6 +298,7 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
     }
     for dep in &mut deps {
         settle(dep, file.pinned, &leaves);
+        dep.precise |= file.precise;
     }
     // An untagged `FROM build` may name an earlier stage, `FROM golang:1.22 AS build`, and no
     // image: docs.docker.com/build/building/multi-stage/. A regex cannot refer back to a stage
@@ -418,6 +421,7 @@ fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>)
             index: index(leaf, leaves),
             targets: Vec::new(),
             pinned: false,
+            precise: false,
             min: false,
         });
     }
@@ -483,6 +487,7 @@ fn records(
             index: None,
             targets: Vec::new(),
             pinned: false,
+            precise: false,
             min: false,
         });
     }
@@ -514,6 +519,7 @@ fn from_caps(caps: &Captures, text: &str, offset: usize, file: &FileType) -> Opt
         index: None,
         targets: Vec::new(),
         pinned: false,
+        precise: false,
         min: caps.get_group_by_name("min").is_some(),
     })
 }

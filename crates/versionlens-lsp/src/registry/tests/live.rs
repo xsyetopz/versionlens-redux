@@ -159,8 +159,13 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
 /// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, `vlang/vsl`, the Typst compiler, or the
 /// Ansible roles, whose repositories `geerlingguy` publishes, and OSV's Go ecosystem none for the
 /// Packer plugins `hashicorp` publishes, and OSV's Julia ecosystem none for the standard libraries
-/// outside the `_jll` ones, such as Dates and Statistics. Their samples check only that the route
-/// answers and names a repository.
+/// outside the `_jll` ones, such as Dates and Statistics. OSV's own exports bear this out
+/// (`{Go,Julia,GIT}/all.zip`, read 2026-11-25): no Go module named for Packer, no Julia advisory
+/// for a standard library outside the `_jll` ones the `julia` registry answers for, no GIT range
+/// in any repository whose URL names typst, moonbit, purescript, or `ansible-role`, and none in
+/// the samples' own repositories, such as `vibe-d/vibe.d`, `sous-chefs/nginx`, and `elm/core`. The
+/// GIT ranges under `vlang/v` and `haxefoundation/haxe` are the compilers, not vpm or haxelib
+/// packages. Their samples check only that the route answers and names a repository.
 const NO_KNOWN_ADVISORY: &[&str] = &[
     "julia-stdlib",
     "dub",

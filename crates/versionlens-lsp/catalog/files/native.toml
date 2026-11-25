@@ -4,9 +4,11 @@
 # case-insensitively, with optional `exclude` globs that rule a path out and `content`, top-level
 # keys of which the document must hold one (such a row matches only after every row that
 # matches by name has failed), the `format` that reads it (json, toml, yaml, xml, ini, or
-# text), the `registry` that answers for its dependencies, an optional `insert` written before a version added to a
-# bare name, `pinned = true` where each version is the exact one installed, as in a lockfile, and `rules`: { keys }, { spec, pattern }, { record, name, version, source? }, or
-# { lines }, each with an optional `via` registry, `prefix` and `suffix` that names start and
+# text), the `registry` that answers for its dependencies, an optional `insert` written before a
+# version added to a bare name, `pinned = true` where each version is the exact one installed, as
+# in a lockfile, `precise = true` where an update writes the whole version rather than the
+# requirement's own precision, and `rules`: { keys }, { spec, pattern }, { record, name, version,
+# source? }, or { lines }, each with an optional `via` registry, `prefix` and `suffix` that names start and
 # end with, and `within` regex that limits a text rule to what it matches, or to its first group, or { use } for a list
 # in shared.toml.
 # Patterns may name a shared pattern as ${NAME}. A glob two rows share belongs to the earlier
@@ -161,11 +163,15 @@ rules = [
     { lines = '(?m)^[ \t]*(?:https://github\.com/)?(?P<name>[\w.-]+/[\w.-]+?)(?:\.git)?@(?P<version>v?\d[\w.-]*)' },
 ]
 
+# An update writes the whole version, as the fork's master wrote `~> 1.0` as `~> 2.0.0`; Carthage
+# reads a missing patch as 0, so both select the same releases:
+# github.com/Carthage/Carthage/blob/master/Source/CarthageKit/Version.swift
 [[file]]
 id = 'carthage'
 globs = ['Cartfile', 'Cartfile.private']
 format = 'text'
 registry = 'github'
+precise = true
 rules = [
     { lines = '(?m)^[ \t]*github[ \t]+"(?P<name>[\w.-]+/[\w.-]+)"[ \t]+"?(?P<version>(?:~>|>=|==)?[ \t]*v?\d[\w.-]*)' },
     # A GitHub repository by URL, under `github` or `git`, and a quoted branch, tag, or commit,

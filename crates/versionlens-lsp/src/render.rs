@@ -105,8 +105,14 @@ impl<'a> Lines<'a> {
 /// The requirement text that moves `req` to `pick` in the user's own style: the operator stays,
 /// ranges collapse to their leading operator, and a bare name gets the file type's prefix. A bare
 /// name in a file type with no prefix gets none: the version would run into the name, as
-/// `"a"` in `bundleDependencies` becoming `"a2.0.0"`.
-pub(crate) fn replacement(req: &str, pick: &Version, insert: &str) -> Option<String> {
+/// `"a"` in `bundleDependencies` becoming `"a2.0.0"`. A `precise` file type gets the whole
+/// version where the requirement wrote fewer parts.
+pub(crate) fn replacement(
+    req: &str,
+    pick: &Version,
+    insert: &str,
+    precise: bool,
+) -> Option<String> {
     if req.is_empty() {
         return (!insert.is_empty()).then(|| format!("{insert}{}", pick.raw));
     }
@@ -130,7 +136,7 @@ pub(crate) fn replacement(req: &str, pick: &Version, insert: &str) -> Option<Str
     });
     let (operator, like) = first.split_at(at);
     let like = like.split_whitespace().next().unwrap_or(like);
-    Some(format!("{operator}{}", pick.render(like, false)))
+    Some(format!("{operator}{}", pick.render(like, precise)))
 }
 
 fn edit(uri: &Uri, range: Range, text: String) -> WorkspaceEdit {
@@ -164,7 +170,7 @@ pub(crate) fn picks(view: &View<'_>, insert: &str) -> Vec<(String, String)> {
     plan.picks
         .iter()
         .filter_map(|(label, pick)| {
-            let text = replacement(&view.dep.req, pick, insert)?;
+            let text = replacement(&view.dep.req, pick, insert, view.dep.precise)?;
             Some((format!("{label} {}", pick.raw), text))
         })
         .filter(|(_, text)| *text != view.dep.req)
@@ -278,7 +284,7 @@ fn build_command(uri: &Uri, view: &View<'_>, insert: &str, glyphs: &Indicators) 
     };
     let mut choices: Vec<String> = Vec::new();
     for build in &plan.builds {
-        let Some(text) = replacement(&view.dep.req, build, insert) else {
+        let Some(text) = replacement(&view.dep.req, build, insert, view.dep.precise) else {
             continue;
         };
         if text != view.dep.req && !choices.contains(&text) {
@@ -438,7 +444,7 @@ pub(crate) fn updates(views: &[View<'_>], insert: &str, level: &str) -> Vec<Text
                     .iter()
                     .find(|v| version::level(current.as_ref(), v) == level)
             }?;
-            let new_text = replacement(&view.dep.req, pick, insert)?;
+            let new_text = replacement(&view.dep.req, pick, insert, view.dep.precise)?;
             (new_text != view.dep.req).then_some(TextEdit {
                 range: view.range,
                 new_text,

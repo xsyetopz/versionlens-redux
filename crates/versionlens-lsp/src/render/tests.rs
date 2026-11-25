@@ -7,27 +7,49 @@ fn v(text: &str) -> Version {
 #[test]
 fn replaces_in_the_users_style() {
     assert_eq!(
-        replacement("^1.2.3", &v("1.4.0"), "").as_deref(),
+        replacement("^1.2.3", &v("1.4.0"), "", false).as_deref(),
         Some("^1.4.0")
     );
     assert_eq!(
-        replacement("~> 1.2", &v("2.1.0"), "").as_deref(),
+        replacement("~> 1.2", &v("2.1.0"), "", false).as_deref(),
         Some("~> 2.1")
     );
     assert_eq!(
-        replacement(">=4.2, <5", &v("5.1"), "").as_deref(),
+        replacement(">=4.2, <5", &v("5.1"), "", false).as_deref(),
         Some(">=5.1")
     );
-    assert_eq!(replacement("v4", &v("v5.0.0"), "").as_deref(), Some("v5"));
-    assert_eq!(replacement("", &v("2.0"), "==").as_deref(), Some("==2.0"));
-    assert_eq!(replacement("", &v("2.0"), ""), None);
     assert_eq!(
-        replacement("[1.0,2.0)", &v("3.0"), "").as_deref(),
+        replacement("v4", &v("v5.0.0"), "", false).as_deref(),
+        Some("v5")
+    );
+    assert_eq!(
+        replacement("", &v("2.0"), "==", false).as_deref(),
+        Some("==2.0")
+    );
+    assert_eq!(replacement("", &v("2.0"), "", false), None);
+    assert_eq!(
+        replacement("[1.0,2.0)", &v("3.0"), "", false).as_deref(),
         Some("[3.0]")
     );
     assert_eq!(
-        replacement("20-alpine", &v("22.1-alpine"), "").as_deref(),
+        replacement("20-alpine", &v("22.1-alpine"), "", false).as_deref(),
         Some("22-alpine")
+    );
+}
+
+#[test]
+fn writes_the_whole_version_for_a_precise_file_type() {
+    assert_eq!(
+        replacement("~> 1.0", &v("2.0.0"), "", true).as_deref(),
+        Some("~> 2.0.0")
+    );
+    assert_eq!(
+        replacement("== 1.2.3", &v("1.4.0"), "", true).as_deref(),
+        Some("== 1.4.0")
+    );
+    assert_eq!(
+        replacement("1.x", &v("2.3.1"), "", true).as_deref(),
+        Some("2.x")
     );
 }
 
@@ -89,6 +111,7 @@ fn bulk_updates_pick_the_named_level() {
         index: None,
         targets: Vec::new(),
         pinned: false,
+        precise: false,
         min: false,
     };
     let versions: Vec<Version> = ["1.2.0", "1.2.5", "1.4.0", "2.1.0"].map(v).into();
@@ -157,6 +180,7 @@ fn planned(req: &str, list: &[&str]) -> (Dep, Plan) {
         index: None,
         targets: Vec::new(),
         pinned: false,
+        precise: false,
         min: false,
     };
     let versions: Vec<Version> = list.iter().map(|t| v(t)).collect();
