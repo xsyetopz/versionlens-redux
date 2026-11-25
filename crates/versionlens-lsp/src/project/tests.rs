@@ -474,3 +474,5 @@ fn substitutes_known_variables_and_keeps_unknown_ones() {
     assert_eq!(unbase64("cGFzcw==").as_deref(), Some("pass"));
     assert_eq!(base64(b"pass"), "cGFzcw==");
 }
+
+mod live;

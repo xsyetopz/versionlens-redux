@@ -89,6 +89,7 @@ fn bulk_updates_pick_the_named_level() {
         index: None,
         targets: Vec::new(),
         pinned: false,
+        min: false,
     };
     let versions: Vec<Version> = ["1.2.0", "1.2.5", "1.4.0", "2.1.0"].map(v).into();
     let req = Req::parse("^1.2.0", version::Bare::Exact).unwrap();
@@ -156,6 +157,7 @@ fn planned(req: &str, list: &[&str]) -> (Dep, Plan) {
         index: None,
         targets: Vec::new(),
         pinned: false,
+        min: false,
     };
     let versions: Vec<Version> = list.iter().map(|t| v(t)).collect();
     let parsed = Req::parse(req, version::Bare::Prefix).unwrap();

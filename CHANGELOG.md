@@ -71,6 +71,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A catalog rule may take a `within` regex, which limits a text rule to what that regex matches, so a bare name counts only inside its list.
 - `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases; `src/extract/tests/sections.rs` reads each of 184 dependency sections the two baselines read, and `src/extract/tests/fixtures.rs` reads master's eleven checked-in manifest fixtures whole; every `[[file]]` row has a fixture test of what it extracts.
 - `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
+- `just registries-live` also resolves each kind of project registry configuration against a live public mirror that stands in for a private registry: `.npmrc` (npmmirror), `nuget.config` (the dotnet-public Azure Artifacts feed), Composer `repositories` (Aliyun), uv, `requirements.txt`, Pipfile, and `pip.conf` indexes (PyTorch), Cargo source replacement (rsproxy), and Maven `settings.xml` mirrors (Google's Central mirror). A local registry that answers only `Bearer` with the right token checks that an `.npmrc` `_authToken=${VAR}` from `.env` is sent. The live checks wait 60 seconds for an answer, since Ansible Galaxy can take longer than the 10-second default.
 
 - `Brewfile` `brew` and `cask` entries through formulae.brew.sh, and ReScript `rescript.json` and `bsconfig.json` dependency names through npm.
 
@@ -86,6 +87,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- An opam `{>= "1.0"}` or `{> "1.0"}` constraint is a lower bound that a newer release satisfies, not an exact pin; `{= "1.0"}` still pins, as the fork's master read it.
+- A Python index that answers only PEP 503 HTML, as PyTorch's `download.pytorch.org/whl/cpu` does, lists the versions in its file names instead of failing with `invalid JSON`.
+- A registry page that names a release more than once, as Racket's release list and Typst's changelog do, lists it once.
 - Stack `nightly-YYYY-MM-DD` snapshots resolve against the newest Stackage Nightly, `ghc-X.Y.Z` snapshots against GHC's releases, and a snapshot given by URL or `github:` path is labelled as its source, as the fork's master read them.
 - Bazel `multiple_version_override` lists each of its first four `versions`; the fork's master asked it for a `version` key it never has.
 - Dates such as vcpkg's `version-date` `2024-01-31` read as releases, not as prereleases of `2024`, so a bare port name whose versions are all dates gets a latest version.

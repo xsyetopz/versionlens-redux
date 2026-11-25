@@ -208,9 +208,10 @@ rules = [
     # Each package in the `depends`, `depopts`, and `conflicts` lists, with the version a
     # `{>= "1.0" & < "2.0"}` filter starts from, or bare, as `"conf-libev"` or `{< "1.0"}`, whose
     # bound names no version to move to: opam.ocaml.org/doc/Manual.html#opamfield-depends.
-    # The span holds the quoted version alone, so the operator stays outside the requirement. Elsewhere, as in `tags`, a quoted word
-    # is not a package.
-    { lines = '"(?P<name>[A-Za-z][\w.+-]*)"(?:[ \t]*\{[ \t]*(?:(?:>=|=|>)[ \t]*"(?P<version>[^"]+)")?[^}]*\})?', within = '(?m)^(?:depends|depopts|conflicts):[ \t]*\[([^\]]*)\]' },
+    # The span holds the quoted version alone, so the operator stays outside it: `min` marks a
+    # `>=` or `>` bound, which a newer release satisfies, and `=` pins as the registry's bare
+    # version does. A `>` reads as `>=`. Elsewhere, as in `tags`, a quoted word is not a package.
+    { lines = '"(?P<name>[A-Za-z][\w.+-]*)"(?:[ \t]*\{[ \t]*(?:(?:(?P<min>>=?)|=)[ \t]*"(?P<version>[^"]+)")?[^}]*\})?', within = '(?m)^(?:depends|depopts|conflicts):[ \t]*\[([^\]]*)\]' },
 ]
 
 # The `depends` field of a `package` stanza lists each package bare or with a constraint, which

@@ -53,14 +53,20 @@ pub(crate) struct Dep {
     pub(crate) targets: Vec<crate::project::Target>,
     /// The version is the one installed, from a `pinned` file type such as a lockfile.
     pub(crate) pinned: bool,
+    /// The manifest writes a lower-bound operator outside the span, which a rule captures as
+    /// `min`, as opam's `{>= "1.0"}` keeps it outside the quoted version.
+    pub(crate) min: bool,
 }
 
 impl Dep {
     /// What a version without an operator means for this dependency: the exact one where the
-    /// file pins it, else what it means to the registry.
+    /// file pins it, at least it where the manifest says so outside the span, else what it means
+    /// to the registry.
     pub(crate) fn bare(&self, registry: &crate::registry::Registry) -> crate::version::Bare {
         if self.pinned {
             crate::version::Bare::Exact
+        } else if self.min {
+            crate::version::Bare::Min
         } else {
             registry.bare
         }
@@ -412,6 +418,7 @@ fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>)
             index: index(leaf, leaves),
             targets: Vec::new(),
             pinned: false,
+            min: false,
         });
     }
 }
@@ -476,6 +483,7 @@ fn records(
             index: None,
             targets: Vec::new(),
             pinned: false,
+            min: false,
         });
     }
 }
@@ -506,6 +514,7 @@ fn from_caps(caps: &Captures, text: &str, offset: usize, file: &FileType) -> Opt
         index: None,
         targets: Vec::new(),
         pinned: false,
+        min: caps.get_group_by_name("min").is_some(),
     })
 }
 

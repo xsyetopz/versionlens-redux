@@ -154,6 +154,29 @@ fn parses_each_response_shape() {
 }
 
 #[test]
+fn reads_an_index_that_answers_only_html() {
+    // PEP 691 lets a Simple index ignore the JSON `accept` and answer PEP 503 HTML, as PyTorch's
+    // download.pytorch.org/whl/cpu/torch/ does; each file name holds its version.
+    let html = r#"<h1>Links for torch</h1>
+<a href="https://x/torch-0.3.0.post4-cp27-cp27m-linux_x86_64.whl#sha256=0" data-upload-time="t">torch-0.3.0.post4-cp27-cp27m-linux_x86_64.whl</a><br/>
+<a href="https://x/torch-2.4.0%2Bcpu-cp312-cp312-linux_x86_64.whl#sha256=0">torch-2.4.0+cpu-cp312-cp312-linux_x86_64.whl</a><br/>
+<a href="https://x/torch-2.4.0%2Bcpu-cp311-cp311-win_amd64.whl">torch-2.4.0+cpu-cp311-cp311-win_amd64.whl</a><br/>
+<a href="https://x/python-dateutil-2.8.2.tar.gz">python-dateutil-2.8.2.tar.gz</a><br/>
+<a href="https://x/foo_bar-1.0rc1.zip">foo_bar-1.0rc1.zip</a><br/>"#;
+    let pypi = get("pypi").unwrap();
+    assert_eq!(
+        pypi.parse(html, "torch").unwrap().list,
+        ["0.3.0.post4", "2.4.0+cpu", "2.8.2", "1.0rc1"]
+    );
+    // The JSON answer still reads as before, and an HTML answer elsewhere is still an error.
+    assert_eq!(
+        pypi.parse(r#"{"versions":["1.0"]}"#, "x").unwrap().list,
+        ["1.0"]
+    );
+    assert!(get("npm").unwrap().parse(html, "torch").is_err());
+}
+
+#[test]
 fn reads_helm_index_entries() {
     let index = "apiVersion: v1\nentries:\n  other:\n  - version: 9.9.9\n  redis:\n  - apiVersion: v2\n    version: 17.1.0\n    dependencies:\n    - name: common\n      version: 2.0.0\n  - version: \"17.0.0\"\n  zed:\n  - version: 1.0.0\n";
     assert_eq!(helm(index, "redis").list, ["17.1.0", "17.0.0"]);
@@ -185,6 +208,15 @@ fn reads_runtime_and_tool_registries() {
             "rust"
         ),
         ["1.80.0", "1.79.0"]
+    );
+    // Racket's page links each release to its installers, docs, and PDFs; each counts once.
+    assert_eq!(
+        parse(
+            "racket",
+            r#"<a href="releases/9.3/">x</a><a href="releases/9.3/doc">x</a><a href="releases/9.2/pdf-doc">"#,
+            "base"
+        ),
+        ["9.3", "9.2"]
     );
     assert_eq!(
         parse(

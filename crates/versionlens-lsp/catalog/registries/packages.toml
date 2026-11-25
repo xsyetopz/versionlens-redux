@@ -1,8 +1,9 @@
 # Package registries.
 #
 # Each [[registry]] row is one package registry: the `url` template of its version list, read with
-# exactly one of `json` (a path, with optional `field` and `latest`), `regex` (first capture of each
-# match), or `reader` (cargo, helm, terraform, or go-releases); `bare`, what a version without an
+# exactly one of `json` (a path, with optional `field` and `latest`, and an `html` regex for an index
+# that answers HTML instead), `regex` (first capture of each match), or `reader` (cargo, helm,
+# terraform, or go-releases); `bare`, what a version without an
 # operator means (exact, caret, min, or prefix); the `osv` ecosystem and `osv_name` template OSV
 # knows the package by, with an `upstream` regex that finds its GitHub repository; and the `page`
 # template of a package, with host-specific `pages` for images. src/registry.rs documents each
@@ -58,6 +59,10 @@ json = 'versions'
 bare = 'exact'
 osv = 'PyPI'
 accept = 'application/vnd.pypi.simple.v1+json'
+# An index that answers only PEP 503 HTML, as download.pytorch.org/whl/cpu does, links each file by
+# its name: `{name}-{version}-{tags}.whl` or `{name}-{version}.tar.gz` (packaging.python.org/en/
+# latest/specifications/binary-distribution-format/, .../source-distribution-format/).
+html = '''>[^<>]+?-(\d[A-Za-z0-9_.!+]*)(?:-[^<>]*\.whl|\.tar\.gz|\.tar\.bz2|\.tgz|\.zip)</a>'''
 page = 'https://pypi.org/project/{name}/'
 
 [[registry]]

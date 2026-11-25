@@ -274,7 +274,8 @@ const RENAMED: &[(&str, &str, &str)] = &[
     // Clojure tools write `group/artifact`; the clojars registry maps it to Maven's form.
     ("ClojureDepsEdn", "example.test/foo", "1.0.0"),
     ("LeiningenProjectClj", "example.test/foo", "1.0.0"),
-    // The operator sits outside the string opam edits, so the span holds the version alone.
+    // The operator sits outside the string opam edits, so the span holds the version alone; `=`
+    // still pins and `>=` still bounds, as forms.rs's opam test shows.
     ("Opam", "foo", "1.0.0"),
     // Git-hosted dependencies are named by the repository whose tags answer for them.
     ("Cmake", "example/foo", "1.0.0"),

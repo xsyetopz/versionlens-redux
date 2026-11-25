@@ -10,6 +10,16 @@ use crate::http::Http;
 use crate::osv::{self, Query};
 use crate::version::Version;
 
+/// A client that waits 60s for an answer. The checks ask whether each route answers, and Ansible
+/// Galaxy took 2.7s to 19.4s for one version list (curl, three tries), past the 10s default.
+fn patient() -> Http {
+    Http::new(Settings {
+        timeout: Duration::from_secs(60),
+        ..Settings::default()
+    })
+    .unwrap()
+}
+
 /// A registry id, a package it lists, the repository a manifest would name for it, and a
 /// version OSV reports a vulnerability for, where the registry has an OSV ecosystem.
 const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
@@ -230,7 +240,7 @@ fn samples_open_every_page_template() {
 #[test]
 #[ignore = "needs the network"]
 fn every_registry_lists_versions() {
-    let http = Http::new(Settings::default()).unwrap();
+    let http = patient();
     let answers: Vec<Result<String, String>> = block_on(async {
         let tasks: Vec<_> = SAMPLES
             .iter()
@@ -294,7 +304,10 @@ fn every_package_page_resolves() {
                             request = request.header("user-agent", agent).header("cookie", cookie);
                         }
                         match request.send().await {
-                            Ok(response) if response.status().is_success() => return None,
+                            Ok(response) if response.status().is_success() => {
+                                eprintln!("page {id} {url}: HTTP {}", response.status());
+                                return None;
+                            }
                             Ok(response) if response.headers().contains_key("cf-mitigated") => {
                                 last = format!("{id} {url}: Cloudflare challenge on every try");
                             }
@@ -347,7 +360,7 @@ fn osv_reports_each_ecosystem() {
             Some((id, query))
         })
         .unzip();
-    let http = Http::new(Settings::default()).unwrap();
+    let http = patient();
     let resolved = block_on(osv::upstream::resolve(&http, &queries)).unwrap();
     let unnamed: Vec<&str> = queries
         .iter()

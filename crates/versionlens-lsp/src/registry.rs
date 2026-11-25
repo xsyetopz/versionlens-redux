@@ -47,6 +47,9 @@ pub(crate) struct Registry {
     /// with `{upstream}` lists versions under what this pattern finds, by [`upstream_of`].
     pub(crate) upstream: &'static str,
     pub(crate) accept: &'static str,
+    /// A regex, read like `regex`, for an answer in HTML where `accept` asked for JSON; empty for
+    /// none. PEP 691 lets a Python index answer only PEP 503 HTML, as `download.pytorch.org` does.
+    pub(crate) html: &'static str,
     /// The field that marks a JSON version entry yanked, such as JSR's `yanked`; empty for none.
     pub(crate) yanked: &'static str,
     /// The field that marks a JSON version entry deprecated, such as npm's `deprecated`.
@@ -133,6 +136,7 @@ fn registry(row: &Row) -> Result<Registry, String> {
         "osv_name",
         "upstream",
         "accept",
+        "html",
         "yanked",
         "deprecated",
         "filtered",
@@ -176,6 +180,7 @@ fn registry(row: &Row) -> Result<Registry, String> {
         osv_name: row.opt("osv_name")?.unwrap_or("{name}"),
         upstream: row.text("upstream")?,
         accept: row.opt("accept")?.unwrap_or(accept),
+        html: row.text("html")?,
         yanked: row.text("yanked")?,
         deprecated: row.text("deprecated")?,
         filtered: row.text("filtered")?,

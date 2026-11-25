@@ -222,6 +222,31 @@ fn reads_stack_snapshots_of_every_kind() {
 }
 
 #[test]
+fn keeps_the_opam_operator_outside_the_span() {
+    // opam.ocaml.org/doc/Manual.html#Filtered-package-formulas: `{>= "1.0"}` is a lower bound,
+    // and `{= "1.0"}` or a bare constraint-free version pins, as the fork's master read `= 1.0.0`.
+    use crate::version::Bare;
+    let text = "depends: [\n  \"lwt\" {>= \"5.0\"}\n  \"tls\" {= \"1.0.0\"}\n  \"ssl\" {> \"0.5\" & < \"1.0\"}\n]\n";
+    let file = crate::catalog::file_type("/work/demo.opam").unwrap();
+    let opam = crate::registry::get("opam").unwrap();
+    let read: Vec<(String, String, Bare)> = super::extract(file, text)
+        .into_iter()
+        .map(|d| {
+            let bare = d.bare(opam);
+            (d.name, d.req, bare)
+        })
+        .collect();
+    assert_eq!(
+        read,
+        [
+            ("lwt".to_owned(), "5.0".to_owned(), Bare::Min),
+            ("tls".to_owned(), "1.0.0".to_owned(), Bare::Exact),
+            ("ssl".to_owned(), "0.5".to_owned(), Bare::Min),
+        ]
+    );
+}
+
+#[test]
 fn reads_rust_channels_with_a_host() {
     expect(
         "rust-toolchain.toml",

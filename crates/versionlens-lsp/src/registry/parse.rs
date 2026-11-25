@@ -1,6 +1,8 @@
 //! Reads registry responses into version lists, with the versions each registry marks yanked or
 //! deprecated kept apart.
 
+use std::collections::HashSet;
+
 use serde_json::Value;
 
 use super::{Parse, Registry, Versions};
@@ -15,6 +17,24 @@ impl From<Vec<String>> for Versions {
     }
 }
 
+/// The versions each match of `pattern` captures. With two groups, the first names the package,
+/// for pages that also link other packages. A page may name a release more than once, as Racket's
+/// links its installers and its docs, so each version is kept once, where it first appears.
+fn matched(pattern: &'static str, body: &str, name: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+    regex(pattern)
+        .captures_iter(body)
+        .filter_map(|c| match (c.get_group(1), c.get_group(2)) {
+            (Some(owner), Some(version)) => {
+                (&body[owner.range()] == name).then(|| body[version.range()].to_owned())
+            }
+            (Some(version), None) => Some(body[version.range()].to_owned()),
+            _ => None,
+        })
+        .filter(|version| seen.insert(version.clone()))
+        .collect()
+}
+
 impl Registry {
     /// Reads a response body into versions.
     ///
@@ -23,18 +43,13 @@ impl Registry {
     pub(crate) fn parse(&self, body: &str, name: &str) -> Result<Versions, String> {
         match &self.parse {
             // With two groups, the first names the package, for pages that also link other packages.
-            Parse::Regex(pattern) => Ok(regex(pattern)
-                .captures_iter(body)
-                .filter_map(|c| match (c.get_group(1), c.get_group(2)) {
-                    (Some(owner), Some(version)) => {
-                        (&body[owner.range()] == name).then(|| body[version.range()].to_owned())
-                    }
-                    (Some(version), None) => Some(body[version.range()].to_owned()),
-                    _ => None,
-                })
-                .collect::<Vec<_>>()
-                .into()),
+            // A page may name a release more than once, as Racket's links its installers and its
+            // docs, so each version is kept once, where it first appears.
+            Parse::Regex(pattern) => Ok(matched(pattern, body, name).into()),
             Parse::Fn(read) => Ok(read(body, name)),
+            Parse::Json { .. } if !self.html.is_empty() && body.trim_start().starts_with('<') => {
+                Ok(matched(self.html, body, name).into())
+            }
             Parse::Json { at, field, latest } => {
                 let root: Value =
                     serde_json::from_str(body).map_err(|e| format!("invalid JSON: {e}"))?;
