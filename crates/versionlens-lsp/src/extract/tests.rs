@@ -1,6 +1,8 @@
 use super::*;
 use crate::catalog::file_type;
 
+mod upstream;
+
 fn deps(path: &str, text: &str) -> Vec<(String, String)> {
     let file = file_type(path).unwrap_or_else(|| panic!("{path} not recognised"));
     extract(file, text)
@@ -580,5 +582,14 @@ fn reads_paket_references_without_versions() {
     assert_eq!(
         deps("paket.references", references),
         pairs(&[("Newtonsoft.Json", ""), ("FAKE", "")])
+    );
+}
+
+#[test]
+fn reads_dev_engines_runtime_and_package_manager() {
+    let manifest = r#"{"devEngines": {"runtime": {"name": "node", "version": ">=20.0.0"}, "packageManager": [{"name": "pnpm", "version": "^9.0.0"}]}}"#;
+    assert_eq!(
+        deps("package.json", manifest),
+        pairs(&[("node", ">=20.0.0"), ("pnpm", "^9.0.0")])
     );
 }

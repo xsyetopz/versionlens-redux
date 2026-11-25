@@ -1,6 +1,6 @@
 //! Patterns that more than one row uses.
 
-use crate::extract::Rule::{self, Keys, Record, Spec, Via};
+use crate::extract::Rule::{self, Keys, Lines, Record, Spec, Via};
 
 pub(super) const PEP508: &str = r"^\s*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*\(?(?P<version>(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+(?:\s*,\s*(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+)*)?\)?\s*(?:;.*)?$";
 pub(super) const DOCKER: &str = r"^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$";
@@ -16,13 +16,29 @@ pub(super) const NPM_DEPS: &[Rule] = &[
     Keys("optionalDependencies"),
     Keys("resolutions"),
     Keys("overrides"),
+    // A nested override pins a dependency only below its parent: `{"parent": {"child": "1.0.0"}}`.
+    Keys("overrides.*"),
     Keys("pnpm.overrides"),
+    Keys("pnpm.overrides.*"),
+    Keys("packageExtensions.*.dependencies"),
+    Keys("packageExtensions.*.devDependencies"),
+    Keys("packageExtensions.*.peerDependencies"),
+    Keys("packageExtensions.*.optionalDependencies"),
+    Keys("pnpm.packageExtensions.*.dependencies"),
+    Keys("pnpm.packageExtensions.*.devDependencies"),
+    Keys("pnpm.packageExtensions.*.peerDependencies"),
+    Keys("pnpm.packageExtensions.*.optionalDependencies"),
     Keys("catalog"),
     Keys("catalogs.*"),
     Keys("workspaces.catalog"),
     Keys("workspaces.catalogs.*"),
     Keys("volta"),
     Spec("packageManager", r"^(?P<name>[\w-]+)@(?P<version>[^+]+)"),
+    // `devEngines` names its tools as `{"name": "pnpm", "version": "^9.0.0"}`, or a list of them.
+    Record("devEngines.packageManager", "name", "version", ""),
+    Record("devEngines.packageManager.*", "name", "version", ""),
+    Record("devEngines.runtime", "name", "version", ""),
+    Record("devEngines.runtime.*", "name", "version", ""),
     // JSPM names its registry in each value: `npm:lodash@^4.17.0`, `github:owner/repo@1.0.0`.
     Spec(
         "jspm.*.*",
@@ -68,7 +84,16 @@ pub(super) const NUGET: &[Rule] = &[
         "@Version|Version",
         "",
     ),
+    Record(
+        "Project.ItemGroup.DotNetCliToolReference",
+        "@Include|@Update",
+        "@Version|Version",
+        "",
+    ),
     Record("packages.package", "@id", "@version", ""),
+    // An MSBuild SDK pins its version in `<Project Sdk="Name/1.0">` or `<Sdk Name="" Version="" />`.
+    Lines(r#"<Project[ \t\r\n][^>]*?Sdk="(?P<name>[\w.-]+)/(?P<version>[^"/;]+)""#),
+    Record("Project.Sdk", "@Name", "@Version", ""),
 ];
 pub(super) const POM: &[Rule] = &[
     Record("project.parent", "groupId:artifactId", "version", ""),

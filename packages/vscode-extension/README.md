@@ -43,7 +43,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec` |
 | CocoaPods | | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
-| NuGet | NuGet | `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json` |
+| NuGet | NuGet | MSBuild SDKs and packages in `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json` |
 | Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, `ivy.xml`, `.mvn/extensions.xml`, `*.main.kts` |
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |

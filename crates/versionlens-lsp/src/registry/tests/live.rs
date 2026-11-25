@@ -84,7 +84,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
 ];
 
 /// How many times a page behind a bot challenge is asked before the check fails.
-const CHALLENGE_RETRIES: u64 = 6;
+const CHALLENGE_RETRIES: u64 = 10;
 
 fn block_on<F: Future>(work: F) -> F::Output {
     tokio::runtime::Builder::new_multi_thread()

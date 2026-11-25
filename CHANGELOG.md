@@ -14,7 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Runtime pins report vulnerabilities: Node.js, Python, Ruby, and Gradle through OSV's Bitnami ecosystem, Go through `stdlib`, and GHC through OSV's GHC ecosystem. The `go` and `toolchain` lines of `go.mod`, `node` in `.tool-versions` and `mise.toml`, and `with-compiler:` in `cabal.project` resolve against those releases.
 - `Package.swift` dependencies report vulnerabilities through OSV's SwiftURL ecosystem.
 - More manifests: `bower.json`, `paket.references`, Kubernetes manifests (`k8s/`, `kubernetes/`, `manifests/`, `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`), and Helm `values.yaml` images.
-- `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried until the page itself answers.
+- `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers.
 
 ### Changed
 
@@ -28,6 +28,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Every dependency property upstream 1.3.0 reads is read again: nested npm and pnpm `overrides`, pnpm `packageExtensions`, MSBuild SDKs in `<Project Sdk="Name/1.0">` and `<Sdk>`, and `DotNetCliToolReference`. `devEngines` runtimes and package managers are read too.
 - `requirements.txt`, `requirements/*.txt`, `*constraints*.txt`, and `*.hxml` files are recognised.
 - VS Code commands act on the active manifest, and the VersionLens output channel logs the server path, each applied setting, and every failed request.
 - A failed lookup shows `✗` with its reason on the dependency's line instead of disappearing.
