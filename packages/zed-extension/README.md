@@ -13,7 +13,13 @@ The extension runs the first server it finds, with `--stdio`:
 
 ## Files
 
-Zed starts language servers per language, not per file name. The extension registers the server for the languages its manifests use, such as TOML, JSON, YAML, XML, Go Mod, Ruby, and Plain Text. Zed opens files it has no language for, such as `requirements.txt` and `*.hxml`, as Plain Text. The server ignores every document that is not a manifest it reads.
+Zed starts language servers per language, not per file name. The extension registers the server for the languages its manifests use, such as TOML, JSON, YAML, XML, Go Mod, Ruby, and Plain Text. Zed opens `*.txt` files, such as `requirements.txt`, as Plain Text. Some languages come from Zed extensions rather than from Zed itself: `Cargo.toml` and `pyproject.toml` need the `toml` extension, and a `Dockerfile` needs the `dockerfile` extension. Zed offers to install them when such a file opens. Zed starts no language server for a file it has no language for, such as `*.hxml`. Map such files to Plain Text in the user settings:
+
+```json
+{ "file_types": { "Plain Text": ["*.hxml"] } }
+```
+
+The server ignores every document that is not a manifest it reads.
 
 ## Settings
 
