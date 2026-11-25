@@ -140,6 +140,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
         Some("v4.32.0"),
     ),
     ("quicklisp", "clack", None, None),
+    ("ultralisp", "egao1980-cl-idna", None, None),
     ("alire", "aws", None, None),
     ("artifacthub", "podinfo:podinfo", None, None),
     ("github", "haskell:cabal", None, None),

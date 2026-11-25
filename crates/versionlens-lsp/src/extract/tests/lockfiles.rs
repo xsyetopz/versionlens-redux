@@ -12,11 +12,25 @@ fn reads_package_lock_versions() {
     "node_modules/@scope/pkg": { "version": "2.0.0", "resolved": "https://registry.npmjs.org/x" },
     "node_modules/a/node_modules/lodash": { "version": "3.10.1" },
     "node_modules/local": { "resolved": "packages/local", "link": true },
+    "node_modules/@adiwajshing/baileys": {
+      "version": "5.0.0",
+      "resolved": "git+ssh://git@github.com/WhiskeySockets/Baileys.git#b7878e531144133b48d9e5970787e7b256d21063",
+      "license": "MIT"
+    },
+    "node_modules/prelude-ls": {
+      "version": "1.2.1",
+      "dev": true,
+      "license": "MIT"
+    },
     "packages/local": { "name": "local", "version": "0.1.0" }
   },
   "dependencies": {
     "lodash": {
       "version": "4.17.21"
+    },
+    "postgres": {
+      "version": "git+ssh://git@github.com/charsleysa/postgres.git#3b1a01b2da3e2fafb1a79006f838eff11a8de3cb",
+      "from": "postgres@charsleysa/postgres#fix-errors-compiled"
     }
   }
 }"#;
@@ -27,7 +41,18 @@ fn reads_package_lock_versions() {
             ("@scope/pkg", "2.0.0", "npm"),
             ("lodash", "3.10.1", "npm"),
             ("local", "packages/local", "directory"),
+            (
+                "@adiwajshing/baileys",
+                "git+ssh://git@github.com/WhiskeySockets/Baileys.git#b7878e531144133b48d9e5970787e7b256d21063",
+                "source",
+            ),
+            ("prelude-ls", "1.2.1", "npm"),
             ("lodash", "4.17.21", "npm"),
+            (
+                "postgres",
+                "git+ssh://git@github.com/charsleysa/postgres.git#3b1a01b2da3e2fafb1a79006f838eff11a8de3cb",
+                "source",
+            ),
         ],
     );
 }

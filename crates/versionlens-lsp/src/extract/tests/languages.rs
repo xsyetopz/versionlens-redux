@@ -70,30 +70,40 @@ fn reads_spago_ranges() {
 
 #[test]
 fn reads_corral_deps() {
-    let text = "{\n  \"deps\": [\n    {\n      \"locator\": \"github.com/ponylang/ssl.git\",\n      \"version\": \"2.0.1\"\n    },\n    {\n      \"locator\": \"github.com/ponylang/valbytes.git\",\n      \"version\": \"0.6.2\"\n    }\n  ]\n}\n";
+    let text = "{\n  \"deps\": [\n    {\n      \"locator\": \"github.com/ponylang/ssl.git\",\n      \"version\": \"2.0.1\"\n    },\n    {\n      \"locator\": \"github.com/ponylang/valbytes.git\",\n      \"version\": \"0.6.2\"\n    },\n    {\n      \"locator\": \"gitlab.com/someone/pony-thing.git\",\n      \"version\": \">=1.1.0 <2.0.0\"\n    },\n    {\n      \"locator\": \"../pony-inspect\",\n      \"version\": \"\"\n    }\n  ]\n}\n";
     expect(
         "corral.json",
         text,
         &[
             ("ponylang/ssl", "2.0.1", "github"),
             ("ponylang/valbytes", "0.6.2", "github"),
+            (
+                "https://gitlab.com/someone/pony-thing",
+                ">=1.1.0 <2.0.0",
+                "source",
+            ),
+            ("../pony-inspect", "../pony-inspect", "directory"),
         ],
     );
 }
 
 #[test]
 fn reads_qlfile_tags() {
-    // The Qlot README's examples: a dist date, a branch or ref it pins, and release tags; a
-    // `github` line's branch names no URL.
-    let text = "ql clack 2014-01-13\nql log4cl\ngit clack https://github.com/fukamachi/clack.git :branch develop\ngit datafly https://github.com/fukamachi/datafly.git :tag v0.7.4\ngithub fukamachi/sxql :tag 0.1.0\ngithub fukamachi/dexador :branch master\n";
+    // The Qlot README's examples: dist dates from Quicklisp and Ultralisp, a branch or ref it
+    // pins, and release tags.
+    let text = "ql clack 2014-01-13\nql log4cl\nql-dist quicklisp mito 2023-02-15\nultralisp egao1980-cl-idna 20261119062000\nql-dist ultralisp datafly 20250101000000\ngit clack https://github.com/fukamachi/clack.git :branch develop\ngit datafly https://github.com/fukamachi/datafly.git :tag v0.7.4\ngithub fukamachi/sxql :tag 0.1.0\ngithub fukamachi/dexador :branch master\n";
     expect(
         "qlfile",
         text,
         &[
             ("clack", "2014-01-13", "quicklisp"),
+            ("mito", "2023-02-15", "quicklisp"),
+            ("egao1980-cl-idna", "20261119062000", "ultralisp"),
+            ("datafly", "20250101000000", "ultralisp"),
             ("https://github.com/fukamachi/clack", "develop", "source"),
             ("fukamachi/datafly", "v0.7.4", "github"),
             ("fukamachi/sxql", "0.1.0", "github"),
+            ("https://github.com/fukamachi/dexador", "master", "source"),
         ],
     );
 }

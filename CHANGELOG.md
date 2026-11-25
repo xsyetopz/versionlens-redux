@@ -76,12 +76,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `Brewfile` `brew` and `cask` entries through formulae.brew.sh, and ReScript `rescript.json` and `bsconfig.json` dependency names through npm.
 - Forms the rows used to skip are read:
   - Lake Reservoir requires through Reservoir's API: a `scope` with a tag `rev` or `version = "git#tag"`, and `require "scope" / name @ git "tag"`.
-  - `qlfile` `ql` dist dates through Quicklisp's dist list.
+  - `qlfile` `ql` and `ql-dist quicklisp` dist dates through Quicklisp's dist list, and `ultralisp` and `ql-dist ultralisp` dist versions through Ultralisp's newest dist.
   - Flux `GitRepository` `ref.semver` ranges on GitHub.
   - Mill `*.mill.yaml` lists, and Scala `::` dependencies with the `_2.12`, `_2.13`, or `_3` suffix the build's `scalaVersion` gives.
   - Alire `case(...)` dependencies, and PlatformIO specs with comma-joined constraints.
   - `west.yml` projects named through a remote's `url-base`: a GitHub release where the remote is on GitHub and the revision is a version, and the git reference otherwise.
-- Git references, URLs, and local paths the rows used to skip are labelled as the source they pin, with a hover link to the repository: Lake branch and commit `rev`s and `lake-manifest.json` branch `inputRev`s, Idris `pack.toml` custom `commit`s, Flux `GitRepository` branches, names, and commits, Argo CD git `targetRevision`s, `qlfile` `git` `:branch` and `:ref`, GitHub `archive/<commit>` URLs in CMake, Zig, Meson, Bazel, and Buck2 files, `Cargo.lock` git packages, Yarn git resolutions, and `package-lock.json` links, Yarn Berry and `bun.lock` workspaces, helmfile local charts, and Pulumi local packages as directories. Yarn `patch:` entries read as the npm version they patch.
+- Git references, URLs, and local paths the rows used to skip are labelled as the source they pin, with a hover link to the repository: Lake branch and commit `rev`s and `lake-manifest.json` branch `inputRev`s, Idris `pack.toml` custom `commit`s, Flux `GitRepository` branches, names, and commits, Argo CD git `targetRevision`s, `qlfile` `git` and `github` `:branch` and `:ref`, `corral.json` GitLab and Bitbucket locators and local bundles, `package-lock.json` git packages (whose declared version no longer reads as an npm release), GitHub `archive/<commit>` URLs in CMake, Zig, Meson, Bazel, and Buck2 files, `Cargo.lock` git packages, Yarn git resolutions, and `package-lock.json` links, Yarn Berry and `bun.lock` workspaces, helmfile local charts, and Pulumi local packages as directories. Yarn `patch:` entries read as the npm version they patch.
 
 ### Changed
 

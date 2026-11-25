@@ -227,6 +227,25 @@ fn is_package(name: &str, registry: &str) -> bool {
                 || name.starts_with("composer-"))))
 }
 
+/// The dependencies `rule` finds, their names completed by `prefix` and `suffix`. An affix
+/// completes a registry's package name; a package its requirement turns local or git keeps the
+/// name the manifest gives it. A rule routed to a source on purpose, such as qlfile's
+/// `github owner/repo :branch`, affixes the URL its link needs.
+fn affix(file: &FileType, prefix: &str, suffix: &str, rule: &'static Rule, text: &str) -> Vec<Dep> {
+    let inner = FileType {
+        rules: std::slice::from_ref(rule),
+        ..*file
+    };
+    let mut deps = extract(&inner, text);
+    for dep in &mut deps {
+        if dep.registry == file.registry || ![DIRECTORY, SOURCE].contains(&dep.registry) {
+            dep.name.insert_str(0, prefix);
+            dep.name.push_str(suffix);
+        }
+    }
+    deps
+}
+
 pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
     let leaves = flatten(file.format, text);
     let mut deps = Vec::new();
@@ -262,19 +281,7 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                 deps.extend(extract(&inner, text));
             }
             Rule::Affix(prefix, suffix, rule) => {
-                let inner = FileType {
-                    rules: std::slice::from_ref(rule),
-                    ..*file
-                };
-                // An affix completes a registry's package name; a local or git package keeps
-                // the name the manifest gives it.
-                deps.extend(extract(&inner, text).into_iter().map(|mut dep| {
-                    if ![DIRECTORY, SOURCE].contains(&dep.registry) {
-                        dep.name.insert_str(0, prefix);
-                        dep.name.push_str(suffix);
-                    }
-                    dep
-                }));
+                deps.extend(affix(file, prefix, suffix, rule, text));
             }
             Rule::Within(block, rule) => {
                 let inner = FileType {

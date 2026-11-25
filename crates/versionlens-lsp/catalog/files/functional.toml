@@ -342,7 +342,10 @@ rules = [
 ]
 
 # Corral, the Pony package manager, lists `deps` as a `locator` and a `version`:
-# github.com/ponylang/http_server's corral.json.
+# github.com/ponylang/http_server's corral.json. A locator on gitlab.com or bitbucket.org works
+# the same way, and `../name.git` or `../name` is a local bundle: github.com/ponylang/corral,
+# DOCS.md "GitHub or GitLab or Bitbucket", "Local git Bundle", and "Local Direct Bundle". No
+# registry lists GitLab or Bitbucket tags, so those locators link to their repository.
 [[file]]
 id = 'corral'
 globs = ['corral.json']
@@ -350,12 +353,16 @@ format = 'text'
 registry = 'github'
 rules = [
     { lines = '"locator"\s*:\s*"github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*"version"\s*:\s*"(?P<version>[^"]+)"' },
+    { lines = '"locator"\s*:\s*"(?P<name>(?:gitlab\.com|bitbucket\.org)/[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*"version"\s*:\s*"(?P<version>[^"]+)"', via = 'source', prefix = 'https://' },
+    { lines = '"locator"\s*:\s*"(?P<name>(?P<version>\.{1,2}/[^"]+))"', via = 'directory' },
 ]
 
 # Qlot's qlfile takes a GitHub library at a `:tag`, by `github owner/repo` or a `git` URL, any git
 # URL at a `:ref`, `:branch`, or `:tag` it pins, and a Quicklisp project from the dist of a date,
 # `ql clack 2014-01-13`: github.com/fukamachi/qlot, README.markdown "ql" and "git". A `github`
-# line's branch or ref names no URL to link, so it is not read.
+# line's `:branch` or `:ref` pins its repository on github.com, which is its link. `ultralisp
+# name version` is `ql` from Ultralisp's dist, and `ql-dist quicklisp|ultralisp name version`
+# takes a project from the named dist: README.markdown "ultralisp" and "ql-dist".
 [[file]]
 id = 'qlfile'
 globs = ['qlfile']
@@ -364,7 +371,9 @@ registry = 'github'
 rules = [
     { lines = '(?m)^[ \t]*github[ \t]+(?P<name>[\w.-]+/[\w.-]+)[ \t]+:tag[ \t]+(?P<version>\S+)' },
     { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?[ \t]+:tag[ \t]+(?P<version>\S+)' },
-    { lines = '(?m)^[ \t]*ql[ \t]+(?P<name>\S+)[ \t]+(?P<version>\d{4}-\d{2}-\d{2})', via = 'quicklisp' },
+    { lines = '(?m)^[ \t]*(?:ql|ql-dist[ \t]+quicklisp)[ \t]+(?P<name>\S+)[ \t]+(?P<version>\d{4}-\d{2}-\d{2})', via = 'quicklisp' },
+    { lines = '(?m)^[ \t]*(?:ultralisp|ql-dist[ \t]+ultralisp)[ \t]+(?P<name>\S+)[ \t]+(?P<version>\d{14})', via = 'ultralisp' },
+    { lines = '(?m)^[ \t]*github[ \t]+(?P<name>[\w.-]+/[\w.-]+)[ \t]+:(?:ref|branch)[ \t]+(?P<version>\S+)', via = 'source', prefix = 'https://github.com/' },
     { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+(?P<name>\S+?)(?:\.git)?[ \t]+:(?:ref|branch|tag)[ \t]+(?P<version>\S+)', via = 'source' },
 ]
 

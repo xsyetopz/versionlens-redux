@@ -209,7 +209,13 @@ rules = [
 # `packages` keys a package by its `node_modules/` path in lockfile v2 and v3, and v1 nests
 # `dependencies` by name; either way `version` comes first. Workspace entries start with `name`.
 # A link to a workspace gives its directory as `resolved` beside `"link": true`, which reads as a
-# local directory. Read from github.com/npm/cli/blob/latest/package-lock.json.
+# local directory. Read from github.com/npm/cli/blob/latest/package-lock.json. A git dependency
+# resolves to `git+ssh://…#commit` beside the version its package.json declares in v2 and v3
+# (`node_modules/@adiwajshing/baileys` in github.com/Scheyot2/luix-bot's .package-lock.json.bak),
+# and gives that URL as its `version` in v1 (`postgres` in nrwl/nx's lock-file fixture
+# auxiliary-packages/package-lock.json.fixture). The registry rule takes a version only when the
+# next key is a registry `resolved` URL, a key other than `resolved`, or the entry's end, so a
+# git package's declared version is not compared with the npm release of the same name.
 [[file]]
 id = 'package-lock'
 globs = ['package-lock.json', 'npm-shrinkwrap.json']
@@ -217,7 +223,9 @@ format = 'text'
 registry = 'npm'
 pinned = true
 rules = [
-    { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>\d[^"]*)"' },
+    { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>\d[^"]*)"(?:\s*\}|,\s*"(?:resolved":[ \t]*"https?:|[^r"]|re[^s]))' },
+    { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"[^"]*",\s*"resolved":[ \t]*"(?P<version>git\+[^"]+)"', via = 'source' },
+    { lines = '"(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>git\+[^"]+)"', via = 'source' },
     { lines = '"[^"\n]*node_modules/(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"resolved":[ \t]*"(?P<version>[^"]+)",\s*"link":[ \t]*true', via = 'directory' },
 ]
 

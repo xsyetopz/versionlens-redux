@@ -593,6 +593,18 @@ regex = '(?m)^(\d{4}-\d{2}-\d{2})\s'
 bare = 'exact'
 page = 'https://www.quicklisp.org/beta/releases.html'
 
+# Ultralisp, a Quicklisp dist rebuilt as its projects change, publishes only its newest dist,
+# whose `version` is a timestamp such as 20261119062000 that Qlot's `ultralisp name version`
+# takes: dist.ultralisp.org, the distinfo Qlot's README.markdown "dist" points at. It keeps no
+# version list, so the newest dist is the one version a pin compares with. Its project search is
+# the page. OSV has no Common Lisp ecosystem.
+[[registry]]
+id = 'ultralisp'
+url = 'https://dist.ultralisp.org/'
+regex = '(?m)^version:[ \t]*(\d{14})\s'
+bare = 'exact'
+page = 'https://ultralisp.org/search/?query={name}'
+
 # Reservoir, Lake's default registry, names a package `scope/name`, which a manifest gives as
 # `scope:name`, and lists each indexed release with the Git `tag` a `rev` pins; its `version` is
 # mostly `0.0.0`: reservoir.lean-lang.org/api/v1/packages/leanprover-community/mathlib/versions.
