@@ -1,4 +1,4 @@
-# Ruby, Dart, BEAM, Julia, R, Perl, OCaml, and Haskell manifests; see native.toml for the row format.
+# Ruby, Dart, BEAM, Julia, R, Perl, OCaml, Haskell, and other language manifests; see native.toml for the row format.
 
 [[file]]
 id = 'gemfile'
@@ -202,3 +202,81 @@ rules = [
     { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)' },
 ]
 
+
+# Typst imports a Universe package at its full version, `#import "@preview/{name}:{version}"`:
+# github.com/typst/packages, README.md.
+[[file]]
+id = 'typst'
+globs = ['*.typ']
+format = 'text'
+registry = 'typst'
+rules = [
+    { lines = '"@preview/(?P<name>[a-z][\w-]*):(?P<version>\d[\w.-]*)"' },
+]
+
+# Wally maps an alias to `"scope/name@version"` under [dependencies], [server-dependencies], and
+# [dev-dependencies]: github.com/UpliftGames/wally, README.md.
+[[file]]
+id = 'wally'
+globs = ['wally.toml']
+format = 'text'
+registry = 'wally'
+rules = [
+    { lines = '''(?m)^[ \t]*[\w-]+[ \t]*=[ \t]*["'](?P<name>[a-z0-9_-]+/[a-z0-9_-]+)@(?P<version>[^"']+)["']''' },
+]
+
+# MoonBit's moon.mod.json maps `deps` to a version or a local `path`: docs.moonbitlang.com,
+# toolchain/moon/module.md.
+[[file]]
+id = 'moonbit'
+globs = ['moon.mod.json']
+format = 'json'
+registry = 'mooncakes'
+rules = [{ keys = 'deps' }]
+
+# Spago lists a package-set dependency by name and a registry one with its range,
+# `- lists: ">=7.0.0 <8.0.0"`: github.com/purescript/spago, README.md.
+[[file]]
+id = 'spago'
+globs = ['spago.yaml']
+format = 'text'
+registry = 'purescript'
+rules = [
+    { lines = '''(?m)^[ \t]*-[ \t]+(?P<name>[a-z][\w-]*):[ \t]*["']?(?P<version>[<>=]*[ \t]*\d[^"'\r\n#]*?)["']?[ \t]*(?:#.*)?\r?$''' },
+]
+
+# Corral, the Pony package manager, lists `deps` as a `locator` and a `version`:
+# github.com/ponylang/http_server's corral.json.
+[[file]]
+id = 'corral'
+globs = ['corral.json']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '"locator"\s*:\s*"github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*"version"\s*:\s*"(?P<version>[^"]+)"' },
+]
+
+# Qlot's qlfile takes a GitHub library at a `:tag`, by `github owner/repo` or a `git` URL:
+# github.com/fukamachi/qlot, README.markdown. A Quicklisp dist date is not read.
+[[file]]
+id = 'qlfile'
+globs = ['qlfile']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '(?m)^[ \t]*github[ \t]+(?P<name>[\w.-]+/[\w.-]+)[ \t]+:tag[ \t]+(?P<version>\S+)' },
+    { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?[ \t]+:tag[ \t]+(?P<version>\S+)' },
+]
+
+# Lake requires a git package at a `rev`, in lakefile.toml as `git` then `rev` and in lakefile.lean
+# as `from git "url" @ "rev"`: leanprover/lean4, src/lake/README.md. Only a release-like rev reads,
+# not a branch or commit; a Reservoir `scope`/`version` is not read.
+[[file]]
+id = 'lake'
+globs = ['lakefile.toml', 'lakefile.lean']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''git[ \t]*=[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*rev[ \t]*=[ \t]*"(?P<version>v?\d+\.\d[\w.-]*)"''' },
+    { lines = 'from\s+git\s+"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*@\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
+]

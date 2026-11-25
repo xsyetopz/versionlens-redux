@@ -211,6 +211,28 @@ rules = [
     { lines = '(?m)^[ \t]*(?:lib_deps[ \t]*=[ \t]*)?(?P<name>[\w.-]+/[\w.+-]+(?:[ \t]+[\w.+-]+)*?)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)' },
 ]
 
+# fpm, the Fortran package manager, takes a git dependency at a `tag`, inline or as a table:
+# fpm.fortran-lang.org/spec/manifest.html (fortran-lang/fpm-docs, pages/spec/manifest.md).
+[[file]]
+id = 'fpm'
+globs = ['fpm.toml']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''git[ \t]*=[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[ \t]*(?:,|\r?\n)\s*tag[ \t]*=[ \t]*"(?P<version>[^"]+)"''' },
+]
+
+# Boss, the Delphi package manager, keys `dependencies` by repository, as `"github.com/HashLoad/
+# horse": "^3.0.0"`, and installs its tags: github.com/HashLoad/boss (README.md).
+[[file]]
+id = 'boss'
+globs = ['boss.json']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '"github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*:\s*"(?P<version>[^"]+)"' },
+]
+
 # ESP-IDF components list registry dependencies as `namespace/name: spec` or with a `version`
 # key; a name without a namespace is in `espressif`, and `idf` pins ESP-IDF itself:
 # docs.espressif.com/projects/idf-component-manager (reference/manifest_file.rst). Each name is

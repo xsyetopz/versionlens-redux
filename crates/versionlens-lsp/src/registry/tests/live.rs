@@ -113,6 +113,10 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("platformio-platform", "espressif32", None, None),
     ("platformio-tool", "platformio/toolchain-xtensa", None, None),
     ("esp", "espressif/led_strip", None, None),
+    ("typst", "cetz", None, None),
+    ("wally", "roblox/roact", None, None),
+    ("mooncakes", "moonbitlang/x", None, None),
+    ("purescript", "prelude", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a

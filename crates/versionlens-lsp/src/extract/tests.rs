@@ -3,6 +3,7 @@ use crate::catalog::{file_type, file_type_of};
 
 mod build;
 mod infra;
+mod languages;
 mod legacy;
 mod lockfiles;
 mod master;

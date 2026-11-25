@@ -1,4 +1,4 @@
-//! Build systems: CPM.cmake, `FetchContent`, Hunter, `PlatformIO`, ESP-IDF components, and Mill.
+//! Build systems: CPM.cmake, `FetchContent`, Hunter, `PlatformIO`, ESP-IDF components, Mill, fpm, and Boss.
 //! Fixtures are excerpts of the real files or docs each row cites.
 
 use super::expect;
@@ -82,6 +82,33 @@ fn reads_idf_component_dependencies() {
             ("lvgl/lvgl", "9.6.0", "esp"),
             ("espressif/led_strip", "^2.0.0", "esp"),
             ("my_local", "../my_local", "directory"),
+        ],
+    );
+}
+
+#[test]
+fn reads_fpm_git_tags() {
+    // The fpm manifest spec's inline and table forms; a branch or revision is not a release.
+    let text = "[dependencies]\ntoml-f = { git = \"https://github.com/toml-f/toml-f\", tag = \"v0.2.1\" }\nhead = { git = \"https://github.com/toml-f/toml-f\", branch = \"main\" }\n[dependencies.stdlib]\ngit = \"https://github.com/fortran-lang/stdlib.git\"\ntag = \"v0.5.0\"\n";
+    expect(
+        "fpm.toml",
+        text,
+        &[
+            ("toml-f/toml-f", "v0.2.1", "github"),
+            ("fortran-lang/stdlib", "v0.5.0", "github"),
+        ],
+    );
+}
+
+#[test]
+fn reads_boss_dependencies() {
+    let text = "{\n  \"name\": \"my-project\",\n  \"version\": \"1.0.0\",\n  \"homepage\": \"https://github.com/myuser/my-project\",\n  \"dependencies\": {\n    \"github.com/HashLoad/horse\": \"^3.0.0\",\n    \"github.com/viniciussanchez/dataset-serialize\": \"v2.6.2\"\n  }\n}\n";
+    expect(
+        "boss.json",
+        text,
+        &[
+            ("HashLoad/horse", "^3.0.0", "github"),
+            ("viniciussanchez/dataset-serialize", "v2.6.2", "github"),
         ],
     );
 }

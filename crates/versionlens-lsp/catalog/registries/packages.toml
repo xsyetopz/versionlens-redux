@@ -468,3 +468,42 @@ field = 'version'
 yanked = 'yanked_at'
 bare = 'exact'
 page = 'https://components.espressif.com/components/{group}/{artifact}'
+
+# Typst Universe publishes each package version as a directory of typst/packages,
+# packages/preview/{name}/{version}; the contents API lists them.
+[[registry]]
+id = 'typst'
+url = 'https://api.github.com/repos/typst/packages/contents/packages/preview/{name}'
+json = ''
+field = 'name'
+bare = 'exact'
+page = 'https://typst.app/universe/package/{name}'
+
+# Wally's package metadata lists each published wally.toml, its version at `package.version`;
+# a nested field, so a regex reads it. Ranges follow Cargo, where a bare version is a caret.
+[[registry]]
+id = 'wally'
+url = 'https://api.wally.run/v1/package-metadata/{name}'
+regex = '"version":"([^"]+)"'
+bare = 'caret'
+page = 'https://wally.run/package/{name}'
+
+# mooncakes.io, the MoonBit registry, lists every version of a module with its yank state.
+[[registry]]
+id = 'mooncakes'
+url = 'https://mooncakes.io/api/v0/modules/{name}'
+json = 'versions'
+field = 'version'
+latest = 'latest_version'
+yanked = 'yanked'
+bare = 'exact'
+page = 'https://mooncakes.io/docs/{name}'
+
+# The PureScript registry keeps one metadata file per package, its `published` keyed by version.
+[[registry]]
+id = 'purescript'
+url = 'https://raw.githubusercontent.com/purescript/registry/main/metadata/{name}.json'
+json = 'published'
+field = '@key'
+bare = 'exact'
+page = 'https://pursuit.purescript.org/packages/purescript-{name}'
