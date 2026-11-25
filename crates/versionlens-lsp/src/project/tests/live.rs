@@ -300,6 +300,60 @@ fn sends_the_npmrc_token_to_github_packages() {
     );
 }
 
+/// The real `dotnet` CLI reports a source from a `NuGet.Config` this reader does not look for,
+/// here the one under the `dotnet-home/` the CLI is given as `HOME`, and the lookup reaches it.
+#[test]
+#[ignore = "needs the dotnet CLI"]
+fn reaches_the_feed_dotnet_lists() {
+    let routes = vec![
+        (
+            "/v3/index.json",
+            r#"{"resources":[{"@id":"{url}/flat/","@type":"PackageBaseAddress/3.0.0"}]}"#.into(),
+        ),
+        (
+            "/flat/contoso.core/index.json",
+            r#"{"versions":["1.0.0","1.1.0"]}"#.into(),
+        ),
+    ];
+    let (url, seen) = token_registry("", routes);
+    let config = format!(
+        r#"<configuration><packageSources><clear /><add key="corp" value="{url}/v3/index.json" /></packageSources></configuration>"#
+    );
+    let root = project(
+        "live-dotnet-list",
+        &[
+            ("dotnet-home/.nuget/NuGet/NuGet.Config", &config),
+            (
+                "app.csproj",
+                r#"<Project><ItemGroup><PackageReference Include="Contoso.Core" Version="1.0.0" /></ItemGroup></Project>"#,
+            ),
+        ],
+    );
+    let mut env = env(&root, &[]);
+    env.run = |dir, program, args| {
+        let home = dir.join("dotnet-home");
+        let out = std::process::Command::new(program)
+            .args(args)
+            .current_dir(dir)
+            .env("HOME", &home)
+            .env("DOTNET_CLI_HOME", &home)
+            .env("DOTNET_CLI_TELEMETRY_OPTOUT", "1")
+            .env("DOTNET_NOLOGO", "1")
+            .output()
+            .ok()?;
+        out.status
+            .success()
+            .then(|| String::from_utf8_lossy(&out.stdout).into_owned())
+    };
+    let found = looked_up(&root, "app.csproj", &env);
+    let sent: Vec<_> = seen.lock().unwrap().clone();
+    eprintln!("config dotnet-list {found:?} sent {sent:?}");
+    assert!(
+        matches!(found.as_slice(), [(_, target, Ok(2))] if target.starts_with(&url)),
+        "{found:?} {sent:?}"
+    );
+}
+
 /// What Composer 2.11.2, pip 26.2.2, `NuGet` 7.9.0 (`dotnet restore`), Maven 3.10.1, and Cargo
 /// 1.100.0 sent to a capturing server for these same configurations: `Basic dTpw` (`u:p`) from
 /// each password, and Cargo's token bare. Each reader's lookup must send the same and succeed.
