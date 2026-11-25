@@ -116,6 +116,17 @@ rules = [
     { lines = '''(?m)(?:^[ \t]*|requires\(\s*["']|["'])(?P<name>[a-z0-9][\w.+-]*)/(?P<version>\d[\w.+-]*)''' },
 ]
 
+# A Spack environment lists specs as `name@version`, with variants after it, `@=` for an exact
+# version, and `:` for a range: spack.readthedocs.io (lib/spack/docs/environments.rst)
+[[file]]
+id = 'spack'
+globs = ['spack.yaml', 'spack.yml']
+format = 'yaml'
+registry = 'spack'
+rules = [
+    { spec = 'spack.specs.*', pattern = '^\s*(?P<name>[a-z0-9][\w-]*)[ \t]*@=?(?P<version>\d[\w.:]*)' },
+]
+
 [[file]]
 id = 'shards'
 globs = ['shard.yml']

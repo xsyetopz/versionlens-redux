@@ -352,3 +352,51 @@ osv_name = 'https://supermarket.chef.io/api/v1/cookbooks/{name}'
 upstream = '"source_url":\s*"${GITHUB_URL}'
 page = 'https://supermarket.chef.io/cookbooks/{name}'
 
+
+# Charts by Artifact Hub repository name, `repository/chart`, as helmfile releases write them;
+# its Trivy reports give the advisories of each version's images.
+[[registry]]
+id = 'artifacthub'
+url = 'https://artifacthub.io/api/v1/packages/helm/{name}'
+json = 'available_versions'
+field = 'version'
+bare = 'exact'
+osv = 'Artifact Hub'
+page = 'https://artifacthub.io/packages/helm/{name}'
+
+# Nixhub, Devbox's index of the versions each nixpkgs package has had.
+[[registry]]
+id = 'nixhub'
+url = 'https://search.devbox.sh/v2/pkg?name={name}'
+json = 'releases'
+field = 'version'
+bare = 'prefix'
+page = 'https://www.nixhub.io/packages/{name}'
+
+[[registry]]
+id = 'vagrant'
+url = 'https://app.vagrantup.com/api/v2/box/{name}'
+json = 'versions'
+field = 'version'
+bare = 'exact'
+page = 'https://portal.cloud.hashicorp.com/vagrant/discover/{name}'
+
+# A plugin `owner/name` is the repository `owner/packer-plugin-name`, a Go module.
+[[registry]]
+id = 'packer'
+url = 'https://api.github.com/repos/{group}/packer-plugin-{artifact}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'prefix'
+osv = 'Go'
+osv_name = 'github.com/{group}/packer-plugin-{artifact}'
+page = 'https://github.com/{group}/packer-plugin-{artifact}'
+
+# Spack's package index; a spec version such as `@1.2` matches every 1.2 release.
+[[registry]]
+id = 'spack'
+url = 'https://packages.spack.io/data/packages/{name}.json'
+json = 'versions'
+field = 'name'
+bare = 'prefix'
+page = 'https://packages.spack.io/package.html?name={name}'

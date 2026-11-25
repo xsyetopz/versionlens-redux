@@ -1,6 +1,7 @@
 use super::*;
 use crate::catalog::file_type;
 
+mod infra;
 mod lockfiles;
 mod master;
 mod upstream;

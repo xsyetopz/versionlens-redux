@@ -56,14 +56,25 @@ rules = [
     { lines = '${IMAGE_LINE}' },
 ]
 
-# Kubernetes manifests have no fixed name; these are the folders and suffixes that hold them.
+# Kubernetes manifests have no fixed name; these are the folders and suffixes that hold them,
+# with Flux's `clusters/` (fluxcd.io/flux/guides/repository-structure/) and Argo CD's own folders.
 [[file]]
 id = 'kubernetes'
-globs = ['k8s/**/*.yaml', 'k8s/**/*.yml', 'kubernetes/**/*.yaml', 'kubernetes/**/*.yml', 'manifests/**/*.yaml', 'manifests/**/*.yml', 'deploy/**/*.yaml', 'deploy/**/*.yml', '*.k8s.yaml', '*.k8s.yml', 'skaffold.yaml', 'tilt.yaml']
+globs = ['k8s/**/*.yaml', 'k8s/**/*.yml', 'kubernetes/**/*.yaml', 'kubernetes/**/*.yml', 'manifests/**/*.yaml', 'manifests/**/*.yml', 'deploy/**/*.yaml', 'deploy/**/*.yml', 'clusters/**/*.yaml', 'clusters/**/*.yml', 'argocd/**/*.yaml', 'argocd/**/*.yml', 'argo-cd/**/*.yaml', 'argo-cd/**/*.yml', '*.k8s.yaml', '*.k8s.yml', 'skaffold.yaml', 'tilt.yaml']
 format = 'text'
 registry = 'docker'
 rules = [
     { lines = '${IMAGE_LINE}' },
+    # An Argo CD Application's Helm source names `chart`, `repoURL`, and `targetRevision`, in
+    # the docs' order or with `repoURL` first; git sources have no `chart`:
+    # github.com/argoproj/argo-cd/blob/master/docs/operator-manual/declarative-setup.md
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
+    # Flux sources pin an OCI artifact or a git repository by `ref.tag`:
+    # github.com/fluxcd/source-controller/blob/main/docs/spec/v1/ocirepositories.md and
+    # gitrepositories.md
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?oci://(?P<name>[\w.-]+(?::\d+)?/[\w./-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'oci' },
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'github' },
 ]
 
 # Helm chart values split an image into `repository` and `tag`, at the top or under a component.
@@ -123,6 +134,94 @@ registry = 'terraform'
 rules = [
     { lines = 'source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
     { lines = 'version[ \t]*=[ \t]*"(?P<version>[^"]+)"\s*source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"' },
+    { lines = '${GITHUB_REF}', via = 'github' },
+]
+
+# A unit's `terraform { source }` names a registry module as `tfr://[host]/ns/name/provider`
+# with `?version=`, or a git module pinned by `?ref=`:
+# docs.terragrunt.com/reference/hcl/blocks/terraform/
+[[file]]
+id = 'terragrunt'
+globs = ['terragrunt.hcl', 'terragrunt.stack.hcl']
+format = 'text'
+registry = 'terraform'
+rules = [
+    { lines = 'tfr://(?:registry\.(?:terraform\.io|opentofu\.org))?/(?P<name>[\w-]+/[\w-]+/[\w-]+)(?://[^?"\s]*)?\?version=(?P<version>[^"&\s]+)' },
+    { lines = '${GITHUB_REF}', via = 'github' },
+]
+
+# Packer plugins are GitHub repositories named `packer-plugin-<name>`, which `required_plugins`
+# gives as `github.com/<owner>/<name>`:
+# developer.hashicorp.com/packer/docs/templates/hcl_templates/blocks/packer
+[[file]]
+id = 'packer'
+globs = ['*.pkr.hcl']
+format = 'text'
+registry = 'packer'
+rules = [
+    { lines = 'version[ \t]*=[ \t]*"(?P<version>[^"]+)"\s*source[ \t]*=[ \t]*"github\.com/(?P<name>[\w.-]+/[\w-]+)"' },
+    { lines = 'source[ \t]*=[ \t]*"github\.com/(?P<name>[\w.-]+/[\w-]+)"\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+]
+
+# A release names its chart `repository/chart` after a `repositories` entry, which Artifact Hub
+# names the same way for the public repositories; `version` comes before or after it. Local
+# charts start with `.` and stay out: helmfile.readthedocs.io (docs/index.md, Configuration).
+[[file]]
+id = 'helmfile'
+globs = ['helmfile.yaml', 'helmfile.yml', 'helmfile.yaml.gotmpl', 'helmfile.d/*.yaml', 'helmfile.d/*.yaml.gotmpl']
+format = 'text'
+registry = 'artifacthub'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>\w[\w.-]*/[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)''' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?version:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+chart:[ \t]*["']?(?P<name>\w[\w.-]*/[\w.-]+)["']?[ \t]*\r?$''' },
+]
+
+# Vagrant Cloud boxes: `config.vm.box` with an optional `config.vm.box_version` constraint:
+# developer.hashicorp.com/vagrant/docs/vagrantfile/machine_settings
+[[file]]
+id = 'vagrant'
+globs = ['Vagrantfile']
+format = 'text'
+registry = 'vagrant'
+rules = [
+    { lines = '''\.vm\.box[ \t]*=[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n]*\r?\n(?:[^\n]*\n)*?[ \t]*\w+\.vm\.box_version[ \t]*=[ \t]*["'](?P<version>[^"']+)["']''' },
+]
+
+# A part builds from `source` at a `source-tag`, one of the git refs craft-parts accepts; a
+# line ending in `:` opens another part or block, which ends the search:
+# github.com/canonical/craft-parts/blob/main/craft_parts/sources/git_source.py
+[[file]]
+id = 'snapcraft'
+globs = ['snapcraft.yaml', '.snapcraft.yaml']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]+source:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*[^:\s][ \t]*\r?\n){0,8}?[ \t]+source-tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''' },
+    { lines = '''(?m)^[ \t]+source-tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*[^:\s][ \t]*\r?\n){0,8}?[ \t]+source:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?$''' },
+]
+
+# Flatpak manifests are named for their reverse-DNS app id and hold `app-id` (or `id`) and
+# `runtime-version`; a git source gives `url` and `tag`, as Flathub's
+# github.com/flathub/com.github.tchx84.Flatseal/blob/master/com.github.tchx84.Flatseal.json does.
+[[file]]
+id = 'flatpak'
+globs = ['com.*.json', 'org.*.json', 'io.*.json', 'net.*.json', 'dev.*.json', 'app.*.json']
+content = ['app-id', 'runtime-version']
+format = 'json'
+registry = 'github'
+rules = [
+    { lines = '"url":[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[ \t]*,\s*(?:"[\w-]+":[ \t]*"[^"\n]*"[ \t]*,\s*)*?"tag":[ \t]*"(?P<version>v?\d[^"]*)"' },
+    { lines = '"tag":[ \t]*"(?P<version>v?\d[^"]*)"[ \t]*,\s*(?:"[\w-]+":[ \t]*"[^"\n]*"[ \t]*,\s*)*?"url":[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"' },
+]
+
+[[file]]
+id = 'flatpak'
+globs = ['com.*.yaml', 'org.*.yaml', 'io.*.yaml', 'net.*.yaml', 'dev.*.yaml', 'app.*.yaml', 'com.*.yml', 'org.*.yml', 'io.*.yml', 'net.*.yml', 'dev.*.yml', 'app.*.yml']
+content = ['app-id', 'runtime-version']
+format = 'yaml'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]+(?:-[ \t]+)?url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''' },
 ]
 
 [[file]]

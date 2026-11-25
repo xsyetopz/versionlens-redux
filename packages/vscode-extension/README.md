@@ -31,15 +31,15 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Registry | OSV advisories | Files |
 | --- | --- | --- |
 | crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables), `Cargo.lock` |
-| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `.bun-version`, and the resolved versions in `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` |
-| Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions` and `mise.toml`, `node-version` of `actions/setup-node` |
+| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `.bun-version`, `npm:` entries of `.prototools`, and the resolved versions in `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` |
+| Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions`, `mise.toml`, and `.prototools`, `node-version` of `actions/setup-node` |
 | JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json`, `composer.lock` |
 | PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml`, `poetry.lock`, `uv.lock` |
 | conda-forge | GIT (the GitHub repository its `dev_url` names) | `environment.yml`, `environment.yaml`, `pixi.toml` |
 | Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
-| Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions` and `mise.toml`, `go-version` of `actions/setup-go` |
+| Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions`, `mise.toml`, and `.prototools`, `go-version` of `actions/setup-go` |
 | RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec`, `Gemfile.lock`, `gems.locked` |
 | CocoaPods | GIT (the GitHub repository the podspec's `source` names) | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
@@ -51,13 +51,18 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
 | Elm packages | GIT (`github.com/author/package`) | `elm.json` |
 | Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs, and `oci://` chart dependencies in `Chart.yaml` |
-| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
+| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix`, Terraform and Terragrunt `git::` module sources with `?ref=`, Flux `GitRepository` tags, `snapcraft.yaml` `source-tag`, Flatpak manifest git `tag`s, `aqua.yaml` |
 | Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
-| Helm repositories | Artifact Hub image scans | `Chart.yaml` |
+| Helm repositories | Artifact Hub image scans | `Chart.yaml`, Argo CD `Application` charts (`argocd/`, `argo-cd/`, `clusters/`, and Kubernetes manifest folders) |
+| Artifact Hub | Artifact Hub image scans | `helmfile.yaml`, `helmfile.yaml.gotmpl`, `helmfile.d/*.yaml` (`repo/chart` releases) |
 | Ansible Galaxy | GIT (the GitHub repository the collection version's `repository` names) | `requirements.yml`, `galaxy.yml` |
 | Puppet Forge | GIT (the GitHub repository the module's `source` names) | `Puppetfile` |
 | Chef Supermarket | GIT (the GitHub repository the cookbook's `source_url` names) | `Berksfile`, `metadata.rb` |
-| Terraform Registry | GIT (the GitHub repository the provider or module's `source` names) | `*.tf`, `*.tofu`, `.terraform.lock.hcl` |
+| Terraform Registry | GIT (the GitHub repository the provider or module's `source` names) | `*.tf`, `*.tofu`, `.terraform.lock.hcl`, `terragrunt.hcl`, `terragrunt.stack.hcl` |
+| Packer plugins on GitHub | Go (`github.com/owner/packer-plugin-name`) | `required_plugins` in `*.pkr.hcl` |
+| Vagrant Cloud | | `config.vm.box` and `box_version` in `Vagrantfile` |
+| Nixhub | | `devbox.json` |
+| Spack packages | | `spack.yaml` environment specs |
 | Bazel Central Registry | GIT (the GitHub repository the module's `github:` repository names) | `MODULE.bazel` |
 | vcpkg | GIT (the GitHub repository the port's `vcpkg_from_github` names) | `vcpkg.json` |
 | ConanCenter | GitLab Advisory Database | `conanfile.txt`, `conanfile.py` |

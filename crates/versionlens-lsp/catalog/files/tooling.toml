@@ -26,6 +26,45 @@ rules = [
     { lines = '''(?m)^[ \t]*["'](?P<registry>npm|cargo|pipx|go):(?P<name>[^"'\s]+)["'][ \t]*=[ \t]*(?:\{[^}\n]*?[ {,]version[ \t]*=[ \t]*)?["'](?P<version>\d[\w.]*)["']''' },
 ]
 
+# proto pins tools at the top level as mise does, with `go` for Go and `npm:` for npm packages:
+# github.com/moonrepo/moon/blob/master/website/docs/proto/config.mdx
+[[file]]
+id = 'proto'
+globs = ['.prototools']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '''(?m)^[ \t]*["']?(?P<name>node|bun|pnpm|npm|yarn)["']?[ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''' },
+    { lines = '''(?m)^[ \t]*["']?(?P<registry>(?P<name>python|ruby|rust))["']?[ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''' },
+    { lines = '''(?m)^[ \t]*["']?(?P<name>go)["']?[ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''', via = 'golang' },
+    { lines = '''(?m)^[ \t]*["']npm:(?P<name>[^"'\s]+)["'][ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''' },
+]
+
+# aqua installs GitHub releases; a standard-registry name is `owner/repo`, or `owner/repo/cmd`
+# for one command of a repository, with its version after `@` or in `version`:
+# aquaproj.github.io/docs/reference/config/
+[[file]]
+id = 'aqua'
+globs = ['aqua.yaml', 'aqua.yml', '.aqua.yaml', '.aqua.yml', 'aqua/imports/*.yaml', 'aqua/imports/*.yml']
+format = 'yaml'
+registry = 'github'
+rules = [
+    { spec = 'packages.*.name', pattern = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[\w.-]+)?@(?P<version>v?\d[\w.-]*)$' },
+    { record = 'packages.*', name = 'name', version = 'version' },
+]
+
+# Devbox lists Nixhub packages as `name@version`, or maps each name to a version or to a table
+# with `version`: jetify.com/docs/devbox/configuration/, and github.com/jetify-com/devbox/blob/main/devbox.json
+[[file]]
+id = 'devbox'
+globs = ['devbox.json']
+format = 'json'
+registry = 'nixhub'
+rules = [
+    { spec = 'packages.*', pattern = '^(?P<name>[\w.+-]+)@(?P<version>\d[^@\s]*)$' },
+    { keys = 'packages' },
+]
+
 [[file]]
 id = 'ruby'
 globs = ['.ruby-version']

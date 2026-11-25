@@ -25,16 +25,25 @@ async fn hub(http: &Http, path: &str) -> Result<Option<Value>, String> {
     }
 }
 
-/// The CVEs Artifact Hub's Trivy scan found in the images a chart version deploys.
+/// The CVEs Artifact Hub's Trivy scan found in the images a chart version deploys. A name reads
+/// `repository-url chart`, which Artifact Hub's repository search resolves, or `repository/chart`
+/// in Artifact Hub's own repository names, as helmfile releases write charts.
 pub(super) async fn ids(http: &Http, query: &Query) -> Result<Vec<String>, String> {
-    let Some((source, chart)) = query.name.split_once(' ') else {
-        return Ok(Vec::new());
+    let repos;
+    let (repo, chart) = match query.name.split_once(' ') {
+        Some((source, chart)) => {
+            repos = hub(http, &format!("repositories/search?url={source}&limit=1")).await?;
+            let Some(repo) = repos.as_ref().and_then(|r| r.pointer("/0/name")?.as_str()) else {
+                return Ok(Vec::new());
+            };
+            (repo, chart)
+        }
+        None => match query.name.split_once('/') {
+            Some(pair) => pair,
+            None => return Ok(Vec::new()),
+        },
     };
     let version = &query.version;
-    let repos = hub(http, &format!("repositories/search?url={source}&limit=1")).await?;
-    let Some(repo) = repos.as_ref().and_then(|r| r.pointer("/0/name")?.as_str()) else {
-        return Ok(Vec::new());
-    };
     let package = hub(http, &format!("packages/helm/{repo}/{chart}/{version}")).await?;
     let Some(id) = package.as_ref().and_then(|p| p.get("package_id")?.as_str()) else {
         return Ok(Vec::new());

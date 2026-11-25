@@ -95,12 +95,23 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("luarocks", "luasocket", None, None),
     ("luarocks", "lua-resty-jwt", None, Some("0.2.0-0")),
     ("xmake", "zlib", None, Some("v1.2.11")),
+    (
+        "artifacthub",
+        "prometheus-community/prometheus",
+        None,
+        Some("25.0.0"),
+    ),
+    ("nixhub", "nodejs", None, None),
+    ("vagrant", "bento/ubuntu-22.04", None, None),
+    ("packer", "hashicorp/amazon", None, Some("v1.0.0")),
+    ("spack", "zlib", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
 /// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
-/// packages, or hxcpp. Their samples check only that the route answers and names a repository.
-const NO_KNOWN_ADVISORY: &[&str] = &["dub", "chef", "elm", "haxelib"];
+/// packages, or hxcpp, and OSV's Go ecosystem none for the Packer plugins `hashicorp` publishes. Their samples
+/// check only that the route answers and names a repository.
+const NO_KNOWN_ADVISORY: &[&str] = &["dub", "chef", "elm", "haxelib", "packer"];
 
 /// How many times a page behind a bot challenge is asked before the check fails.
 const CHALLENGE_RETRIES: u64 = 10;

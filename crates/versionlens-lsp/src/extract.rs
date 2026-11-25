@@ -286,7 +286,9 @@ fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>)
             continue;
         };
         let tail = &leaf.path[depth + 1..];
-        if !path_matches(map, head) {
+        // A list in the map's place, as devbox.json also writes `packages`, flattens to index
+        // names; its entries are read by a `spec` rule instead.
+        if !path_matches(map, head) || name.bytes().all(|b| b.is_ascii_digit()) {
             continue;
         }
         // A `path` entry, as Cargo and Pub write local dependencies, names a directory. A `git`
