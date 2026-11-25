@@ -76,6 +76,7 @@ Settings: booleans `enabled`, `codeLens`, `inlayHints`, `prereleases`, `vulnerab
 - `log`: show the server's log messages.
 - `restart`: restart the server.
 - `info`: show the server command and the buffer's status.
+- `auth [add|remove]`: store or forget the Authorization header for a registry URL prefix, like VS Code's "Add url authentication" and "Remove url authentication"; default `add`. Neovim has no secret store, so the headers live in `stdpath("data")/versionlens/authorization.json`, readable only by its owner (mode 0600). A stored header replaces an `authorization` setting for the same prefix.
 
 `updateAll`, `clearCache`, and `output` still work as aliases. Per-dependency updates are code actions (`vim.lsp.buf.code_action()`) and code lenses (`vim.lsp.codelens.run()`). `:checkhealth versionlens` checks the server.
 

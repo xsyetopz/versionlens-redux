@@ -116,7 +116,7 @@ restart.
     Open a |vim.ui.select()| menu of what applies to the current buffer,
     from its status: hide or show versions and prereleases, update at each
     level while dependencies are outdated, sort, install, refresh, update the
-    workspace, clear the cache, log, restart, info.
+    workspace, clear the cache, log, restart, info, and url authentication.
 
 :VersionLens {subcommand} [{argument}]
     All subcommands complete with <Tab>.
@@ -132,6 +132,13 @@ restart.
   log                               Show the server's log messages.
   restart                           Restart the server.
   info                              Show the server command and status.
+  auth [add|remove]                 Store or forget an Authorization header
+                                    for a registry URL prefix; default add.
+                                    Headers are kept in
+                                    stdpath("data")/versionlens/authorization.json,
+                                    readable only by you (mode 0600), and
+                                    replace an `authorization` setting for the
+                                    same prefix.
 
 `updateAll`, `clearCache`, and `output` are accepted as aliases of `update`,
 `clear-cache`, and `log`.

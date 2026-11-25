@@ -118,11 +118,12 @@ check(":VersionLens parses every subcommand", function()
     assert(command == case[2], case[1] .. " -> " .. tostring(command))
     assert(vim.deep_equal(arguments, case[3]), case[1] .. " arguments " .. vim.inspect(arguments))
   end
-  for _, local_only in ipairs({ "log", "output", "restart", "info" }) do
+  for _, local_only in ipairs({ "log", "output", "restart", "info", "auth", "auth remove" }) do
     local spec = assert(commands.parse(local_only))
     assert(commands.request(spec, "u") == nil, local_only .. " stays in the client")
   end
   assert(commands.parse("output").name == "log", "output aliases log")
+  eq(commands.parse("auth").arg, "add")
   for _, bad in ipairs({ "", "bogus", "update huge", "show now", "update major extra" }) do
     local spec, err = commands.parse(bad)
     assert(spec == nil and err, "should reject " .. vim.inspect(bad))
@@ -144,6 +145,47 @@ check(":VersionLens completes subcommands and arguments", function()
     vim.deep_equal(vim.fn.getcompletion("VersionLens upd", "cmdline"), { "update", "updateAll" }),
     vim.inspect(vim.fn.getcompletion("VersionLens upd", "cmdline"))
   )
+end)
+
+check(":VersionLens auth stores headers privately and sends them to the server", function()
+  local auth = require("versionlens.auth")
+  local path = vim.fs.joinpath(vim.fn.tempname(), "authorization.json")
+  local real_path, input, select, inputsecret =
+    auth.path, vim.ui.input, vim.ui.select, vim.fn.inputsecret
+  local answers = { "https://npm.example.com/", "user" }
+  auth.path = function()
+    return path
+  end
+  vim.ui.input = function(_, on_confirm)
+    on_confirm(table.remove(answers, 1))
+  end
+  vim.ui.select = function(items, _, on_choice)
+    on_choice(items[1])
+  end
+  vim.fn.inputsecret = function()
+    return "secret"
+  end
+  local ok, err = pcall(function()
+    versionlens.run("auth add")
+    eq(auth.load()["https://npm.example.com/"], "Basic dXNlcjpzZWNyZXQ=")
+    eq(vim.uv.fs_stat(path).mode % 512, tonumber("600", 8))
+    local clients = vim.lsp.get_clients({ name = "versionlens" })
+    assert(#clients > 0, "no running server to receive the settings")
+    for _, client in ipairs(clients) do
+      eq(
+        client.settings.versionlens.authorization["https://npm.example.com/"],
+        "Basic dXNlcjpzZWNyZXQ="
+      )
+    end
+    versionlens.run("auth remove")
+    assert(vim.tbl_isempty(auth.load()), vim.inspect(auth.load()))
+    eq(auth.header(auth.kinds[2], nil, " t "), "Bearer t")
+    eq(auth.header(auth.kinds[3], nil, "Custom x"), "Custom x")
+    eq(auth.header(auth.kinds[2], nil, " "), nil)
+    assert(not auth.valid_url("ftp://x") and auth.valid_url("http://x/"), "valid_url")
+  end)
+  auth.path, vim.ui.input, vim.ui.select, vim.fn.inputsecret = real_path, input, select, inputsecret
+  assert(ok, err)
 end)
 
 check("status renders glyphs and counts, Unicode and ASCII", function()

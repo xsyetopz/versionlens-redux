@@ -179,7 +179,33 @@ local function server_settings()
   local settings = vim.deepcopy(M.config.settings)
   local glyphs = require("versionlens.status").indicators[M.config.ascii and "ascii" or "unicode"]
   settings.indicators = vim.tbl_extend("force", glyphs, settings.indicators or {})
+  local ok, stored = pcall(require("versionlens.auth").load)
+  if not ok then
+    notify(stored, vim.log.levels.ERROR)
+  elseif not vim.tbl_isempty(stored) then
+    settings.authorization = vim.tbl_extend("force", settings.authorization or {}, stored)
+  end
   return { versionlens = settings }
+end
+
+-- vim.lsp.start reuses a running client, so its settings would otherwise stay the old ones.
+local function push_settings()
+  for _, client in ipairs(vim.lsp.get_clients({ name = name })) do
+    client.settings = server_settings()
+    client:notify("workspace/didChangeConfiguration", { settings = client.settings })
+  end
+end
+
+local function auth(verb)
+  local ok, err = pcall(require("versionlens.auth")[verb], function(message)
+    if message then
+      push_settings()
+      notify(message)
+    end
+  end)
+  if not ok then
+    notify(err, vim.log.levels.ERROR)
+  end
 end
 
 --- Starts or reuses the server for bufnr when it is a supported manifest.
@@ -297,6 +323,8 @@ function M.run(text, bufnr)
     restart(bufnr)
   elseif spec.name == "info" then
     info(bufnr)
+  elseif spec.name == "auth" then
+    auth(spec.arg)
   else
     local command, arguments = commands.request(spec, vim.uri_from_bufnr(bufnr))
     execute(command, arguments, bufnr)
@@ -370,11 +398,7 @@ function M.setup(opts)
     notify(problem, vim.log.levels.WARN)
   end
   patterns = nil
-  for _, client in ipairs(vim.lsp.get_clients({ name = name })) do
-    -- vim.lsp.start reuses a running client, so its settings would otherwise stay the old ones.
-    client.settings = server_settings()
-    client:notify("workspace/didChangeConfiguration", { settings = client.settings })
-  end
+  push_settings()
   vim.api.nvim_create_user_command("VersionLens", function(args)
     if args.args == "" then
       M.menu()

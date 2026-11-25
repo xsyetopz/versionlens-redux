@@ -19,6 +19,7 @@ M.subcommands = {
   log = {},
   restart = {},
   info = {},
+  auth = { args = { "add", "remove" } },
 }
 
 -- Older spellings and VS Code names.
@@ -57,6 +58,8 @@ function M.parse(text)
       arg = "latest"
     elseif name == "prereleases" then
       arg = "toggle"
+    elseif name == "auth" then
+      arg = "add"
     end
   end
   return { name = name, arg = arg }
@@ -125,6 +128,8 @@ function M.menu(status)
   add("Show log", "log")
   add("Restart server", "restart")
   add("Server info", "info")
+  add("Add url authentication", "auth add")
+  add("Remove url authentication", "auth remove")
   return entries
 end
 
