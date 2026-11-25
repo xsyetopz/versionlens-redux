@@ -62,7 +62,7 @@ impl Server {
         self.runtime.spawn(async move {
             let started = Instant::now();
             let result = http
-                .versions(registry, &key.1, key.2.as_deref(), &key.3)
+                .versions(registry, &key.1, key.2.as_deref(), &key.3, &key.4)
                 .await;
             drop(tx.send(Event::Fetched(key, result, started.elapsed(), generation)));
         });

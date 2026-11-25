@@ -102,6 +102,21 @@ The server lists the files it reads in its initialize result, and the extension 
 | `versionlens.serverPath` | empty | A `versionlens-lsp` binary to run instead of the bundled one. `VERSIONLENS_LSP` takes precedence. |
 | `versionlens.trace.server` | `off` | Log LSP traffic to the output channel. |
 
+### Project Registry Configuration
+
+The server reads the registry configuration a package manager would, from the manifest's folder up and then the user's home, and asks each dependency's registries in the order that package manager tries them, with their credentials:
+
+| Registry | Read from |
+| --- | --- |
+| npm | the nearest `.npmrc` and the `.env` beside it, then `NPM_CONFIG_USERCONFIG` or `~/.npmrc`, then `npm_config_registry` and `npm_config_@scope:registry`: `registry`, `@scope:registry`, and `//host/path/:_authToken`, `:_auth`, or `:username` with `:_password`, with `${VAR}` expanded |
+| NuGet | `nuget.config` in each parent folder and the user's `NuGet.Config`: `packageSources` with `<clear/>`, `disabledPackageSources`, `packageSourceCredentials`, `packageSourceMapping`, and `%VAR%`; without any, `dotnet nuget list source`. v3 feeds only. |
+| Composer | `repositories` of type `composer` with `only` and `exclude`, `"packagist.org": false`, and credentials from `COMPOSER_AUTH`, `auth.json`, and `COMPOSER_HOME/auth.json` (`http-basic`, `bearer`) |
+| PyPI | `[[tool.uv.index]]`, `[[tool.poetry.source]]`, Pipfile `[[source]]`, requirements `--index-url` and `--extra-index-url`, `UV_DEFAULT_INDEX`, `UV_INDEX`, `PIP_INDEX_URL`, and `pip.conf`; a dependency's `source`, `index`, or `tool.uv.sources` index picks one. Credentials come from the URL, `UV_INDEX_<NAME>_USERNAME` and `_PASSWORD`, or `POETRY_HTTP_BASIC_<NAME>_*`. The index must answer the PEP 691 JSON API. |
+| Cargo | `.cargo/config.toml` in each parent folder and `CARGO_HOME`: `registries.<name>.index`, `source.<name>.replace-with`, and tokens from `CARGO_REGISTRIES_<NAME>_TOKEN`, the configuration, and `credentials.toml`. Sparse indexes only. |
+| Maven | `~/.m2/settings.xml` and `MAVEN_HOME/conf/settings.xml`: the mirror of `central` and the `<server>` with its id, with `${env.VAR}` expanded. Encrypted passwords are not decrypted. |
+
+`versionlens.registries` overrides all of this for its registry id.
+
 ### Settings and Commands From VersionLens 1.x
 
 A `settings.json` written for the original extension keeps working; a key of this version wins over the original one it replaces.
@@ -128,7 +143,7 @@ A changed setting applies without a restart, and the output channel logs it. Cha
 | --- | --- |
 | Nothing shows | The file name must match a row above, and `editor.codeLens` or `editor.inlayHints.enabled` must be on. |
 | Requests time out | Raise `versionlens.timeoutMs`, or lower `versionlens.concurrency` on a slow network. |
-| Private registry | Point `versionlens.registries` at the mirror. |
+| Private registry | Check the project configuration under Project Registry Configuration, or point `versionlens.registries` at the mirror. |
 | Old results | Run **VersionLens: Clear Cache**. |
 
 ## Install From VSIX

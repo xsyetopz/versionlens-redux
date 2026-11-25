@@ -16,6 +16,7 @@ use serde_json::{Map, Value, json};
 use super::{Pending, Server};
 use crate::config::Settings;
 use crate::http::Http;
+use crate::project::base64;
 use crate::registry;
 
 /// The ways a registry authenticates, as VS Code's Add command offers them.
@@ -138,26 +139,6 @@ pub(super) fn header(value: &Value) -> Option<String> {
             Some(format!("Basic {}", base64(pair.as_bytes())))
         }
     }
-}
-
-/// Standard padded base64, for the Basic header.
-pub(super) fn base64(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
-    for chunk in bytes.chunks(3) {
-        let n = chunk
-            .iter()
-            .enumerate()
-            .fold(0u32, |n, (i, b)| n | (u32::from(*b) << (16 - 8 * i)));
-        for i in 0..4 {
-            out.push(if i <= chunk.len() {
-                char::from(ALPHABET[((n >> (18 - 6 * i)) & 63) as usize])
-            } else {
-                '='
-            });
-        }
-    }
-    out
 }
 
 /// The blank entry for one of [`KINDS`].

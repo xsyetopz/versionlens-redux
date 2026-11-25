@@ -3,6 +3,7 @@
 //! asks the editor to refresh lenses and hints.
 
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -16,6 +17,7 @@ use crate::config::Settings;
 use crate::extract::{Dep, extract};
 use crate::http::Http;
 use crate::osv::Query;
+use crate::project::{self, Env};
 use crate::registry;
 use crate::render;
 use crate::version::Version;
@@ -40,9 +42,15 @@ const COMMANDS: &[&str] = &[
 /// Lookups finishing within this window share one refresh.
 const COALESCE: Duration = Duration::from_millis(120);
 
-/// A lookup: the registry, the package, the repository the manifest names, and the filters
-/// the registry pages by ([`registry::filters_of`]).
-type Key = (&'static str, String, Option<String>, Vec<String>);
+/// A lookup: the registry, the package, the repository the manifest names, the filters the
+/// registry pages by ([`registry::filters_of`]), and where the project's configuration sends it.
+type Key = (
+    &'static str,
+    String,
+    Option<String>,
+    Vec<String>,
+    Vec<project::Target>,
+);
 
 struct Found {
     versions: Vec<Version>,
@@ -100,6 +108,8 @@ struct Server {
     http: Http,
     /// The URL authentication the server stores itself; see [`credentials`].
     stored: credentials::Stored,
+    /// The environment the project registry configuration is read in.
+    env: Env,
     settings: Settings,
     /// `enabled` and `prereleases` as last configured; the show and prerelease commands
     /// override them until the setting itself changes.
@@ -157,7 +167,13 @@ fn decode(text: &str) -> String {
 
 fn key(dep: &Dep) -> Key {
     let filters = registry::get(dep.registry).map_or_default(|r| registry::filters_of(r, &dep.req));
-    (dep.registry, dep.name.clone(), dep.source.clone(), filters)
+    (
+        dep.registry,
+        dep.name.clone(),
+        dep.source.clone(),
+        filters,
+        dep.targets.clone(),
+    )
 }
 
 fn param<T: serde::de::DeserializeOwned>(value: Value) -> Result<T, String> {
@@ -170,12 +186,13 @@ fn param<T: serde::de::DeserializeOwned>(value: Value) -> Result<T, String> {
 /// Reports a protocol or transport failure.
 pub(crate) fn run() -> Result<(), String> {
     let (conn, io) = Connection::stdio();
-    serve(conn, credentials::default_path())?;
+    serve(conn, credentials::default_path(), Env::process())?;
     io.join().map_err(|e| e.to_string())
 }
 
-/// Serves one editor on `conn`, keeping URL authentication in the file at `stored`.
-fn serve(conn: Connection, stored: Option<std::path::PathBuf>) -> Result<(), String> {
+/// Serves one editor on `conn`, keeping URL authentication in the file at `stored` and reading
+/// project registry configuration in `env`.
+fn serve(conn: Connection, stored: Option<std::path::PathBuf>, env: Env) -> Result<(), String> {
     let (id, params) = conn.initialize_start().map_err(|e| e.to_string())?;
     let (auth_actions, commands) = credentials::advertised(&params, COMMANDS);
     let capabilities = json!({
@@ -221,6 +238,7 @@ fn serve(conn: Connection, stored: Option<std::path::PathBuf>) -> Result<(), Str
         runtime,
         http: Http::new(settings.clone())?,
         stored: credentials::Stored::at(stored),
+        env,
         configured: (settings.enabled, settings.prereleases),
         settings,
         caps,
@@ -516,7 +534,8 @@ impl Server {
             return;
         };
         let started = Instant::now();
-        let deps = extract(file, &text);
+        let mut deps = extract(file, &text);
+        project::resolve(Path::new(&path), &text, &mut deps, &self.env);
         let first = !self.docs.contains_key(uri.as_str());
         if first && open {
             self.log(

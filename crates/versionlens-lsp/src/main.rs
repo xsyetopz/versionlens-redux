@@ -8,6 +8,7 @@ mod extract;
 mod flatten;
 mod http;
 mod osv;
+mod project;
 mod registry;
 mod render;
 mod server;

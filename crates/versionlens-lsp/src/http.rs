@@ -1,17 +1,21 @@
 //! One pooled HTTP/2 client for every registry, with a concurrency cap and a per-request deadline
 //! that starts when the request is sent, not while it waits for a slot.
 
+use std::collections::HashMap;
 use std::error::Error;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use reqwest::{Client, RequestBuilder, Response, StatusCode, Url, header};
 use tokio::sync::Semaphore;
 use tokio::time::timeout;
 
 use crate::config::Settings;
+use crate::project::Target;
 use crate::registry::{self, Registry, Versions, expand};
 
 mod gh;
+
+pub(crate) use gh::run_in;
 
 /// The most `Link` pages a paged registry is followed through, past its first.
 const PAGES: usize = 30;
@@ -35,6 +39,8 @@ pub(crate) struct Http {
     other: Option<Client>,
     permits: Arc<Semaphore>,
     settings: Arc<Settings>,
+    /// `NuGet` service index URLs and the version-list templates they resolve to.
+    indexes: Arc<Mutex<HashMap<String, String>>>,
 }
 
 /// Renders an error with every cause, so a log names the real failure (DNS, TLS, proxy) rather
@@ -81,6 +87,7 @@ impl Http {
             other,
             permits: Arc::new(Semaphore::new(settings.concurrency)),
             settings: Arc::new(settings),
+            indexes: Arc::default(),
         })
     }
 
@@ -178,6 +185,7 @@ impl Http {
         client: &Client,
         url: &str,
         accept: &str,
+        auth: Option<&str>,
     ) -> Result<(String, Option<Url>), String> {
         let mut request = client.get(url).header(header::ACCEPT, accept);
         // The longest matching prefix wins, so a host-wide value can be narrowed per path.
@@ -187,7 +195,7 @@ impl Http {
             .iter()
             .filter(|(prefix, _)| url.starts_with(prefix.as_str()))
             .max_by_key(|(prefix, _)| prefix.len());
-        if let Some((_, value)) = configured {
+        if let Some(value) = configured.map(|(_, v)| v.as_str()).or(auth) {
             request = request.header(header::AUTHORIZATION, value);
         } else if url.starts_with("https://api.github.com/") {
             let token = match &self.settings.github_token {
@@ -198,7 +206,8 @@ impl Http {
                 request = request.bearer_auth(token);
             }
         }
-        self.send(request, url, configured.is_none()).await
+        self.send(request, url, configured.is_none() && auth.is_none())
+            .await
     }
 
     /// Fetches a document as text.
@@ -206,7 +215,7 @@ impl Http {
     /// # Errors
     /// Names the URL with the failure.
     pub(crate) async fn text(&self, url: &str, accept: &str) -> Result<String, String> {
-        let fetched = self.get(&self.client, url, accept).await;
+        let fetched = self.get(&self.client, url, accept, None).await;
         fetched.map(|(body, _)| body)
     }
 
@@ -223,24 +232,99 @@ impl Http {
         self.send(request, url, false).await.map(|(body, _)| body)
     }
 
-    /// Lists a package's versions from its registry, honouring a configured URL override. Each of
-    /// `filters` fetches the registry's filtered page alongside, and its versions join the list.
+    /// Lists a package's versions from its registry, honouring a configured URL override, else
+    /// the project's `targets` in order, the first that answers winning. Each of `filters`
+    /// fetches the registry's filtered page alongside, and its versions join the list.
     ///
     /// # Errors
-    /// Explains why the registry could not answer.
+    /// Explains why the registry could not answer, naming each target that failed.
     pub(crate) async fn versions(
         &self,
         registry: &'static Registry,
         name: &str,
         source: Option<&str>,
         filters: &[String],
+        targets: &[Target],
     ) -> Result<Versions, String> {
         let registry = registry::route(registry, name);
-        let template = self
-            .settings
-            .registries
-            .get(registry.id)
-            .map_or(registry.url, String::as_str);
+        if let Some(template) = self.settings.registries.get(registry.id) {
+            return self
+                .versions_at(registry, template, None, name, source, filters)
+                .await;
+        }
+        if targets.is_empty() {
+            return self
+                .versions_at(registry, registry.url, None, name, source, filters)
+                .await;
+        }
+        let mut errors = Vec::new();
+        for target in targets {
+            let auth = target.auth.as_deref();
+            let template = if target.index {
+                self.service_index(&target.url, auth).await
+            } else {
+                Ok(target.url.clone())
+            };
+            let found = match template {
+                Ok(template) => {
+                    self.versions_at(registry, &template, auth, name, source, filters)
+                        .await
+                }
+                Err(error) => Err(error),
+            };
+            match found {
+                Ok(versions) => return Ok(versions),
+                Err(error) => errors.push(error),
+            }
+        }
+        Err(errors.join("; "))
+    }
+
+    /// The version-list template of a `NuGet` v3 source, from the `PackageBaseAddress/3.0.0`
+    /// resource its service index lists, as
+    /// <https://learn.microsoft.com/en-us/nuget/api/service-index> documents. Kept per index URL.
+    async fn service_index(&self, url: &str, auth: Option<&str>) -> Result<String, String> {
+        if let Some(found) = self
+            .indexes
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(url)
+        {
+            return Ok(found.clone());
+        }
+        let (body, _) = self
+            .get(&self.client, url, "application/json", auth)
+            .await?;
+        let index: serde_json::Value =
+            serde_json::from_str(&body).map_err(|e| format!("{url}: {e}"))?;
+        let base = index["resources"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|r| {
+                r["@type"]
+                    .as_str()
+                    .is_some_and(|t| t.starts_with("PackageBaseAddress/3.0.0"))
+            })
+            .and_then(|r| r["@id"].as_str())
+            .ok_or_else(|| format!("{url}: lists no PackageBaseAddress/3.0.0 resource"))?;
+        let template = format!("{}/{{lower}}/index.json", base.trim_end_matches('/'));
+        self.indexes
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(url.to_owned(), template.clone());
+        Ok(template)
+    }
+
+    async fn versions_at(
+        &self,
+        registry: &'static Registry,
+        template: &str,
+        auth: Option<&str>,
+        name: &str,
+        source: Option<&str>,
+        filters: &[String],
+    ) -> Result<Versions, String> {
         let url = expand(template, name, source)?;
         let client = match &self.other {
             Some(other)
@@ -257,14 +341,14 @@ impl Http {
             let url = expand(registry.filtered, name, source)?.replace("{filter}", filter);
             let (http, client) = (self.clone(), client.clone());
             more.push(tokio::spawn(async move {
-                let body = http.get(&client, &url, registry.accept).await;
+                let body = http.get(&client, &url, registry.accept, None).await;
                 (url, body.map(|(body, _)| body))
             }));
         }
-        let (url, (body, mut next)) = match self.get(client, &url, registry.accept).await {
+        let (url, (body, mut next)) = match self.get(client, &url, registry.accept, auth).await {
             Err(error) if !registry.fallback.is_empty() && template == registry.url => {
                 let url = expand(registry.fallback, name, source)?;
-                let fetched = self.get(client, &url, registry.accept).await;
+                let fetched = self.get(client, &url, registry.accept, None).await;
                 (url, fetched.map_err(|e| format!("{error}; {e}"))?)
             }
             fetched => (url, fetched?),
@@ -277,7 +361,9 @@ impl Http {
             let Some(page) = next.take().filter(|_| registry.paged) else {
                 break;
             };
-            let (body, after) = self.get(client, page.as_str(), registry.accept).await?;
+            let (body, after) = self
+                .get(client, page.as_str(), registry.accept, auth)
+                .await?;
             versions.list.extend(registry.parse(&body, name)?.list);
             next = after;
         }

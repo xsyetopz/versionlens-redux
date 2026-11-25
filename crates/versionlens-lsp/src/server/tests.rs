@@ -23,11 +23,16 @@ impl Client {
         Self::init_at(params, None)
     }
 
-    /// Starts a server that keeps URL authentication in `stored`; the others keep none, so no
-    /// test reads the user's own file.
+    /// Starts a server that keeps URL authentication in `stored`; the others keep none, and
+    /// none sees the user's environment or home, so no test reads the user's own files.
     fn init_at(params: Value, stored: Option<std::path::PathBuf>) -> Self {
         let (server, conn) = Connection::memory();
-        let server = thread::spawn(move || serve(server, stored));
+        let env = Env {
+            vars: HashMap::new(),
+            home: None,
+            run: |_, _, _| None,
+        };
+        let server = thread::spawn(move || serve(server, stored, env));
         let mut client = Self {
             conn,
             server,

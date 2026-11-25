@@ -174,7 +174,7 @@ fn every_registry_lists_versions() {
             .map(|&(id, name, source, _)| {
                 let http = http.clone();
                 tokio::spawn(async move {
-                    http.versions(get(id).unwrap(), name, source, &[])
+                    http.versions(get(id).unwrap(), name, source, &[], &[])
                         .await
                         .err()
                         .map(|e| format!("{id} {name}: {e}"))

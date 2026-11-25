@@ -67,6 +67,7 @@ fn list(registry: &'static Registry, filters: &[&str]) -> Vec<String> {
             "node",
             None,
             &filters.iter().map(|f| (*f).to_owned()).collect::<Vec<_>>(),
+            &[],
         ))
         .unwrap()
         .list

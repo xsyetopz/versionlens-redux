@@ -2,6 +2,7 @@
 //! `GITHUB_TOKEN` and `GH_TOKEN` variables, so a signed-in `gh` lifts the anonymous rate limit.
 
 use std::io::Read;
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -33,8 +34,15 @@ pub(crate) async fn token() -> Option<String> {
 /// Runs `program` and returns its trimmed standard output when it exits successfully within
 /// [`LIMIT`], killing it otherwise.
 pub(crate) fn run(program: &str, args: &[&str]) -> Option<String> {
+    run_in(Path::new("."), program, args)
+}
+
+/// [`run`] in the directory `dir`, for a command whose answer depends on where it runs, such as
+/// `dotnet nuget list source`, which reads the `nuget.config` files above it.
+pub(crate) fn run_in(dir: &Path, program: &str, args: &[&str]) -> Option<String> {
     let mut child = Command::new(program)
         .args(args)
+        .current_dir(dir)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())

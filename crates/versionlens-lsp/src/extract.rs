@@ -37,6 +37,10 @@ pub(crate) struct Dep {
     pub(crate) span: Range<usize>,
     pub(crate) registry: &'static str,
     pub(crate) source: Option<String>,
+    /// The registry or index the manifest names for it, such as Cargo's `registry = "name"`.
+    pub(crate) index: Option<String>,
+    /// Where the project's registry configuration sends its lookup; empty for the default.
+    pub(crate) targets: Vec<crate::project::Target>,
 }
 
 /// Compiles each rule's regex once for the life of the process.
@@ -268,8 +272,26 @@ fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>)
             span: leaf.span.clone(),
             registry,
             source: source.map(str::to_owned),
+            index: index(leaf, leaves),
+            targets: Vec::new(),
         });
     }
+}
+
+/// The registry a `version` leaf's table names beside it: Cargo's `registry`, Poetry's `source`,
+/// or Pipenv's `index`.
+fn index(leaf: &Leaf, leaves: &[Leaf]) -> Option<String> {
+    let (table, last) = leaf.path.split_at(leaf.path.len().checked_sub(1)?);
+    (last == ["version"]).then_some(())?;
+    leaves
+        .iter()
+        .find(|l| {
+            l.parent == leaf.parent
+                && l.path.split_last().is_some_and(|(key, head)| {
+                    head == table && ["registry", "source", "index"].contains(&key.as_str())
+                })
+        })
+        .map(|l| l.value.clone())
 }
 
 fn records(
@@ -313,6 +335,8 @@ fn records(
             span: leaf.span.clone(),
             registry: file.registry,
             source: field(source).map(|l| l.value.clone()),
+            index: None,
+            targets: Vec::new(),
         });
     }
 }
@@ -337,6 +361,8 @@ fn from_caps(caps: &Captures, text: &str, offset: usize, file: &FileType) -> Opt
         span: span.start + offset..span.end + offset,
         registry,
         source: group("source").map(str::to_owned),
+        index: None,
+        targets: Vec::new(),
     })
 }
 
