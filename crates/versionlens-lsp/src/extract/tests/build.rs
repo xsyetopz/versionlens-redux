@@ -141,12 +141,23 @@ fn reads_mill_java_dependencies() {
 
 #[test]
 fn reads_mill_scala_dependencies_with_the_scala_version() {
-    // com-lihaoyi/mill's example/scalalib/basic/5-programmable/build.mill, with a Scala.js `:::`.
-    let text = "object foo extends ScalaModule {\n  def scalaVersion = \"3.8.2\"\n  def mvnDeps = Seq(\n    mvn\"com.lihaoyi::scalatags:0.13.1\",\n    mvn\"com.lihaoyi:::upickle:3.1.0\"\n  )\n}\n";
+    // com-lihaoyi/mill's example/scalalib/basic/5-programmable/build.mill.
+    let text = "object foo extends ScalaModule {\n  def scalaVersion = \"3.8.2\"\n  def mvnDeps = Seq(\n    mvn\"com.lihaoyi::scalatags:0.13.1\"\n  )\n}\n";
     expect(
         "build.mill",
         text,
         &[("com.lihaoyi:scalatags_3", "0.13.1", "maven")],
+    );
+    // scalalib/dependencies.adoc's example: `:::` appends the full Scala version, and Maven
+    // Central publishes org.scalamacros:paradise_2.12.12.
+    let full = "object foo extends ScalaModule {\n  def scalaVersion = \"2.12.12\"\n  def mvnDeps = Seq(\n    mvn\"com.typesafe.akka::akka-actor:2.5.25\",\n    mvn\"org.scalamacros:::paradise:2.1.1\"\n  )\n}\n";
+    expect(
+        "build.mill",
+        full,
+        &[
+            ("com.typesafe.akka:akka-actor_2.12", "2.5.25", "maven"),
+            ("org.scalamacros:paradise_2.12.12", "2.1.1", "maven"),
+        ],
     );
     // Its 1-simple/build.mill.yaml, at Scala 2.13.
     let yaml = "extends: ScalaModule\nscalaVersion: 2.13.16\nmvnDeps:\n- com.lihaoyi::scalatags:0.13.1\n- com.lihaoyi::mainargs:0.7.8";

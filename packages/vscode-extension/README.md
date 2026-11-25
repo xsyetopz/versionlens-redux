@@ -62,7 +62,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | CocoaPods | GIT (the GitHub repository the podspec's `source` names) | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
 | NuGet | NuGet | MSBuild SDKs and packages in `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json`, `*.nuspec` |
-| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, Mill `*.mill`, `build.sc`, and `*.mill.yaml` (`mvn"…"`, `ivy"…"`, YAML lists, and Scala `::` dependencies with the suffix `scalaVersion` gives), `ivy.xml` (with `override`s), Maven 1 `project.xml`, Buildr `buildfile`, `.mvn/extensions.xml`, `*.main.kts`, Pants `BUILD` `jvm_artifact`s |
+| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, Mill `*.mill`, `build.sc`, and `*.mill.yaml` (`mvn"…"`, `ivy"…"`, YAML lists, Scala `::` dependencies with the suffix `scalaVersion` gives, and `:::` ones with its full version), `ivy.xml` (with `override`s), Maven 1 `project.xml`, Buildr `buildfile`, `.mvn/extensions.xml`, `*.main.kts`, Pants `BUILD` `jvm_artifact`s |
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |

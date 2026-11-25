@@ -120,8 +120,8 @@ fn file(row: &Row) -> Result<FileType, String> {
 
 /// One rule: `keys`, `spec` with its `pattern`, `record` with its `name`, `version`, and
 /// optional `source` fields, or `lines`. A `within` regex limits it to the text that regex matches,
-/// a `via` names the registry its dependencies go to, and a `prefix` and `suffix` the text their
-/// names start and end with.
+/// and a `suffix` group it captures ends each registry name; a `via` names the registry its
+/// dependencies go to, and a `prefix` and `suffix` the text their names start and end with.
 fn rule(entry: &Row) -> Result<Rule, String> {
     entry.only(&[
         "keys", "spec", "pattern", "record", "name", "version", "source", "lines", "within", "via",
@@ -143,10 +143,6 @@ fn rule(entry: &Row) -> Result<Rule, String> {
     } else {
         return Err(entry.error("a rule needs keys, spec, record, or lines"));
     };
-    let rule = match entry.opt("within")? {
-        Some(block) => Rule::Within(block, Box::leak(Box::new(rule))),
-        None => rule,
-    };
     let rule = match (entry.opt("prefix")?, entry.opt("suffix")?) {
         (None, None) => rule,
         (prefix, suffix) => Rule::Affix(
@@ -154,6 +150,12 @@ fn rule(entry: &Row) -> Result<Rule, String> {
             suffix.unwrap_or_default(),
             Box::leak(Box::new(rule)),
         ),
+    };
+    // The block wraps the affix, so a name the row's `suffix` ends takes the block's `suffix`
+    // capture after it.
+    let rule = match entry.opt("within")? {
+        Some(block) => Rule::Within(block, Box::leak(Box::new(rule))),
+        None => rule,
     };
     Ok(match entry.opt("via")? {
         Some(registry) => Rule::Via(registry, Box::leak(Box::new(rule))),

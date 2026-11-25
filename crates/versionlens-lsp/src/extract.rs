@@ -289,13 +289,22 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                     ..*file
                 };
                 for caps in regex(block).captures_iter(text) {
-                    let Some(range) = caps.get_group(1).or_else(|| caps.get_group(0)) else {
+                    // A block that captures a `suffix`, such as the full Scala version Mill's
+                    // `:::` appends, holds its rule in the whole match.
+                    let suffix = caps.get_group_by_name("suffix").map(|m| &text[m.range()]);
+                    let first = caps.get_group(1).filter(|_| suffix.is_none());
+                    let Some(range) = first.or_else(|| caps.get_group(0)) else {
                         continue;
                     };
                     let range = range.range();
                     deps.extend(extract(&inner, &text[range.clone()]).into_iter().map(
                         |mut dep| {
                             dep.span = dep.span.start + range.start..dep.span.end + range.start;
+                            if let Some(suffix) = suffix
+                                && ![DIRECTORY, SOURCE].contains(&dep.registry)
+                            {
+                                dep.name.push_str(suffix);
+                            }
                             dep
                         },
                     ));

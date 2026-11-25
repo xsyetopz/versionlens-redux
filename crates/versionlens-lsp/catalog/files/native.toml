@@ -9,7 +9,8 @@
 # in a lockfile, `precise = true` where an update writes the whole version rather than the
 # requirement's own precision, and `rules`: { keys }, { spec, pattern }, { record, name, version,
 # source? }, or { lines }, each with an optional `via` registry, `prefix` and `suffix` that names start and
-# end with, and `within` regex that limits a text rule to what it matches, or to its first group, or { use } for a list
+# end with, and `within` regex that limits a text rule to what it matches, or to its first group (all
+# of it where it captures a `suffix`, which then ends each name), or { use } for a list
 # in shared.toml.
 # Patterns may name a shared pattern as ${NAME}. A glob two rows share belongs to the earlier
 # row, and the groups load in the order of GROUPS in src/catalog.rs.
