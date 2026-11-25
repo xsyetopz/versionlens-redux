@@ -510,7 +510,10 @@ field = 'version'
 bare = 'exact'
 page = 'https://portal.cloud.hashicorp.com/vagrant/discover/{name}'
 
-# A plugin `owner/name` is the repository `owner/packer-plugin-name`, a Go module.
+# A plugin `owner/name` is the repository `owner/packer-plugin-name`, a Go module. OSV's Go
+# ecosystem holds the Go vulnerability database and GitHub's reviewed Go advisories; OSV's GIT
+# ecosystem holds the "NVD CVEs for open source software" it converts to a repository's tags
+# (google.github.io/osv.dev/data/), which a plugin's `v1.2.3` releases are.
 [[registry]]
 id = 'packer'
 url = 'https://api.github.com/repos/{group}/packer-plugin-{artifact}/tags?per_page=100'
@@ -519,6 +522,7 @@ field = 'name'
 bare = 'prefix'
 osv = 'Go'
 osv_name = 'github.com/{group}/packer-plugin-{artifact}'
+also = { 'GIT' = 'https://github.com/{group}/packer-plugin-{artifact}' }
 page = 'https://github.com/{group}/packer-plugin-{artifact}'
 
 # Spack's package index; a spec version such as `@1.2` matches every 1.2 release.

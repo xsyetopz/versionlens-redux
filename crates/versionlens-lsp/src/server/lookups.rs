@@ -167,7 +167,7 @@ impl Server {
         let queries: Vec<Query> = doc
             .deps
             .iter()
-            .filter_map(|dep| self.query(dep))
+            .flat_map(|dep| self.queries(dep))
             .filter(|q| !self.vulns.contains_key(q) && !self.osv_inflight.contains(q))
             .collect::<HashSet<_>>()
             .into_iter()
@@ -183,19 +183,26 @@ impl Server {
         });
     }
 
-    pub(super) fn query(&self, dep: &Dep) -> Option<Query> {
-        let registry = registry::route(registry::get(dep.registry)?, &dep.name);
-        let found = self.cache.get(&key(dep))?.result.as_ref().ok()?;
-        let req = Req::parse(&dep.req, dep.bare(registry))?;
-        let version = render::current(&req, &found.versions)?;
-        let name = registry::expand(registry.osv_name, &dep.name, dep.source.as_deref()).ok()?;
-        Some(Query {
-            ecosystem: registry.osv?,
-            name: name.replace("{version}", &version.raw),
-            version: version.raw,
-            upstream: registry.upstream,
-            package: dep.name.clone(),
-        })
+    /// The OSV queries for a dependency at its current version: one for the registry's own
+    /// ecosystem, and one for each further ecosystem its `also` names.
+    pub(super) fn queries(&self, dep: &Dep) -> Vec<Query> {
+        let Some(registry) = registry::get(dep.registry).map(|r| registry::route(r, &dep.name))
+        else {
+            return Vec::new();
+        };
+        let Some(found) = self
+            .cache
+            .get(&key(dep))
+            .and_then(|e| e.result.as_ref().ok())
+        else {
+            return Vec::new();
+        };
+        let Some(version) = Req::parse(&dep.req, dep.bare(registry))
+            .and_then(|r| render::current(&r, &found.versions))
+        else {
+            return Vec::new();
+        };
+        osv::queries(registry, &dep.name, dep.source.as_deref(), &version.raw)
     }
 
     fn start_progress(&mut self) {

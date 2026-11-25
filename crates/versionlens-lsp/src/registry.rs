@@ -46,6 +46,9 @@ pub(crate) struct Registry {
     /// is the OSV name itself. `{version}` in `osv_name` names the version asked about. A `url`
     /// with `{upstream}` lists versions under what this pattern finds, by [`upstream_of`].
     pub(crate) upstream: &'static str,
+    /// Further OSV ecosystems that hold advisories for the same package, each with its package
+    /// name as an [`expand`] template, such as the Typst compiler's `typst-cli` crate on crates.io.
+    pub(crate) also: &'static [(&'static str, &'static str)],
     pub(crate) accept: &'static str,
     /// A JSON body, as an [`expand`] template, that `url` is posted instead of fetched; empty for
     /// a GET. `CircleCI` lists an orb's versions only through its GraphQL endpoint.
@@ -138,6 +141,7 @@ fn registry(row: &Row) -> Result<Registry, String> {
         "osv",
         "osv_name",
         "upstream",
+        "also",
         "accept",
         "body",
         "html",
@@ -183,6 +187,7 @@ fn registry(row: &Row) -> Result<Registry, String> {
         osv: row.opt("osv")?,
         osv_name: row.opt("osv_name")?.unwrap_or("{name}"),
         upstream: row.text("upstream")?,
+        also: row.pairs("also")?.leak(),
         accept: row.opt("accept")?.unwrap_or(accept),
         body: row.text("body")?,
         html: row.text("html")?,

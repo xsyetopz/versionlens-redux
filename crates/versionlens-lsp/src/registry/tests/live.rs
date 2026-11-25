@@ -10,6 +10,9 @@ use crate::http::Http;
 use crate::osv::{self, Query};
 use crate::version::Version;
 
+mod exports;
+mod pages;
+
 /// A client that waits 60s for an answer. The checks ask whether each route answers, and Ansible
 /// Galaxy took 2.7s to 19.4s for one version list (curl, three tries), past the 10s default.
 fn patient() -> Http {
@@ -128,7 +131,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("platformio-tool", "platformio/toolchain-xtensa", None, None),
     ("esp", "espressif/led_strip", None, None),
     ("typst", "cetz", None, None),
-    ("typst-compiler", "compiler", None, Some("0.10.0")),
+    ("typst-compiler", "compiler", None, Some("0.13.0")),
     ("wally", "roblox/roact", None, None),
     ("mooncakes", "moonbitlang/x", None, Some("0.4.6")),
     ("purescript", "prelude", None, Some("6.0.1")),
@@ -187,20 +190,16 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
-/// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
-/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, `vlang/vsl`, Lean's mathlib4 (queried
-/// 2026-11-25), the Typst compiler, or the
-/// Ansible roles, whose repositories `geerlingguy` publishes, and OSV's Go ecosystem none for the
-/// Packer plugins `hashicorp` publishes, and OSV's Julia ecosystem none for the standard libraries
-/// outside the `_jll` ones, such as Dates and Statistics. OSV's own exports bear this out
-/// (`{Go,Julia,GIT}/all.zip`, read 2026-11-25): no Go module named for Packer, no Julia advisory
-/// for a standard library outside the `_jll` ones the `julia` registry answers for, no GIT range
-/// in any repository whose URL names typst, moonbit, purescript, or `ansible-role`, and none in
-/// the samples' own repositories, such as `vibe-d/vibe.d`, `sous-chefs/nginx`, and `elm/core`. The
-/// GIT ranges under `vlang/v` and `haxefoundation/haxe` are the compilers, not vpm or haxelib
-/// packages. GIT/all.zip names no repository on codeberg.org, code.forgejo.org, or gitea.com, so
-/// `forgejo` has none either. Their samples check only that the route answers and names a
-/// repository.
+/// sample could show. `exports::advisory_free_registries_hold_no_osv_entries` reads OSV's whole
+/// exports each run and fails once one of them holds an entry for these registries' packages:
+/// OSV lists no ecosystem of their own; its Julia export names no standard library outside the
+/// `_jll` ones; its Go and GIT exports no `packer-plugin-` module or repository; its crates.io and
+/// GIT exports nothing named for typst; and its GIT export no repository of an Elm package, a
+/// PureScript package-set package, or a mooncakes.io module, none whose URL names purescript,
+/// moonbit, or `ansible-role`, none on codeberg.org, code.forgejo.org, or gitea.com, and none of
+/// the samples' own repositories, such as `vibe-d/vibe.d` and `sous-chefs/nginx`. The GIT ranges
+/// under `vlang/v` and `haxefoundation/haxe` are the compilers, not vpm or haxelib packages.
+/// Their samples check only that the route answers and names a repository.
 const NO_KNOWN_ADVISORY: &[&str] = &[
     "julia-stdlib",
     "dub",
@@ -217,8 +216,9 @@ const NO_KNOWN_ADVISORY: &[&str] = &[
     "forgejo",
 ];
 
-/// How many times a page behind a bot challenge is asked before the check fails.
-const CHALLENGE_RETRIES: u64 = 10;
+/// How many times a page behind a bot challenge or a passing outage is asked before the check
+/// fails: waits of 1, 2, 4, then 8 seconds put the last try about a minute after the first.
+const PAGE_TRIES: u32 = 10;
 
 fn block_on<F: Future>(work: F) -> F::Output {
     tokio::runtime::Builder::new_multi_thread()
@@ -419,60 +419,22 @@ fn every_package_page_resolves() {
     // Run alone, the test builds the first client, so it installs the provider `Http::new` would.
     drop(rustls::crypto::ring::default_provider().install_default());
     let client = reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (versionlens live check)")
         .timeout(Duration::from_secs(30))
         .build()
         .unwrap();
+    let policy = pages::Policy {
+        tries: PAGE_TRIES,
+        wait: Duration::from_secs(1),
+    };
     let failures: Vec<String> = block_on(async {
         let tasks: Vec<_> = SAMPLES
             .iter()
             .map(|&(id, name, ..)| {
                 let (client, url) = (client.clone(), page(id, name));
                 tokio::spawn(async move {
-                    // A Cloudflare challenge, as npmjs.com sends some requests, says nothing about
-                    // the page, so it is asked again until the page itself answers.
-                    let mut last = String::new();
-                    for attempt in 0..CHALLENGE_RETRIES {
-                        tokio::time::sleep(Duration::from_secs(attempt)).await;
-                        let mut request = client.get(&url).header("accept", "text/html");
-                        if let Some((agent, cookie)) = npm_clearance(&url) {
-                            request = request.header("user-agent", agent).header("cookie", cookie);
-                        }
-                        match request.send().await {
-                            // Anubis, in front of code.forgejo.org, answers a `Mozilla` agent
-                            // with a 202 proof-of-work page and lets other agents through, so the
-                            // page is asked for again without the browser token.
-                            Ok(response) if response.status() == reqwest::StatusCode::ACCEPTED => {
-                                let plain = client
-                                    .get(&url)
-                                    .header("user-agent", "versionlens live check")
-                                    .send()
-                                    .await;
-                                last = match plain {
-                                    Ok(plain) if plain.status() == reqwest::StatusCode::OK => {
-                                        eprintln!("page {id} {url}: HTTP {}", plain.status());
-                                        return None;
-                                    }
-                                    Ok(plain) => format!("{id} {url}: HTTP {}", plain.status()),
-                                    Err(e) => format!("{id} {url}: {}", crate::http::chain(&e)),
-                                };
-                            }
-                            Ok(response) if response.status().is_success() => {
-                                eprintln!("page {id} {url}: HTTP {}", response.status());
-                                return None;
-                            }
-                            Ok(response) if response.headers().contains_key("cf-mitigated") => {
-                                last = format!("{id} {url}: Cloudflare challenge on every try");
-                            }
-                            Ok(response) => {
-                                return Some(format!("{id} {url}: HTTP {}", response.status()));
-                            }
-                            Err(e) => {
-                                return Some(format!("{id} {url}: {}", crate::http::chain(&e)));
-                            }
-                        }
-                    }
-                    Some(last)
+                    let clearance = npm_clearance(&url);
+                    let failed = pages::check(&client, &url, clearance, policy).await;
+                    failed.map(|why| format!("{id} {why}"))
                 })
             })
             .collect();
@@ -499,18 +461,10 @@ fn npm_clearance(url: &str) -> Option<(String, String)> {
 fn osv_reports_each_ecosystem() {
     let (ids, queries): (Vec<&str>, Vec<Query>) = SAMPLES
         .iter()
-        .filter_map(|&(id, name, source, vulnerable)| {
-            let registry = get(id).unwrap();
-            let (ecosystem, version) = (registry.osv?, vulnerable?.to_owned());
-            let url = expand(registry.osv_name, name, source).unwrap();
-            let query = Query {
-                ecosystem,
-                name: url.replace("{version}", &version),
-                version,
-                upstream: registry.upstream,
-                package: name.to_owned(),
-            };
-            Some((id, query))
+        .filter_map(|&(id, name, source, vulnerable)| Some((id, name, source, vulnerable?)))
+        .flat_map(|(id, name, source, version)| {
+            let asked = osv::queries(get(id).unwrap(), name, source, version);
+            asked.into_iter().map(move |q| (id, q))
         })
         .unzip();
     let http = patient();
@@ -526,7 +480,8 @@ fn osv_reports_each_ecosystem() {
     for (id, (q, found)) in ids.iter().zip(queries.iter().zip(&results)) {
         let shown: Vec<&str> = found.iter().take(3).map(String::as_str).collect();
         eprintln!(
-            "advisories {id} {}@{}: {} {shown:?}",
+            "advisories {id} {} {}@{}: {} {shown:?}",
+            q.ecosystem,
             q.package,
             q.version,
             found.len()

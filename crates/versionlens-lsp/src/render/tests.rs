@@ -124,7 +124,7 @@ fn bulk_updates_pick_named_level() {
             plan: Box::new(version::plan(&req, &versions, None, false).unwrap()),
             current: req.floor().cloned(),
         },
-        vulns: &[],
+        vulns: Vec::new(),
         page: String::new(),
     };
     let text = |level| {
@@ -194,7 +194,7 @@ fn view(dep: &Dep, state: State) -> View<'_> {
         dep,
         range: Range::default(),
         state,
-        vulns: &[],
+        vulns: Vec::new(),
         page: "https://registry".into(),
     }
 }

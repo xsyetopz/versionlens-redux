@@ -82,10 +82,18 @@ impl Server {
             .iter()
             .map(|dep| {
                 let state = self.state(doc, dep);
-                let vulns = self
-                    .query(dep)
-                    .and_then(|q| self.vulns.get(&q))
-                    .map_or(&[][..], Vec::as_slice);
+                // Two ecosystems may carry the same advisory, such as a GHSA id in Go and GIT.
+                let mut vulns: Vec<String> = Vec::new();
+                for id in self
+                    .queries(dep)
+                    .iter()
+                    .filter_map(|q| self.vulns.get(q))
+                    .flatten()
+                {
+                    if !vulns.contains(id) {
+                        vulns.push(id.clone());
+                    }
+                }
                 View {
                     dep,
                     range: lines.range(&dep.span),

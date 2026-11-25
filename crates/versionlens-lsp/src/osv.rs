@@ -5,12 +5,16 @@
 use serde_json::{Value, json};
 
 use crate::http::Http;
+use crate::registry::{self, Registry};
 
 const BATCH: usize = 1000;
 
 mod artifact_hub;
 mod gitlab;
 pub(crate) mod upstream;
+
+#[cfg(test)]
+mod tests;
 
 pub(crate) use artifact_hub::ARTIFACT_HUB;
 pub(crate) use gitlab::GITLAB;
@@ -26,6 +30,33 @@ pub(crate) struct Query {
     pub(crate) upstream: &'static str,
     /// The dependency's own name, which `{name}` in `upstream` stands for.
     pub(crate) package: String,
+}
+
+/// The queries for a package at a version: one in the registry's own ecosystem, and one in each
+/// further ecosystem its `also` names, which takes the name as written and no upstream document.
+pub(crate) fn queries(
+    registry: &Registry,
+    package: &str,
+    source: Option<&str>,
+    version: &str,
+) -> Vec<Query> {
+    let own = registry
+        .osv
+        .map(|e| (e, registry.osv_name, registry.upstream));
+    let also = registry.also.iter().map(|&(e, name)| (e, name, ""));
+    own.into_iter()
+        .chain(also)
+        .filter_map(|(ecosystem, template, upstream)| {
+            let name = registry::expand(template, package, source).ok()?;
+            Some(Query {
+                ecosystem,
+                name: name.replace("{version}", version),
+                version: version.to_owned(),
+                upstream,
+                package: package.to_owned(),
+            })
+        })
+        .collect()
 }
 
 /// The vulnerability ids affecting each query, in order.

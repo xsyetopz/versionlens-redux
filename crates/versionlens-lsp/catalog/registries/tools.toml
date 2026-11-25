@@ -13,7 +13,10 @@ page = 'https://www.rust-lang.org/tools/install'
 
 # Typst's changelog lists each release once in its body, `<li><a href="/docs/changelog/0.13.0/">`,
 # and once more in the navigation; crates.io's typst-cli skips 0.2 through 0.10, which the
-# `compiler` minimum of a typst.toml still names.
+# `compiler` minimum of a typst.toml still names. From 0.11 on, typst-cli on crates.io is the
+# compiler at the same version, with typst/typst as its repository (crates.io/api/v1/crates/typst-cli,
+# read 2026-11-25), so RustSec and GitHub's crates.io advisories reach it through OSV's crates.io
+# ecosystem as well as GIT.
 [[registry]]
 id = 'typst-compiler'
 url = 'https://typst.app/docs/changelog/'
@@ -21,6 +24,7 @@ regex = '(?i)<li><a href="/docs/changelog/(\d+\.\d+\.\d+)/">'
 bare = 'prefix'
 osv = 'GIT'
 osv_name = 'https://github.com/typst/typst'
+also = { 'crates.io' = 'typst-cli' }
 page = 'https://typst.app/docs/changelog/'
 
 # Stackage names the newest snapshot of each LTS series, `{"lts-22":"lts-22.44",…}`, which a

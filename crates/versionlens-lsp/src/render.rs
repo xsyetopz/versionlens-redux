@@ -47,7 +47,7 @@ pub(crate) struct View<'a> {
     pub(crate) dep: &'a Dep,
     pub(crate) range: Range,
     pub(crate) state: State,
-    pub(crate) vulns: &'a [String],
+    pub(crate) vulns: Vec<String>,
     pub(crate) page: String,
 }
 
