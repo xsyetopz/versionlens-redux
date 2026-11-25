@@ -262,6 +262,8 @@ rules = [
     { lines = '"tag":[ \t]*"(?P<version>v?\d[^"]*)"[ \t]*,\s*(?:"[\w-]+":[ \t]*"[^"\n]*"[ \t]*,\s*)*?"url":[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"' },
 ]
 
+# The same manifest in YAML, which docs.flatpak.org/en/latest/manifests.html accepts beside JSON
+# and uses for its examples, such as org.gnome.Dictionary.yml; a git source gives `url` and `tag`.
 [[file]]
 id = 'flatpak'
 globs = ['com.*.yaml', 'org.*.yaml', 'io.*.yaml', 'net.*.yaml', 'dev.*.yaml', 'app.*.yaml', 'com.*.yml', 'org.*.yml', 'io.*.yml', 'net.*.yml', 'dev.*.yml', 'app.*.yml']

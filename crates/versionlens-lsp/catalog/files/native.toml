@@ -124,6 +124,9 @@ rules = [
     { record = 'overrides.*', name = 'name', version = 'version|version-semver|version-string|version-date' },
 ]
 
+# Conan names a requirement `name/version`: a line under conanfile.txt's `[requires]`, and in
+# conanfile.py `requires = "zlib/1.3.1"`, `self.requires("zlib/1.3.1")`, or
+# `self.tool_requires("tool/1.1.1")`: docs.conan.io/2/reference/conanfile/methods/requirements.html
 [[file]]
 id = 'conan'
 globs = ['conanfile.txt', 'conanfile.py']
