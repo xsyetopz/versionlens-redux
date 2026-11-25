@@ -5,8 +5,13 @@
 //! and `source.<name>.replace-with` redirects crates.io or a named registry to another
 //! registry or `source.<name>.registry` URL. Tokens come from `CARGO_REGISTRIES_<NAME>_TOKEN`
 //! (`CARGO_REGISTRY_TOKEN` for crates.io), the configuration, then `credentials.toml`, and are
-//! sent as the bare `Authorization` value, as Cargo sends them. Only sparse (`sparse+https://`)
-//! indexes answer over HTTP; a git index is left to Cargo.
+//! sent as the bare `Authorization` value, as Cargo sends them. Cargo sends them only through the
+//! `cargo:token` credential provider, named by `registries.<name>.credential-provider` or else in
+//! `registry.global-credential-providers`, possibly through a `[credential-alias]`: without one,
+//! Cargo 1.100.0 stops with "authenticated registries require a credential-provider to be
+//! configured" (<https://doc.rust-lang.org/cargo/reference/registry-authentication.html>), so no
+//! token is sent then either. Only sparse (`sparse+https://`) indexes answer over HTTP; a git
+//! index is left to Cargo.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -69,6 +74,9 @@ pub(super) fn config(dir: &Path, env: &Env) -> impl Fn(&Dep) -> Vec<Target> {
         .filter(|(k, _)| k.starts_with("CARGO_REGISTRIES_"))
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
+    let global = env
+        .var("CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS")
+        .map(str::to_owned);
     move |dep: &Dep| {
         let var = |name: &str, field: &str| {
             let key = name.to_ascii_uppercase().replace('-', "_");
@@ -93,7 +101,50 @@ pub(super) fn config(dir: &Path, env: &Env) -> impl Fn(&Dep) -> Vec<Target> {
         };
         let token = var(&name, "TOKEN")
             .or_else(|| values.get(&format!("registries.{name}.token")).cloned())
-            .or_else(|| tokens.get(&name).cloned());
+            .or_else(|| tokens.get(&name).cloned())
+            .filter(|_| {
+                by_token(
+                    &values,
+                    &name,
+                    var(&name, "CREDENTIAL_PROVIDER"),
+                    global.as_deref(),
+                )
+            });
         vec![Target::new(format!("{}/{{cargo}}", base(&url)), token)]
+    }
+}
+
+/// Whether Cargo would use `cargo:token` for registry `name`: its own provider when one is set,
+/// by `var` or the configuration, else any of the global list, by `global` or the configuration.
+/// A string names the provider and its arguments split on spaces, and an array lists them; either
+/// may name a `[credential-alias]`.
+fn by_token(
+    values: &HashMap<String, String>,
+    name: &str,
+    var: Option<String>,
+    global: Option<&str>,
+) -> bool {
+    let token = |provider: &str| {
+        let provider = values
+            .get(&format!("credential-alias.{provider}"))
+            .or_else(|| values.get(&format!("credential-alias.{provider}.0")))
+            .map_or(provider, String::as_str);
+        provider.split_whitespace().next() == Some("cargo:token")
+    };
+    let own = format!("registries.{name}.credential-provider");
+    let set = var.or_else(|| {
+        values
+            .get(&own)
+            .or_else(|| values.get(&format!("{own}.0")))
+            .cloned()
+    });
+    if let Some(provider) = set {
+        return token(&provider);
+    }
+    match global {
+        Some(list) => list.split_whitespace().any(token),
+        None => values.iter().any(|(key, value)| {
+            key.starts_with("registry.global-credential-providers.") && token(value)
+        }),
     }
 }

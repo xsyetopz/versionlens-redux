@@ -343,6 +343,11 @@ fn auth_files(kind: &str, url: &str, host: &str) -> Vec<(String, String)> {
                 "home/.cargo/credentials.toml".into(),
                 "[registries.my]\ntoken = \"from-file\"\n".into(),
             ),
+            // Cargo sends the token only through this provider, as it did to the capturing server.
+            (
+                "home/.cargo/config.toml".into(),
+                "[registry]\nglobal-credential-providers = [\"cargo:token\"]\n".into(),
+            ),
             (
                 "Cargo.toml".into(),
                 "[dependencies]\nmine = { version = \"1\", registry = \"my\" }\n".into(),

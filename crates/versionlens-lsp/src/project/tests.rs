@@ -416,6 +416,10 @@ fn reads_cargo_registries_replacement_and_tokens() {
                 "home/.cargo/credentials.toml",
                 "[registries.my]\ntoken = \"from-file\"\n",
             ),
+            (
+                "home/.cargo/config.toml",
+                "[registry]\nglobal-credential-providers = [\"cargo:token\"]\n",
+            ),
         ],
     );
     let found = |vars: &[(&str, &str)]| targets(&root, "ws/app/Cargo.toml", &env(&root, vars));
@@ -445,6 +449,68 @@ fn reads_cargo_registries_replacement_and_tokens() {
             )]
         )
     );
+}
+
+/// Cargo 1.100.0 sends a registry's token only when `cargo:token` is its credential provider: a
+/// `registries.<name>.credential-provider`, else one of `registry.global-credential-providers`.
+/// Without one it stops with "authenticated registries require a credential-provider to be
+/// configured" and sends neither the `credentials.toml` token nor `CARGO_REGISTRIES_<NAME>_TOKEN`.
+#[test]
+fn sends_a_cargo_token_only_through_the_cargo_token_provider() {
+    let files = |name: &str, config: &str| {
+        let config =
+            format!("[registries.my]\nindex = \"sparse+https://cargo.example/index/\"\n{config}");
+        let root = project(
+            &format!("cargo-provider-{name}"),
+            &[
+                ("app/.cargo/config.toml", config.as_str()),
+                (
+                    "app/Cargo.toml",
+                    "[dependencies]\nmine = { version = \"1\", registry = \"my\" }\n",
+                ),
+                (
+                    "home/.cargo/credentials.toml",
+                    "[registries.my]\ntoken = \"from-file\"\n",
+                ),
+            ],
+        );
+        move |vars: &[(&str, &str)]| {
+            let found = targets(&root, "app/Cargo.toml", &env(&root, vars));
+            found[0].1[0].1.clone()
+        }
+    };
+    let none = files("none", "");
+    assert_eq!(none(&[]), None);
+    assert_eq!(none(&[("CARGO_REGISTRIES_MY_TOKEN", "from-env")]), None);
+    assert_eq!(
+        none(&[("CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS", "cargo:token")]),
+        Some("from-file".into())
+    );
+    assert_eq!(
+        none(&[("CARGO_REGISTRIES_MY_CREDENTIAL_PROVIDER", "cargo:token")]),
+        Some("from-file".into())
+    );
+    let own = files("own", "credential-provider = \"cargo:token\"\n");
+    assert_eq!(
+        own(&[("CARGO_REGISTRIES_MY_TOKEN", "from-env")]),
+        Some("from-env".into())
+    );
+    // Providers later in the global list win, and a registry's own provider replaces the list.
+    let global = files(
+        "global",
+        "\n[registry]\nglobal-credential-providers = [\"cargo:libsecret\", \"cargo:token\"]\n",
+    );
+    assert_eq!(global(&[]), Some("from-file".into()));
+    let keychain = files(
+        "keychain",
+        "credential-provider = \"cargo:macos-keychain\"\n\n[registry]\nglobal-credential-providers = [\"cargo:token\"]\n",
+    );
+    assert_eq!(keychain(&[]), None);
+    let alias = files(
+        "alias",
+        "credential-provider = \"plain\"\n\n[credential-alias]\nplain = \"cargo:token\"\n",
+    );
+    assert_eq!(alias(&[]), Some("from-file".into()));
 }
 
 #[test]

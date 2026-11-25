@@ -89,6 +89,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - An opam `{>= "1.0"}` or `{> "1.0"}` constraint is a lower bound that a newer release satisfies, not an exact pin; `{= "1.0"}` still pins, as the fork's master read it.
 - A registry that answers 429 Too Many Requests is asked again after the `Retry-After` it names, or after one second without one, up to three times; a wait over five seconds is reported as the 429. ECR Public serves anonymous clients one request a second, so the later pages of a long tag list, as `public.ecr.aws/docker/library/node`'s, failed the lookup before.
+- A Cargo registry token goes out only when `cargo:token` is the registry's `credential-provider`, one of `registry.global-credential-providers`, or an alias of it, as Cargo 1.100.0 requires; without one, Cargo stops with "authenticated registries require a credential-provider to be configured" and sends no token, and versionlens sent it anyway.
 - A Composer repository on a port, as `https://repo.example:8443/`, takes its `auth.json` credentials from the `repo.example:8443` key, as Composer does; the bare `repo.example` key was used before, and Composer ignores it.
 - A Python index that answers only PEP 503 HTML, as PyTorch's `download.pytorch.org/whl/cpu` does, lists the versions in its file names instead of failing with `invalid JSON`.
 - A registry page that names a release more than once, as Racket's release list and Typst's changelog do, lists it once.
