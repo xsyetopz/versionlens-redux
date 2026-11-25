@@ -33,6 +33,18 @@ rules = [
     { keys = 'patch.*' },
 ]
 
+# Resolved crates; git and path packages carry another `source` or none, and stay out. Read
+# from this repository's own Cargo.lock, whose crates.io entries name the git index, and the
+# sparse index source: doc.rust-lang.org/cargo/reference/registry-index.html#sparse-protocol
+[[file]]
+id = 'cargo-lock'
+globs = ['Cargo.lock']
+format = 'text'
+registry = 'cargo'
+rules = [
+    { lines = '(?m)^name = "(?P<name>[^"]+)"\r?\nversion = "(?P<version>[^"]+)"\r?\nsource = "(?:registry\+https://github\.com/rust-lang/crates\.io-index|sparse\+https://index\.crates\.io/)"' },
+]
+
 [[file]]
 id = 'go'
 globs = ['go.mod', 'go.work']

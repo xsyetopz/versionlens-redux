@@ -22,6 +22,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - GitHub requests with no `versionlens.githubToken`, `GITHUB_TOKEN`, or `GH_TOKEN` use the token `gh auth token --hostname github.com` prints, read once per session with a 2-second limit, as the fork's master did.
 - A manifest's own version (`version` in `package.json`, `composer.json`, and `pubspec.yaml`; `[package] version` in `Cargo.toml`; `[project] version` in `pyproject.toml`; `<project><version>` in `pom.xml`; `<Version>` and `<AssemblyVersion>` in .NET projects) gets lenses for its next major, minor, and patch release, or its release and next prerelease, as upstream's project version suggestions did. No registry is asked, and the lenses count as neither outdated nor failed.
 - Gradle `plugins { id 'name' version '1.0' }` entries resolve through the Gradle Plugin Portal's marker artifacts.
+- Lockfiles show the version each package resolved to beside the latest: `package-lock.json` and `npm-shrinkwrap.json`, `yarn.lock` (Yarn 1 and Berry), `pnpm-lock.yaml` importers, `bun.lock`, `composer.lock`, crates.io entries of `Cargo.lock`, `poetry.lock`, index entries of `uv.lock`, and `Gemfile.lock` and `gems.locked`.
 - `constraints:` in `cabal.project`, one-line Terraform `required_providers` blocks and blocks that list `version` before `source`, and Nixpkgs release branches such as `github:NixOS/nixpkgs/nixos-24.05` are read.
 - The dependency sections the fork's master read beyond upstream's are read too:
   - Cargo `[patch.*]` and `rust-version`

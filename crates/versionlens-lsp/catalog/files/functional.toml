@@ -9,6 +9,18 @@ rules = [
     { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
 ]
 
+# Each section's `specs:` lists a resolved gem at four spaces, `name (1.0.0)` or with a platform,
+# `name (1.0.0-x86_64-linux)`; its own dependencies sit deeper. Read from
+# github.com/rails/rails/blob/main/Gemfile.lock.
+[[file]]
+id = 'gemfile-lock'
+globs = ['Gemfile.lock', 'gems.locked']
+format = 'text'
+registry = 'rubygems'
+rules = [
+    { lines = '(?m)^    (?P<name>[A-Za-z0-9][\w.-]*) \((?P<version>\d[\w.]*)(?:-[\w-]+)?\)\r?$' },
+]
+
 [[file]]
 id = 'podfile'
 globs = ['Podfile', '*.podspec']

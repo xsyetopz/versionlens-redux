@@ -153,3 +153,65 @@ rules = [
     { keys = 'test-dependencies.indirect' },
 ]
 
+# Lockfiles hold the version each package resolved to, so the lens compares it with the latest.
+
+# `packages` keys a package by its `node_modules/` path in lockfile v2 and v3, and v1 nests
+# `dependencies` by name; either way `version` comes first. Workspace entries start with `name`,
+# and links carry no version. Read from github.com/npm/cli/blob/latest/package-lock.json.
+[[file]]
+id = 'package-lock'
+globs = ['package-lock.json', 'npm-shrinkwrap.json']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>\d[^"]*)"' },
+]
+
+# An entry heads one or more `name@range` keys, then `version "1.0.0"` in Yarn 1
+# (github.com/babel/babel/blob/v7.0.0/yarn.lock) or `version: 1.0.0` in Yarn 2 and later
+# (github.com/yarnpkg/berry/blob/master/yarn.lock). Ranges must start like a version or `npm:`
+# one, so workspace, patch, git, and aliased entries stay out.
+[[file]]
+id = 'yarn-lock'
+globs = ['yarn.lock']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '(?m)^"?(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?:npm:)?[\^~<>=*\dvx][^\n]*:\r?\n[ \t]+version:?[ \t]+"?(?P<version>\d[^"\s]*)' },
+]
+
+# Each importer lists its direct dependencies as `name:`, `specifier:`, then the resolved
+# `version:`, whose peer suffix `(react@18.2.0)` and `link:` versions stay out. pnpm 8 and later
+# write this shape: github.com/vitejs/vite/blob/main/pnpm-lock.yaml.
+[[file]]
+id = 'pnpm-lock'
+globs = ['pnpm-lock.yaml']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '''(?m)^[ \t]+'?(?P<name>(?:@[\w.-]+/)?[\w.-]+)'?:\r?\n[ \t]+specifier:[^\n]*\r?\n[ \t]+version:[ \t]+'?(?P<version>\d[\w.+-]*)''' },
+]
+
+# Bun's text lockfile maps each package path to `["name@version", ...]`; the name comes from the
+# value, which also covers nested and aliased paths: bun.sh/docs/install/lockfile, and this
+# repository's own bun.lock. Workspace and git entries carry no version.
+[[file]]
+id = 'bun-lock'
+globs = ['bun.lock']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '"[^"\n]+":[ \t]*\[[ \t]*"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>\d[^"]*)"' },
+]
+
+# Installed packages: github.com/composer/composer/blob/main/composer.lock
+[[file]]
+id = 'composer-lock'
+globs = ['composer.lock']
+format = 'json'
+registry = 'composer'
+rules = [
+    { record = 'packages.*', name = 'name', version = 'version' },
+    { record = 'packages-dev.*', name = 'name', version = 'version' },
+]
+

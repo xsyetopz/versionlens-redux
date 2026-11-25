@@ -76,6 +76,27 @@ rules = [
     { spec = 'dependencies.*.pip.*', pattern = '${PEP508}', via = 'pypi' },
 ]
 
+# Resolved packages: github.com/python-poetry/poetry/blob/main/poetry.lock
+[[file]]
+id = 'poetry-lock'
+globs = ['poetry.lock']
+format = 'toml'
+registry = 'pypi'
+rules = [
+    { record = 'package.*', name = 'name', version = 'version' },
+]
+
+# Index packages carry `source = { registry = ... }`; the project itself and git, path, and URL
+# packages carry another source: github.com/astral-sh/uv/blob/main/uv.lock
+[[file]]
+id = 'uv-lock'
+globs = ['uv.lock']
+format = 'text'
+registry = 'pypi'
+rules = [
+    { lines = '(?m)^name = "(?P<name>[^"]+)"\r?\nversion = "(?P<version>[^"]+)"\r?\nsource = \{ registry = ' },
+]
+
 [[file]]
 id = 'python'
 globs = ['.python-version']
