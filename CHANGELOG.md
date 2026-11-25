@@ -13,12 +13,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - New manifests: conda `environment.yml` (its `pip:` list through PyPI), `setup.cfg`, `setup.py`, `tox.ini`, JSPM `npm:` and `github:` values in `package.json`, `ivy.xml`, `Gopkg.toml`, `glide.yaml`, `shard.yml`, `Mintfile`, `Puppetfile` (Puppet Forge), `Berksfile` and `metadata.rb` (Chef Supermarket), `Earthfile`, workflow `container:`, `services:`, and `docker://` images, and Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod images.
 - Runtime pins report vulnerabilities: Node.js, Python, Ruby, and Gradle through OSV's Bitnami ecosystem, Go through `stdlib`, and GHC through OSV's GHC ecosystem. The `go` and `toolchain` lines of `go.mod`, `node` in `.tool-versions` and `mise.toml`, and `with-compiler:` in `cabal.project` resolve against those releases.
 - `Package.swift` dependencies report vulnerabilities through OSV's SwiftURL ecosystem.
+- Helm charts report the CVEs Artifact Hub's Trivy scans find in the images a chart version deploys, and Conan packages report GitLab Advisory Database entries whose range holds their version.
 - More manifests: `bower.json`, `paket.references`, Kubernetes manifests (`k8s/`, `kubernetes/`, `manifests/`, `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`), and Helm `values.yaml` images.
-- `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers.
+- `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
 
 ### Changed
 
-- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,300 lines of Rust outside tests (tokei), 1,900 of them in the file-type rows and the registry modules, and no file above 654 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
+- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,500 lines of Rust outside tests (tokei), 2,100 of them in the file-type rows and the registry modules, and no file above 667 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
 - Every editor takes its file globs from the server, so VS Code, JetBrains, and Neovim pick up a new file type with no change of their own. JetBrains and Neovim run `versionlens-lsp --file-types`; VS Code reads `capabilities.experimental.fileTypes` from the initialize result and sends the server only those files.
 - OSV checks send one `querybatch` request per document instead of one request per dependency. Registry requests share one pooled HTTP/2 client, capped by `versionlens.concurrency` and limited by `versionlens.timeoutMs`.
 - Quick fixes come from results already in memory, so they no longer wait on the network.
@@ -34,7 +35,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A failed lookup shows `✗` with its reason on the dependency's line instead of disappearing.
 - `deps.edn` and `project.clj` look in Clojars, then Maven Central, where `org.clojure/clojure` lives; their OSV queries use Maven's `group:artifact` names.
 - Maven and Clojure package links open pages that exist: Maven Central's artifact page and cljdoc.
-- ConanCenter dependencies no longer send OSV queries for an ecosystem OSV does not have.
+- ConanCenter dependencies no longer send OSV queries for an ecosystem OSV does not have; the GitLab Advisory Database answers them instead.
 
 ## [0.6.3] - 2026-11-09
 

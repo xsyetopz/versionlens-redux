@@ -54,14 +54,14 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
         "helm",
         "prometheus",
         Some("https://prometheus-community.github.io/helm-charts"),
-        None,
+        Some("25.0.0"),
     ),
     ("galaxy", "community.general", None, None),
     ("terraform", "hashicorp/aws", None, None),
     ("terraform", "terraform-aws-modules/vpc/aws", None, None),
     ("bazel", "rules_go", None, None),
     ("vcpkg", "fmt", None, None),
-    ("conan", "zlib", None, None),
+    ("conan", "openssl", None, Some("1.1.1f")),
     ("cran", "commonmark", None, Some("1.7")),
     ("cpan", "Moose", None, None),
     ("dub", "vibe-d", None, None),
@@ -185,7 +185,11 @@ fn every_package_page_resolves() {
                     let mut last = String::new();
                     for attempt in 0..CHALLENGE_RETRIES {
                         tokio::time::sleep(Duration::from_secs(attempt)).await;
-                        match client.get(&url).header("accept", "text/html").send().await {
+                        let mut request = client.get(&url).header("accept", "text/html");
+                        if let Some((agent, cookie)) = npm_clearance(&url) {
+                            request = request.header("user-agent", agent).header("cookie", cookie);
+                        }
+                        match request.send().await {
                             Ok(response) if response.status().is_success() => return None,
                             Ok(response) if response.headers().contains_key("cf-mitigated") => {
                                 last = format!("{id} {url}: Cloudflare challenge on every try");
@@ -211,16 +215,25 @@ fn every_package_page_resolves() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+/// The browser and `cf_clearance` cookie of a Cloudflare challenge the user solved on
+/// npmjs.com, from `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE`. Cloudflare binds the
+/// cookie to that browser's user agent and IP, and it goes to npmjs.com alone.
+fn npm_clearance(url: &str) -> Option<(String, String)> {
+    url.starts_with("https://www.npmjs.com/").then_some(())?;
+    let agent = std::env::var("VERSIONLENS_NPM_USER_AGENT").ok()?;
+    Some((agent, std::env::var("VERSIONLENS_NPM_COOKIE").ok()?))
+}
+
 #[test]
 #[ignore = "needs the network"]
 fn osv_reports_each_ecosystem() {
     let queries: Vec<Query> = SAMPLES
         .iter()
-        .filter_map(|&(id, name, _, vulnerable)| {
+        .filter_map(|&(id, name, source, vulnerable)| {
             let registry = get(id).unwrap();
             Some(Query {
                 ecosystem: registry.osv?,
-                name: expand(registry.osv_name, name, None).unwrap(),
+                name: expand(registry.osv_name, name, source).unwrap(),
                 version: vulnerable?.to_owned(),
             })
         })

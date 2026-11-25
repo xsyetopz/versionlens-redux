@@ -53,14 +53,14 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs |
 | GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
 | Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
-| Helm repositories | | `Chart.yaml` |
+| Helm repositories | Artifact Hub image scans | `Chart.yaml` |
 | Ansible Galaxy | | `requirements.yml`, `galaxy.yml` |
 | Puppet Forge | | `Puppetfile` |
 | Chef Supermarket | | `Berksfile`, `metadata.rb` |
 | Terraform Registry | | `*.tf`, `*.tofu`, `.terraform.lock.hcl` |
 | Bazel Central Registry | | `MODULE.bazel` |
 | vcpkg | | `vcpkg.json` |
-| ConanCenter | | `conanfile.txt`, `conanfile.py` |
+| ConanCenter | GitLab Advisory Database | `conanfile.txt`, `conanfile.py` |
 | CRAN | CRAN | `DESCRIPTION`, `renv.lock` |
 | MetaCPAN | | `cpanfile` |
 | DUB | | `dub.json`, `dub.selections.json`, `dub.sdl` |
@@ -72,7 +72,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, and their `.tool-versions` and `mise.toml` entries |
 | Rust and Terraform releases | | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, and their `.tool-versions` and `mise.toml` entries |
 
-The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for the registries with an empty advisories cell, so their versions get no vulnerability check. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
+The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for Helm or Conan, so Helm chart versions report the CVEs that Artifact Hub's Trivy scans find in the images they deploy, and Conan versions report the GitLab Advisory Database entries whose range holds them. No public advisory source covers the registries with an empty advisories cell, so their versions get no vulnerability check. Set `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` to the user agent and `cf_clearance` cookie of a browser that passed the npmjs.com challenge, and the live check sends them to npmjs.com. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
 
 ## Settings
 
@@ -82,7 +82,7 @@ The server lists the files it reads in its initialize result, and the extension 
 | `versionlens.codeLens` | `true` | Show update actions as code lenses. |
 | `versionlens.inlayHints` | `true` | Show the newest version as an inlay hint. |
 | `versionlens.prereleases` | `false` | Offer prerelease versions as updates. |
-| `versionlens.vulnerabilities` | `true` | Check versions against OSV.dev. |
+| `versionlens.vulnerabilities` | `true` | Check versions against OSV.dev, Artifact Hub, and the GitLab Advisory Database. |
 | `versionlens.timeoutMs` | `10000` | Time limit for one registry request, in milliseconds. |
 | `versionlens.concurrency` | `32` | Registry requests that run at once. |
 | `versionlens.cacheMinutes` | `60` | How long registry answers are reused. |

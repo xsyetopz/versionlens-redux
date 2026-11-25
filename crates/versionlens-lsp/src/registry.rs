@@ -348,7 +348,16 @@ pub(crate) static REGISTRIES: &[Registry] = &[
     Registry {
         accept: "*/*",
         parse: Parse::Fn(parse::helm),
-        ..json("helm", "{source}/index.yaml", "", "", Bare::Exact, None)
+        // OSV has no Helm ecosystem; Artifact Hub scans the images each chart version deploys.
+        osv_name: "{source} {name}",
+        ..json(
+            "helm",
+            "{source}/index.yaml",
+            "",
+            "",
+            Bare::Exact,
+            Some(crate::osv::ARTIFACT_HUB),
+        )
     },
     json(
         "galaxy",
@@ -385,13 +394,17 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Min,
         None,
     ),
-    text(
-        "conan",
-        "https://raw.githubusercontent.com/conan-io/conan-center-index/master/recipes/{name}/config.yml",
-        r#"(?m)^  "?(\d[^":\s]*)"?:"#,
-        Bare::Exact,
-        None,
-    ),
+    Registry {
+        // OSV has no Conan ecosystem; the GitLab Advisory Database files advisories by slug.
+        osv_name: "conan/{name}",
+        ..text(
+            "conan",
+            "https://raw.githubusercontent.com/conan-io/conan-center-index/master/recipes/{name}/config.yml",
+            r#"(?m)^  "?(\d[^":\s]*)"?:"#,
+            Bare::Exact,
+            Some(crate::osv::GITLAB),
+        )
+    },
     json(
         "cran",
         "https://crandb.r-pkg.org/{name}",

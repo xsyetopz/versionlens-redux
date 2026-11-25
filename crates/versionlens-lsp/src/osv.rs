@@ -1,10 +1,18 @@
-//! Known vulnerabilities from OSV, asked for a whole document in one batch request.
+//! Known vulnerabilities from OSV, asked for a whole document in one batch request. Two sources
+//! cover registries OSV has no ecosystem for: Artifact Hub's image scans for Helm charts and the
+//! GitLab Advisory Database for Conan.
 
 use serde_json::{Value, json};
 
 use crate::http::Http;
 
 const BATCH: usize = 1000;
+
+mod artifact_hub;
+mod gitlab;
+
+pub(crate) use artifact_hub::ARTIFACT_HUB;
+pub(crate) use gitlab::GITLAB;
 
 /// A package at a version, in an OSV ecosystem.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -19,6 +27,23 @@ pub(crate) struct Query {
 /// # Errors
 /// Reports a failed request or an unexpected response.
 pub(crate) async fn query(http: &Http, queries: &[Query]) -> Result<Vec<Vec<String>>, String> {
+    let osv: Vec<&Query> = queries
+        .iter()
+        .filter(|q| ![ARTIFACT_HUB, GITLAB].contains(&q.ecosystem))
+        .collect();
+    let mut osv_ids = batch(http, &osv).await?.into_iter();
+    let mut out = Vec::with_capacity(queries.len());
+    for query in queries {
+        out.push(match query.ecosystem {
+            ARTIFACT_HUB => artifact_hub::ids(http, query).await?,
+            GITLAB => gitlab::ids(http, query).await?,
+            _ => osv_ids.next().unwrap_or_default(),
+        });
+    }
+    Ok(out)
+}
+
+async fn batch(http: &Http, queries: &[&Query]) -> Result<Vec<Vec<String>>, String> {
     let mut out = Vec::with_capacity(queries.len());
     for chunk in queries.chunks(BATCH) {
         let body = json!({ "queries": chunk.iter().map(|q| json!({

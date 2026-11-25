@@ -183,7 +183,7 @@ impl Server {
         let version = render::current(&req, &found.versions)?;
         Some(Query {
             ecosystem: registry.osv?,
-            name: registry::expand(registry.osv_name, &dep.name, None).ok()?,
+            name: registry::expand(registry.osv_name, &dep.name, dep.source.as_deref()).ok()?,
             version: version.raw,
         })
     }

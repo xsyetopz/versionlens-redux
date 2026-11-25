@@ -195,6 +195,15 @@ impl Http {
         self.send(request, url, configured.is_none()).await
     }
 
+    /// Fetches a JSON document as text.
+    ///
+    /// # Errors
+    /// Names the URL with the failure.
+    pub(crate) async fn json(&self, url: &str) -> Result<String, String> {
+        let fetched = self.get(&self.client, url, "application/json").await;
+        fetched.map(|(body, _)| body)
+    }
+
     /// Posts a JSON body and returns the response text.
     ///
     /// # Errors
