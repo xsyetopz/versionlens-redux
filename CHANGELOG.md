@@ -23,6 +23,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A manifest's own version (`version` in `package.json`, `composer.json`, and `pubspec.yaml`; `[package] version` in `Cargo.toml`; `[project] version` in `pyproject.toml`; `<project><version>` in `pom.xml`; `<Version>` and `<AssemblyVersion>` in .NET projects) gets lenses for its next major, minor, and patch release, or its release and next prerelease, as upstream's project version suggestions did. No registry is asked, and the lenses count as neither outdated nor failed.
 - Gradle `plugins { id 'name' version '1.0' }` entries resolve through the Gradle Plugin Portal's marker artifacts.
 - `constraints:` in `cabal.project`, one-line Terraform `required_providers` blocks and blocks that list `version` before `source`, and Nixpkgs release branches such as `github:NixOS/nixpkgs/nixos-24.05` are read.
+- The dependency sections the fork's master read beyond upstream's are read too:
+  - Cargo `[patch.*]` and `rust-version`
+  - Composer `conflict`, `replace`, and `provide`
+  - `jsr.json` and `deno.json` versions
+  - `project.json` runtimes
+  - `pom.xml` profiles
+  - vcpkg bare names and feature dependencies
+  - DUB `configurations` in `dub.json`; in `dub.sdl`, attributes in any order, with `path` and `repository`
+  - Pub `workspace:` folders
+  - `go.mod` `replace`, `exclude`, and quoted paths
+  - PEP 508 direct references (`name @ url`)
+  - Gradle map notation (`group:, name:, version:`), `kotlin("jvm") version`, and catalog `version.ref` and `[plugins]`
+  - Swift `.exact`, branch, revision, non-GitHub, and `path:` packages
+  - Zig `.path` dependencies
+  - Nimble `#head` requirements
+  - Helm `file://`, repository-alias, and `oci://` chart repositories
+  - `package.json` `bundleDependencies`, `bundledDependencies`, and `trustedDependencies`
+  - The `node-version`, `bun-version`, `python-version`, `ruby-version`, and `go-version` inputs of workflow setup actions
 - `src/catalog/tests.rs` pins the row that reads each file upstream 1.3.0 and the fork's master read, and replays master's 74 checking-coverage cases.
 - `just registries-live` asks every registry, every package page template, and every OSV ecosystem for a sample package. A Cloudflare challenge on a page is retried, up to ten times, until the page itself answers. `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` pass the clearance of a browser challenge the user solved to npmjs.com.
 

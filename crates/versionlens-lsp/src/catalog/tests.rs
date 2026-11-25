@@ -1,8 +1,8 @@
 use regex_automata::meta::Regex;
 
 use super::*;
-use crate::extract::Rule::{Lines, Spec, Via};
-use crate::extract::{PROJECT, SOURCE, extract};
+use crate::extract::Rule::{Lines, Prefix, Spec, Via};
+use crate::extract::{DIRECTORY, PROJECT, SOURCE, extract};
 use crate::registry;
 
 #[test]
@@ -30,10 +30,13 @@ fn every_row_names_a_known_registry_and_valid_regexes() {
         for mut rule in file.rules {
             if let Via(id, inner) = rule {
                 assert!(
-                    registry::get(id).is_some() || [PROJECT, SOURCE].contains(id),
+                    registry::get(id).is_some() || [DIRECTORY, PROJECT, SOURCE].contains(id),
                     "{} sends a rule to {id}",
                     file.id
                 );
+                rule = inner;
+            }
+            if let Prefix(_, inner) = rule {
                 rule = inner;
             }
             if let Spec(_, pattern) | Lines(pattern) = rule

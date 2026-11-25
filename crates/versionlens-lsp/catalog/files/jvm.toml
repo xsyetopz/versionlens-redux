@@ -54,6 +54,12 @@ rules = [
     # A plugins block names each plugin by id: `id 'org.example' version '1.0'` in Groovy,
     # `id("org.example") version "1.0"` in Kotlin; docs.gradle.org/current/userguide/plugins.html.
     { lines = '''(?-u:\b)id[ \t(]*["'](?P<name>[\w.-]+)["'][ \t)]*version[ \t(]*["'](?P<version>[^"'$]+)["']''', via = 'gradle-plugins' },
+    # Kotlin's DSL writes its own plugins as `kotlin("jvm")`, short for `org.jetbrains.kotlin.jvm`:
+    # kotlinlang.org/docs/gradle-configure-project.html#apply-the-plugin
+    { lines = '''(?-u:\b)kotlin\([ \t]*"(?P<name>[\w.-]+)"[ \t]*\)[ \t]*version[ \t(]*"(?P<version>[^"$]+)"''', prefix = 'org.jetbrains.kotlin.', via = 'gradle-plugins' },
+    # Map notation: `implementation group: 'g', name: 'a', version: '1.0'`, or with `=` in Kotlin:
+    # docs.gradle.org/current/userguide/declaring_dependencies.html
+    { lines = '''group[ \t]*[:=][ \t]*["'](?P<group>[\w.-]+)["'][ \t]*,[ \t]*name[ \t]*[:=][ \t]*["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*version[ \t]*[:=][ \t]*["'](?P<version>[^"'$]+)["']''' },
 ]
 
 [[file]]
@@ -65,6 +71,14 @@ rules = [
     { spec = 'libraries.*', pattern = '${MAVEN_SPEC}' },
     { record = 'libraries.*', name = 'module', version = 'version' },
     { record = 'libraries.*', name = 'group:name', version = 'version' },
+    # A `version.ref` points into `[versions]`; the lens sits on that entry and looks up the first
+    # library, else plugin, that uses it, as the fork's master did. Plugins are named by `id`:
+    # docs.gradle.org/current/userguide/version_catalogs.html#sec:version-catalog-declaration
+    { lines = '''\{[^}\n]*?[{ \t,]module[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''' },
+    { lines = '''\{[^}\n]*?[{ \t,]group[ \t]*=[ \t]*"(?P<group>[^"]+)"[^}\n]*?[{ \t,]name[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''' },
+    { lines = '''\{[^}\n]*?[{ \t,]id[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''', via = 'gradle-plugins' },
+    { record = 'plugins.*', name = 'id', version = 'version', via = 'gradle-plugins' },
+    { spec = 'plugins.*', pattern = '^(?P<name>[\w.-]+):(?P<version>[^:]+)$', via = 'gradle-plugins' },
 ]
 
 [[file]]
@@ -111,6 +125,7 @@ registry = 'nuget'
 rules = [
     { keys = 'dependencies' },
     { keys = 'frameworks.*.dependencies' },
+    { keys = 'runtimes.*.dependencies' },
 ]
 
 [[file]]

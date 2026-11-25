@@ -32,14 +32,14 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | --- | --- | --- |
 | crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables) |
 | npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `.bun-version` |
-| Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions` and `mise.toml` |
+| Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions` and `mise.toml`, `node-version` of `actions/setup-node` |
 | JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json` |
 | PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml` |
 | conda-forge | GIT (the GitHub repository its `dev_url` names) | `environment.yml`, `environment.yaml`, `pixi.toml` |
 | Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
-| Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions` and `mise.toml` |
+| Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions` and `mise.toml`, `go-version` of `actions/setup-go` |
 | RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec` |
 | CocoaPods | GIT (the GitHub repository the podspec's `source` names) | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
@@ -50,7 +50,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
 | Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
 | Elm packages | GIT (`github.com/author/package`) | `elm.json` |
-| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs |
+| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs, and `oci://` chart dependencies in `Chart.yaml` |
 | GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
 | Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
 | Helm repositories | Artifact Hub image scans | `Chart.yaml` |
@@ -69,8 +69,8 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project` |
 | LuaRocks | GIT (the GitHub repository the rockspec's `source.url` names) | `*.rockspec` |
 | xmake repository | GIT (the GitHub repository the package's `xmake.lua` names) | `xmake.lua` |
-| Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, and their `.tool-versions` and `mise.toml` entries |
-| Rust and Terraform releases | GIT (`rust-lang/rust`, `hashicorp/terraform`) | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, and their `.tool-versions` and `mise.toml` entries |
+| Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, their `.tool-versions` and `mise.toml` entries, and the `python-version` and `ruby-version` inputs of workflow setup actions |
+| Rust and Terraform releases | GIT (`rust-lang/rust`, `hashicorp/terraform`) | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, `rust-version` in `Cargo.toml`, and their `.tool-versions` and `mise.toml` entries |
 
 The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for Helm or Conan, so Helm chart versions report the CVEs that Artifact Hub's Trivy scans find in the images they deploy, and Conan versions report the GitLab Advisory Database entries whose range holds them. Registries outside OSV that name a package's GitHub repository have it looked up, and OSV's GIT ecosystem is asked about that repository at the version; a package that names no GitHub repository gets no check. Docker Hub and OCI images are asked about by the application they package in OSV's Bitnami ecosystem, so an image from any other publisher gets no check. Unity packages name only Unity's own git host, so they get no vulnerability check. Set `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` to the user agent and `cf_clearance` cookie of a browser that passed the npmjs.com challenge, and the live check sends them to npmjs.com. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
 

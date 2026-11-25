@@ -20,12 +20,16 @@ pub(crate) enum Rule {
     /// Objects at a path whose fields name the dependency: `groupId:artifactId` joins two fields,
     /// `@Include|@Update` takes the first present. The last field names an optional source URL.
     Record(&'static str, &'static str, &'static str, &'static str),
-    /// A regex over the whole text with `name`, optional `group`, `version`, `registry`, and `source` groups.
+    /// A regex over the whole text with `name`, optional `group`, `version`, `registry`, and `source`
+    /// groups, or a `ref` group in place of `version` that names the key holding the version.
     /// Without a `name` group the file type's id names the package, as in `.nvmrc` for `node`.
     Lines(&'static str),
     /// A rule whose dependencies come from another registry, such as the `pip:` list inside a
     /// conda `environment.yml`.
     Via(&'static str, &'static Self),
+    /// A rule whose dependency names lack a fixed head the manifest leaves out, such as
+    /// `org.jetbrains.kotlin.` before the `jvm` of Gradle's `kotlin("jvm")`.
+    Prefix(&'static str, &'static Self),
 }
 
 /// A dependency found in a manifest: what it is called, what it asks for, and where that is.
@@ -216,15 +220,44 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                 };
                 deps.extend(extract(&inner, text));
             }
+            Rule::Prefix(prefix, rule) => {
+                let inner = FileType {
+                    rules: std::slice::from_ref(rule),
+                    ..*file
+                };
+                deps.extend(extract(&inner, text).into_iter().map(|mut dep| {
+                    dep.name.insert_str(0, prefix);
+                    dep
+                }));
+            }
         }
     }
     for dep in &mut deps {
-        if local_path(&dep.req).is_some() {
+        // A Helm chart's `repository` may be a local chart, a `helm repo add` alias, or an OCI
+        // registry: helm.sh/docs/helm/helm_dependency/ and helm.sh/docs/topics/registries/
+        match dep.source.as_deref() {
+            Some(source) if local_path(source).is_some() => dep.registry = DIRECTORY,
+            Some(source) if source.starts_with('@') || source.starts_with("alias:") => {
+                dep.registry = SOURCE;
+                dep.source = Some("repository alias".to_owned());
+            }
+            Some(source) if let Some(repo) = source.strip_prefix("oci://") => {
+                dep.name = format!("{}/{}", repo.trim_end_matches('/'), dep.name);
+                dep.registry = "oci";
+            }
+            _ => {}
+        }
+        if dep.registry == DIRECTORY || local_path(&dep.req).is_some() {
             dep.registry = DIRECTORY;
         } else if dep.registry != SOURCE
             && let Some(label) = source_label(&dep.req)
         {
             dep.registry = SOURCE;
+            dep.source = Some(label.to_owned());
+        }
+        // A `via = 'source'` row pins a branch or revision of the repository its name gives.
+        if dep.registry == SOURCE && dep.source.is_none() {
+            let label = source_label(&dep.name).unwrap_or("git reference");
             dep.source = Some(label.to_owned());
         }
         if let Some(var) = dep.req.strip_prefix("${").and_then(|r| r.strip_suffix('}'))
@@ -355,9 +388,12 @@ fn from_caps(caps: &Captures, text: &str, offset: usize, file: &FileType) -> Opt
     let registry = group("registry")
         .and_then(crate::registry::alias)
         .unwrap_or(file.registry);
+    // A `ref` names the key that holds the version, as `${ref}` would, such as a Gradle
+    // catalog's `version.ref`.
+    let req = group("ref").map_or_else(|| text[span.clone()].to_owned(), |r| format!("${{{r}}}"));
     Some(Dep {
         name,
-        req: text[span.clone()].to_owned(),
+        req,
         span: span.start + offset..span.end + offset,
         registry,
         source: group("source").map(str::to_owned),

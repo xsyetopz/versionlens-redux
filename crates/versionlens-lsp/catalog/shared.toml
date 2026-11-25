@@ -4,7 +4,9 @@
 [patterns]
 GITHUB_URL = '''https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?"'''
 PEP508 = '^\s*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*\(?(?P<version>(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+(?:\s*,\s*(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+)*)?\)?\s*(?:;.*)?$'
-DOCKER = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$'
+# A direct reference, `name @ url`, which no index answers: peps.python.org/pep-0508/#specification
+PEP508_URL = '^[ \t]*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)[ \t]*(?:\[[^\]\n]*\])?[ \t]*@[ \t]*(?P<version>[^\s;#]+)'
+DOCKER ='^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$'
 IMAGE_LINE = '''(?m)^[ \t]*(?:-[ \t]*)?(?:image|container)[ \t]*:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$'''
 ACTION = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$'
 TOOL_VERSION = '\A\s*v?(?P<version>\d[\w.]*)\s*\z'
@@ -41,6 +43,12 @@ NPM_DEPS = [
     { keys = 'workspaces.catalog' },
     { keys = 'workspaces.catalogs.*' },
     { keys = 'volta' },
+    # Name lists, read as the fork's master read them: bundleDependencies and its older spelling
+    # (docs.npmjs.com/cli/v10/configuring-npm/package-json#bundledependencies), and Bun's
+    # trustedDependencies (bun.sh/docs/install/lifecycle#trusteddependencies).
+    { spec = 'bundleDependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'bundledDependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'trustedDependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
     { spec = 'packageManager', pattern = '^(?P<name>[\w-]+)@(?P<version>[^+]+)' },
     # `devEngines` names its tools as `{"name": "pnpm", "version": "^9.0.0"}`, or a list of them.
     { record = 'devEngines.packageManager', name = 'name', version = 'version' },
@@ -54,7 +62,9 @@ NPM_DEPS = [
 PYPROJECT = [
     { spec = 'project.version', pattern = '${OWN}', via = 'project' },
     { spec = 'project.dependencies.*', pattern = '${PEP508}' },
+    { spec = 'project.dependencies.*', pattern = '${PEP508_URL}' },
     { spec = 'project.optional-dependencies.*.*', pattern = '${PEP508}' },
+    { spec = 'project.optional-dependencies.*.*', pattern = '${PEP508_URL}' },
     { spec = 'dependency-groups.*.*', pattern = '${PEP508}' },
     { spec = 'build-system.requires.*', pattern = '${PEP508}' },
     { spec = 'tool.uv.dev-dependencies.*', pattern = '${PEP508}' },
@@ -86,4 +96,9 @@ POM = [
     { record = 'project.dependencyManagement.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
     { record = 'project.build.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
     { record = 'project.build.pluginManagement.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+    # A profile holds the same sections: maven.apache.org/pom.html#Profiles
+    { record = 'project.profiles.profile.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.profiles.profile.dependencyManagement.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.profiles.profile.build.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.profiles.profile.build.pluginManagement.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
 ]

@@ -65,6 +65,7 @@ globs = ['deno.json', 'deno.jsonc', 'import_map.json', 'jsr.json', 'jsr.jsonc']
 format = 'json'
 registry = 'jsr'
 rules = [
+    { spec = 'version', pattern = '${OWN}', via = 'project' },
     { spec = 'imports.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
     { spec = 'scopes.*.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
 ]
@@ -87,6 +88,11 @@ rules = [
     { spec = 'version', pattern = '${OWN}', via = 'project' },
     { keys = 'require' },
     { keys = 'require-dev' },
+    # Constraints on other packages, which the fork's master read too:
+    # getcomposer.org/doc/04-schema.md#conflict
+    { keys = 'conflict' },
+    { keys = 'replace' },
+    { keys = 'provide' },
 ]
 
 [[file]]
@@ -116,6 +122,8 @@ registry = 'dub'
 rules = [
     { keys = 'dependencies' },
     { keys = 'versions' },
+    # A build configuration adds dependencies: dub.pm/dub-reference/configurations/
+    { keys = 'configurations.*.dependencies' },
 ]
 
 [[file]]
@@ -124,7 +132,13 @@ globs = ['dub.sdl']
 format = 'text'
 registry = 'dub'
 rules = [
-    { lines = 'dependency[ \t]+"(?P<name>[^"]+)"[ \t]+version="(?P<version>[^"]+)"' },
+    # Attributes come in any order; `path` names a local package, and beside `repository` the
+    # `version` is a git commit: dub.pm/dub-reference/dependencies/. The commit rules come first,
+    # so they win the span the registry rule also matches.
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]repository="[^"]+"[^\n#]*?[ \t]version="(?P<version>[^"]+)"', via = 'source' },
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]version="(?P<version>[^"]+)"[^\n#]*?[ \t]repository="', via = 'source' },
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]version="(?P<version>[^"]+)"' },
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]path="(?P<version>[^"]+)"', via = 'directory' },
 ]
 
 [[file]]

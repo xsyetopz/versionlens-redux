@@ -1,6 +1,7 @@
 use super::*;
 use crate::catalog::file_type;
 
+mod master;
 mod upstream;
 
 fn deps(path: &str, text: &str) -> Vec<(String, String)> {

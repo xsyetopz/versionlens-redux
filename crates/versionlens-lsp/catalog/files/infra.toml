@@ -38,6 +38,12 @@ rules = [
     { spec = 'runs.steps.*.uses', pattern = '${ACTION}' },
     { lines = '${IMAGE_LINE}', via = 'docker' },
     { lines = '''(?m)uses:[ \t]*["']?docker://(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)''', via = 'docker' },
+    # The runtime a setup action installs, from its `<tool>-version` input, as the fork's master
+    # read it: github.com/actions/setup-node, setup-python, setup-go, ruby/setup-ruby, and
+    # oven-sh/setup-bun. Expressions such as `${{ matrix.node }}` and lists stay out.
+    { lines = '''(?m)^[ \t]+(?P<name>node|bun)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'npm' },
+    { lines = '''(?m)^[ \t]+(?P<registry>(?P<name>python|ruby))-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''' },
+    { lines = '''(?m)^[ \t]+(?P<name>go)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'golang' },
 ]
 
 # CI services and dev environments that name images under `image:` keys at any depth.

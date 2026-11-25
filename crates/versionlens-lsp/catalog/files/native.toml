@@ -6,7 +6,8 @@
 # matches by name has failed), the `format` that reads it (json, toml, yaml, xml, or text), the `registry`
 # that answers for its dependencies, an optional `insert` written before a version added to a
 # bare name, and `rules`: { keys }, { spec, pattern }, { record, name, version, source? }, or
-# { lines }, each with an optional `via` registry, or { use } for a list in shared.toml.
+# { lines }, each with an optional `via` registry and `prefix` that names start with, or { use }
+# for a list in shared.toml.
 # Patterns may name a shared pattern as ${NAME}. A glob two rows share belongs to the earlier
 # row, and the groups load in the order of GROUPS in src/catalog.rs.
 
@@ -17,6 +18,9 @@ format = 'toml'
 registry = 'cargo'
 rules = [
     { spec = 'package.version', pattern = '${OWN}', via = 'project' },
+    # The oldest Rust release the package supports, which the fork's master looked up as a toolchain:
+    # doc.rust-lang.org/cargo/reference/rust-version.html
+    { lines = '''(?m)^[ \t]*(?P<name>rust)-version[ \t]*=[ \t]*["'](?P<version>\d+\.\d+(?:\.\d+)?)["']''', via = 'rust' },
     { keys = 'dependencies' },
     { keys = 'dev-dependencies' },
     { keys = 'build-dependencies' },
@@ -24,6 +28,9 @@ rules = [
     { keys = 'target.*.dev-dependencies' },
     { keys = 'target.*.build-dependencies' },
     { keys = 'workspace.dependencies' },
+    # `[patch.<registry>]` overrides a crate, mostly with git or a path, as the fork's master read
+    # it: doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section
+    { keys = 'patch.*' },
 ]
 
 [[file]]
@@ -32,7 +39,13 @@ globs = ['go.mod', 'go.work']
 format = 'text'
 registry = 'go'
 rules = [
-    { lines = '(?m)^(?:require[ \t]+|[ \t]+)(?P<name>[\w.~-]+\.[\w.~/-]+)[ \t]+(?P<version>v\d[^\s]*)' },
+    # `require` and `exclude` lines and block entries; paths and versions may be quoted, as
+    # go.dev/ref/mod#go-mod-file-lexical allows.
+    { lines = '''(?m)^(?:require[ \t]+|exclude[ \t]+|[ \t]+)["`]?(?P<name>[\w.~-]+\.[\w.~/-]+)["`]?[ \t]+["`]?(?P<version>v\d[^\s"`]*)''' },
+    # A `replace` names the module that stands in, at a version, or a local directory:
+    # go.dev/ref/mod#go-mod-file-replace
+    { lines = '''=>[ \t]*["`]?(?P<name>[\w.~-]+\.[\w.~/-]+)["`]?[ \t]+["`]?(?P<version>v\d[^\s"`]*)''' },
+    { lines = '''(?m)^(?:replace[ \t]+|[ \t]+)["`]?(?P<name>[\w.~-]+\.[\w.~/-]+)["`]?(?:[ \t]+["`]?v[^\s"`]*["`]?)?[ \t]*=>[ \t]*["`]?(?P<version>\.{0,2}/[^\s"`]*)''' },
     # The `go` and `toolchain` directives pin the Go release itself.
     { lines = '(?m)^(?:go[ \t]+|toolchain[ \t]+go)(?P<version>\d[\w.]*)[ \t]*\r?$', via = 'golang' },
 ]
@@ -74,6 +87,11 @@ format = 'json'
 registry = 'vcpkg'
 rules = [
     { record = 'dependencies.*', name = 'name', version = 'version>=' },
+    # A dependency may be a bare port name, and a feature lists its own dependencies:
+    # learn.microsoft.com/en-us/vcpkg/reference/vcpkg-json#dependencies
+    { spec = 'dependencies.*', pattern = '^(?P<name>[a-z0-9]+(?:-[a-z0-9]+)*)$' },
+    { record = 'features.*.dependencies.*', name = 'name', version = 'version>=' },
+    { spec = 'features.*.dependencies.*', pattern = '^(?P<name>[a-z0-9]+(?:-[a-z0-9]+)*)$' },
     { record = 'overrides.*', name = 'name', version = 'version|version-semver|version-string|version-date' },
 ]
 
@@ -120,7 +138,11 @@ globs = ['Package.swift']
 format = 'text'
 registry = 'swift'
 rules = [
-    { lines = '\.package\(\s*url:\s*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*(?:from:|exact:|\.upToNextMajor\(from:|\.upToNextMinor\(from:)\s*"(?P<version>[^"]+)"' },
+    { lines = '\.package\(\s*(?:name:\s*"[^"]*"\s*,\s*)?url:\s*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*(?:from:|exact:|\.exact\(|\.upToNextMajor\(from:|\.upToNextMinor\(from:)\s*"(?P<version>[^"]+)"' },
+    # Other hosts, branches, revisions, and local packages need no lookup, as the fork's master
+    # labeled them: docs.swift.org/package-manager/PackageDescription/PackageDescription.html#package-dependency
+    { lines = '\.package\(\s*(?:name:\s*"[^"]*"\s*,\s*)?url:\s*"(?P<name>[^"]+)"\s*,\s*(?:from:|exact:|\.exact\(|\.upToNextMajor\(from:|\.upToNextMinor\(from:|branch:|revision:|\.revision\(|\.branch\()\s*"(?P<version>[^"]+)"', via = 'source' },
+    { lines = '\.package\(\s*(?:name:\s*"[^"]*"\s*,\s*)?path:\s*"(?P<name>(?P<version>[^"]+))"', via = 'directory' },
 ]
 
 [[file]]
@@ -169,6 +191,9 @@ rules = [
     { lines = '${GITHUB_ARCHIVE}' },
     { lines = '${GITHUB_RELEASE}' },
     { lines = '${GITHUB_FRAGMENT}' },
+    # A `.path` dependency is a local package: ziglang.org/download/0.14.0/release-notes.html#Package-Management
+    # and github.com/ziglang/zig/blob/master/doc/build.zig.zon.md
+    { lines = '\.@?"?(?P<name>[\w-]+)"?\s*=\s*\.\{\s*\.path\s*=\s*"(?P<version>[^"]+)"', via = 'directory' },
 ]
 
 [[file]]
@@ -178,6 +203,9 @@ format = 'text'
 registry = 'github'
 rules = [
     { lines = 'requires[ \t(]+"https?://github\.com/(?P<name>[\w.-]+/[\w-]+)(?:\.git)?[ \t]+(?P<version>(?:>=|<=|==|\^=|~=|>|<)[ \t]*v?\d[\w.-]*)"' },
+    # `name#head` and `url#branch` follow a moving branch, as the fork's master labeled them:
+    # nim-lang.github.io/nimble/create-packages.html#dependencies
+    { lines = '"(?P<name>(?:https?://)?[\w./:-]+)#(?P<version>[\w./-]+)"', via = 'source' },
 ]
 
 [[file]]

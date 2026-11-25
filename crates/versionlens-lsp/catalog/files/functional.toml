@@ -29,6 +29,8 @@ rules = [
     { keys = 'dependencies' },
     { keys = 'dev_dependencies' },
     { keys = 'dependency_overrides' },
+    # A workspace root lists its packages' folders: dart.dev/tools/pub/workspaces
+    { spec = 'workspace.*', pattern = '^(?P<name>.+)$', via = 'directory' },
 ]
 
 [[file]]
