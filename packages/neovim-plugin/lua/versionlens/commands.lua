@@ -19,6 +19,7 @@ M.subcommands = {
   log = {},
   restart = {},
   info = {},
+  settings = {},
   auth = { args = { "add", "remove" } },
 }
 
@@ -128,6 +129,7 @@ function M.menu(status)
   add("Show log", "log")
   add("Restart server", "restart")
   add("Server info", "info")
+  add("Settings", "settings")
   add("Add url authentication", "auth add")
   add("Remove url authentication", "auth remove")
   return entries

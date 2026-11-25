@@ -118,7 +118,15 @@ check(":VersionLens parses every subcommand", function()
     assert(command == case[2], case[1] .. " -> " .. tostring(command))
     assert(vim.deep_equal(arguments, case[3]), case[1] .. " arguments " .. vim.inspect(arguments))
   end
-  for _, local_only in ipairs({ "log", "output", "restart", "info", "auth", "auth remove" }) do
+  for _, local_only in ipairs({
+    "log",
+    "output",
+    "restart",
+    "info",
+    "settings",
+    "auth",
+    "auth remove",
+  }) do
     local spec = assert(commands.parse(local_only))
     assert(commands.request(spec, "u") == nil, local_only .. " stays in the client")
   end
@@ -185,6 +193,87 @@ check(":VersionLens auth stores headers privately and sends them to the server",
     assert(not auth.valid_url("ftp://x") and auth.valid_url("http://x/"), "valid_url")
   end)
   auth.path, vim.ui.input, vim.ui.select, vim.fn.inputsecret = real_path, input, select, inputsecret
+  assert(ok, err)
+end)
+
+check("settings render every key and parse back to the same table", function()
+  local settings = require("versionlens.settings")
+  local given =
+    { timeoutMs = 5000, providers = { npm = { cacheMinutes = 5 } }, fileTypes = { "npm" } }
+  local page = assert(settings.parse(table.concat(settings.render(given), "\n")))
+  for _, row in ipairs(settings.schema) do
+    local expected = given[row[1]]
+    if expected == nil then
+      expected = row[3]
+    end
+    assert(vim.deep_equal(page[row[1]], expected), row[1] .. " " .. vim.inspect(page[row[1]]))
+  end
+  eq(#settings.schema, 21)
+  local bad, err = settings.parse("return { timeoutMs = 'soon', nope = 1 }")
+  eq(bad, nil)
+  eq(err, "setting timeoutMs must be a number; unknown setting nope")
+  bad, err = settings.parse("return { enabled = os.exit() }")
+  assert(bad == nil and err:match("os"), "the page runs without globals: " .. tostring(err))
+end)
+
+check(":VersionLens settings writes changes privately and sends them to the server", function()
+  local settings = require("versionlens.settings")
+  local path = vim.fs.joinpath(vim.fn.tempname(), "settings.json")
+  local real_path = settings.path
+  settings.path = function()
+    return path
+  end
+  local ok, err = pcall(function()
+    versionlens.run("settings")
+    local bufnr = vim.api.nvim_get_current_buf()
+    eq(vim.api.nvim_buf_get_name(bufnr), "versionlens://settings")
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local row = assert(vim.fn.index(lines, "  timeoutMs = 10000,") + 1, "no timeoutMs line")
+    assert(row > 0, vim.inspect(lines))
+    vim.api.nvim_buf_set_lines(bufnr, row - 1, row, false, { "  timeoutMs = 2500," })
+    vim.cmd.write()
+    eq(vim.bo[bufnr].modified, false)
+    eq(vim.fn.readfile(path)[1], '{"timeoutMs":2500}')
+    eq(vim.uv.fs_stat(path).mode % 512, tonumber("600", 8))
+    eq(versionlens.config.settings.timeoutMs, 2500)
+    local clients = vim.lsp.get_clients({ name = "versionlens" })
+    assert(#clients > 0, "no running server to receive the settings")
+    for _, client in ipairs(clients) do
+      eq(client.settings.versionlens.timeoutMs, 2500)
+    end
+    vim.api.nvim_buf_set_lines(bufnr, row - 1, row, false, { "  timeoutMs = 'soon'," })
+    pcall(vim.cmd.write)
+    eq(vim.bo[bufnr].modified, true)
+    eq(vim.fn.readfile(path)[1], '{"timeoutMs":2500}')
+    vim.api.nvim_buf_set_lines(bufnr, row - 1, row, false, { "  timeoutMs = 10000," })
+    vim.cmd.write()
+    eq(vim.fn.readfile(path)[1], "{}")
+    eq(versionlens.config.settings.timeoutMs, nil)
+    vim.cmd("bwipeout!")
+  end)
+  settings.path = real_path
+  assert(ok, err)
+end)
+
+check("trace level logs the LSP traffic, as VS Code's trace.server does", function()
+  local bufnr = edit("Cargo.toml", { "[dependencies]", 'serde = "1.0.0"' })
+  assert(
+    vim.wait(5000, function()
+      return #vim.lsp.get_clients({ bufnr = bufnr, name = "versionlens" }) == 1
+    end),
+    "server did not attach"
+  )
+  vim.lsp.log.set_level("trace")
+  local ok, err = pcall(function()
+    vim.lsp.buf_request_sync(bufnr, "textDocument/codeLens", {
+      textDocument = vim.lsp.util.make_text_document_params(bufnr),
+    }, 5000)
+    local log = table.concat(vim.fn.readfile(vim.lsp.log.get_filename()), "\n")
+    assert(log:find('"rpc.send"', 1, true), "no rpc.send in " .. vim.lsp.log.get_filename())
+    assert(log:find('"rpc.receive"', 1, true), "no rpc.receive")
+    assert(log:find("textDocument/codeLens", 1, true), "the code lens request is not logged")
+  end)
+  vim.lsp.log.set_level("warn")
   assert(ok, err)
 end)
 

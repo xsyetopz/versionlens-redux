@@ -108,6 +108,13 @@ Example: >lua
 Calling `setup()` again sends the new settings to running servers, with no
 restart.
 
+`:VersionLens settings` is the settings page: a Lua buffer listing every
+setting with its value and description. |:write| checks it, applies it to
+running servers, and keeps what differs from `setup()` in
+stdpath("data")/versionlens/settings.json, readable only by you (mode 0600),
+so the change survives a restart. A page with an unknown key, a wrong type,
+or a Lua error is not saved, and the message names the problem.
+
 ==============================================================================
 4. COMMANDS                                             *versionlens-commands*
 
@@ -116,7 +123,8 @@ restart.
     Open a |vim.ui.select()| menu of what applies to the current buffer,
     from its status: hide or show versions and prereleases, update at each
     level while dependencies are outdated, sort, install, refresh, update the
-    workspace, clear the cache, log, restart, info, and url authentication.
+    workspace, clear the cache, log, restart, info, settings, and url
+    authentication.
 
 :VersionLens {subcommand} [{argument}]
     All subcommands complete with <Tab>.
@@ -132,6 +140,8 @@ restart.
   log                               Show the server's log messages.
   restart                           Restart the server.
   info                              Show the server command and status.
+  settings                          Open the settings page; see
+                                    |versionlens-settings|.
   auth [add|remove]                 Store or forget an Authorization header
                                     for a registry URL prefix; default add.
                                     Headers are kept in

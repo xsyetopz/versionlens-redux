@@ -308,6 +308,18 @@ local function info(bufnr)
   notify(table.concat(lines, "\n"))
 end
 
+-- setup()'s own settings; the settings page keeps only what differs from them.
+local base = {}
+
+local function open_settings()
+  local page = require("versionlens.settings")
+  page.open(M.config.settings, function(written)
+    M.config.settings = page.save(written, base)
+    push_settings()
+    return "settings saved to " .. page.path()
+  end)
+end
+
 --- Runs the :VersionLens line `text` for bufnr; returns false when it does not parse.
 function M.run(text, bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
@@ -325,6 +337,8 @@ function M.run(text, bufnr)
     info(bufnr)
   elseif spec.name == "auth" then
     auth(spec.arg)
+  elseif spec.name == "settings" then
+    open_settings()
   else
     local command, arguments = commands.request(spec, vim.uri_from_bufnr(bufnr))
     execute(command, arguments, bufnr)
@@ -355,39 +369,7 @@ end
 
 --- Problems in a settings table: unknown keys and wrong value types, one string each.
 function M.validate_settings(settings)
-  local kinds = {
-    enabled = "boolean",
-    codeLens = "boolean",
-    inlayHints = "boolean",
-    prereleases = "boolean",
-    vulnerabilities = "boolean",
-    strictSsl = "boolean",
-    timeoutMs = "number",
-    concurrency = "number",
-    cacheMinutes = "number",
-    githubToken = "string",
-    registries = "table",
-    authorization = "table",
-    install = "table",
-    files = "table",
-    indicators = "table",
-    prereleaseTags = "table",
-    updateSeverity = "string",
-    stats = "boolean",
-    fileTypes = "table",
-    workspaceExclude = "table",
-    providers = "table",
-  }
-  local problems = {}
-  for key, value in pairs(settings) do
-    if not kinds[key] then
-      table.insert(problems, "unknown setting " .. key)
-    elseif type(value) ~= kinds[key] then
-      table.insert(problems, ("setting %s must be a %s"):format(key, kinds[key]))
-    end
-  end
-  table.sort(problems)
-  return problems
+  return require("versionlens.settings").validate(settings)
 end
 
 --- Configures the plugin, registers :VersionLens, and starts on manifest buffers.
@@ -396,6 +378,16 @@ function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
   for _, problem in ipairs(M.validate_settings(M.config.settings)) do
     notify(problem, vim.log.levels.WARN)
+  end
+  base = vim.deepcopy(M.config.settings)
+  local ok, saved = pcall(require("versionlens.settings").load)
+  if not ok then
+    notify(saved, vim.log.levels.ERROR)
+  else
+    for _, problem in ipairs(M.validate_settings(saved)) do
+      notify(problem .. " in " .. require("versionlens.settings").path(), vim.log.levels.WARN)
+    end
+    M.config.settings = vim.tbl_extend("force", M.config.settings, saved)
   end
   patterns = nil
   push_settings()

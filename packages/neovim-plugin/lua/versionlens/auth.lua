@@ -26,17 +26,19 @@ function M.load()
   return stored
 end
 
---- Replaces the stored map with `stored`, readable only by its owner.
-function M.save(stored)
-  local path = M.path()
+--- Writes the JSON object `value` to `path`, readable only by its owner.
+function M.write(path, value)
   vim.fn.mkdir(vim.fs.dirname(path), "p")
   local fd = assert(vim.uv.fs_open(path, "w", tonumber("600", 8)))
   -- fs_open applies the mode only to a new file; an older file keeps its own until this.
   assert(vim.uv.fs_fchmod(fd, tonumber("600", 8)))
-  assert(
-    vim.uv.fs_write(fd, vim.json.encode(vim.tbl_isempty(stored) and vim.empty_dict() or stored))
-  )
+  assert(vim.uv.fs_write(fd, vim.json.encode(vim.tbl_isempty(value) and vim.empty_dict() or value)))
   assert(vim.uv.fs_close(fd))
+end
+
+--- Replaces the stored map with `stored`, readable only by its owner.
+function M.save(stored)
+  M.write(M.path(), stored)
 end
 
 --- The Authorization header for one of M.kinds, or nil for a blank answer.
