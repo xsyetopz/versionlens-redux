@@ -24,6 +24,10 @@ pub(super) fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mu
         // dart.dev/tools/pub/dependencies#sdk and #hosted-packages
         // dub's `repository` names a Git repository whose `version` beside it is a tag or commit,
         // not a registry version: dub.pm/dub-reference/dependencies/#git-repositories
+        // pnpm's `-` value removes the dependency the key selects (pnpm.io/settings#overrides).
+        if registry == "npm" && leaf.value == "-" {
+            continue;
+        }
         let mut req = leaf.value.clone();
         let mut span = leaf.span.clone();
         let (registry, source) = match tail.iter().map(String::as_str).collect::<Vec<_>>()[..] {
@@ -78,7 +82,18 @@ fn selected(key: &str, parent: Option<&str>) -> String {
     if key == "." {
         return parent.map_or_else(String::new, |p| selected(p, None));
     }
-    let key = key.rsplit('>').next().unwrap_or(key);
+    // A `>` before a letter or scope starts the child; one before a digit or `=` opens a range,
+    // as in `@volar/typescript>typescript@>=7`.
+    let child = key
+        .rmatch_indices('>')
+        .find(|(at, _)| {
+            key[at + 1..]
+                .bytes()
+                .next()
+                .is_some_and(|b| b.is_ascii_alphabetic() || b == b'@' || b == b'_')
+        })
+        .map_or(0, |(at, _)| at + 1);
+    let key = &key[child..];
     let mut parts = key.rsplit('/');
     let last = parts.next().unwrap_or(key);
     let package = match parts.next() {

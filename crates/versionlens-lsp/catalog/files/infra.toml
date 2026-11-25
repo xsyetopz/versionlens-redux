@@ -149,8 +149,10 @@ rules = [
 ]
 
 # A Scoop bucket keeps one JSON manifest per app in `bucket/`, its `url` (top-level or per
-# `architecture`) the download; a GitHub release asset names its repository and tag. `autoupdate`
-# writes `$version` in place of the tag, so it is not read: ScoopInstaller/Main, bucket/gh.json.
+# `architecture`) the download; a GitHub release asset names its repository and tag. An
+# `autoupdate` URL is a template, `.../download/v$version/...`, that Scoop fills in from the
+# newest release, so the pinned version is the one the download URLs above it carry:
+# ScoopInstaller/Main, bucket/gh.json; github.com/ScoopInstaller/Scoop/wiki/App-Manifest-Autoupdate.
 [[file]]
 id = 'scoop'
 globs = ['bucket/*.json']
@@ -248,11 +250,13 @@ globs = ['requirements.yml', 'requirements.yaml', 'galaxy.yml']
 format = 'yaml'
 registry = 'galaxy'
 rules = [
-    { record = 'collections.*', name = 'name', version = 'version' },
+    # Galaxy installs the newest when `version` is omitted, as geerlingguy/mac-dev-playbook's
+    # requirements.yml writes every entry (docs.ansible.com/ansible/latest/galaxy/user_guide.html).
+    { record = 'collections.*', name = 'name', version = 'version?' },
     # A role is named `namespace.role` by `name` or `src`, or comes from the git repository its
     # `src` gives, as the fork's master read them:
     # docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-multiple-roles-from-a-file
-    { record = 'roles.*', name = 'name|src', version = 'version', source = 'src', via = 'galaxy-role' },
+    { record = 'roles.*', name = 'name|src', version = 'version?', source = 'src', via = 'galaxy-role' },
     { keys = 'dependencies' },
 ]
 

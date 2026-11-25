@@ -216,7 +216,10 @@ registry = 'clojars'
 rules = [
     # A name may be quoted, and `defproject` gives the project's own version:
     # codeberg.org/leiningen/leiningen/src/branch/main/sample.project.clj
-    { lines = '\["?(?P<name>[\w.-]+(?:/[\w.-]+)?)"?\s+"(?P<version>[^"]+)"' },
+    # A coordinate vector opens a vector of them or follows another, as in `:dependencies
+    # [[a "1"] [b "2"]]`; a vector of strings, as ring-clojure/ring's `:sub ["ring-core"
+    # "ring-devel"]` and `:aliases {"test" ["sub" "test"]}`, names no dependency.
+    { lines = '[\[\]](?:\s|;[^\n]*\n)*\["?(?P<name>[\w.-]+(?:/[\w.-]+)?)"?\s+"(?P<version>[^"]+)"' },
     { lines = '\(defproject\s+[\w.-]+(?:/[\w.-]+)?\s+"(?P<version>v?\d[\w.+-]*)"', via = 'project' },
 ]
 

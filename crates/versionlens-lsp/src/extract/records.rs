@@ -63,7 +63,22 @@ pub(super) fn records<'a>(
             .split(':')
             .map(|n| field(n).map(|l| resolve(l).value.as_str()))
             .collect();
-        let (Some(parts), Some(own)) = (parts, field(version)) else {
+        let Some(parts) = parts else { continue };
+        // A trailing `?` marks a version the record may omit, as Galaxy then installs the newest
+        // (docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-roles-and-collections-from-the-same-requirements-yml-file).
+        let Some(own) = field(version.trim_end_matches('?')) else {
+            if let (true, Some(at)) = (
+                version.ends_with('?'),
+                field(names.split(':').next().unwrap_or(names)),
+            ) {
+                deps.push(Dep {
+                    name: parts.join(":"),
+                    span: at.span.start..at.span.start,
+                    registry: file.registry,
+                    source: field(source).map(|l| l.value.clone()),
+                    ..Dep::default()
+                });
+            }
             continue;
         };
         let leaf = resolve(own);

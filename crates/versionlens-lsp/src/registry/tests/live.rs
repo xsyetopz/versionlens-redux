@@ -118,6 +118,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("elm", "elm/core", None, Some("1.0.2")),
     ("luarocks", "luasocket", None, None),
     ("luarocks", "lua-resty-jwt", None, Some("0.2.0-0")),
+    ("wrapdb", "pcre2", None, None),
     ("xmake", "zlib", None, Some("v1.2.11")),
     (
         "artifacthub",

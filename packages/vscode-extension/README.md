@@ -69,7 +69,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
-| Julia General, then Julia's release list | Julia | `Manifest.toml` standard libraries |
+| Julia General, then Julia's release list | Julia | `Manifest.toml` standard libraries, and `Project.toml` `[deps]` without a `[compat]` bound |
 | Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
 | Elm packages | GIT (`github.com/author/package`) | `elm.json` |
 | Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs, and `oci://` chart dependencies in `Chart.yaml` |
@@ -96,6 +96,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Hackage | Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
 | GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project`, and `resolver:` or `snapshot: ghc-…` in `stack.yaml` |
 | LuaRocks | GIT (the GitHub repository the rockspec's `source.url` names) | `*.rockspec` |
+| Meson WrapDB | | `subprojects/*.wrap` files that WrapDB released, by their `patch_url` |
 | xmake repository | GIT (the GitHub repository the package's `xmake.lua` names) | `xmake.lua` |
 | Typst releases | GIT (`typst/typst`) | `compiler` in `typst.toml` |
 | Stackage snapshots | | `resolver:` and `snapshot:` `lts-…` and `nightly-…` in `stack.yaml`; a snapshot by URL or `github:` path is labelled as its source |

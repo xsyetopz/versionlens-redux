@@ -73,6 +73,10 @@ NPM_DEPS = [
     { keys = 'overrides.*' },
     { keys = 'pnpm.overrides' },
     { keys = 'pnpm.overrides.*' },
+    # An override may swap in another package, as vitejs/vite's pnpm-workspace.yaml writes
+    # `debug: 'npm:obug@^1.0.2'` (pnpm.io/settings#overrides).
+    { spec = 'overrides.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'pnpm.overrides.*', pattern = '${NPM_ALIAS}' },
     { keys = 'packageExtensions.*.dependencies' },
     { keys = 'packageExtensions.*.devDependencies' },
     { keys = 'packageExtensions.*.peerDependencies' },

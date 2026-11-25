@@ -418,6 +418,10 @@ rules = [
     { lines = '${GITHUB_ARCHIVE}' },
     { lines = '${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
     { lines = '${GITHUB_RELEASE}' },
+    # A wrap from WrapDB carries the `patch_url` its release adds, which names the wrap and its
+    # version, as GNOME/glib's subprojects/pcre2.wrap writes `.../v2/pcre2_10.46-1/get_patch`:
+    # mesonbuild.com/Adding-new-projects-to-wrapdb.html
+    { lines = '(?m)^[ \t]*patch_url[ \t]*=[ \t]*https://wrapdb\.mesonbuild\.com/v2/(?P<name>[\w.+-]+?)_(?P<version>\d[\w.]*-\d+)/get_patch', via = 'wrapdb' },
 ]
 
 [[file]]

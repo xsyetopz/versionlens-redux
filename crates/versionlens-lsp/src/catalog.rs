@@ -119,7 +119,7 @@ fn file(row: &Row) -> Result<FileType, String> {
 }
 
 /// One rule: `keys`, `spec` with its `pattern`, `record` with its `name`, `version`, and
-/// optional `source` fields, or `lines`. A `within` regex limits it to the text that regex matches,
+/// optional `source` fields, where a `version` ending in `?` may be absent, or `lines`. A `within` regex limits it to the text that regex matches,
 /// and a `suffix` group it captures ends each registry name; a `via` names the registry its
 /// dependencies go to, and a `prefix` and `suffix` the text their names start and end with.
 fn rule(entry: &Row) -> Result<Rule, String> {

@@ -273,6 +273,16 @@ osv_name = 'https://luarocks.org/{name}-{version}.rockspec'
 upstream = '''url\s*=\s*['"](?:git\+)?(?:https?|git)://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?['"]'''
 page = 'https://luarocks.org/search?q={name}'
 
+# Meson's WrapDB: one releases.json names each wrap's `versions`, newest first, as
+# `upstream-revision` (`10.46-1`). wrapdb.mesonbuild.com/v2/releases.json, which `meson wrap`
+# asks, answers 301 to this address.
+[[registry]]
+id = 'wrapdb'
+url = 'https://mesonbuild.com/wrapdb/releases.json'
+json = '{name}/versions'
+bare = 'exact'
+page = 'https://github.com/mesonbuild/wrapdb/blob/master/subprojects/{name}.wrap'
+
 [[registry]]
 id = 'xmake'
 url = 'https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua'

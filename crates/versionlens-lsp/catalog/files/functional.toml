@@ -131,6 +131,10 @@ registry = 'julia'
 rules = [
     { spec = 'version', pattern = '${OWN}', via = 'project' },
     { keys = 'compat' },
+    # A `[deps]` entry without a `[compat]` one takes any version, as JuliaData/DataFrames.jl
+    # leaves its standard libraries, Random and Printf among them: pkgdocs.julialang.org/v1/compatibility/.
+    # The extractor drops the entry where `[compat]` names it.
+    { lines = '(?m)^[ \t]*(?P<name>[A-Za-z_]\w*)[ \t]*=', within = '(?ms)^\[deps\][ \t]*\r?\n(?P<body>.*?)(?:^[ \t]*\[|\z)', via = 'julia-stdlib' },
     { spec = 'compat.julia', pattern = '^(?P<version>.+)$', via = 'julia-lang' },
     { keys = 'sources' },
 ]
@@ -255,7 +259,10 @@ format = 'text'
 registry = 'opam'
 rules = [
     { lines = '\(version[ \t]+(?P<version>\d[\w.~+-]*)\)', via = 'project' },
-    { lines = '[\s(](?P<name>[a-z][\w-]*)(?:[ \t]+\((?:and[ \t]+\()?(?P<version>(?:>=|<=|=|>|<)[ \t]*[\w.~+-]+)\))?', within = '\(depends(\s(?:[^()]|\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\))*)\)' },
+    # A constraint is read whole, so its `and`, `or`, and `not` name no package: ocaml/ocaml-lsp
+    # writes `(top-closure (or :with-test :with-dev-setup))`, `(ocamlformat (and :with-test
+    # (= 0.29.0)))`, and a quoted `(>= "v0.14")`, whose operator stays outside the span as `min`.
+    { lines = '''[\s(](?P<name>[a-z][\w-]*)(?:[ \t]+\((?:(?:and|or|not)[ \t]+)?(?::[\w-]+[ \t]+)*\(?(?:(?P<min>>=)[ \t]*")?(?P<version>(?:(?:<>|<=|>=|=|<|>)[ \t]*)?[\w.~+-]+)?"?\)?(?:[^()]|\([^()]*\))*\))?''', within = '\(depends(\s(?:[^()]|\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\))*)\)' },
 ]
 
 [[file]]

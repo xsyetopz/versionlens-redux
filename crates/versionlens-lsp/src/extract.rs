@@ -317,6 +317,15 @@ fn read(file: &FileType, text: &str) -> Vec<Dep> {
             && d.req.is_empty()
             && stages.iter().any(|s| s.eq_ignore_ascii_case(&d.name)))
     });
+    // A Julia `[deps]` entry gives way to the `[compat]` bound of the same package.
+    let bounded: Vec<String> = deps
+        .iter()
+        .filter(|d| d.registry == "julia")
+        .map(|d| d.name.clone())
+        .collect();
+    deps.retain(|d| {
+        !(d.registry == "julia-stdlib" && d.req.is_empty() && bounded.contains(&d.name))
+    });
     deps.retain(|d| {
         !d.name.is_empty()
             && is_package(&d.name, d.registry)
