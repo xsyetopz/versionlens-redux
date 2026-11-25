@@ -145,20 +145,36 @@ internal class RemoveAuthenticationAction : AuthenticationAction() {
             Messages.showInfoMessage(project, "VersionLens: no stored url authentication", TITLE)
             return
         }
-        val dialog =
-            object :
-                ChooseElementsDialog<String>(
-                    project,
-                    urls,
-                    "URLs to Forget",
-                    "URLs to forget",
-                    true,
-                ) {
-                override fun getItemText(item: String): String = item
+        val picked = chooser(project, urls)
+        if (picked.isNotEmpty()) {
+            store(
+                project,
+                { Section.without(it, picked) },
+                "VersionLens: authentication removed for ${picked.joinToString(", ")}",
+            )
+        }
+    }
 
-                override fun getItemIcon(item: String): Icon? = null
-            }
-        val picked = dialog.showAndGetResult()
-        if (picked.isNotEmpty()) store(project, { Section.without(it, picked) }, null)
+    internal companion object {
+        /**
+         * Shows the URLs and returns the ones picked. TestDialogManager answers only Messages
+         * dialogs, and a headless IDE refuses a DialogWrapper, so LiveTest replaces this.
+         */
+        @Volatile
+        internal var chooser: (Project, List<String>) -> List<String> = { project, urls ->
+            object :
+                    ChooseElementsDialog<String>(
+                        project,
+                        urls,
+                        "URLs to Forget",
+                        "URLs to forget",
+                        true,
+                    ) {
+                    override fun getItemText(item: String): String = item
+
+                    override fun getItemIcon(item: String): Icon? = null
+                }
+                .showAndGetResult()
+        }
     }
 }

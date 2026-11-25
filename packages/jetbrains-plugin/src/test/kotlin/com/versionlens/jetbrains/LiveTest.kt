@@ -244,10 +244,42 @@ class LiveTest {
             }
             assertEquals(listOf("Registry URL prefix the header is sent to", "Token"), asked)
             println("PASS addAuthentication: ${settings.json().getAsJsonObject("authorization")}")
+            remove(project, file, settings, url, shown)
         } finally {
             TestDialogManager.setTestInputDialog(input)
             TestDialogManager.setTestDialog(dialog)
             settings.authorization = before
+        }
+    }
+
+    /** Forgets [url] through the Remove action's chooser, then finds nothing left to remove. */
+    private fun remove(
+        project: Project,
+        file: PsiFile,
+        settings: Settings,
+        url: String,
+        shown: MutableList<String>,
+    ) {
+        val offered = CopyOnWriteArrayList<List<String>>()
+        val chooser = RemoveAuthenticationAction.chooser
+        RemoveAuthenticationAction.chooser = { _, urls -> urls.also { offered += it } }
+        try {
+            run(project, file, "versionlens.removeAuthentication")
+            until("the forgotten header leaves the section sent to the server") {
+                settings.json().getAsJsonObject("authorization")?.has(url) == false
+            }
+            until("the action confirms the removal") {
+                shown.any { "authentication removed for $url" in it }
+            }
+            assertEquals(listOf(listOf(url)), offered.toList())
+            run(project, file, "versionlens.removeAuthentication")
+            until("an empty store says so instead of opening the chooser") {
+                shown.any { "no stored url authentication" in it }
+            }
+            assertEquals(1, offered.size)
+            println("PASS removeAuthentication: offered $offered")
+        } finally {
+            RemoveAuthenticationAction.chooser = chooser
         }
     }
 
