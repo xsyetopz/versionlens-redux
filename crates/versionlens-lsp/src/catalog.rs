@@ -76,10 +76,11 @@ fn file(row: &Row) -> Result<FileType, String> {
         "toml" => Format::Toml,
         "yaml" => Format::Yaml,
         "xml" => Format::Xml,
+        "ini" => Format::Ini,
         "text" => Format::Text,
         other => {
             return Err(row.error(&format!(
-                "format {other} is not json, toml, yaml, xml, or text"
+                "format {other} is not json, toml, yaml, xml, ini, or text"
             )));
         }
     };

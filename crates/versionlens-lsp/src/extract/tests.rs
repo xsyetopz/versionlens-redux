@@ -1,7 +1,8 @@
 use super::*;
-use crate::catalog::file_type;
+use crate::catalog::{file_type, file_type_of};
 
 mod infra;
+mod legacy;
 mod lockfiles;
 mod master;
 mod upstream;
@@ -15,6 +16,27 @@ fn deps(path: &str, text: &str) -> Vec<(String, String)> {
             (d.name, d.req)
         })
         .collect()
+}
+
+/// Each dependency's name, requirement, and registry, for a document opened at `path`, with the
+/// content rows a path alone cannot pick.
+fn found(path: &str, text: &str) -> Vec<(String, String, &'static str)> {
+    let file = file_type_of(path, text).unwrap_or_else(|| panic!("{path} not recognised"));
+    extract(file, text)
+        .into_iter()
+        .map(|d| {
+            assert_eq!(text[d.span.clone()], d.req, "span of {}", d.name);
+            (d.name, d.req, d.registry)
+        })
+        .collect()
+}
+
+fn expect(path: &str, text: &str, want: &[(&str, &str, &str)]) {
+    let want: Vec<_> = want
+        .iter()
+        .map(|(n, r, g)| ((*n).to_owned(), (*r).to_owned(), *g))
+        .collect();
+    assert_eq!(found(path, text), want, "{path}");
 }
 
 fn pairs(list: &[(&str, &str)]) -> Vec<(String, String)> {

@@ -24,6 +24,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Gradle `plugins { id 'name' version '1.0' }` entries resolve through the Gradle Plugin Portal's marker artifacts.
 - Infrastructure and tool manifests: `helmfile.yaml` releases through Artifact Hub, Argo CD `Application` charts, Flux `OCIRepository` and `GitRepository` tags, `terragrunt.hcl` sources, Terraform `git::` modules pinned with `?ref=`, Packer `required_plugins`, `Vagrantfile` boxes (Vagrant Cloud), `snapcraft.yaml` and Flatpak manifest git tags, `.prototools`, `aqua.yaml`, `devbox.json` (Nixhub), and `spack.yaml` specs (Spack packages).
 - Artifact Hub advisories also resolve a chart named `repo/chart`, as helmfile writes it.
+- Legacy manifests: Maven 1 `project.xml`, Ivy `override`s, Buildr `buildfile` artifacts, `.nuspec` dependencies, PEAR 2.0 `package.xml` through the PEAR and PECL channels, CPAN `META.json` and `META.yml`, Dist::Zilla `dist.ini` `[Prereqs]` sections, and `component.json`.
+- Catalog rows can read `ini` documents, whose `[section]` headers become paths, so a rule can select the keys of one section.
 - Lockfiles show the version each package resolved to beside the latest: `package-lock.json` and `npm-shrinkwrap.json`, `yarn.lock` (Yarn 1 and Berry), `pnpm-lock.yaml` importers, `bun.lock`, `composer.lock`, crates.io entries of `Cargo.lock`, `poetry.lock`, index entries of `uv.lock`, and `Gemfile.lock` and `gems.locked`.
 - `constraints:` in `cabal.project`, one-line Terraform `required_providers` blocks and blocks that list `version` before `source`, and Nixpkgs release branches such as `github:NixOS/nixpkgs/nixos-24.05` are read.
 - The dependency sections the fork's master read beyond upstream's are read too:

@@ -181,6 +181,9 @@ fn is_package(name: &str, registry: &str) -> bool {
             | ("cran", "R")
             | ("luarocks", "lua")
     ) || name.contains('$')
+        // A Perl module never starts with `-`; dist.ini's `-phase` and `-relationship` configure
+        // the Prereqs plugin itself.
+        || (registry == "cpan" && name.starts_with('-'))
         || (registry == "composer"
             && (name.starts_with("ext-")
                 || name.starts_with("lib-")

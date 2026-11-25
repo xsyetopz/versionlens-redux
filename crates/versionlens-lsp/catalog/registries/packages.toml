@@ -400,3 +400,19 @@ json = 'versions'
 field = 'name'
 bare = 'prefix'
 page = 'https://packages.spack.io/package.html?name={name}'
+
+# PEAR and PECL channels serve each package's releases over REST:
+# pear.php.net/dtd/rest.allreleases.xsd, as pear.php.net/rest/r/console_table/allreleases.xml.
+[[registry]]
+id = 'pear'
+url = 'https://pear.php.net/rest/r/{lower}/allreleases.xml'
+regex = '<v>([^<]+)</v>'
+bare = 'min'
+page = 'https://pear.php.net/package/{name}'
+
+[[registry]]
+id = 'pecl'
+url = 'https://pecl.php.net/rest/r/{lower}/allreleases.xml'
+regex = '<v>([^<]+)</v>'
+bare = 'min'
+page = 'https://pecl.php.net/package/{name}'

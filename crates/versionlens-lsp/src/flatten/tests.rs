@@ -62,3 +62,16 @@ fn reads_xml_elements_and_attributes() {
         "2.0",
     );
 }
+
+#[test]
+fn reads_ini_sections_and_plugin_names() {
+    let text = "name = Dist-Zilla\n; comment\n[Prereqs / TestRequires]\nTest::More = 0.90 ; why\n[Prereqs]\nperl = v5.22.0\n";
+    let leaves = flatten(Format::Ini, text);
+    let paths: Vec<String> = leaves.iter().map(|l| l.path.join(".")).collect();
+    assert_eq!(
+        paths,
+        ["name", "Prereqs.TestRequires.Test::More", "Prereqs.perl"]
+    );
+    check(Format::Ini, text, "Prereqs.TestRequires.Test::More", "0.90");
+    assert_ne!(leaves[1].parent, leaves[2].parent);
+}

@@ -1,28 +1,8 @@
 //! Infrastructure and environment manifests: Terraform modules, Terragrunt, Packer, helmfile,
 //! Argo CD, Flux, Vagrant, Snapcraft, Flatpak, proto, aqua, Devbox, and Spack.
 
-use super::extract;
+use super::expect;
 use crate::catalog::file_type_of;
-
-/// Each dependency's name, requirement, and registry, for a document opened at `path`.
-fn found(path: &str, text: &str) -> Vec<(String, String, &'static str)> {
-    let file = file_type_of(path, text).unwrap_or_else(|| panic!("{path} not recognised"));
-    extract(file, text)
-        .into_iter()
-        .map(|d| {
-            assert_eq!(text[d.span.clone()], d.req, "span of {}", d.name);
-            (d.name, d.req, d.registry)
-        })
-        .collect()
-}
-
-fn expect(path: &str, text: &str, want: &[(&str, &str, &str)]) {
-    let want: Vec<_> = want
-        .iter()
-        .map(|(n, r, g)| ((*n).to_owned(), (*r).to_owned(), *g))
-        .collect();
-    assert_eq!(found(path, text), want, "{path}");
-}
 
 #[test]
 fn reads_terraform_git_modules() {

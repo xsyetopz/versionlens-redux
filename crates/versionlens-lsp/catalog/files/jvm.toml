@@ -106,6 +106,44 @@ format = 'xml'
 registry = 'maven'
 rules = [
     { record = 'ivy-module.dependencies.dependency', name = '@org:@name', version = '@rev' },
+    # An `override` sets the revision of a transitive module:
+    # ant.apache.org/ivy/history/latest-milestone/ivyfile/override.html
+    { record = 'ivy-module.dependencies.override', name = '@org:@module', version = '@rev' },
+]
+
+# Maven 1 names a dependency by `groupId` and `artifactId`, or by one `id` that serves as both:
+# maven.apache.org/maven-1.x/reference/maven-model/3.0.2/maven.html, and Commons Lang 2.0's
+# project.xml (github.com/apache/commons-lang/blob/LANG_2_0/project.xml).
+[[file]]
+id = 'maven1'
+globs = ['project.xml']
+format = 'xml'
+registry = 'maven'
+rules = [
+    { record = 'project.dependencies.dependency', name = 'groupId|id:artifactId|id', version = 'version' },
+]
+
+# Buildr writes an artifact as `group:id:type:version` or `group:id:type:classifier:version`:
+# buildr.apache.org/artifacts.html, and github.com/iron-io/iron_mq_java/blob/master/buildfile
+[[file]]
+id = 'buildr'
+globs = ['buildfile']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '''['"](?P<group>[\w.-]+):(?P<name>[\w.-]+):[a-z][\w-]*(?::[\w.-]+)?:(?P<version>\d[\w.+-]*)['"]''' },
+]
+
+# A NuGet package's own dependencies, flat or grouped by target framework:
+# learn.microsoft.com/nuget/reference/nuspec#dependencies-element
+[[file]]
+id = 'nuspec'
+globs = ['*.nuspec']
+format = 'xml'
+registry = 'nuget'
+rules = [
+    { record = 'package.metadata.dependencies.dependency', name = '@id', version = '@version' },
+    { record = 'package.metadata.dependencies.group.dependency', name = '@id', version = '@version' },
 ]
 
 [[file]]

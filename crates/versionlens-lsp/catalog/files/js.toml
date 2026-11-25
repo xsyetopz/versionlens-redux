@@ -70,6 +70,36 @@ rules = [
     { spec = 'scopes.*.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
 ]
 
+# Component names packages by GitHub repository, in `dependencies` and `development.dependencies`:
+# github.com/componentjs/spec/blob/master/component.json/specifications.md
+[[file]]
+id = 'component'
+globs = ['component.json']
+format = 'json'
+registry = 'github'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'development.dependencies' },
+]
+
+# PEAR 2.0 package.xml: `package` dependencies come from the PEAR channel and `extension` ones
+# from PECL, each with a `min` or `recommended` version:
+# pear.php.net/manual/en/guide.developers.package2.dependencies.php, and the package.xml of
+# github.com/pear/Console_Table and github.com/php-memcached-dev/php-memcached.
+[[file]]
+id = 'pear'
+globs = ['package.xml', 'package2.xml']
+format = 'xml'
+registry = 'pear'
+rules = [
+    { record = 'package.dependencies.required.package', name = 'name', version = 'min|recommended' },
+    { record = 'package.dependencies.optional.package', name = 'name', version = 'min|recommended' },
+    { record = 'package.dependencies.group.package', name = 'name', version = 'min|recommended' },
+    { record = 'package.dependencies.required.extension', name = 'name', version = 'min|recommended', via = 'pecl' },
+    { record = 'package.dependencies.optional.extension', name = 'name', version = 'min|recommended', via = 'pecl' },
+    { record = 'package.dependencies.group.extension', name = 'name', version = 'min|recommended', via = 'pecl' },
+]
+
 [[file]]
 id = 'unity'
 globs = ['Packages/manifest.json']

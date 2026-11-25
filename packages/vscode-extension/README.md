@@ -36,6 +36,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json`, `composer.lock` |
+| PEAR and PECL channels | | `package.xml`, `package2.xml` (PEAR 2.0 `package` and `extension` dependencies) |
 | PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml`, `poetry.lock`, `uv.lock` |
 | conda-forge | GIT (the GitHub repository its `dev_url` names) | `environment.yml`, `environment.yaml`, `pixi.toml` |
 | Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
@@ -43,15 +44,15 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec`, `Gemfile.lock`, `gems.locked` |
 | CocoaPods | GIT (the GitHub repository the podspec's `source` names) | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
-| NuGet | NuGet | MSBuild SDKs and packages in `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json` |
-| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, `ivy.xml`, `.mvn/extensions.xml`, `*.main.kts` |
+| NuGet | NuGet | MSBuild SDKs and packages in `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json`, `*.nuspec` |
+| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, `ivy.xml` (with `override`s), Maven 1 `project.xml`, Buildr `buildfile`, `.mvn/extensions.xml`, `*.main.kts` |
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
 | Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
 | Elm packages | GIT (`github.com/author/package`) | `elm.json` |
 | Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs, and `oci://` chart dependencies in `Chart.yaml` |
-| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix`, Terraform and Terragrunt `git::` module sources with `?ref=`, Flux `GitRepository` tags, `snapcraft.yaml` `source-tag`, Flatpak manifest git `tag`s, `aqua.yaml` |
+| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix`, Terraform and Terragrunt `git::` module sources with `?ref=`, Flux `GitRepository` tags, `snapcraft.yaml` `source-tag`, Flatpak manifest git `tag`s, `aqua.yaml`, `component.json` |
 | Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
 | Helm repositories | Artifact Hub image scans | `Chart.yaml`, Argo CD `Application` charts (`argocd/`, `argo-cd/`, `clusters/`, and Kubernetes manifest folders) |
 | Artifact Hub | Artifact Hub image scans | `helmfile.yaml`, `helmfile.yaml.gotmpl`, `helmfile.d/*.yaml` (`repo/chart` releases) |
@@ -67,7 +68,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | vcpkg | GIT (the GitHub repository the port's `vcpkg_from_github` names) | `vcpkg.json` |
 | ConanCenter | GitLab Advisory Database | `conanfile.txt`, `conanfile.py` |
 | CRAN | CRAN | `DESCRIPTION`, `renv.lock` |
-| MetaCPAN | GIT (the GitHub repository the release's `repository` names) | `cpanfile` |
+| MetaCPAN | GIT (the GitHub repository the release's `repository` names) | `cpanfile`, `META.json`, `META.yml`, `MYMETA.json`, `MYMETA.yml`, `dist.ini` |
 | DUB | GIT (the GitHub repository the package names) | `dub.json`, `dub.selections.json`, `dub.sdl` |
 | opam | opam | `opam`, `*.opam`, `dune-project` |
 | Hackage | Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |

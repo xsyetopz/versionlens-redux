@@ -58,7 +58,7 @@ The release and Marketplace publication procedure is documented in [`docs/releas
 
 ## Adding a File Type
 
-Add one `[[file]]` row to the group file for its ecosystem in [`crates/versionlens-lsp/catalog/files/`](crates/versionlens-lsp/catalog/files): its globs, its format (`json`, `toml`, `yaml`, `xml`, or `text`), its registry id, and the rules that locate dependencies. A new registry is one `[[registry]]` row in [`catalog/registries/`](crates/versionlens-lsp/catalog/registries). The server embeds these TOML files, and each one's header comment gives its row format. JetBrains and Neovim read the globs from `versionlens-lsp --file-types`, and VS Code reads them from `capabilities.experimental.fileTypes` in the initialize result, so they need no change. Zed picks files by language, so a manifest in a language that [`extension.toml`](packages/zed-extension/extension.toml) does not list needs that language added there.
+Add one `[[file]]` row to the group file for its ecosystem in [`crates/versionlens-lsp/catalog/files/`](crates/versionlens-lsp/catalog/files): its globs, its format (`json`, `toml`, `yaml`, `xml`, `ini`, or `text`), its registry id, and the rules that locate dependencies. A new registry is one `[[registry]]` row in [`catalog/registries/`](crates/versionlens-lsp/catalog/registries). The server embeds these TOML files, and each one's header comment gives its row format. JetBrains and Neovim read the globs from `versionlens-lsp --file-types`, and VS Code reads them from `capabilities.experimental.fileTypes` in the initialize result, so they need no change. Zed picks files by language, so a manifest in a language that [`extension.toml`](packages/zed-extension/extension.toml) does not list needs that language added there.
 
 ## Asset Policy
 

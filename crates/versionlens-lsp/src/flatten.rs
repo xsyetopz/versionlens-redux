@@ -1,4 +1,4 @@
-//! Flattens JSON, TOML, YAML, and XML documents into scalar leaves with byte spans, so one set of
+//! Flattens JSON, TOML, YAML, XML, and INI documents into scalar leaves with byte spans, so one set of
 //! path rules reads every structured manifest the same way.
 
 use std::ops::Range;
@@ -12,6 +12,7 @@ pub(crate) enum Format {
     Toml,
     Yaml,
     Xml,
+    Ini,
     /// Read only by line rules.
     Text,
 }
@@ -56,6 +57,7 @@ pub(crate) fn flatten(format: Format, text: &str) -> Vec<Leaf> {
         Format::Toml => toml(text, &mut out),
         Format::Yaml => yaml(text, &mut out),
         Format::Xml => xml(text, &mut out),
+        Format::Ini => ini(text, &mut out),
         Format::Text => {}
     }
     out.leaves
@@ -288,6 +290,41 @@ fn scalar(raw: &str) -> &str {
         return raw[1..].find(quote).map_or(raw, |end| &raw[..end + 2]);
     }
     raw.find(" #").map_or(raw, |end| &raw[..end]).trim_end()
+}
+
+/// `key = value` lines under `[section]` headers, as `Config::MVP` reads them for the
+/// `dist.ini` of `Dist::Zilla`: a header's ` / ` separates the plugin from its name, so `[Prereqs / TestRequires]`
+/// becomes the path `Prereqs.TestRequires`, and `;` starts a comment at a line's start or after a
+/// space: <https://metacpan.org/pod/Config::MVP::Reader::INI>. A line rule cannot tell which
+/// section a line sits in, as the regex crate has no lookbehind and its matches do not overlap.
+fn ini(text: &str, out: &mut Out) {
+    let mut section = 0;
+    let mut offset = 0;
+    for line in text.split_inclusive('\n') {
+        let start = offset;
+        offset += line.len();
+        let body = line.trim_end_matches(['\n', '\r']).trim();
+        if body.is_empty() || body.starts_with([';', '#']) {
+            continue;
+        }
+        if let Some(header) = body.strip_prefix('[').and_then(|b| b.strip_suffix(']')) {
+            out.path = header.split('/').map(|p| p.trim().to_owned()).collect();
+            section = out.id();
+            continue;
+        }
+        let Some((key, value)) = body.split_once('=') else {
+            continue;
+        };
+        let value = value.find(" ;").map_or(value, |end| &value[..end]).trim();
+        if value.is_empty() {
+            continue;
+        }
+        let after = line.find('=').map_or(0, |eq| eq + 1);
+        let at = start + after + line[after..].find(value).unwrap_or(0);
+        out.path.push(key.trim().to_owned());
+        out.leaf(value, at..at + value.len(), section);
+        out.path.pop();
+    }
 }
 
 /// Elements become path segments, attributes `@name` children, and text the element's value.

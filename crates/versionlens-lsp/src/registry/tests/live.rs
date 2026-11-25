@@ -105,6 +105,8 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("vagrant", "bento/ubuntu-22.04", None, None),
     ("packer", "hashicorp/amazon", None, Some("v1.0.0")),
     ("spack", "zlib", None, None),
+    ("pear", "Console_Table", None, None),
+    ("pecl", "igbinary", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
