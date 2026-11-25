@@ -1,24 +1,16 @@
-//! Every package registry as one data row: where its version list lives and how to read it.
-//! Supporting a new registry means adding a row here.
+//! Every package registry as one row of `catalog/registries/`: where its version list lives, how
+//! to read it, where OSV files its advisories, and the page that shows a package. Supporting a
+//! new registry means adding a row there.
 
+use std::sync::LazyLock;
+
+use crate::data::{self, Row};
 use crate::version::Bare;
 
-/// An [`Registry::upstream`] pattern for a GitHub URL that follows `before`, up to its closing
-/// quote, without a `.git` suffix or trailing slash.
-macro_rules! github {
-    ($before:literal) => {
-        concat!(
-            $before,
-            r#"https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?""#
-        )
-    };
-}
-
 mod parse;
-mod tools;
 
 /// How a registry response lists versions.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum Parse {
     /// JSON: `at` is a `/`-separated path (a `{name}` segment is the package name) to an array,
     /// object, or string. `field` picks each element's field (`a|b` takes the first present),
@@ -36,7 +28,7 @@ pub(crate) enum Parse {
 }
 
 /// A package registry.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Registry {
     pub(crate) id: &'static str,
     /// URL template; see [`expand`] for the placeholders.
@@ -66,6 +58,10 @@ pub(crate) struct Registry {
     pub(crate) fallback: &'static str,
     /// Whether the registry splits a version list over pages its `Link` headers name.
     pub(crate) paged: bool,
+    /// The URL template of a package's page; empty where the registry has none.
+    pub(crate) page: &'static str,
+    /// Page templates by image host, such as `ghcr.io`, that outrank `page` for images there.
+    pub(crate) pages: &'static [(&'static str, &'static str)],
 }
 
 /// The filters a requirement pages by, for a registry with filtered pages: its leading number
@@ -95,508 +91,113 @@ pub(crate) struct Versions {
     pub(crate) deprecated: Vec<String>,
 }
 
-const fn json(
-    id: &'static str,
-    url: &'static str,
-    at: &'static str,
-    field: &'static str,
-    bare: Bare,
-    osv: Option<&'static str>,
-) -> Registry {
-    Registry {
-        id,
-        url,
-        parse: Parse::Json {
+static FILES: &[(&str, &str)] = &[
+    (
+        "registries/packages.toml",
+        include_str!("../catalog/registries/packages.toml"),
+    ),
+    (
+        "registries/tools.toml",
+        include_str!("../catalog/registries/tools.toml"),
+    ),
+];
+
+/// Every registry, in catalog order.
+pub(crate) static REGISTRIES: LazyLock<Vec<Registry>> =
+    LazyLock::new(|| load().expect("the embedded registry catalog loads"));
+
+fn load() -> Result<Vec<Registry>, String> {
+    let mut all = Vec::new();
+    for (file, text) in FILES {
+        for row in data::rows(file, text, "registry")? {
+            all.push(registry(&row)?);
+        }
+    }
+    Ok(all)
+}
+
+/// One `[[registry]]` row. It reads its versions with exactly one of `json` (a path, with
+/// optional `field` and `latest`), `regex`, or `reader`, a name from [`parse::reader`].
+fn registry(row: &Row) -> Result<Registry, String> {
+    row.only(&[
+        "id",
+        "url",
+        "json",
+        "field",
+        "latest",
+        "regex",
+        "reader",
+        "bare",
+        "osv",
+        "osv_name",
+        "upstream",
+        "accept",
+        "yanked",
+        "deprecated",
+        "filtered",
+        "fallback",
+        "paged",
+        "page",
+        "pages",
+    ])?;
+    let parse = match (row.opt("json")?, row.opt("regex")?, row.opt("reader")?) {
+        (Some(at), None, None) => Parse::Json {
             at,
-            field,
-            latest: "",
+            field: row.text("field")?,
+            latest: row.text("latest")?,
         },
+        (None, Some(pattern), None) => Parse::Regex(pattern),
+        (None, None, Some(name)) => {
+            Parse::Fn(parse::reader(name).ok_or_else(|| row.error(&format!("no reader {name}")))?)
+        }
+        _ => return Err(row.error("needs exactly one of json, regex, and reader")),
+    };
+    let accept = if matches!(parse, Parse::Json { .. }) {
+        "application/json"
+    } else {
+        "*/*"
+    };
+    let bare = match row.need("bare")? {
+        "exact" => Bare::Exact,
+        "caret" => Bare::Caret,
+        "min" => Bare::Min,
+        "prefix" => Bare::Prefix,
+        other => {
+            return Err(row.error(&format!("bare {other} is not exact, caret, min, or prefix")));
+        }
+    };
+    Ok(Registry {
+        id: row.need("id")?,
+        url: row.need("url")?,
+        parse,
         bare,
-        osv,
-        osv_name: "{name}",
-        upstream: "",
-        accept: "application/json",
-        yanked: "",
-        deprecated: "",
-        filtered: "",
-        fallback: "",
-        paged: false,
-    }
+        osv: row.opt("osv")?,
+        osv_name: row.opt("osv_name")?.unwrap_or("{name}"),
+        upstream: row.text("upstream")?,
+        accept: row.opt("accept")?.unwrap_or(accept),
+        yanked: row.text("yanked")?,
+        deprecated: row.text("deprecated")?,
+        filtered: row.text("filtered")?,
+        fallback: row.text("fallback")?,
+        paged: row.flag("paged")?,
+        page: row.text("page")?,
+        pages: row.pairs("pages")?.leak(),
+    })
 }
-
-const fn text(
-    id: &'static str,
-    url: &'static str,
-    pattern: &'static str,
-    bare: Bare,
-    osv: Option<&'static str>,
-) -> Registry {
-    Registry {
-        id,
-        url,
-        parse: Parse::Regex(pattern),
-        bare,
-        osv,
-        osv_name: "{name}",
-        upstream: "",
-        accept: "*/*",
-        yanked: "",
-        deprecated: "",
-        filtered: "",
-        fallback: "",
-        paged: false,
-    }
-}
-
-const MAVEN_VERSIONS: &str = r"<version>([^<]+)</version>";
-
-const GITHUB: Registry = Registry {
-    osv_name: "github.com/{name}",
-    ..json(
-        "github",
-        "https://api.github.com/repos/{name}/tags?per_page=100",
-        "",
-        "name",
-        Bare::Prefix,
-        Some("GIT"),
-    )
-};
-
-pub(crate) static REGISTRIES: &[Registry] = &[
-    Registry {
-        parse: Parse::Fn(parse::cargo),
-        ..text(
-            "cargo",
-            "https://index.crates.io/{cargo}",
-            "",
-            Bare::Caret,
-            Some("crates.io"),
-        )
-    },
-    Registry {
-        accept: "application/vnd.npm.install-v1+json",
-        deprecated: "deprecated",
-        parse: Parse::Json {
-            at: "versions",
-            field: "@key",
-            latest: "dist-tags/latest",
-        },
-        ..json(
-            "npm",
-            "https://registry.npmjs.org/{enc}",
-            "",
-            "",
-            Bare::Exact,
-            Some("npm"),
-        )
-    },
-    Registry {
-        yanked: "yanked",
-        parse: Parse::Json {
-            at: "versions",
-            field: "@key",
-            latest: "latest",
-        },
-        osv_name: "https://jsr.io/{name}",
-        upstream: github!(r#"href=""#),
-        ..json(
-            "jsr",
-            "https://jsr.io/{name}/meta.json",
-            "",
-            "",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    Registry {
-        deprecated: "deprecated",
-        parse: Parse::Json {
-            at: "versions",
-            field: "@key",
-            latest: "dist-tags/latest",
-        },
-        ..json(
-            "unity",
-            "https://packages.unity.com/{name}",
-            "",
-            "",
-            Bare::Exact,
-            None,
-        )
-    },
-    Registry {
-        accept: "application/vnd.pypi.simple.v1+json",
-        ..json(
-            "pypi",
-            "https://pypi.org/simple/{name}/",
-            "versions",
-            "",
-            Bare::Exact,
-            Some("PyPI"),
-        )
-    },
-    json(
-        "composer",
-        "https://repo.packagist.org/p2/{name}.json",
-        "packages/{name}",
-        "version",
-        Bare::Exact,
-        Some("Packagist"),
-    ),
-    text(
-        "go",
-        "https://proxy.golang.org/{go}/@v/list",
-        r"(?m)^(v\S+)$",
-        Bare::Exact,
-        Some("Go"),
-    ),
-    json(
-        "rubygems",
-        "https://rubygems.org/api/v1/versions/{name}.json",
-        "",
-        "number",
-        Bare::Exact,
-        Some("RubyGems"),
-    ),
-    Registry {
-        osv_name: "https://trunk.cocoapods.org/api/v1/pods/{name}/specs/latest",
-        upstream: github!(r#""git":\s*""#),
-        ..json(
-            "cocoapods",
-            "https://trunk.cocoapods.org/api/v1/pods/{name}",
-            "versions",
-            "name",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    Registry {
-        yanked: "retracted",
-        parse: Parse::Json {
-            at: "versions",
-            field: "version",
-            latest: "latest/version",
-        },
-        ..json(
-            "pub",
-            "https://pub.dev/api/packages/{name}",
-            "",
-            "",
-            Bare::Exact,
-            Some("Pub"),
-        )
-    },
-    json(
-        "nuget",
-        "https://api.nuget.org/v3-flatcontainer/{lower}/index.json",
-        "versions",
-        "",
-        Bare::Min,
-        Some("NuGet"),
-    ),
-    text(
-        "maven",
-        "https://repo1.maven.org/maven2/{path}/maven-metadata.xml",
-        MAVEN_VERSIONS,
-        Bare::Exact,
-        Some("Maven"),
-    ),
-    // Leiningen writes `group/artifact`, and a bare `name` for `name/name`; OSV wants `group:artifact`.
-    // Leiningen and the Clojure CLI search Maven Central too, where `org.clojure/clojure` lives.
-    Registry {
-        osv_name: "{group}:{artifact}",
-        fallback: "https://repo1.maven.org/maven2/{path}/maven-metadata.xml",
-        ..text(
-            "clojars",
-            "https://repo.clojars.org/{path}/maven-metadata.xml",
-            MAVEN_VERSIONS,
-            Bare::Exact,
-            Some("Maven"),
-        )
-    },
-    json(
-        "hex",
-        "https://hex.pm/api/packages/{name}",
-        "releases",
-        "version",
-        Bare::Exact,
-        Some("Hex"),
-    ),
-    text(
-        "julia",
-        "https://raw.githubusercontent.com/JuliaRegistries/General/master/{First}/{name}/Versions.toml",
-        r#"(?m)^\["([^"]+)"\]"#,
-        Bare::Caret,
-        Some("Julia"),
-    ),
-    Registry {
-        osv_name: "https://lib.haxe.org/p/{name}/",
-        upstream: github!(r#"github-user-website"[^\n]*?href=""#),
-        ..text(
-            "haxelib",
-            "https://lib.haxe.org/p/{name}/versions/",
-            r"haxelib install \S+ ([0-9][\w.+-]*)",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    // OSV has no image ecosystem; its Bitnami ecosystem files the advisories of the application
-    // an image's tag versions, such as nginx in `nginx:1.20.0-alpine`.
-    Registry {
-        filtered: "https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100&name={filter}",
-        osv_name: "{app}",
-        ..json(
-            "docker",
-            "https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100",
-            "results",
-            "name",
-            Bare::Prefix,
-            Some("Bitnami"),
-        )
-    },
-    // An image on any registry but Docker Hub, through the OCI distribution API; see [`route`].
-    Registry {
-        paged: true,
-        osv_name: "{app}",
-        ..json(
-            "oci",
-            "https://{host}/v2/{repo}/tags/list?n=1000",
-            "tags",
-            "",
-            Bare::Prefix,
-            Some("Bitnami"),
-        )
-    },
-    // OSV's GitHub Actions ecosystem has no version order, so a versioned query never matches;
-    // its GIT ecosystem matches the repository's exact tag, for actions and C/C++ sources alike.
-    GITHUB,
-    // Swift packages are GitHub repositories; OSV files their advisories under SwiftURL.
-    Registry {
-        id: "swift",
-        osv: Some("SwiftURL"),
-        ..GITHUB
-    },
-    Registry {
-        accept: "*/*",
-        parse: Parse::Fn(parse::helm),
-        // OSV has no Helm ecosystem; Artifact Hub scans the images each chart version deploys.
-        osv_name: "{source} {name}",
-        ..json(
-            "helm",
-            "{source}/index.yaml",
-            "",
-            "",
-            Bare::Exact,
-            Some(crate::osv::ARTIFACT_HUB),
-        )
-    },
-    Registry {
-        osv_name: "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{ns}/{short}/versions/{version}/",
-        upstream: github!(r#""repository":\s*""#),
-        ..json(
-            "galaxy",
-            "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{ns}/{short}/versions/?limit=100",
-            "data",
-            "version",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    Registry {
-        parse: Parse::Fn(tools::terraform),
-        osv_name: "https://registry.terraform.io/v1/{tf}",
-        upstream: github!(r#""source":\s*""#),
-        ..json(
-            "terraform",
-            "https://registry.terraform.io/v1/{tf}/versions",
-            "",
-            "",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    Registry {
-        osv_name: "https://bcr.bazel.build/modules/{name}/metadata.json",
-        upstream: r#""github:(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)""#,
-        ..json(
-            "bazel",
-            "https://bcr.bazel.build/modules/{name}/metadata.json",
-            "versions",
-            "",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    Registry {
-        osv_name: "https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/{name}/portfile.cmake",
-        upstream: r"REPO[ \t]+(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)\s",
-        ..json(
-            "vcpkg",
-            "https://raw.githubusercontent.com/microsoft/vcpkg/master/versions/{first}-/{name}.json",
-            "versions",
-            "version|version-semver|version-string|version-date",
-            Bare::Min,
-            Some("GIT"),
-        )
-    },
-    Registry {
-        // OSV has no Conan ecosystem; the GitLab Advisory Database files advisories by slug.
-        osv_name: "conan/{name}",
-        ..text(
-            "conan",
-            "https://raw.githubusercontent.com/conan-io/conan-center-index/master/recipes/{name}/config.yml",
-            r#"(?m)^  "?(\d[^":\s]*)"?:"#,
-            Bare::Exact,
-            Some(crate::osv::GITLAB),
-        )
-    },
-    json(
-        "cran",
-        "https://crandb.r-pkg.org/{name}",
-        "Version",
-        "",
-        Bare::Min,
-        Some("CRAN"),
-    ),
-    Registry {
-        osv_name: "https://fastapi.metacpan.org/v1/release/{dist}",
-        upstream: github!(r#""web"\s*:\s*""#),
-        ..json(
-            "cpan",
-            "https://fastapi.metacpan.org/v1/download_url/{name}",
-            "version",
-            "",
-            Bare::Min,
-            Some("GIT"),
-        )
-    },
-    Registry {
-        osv_name: "https://code.dlang.org/api/packages/{name}/info",
-        upstream: r#""kind":"github","owner":"(?P<owner>[^"]+)","project":"(?P<repo>[^"]+)""#,
-        ..json(
-            "dub",
-            "https://code.dlang.org/api/packages/{name}/info",
-            "versions",
-            "version",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    json(
-        "hackage",
-        "https://hackage.haskell.org/package/{name}/preferred",
-        "normal-version",
-        "",
-        Bare::Exact,
-        Some("Hackage"),
-    ),
-    text(
-        "opam",
-        "https://opam.ocaml.org/packages/{name}/",
-        r#"href="\.\./([^/]+)/[^/]+?\.(\d[^/"]*)/""#,
-        Bare::Exact,
-        Some("opam"),
-    ),
-    // Puppetfile names a module `owner/name` or `owner-name`; extraction joins it as `owner:name`.
-    Registry {
-        osv_name: "https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference",
-        upstream: github!(r#""source":\s*""#),
-        ..json(
-            "puppet",
-            "https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference",
-            "releases",
-            "version",
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-    // Supermarket lists each version as a URL; `latest_version` is skipped by its `:` before the quote.
-    Registry {
-        osv_name: "https://supermarket.chef.io/api/v1/cookbooks/{name}",
-        upstream: github!(r#""source_url":\s*""#),
-        ..text(
-            "chef",
-            "https://supermarket.chef.io/api/v1/cookbooks/{name}",
-            r#"[\[,]"[^"]*/versions/([^"]+)""#,
-            Bare::Exact,
-            Some("GIT"),
-        )
-    },
-];
-
-const PAGES: &[(&str, &str)] = &[
-    ("cargo", "https://crates.io/crates/{name}"),
-    ("npm", "https://www.npmjs.com/package/{name}"),
-    ("jsr", "https://jsr.io/{name}"),
-    ("unity", "https://packages.unity.com/{name}"),
-    ("pypi", "https://pypi.org/project/{name}/"),
-    ("composer", "https://packagist.org/packages/{name}"),
-    ("go", "https://pkg.go.dev/{name}"),
-    ("rubygems", "https://rubygems.org/gems/{name}"),
-    ("cocoapods", "https://cocoapods.org/pods/{name}"),
-    ("pub", "https://pub.dev/packages/{name}"),
-    ("nuget", "https://www.nuget.org/packages/{name}"),
-    (
-        "maven",
-        "https://central.sonatype.com/artifact/{group}/{artifact}",
-    ),
-    // cljdoc covers Clojars and Maven Central alike, as the Clojure tools search both.
-    ("clojars", "https://cljdoc.org/d/{group}/{artifact}"),
-    ("hex", "https://hex.pm/packages/{name}"),
-    ("julia", "https://juliahub.com/ui/Packages/General/{name}"),
-    ("haxelib", "https://lib.haxe.org/p/{name}/"),
-    ("docker", "https://hub.docker.com/r/{docker}"),
-    ("oci", "https://explore.ggcr.dev/?repo={name}"),
-    ("oci ghcr.io", "https://ghcr.io/{repo}"),
-    ("oci quay.io", "https://quay.io/repository/{repo}"),
-    (
-        "oci mcr.microsoft.com",
-        "https://mcr.microsoft.com/artifact/mar/{repo}",
-    ),
-    ("oci public.ecr.aws", "https://gallery.ecr.aws/{repo}"),
-    (
-        "oci registry.gitlab.com",
-        "https://gitlab.com/{repo}/container_registry",
-    ),
-    ("github", "https://github.com/{name}"),
-    ("swift", "https://github.com/{name}"),
-    (
-        "helm",
-        "https://artifacthub.io/packages/search?ts_query_web={name}",
-    ),
-    (
-        "galaxy",
-        "https://galaxy.ansible.com/ui/repo/published/{ns}/{short}/",
-    ),
-    ("terraform", "https://registry.terraform.io/{tf}"),
-    ("bazel", "https://registry.bazel.build/modules/{name}"),
-    ("vcpkg", "https://vcpkg.io/en/package/{name}"),
-    ("conan", "https://conan.io/center/recipes/{name}"),
-    ("cran", "https://cran.r-project.org/package={name}"),
-    ("cpan", "https://metacpan.org/pod/{name}"),
-    ("dub", "https://code.dlang.org/packages/{name}"),
-    ("hackage", "https://hackage.haskell.org/package/{name}"),
-    ("opam", "https://opam.ocaml.org/packages/{name}/"),
-    (
-        "puppet",
-        "https://forge.puppet.com/modules/{group}/{artifact}",
-    ),
-    ("chef", "https://supermarket.chef.io/cookbooks/{name}"),
-];
 
 /// The human-readable page for a package.
 pub(crate) fn page(id: &str, name: &str) -> String {
-    let id = get(id).map_or(id, |registry| route(registry, name).id);
-    // An image's page depends on its host, so `oci quay.io` outranks `oci`.
-    let keys = [
-        image_host(name).map(|host| format!("{id} {host}")),
-        Some(id.to_owned()),
-    ];
-    let template = keys
-        .iter()
-        .flatten()
-        .find_map(|key| PAGES.iter().chain(tools::PAGES).find(|(k, _)| k == key))
-        .map_or("https://osv.dev/list?q={name}", |(_, t)| t);
+    let template = get(id)
+        .map(|registry| route(registry, name))
+        .and_then(|registry| {
+            // An image's page depends on its host, so a quay.io page outranks the OCI one.
+            let host = image_host(name);
+            let by_host = registry.pages.iter().find(|(h, _)| Some(*h) == host);
+            by_host
+                .map(|(_, t)| *t)
+                .or_else(|| (!registry.page.is_empty()).then_some(registry.page))
+        })
+        .unwrap_or("https://osv.dev/list?q={name}");
     expand(template, name, None)
         .unwrap_or_else(|_| format!("https://www.google.com/search?q={name}"))
 }
@@ -621,7 +222,7 @@ fn image_host(name: &str) -> Option<&str> {
 
 /// The registry with this id.
 pub(crate) fn get(id: &str) -> Option<&'static Registry> {
-    REGISTRIES.iter().chain(tools::ROWS).find(|r| r.id == id)
+    REGISTRIES.iter().find(|r| r.id == id)
 }
 
 /// Maps a registry named inside a requirement, such as deno's `npm:` prefix, to its row.

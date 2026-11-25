@@ -1,0 +1,146 @@
+# .NET and JVM manifests; see native.toml for the row format.
+
+[[file]]
+id = 'paket'
+globs = ['paket.dependencies']
+format = 'text'
+registry = 'nuget'
+rules = [
+    { lines = '(?m)^[ \t]*nuget[ \t]+(?P<name>[\w.-]+)[ \t]+(?P<version>(?:[~><=]+[ \t]*)?\d[\w.-]*)' },
+]
+
+# `paket.references` names a project's packages; their versions live in `paket.dependencies`.
+[[file]]
+id = 'paket-references'
+globs = ['paket.references']
+format = 'text'
+registry = 'nuget'
+rules = [
+    { lines = '(?m)^[ \t]*(?P<name>[A-Za-z_][\w.-]*)[ \t]*\r?$' },
+]
+
+[[file]]
+id = 'nuget'
+globs = ['*.csproj', '*.fsproj', '*.vbproj', '*.props', '*.targets', 'packages.config']
+format = 'xml'
+registry = 'nuget'
+rules = [{ use = 'NUGET' }]
+
+[[file]]
+id = 'dotnet-tools'
+globs = ['dotnet-tools.json']
+format = 'json'
+registry = 'nuget'
+rules = [
+    { keys = 'tools' },
+]
+
+[[file]]
+id = 'maven'
+globs = ['pom.xml']
+format = 'xml'
+registry = 'maven'
+rules = [{ use = 'POM' }]
+
+[[file]]
+id = 'gradle'
+globs = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '''["'](?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)["']''' },
+]
+
+[[file]]
+id = 'gradle-catalog'
+globs = ['libs.versions.toml', '*.versions.toml']
+format = 'toml'
+registry = 'maven'
+rules = [
+    { spec = 'libraries.*', pattern = '${MAVEN_SPEC}' },
+    { record = 'libraries.*', name = 'module', version = 'version' },
+    { record = 'libraries.*', name = 'group:name', version = 'version' },
+]
+
+[[file]]
+id = 'sbt'
+globs = ['*.sbt']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"' },
+]
+
+[[file]]
+id = 'deps-edn'
+globs = ['deps.edn']
+format = 'text'
+registry = 'clojars'
+rules = [
+    { lines = '(?P<name>[\w.-]+/[\w.-]+)\s+\{\s*:mvn/version\s+"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'ivy'
+globs = ['ivy.xml']
+format = 'xml'
+registry = 'maven'
+rules = [
+    { record = 'ivy-module.dependencies.dependency', name = '@org:@name', version = '@rev' },
+]
+
+[[file]]
+id = 'leiningen'
+globs = ['project.clj']
+format = 'text'
+registry = 'clojars'
+rules = [
+    { lines = '\[(?P<name>[\w.-]+(?:/[\w.-]+)?)\s+"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'dotnet-project-json'
+globs = ['project.json']
+format = 'json'
+registry = 'nuget'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'frameworks.*.dependencies' },
+]
+
+[[file]]
+id = 'global-json'
+globs = ['global.json']
+format = 'json'
+registry = 'nuget'
+rules = [
+    { keys = 'msbuild-sdks' },
+]
+
+[[file]]
+id = 'maven-extensions'
+globs = ['.mvn/extensions.xml']
+format = 'xml'
+registry = 'maven'
+rules = [
+    { record = 'extensions.extension', name = 'groupId:artifactId', version = 'version' },
+]
+
+[[file]]
+id = 'kotlin-script'
+globs = ['*.main.kts']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '@file:DependsOn\("(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)"\)' },
+]
+
+[[file]]
+id = 'gradle-wrapper'
+globs = ['gradle-wrapper.properties']
+format = 'text'
+registry = 'gradle-dist'
+rules = [
+    { lines = 'distributionUrl=.*?/(?P<name>gradle)-(?P<version>\d[\w.-]*?)-(?:bin|all)\.zip' },
+]
+

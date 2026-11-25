@@ -1,0 +1,155 @@
+# Containers, CI, orchestration, and infrastructure files; see native.toml for the row format.
+
+[[file]]
+id = 'dockerfile'
+globs = ['Dockerfile', 'dockerfile', '*.Dockerfile', '*.dockerfile', 'Dockerfile.*', 'Containerfile', 'Earthfile']
+format = 'text'
+registry = 'docker'
+rules = [
+    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)' },
+]
+
+[[file]]
+id = 'compose'
+globs = ['compose.yaml', 'compose.yml', 'compose.*.yaml', 'compose.*.yml', 'docker-compose*.yaml', 'docker-compose*.yml', '*.compose.yaml', '*.compose.yml']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { spec = 'services.*.image', pattern = '${DOCKER}' },
+]
+
+[[file]]
+id = 'kustomize'
+globs = ['kustomization.yaml', 'kustomization.yml', 'Kustomization']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { record = 'images.*', name = 'name', version = 'newTag' },
+]
+
+[[file]]
+id = 'github-actions'
+globs = ['.github/workflows/**/*.yml', '.github/workflows/**/*.yaml', '.github/actions/**/*.yml', '.github/actions/**/*.yaml', 'action.yml', 'action.yaml']
+format = 'yaml'
+registry = 'github'
+rules = [
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION}' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION}' },
+    { spec = 'runs.steps.*.uses', pattern = '${ACTION}' },
+    { lines = '${IMAGE_LINE}', via = 'docker' },
+    { lines = '''(?m)uses:[ \t]*["']?docker://(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)''', via = 'docker' },
+]
+
+# CI services and dev environments that name images under `image:` keys at any depth.
+[[file]]
+id = 'ci-images'
+globs = ['bitbucket-pipelines.yml', '.drone.yml', '.woodpecker.yml', '.woodpecker.yaml', '.woodpecker/*.yml', '.woodpecker/*.yaml', '.gitpod.yml', '.cirrus.yml', 'azure-pipelines.yml', 'azure-pipelines.yaml', 'cloudbuild.yaml', 'cloudbuild.yml']
+format = 'text'
+registry = 'docker'
+rules = [
+    { lines = '${IMAGE_LINE}' },
+]
+
+# Kubernetes manifests have no fixed name; these are the folders and suffixes that hold them.
+[[file]]
+id = 'kubernetes'
+globs = ['k8s/**/*.yaml', 'k8s/**/*.yml', 'kubernetes/**/*.yaml', 'kubernetes/**/*.yml', 'manifests/**/*.yaml', 'manifests/**/*.yml', 'deploy/**/*.yaml', 'deploy/**/*.yml', '*.k8s.yaml', '*.k8s.yml', 'skaffold.yaml', 'tilt.yaml']
+format = 'text'
+registry = 'docker'
+rules = [
+    { lines = '${IMAGE_LINE}' },
+]
+
+# Helm chart values split an image into `repository` and `tag`, at the top or under a component.
+[[file]]
+id = 'helm-values'
+globs = ['values.yaml', 'values.yml', 'values-*.yaml', 'values.*.yaml']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { lines = '${IMAGE_LINE}' },
+    { record = 'image', name = 'repository', version = 'tag' },
+    { record = '*.image', name = 'repository', version = 'tag' },
+]
+
+[[file]]
+id = 'puppetfile'
+globs = ['Puppetfile']
+format = 'text'
+registry = 'puppet'
+rules = [
+    { lines = '''(?m)^[ \t]*mod[ \t]+["'](?P<group>[A-Za-z0-9]+)[-/](?P<name>[a-z][a-z0-9_]*)["'][ \t]*,[ \t]*["'](?P<version>\d[^"']*)["']''' },
+]
+
+[[file]]
+id = 'chef'
+globs = ['Berksfile', 'metadata.rb']
+format = 'text'
+registry = 'chef'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:cookbook|depends)[ \t]+["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+]
+
+[[file]]
+id = 'helm'
+globs = ['Chart.yaml']
+format = 'yaml'
+registry = 'helm'
+rules = [
+    { record = 'dependencies.*', name = 'name', version = 'version', source = 'repository' },
+]
+
+[[file]]
+id = 'ansible'
+globs = ['requirements.yml', 'requirements.yaml', 'galaxy.yml']
+format = 'yaml'
+registry = 'galaxy'
+rules = [
+    { record = 'collections.*', name = 'name', version = 'version' },
+    { keys = 'dependencies' },
+]
+
+[[file]]
+id = 'terraform'
+globs = ['*.tf', '*.tofu']
+format = 'text'
+registry = 'terraform'
+rules = [
+    { lines = '(?m)source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"[ \t]*\r?\n[ \t]*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'terraform-lock'
+globs = ['.terraform.lock.hcl']
+format = 'text'
+registry = 'terraform'
+rules = [
+    { lines = 'provider[ \t]+"registry\.terraform\.io/(?P<name>[\w-]+/[\w-]+)"[ \t]*\{\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'gitlab-ci'
+globs = ['.gitlab-ci.yml', '.gitlab-ci.yaml']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { spec = 'image', pattern = '${DOCKER}' },
+    { spec = 'image.name', pattern = '${DOCKER}' },
+    { spec = 'services.*', pattern = '${DOCKER}' },
+    { spec = 'services.*.name', pattern = '${DOCKER}' },
+    { spec = '*.image', pattern = '${DOCKER}' },
+    { spec = '*.image.name', pattern = '${DOCKER}' },
+    { spec = '*.services.*', pattern = '${DOCKER}' },
+    { spec = '*.services.*.name', pattern = '${DOCKER}' },
+]
+
+[[file]]
+id = 'circleci'
+globs = ['.circleci/config.yml', '.circleci/config.yaml']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { spec = 'jobs.*.docker.*.image', pattern = '${DOCKER}' },
+    { spec = 'executors.*.docker.*.image', pattern = '${DOCKER}' },
+]
+

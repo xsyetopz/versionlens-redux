@@ -20,7 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
-- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,700 lines of Rust outside tests (tokei), 2,200 of them in the file-type rows and the registry modules, and no file above 754 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
+- Rewrote the language server as one crate, `versionlens-lsp`, of about 5,200 lines of Rust outside tests (tokei), and no file above 603 lines. Each file type and each registry is one row of an embedded TOML catalog, about 1,300 lines in `crates/versionlens-lsp/catalog/`: file types in `files/`, registries in `registries/`, and the patterns rows share in `shared.toml`.
 - Every editor takes its file globs from the server, so VS Code, JetBrains, and Neovim pick up a new file type with no change of their own. JetBrains and Neovim run `versionlens-lsp --file-types`; VS Code reads `capabilities.experimental.fileTypes` from the initialize result and sends the server only those files.
 - OSV checks send one `querybatch` request per document instead of one request per dependency. Registry requests share one pooled HTTP/2 client, capped by `versionlens.concurrency` and limited by `versionlens.timeoutMs`.
 - Quick fixes come from results already in memory, so they no longer wait on the network.

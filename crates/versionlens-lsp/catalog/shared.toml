@@ -1,0 +1,80 @@
+# Patterns and rule lists that more than one file type uses. A row names a pattern as ${NAME}
+# and a rule list as { use = NAME }.
+
+[patterns]
+GITHUB_URL = '''https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?"'''
+PEP508 = '^\s*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*\(?(?P<version>(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+(?:\s*,\s*(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+)*)?\)?\s*(?:;.*)?$'
+DOCKER = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$'
+IMAGE_LINE = '''(?m)^[ \t]*(?:-[ \t]*)?(?:image|container)[ \t]*:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$'''
+ACTION = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$'
+TOOL_VERSION = '\A\s*v?(?P<version>\d[\w.]*)\s*\z'
+MAVEN_SPEC = '^(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)$'
+GITHUB_ARCHIVE = 'github\.com/(?P<name>[\w.-]+/[\w.-]+)/archive/(?:refs/tags/)?(?P<version>v?\d[\w.-]*?)\.(?:tar\.gz|tgz|zip|tar\.xz|tar\.bz2)'
+GITHUB_RELEASE = 'github\.com/(?P<name>[\w.-]+/[\w.-]+)/releases/download/(?P<version>v?\d[\w.-]*)/'
+GITHUB_FRAGMENT = 'github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?#(?P<version>v?\d[\w.-]*)'
+
+[rules]
+NPM_DEPS = [
+    { keys = 'dependencies' },
+    { keys = 'devDependencies' },
+    { keys = 'peerDependencies' },
+    { keys = 'optionalDependencies' },
+    { keys = 'resolutions' },
+    { keys = 'overrides' },
+    # A nested override pins a dependency only below its parent: `{"parent": {"child": "1.0.0"}}`.
+    { keys = 'overrides.*' },
+    { keys = 'pnpm.overrides' },
+    { keys = 'pnpm.overrides.*' },
+    { keys = 'packageExtensions.*.dependencies' },
+    { keys = 'packageExtensions.*.devDependencies' },
+    { keys = 'packageExtensions.*.peerDependencies' },
+    { keys = 'packageExtensions.*.optionalDependencies' },
+    { keys = 'pnpm.packageExtensions.*.dependencies' },
+    { keys = 'pnpm.packageExtensions.*.devDependencies' },
+    { keys = 'pnpm.packageExtensions.*.peerDependencies' },
+    { keys = 'pnpm.packageExtensions.*.optionalDependencies' },
+    { keys = 'catalog' },
+    { keys = 'catalogs.*' },
+    { keys = 'workspaces.catalog' },
+    { keys = 'workspaces.catalogs.*' },
+    { keys = 'volta' },
+    { spec = 'packageManager', pattern = '^(?P<name>[\w-]+)@(?P<version>[^+]+)' },
+    # `devEngines` names its tools as `{"name": "pnpm", "version": "^9.0.0"}`, or a list of them.
+    { record = 'devEngines.packageManager', name = 'name', version = 'version' },
+    { record = 'devEngines.packageManager.*', name = 'name', version = 'version' },
+    { record = 'devEngines.runtime', name = 'name', version = 'version' },
+    { record = 'devEngines.runtime.*', name = 'name', version = 'version' },
+    # JSPM names its registry in each value: `npm:lodash@^4.17.0`, `github:owner/repo@1.0.0`.
+    { spec = 'jspm.*.*', pattern = '^npm:(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>.+)$' },
+    { spec = 'jspm.*.*', pattern = '^github:(?P<name>[\w.-]+/[\w.-]+)@(?P<version>.+)$', via = 'github' },
+]
+PYPROJECT = [
+    { spec = 'project.dependencies.*', pattern = '${PEP508}' },
+    { spec = 'project.optional-dependencies.*.*', pattern = '${PEP508}' },
+    { spec = 'dependency-groups.*.*', pattern = '${PEP508}' },
+    { spec = 'build-system.requires.*', pattern = '${PEP508}' },
+    { spec = 'tool.uv.dev-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'tool.uv.constraint-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'tool.uv.override-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'tool.pdm.dev-dependencies.*.*', pattern = '${PEP508}' },
+    { keys = 'tool.poetry.dependencies' },
+    { keys = 'tool.poetry.dev-dependencies' },
+    { keys = 'tool.poetry.group.*.dependencies' },
+]
+NUGET = [
+    { record = 'Project.ItemGroup.PackageReference', name = '@Include|@Update', version = '@Version|Version' },
+    { record = 'Project.ItemGroup.PackageVersion', name = '@Include|@Update', version = '@Version|Version' },
+    { record = 'Project.ItemGroup.GlobalPackageReference', name = '@Include|@Update', version = '@Version|Version' },
+    { record = 'Project.ItemGroup.DotNetCliToolReference', name = '@Include|@Update', version = '@Version|Version' },
+    { record = 'packages.package', name = '@id', version = '@version' },
+    # An MSBuild SDK pins its version in `<Project Sdk="Name/1.0">` or `<Sdk Name="" Version="" />`.
+    { lines = '<Project[ \t\r\n][^>]*?Sdk="(?P<name>[\w.-]+)/(?P<version>[^"/;]+)"' },
+    { record = 'Project.Sdk', name = '@Name', version = '@Version' },
+]
+POM = [
+    { record = 'project.parent', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.dependencyManagement.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.build.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.build.pluginManagement.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+]

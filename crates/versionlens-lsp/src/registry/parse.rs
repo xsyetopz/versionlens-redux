@@ -158,3 +158,46 @@ pub(super) fn helm(body: &str, name: &str) -> Versions {
     }
     out.into()
 }
+
+/// The Go release feed names versions `go1.22.1`; requirements and `.go-version` drop the prefix.
+pub(super) fn go_releases(body: &str, _name: &str) -> Versions {
+    let Ok(Value::Array(items)) = serde_json::from_str::<Value>(body) else {
+        return Versions::default();
+    };
+    items
+        .iter()
+        .filter_map(|item| item.get("version")?.as_str()?.strip_prefix("go"))
+        .map(str::to_owned)
+        .collect::<Vec<_>>()
+        .into()
+}
+
+/// Terraform's provider endpoint lists `versions`; its module endpoint nests them in `modules`.
+pub(super) fn terraform(body: &str, _name: &str) -> Versions {
+    let Ok(root) = serde_json::from_str::<Value>(body) else {
+        return Versions::default();
+    };
+    let versions = root
+        .get("versions")
+        .or_else(|| root.pointer("/modules/0/versions"));
+    let Some(items) = versions.and_then(Value::as_array) else {
+        return Versions::default();
+    };
+    items
+        .iter()
+        .filter_map(|item| item.get("version")?.as_str().map(str::to_owned))
+        .collect::<Vec<_>>()
+        .into()
+}
+
+/// The reader a catalog row names with `reader`, for a response neither JSON paths nor a regex
+/// can read.
+pub(super) fn reader(name: &str) -> Option<fn(&str, &str) -> Versions> {
+    Some(match name {
+        "cargo" => cargo,
+        "helm" => helm,
+        "terraform" => terraform,
+        "go-releases" => go_releases,
+        _ => return None,
+    })
+}

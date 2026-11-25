@@ -1,0 +1,123 @@
+# Registries for language runtimes, build tools, and the smaller package indexes. Runtimes
+# answer for tool-version files such as `.python-version` and `.tool-versions`. See packages.toml
+# for the row format.
+
+[[registry]]
+id = 'rust'
+url = 'https://raw.githubusercontent.com/rust-lang/rust/master/RELEASES.md'
+regex = '(?m)^Version (\d+\.\d+\.\d+) \('
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://github.com/rust-lang/rust'
+page = 'https://www.rust-lang.org/tools/install'
+
+# OSV's Bitnami ecosystem carries the runtimes' own CVEs, under each product's name.
+[[registry]]
+id = 'python'
+url = 'https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json'
+json = ''
+field = 'version'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'python'
+page = 'https://www.python.org/downloads/'
+
+[[registry]]
+id = 'ruby'
+url = 'https://raw.githubusercontent.com/ruby/www.ruby-lang.org/master/_data/releases.yml'
+regex = '(?m)^- version: (\d\S*)'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'ruby'
+page = 'https://www.ruby-lang.org/en/downloads/'
+
+[[registry]]
+id = 'nodejs'
+url = 'https://nodejs.org/dist/index.json'
+json = ''
+field = 'version'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'node'
+page = 'https://nodejs.org/en/about/previous-releases'
+
+[[registry]]
+id = 'ghc'
+url = 'https://downloads.haskell.org/~ghc/'
+regex = 'href="(\d+\.\d+\.\d+)/"'
+bare = 'prefix'
+osv = 'GHC'
+osv_name = 'ghc'
+page = 'https://www.haskell.org/ghc/'
+
+[[registry]]
+id = 'golang'
+url = 'https://go.dev/dl/?mode=json&include=all'
+reader = 'go-releases'
+bare = 'prefix'
+osv = 'Go'
+osv_name = 'stdlib'
+accept = 'application/json'
+page = 'https://go.dev/dl/'
+
+[[registry]]
+id = 'terraform-cli'
+url = 'https://releases.hashicorp.com/terraform/index.json'
+json = 'versions'
+field = '@key'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://github.com/hashicorp/terraform'
+page = 'https://releases.hashicorp.com/terraform/'
+
+[[registry]]
+id = 'gradle-dist'
+url = 'https://services.gradle.org/versions/all'
+json = ''
+field = 'version'
+bare = 'exact'
+osv = 'Bitnami'
+osv_name = 'gradle'
+page = 'https://gradle.org/releases/'
+
+[[registry]]
+id = 'conda'
+url = 'https://api.anaconda.org/package/conda-forge/{name}'
+json = 'versions'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://api.anaconda.org/package/conda-forge/{name}'
+upstream = '"dev_url":\s*"${GITHUB_URL}'
+page = 'https://anaconda.org/conda-forge/{name}'
+
+[[registry]]
+id = 'elm'
+url = 'https://package.elm-lang.org/packages/{name}/releases.json'
+json = ''
+field = '@key'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://github.com/{name}'
+page = 'https://package.elm-lang.org/packages/{name}/latest/'
+
+[[registry]]
+id = 'luarocks'
+url = 'https://luarocks.org/manifest.json'
+json = 'repository/{name}'
+field = '@key'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://luarocks.org/{name}-{version}.rockspec'
+upstream = '''url\s*=\s*['"](?:git\+)?(?:https?|git)://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?['"]'''
+page = 'https://luarocks.org/search?q={name}'
+
+[[registry]]
+id = 'xmake'
+url = 'https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua'
+regex = 'add_versions\("(?:[a-z]+:)?([^"]+)"'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua'
+upstream = '"https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?["/]'
+page = 'https://xmake.io/#/package/remote_package'
+

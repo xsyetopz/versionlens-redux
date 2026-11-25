@@ -3,6 +3,7 @@
 
 mod catalog;
 mod config;
+mod data;
 mod extract;
 mod flatten;
 mod http;

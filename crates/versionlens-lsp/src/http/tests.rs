@@ -44,23 +44,14 @@ fn docker_at(base: &str) -> &'static Registry {
     let url = format!("{base}/{{docker}}");
     let filtered = format!("{base}/{{docker}}?name={{filter}}");
     Box::leak(Box::new(Registry {
-        id: docker.id,
         url: Box::leak(url.into_boxed_str()),
         parse: registry::Parse::Json {
             at: "results",
             field: "name",
             latest: "",
         },
-        bare: docker.bare,
-        osv: docker.osv,
-        osv_name: docker.osv_name,
-        upstream: docker.upstream,
-        accept: docker.accept,
-        yanked: docker.yanked,
-        deprecated: docker.deprecated,
         filtered: Box::leak(filtered.into_boxed_str()),
-        fallback: docker.fallback,
-        paged: docker.paged,
+        ..docker.clone()
     }))
 }
 

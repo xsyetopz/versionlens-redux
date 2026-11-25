@@ -1,0 +1,147 @@
+# Ruby, Dart, BEAM, Julia, R, Perl, OCaml, and Haskell manifests; see native.toml for the row format.
+
+[[file]]
+id = 'gemfile'
+globs = ['Gemfile', 'gems.rb', '*.gemspec']
+format = 'text'
+registry = 'rubygems'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+]
+
+[[file]]
+id = 'podfile'
+globs = ['Podfile', '*.podspec']
+format = 'text'
+registry = 'cocoapods'
+rules = [
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+    { lines = '''(?m)^[ \t]*\w+\.dependency[ \t]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+]
+
+[[file]]
+id = 'pubspec'
+globs = ['pubspec.yaml', 'pubspec.yml', 'pubspec_overrides.yaml']
+format = 'yaml'
+registry = 'pub'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'dev_dependencies' },
+    { keys = 'dependency_overrides' },
+]
+
+[[file]]
+id = 'mix'
+globs = ['mix.exs']
+format = 'text'
+registry = 'hex'
+rules = [
+    { lines = '\{:(?P<name>\w+),[ \t]*"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'rebar'
+globs = ['rebar.config']
+format = 'text'
+registry = 'hex'
+rules = [
+    { lines = '\{(?P<name>\w+),[ \t]*"(?P<version>[^"]+)"\}' },
+]
+
+[[file]]
+id = 'gleam'
+globs = ['gleam.toml']
+format = 'toml'
+registry = 'hex'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'dev-dependencies' },
+]
+
+[[file]]
+id = 'julia'
+globs = ['Project.toml', 'JuliaProject.toml', 'Manifest.toml', 'Manifest-v*.toml']
+format = 'toml'
+registry = 'julia'
+rules = [
+    { keys = 'compat' },
+    # A manifest pins each registered package; standard libraries lack `git-tree-sha1`.
+    { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+)\]\]\r?\n(?:[^\[\n][^\n]*\n)*?git-tree-sha1[^\n]*\n(?:[^\[\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'renv'
+globs = ['renv.lock']
+format = 'json'
+registry = 'cran'
+rules = [
+    { record = 'Packages.*', name = 'Package', version = 'Version' },
+]
+
+[[file]]
+id = 'r'
+globs = ['DESCRIPTION']
+format = 'text'
+registry = 'cran'
+rules = [
+    { lines = '(?P<name>[A-Za-z][\w.]*)[ \t]*\((?P<version>[<>=]+[ \t]*[\d.-]+)\)' },
+]
+
+[[file]]
+id = 'cpanfile'
+globs = ['cpanfile']
+format = 'text'
+registry = 'cpan'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:requires|recommends|suggests)[ \t]+['"](?P<name>[\w:]+)['"][ \t]*(?:,|=>)[ \t]*['"]?(?P<version>[\w.<>= ]+?)['"]?[ \t]*;''' },
+]
+
+[[file]]
+id = 'opam'
+globs = ['opam', '*.opam']
+format = 'text'
+registry = 'opam'
+rules = [
+    { lines = '"(?P<name>[\w.+-]+)"[ \t]*\{[ \t]*(?:>=|=|>)[ \t]*"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'dune'
+globs = ['dune-project']
+format = 'text'
+registry = 'opam'
+rules = [
+    { lines = '\((?P<name>[\w-]+)[ \t]+\((?P<version>(?:>=|=)[ \t]*[\w.~+-]+)\)' },
+]
+
+[[file]]
+id = 'cabal'
+globs = ['*.cabal', 'cabal.project', 'stack.yaml', 'stack.yml']
+format = 'text'
+registry = 'hackage'
+rules = [
+    { lines = '(?m)(?:build-depends:|,|^)[ \t]*(?P<name>[A-Za-z][\w-]*)[ \t]+(?P<version>(?:\^>=|>=|==)[ \t]*\d[\d.]*)' },
+    { lines = '(?m)^[ \t]*with-compiler:[ \t]*(?P<name>ghc)-(?P<version>\d[\d.]*)', via = 'ghc' },
+    # Stack's `extra-deps` entries read `- package-1.2.3`.
+    { lines = '(?m)^[ \t]*-[ \t]+(?P<name>[A-Za-z][\w-]*?)-(?P<version>\d+(?:\.\d+)*)(?:@\S+)?[ \t]*(?:#.*)?\r?$' },
+]
+
+[[file]]
+id = 'rockspec'
+globs = ['*.rockspec']
+format = 'text'
+registry = 'luarocks'
+rules = [
+    { lines = '''["'](?P<name>[A-Za-z][\w.-]*)[ \t]*(?P<version>(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*)["']''' },
+]
+
+[[file]]
+id = 'flake'
+globs = ['flake.nix']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)/(?P<version>v?\d[\w.-]*)' },
+    { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)' },
+]
+

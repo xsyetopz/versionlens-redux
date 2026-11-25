@@ -1,12 +1,42 @@
-//! Every supported manifest as one data row: the files it covers, how to read it, and which
-//! registry answers for its dependencies. Supporting a new file type means adding a row to the matching module in `catalog/rows/`.
+//! Every supported manifest as one row of `catalog/files/`: the files it covers, how to read it,
+//! and which registry answers for its dependencies. Supporting a new file type means adding a
+//! row to the file for its group of ecosystems.
 
+use std::sync::LazyLock;
+
+use crate::data::{self, Row};
 use crate::extract::Rule;
 use crate::flatten::Format;
 
-mod rows;
+/// The file groups in matching order: a glob two rows share belongs to the earlier row.
+static GROUPS: &[(&str, &str)] = &[
+    (
+        "files/native.toml",
+        include_str!("../catalog/files/native.toml"),
+    ),
+    ("files/js.toml", include_str!("../catalog/files/js.toml")),
+    (
+        "files/python.toml",
+        include_str!("../catalog/files/python.toml"),
+    ),
+    ("files/jvm.toml", include_str!("../catalog/files/jvm.toml")),
+    (
+        "files/functional.toml",
+        include_str!("../catalog/files/functional.toml"),
+    ),
+    (
+        "files/infra.toml",
+        include_str!("../catalog/files/infra.toml"),
+    ),
+    (
+        "files/tooling.toml",
+        include_str!("../catalog/files/tooling.toml"),
+    ),
+];
 
-pub(crate) use rows::FILE_TYPES;
+/// Every file type, in matching order.
+pub(crate) static FILE_TYPES: LazyLock<Vec<FileType>> =
+    LazyLock::new(|| load().expect("the embedded file-type catalog loads"));
 
 /// A kind of manifest.
 #[derive(Clone, Copy, Debug)]
@@ -21,21 +51,80 @@ pub(crate) struct FileType {
     pub(crate) insert: &'static str,
 }
 
-const fn row(
-    id: &'static str,
-    globs: &'static [&'static str],
-    format: Format,
-    registry: &'static str,
-    rules: &'static [Rule],
-) -> FileType {
-    FileType {
-        id,
-        globs,
-        format,
-        registry,
-        rules,
-        insert: "",
+fn load() -> Result<Vec<FileType>, String> {
+    let mut all = Vec::new();
+    for (name, text) in GROUPS {
+        for row in data::rows(name, text, "file")? {
+            all.push(file(&row)?);
+        }
     }
+    Ok(all)
+}
+
+/// One `[[file]]` row.
+fn file(row: &Row) -> Result<FileType, String> {
+    row.only(&["id", "globs", "format", "registry", "insert", "rules"])?;
+    let format = match row.need("format")? {
+        "json" => Format::Json,
+        "toml" => Format::Toml,
+        "yaml" => Format::Yaml,
+        "xml" => Format::Xml,
+        "text" => Format::Text,
+        other => {
+            return Err(row.error(&format!(
+                "format {other} is not json, toml, yaml, xml, or text"
+            )));
+        }
+    };
+    let mut rules = Vec::new();
+    for entry in row.tables("rules")? {
+        // `{ use = 'NAME' }` stands for the shared rule list NAME.
+        match entry.opt("use")? {
+            Some(name) => {
+                entry.only(&["use"])?;
+                for shared in data::shared_rules(name)? {
+                    rules.push(rule(&shared)?);
+                }
+            }
+            None => rules.push(rule(&entry)?),
+        }
+    }
+    Ok(FileType {
+        id: row.need("id")?,
+        globs: row.list("globs")?.leak(),
+        format,
+        registry: row.need("registry")?,
+        rules: rules.leak(),
+        insert: row.text("insert")?,
+    })
+}
+
+/// One rule: `keys`, `spec` with its `pattern`, `record` with its `name`, `version`, and
+/// optional `source` fields, or `lines`. A `via` names the registry its dependencies go to.
+fn rule(entry: &Row) -> Result<Rule, String> {
+    entry.only(&[
+        "keys", "spec", "pattern", "record", "name", "version", "source", "lines", "via",
+    ])?;
+    let rule = if let Some(path) = entry.opt("keys")? {
+        Rule::Keys(path)
+    } else if let Some(path) = entry.opt("spec")? {
+        Rule::Spec(path, entry.need("pattern")?)
+    } else if let Some(path) = entry.opt("record")? {
+        Rule::Record(
+            path,
+            entry.need("name")?,
+            entry.need("version")?,
+            entry.text("source")?,
+        )
+    } else if let Some(pattern) = entry.opt("lines")? {
+        Rule::Lines(pattern)
+    } else {
+        return Err(entry.error("a rule needs keys, spec, record, or lines"));
+    };
+    Ok(match entry.opt("via")? {
+        Some(registry) => Rule::Via(registry, Box::leak(Box::new(rule))),
+        None => rule,
+    })
 }
 
 fn glob(pattern: &str, text: &str) -> bool {

@@ -1,0 +1,126 @@
+# JavaScript, web, and other package-manager ecosystems; see native.toml for the row format.
+
+[[file]]
+id = 'npm'
+globs = ['package.json', 'package.json5']
+format = 'json'
+registry = 'npm'
+rules = [{ use = 'NPM_DEPS' }]
+
+[[file]]
+id = 'node'
+globs = ['.nvmrc', '.node-version']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '${TOOL_VERSION}' },
+]
+
+# Bower's registry only names each package's Git repository; the packages it still serves
+# publish the same versions to npm.
+[[file]]
+id = 'bower'
+globs = ['bower.json']
+format = 'json'
+registry = 'npm'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'devDependencies' },
+    { keys = 'resolutions' },
+]
+
+[[file]]
+id = 'bun'
+globs = ['.bun-version']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '${TOOL_VERSION}' },
+]
+
+[[file]]
+id = 'pnpm'
+globs = ['pnpm-workspace.yaml', 'pnpm-workspace.yml', 'package.yaml', 'package.yml', '.yarnrc.yml', '.yarnrc.yaml']
+format = 'yaml'
+registry = 'npm'
+rules = [{ use = 'NPM_DEPS' }]
+
+[[file]]
+id = 'deno'
+globs = ['deno.json', 'deno.jsonc', 'import_map.json', 'jsr.json', 'jsr.jsonc']
+format = 'json'
+registry = 'jsr'
+rules = [
+    { spec = 'imports.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
+    { spec = 'scopes.*.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
+]
+
+[[file]]
+id = 'unity'
+globs = ['Packages/manifest.json']
+format = 'json'
+registry = 'unity'
+rules = [
+    { keys = 'dependencies' },
+]
+
+[[file]]
+id = 'composer'
+globs = ['composer.json']
+format = 'json'
+registry = 'composer'
+rules = [
+    { keys = 'require' },
+    { keys = 'require-dev' },
+]
+
+[[file]]
+id = 'haxelib'
+globs = ['haxelib.json']
+format = 'json'
+registry = 'haxelib'
+rules = [
+    { keys = 'dependencies' },
+]
+
+[[file]]
+id = 'hxml'
+globs = ['*.hxml']
+format = 'text'
+registry = 'haxelib'
+insert = ':'
+rules = [
+    { lines = '(?m)^[ \t]*-(?:-library|lib|L)[ \t]+(?P<name>[\w.-]+)(?::(?P<version>[\w.+-]+))?[ \t]*\r?$' },
+]
+
+[[file]]
+id = 'dub'
+globs = ['dub.json', 'dub.selections.json']
+format = 'json'
+registry = 'dub'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'versions' },
+]
+
+[[file]]
+id = 'dub-sdl'
+globs = ['dub.sdl']
+format = 'text'
+registry = 'dub'
+rules = [
+    { lines = 'dependency[ \t]+"(?P<name>[^"]+)"[ \t]+version="(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'elm'
+globs = ['elm.json']
+format = 'json'
+registry = 'elm'
+rules = [
+    { keys = 'dependencies.direct' },
+    { keys = 'dependencies.indirect' },
+    { keys = 'test-dependencies.direct' },
+    { keys = 'test-dependencies.indirect' },
+]
+

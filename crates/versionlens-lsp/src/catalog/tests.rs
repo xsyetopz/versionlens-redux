@@ -19,7 +19,7 @@ fn matches_trailing_segments_case_insensitively() {
 
 #[test]
 fn every_row_names_a_known_registry_and_valid_regexes() {
-    for file in FILE_TYPES {
+    for file in FILE_TYPES.iter() {
         assert!(
             registry::get(file.registry).is_some(),
             "{} names {}",

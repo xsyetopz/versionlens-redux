@@ -36,7 +36,7 @@ bun run package:editors
 
 ## Adding a File Type
 
-Add one `row` to `FILE_TYPES` in `crates/versionlens-lsp/src/catalog/rows.rs`, and a `REGISTRIES` row in `crates/versionlens-lsp/src/registry.rs` when the registry is new. Editors read the globs from `versionlens-lsp --file-types` or from `capabilities.experimental.fileTypes` in the initialize result, so their packages stay unchanged; Zed needs the file's language in `packages/zed-extension/extension.toml`.
+Add one `[[file]]` row to the group file in `crates/versionlens-lsp/catalog/files/`, and a `[[registry]]` row in `crates/versionlens-lsp/catalog/registries/` when the registry is new. Each file's header comment gives its row format. Editors read the globs from `versionlens-lsp --file-types` or from `capabilities.experimental.fileTypes` in the initialize result, so their packages stay unchanged; Zed needs the file's language in `packages/zed-extension/extension.toml`.
 
 ## Release
 

@@ -4,7 +4,6 @@
 
 use std::time::Duration;
 
-use super::super::tools::{self, ROWS};
 use super::*;
 use crate::config::Settings;
 use crate::http::Http;
@@ -117,14 +116,12 @@ fn block_on<F: Future>(work: F) -> F::Output {
 fn samples_cover_every_registry() {
     let missing: Vec<&str> = REGISTRIES
         .iter()
-        .chain(ROWS)
         .map(|r| r.id)
         .filter(|id| !SAMPLES.iter().any(|(sample, ..)| sample == id))
         .collect();
     assert!(missing.is_empty(), "no live sample for {missing:?}");
     let silent: Vec<&str> = REGISTRIES
         .iter()
-        .chain(ROWS)
         .filter(|r| r.osv.is_some())
         .map(|r| r.id)
         .filter(|id| {
@@ -144,11 +141,20 @@ fn samples_open_every_page_template() {
         .iter()
         .map(|&(id, name, ..)| page(id, name))
         .collect();
-    let unopened: Vec<&str> = PAGES
+    let unopened: Vec<String> = REGISTRIES
         .iter()
-        .chain(tools::PAGES)
-        .map(|&(key, template)| (key, template.split('{').next().unwrap_or(template)))
-        .filter(|(_, stem)| !opened.iter().any(|url| url.starts_with(stem)))
+        .flat_map(|r| {
+            let hosts = r
+                .pages
+                .iter()
+                .map(|&(host, t)| (format!("{} {host}", r.id), t));
+            std::iter::once((r.id.to_owned(), r.page)).chain(hosts)
+        })
+        .filter(|(_, template)| !template.is_empty())
+        .filter(|(_, template)| {
+            let stem = template.split('{').next().unwrap_or(template);
+            !opened.iter().any(|url| url.starts_with(stem))
+        })
         .map(|(key, _)| key)
         .collect();
     assert!(
