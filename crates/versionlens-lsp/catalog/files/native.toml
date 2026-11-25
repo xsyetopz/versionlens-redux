@@ -36,9 +36,11 @@ rules = [
     { keys = 'patch.*' },
 ]
 
-# Resolved crates; git and path packages carry another `source` or none, and stay out. Read
-# from this repository's own Cargo.lock, whose crates.io entries name the git index, and the
-# sparse index source: doc.rust-lang.org/cargo/reference/registry-index.html#sparse-protocol
+# Resolved crates. Read from this repository's own Cargo.lock, whose crates.io entries name the
+# git index, and the sparse index source: doc.rust-lang.org/cargo/reference/registry-index.html
+# #sparse-protocol. A git package's `source` is its repository and commit,
+# `git+https://github.com/zed-industries/alacritty?rev=…#…` in zed-industries/zed's Cargo.lock,
+# and reads as that source; a path package has no `source` and names no directory, so it stays out.
 [[file]]
 id = 'cargo-lock'
 globs = ['Cargo.lock']
@@ -47,6 +49,7 @@ registry = 'cargo'
 pinned = true
 rules = [
     { lines = '(?m)^name = "(?P<name>[^"]+)"\r?\nversion = "(?P<version>[^"]+)"\r?\nsource = "(?:registry\+https://github\.com/rust-lang/crates\.io-index|sparse\+https://index\.crates\.io/)"' },
+    { lines = '(?m)^name = "(?P<name>[^"]+)"\r?\nversion = "[^"]+"\r?\nsource = "(?P<version>git\+[^"]+)"', via = 'source' },
 ]
 
 [[file]]
@@ -216,6 +219,7 @@ rules = [
     { lines = 'GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?(?:\s[^)]*?)?\s(?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)' },
     { lines = '[\s(](?:GIT_TAG|VERSION)\s+"?(?P<version>v?\d[\w.-]*)"?\s[^)]*?GIT_REPOSITORY\s+"?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"?\s' },
     { lines = '${GITHUB_ARCHIVE}' },
+    { lines = '${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
     { lines = '${GITHUB_RELEASE}' },
     # Hunter pins a package in cmake/Hunter/config.cmake with `hunter_config(name VERSION v)`:
     # hunter.readthedocs.io/en/latest/reference/user-modules/hunter_config.html
@@ -227,16 +231,18 @@ rules = [
 # comparisons follow semver: docs.platformio.org (projectconf/sections/env/options/platform/
 # platform.rst, library/lib_deps.rst). `platform_packages` lists tools the same way, so tools,
 # whose names start `toolchain-`, `framework-`, or `tool-`, are read first: the earlier rule keeps
-# a span two rules match. Owner-less library names and comma-separated lists are not read.
+# a span two rules match. A spec joins constraints with commas, `~5.6,!=5.4`. An owner-less name is
+# a framework built-in, such as SPI or ESP8266WiFi, which the registry's search does not list
+# (api.registry.platformio.org/v3/search?query=name:SPI, 2026-11-25), so it is not read.
 [[file]]
 id = 'platformio'
 globs = ['platformio.ini']
 format = 'text'
 registry = 'platformio'
 rules = [
-    { lines = '(?m)^[ \t]*platform[ \t]*=[ \t]*(?:platformio/)?(?P<name>[\w-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)', via = 'platformio-platform' },
-    { lines = '(?m)^[ \t]*(?:platform_packages[ \t]*=[ \t]*)?(?P<name>[\w.-]+/(?:toolchain|framework|tool)-[\w.+-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)', via = 'platformio-tool' },
-    { lines = '(?m)^[ \t]*(?:lib_deps[ \t]*=[ \t]*)?(?P<name>[\w.-]+/[\w.+-]+(?:[ \t]+[\w.+-]+)*?)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)' },
+    { lines = '(?m)^[ \t]*platform[ \t]*=[ \t]*(?:platformio/)?(?P<name>[\w-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*(?:,[ \t]*[~^<>=!]+[ \t]*\d[^\s;,]*)*)', via = 'platformio-platform' },
+    { lines = '(?m)^[ \t]*(?:platform_packages[ \t]*=[ \t]*)?(?P<name>[\w.-]+/(?:toolchain|framework|tool)-[\w.+-]+)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*(?:,[ \t]*[~^<>=!]+[ \t]*\d[^\s;,]*)*)', via = 'platformio-tool' },
+    { lines = '(?m)^[ \t]*(?:lib_deps[ \t]*=[ \t]*)?(?P<name>[\w.-]+/[\w.+-]+(?:[ \t]+[\w.+-]+)*?)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*(?:,[ \t]*[~^<>=!]+[ \t]*\d[^\s;,]*)*)' },
 ]
 
 # An Arduino library.properties lists `depends=Name, Other Name (>=1.0.0)`: comma-separated library
@@ -324,6 +330,7 @@ format = 'text'
 registry = 'github'
 rules = [
     { lines = '${GITHUB_ARCHIVE}' },
+    { lines = '${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
     { lines = '${GITHUB_RELEASE}' },
     { lines = '${GITHUB_FRAGMENT}' },
     # A `.path` dependency is a local package: ziglang.org/download/0.14.0/release-notes.html#Package-Management
@@ -365,6 +372,7 @@ registry = 'github'
 rules = [
     { lines = '(?m)^[ \t]*url[ \t]*=[ \t]*https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?[ \t]*\r?\n(?:[^\n]*\n)*?[ \t]*revision[ \t]*=[ \t]*(?P<version>v?\d[\w.-]*)' },
     { lines = '${GITHUB_ARCHIVE}' },
+    { lines = '${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
     { lines = '${GITHUB_RELEASE}' },
 ]
 
@@ -375,12 +383,14 @@ format = 'text'
 registry = 'github'
 rules = [
     { lines = '${GITHUB_ARCHIVE}' },
+    { lines = '${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
     { lines = '${GITHUB_RELEASE}' },
 ]
 
 # Buck2 fetches a source with `http_archive` or `http_file` from `urls`, and a GitHub archive or
 # release asset names its repository and tag: buck2.build/docs/prelude/rules/core/http_archive and
-# sluongng/buck2-go's toolchains/BUCK. A commit archive is not a release.
+# sluongng/buck2-go's toolchains/BUCK. A commit archive,
+# `https://github.com/NixOS/nixpkgs/archive/5d73….tar.gz`, is the git reference it pins.
 [[file]]
 id = 'buck'
 globs = ['BUCK', 'BUCK.v2', 'TARGETS', 'TARGETS.v2']
@@ -388,22 +398,25 @@ format = 'text'
 registry = 'github'
 rules = [
     { lines = '${GITHUB_ARCHIVE}' },
+    { lines = '${GITHUB_COMMIT_ARCHIVE}', via = 'source' },
     { lines = '${GITHUB_RELEASE}' },
 ]
 
 # West, Zephyr's meta-tool, lists `manifest.projects` with a `url` and a `revision`, a tag, branch,
-# or commit: zephyrproject-rtos/zephyr, doc/develop/west/manifest.rst. Only a GitHub `url` with a
-# release-like revision reads. A project named through a `remote` takes its URL from that remote's
-# `url-base` elsewhere in the file, which one regex match cannot join to each project, so it is
-# not read.
+# or commit: zephyrproject-rtos/zephyr, doc/develop/west/manifest.rst. A GitHub `url` with a
+# release-like revision reads as that release, and any other revision as the git reference it
+# pins. A project named through a `remote` takes its URL from that remote's `url-base`, which
+# src/extract/west.rs joins, as zephyrproject-rtos/example-application's west.yml names zephyr.
 [[file]]
 id = 'west'
 globs = ['west.yml']
-format = 'text'
+format = 'yaml'
 registry = 'github'
 rules = [
     { lines = '''(?m)^[ \t]*(?:-[ \t]+)?url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+revision:[ \t]*["']?(?P<version>v?\d+\.\d[^"'\s#]*)''' },
     { lines = '''(?m)^[ \t]*(?:-[ \t]+)?revision:[ \t]*["']?(?P<version>v?\d+\.\d[^"'\s#]*)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?$''' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?url:[ \t]*["']?(?P<name>https?://[^"'\s#]+?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+revision:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'source' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?revision:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+url:[ \t]*["']?(?P<name>https?://[^"'\s#]+?)(?:\.git)?["']?[ \t]*\r?$''', via = 'source' },
 ]
 
 # Pants declares a Python requirement with `python_requirement(requirements=[...])` and a JVM one
@@ -421,11 +434,13 @@ rules = [
 ]
 
 
-# Alire lists each `[[depends-on]]` table's crates as `name = "constraint"`; a dynamic dependency
-# nests under `case(...)` and is not read: alire-project/alire, doc/catalog-format-spec.md.
+# Alire lists each `[[depends-on]]` table's crates as `name = "constraint"`, and a dynamic one
+# under `'case(os)'.linux` or another case and value: alire-project/alire,
+# doc/catalog-format-spec.md "depends-on", whose crates are strings, so a key three tables down is
+# the crate a case value selects.
 [[file]]
 id = 'alire'
 globs = ['alire.toml']
 format = 'toml'
 registry = 'alire'
-rules = [{ keys = 'depends-on.*' }]
+rules = [{ keys = 'depends-on.*' }, { keys = 'depends-on.*.*.*' }]

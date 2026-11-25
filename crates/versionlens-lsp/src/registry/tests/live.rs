@@ -133,6 +133,13 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("mooncakes", "moonbitlang/x", None, Some("0.4.6")),
     ("purescript", "prelude", None, Some("6.0.1")),
     ("vpm", "vsl", None, Some("v0.1.47")),
+    (
+        "reservoir",
+        "leanprover-community:mathlib",
+        None,
+        Some("v4.32.0"),
+    ),
+    ("quicklisp", "clack", None, None),
     ("alire", "aws", None, None),
     ("artifacthub", "podinfo:podinfo", None, None),
     ("github", "haskell:cabal", None, None),
@@ -156,7 +163,8 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
 /// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
-/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, `vlang/vsl`, the Typst compiler, or the
+/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, `vlang/vsl`, Lean's mathlib4 (queried
+/// 2026-11-25), the Typst compiler, or the
 /// Ansible roles, whose repositories `geerlingguy` publishes, and OSV's Go ecosystem none for the
 /// Packer plugins `hashicorp` publishes, and OSV's Julia ecosystem none for the standard libraries
 /// outside the `_jll` ones, such as Dates and Statistics. OSV's own exports bear this out
@@ -176,6 +184,7 @@ const NO_KNOWN_ADVISORY: &[&str] = &[
     "mooncakes",
     "purescript",
     "vpm",
+    "reservoir",
     "typst-compiler",
     "galaxy-role",
 ];

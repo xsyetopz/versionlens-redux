@@ -581,6 +581,33 @@ osv_name = 'https://vpm.vlang.io/api/packages/{name}'
 upstream = '"url":\s*"${GITHUB_URL}'
 page = 'https://vpm.vlang.io/packages/{name}'
 
+# Quicklisp publishes one dist of every project a month or so, named by its date, and lists each
+# in quicklisp-versions.txt as `2010-10-07 http://beta.quicklisp.org/dist/quicklisp/2010-10-07/
+# distinfo.txt`; Qlot's `ql` takes such a date: github.com/fukamachi/qlot, README.markdown "ql".
+# The list is the dist's and not the project's, so a project a later dist dropped still shows the
+# newest date. OSV has no Common Lisp ecosystem.
+[[registry]]
+id = 'quicklisp'
+url = 'https://beta.quicklisp.org/dist/quicklisp-versions.txt'
+regex = '(?m)^(\d{4}-\d{2}-\d{2})\s'
+bare = 'exact'
+page = 'https://www.quicklisp.org/beta/releases.html'
+
+# Reservoir, Lake's default registry, names a package `scope/name`, which a manifest gives as
+# `scope:name`, and lists each indexed release with the Git `tag` a `rev` pins; its `version` is
+# mostly `0.0.0`: reservoir.lean-lang.org/api/v1/packages/leanprover-community/mathlib/versions.
+# The package document's `repoUrl` names the GitHub repository OSV keys GIT advisories by.
+[[registry]]
+id = 'reservoir'
+url = 'https://reservoir.lean-lang.org/api/v1/packages/{group}/{artifact}/versions'
+json = 'data'
+field = 'tag'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://reservoir.lean-lang.org/api/v1/packages/{group}/{artifact}'
+upstream = '"repoUrl":\s*"${GITHUB_URL}'
+page = 'https://reservoir.lean-lang.org/@{group}/{artifact}'
+
 # Nimble finds a bare package name in nim-lang/packages' packages.json, whose entry gives the
 # repository Nimble installs the tags of, as `"name": "jester", "url": "https://github.com/dom96/
 # jester/"`; a name matches case-insensitively, as Nimble's `normalize` compares, though not

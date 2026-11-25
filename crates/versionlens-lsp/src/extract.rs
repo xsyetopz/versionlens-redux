@@ -296,6 +296,9 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
             }
         }
     }
+    if file.id == "west" {
+        deps.extend(west::projects(&leaves));
+    }
     for dep in &mut deps {
         settle(dep, file.pinned, &leaves);
         dep.precise |= file.precise;
@@ -523,6 +526,8 @@ fn from_caps(caps: &Captures, text: &str, offset: usize, file: &FileType) -> Opt
         min: caps.get_group_by_name("min").is_some(),
     })
 }
+
+mod west;
 
 #[cfg(test)]
 mod tests;

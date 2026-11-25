@@ -15,6 +15,8 @@ MAVEN_SPEC = '^(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)$'
 # A tag archive's version is digits then a `.` or `-` part, so a commit archive such as
 # `archive/5d73…f8.tar.gz` is not read as one.
 GITHUB_ARCHIVE = 'github\.com/(?P<name>[\w.-]+/[\w.-]+)/archive/(?:refs/tags/)?(?P<version>v?\d+(?:[.-][\w.-]*?)?)\.(?:tar\.gz|tgz|zip|tar\.xz|tar\.bz2)'
+# A commit archive pins the git reference its 40-hex name gives, and names the repository by URL.
+GITHUB_COMMIT_ARCHIVE = '(?P<name>https://github\.com/[\w.-]+/[\w.-]+)/archive/(?P<version>[0-9a-f]{40})\.(?:tar\.gz|tgz|zip|tar\.xz|tar\.bz2)'
 GITHUB_RELEASE = 'github\.com/(?P<name>[\w.-]+/[\w.-]+)/releases/download/(?P<version>v?\d[\w.-]*)/'
 # A manifest's own version, which upstream's dependencyProperties list as `version`,
 # `project.version`, `package`, and `Project.PropertyGroup.Version` (upstream package.json, 1.3.0).

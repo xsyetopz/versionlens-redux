@@ -70,6 +70,7 @@ fn matches_restored_and_added_globs() {
     assert_eq!(id("flake.nix"), Some("flake"));
     assert_eq!(id("x/foo-1.0-1.rockspec"), Some("rockspec"));
     assert_eq!(id("xmake.lua"), Some("xmake"));
+    assert_eq!(id("test/package.mill.yaml"), Some("mill"));
     assert_eq!(id("subprojects/a.wrap"), Some("meson-wrap"));
     assert_eq!(id("a.wrap"), None);
     assert_eq!(id(".mise/config.toml"), Some("mise"));

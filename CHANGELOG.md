@@ -74,6 +74,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `just registries-live` also resolves each kind of project registry configuration against a live public mirror that stands in for a private registry: `.npmrc` (npmmirror), `nuget.config` (the dotnet-public Azure Artifacts feed), Composer `repositories` (Aliyun), uv, `requirements.txt`, Pipfile, and `pip.conf` indexes (PyTorch), Cargo source replacement (the TUNA mirror), and Maven `settings.xml` mirrors (Google's Central mirror). A local registry that answers only `Bearer` with the right token checks that an `.npmrc` `_authToken=${VAR}` from `.env` is sent. A second local registry checks that Composer `auth.json`, pip index URL credentials, `nuget.config` `packageSourceCredentials`, Maven `settings.xml` server passwords with `${env.VAR}`, and Cargo `credentials.toml` tokens go out as the header that Composer 2.11.2, pip 26.2.2, NuGet 7.9.0, Maven 3.10.1, and Cargo 1.100.0 each sent to a capturing server. A GitHub check reads the 5,000-request limit that the `gh auth token` gets and the 401 that a bad `githubToken` setting gets. A GitHub Packages check sends `.npmrc`'s `${GITHUB_TOKEN}`, set to the `gh auth token`, to `npm.pkg.github.com` for `@github/catalyst`, which answers 401 without a token and 403, or the versions with `read:packages`, with one. A NuGet check runs the real `dotnet nuget list source` with a `HOME` whose `NuGet.Config` the reader does not read, and the lookup reaches the local feed it lists. The live checks wait 60 seconds for an answer, since Ansible Galaxy can take longer than the 10-second default.
 
 - `Brewfile` `brew` and `cask` entries through formulae.brew.sh, and ReScript `rescript.json` and `bsconfig.json` dependency names through npm.
+- Forms the rows used to skip are read:
+  - Lake Reservoir requires through Reservoir's API: a `scope` with a tag `rev` or `version = "git#tag"`, and `require "scope" / name @ git "tag"`.
+  - `qlfile` `ql` dist dates through Quicklisp's dist list.
+  - Flux `GitRepository` `ref.semver` ranges on GitHub.
+  - Mill `*.mill.yaml` lists, and Scala `::` dependencies with the `_2.12`, `_2.13`, or `_3` suffix the build's `scalaVersion` gives.
+  - Alire `case(...)` dependencies, and PlatformIO specs with comma-joined constraints.
+  - `west.yml` projects named through a remote's `url-base`: a GitHub release where the remote is on GitHub and the revision is a version, and the git reference otherwise.
+- Git references, URLs, and local paths the rows used to skip are labelled as the source they pin, with a hover link to the repository: Lake branch and commit `rev`s and `lake-manifest.json` branch `inputRev`s, Idris `pack.toml` custom `commit`s, Flux `GitRepository` branches, names, and commits, Argo CD git `targetRevision`s, `qlfile` `git` `:branch` and `:ref`, GitHub `archive/<commit>` URLs in CMake, Zig, Meson, Bazel, and Buck2 files, `Cargo.lock` git packages, Yarn git resolutions, and `package-lock.json` links, Yarn Berry and `bun.lock` workspaces, helmfile local charts, and Pulumi local packages as directories. Yarn `patch:` entries read as the npm version they patch.
 
 ### Changed
 
@@ -87,6 +95,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- A fixed source's hover link drops a `?rev=` query, and a source whose requirement is only a revision, such as a west project's `main`, links the repository its name gives instead of an OSV search.
 - A Carthage update writes the whole version, `~> 1.0` becoming `~> 2.0.0` as the fork's master wrote it, through the file type's new `precise` flag; Carthage reads a missing patch as 0, so the range is the same.
 - An opam `{>= "1.0"}` or `{> "1.0"}` constraint is a lower bound that a newer release satisfies, not an exact pin; `{= "1.0"}` still pins, as the fork's master read it.
 - A registry that answers 429 Too Many Requests is asked again after the `Retry-After` it names, or after one second without one, up to three times; a wait over five seconds is reported as the 429. ECR Public serves anonymous clients one request a second, so the later pages of a long tag list, as `public.ecr.aws/docker/library/node`'s, failed the lookup before.

@@ -109,15 +109,24 @@ rules = [
 ]
 
 # Mill writes a Java dependency `mvn"org:name:version"`, `ivy"…"` before Mill 1.0, with
-# `;attribute=value` after it; a Scala one's `::` appends the Scala version to the artifact, which
-# the build alone gives, so it is not read: mill-build.org (fundamentals/library-deps.adoc).
+# `;attribute=value` after it: mill-build.org (fundamentals/library-deps.adoc). Mill 1.0's
+# declarative `build.mill.yaml` and `package.mill.yaml` list the same coordinates under `mvnDeps`,
+# as com-lihaoyi/mill's example/javalib/basic/1-simple/build.mill.yaml does. A Scala one's `::`
+# appends the Scala binary version to the artifact, which the file's `scalaVersion` gives,
+# `def scalaVersion = "3.8.2"` in example/scalalib/basic/5-programmable/build.mill and
+# `scalaVersion: 3.8.2` in example/scalalib/basic/1-simple/build.mill.yaml; a module that inherits
+# it from another file stays unread, as does `:::`, whose platform suffix plugins choose.
 [[file]]
 id = 'mill'
-globs = ['*.mill', 'build.sc']
+globs = ['*.mill', 'build.sc', '*.mill.yaml']
 format = 'text'
 registry = 'maven'
 rules = [
     { lines = '(?:mvn|ivy)"(?P<group>[\w.-]+):(?P<name>[\w.-]+):(?P<version>\d[^";]*)[";]' },
+    { lines = '''(?m)^[ \t]*-[ \t]+["']?(?P<group>[\w.-]+):(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''' },
+    { lines = '''(?:(?:mvn|ivy)"|(?m:^)[ \t]*-[ \t]+["']?)(?P<group>[\w.-]+)::(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''', within = '''(?s)\A.*scalaVersion(?:[ \t]*=[ \t]*"|:[ \t]*["']?)2\.12\..*\z''', suffix = '_2.12' },
+    { lines = '''(?:(?:mvn|ivy)"|(?m:^)[ \t]*-[ \t]+["']?)(?P<group>[\w.-]+)::(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''', within = '''(?s)\A.*scalaVersion(?:[ \t]*=[ \t]*"|:[ \t]*["']?)2\.13\..*\z''', suffix = '_2.13' },
+    { lines = '''(?:(?:mvn|ivy)"|(?m:^)[ \t]*-[ \t]+["']?)(?P<group>[\w.-]+)::(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''', within = '''(?s)\A.*scalaVersion(?:[ \t]*=[ \t]*"|:[ \t]*["']?)3\..*\z''', suffix = '_3' },
 ]
 
 [[file]]

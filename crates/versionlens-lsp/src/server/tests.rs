@@ -190,7 +190,7 @@ fn reads_package_shaped_json_and_only_files_on_disk() {
 fn names_fixed_sources_and_links_their_repository() {
     let client = Client::start();
     let uri = "file:///p/package.json";
-    let text = r#"{ "dependencies": { "a": "github:x/a#v1", "b": "git+https://example.com/b.git#main" } }"#;
+    let text = r#"{ "dependencies": { "a": "github:x/a#v1", "b": "git+https://example.com/b.git#main", "c": "git+https://example.com/c?rev=abc#abc" } }"#;
     client.open(uri, text);
     let lenses = client
         .request(
@@ -215,9 +215,35 @@ fn names_fixed_sources_and_links_their_repository() {
         found,
         [
             ("git repository", "https://github.com/x/a"),
-            ("git repository", "https://example.com/b")
+            ("git repository", "https://example.com/b"),
+            // A Cargo.lock source pins `?rev=` before the commit; the page is the repository.
+            ("git repository", "https://example.com/c")
         ]
     );
+    client.stop();
+}
+
+#[test]
+fn links_a_revision_only_source_to_the_repository_its_name_gives() {
+    let client = Client::start();
+    let uri = "file:///p/west.yml";
+    let text = "manifest:\n  projects:\n    - name: hal\n      url: https://git.example.com/hal\n      revision: main\n";
+    client.open(uri, text);
+    let lenses = client
+        .request(
+            2,
+            "textDocument/codeLens",
+            json!({ "textDocument": { "uri": uri } }),
+        )
+        .response_result
+        .unwrap();
+    let pages: Vec<&str> = lenses
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|l| l.get("command")?.pointer("/arguments/0")?.as_str())
+        .collect();
+    assert_eq!(pages, ["https://git.example.com/hal"]);
     client.stop();
 }
 

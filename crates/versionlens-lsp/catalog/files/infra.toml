@@ -103,22 +103,29 @@ registry = 'docker'
 rules = [
     { lines = '${IMAGE_LINE}' },
     # An Argo CD Application's Helm source names `chart`, `repoURL`, and `targetRevision`, in
-    # the docs' order or with `repoURL` first; git sources have no `chart`:
+    # the docs' order or with `repoURL` first; a git source has no `chart`, and its
+    # `targetRevision` is the git reference it pins, on a repository whose URL ends in `.git` or
+    # names a git host, as the guestbook example's does:
     # github.com/argoproj/argo-cd/blob/master/docs/operator-manual/declarative-setup.md
     { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
     { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<name>https?://[^"'\s]+?)\.git["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'source' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<name>https?://(?:github\.com|gitlab\.com|bitbucket\.org)/[^"'\s]+?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'source' },
     # A Flux HelmRelease names its `chart`, the HelmRepository `sourceRef` it comes from, and a
     # `version` range, before or after the source: github.com/fluxcd/helm-controller, docs/spec/
     # v2/helmreleases.md. The URL is in the HelmRepository object, so the chart is looked up on
     # Artifact Hub under the source's name, as helmfile's repositories are; a chart path from a
-    # GitRepository is not read.
+    # GitRepository has no version of its own, and the GitRepository's `ref` reads below.
     { lines = '''(?m)^[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+sourceRef:[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+name:[ \t]*["']?(?P<group>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'artifacthub' },
     { lines = '''(?m)^[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+sourceRef:[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+name:[ \t]*["']?(?P<group>[\w.-]+)''', via = 'artifacthub' },
-    # Flux sources pin an OCI artifact or a git repository by `ref.tag`:
-    # github.com/fluxcd/source-controller/blob/main/docs/spec/v1/ocirepositories.md and
-    # gitrepositories.md
+    # Flux sources pin an OCI artifact or a git repository by `ref.tag`, a GitHub repository by a
+    # `ref.semver` range, and any git repository by the `ref.branch`, `tag`, `name`, or `commit`
+    # it checks out, the last of them where a commit narrows a branch: github.com/fluxcd/source-controller/blob/main/docs/spec/v1/ocirepositories.md
+    # and gitrepositories.md "Reference".
     { lines = '''(?m)^[ \t]+url:[ \t]*["']?oci://(?P<name>[\w.-]+(?::\d+)?/[\w./-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'oci' },
     { lines = '''(?m)^[ \t]+url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'github' },
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+ref:[ \t]*\r?\n(?:[ \t]+(?:#|branch:|tag:|name:|commit:)[^\n]*\n)*?[ \t]+semver:[ \t]*["']?(?P<version>[^"'\r\n#]+?)["']?[ \t]*(?:#[^\n]*)?\r?$''', via = 'github' },
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?(?P<name>(?:https?|ssh)://[^"'\s]+?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+ref:[ \t]*\r?\n(?:[ \t]+(?:#|branch:|tag:|semver:|name:|commit:)[^\n]*\n)*[ \t]+(?:branch|tag|name|commit):[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'source' },
 ]
 
 # Helm chart values split an image into `repository` and `tag`, at the top or under a component.
@@ -212,8 +219,8 @@ rules = [
 ]
 
 # A release names its chart `repository/chart` after a `repositories` entry, which Artifact Hub
-# names the same way for the public repositories; `version` comes before or after it. Local
-# charts start with `.` and stay out: helmfile.readthedocs.io (docs/index.md, Configuration).
+# names the same way for the public repositories; `version` comes before or after it. A local
+# chart, `./charts/local`, is a directory: helmfile.readthedocs.io (docs/index.md, Configuration).
 [[file]]
 id = 'helmfile'
 globs = ['helmfile.yaml', 'helmfile.yml', 'helmfile.yaml.gotmpl', 'helmfile.d/*.yaml', 'helmfile.d/*.yaml.gotmpl']
@@ -221,7 +228,7 @@ format = 'text'
 registry = 'artifacthub'
 rules = [
     { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>\w[\w.-]*/[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)''' },
-    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?version:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+chart:[ \t]*["']?(?P<name>\w[\w.-]*/[\w.-]+)["']?[ \t]*\r?$''' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?version:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+chart:[ \t]*["']?(?P<name>\w[\w.-]*/[\w.-]+)["']?[ \t]*\r?$''' },    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>(?P<version>\.{1,2}/[^"'\s#]+))''', via = 'directory' },
 ]
 
 # Vagrant Cloud boxes: `config.vm.box` with an optional `config.vm.box_version` constraint:
@@ -314,7 +321,8 @@ rules = [
 # Pulumi.yaml `packages` name a Git repository at a tag, `https://github.com/o/r@v1.0.0`, or a
 # `source` plugin at a `version`, which Pulumi publishes as `pulumi/pulumi-<name>` on GitHub; a
 # `terraform-provider` or `hcl module` source pins its Terraform address in `parameters`:
-# pulumi/docs, content/docs/iac/concepts/projects/project-file.md. A local path is not read.
+# pulumi/docs, content/docs/iac/concepts/projects/project-file.md. A local component,
+# `networking: ./components/networking`, is a directory.
 [[file]]
 id = 'pulumi'
 globs = ['Pulumi.yaml', 'Pulumi.yml']
@@ -325,4 +333,5 @@ rules = [
     { lines = '''(?m)^[ \t]+source:[ \t]*["']?(?P<name>[a-z][\w-]*)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>v?\d[^"'\s#]*)''', prefix = 'pulumi/pulumi-' },
     { lines = '''(?m)^[ \t]+source:[ \t]*["']?terraform-provider["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+parameters:[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<name>[\w-]+/[\w-]+)["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<version>\d[^"'\s#]*)''', via = 'terraform' },
     { lines = '''(?m)^[ \t]+parameters:[ \t]*\r?\n[ \t]+-[ \t]*["']?module["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<name>[\w-]+/[\w-]+/[\w-]+)["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<version>\d[^"'\s#]*)''', via = 'terraform' },
+    { lines = '''(?m)^[ \t]+(?P<name>[\w.-]+):[ \t]*["']?(?P<version>\.{1,2}/[^"'\s#]+)''', within = '(?m)^packages:[ \t]*\r?\n((?:[ \t]+[^\n]*\r?\n?|\r?\n)*)', via = 'directory' },
 ]

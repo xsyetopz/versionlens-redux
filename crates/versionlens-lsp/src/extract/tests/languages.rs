@@ -83,12 +83,15 @@ fn reads_corral_deps() {
 
 #[test]
 fn reads_qlfile_tags() {
-    // The Qlot README's examples; a branch, commit, or dist date is not a release tag.
-    let text = "ql clack 2014-01-13\ngit clack https://github.com/fukamachi/clack.git :branch develop\ngit datafly https://github.com/fukamachi/datafly.git :tag v0.7.4\ngithub fukamachi/sxql :tag 0.1.0\n";
+    // The Qlot README's examples: a dist date, a branch or ref it pins, and release tags; a
+    // `github` line's branch names no URL.
+    let text = "ql clack 2014-01-13\nql log4cl\ngit clack https://github.com/fukamachi/clack.git :branch develop\ngit datafly https://github.com/fukamachi/datafly.git :tag v0.7.4\ngithub fukamachi/sxql :tag 0.1.0\ngithub fukamachi/dexador :branch master\n";
     expect(
         "qlfile",
         text,
         &[
+            ("clack", "2014-01-13", "quicklisp"),
+            ("https://github.com/fukamachi/clack", "develop", "source"),
             ("fukamachi/datafly", "v0.7.4", "github"),
             ("fukamachi/sxql", "0.1.0", "github"),
         ],
@@ -113,17 +116,49 @@ fn reads_the_racket_release_an_info_rkt_needs() {
 
 #[test]
 fn reads_lake_git_revisions() {
-    let toml = "[[require]]\nname = \"batteries\"\ngit = \"https://github.com/leanprover-community/batteries\"\nrev = \"v4.15.0\"\n\n[[require]]\nname = \"aesop\"\ngit = \"https://github.com/leanprover-community/aesop\"\nrev = \"main\"\n\n[[require]]\nname = \"mathlib\"\nscope = \"leanprover-community\"\n";
+    // The README's TOML and Lean `require` forms; a branch pins its git reference.
+    let toml = "[[require]]\nname = \"batteries\"\ngit = \"https://github.com/leanprover-community/batteries\"\nrev = \"v4.15.0\"\n\n[[require]]\nname = \"aesop\"\ngit = \"https://github.com/leanprover-community/aesop\"\nrev = \"main\"\n";
     expect(
         "lakefile.toml",
         toml,
-        &[("leanprover-community/batteries", "v4.15.0", "github")],
+        &[
+            ("leanprover-community/batteries", "v4.15.0", "github"),
+            (
+                "https://github.com/leanprover-community/aesop",
+                "main",
+                "source",
+            ),
+        ],
     );
-    let lean = "require batteries from git\n  \"https://github.com/leanprover-community/batteries\" @ \"v4.15.0\"\nrequire \"leanprover-community\" / \"mathlib\"\n";
+    let lean = "require batteries from git\n  \"https://github.com/leanprover-community/batteries\" @ \"v4.15.0\"\nrequire proofwidgets from git \"https://git.example.com/pw.git\" @ \"v0.0.40\"\n";
     expect(
         "lakefile.lean",
         lean,
-        &[("leanprover-community/batteries", "v4.15.0", "github")],
+        &[
+            ("leanprover-community/batteries", "v4.15.0", "github"),
+            ("https://git.example.com/pw", "v0.0.40", "source"),
+        ],
+    );
+}
+
+#[test]
+fn reads_lake_reservoir_tags() {
+    // openai/ten-proofs' `rev` and kkytola/VirasoroProject's `version = "git#…"` lakefile.toml
+    // requires; a scope with no tag, a branch, or a bare Reservoir version is not read.
+    let toml = "[[require]]\nname = \"mathlib\"\nscope = \"leanprover-community\"\nrev = \"v4.32.0\"\n\n[[require]]\nscope = \"leanprover\"\nname = \"«doc-gen4»\"\nversion = \"git#v4.34.0\"\n\n[[require]]\nname = \"plausible\"\nscope = \"leanprover-community\"\nrev = \"main\"\n\n[[require]]\nname = \"aesop\"\nscope = \"leanprover-community\"\nversion = \"0.0.0\"\n\n[[require]]\nname = \"batteries\"\nscope = \"leanprover-community\"\n";
+    expect(
+        "lakefile.toml",
+        toml,
+        &[
+            ("leanprover-community:mathlib", "v4.32.0", "reservoir"),
+            ("leanprover:doc-gen4", "v4.34.0", "reservoir"),
+        ],
+    );
+    let lean = "require \"leanprover-community\" / \"mathlib\" @ git \"v4.32.0\"\nrequire \"leanprover-community\" / batteries\n";
+    expect(
+        "lakefile.lean",
+        lean,
+        &[("leanprover-community:mathlib", "v4.32.0", "reservoir")],
     );
 }
 
@@ -143,12 +178,19 @@ fn reads_v_module_ranges() {
 
 #[test]
 fn reads_lake_manifest_input_revisions() {
-    // leanprover-community/mathlib4's lake-manifest.json; a branch `inputRev` is not a release.
+    // leanprover-community/mathlib4's lake-manifest.json; a branch `inputRev` pins its reference.
     let text = "{\"version\": \"1.3.0\",\n \"packages\":\n [{\"url\": \"https://github.com/leanprover-community/plausible\",\n   \"type\": \"git\",\n   \"rev\": \"0d8633ef\",\n   \"name\": \"plausible\",\n   \"inputRev\": \"main\"},\n  {\"url\": \"https://github.com/leanprover/lean4-cli\",\n   \"type\": \"git\",\n   \"rev\": \"c830de39\",\n   \"name\": \"Cli\",\n   \"inputRev\": \"v4.37.0-rc1\"}],\n \"name\": \"mathlib\"}\n";
     expect(
         "lake-manifest.json",
         text,
-        &[("leanprover/lean4-cli", "v4.37.0-rc1", "github")],
+        &[
+            (
+                "https://github.com/leanprover-community/plausible",
+                "main",
+                "source",
+            ),
+            ("leanprover/lean4-cli", "v4.37.0-rc1", "github"),
+        ],
     );
 }
 
@@ -168,9 +210,21 @@ fn reads_flake_lock_github_refs() {
 
 #[test]
 fn reads_idris_pack_collection() {
-    // A pack.toml as stefan-hoeck/idris2-pack's config template writes it; a commit is not read.
+    // A pack.toml as stefan-hoeck/idris2-pack's config template writes it; a custom package's
+    // commit pins its git reference.
     let text = "collection = \"nightly-220503\"\n\n[custom.all.literal]\ntype   = \"git\"\nurl    = \"https://github.com/stefan-hoeck/idris2-literal\"\ncommit = \"latest:main\"\n";
-    expect("pack.toml", text, &[("nightly", "220503", "idris-pack")]);
+    expect(
+        "pack.toml",
+        text,
+        &[
+            ("nightly", "220503", "idris-pack"),
+            (
+                "https://github.com/stefan-hoeck/idris2-literal",
+                "main",
+                "source",
+            ),
+        ],
+    );
 }
 
 #[test]

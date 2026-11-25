@@ -63,7 +63,7 @@ fn reads_platformio_platforms_tools_and_libraries() {
                 "platformio-tool",
             ),
             ("fastled/FastLED", "3.9.16", "platformio"),
-            ("bblanchon/ArduinoJson", "~5.6", "platformio"),
+            ("bblanchon/ArduinoJson", "~5.6,!=5.4", "platformio"),
             ("adafruit/Adafruit GFX Library", "^1.11.9", "platformio"),
             ("espressif32", "6.5.0", "platformio-platform"),
             ("google/googletest", "^1.15.2", "platformio"),
@@ -116,7 +116,8 @@ fn reads_boss_dependencies() {
 
 #[test]
 fn reads_mill_java_dependencies() {
-    // mill-build.org's library-deps page; a Scala `::` dependency is not read.
+    // mill-build.org's library-deps page; a Scala `::` dependency in a file with no
+    // `scalaVersion` is not read.
     let text = "object foo extends JavaModule {\n  def mvnDeps = Seq(\n    mvn\"org.slf4j:slf4j-api:1.7.25\",\n    ivy\"ch.qos.logback:logback-classic:1.2.0;classifier=tests\",\n    mvn\"com.lihaoyi::pprint:0.5.3\"\n  )\n}\n";
     expect(
         "build.mill",
@@ -124,6 +125,37 @@ fn reads_mill_java_dependencies() {
         &[
             ("org.slf4j:slf4j-api", "1.7.25", "maven"),
             ("ch.qos.logback:logback-classic", "1.2.0", "maven"),
+        ],
+    );
+    // com-lihaoyi/mill's example/javalib/basic/1-simple/build.mill.yaml.
+    let yaml = "extends: JavaModule\nmvnDeps:\n- net.sourceforge.argparse4j:argparse4j:0.9.0\n- org.thymeleaf:thymeleaf:3.1.1.RELEASE\n";
+    expect(
+        "build.mill.yaml",
+        yaml,
+        &[
+            ("net.sourceforge.argparse4j:argparse4j", "0.9.0", "maven"),
+            ("org.thymeleaf:thymeleaf", "3.1.1.RELEASE", "maven"),
+        ],
+    );
+}
+
+#[test]
+fn reads_mill_scala_dependencies_with_the_scala_version() {
+    // com-lihaoyi/mill's example/scalalib/basic/5-programmable/build.mill, with a Scala.js `:::`.
+    let text = "object foo extends ScalaModule {\n  def scalaVersion = \"3.8.2\"\n  def mvnDeps = Seq(\n    mvn\"com.lihaoyi::scalatags:0.13.1\",\n    mvn\"com.lihaoyi:::upickle:3.1.0\"\n  )\n}\n";
+    expect(
+        "build.mill",
+        text,
+        &[("com.lihaoyi:scalatags_3", "0.13.1", "maven")],
+    );
+    // Its 1-simple/build.mill.yaml, at Scala 2.13.
+    let yaml = "extends: ScalaModule\nscalaVersion: 2.13.16\nmvnDeps:\n- com.lihaoyi::scalatags:0.13.1\n- com.lihaoyi::mainargs:0.7.8";
+    expect(
+        "build.mill.yaml",
+        yaml,
+        &[
+            ("com.lihaoyi:scalatags_2.13", "0.13.1", "maven"),
+            ("com.lihaoyi:mainargs_2.13", "0.7.8", "maven"),
         ],
     );
 }
@@ -136,7 +168,14 @@ fn reads_buck_archives_and_releases() {
     expect(
         "toolchains/BUCK",
         text,
-        &[("bazelbuild/rules_go", "v0.40.1", "github")],
+        &[
+            ("bazelbuild/rules_go", "v0.40.1", "github"),
+            (
+                "https://github.com/NixOS/nixpkgs",
+                "5d736263df906c5da72ab0f372427814de2f52f8",
+                "source",
+            ),
+        ],
     );
 }
 
@@ -156,16 +195,33 @@ fn reads_pants_requirements_and_jvm_artifacts() {
 }
 
 #[test]
-fn reads_west_project_tags() {
-    // The west manifest docs' projects, with a tagged `url` project in each field order; a commit,
-    // a pull ref, and a remote's project are not read.
-    let text = "manifest:\n  remotes:\n    - name: remote1\n      url-base: https://github.com/zephyrproject-rtos\n  projects:\n    - name: zephyr\n      url: https://github.com/zephyrproject-rtos/zephyr\n      revision: v3.7.0\n      import: true\n    - name: hal\n      revision: v1.2.0\n      url: https://github.com/user/hal.git\n    - name: proj2\n      remote: remote1\n      revision: v1.3\n    - name: proj3\n      url: https://github.com/user/project-three\n      revision: 8d24867bc9c9d81c81eeac59391cda59333affd4\n    - name: proj4\n      url: https://github.com/user/project-four\n      revision: pull/69/head\n";
+fn reads_west_projects() {
+    // The west manifest docs' projects: a tagged `url` project in each field order, a commit, a
+    // pull ref, a remote's tagged project with a `repo-path`, and one through `defaults.remote`.
+    let text = "manifest:\n  defaults:\n    remote: remote1\n  remotes:\n    - name: remote1\n      url-base: https://github.com/zephyrproject-rtos\n    - name: remote2\n      url-base: https://git.example.com/base2/\n  projects:\n    - name: zephyr\n      url: https://github.com/zephyrproject-rtos/zephyr\n      revision: v3.7.0\n      import: true\n    - name: hal\n      revision: v1.2.0\n      url: https://github.com/user/hal.git\n    - name: proj2\n      remote: remote1\n      repo-path: hal_nordic\n      revision: v1.3\n    - name: proj3\n      url: https://github.com/user/project-three\n      revision: 8d24867bc9c9d81c81eeac59391cda59333affd4\n    - name: proj4\n      url: https://github.com/user/project-four\n      revision: pull/69/head\n    - name: proj5\n      revision: main\n    - name: proj6\n      remote: remote2\n      revision: v2.0.0\n    - name: proj7\n      remote: remote1\n";
     expect(
         "west.yml",
         text,
         &[
             ("zephyrproject-rtos/zephyr", "v3.7.0", "github"),
             ("user/hal", "v1.2.0", "github"),
+            ("zephyrproject-rtos/hal_nordic", "v1.3", "github"),
+            (
+                "https://github.com/user/project-three",
+                "8d24867bc9c9d81c81eeac59391cda59333affd4",
+                "source",
+            ),
+            (
+                "https://github.com/user/project-four",
+                "pull/69/head",
+                "source",
+            ),
+            (
+                "https://github.com/zephyrproject-rtos/proj5",
+                "main",
+                "source",
+            ),
+            ("https://git.example.com/base2/proj6", "v2.0.0", "source"),
         ],
     );
 }
@@ -177,7 +233,11 @@ fn reads_alire_dependencies() {
     expect(
         "alire.toml",
         text,
-        &[("libfoo", "^1.2", "alire"), ("aunit", "*", "alire")],
+        &[
+            ("libfoo", "^1.2", "alire"),
+            ("aunit", "*", "alire"),
+            ("libbar", "^2.0", "alire"),
+        ],
     );
 }
 
@@ -213,6 +273,24 @@ fn reads_nimble_package_names() {
             ("dotenv", ">= 2.0.0", "nimble"),
             ("foo", "1.0.0", "nimble"),
             ("https://github.com/user/pkg", "head", "source"),
+        ],
+    );
+}
+
+#[test]
+fn reads_github_commit_archives_as_sources() {
+    // A build.zig.zon dependency pinned to a commit archive beside one at a tag archive.
+    let text = ".{\n    .dependencies = .{\n        .known = .{\n            .url = \"https://github.com/o/known/archive/refs/tags/v1.2.0.tar.gz\",\n        },\n        .pinned = .{\n            .url = \"https://github.com/o/pinned/archive/0123456789abcdef0123456789abcdef01234567.tar.gz\",\n        },\n    },\n}\n";
+    expect(
+        "build.zig.zon",
+        text,
+        &[
+            ("o/known", "v1.2.0", "github"),
+            (
+                "https://github.com/o/pinned",
+                "0123456789abcdef0123456789abcdef01234567",
+                "source",
+            ),
         ],
     );
 }

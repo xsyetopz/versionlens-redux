@@ -214,12 +214,17 @@ fn page(dep: &Dep) -> String {
     }
 }
 
-/// The web address of a fixed source: its URL, without a `git+` prefix or a `#ref`, or the
-/// repository a `github:owner/repo` shorthand names.
+/// The web address of a fixed source: its URL, without a `git+` prefix, a `?rev=` query, or a
+/// `#ref`, or the repository a `github:owner/repo` shorthand names. A requirement that is only a
+/// revision, such as a west project's `main`, leaves the page to a name that is a URL.
 fn source_page(dep: &Dep) -> Option<String> {
-    let req = dep.req.trim();
+    url_page(&dep.req).or_else(|| url_page(&dep.name))
+}
+
+fn url_page(req: &str) -> Option<String> {
+    let req = req.trim();
     let req = req.strip_prefix("git+").unwrap_or(req);
-    let url = req.split('#').next().unwrap_or(req);
+    let url = req.split(['#', '?']).next().unwrap_or(req);
     if url.starts_with("https://") || url.starts_with("http://") {
         return Some(url.trim_end_matches(".git").to_owned());
     }

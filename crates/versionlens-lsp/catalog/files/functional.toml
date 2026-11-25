@@ -352,8 +352,10 @@ rules = [
     { lines = '"locator"\s*:\s*"github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*"version"\s*:\s*"(?P<version>[^"]+)"' },
 ]
 
-# Qlot's qlfile takes a GitHub library at a `:tag`, by `github owner/repo` or a `git` URL:
-# github.com/fukamachi/qlot, README.markdown. A Quicklisp dist date is not read.
+# Qlot's qlfile takes a GitHub library at a `:tag`, by `github owner/repo` or a `git` URL, any git
+# URL at a `:ref`, `:branch`, or `:tag` it pins, and a Quicklisp project from the dist of a date,
+# `ql clack 2014-01-13`: github.com/fukamachi/qlot, README.markdown "ql" and "git". A `github`
+# line's branch or ref names no URL to link, so it is not read.
 [[file]]
 id = 'qlfile'
 globs = ['qlfile']
@@ -362,6 +364,8 @@ registry = 'github'
 rules = [
     { lines = '(?m)^[ \t]*github[ \t]+(?P<name>[\w.-]+/[\w.-]+)[ \t]+:tag[ \t]+(?P<version>\S+)' },
     { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?[ \t]+:tag[ \t]+(?P<version>\S+)' },
+    { lines = '(?m)^[ \t]*ql[ \t]+(?P<name>\S+)[ \t]+(?P<version>\d{4}-\d{2}-\d{2})', via = 'quicklisp' },
+    { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+(?P<name>\S+?)(?:\.git)?[ \t]+:(?:ref|branch|tag)[ \t]+(?P<version>\S+)', via = 'source' },
 ]
 
 # A Racket package's info.rkt lists `deps` and `build-deps`, each a source string or a list with
@@ -381,8 +385,12 @@ rules = [
 ]
 
 # Lake requires a git package at a `rev`, in lakefile.toml as `git` then `rev` and in lakefile.lean
-# as `from git "url" @ "rev"`: leanprover/lean4, src/lake/README.md. Only a release-like rev reads,
-# not a branch or commit; a Reservoir `scope`/`version` is not read.
+# as `from git "url" @ "rev"`, and a Reservoir package by `scope` and name, at a tag `rev` or a
+# `version = "git#tag"`, or in Lean as `require "scope" / name @ git "tag"`: leanprover/lean4,
+# src/lake/README.md "Lean require" and "TOML require"; openai/ten-proofs' and kkytola/
+# VirasoroProject's lakefile.toml. A release-like git rev reads as a GitHub release, and any other
+# rev or host as the git reference it pins. A Reservoir branch or commit names no repository, and
+# a bare Reservoir `version` is the registry's own, mostly `0.0.0`, so neither reads.
 [[file]]
 id = 'lake'
 globs = ['lakefile.toml', 'lakefile.lean']
@@ -391,6 +399,11 @@ registry = 'github'
 rules = [
     { lines = '''git[ \t]*=[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*rev[ \t]*=[ \t]*"(?P<version>v?\d+\.\d[\w.-]*)"''' },
     { lines = 'from\s+git\s+"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*@\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
+    { lines = '''(?m)^[ \t]*name[ \t]*=[ \t]*"«?(?P<name>[\w.-]+)»?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*scope[ \t]*=[ \t]*"(?P<group>[\w.-]+)"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*(?:rev[ \t]*=[ \t]*"|version[ \t]*=[ \t]*"git#)(?P<version>v?\d+\.\d[\w.-]*)"''', via = 'reservoir' },
+    { lines = '''(?m)^[ \t]*scope[ \t]*=[ \t]*"(?P<group>[\w.-]+)"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*name[ \t]*=[ \t]*"«?(?P<name>[\w.-]+)»?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*(?:rev[ \t]*=[ \t]*"|version[ \t]*=[ \t]*"git#)(?P<version>v?\d+\.\d[\w.-]*)"''', via = 'reservoir' },
+    { lines = '''require\s+"(?P<group>[\w.-]+)"\s*/\s*"?«?(?P<name>[\w.-]+)»?"?\s*@\s*git\s+"(?P<version>v?\d+\.\d[\w.-]*)"''', via = 'reservoir' },
+    { lines = '''git[ \t]*=[ \t]*"(?P<name>[^"\s]+?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*rev[ \t]*=[ \t]*"(?P<version>[^"\s]+)"''', via = 'source' },
+    { lines = 'from\s+git\s+"(?P<name>[^"\s]+?)(?:\.git)?"\s*@\s*"(?P<version>[^"\s]+)"', via = 'source' },
 ]
 
 # V's v.mod lists `dependencies` as `'module@range'` strings, the same as `v install` takes, which
@@ -404,8 +417,8 @@ registry = 'vpm'
 rules = [{ lines = '''['"](?P<name>[A-Za-z_][\w.]*)@(?P<version>[^'"\r\n]+)['"]''' }]
 
 # Lake's lake-manifest.json records each git package's `url` and the `inputRev` its lakefile asked
-# for, beside the resolved commit `rev`: leanprover-community/mathlib4's lake-manifest.json. Only
-# a release-like `inputRev` reads, not a branch.
+# for, beside the resolved commit `rev`: leanprover-community/mathlib4's lake-manifest.json. A
+# release-like `inputRev` on GitHub reads as a release, and any other as the git reference it pins.
 [[file]]
 id = 'lake-manifest'
 globs = ['lake-manifest.json']
@@ -414,11 +427,13 @@ registry = 'github'
 pinned = true
 rules = [
     { lines = '"url"\s*:\s*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[^}]*?"inputRev"\s*:\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
+    { lines = '"url"\s*:\s*"(?P<name>[^"\s]+?)(?:\.git)?"[^}]*?"inputRev"\s*:\s*"(?P<version>[^"\s]+)"', via = 'source' },
 ]
 
 # Pack's pack.toml pins the curated `collection`, `nightly-YYMMDD`, that every library builds from;
-# a custom package pins a `commit`, not a release: stefan-hoeck/idris2-pack, src/Pack/Config/
-# TOML.idr. The project's pack.toml and the user's ~/.config/pack/pack.toml share the format.
+# a custom git package's `url` and `commit`, a hash or `latest:<branch>`, read as the git reference
+# they pin: stefan-hoeck/idris2-pack, src/Pack/Config/TOML.idr. The project's pack.toml and the
+# user's ~/.config/pack/pack.toml share the format.
 [[file]]
 id = 'idris-pack'
 globs = ['pack.toml']
@@ -426,6 +441,7 @@ format = 'text'
 registry = 'idris-pack'
 rules = [
     { lines = '''(?m)^[ \t]*collection[ \t]*=[ \t]*["'](?P<name>nightly)-(?P<version>\d+)["']''' },
+    { lines = '''(?m)^[ \t]*url[ \t]*=[ \t]*"(?P<name>[^"\s]+?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*commit[ \t]*=[ \t]*"(?:latest:)?(?P<version>[^"\s]+)"''', via = 'source' },
 ]
 
 # A META6.json `depends`, `build-depends`, or `test-depends` lists `Name:ver<1.0.1+>:auth<zef:cro>`

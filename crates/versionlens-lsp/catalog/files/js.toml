@@ -207,8 +207,9 @@ rules = [
 # Lockfiles hold the version each package resolved to, so the lens compares it with the latest.
 
 # `packages` keys a package by its `node_modules/` path in lockfile v2 and v3, and v1 nests
-# `dependencies` by name; either way `version` comes first. Workspace entries start with `name`,
-# and links carry no version. Read from github.com/npm/cli/blob/latest/package-lock.json.
+# `dependencies` by name; either way `version` comes first. Workspace entries start with `name`.
+# A link to a workspace gives its directory as `resolved` beside `"link": true`, which reads as a
+# local directory. Read from github.com/npm/cli/blob/latest/package-lock.json.
 [[file]]
 id = 'package-lock'
 globs = ['package-lock.json', 'npm-shrinkwrap.json']
@@ -217,12 +218,16 @@ registry = 'npm'
 pinned = true
 rules = [
     { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>\d[^"]*)"' },
+    { lines = '"[^"\n]*node_modules/(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"resolved":[ \t]*"(?P<version>[^"]+)",\s*"link":[ \t]*true', via = 'directory' },
 ]
 
 # An entry heads one or more `name@range` keys, then `version "1.0.0"` in Yarn 1
 # (github.com/babel/babel/blob/v7.0.0/yarn.lock) or `version: 1.0.0` in Yarn 2 and later
 # (github.com/yarnpkg/berry/blob/master/yarn.lock). Ranges must start like a version or `npm:`
-# one, so workspace, patch, git, and aliased entries stay out.
+# one, so aliased entries stay out. The same Yarn 2 lockfile resolves a workspace to
+# `name@workspace:path`, a local directory, other than the root's `.`; a git dependency to
+# `name@https://github.com/dexus/pem.git#commit=…`; and a patched package to `name@patch:…`, whose
+# `version` is the npm release the patch applies to.
 [[file]]
 id = 'yarn-lock'
 globs = ['yarn.lock']
@@ -231,11 +236,15 @@ registry = 'npm'
 pinned = true
 rules = [
     { lines = '(?m)^"?(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?:npm:)?[\^~<>=*\dvx][^\n]*:\r?\n[ \t]+version:?[ \t]+"?(?P<version>\d[^"\s]*)' },
+    { lines = '(?m)^"?(?P<name>(?:@[\w.-]+/)?[\w.-]+)@patch:[^\n]*:\r?\n[ \t]+version:[ \t]+"?(?P<version>\d[^"\s]*)' },
+    { lines = '(?m)^[ \t]+resolution:[ \t]+"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@workspace:(?P<version>(?:[^".]|\.[^"])[^"]*)"', via = 'directory' },
+    { lines = '(?m)^[ \t]+resolution:[ \t]+"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>(?:git\+|https?://)[^"]*\.git#[^"]*)"', via = 'source' },
 ]
 
 # Each importer lists its direct dependencies as `name:`, `specifier:`, then the resolved
-# `version:`, whose peer suffix `(react@18.2.0)` and `link:` versions stay out. pnpm 8 and later
-# write this shape: github.com/vitejs/vite/blob/main/pnpm-lock.yaml.
+# `version:`, whose peer suffix `(react@18.2.0)` stays out. pnpm 8 and later write this shape:
+# github.com/vitejs/vite/blob/main/pnpm-lock.yaml. A `link:../vite` version is relative to its
+# importer's directory, a key the entry's regex cannot reach, so links stay out.
 [[file]]
 id = 'pnpm-lock'
 globs = ['pnpm-lock.yaml']
@@ -248,7 +257,8 @@ rules = [
 
 # Bun's text lockfile maps each package path to `["name@version", ...]`; the name comes from the
 # value, which also covers nested and aliased paths: bun.sh/docs/install/lockfile, and this
-# repository's own bun.lock. Workspace and git entries carry no version.
+# repository's own bun.lock. A workspace entry, `["versionlens-redux@workspace:packages/
+# vscode-extension"]` there, names its directory, other than the root's `.`.
 [[file]]
 id = 'bun-lock'
 globs = ['bun.lock']
@@ -257,6 +267,7 @@ registry = 'npm'
 pinned = true
 rules = [
     { lines = '"[^"\n]+":[ \t]*\[[ \t]*"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>\d[^"]*)"' },
+    { lines = '"[^"\n]+":[ \t]*\[[ \t]*"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@workspace:(?P<version>(?:[^".]|\.[^"])[^"]*)"', via = 'directory' },
 ]
 
 # Installed packages: github.com/composer/composer/blob/main/composer.lock

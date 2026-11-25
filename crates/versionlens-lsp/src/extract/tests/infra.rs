@@ -50,6 +50,7 @@ fn reads_helmfile_releases() {
         &[
             ("prometheus-community/prometheus", "25.0.0", "artifacthub"),
             ("grafana/grafana", "7.3.0", "artifacthub"),
+            ("./charts/local", "./charts/local", "directory"),
         ],
     );
 }
@@ -63,15 +64,27 @@ fn reads_argo_cd_and_flux_sources() {
         &[
             ("sealed-secrets", "1.16.1", "helm"),
             ("app", "2.0.0", "helm"),
+            (
+                "https://github.com/argoproj/argocd-example-apps",
+                "HEAD",
+                "source",
+            ),
         ],
     );
-    let flux = "apiVersion: source.toolkit.fluxcd.io/v1\nkind: OCIRepository\nspec:\n  interval: 5m0s\n  url: oci://ghcr.io/stefanprodan/manifests/podinfo\n  ref:\n    tag: 6.1.6\n---\nkind: GitRepository\nspec:\n  url: https://github.com/stefanprodan/podinfo\n  ref:\n    tag: v6.6.0\n---\nkind: GitRepository\nspec:\n  url: https://github.com/stefanprodan/podinfo\n  ref:\n    branch: master\n";
+    let flux = "apiVersion: source.toolkit.fluxcd.io/v1\nkind: OCIRepository\nspec:\n  interval: 5m0s\n  url: oci://ghcr.io/stefanprodan/manifests/podinfo\n  ref:\n    tag: 6.1.6\n---\nkind: GitRepository\nspec:\n  url: https://github.com/stefanprodan/podinfo\n  ref:\n    tag: v6.6.0\n---\nkind: GitRepository\nspec:\n  url: https://github.com/stefanprodan/podinfo\n  ref:\n    branch: master\n---\nkind: GitRepository\nspec:\n  url: https://github.com/stefanprodan/podinfo\n  ref:\n    # SemVer range reference\n    semver: \">=6.0.0 <7.0.0\"\n---\nkind: GitRepository\nspec:\n  url: ssh://git@git.example.com/team/app\n  ref:\n    branch: main\n    commit: \"0e2a5fd\"\n  secretRef:\n    name: creds\n";
     expect(
         "clusters/prod/sources.yaml",
         flux,
         &[
             ("ghcr.io/stefanprodan/manifests/podinfo", "6.1.6", "oci"),
             ("stefanprodan/podinfo", "v6.6.0", "github"),
+            (
+                "https://github.com/stefanprodan/podinfo",
+                "master",
+                "source",
+            ),
+            ("stefanprodan/podinfo", ">=6.0.0 <7.0.0", "github"),
+            ("ssh://git@git.example.com/team/app", "0e2a5fd", "source"),
         ],
     );
 }
@@ -202,12 +215,13 @@ fn reads_flux_helm_release_charts() {
 #[test]
 fn reads_pulumi_packages() {
     // The Pulumi project file docs' `packages` forms.
-    let text = "name: example-project\nruntime: yaml\npackages:\n  static-page: https://github.com/my-org/static-page@v1.0.0\n  networking: ./components/networking\n  random:\n    source: terraform-provider\n    version: 1.4.0\n    parameters:\n      - hashicorp/random\n      - 3.7.1\n  s3-bucket:\n    source: hcl\n    version: 0.13.0\n    parameters:\n      - module\n      - terraform-aws-modules/s3-bucket/aws\n      - 4.1.2\n";
+    let text = "name: example-project\nruntime:\n  name: python\n  options:\n    virtualenv: ./venv\npackages:\n  static-page: https://github.com/my-org/static-page@v1.0.0\n  networking: ./components/networking\n  random:\n    source: terraform-provider\n    version: 1.4.0\n    parameters:\n      - hashicorp/random\n      - 3.7.1\n  s3-bucket:\n    source: hcl\n    version: 0.13.0\n    parameters:\n      - module\n      - terraform-aws-modules/s3-bucket/aws\n      - 4.1.2\n";
     expect(
         "Pulumi.yaml",
         text,
         &[
             ("my-org/static-page", "v1.0.0", "github"),
+            ("networking", "./components/networking", "directory"),
             ("pulumi/pulumi-terraform-provider", "1.4.0", "github"),
             ("hashicorp/random", "3.7.1", "terraform"),
             ("pulumi/pulumi-hcl", "0.13.0", "github"),

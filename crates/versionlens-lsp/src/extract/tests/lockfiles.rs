@@ -1,6 +1,6 @@
 //! Lockfiles, read as the version each package resolved to.
 
-use super::{Dep, deps, extract, file_type, pairs};
+use super::{Dep, deps, expect, extract, file_type, pairs};
 
 #[test]
 fn reads_package_lock_versions() {
@@ -20,13 +20,15 @@ fn reads_package_lock_versions() {
     }
   }
 }"#;
-    assert_eq!(
-        deps("package-lock.json", text),
-        pairs(&[
-            ("@scope/pkg", "2.0.0"),
-            ("lodash", "3.10.1"),
-            ("lodash", "4.17.21")
-        ])
+    expect(
+        "package-lock.json",
+        text,
+        &[
+            ("@scope/pkg", "2.0.0", "npm"),
+            ("lodash", "3.10.1", "npm"),
+            ("local", "packages/local", "directory"),
+            ("lodash", "4.17.21", "npm"),
+        ],
     );
 }
 
@@ -37,25 +39,49 @@ fn reads_yarn_lock_versions() {
         deps("yarn.lock", classic),
         pairs(&[("@babel/code-frame", "7.0.0"), ("lodash", "4.17.21")])
     );
-    let berry = "__metadata:\n  version: 8\n\n\"lodash@npm:^4.17.0\":\n  version: 4.17.21\n  resolution: \"lodash@npm:4.17.21\"\n\n\"app@workspace:.\":\n  version: 0.0.0-use.local\n\n\"alias@npm:other@^1.0.0\":\n  version: 1.2.0\n";
+    let berry = "__metadata:\n  version: 8\n\n\"lodash@npm:^4.17.0\":\n  version: 4.17.21\n  resolution: \"lodash@npm:4.17.21\"\n\n\"app@workspace:.\":\n  version: 0.0.0-use.local\n  resolution: \"app@workspace:.\"\n\n\"alias@npm:other@^1.0.0\":\n  version: 1.2.0\n";
     assert_eq!(deps("yarn.lock", berry), pairs(&[("lodash", "4.17.21")]));
+    // Entries from yarnpkg/berry's own yarn.lock: a workspace, a git dependency, and a patch.
+    let sources = "\"@yarnpkg/cli@workspace:^, @yarnpkg/cli@workspace:packages/yarnpkg-cli\":\n  version: 0.0.0-use.local\n  resolution: \"@yarnpkg/cli@workspace:packages/yarnpkg-cli\"\n\npem@dexus/pem:\n  version: 1.14.5\n  resolution: \"pem@https://github.com/dexus/pem.git#commit=71dae33\"\n\n\"got@patch:got@npm%3A11.8.2#~/.yarn/patches/got-npm-11.8.2-c1eb105458.patch\":\n  version: 11.8.2\n  resolution: \"got@patch:got@npm%3A11.8.2#~/.yarn/patches/got.patch::version=11.8.2&hash=15933f\"\n";
+    expect(
+        "yarn.lock",
+        sources,
+        &[
+            ("@yarnpkg/cli", "packages/yarnpkg-cli", "directory"),
+            (
+                "pem",
+                "https://github.com/dexus/pem.git#commit=71dae33",
+                "source",
+            ),
+            ("got", "11.8.2", "npm"),
+        ],
+    );
 }
 
 #[test]
 fn reads_pnpm_lock_importers() {
     let text = "lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    devDependencies:\n      '@types/node':\n        specifier: ^20.0.0\n        version: 20.11.5\n      vite:\n        specifier: workspace:*\n        version: link:packages/vite\n      react-dom:\n        specifier: ^18.2.0\n        version: 18.2.0(react@18.2.0)\n\npackages:\n\n  '@types/node@20.11.5':\n    resolution: {integrity: sha512-x}\n";
-    assert_eq!(
-        deps("pnpm-lock.yaml", text),
-        pairs(&[("@types/node", "20.11.5"), ("react-dom", "18.2.0")])
+    expect(
+        "pnpm-lock.yaml",
+        text,
+        &[
+            ("@types/node", "20.11.5", "npm"),
+            ("react-dom", "18.2.0", "npm"),
+        ],
     );
 }
 
 #[test]
 fn reads_bun_lock_packages() {
-    let text = "{\n  \"lockfileVersion\": 1,\n  \"workspaces\": {\n    \"\": { \"name\": \"app\", \"dependencies\": { \"lodash\": \"^4.17.0\" } },\n  },\n  \"packages\": {\n    \"@types/node\": [\"@types/node@20.11.5\", \"\", {}, \"sha512-x\"],\n    \"a/lodash\": [\"lodash@3.10.1\", \"\", {}, \"sha512-y\"],\n    \"app\": [\"app@workspace:.\"],\n  }\n}\n";
-    assert_eq!(
-        deps("bun.lock", text),
-        pairs(&[("@types/node", "20.11.5"), ("lodash", "3.10.1")])
+    let text = "{\n  \"lockfileVersion\": 1,\n  \"workspaces\": {\n    \"\": { \"name\": \"app\", \"dependencies\": { \"lodash\": \"^4.17.0\" } },\n  },\n  \"packages\": {\n    \"@types/node\": [\"@types/node@20.11.5\", \"\", {}, \"sha512-x\"],\n    \"a/lodash\": [\"lodash@3.10.1\", \"\", {}, \"sha512-y\"],\n    \"app\": [\"app@workspace:.\"],\n    \"ext\": [\"ext@workspace:packages/vscode-extension\"],\n  }\n}\n";
+    expect(
+        "bun.lock",
+        text,
+        &[
+            ("@types/node", "20.11.5", "npm"),
+            ("lodash", "3.10.1", "npm"),
+            ("ext", "packages/vscode-extension", "directory"),
+        ],
     );
 }
 
@@ -71,9 +97,14 @@ fn reads_composer_lock_packages() {
 #[test]
 fn reads_cargo_lock_registry_crates() {
     let text = "version = 4\n\n[[package]]\nname = \"app\"\nversion = \"0.1.0\"\ndependencies = [\n \"serde\",\n]\n\n[[package]]\nname = \"serde\"\nversion = \"1.0.200\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\nchecksum = \"x\"\n\n[[package]]\nname = \"forked\"\nversion = \"0.2.0\"\nsource = \"git+https://github.com/o/forked#abc\"\n\n[[package]]\nname = \"sparse\"\nversion = \"0.3.0\"\nsource = \"sparse+https://index.crates.io/\"\n";
-    assert_eq!(
-        deps("Cargo.lock", text),
-        pairs(&[("serde", "1.0.200"), ("sparse", "0.3.0")])
+    expect(
+        "Cargo.lock",
+        text,
+        &[
+            ("serde", "1.0.200", "cargo"),
+            ("forked", "git+https://github.com/o/forked#abc", "source"),
+            ("sparse", "0.3.0", "cargo"),
+        ],
     );
 }
 
