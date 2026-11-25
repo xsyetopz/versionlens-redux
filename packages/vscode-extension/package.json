@@ -413,7 +413,7 @@
 				"versionlens.githubToken": {
 					"type": "string",
 					"default": "",
-					"description": "GitHub token for GitHub tag lookups (Actions, Swift, CMake). Falls back to GITHUB_TOKEN or GH_TOKEN."
+					"description": "GitHub token for GitHub tag lookups (Actions, Swift, CMake). Falls back to GITHUB_TOKEN, GH_TOKEN, then `gh auth token`."
 				},
 				"versionlens.registries": {
 					"type": "object",

@@ -11,6 +11,8 @@ use tokio::time::timeout;
 use crate::config::Settings;
 use crate::registry::{self, Registry, Versions, expand};
 
+mod gh;
+
 /// The most `Link` pages a paged registry is followed through, past its first.
 const PAGES: usize = 30;
 
@@ -109,7 +111,7 @@ impl Http {
             if !status.is_success() {
                 let hint = match status.as_u16() {
                     403 if url.contains("api.github.com") => {
-                        " (rate limited; set GITHUB_TOKEN or versionlens.githubToken)"
+                        " (rate limited; set versionlens.githubToken or GITHUB_TOKEN, or sign in with gh auth login)"
                     }
                     401 | 403 => " (add credentials for this URL with versionlens.authorization)",
                     _ => "",
@@ -187,10 +189,14 @@ impl Http {
             .max_by_key(|(prefix, _)| prefix.len());
         if let Some((_, value)) = configured {
             request = request.header(header::AUTHORIZATION, value);
-        } else if url.starts_with("https://api.github.com/")
-            && let Some(token) = &self.settings.github_token
-        {
-            request = request.bearer_auth(token);
+        } else if url.starts_with("https://api.github.com/") {
+            let token = match &self.settings.github_token {
+                Some(token) => Some(token.clone()),
+                None => gh::token().await,
+            };
+            if let Some(token) = token {
+                request = request.bearer_auth(token);
+            }
         }
         self.send(request, url, configured.is_none()).await
     }

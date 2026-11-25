@@ -34,7 +34,7 @@ When none runs, the plugin shows one notification and writes the reason to the l
 | Request timeout (ms) | 10000 |
 | Concurrent requests | 32 |
 | Cache (minutes) | 60 |
-| GitHub token | empty; stored in the IDE password safe, falls back to `GITHUB_TOKEN`, then `GH_TOKEN` |
+| GitHub token | empty; stored in the IDE password safe, falls back to `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token` |
 | Summary lens above each manifest | off |
 | Outdated dependency severity | info; `off`, `hint`, `info`, `warning`, or `error` |
 | Prerelease tags | empty; comma-separated tags such as `rc, beta`, empty allows all |

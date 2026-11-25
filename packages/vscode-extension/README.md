@@ -87,7 +87,7 @@ The server lists the files it reads in its initialize result, and the extension 
 | `versionlens.concurrency` | `32` | Registry requests that run at once. |
 | `versionlens.cacheMinutes` | `60` | How long registry answers are reused. |
 | `versionlens.strictSsl` | `true` | Reject registries whose TLS certificate does not verify. |
-| `versionlens.githubToken` | empty | Token for GitHub tag lookups. Falls back to `GITHUB_TOKEN`, then `GH_TOKEN`. |
+| `versionlens.githubToken` | empty | Token for GitHub tag lookups. Falls back to `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. |
 | `versionlens.registries` | `{}` | URL template per registry id, for mirrors and private registries, such as `{"npm": "https://npm.example.com/{enc}"}`. |
 | `versionlens.providers` | `{}` | Per registry id, overrides of `cacheMinutes`, `strictSsl`, and `prereleaseTags`, such as `{"npm": {"cacheMinutes": 5}}`. |
 | `versionlens.authorization` | `{}` | `Authorization` header per registry URL prefix. **Add url authentication** keeps headers in secret storage instead. |

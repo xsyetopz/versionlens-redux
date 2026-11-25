@@ -30,7 +30,7 @@ M.schema = {
     "githubToken",
     "string",
     "",
-    "GitHub token for GitHub tag lookups; falls back to GITHUB_TOKEN or GH_TOKEN.",
+    "GitHub token for GitHub tag lookups; falls back to GITHUB_TOKEN, GH_TOKEN, then gh auth token.",
   },
   {
     "registries",

@@ -167,7 +167,9 @@ internal class SettingsPage : BoundConfigurable("VersionLens") {
                 .comment("Logs the LSP traffic to the VersionLens tool window.")
         }
         row("GitHub token:") {
-            passwordField().bindText(::token).comment("Empty uses GITHUB_TOKEN or GH_TOKEN.")
+            passwordField()
+                .bindText(::token)
+                .comment("Empty uses GITHUB_TOKEN, GH_TOKEN, or gh auth token.")
         }
         maps()
     }
