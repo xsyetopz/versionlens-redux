@@ -197,6 +197,7 @@ id = 'package-lock'
 globs = ['package-lock.json', 'npm-shrinkwrap.json']
 format = 'text'
 registry = 'npm'
+pinned = true
 rules = [
     { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>\d[^"]*)"' },
 ]
@@ -210,6 +211,7 @@ id = 'yarn-lock'
 globs = ['yarn.lock']
 format = 'text'
 registry = 'npm'
+pinned = true
 rules = [
     { lines = '(?m)^"?(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?:npm:)?[\^~<>=*\dvx][^\n]*:\r?\n[ \t]+version:?[ \t]+"?(?P<version>\d[^"\s]*)' },
 ]
@@ -222,6 +224,7 @@ id = 'pnpm-lock'
 globs = ['pnpm-lock.yaml']
 format = 'text'
 registry = 'npm'
+pinned = true
 rules = [
     { lines = '''(?m)^[ \t]+'?(?P<name>(?:@[\w.-]+/)?[\w.-]+)'?:\r?\n[ \t]+specifier:[^\n]*\r?\n[ \t]+version:[ \t]+'?(?P<version>\d[\w.+-]*)''' },
 ]
@@ -234,6 +237,7 @@ id = 'bun-lock'
 globs = ['bun.lock']
 format = 'text'
 registry = 'npm'
+pinned = true
 rules = [
     { lines = '"[^"\n]+":[ \t]*\[[ \t]*"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>\d[^"]*)"' },
 ]
@@ -244,6 +248,7 @@ id = 'composer-lock'
 globs = ['composer.lock']
 format = 'json'
 registry = 'composer'
+pinned = true
 rules = [
     { record = 'packages.*', name = 'name', version = 'version' },
     { record = 'packages-dev.*', name = 'name', version = 'version' },

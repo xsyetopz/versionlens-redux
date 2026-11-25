@@ -54,6 +54,9 @@ pub(crate) struct FileType {
     /// Top-level keys of which the document must hold one; a row with any matches only by
     /// content, after every row that matches by name has failed.
     pub(crate) content: &'static [&'static str],
+    /// Each version is the one installed, as in a lockfile, so it matches only itself, whatever
+    /// a bare version means to the registry: `Cargo.lock`'s `0.3.0` is not Cargo's `^0.3.0`.
+    pub(crate) pinned: bool,
 }
 
 fn load() -> Result<Vec<FileType>, String> {
@@ -69,7 +72,7 @@ fn load() -> Result<Vec<FileType>, String> {
 /// One `[[file]]` row.
 fn file(row: &Row) -> Result<FileType, String> {
     row.only(&[
-        "id", "globs", "exclude", "content", "format", "registry", "insert", "rules",
+        "id", "globs", "exclude", "content", "format", "registry", "insert", "pinned", "rules",
     ])?;
     let format = match row.need("format")? {
         "json" => Format::Json,
@@ -106,6 +109,7 @@ fn file(row: &Row) -> Result<FileType, String> {
         insert: row.text("insert")?,
         exclude: row.list("exclude")?.leak(),
         content: row.list("content")?.leak(),
+        pinned: row.flag("pinned")?,
     })
 }
 

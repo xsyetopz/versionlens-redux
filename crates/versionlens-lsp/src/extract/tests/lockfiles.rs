@@ -1,6 +1,6 @@
 //! Lockfiles, read as the version each package resolved to.
 
-use super::{deps, pairs};
+use super::{Dep, deps, extract, file_type, pairs};
 
 #[test]
 fn reads_package_lock_versions() {
@@ -95,4 +95,26 @@ fn reads_gemfile_lock_specs() {
         deps("Gemfile.lock", text),
         pairs(&[("actionpack", "7.1.3"), ("nokogiri", "1.16.2")])
     );
+}
+
+#[test]
+fn locked_versions_resolve_to_themselves_not_a_registry_range() {
+    let text = "[[package]]\nname = \"time\"\nversion = \"0.3.0\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\n";
+    let file = file_type("Cargo.lock").expect("Cargo.lock is recognised");
+    let manifest = file_type("Cargo.toml").expect("Cargo.toml is recognised");
+    let cargo = crate::registry::get("cargo").expect("the cargo registry loads");
+    let listed: Vec<_> = ["0.3.0", "0.3.55"]
+        .iter()
+        .filter_map(|v| crate::version::Version::parse(v))
+        .collect();
+
+    let locked = &extract(file, text)[0];
+    let ranged = &extract(manifest, "[dependencies]\ntime = \"0.3.0\"\n")[0];
+    let resolve = |dep: &Dep| {
+        let req = crate::version::Req::parse(&dep.req, dep.bare(cargo)).expect("req parses");
+        crate::render::current(&req, &listed).map(|v| v.raw)
+    };
+
+    assert_eq!(resolve(locked).as_deref(), Some("0.3.0"));
+    assert_eq!(resolve(ranged).as_deref(), Some("0.3.55"));
 }

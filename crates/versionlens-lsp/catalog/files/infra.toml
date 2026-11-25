@@ -256,6 +256,7 @@ id = 'terraform-lock'
 globs = ['.terraform.lock.hcl']
 format = 'text'
 registry = 'terraform'
+pinned = true
 rules = [
     { lines = 'provider[ \t]+"registry\.terraform\.io/(?P<name>[\w-]+/[\w-]+)"[ \t]*\{\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
 ]

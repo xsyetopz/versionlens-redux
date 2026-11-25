@@ -17,6 +17,7 @@ id = 'gemfile-lock'
 globs = ['Gemfile.lock', 'gems.locked']
 format = 'text'
 registry = 'rubygems'
+pinned = true
 rules = [
     { lines = '(?m)^    (?P<name>[A-Za-z0-9][\w.-]*) \((?P<version>\d[\w.]*)(?:-[\w-]+)?\)\r?$' },
 ]
@@ -75,11 +76,19 @@ rules = [
 
 [[file]]
 id = 'julia'
-globs = ['Project.toml', 'JuliaProject.toml', 'Manifest.toml', 'Manifest-v*.toml']
+globs = ['Project.toml', 'JuliaProject.toml']
 format = 'toml'
 registry = 'julia'
+rules = [{ keys = 'compat' }]
+
+# A manifest records the version each package resolved to, not a compat range.
+[[file]]
+id = 'julia-manifest'
+globs = ['Manifest.toml', 'Manifest-v*.toml']
+format = 'toml'
+registry = 'julia'
+pinned = true
 rules = [
-    { keys = 'compat' },
     # A manifest pins each registered package; standard libraries lack `git-tree-sha1`.
     { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+)\]\]\r?\n(?:[^\[\n][^\n]*\n)*?git-tree-sha1[^\n]*\n(?:[^\[\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
     # The rest, without a `path` or `pinned` line (pkgdocs.julialang.org/v1/toml-files/), are
@@ -94,6 +103,7 @@ id = 'renv'
 globs = ['renv.lock']
 format = 'json'
 registry = 'cran'
+pinned = true
 rules = [
     { record = 'Packages.*', name = 'Package', version = 'Version' },
 ]
@@ -215,6 +225,7 @@ id = 'flake-lock'
 globs = ['flake.lock']
 format = 'text'
 registry = 'github'
+pinned = true
 rules = [
     { lines = '''"original"\s*:\s*\{\s*"owner"\s*:\s*"(?P<group>[\w.-]+)"[^}]*?"ref"\s*:\s*"(?:refs/tags/)?(?:nixos-|nixpkgs-|release-)?(?P<version>v?\d[\w.-]*)"[^}]*?"repo"\s*:\s*"(?P<name>[\w.-]+)"[^}]*?"type"\s*:\s*"github"''' },
 ]
@@ -316,6 +327,7 @@ id = 'lake-manifest'
 globs = ['lake-manifest.json']
 format = 'text'
 registry = 'github'
+pinned = true
 rules = [
     { lines = '"url"\s*:\s*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[^}]*?"inputRev"\s*:\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
 ]

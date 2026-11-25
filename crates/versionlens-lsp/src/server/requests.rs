@@ -53,7 +53,7 @@ impl Server {
             Some(Err(error)) => return State::Failed(error.clone()),
             Some(Ok(found)) => found,
         };
-        let Some(req) = registry::get(dep.registry).and_then(|r| Req::parse(&dep.req, r.bare))
+        let Some(req) = registry::get(dep.registry).and_then(|r| Req::parse(&dep.req, dep.bare(r)))
         else {
             return State::Unreadable;
         };

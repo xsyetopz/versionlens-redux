@@ -45,6 +45,20 @@ pub(crate) struct Dep {
     pub(crate) index: Option<String>,
     /// Where the project's registry configuration sends its lookup; empty for the default.
     pub(crate) targets: Vec<crate::project::Target>,
+    /// The version is the one installed, from a `pinned` file type such as a lockfile.
+    pub(crate) pinned: bool,
+}
+
+impl Dep {
+    /// What a version without an operator means for this dependency: the exact one where the
+    /// file pins it, else what it means to the registry.
+    pub(crate) fn bare(&self, registry: &crate::registry::Registry) -> crate::version::Bare {
+        if self.pinned {
+            crate::version::Bare::Exact
+        } else {
+            registry.bare
+        }
+    }
 }
 
 /// Compiles each rule's regex once for the life of the process.
@@ -245,6 +259,7 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
         }
     }
     for dep in &mut deps {
+        dep.pinned |= file.pinned;
         // A Helm chart's `repository` may be a local chart, a `helm repo add` alias, or an OCI
         // registry: helm.sh/docs/helm/helm_dependency/ and helm.sh/docs/topics/registries/
         match dep.source.as_deref() {
@@ -323,6 +338,7 @@ fn keys(map: &str, leaves: &[Leaf], registry: &'static str, deps: &mut Vec<Dep>)
             source: source.map(str::to_owned),
             index: index(leaf, leaves),
             targets: Vec::new(),
+            pinned: false,
         });
     }
 }
@@ -386,6 +402,7 @@ fn records(
             source: field(source).map(|l| l.value.clone()),
             index: None,
             targets: Vec::new(),
+            pinned: false,
         });
     }
 }
@@ -415,6 +432,7 @@ fn from_caps(caps: &Captures, text: &str, offset: usize, file: &FileType) -> Opt
         source: group("source").map(str::to_owned),
         index: None,
         targets: Vec::new(),
+        pinned: false,
     })
 }
 

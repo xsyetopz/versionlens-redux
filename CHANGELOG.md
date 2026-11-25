@@ -81,6 +81,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `deps.edn` and `project.clj` look in Clojars, then Maven Central, where `org.clojure/clojure` lives; their OSV queries use Maven's `group:artifact` names.
 - Maven and Clojure package links open pages that exist: Maven Central's artifact page and cljdoc.
 - Julia `_jll` packages are looked up under General's `jll/` folder, where they live; they failed with HTTP 404 before.
+- A lockfile's version matches only itself, so the lens and OSV check the locked version: `Cargo.lock`'s `time 0.3.0` read as `^0.3.0` and showed the newest 0.3 release as satisfied, and a Julia `Manifest.toml`, now its own `julia-manifest` file type apart from `Project.toml` compat ranges, hid the advisories of the version it records.
 - ConanCenter dependencies no longer send OSV queries for an ecosystem OSV does not have; the GitLab Advisory Database answers them instead.
 
 ## [0.6.3] - 2026-11-09

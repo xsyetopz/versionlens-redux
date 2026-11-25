@@ -82,6 +82,7 @@ id = 'poetry-lock'
 globs = ['poetry.lock']
 format = 'toml'
 registry = 'pypi'
+pinned = true
 rules = [
     { record = 'package.*', name = 'name', version = 'version' },
 ]
@@ -93,6 +94,7 @@ id = 'uv-lock'
 globs = ['uv.lock']
 format = 'text'
 registry = 'pypi'
+pinned = true
 rules = [
     { lines = '(?m)^name = "(?P<name>[^"]+)"\r?\nversion = "(?P<version>[^"]+)"\r?\nsource = \{ registry = ' },
 ]
