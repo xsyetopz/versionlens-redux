@@ -165,6 +165,7 @@ const PRIOR_FILES: &[(&str, &str)] = &[
     ("build.DOCKERFILE", "dockerfile"),
     ("DOCKER-COMPOSE.OVERRIDE.YML", "compose"),
     ("SERVICE.COMPOSE.YML", "compose"),
+    ("service.compose.yaml", "compose"),
     (".YARNRC.YML", "pnpm"),
     ("docker-compose.override.yml", "compose"),
     ("docker-compose.prod.yaml", "compose"),
