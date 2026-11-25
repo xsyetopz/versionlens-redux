@@ -206,7 +206,8 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                     .iter()
                     .filter(|l| path_matches(path, &l.path) && text[l.span.clone()] == l.value)
                 {
-                    if let Some(caps) = re.captures_iter(&leaf.value).next() {
+                    // A value may list several, as library.properties' `depends=A, B (>=1.0)`.
+                    for caps in re.captures_iter(&leaf.value) {
                         deps.extend(from_caps(&caps, &leaf.value, leaf.span.start, file));
                     }
                 }

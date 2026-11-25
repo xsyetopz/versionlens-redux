@@ -325,7 +325,19 @@ impl Http {
         source: Option<&str>,
         filters: &[String],
     ) -> Result<Versions, String> {
-        let url = expand(template, name, source)?;
+        let resolved;
+        let mut url = template;
+        // A registry with no version list of its own names where the releases are: VPM a GitHub
+        // repository whose tags they are, raku.land the `zef:auth` a distribution is under.
+        if url.contains("{upstream}") {
+            let page = expand(registry.osv_name, name, source)?;
+            let text = self.text(&page, "*/*").await?;
+            let owned = registry::upstream_of(registry.upstream, name, &text)
+                .ok_or_else(|| format!("{page}: names no upstream for {name}"))?;
+            resolved = url.replace("{upstream}", &owned);
+            url = &resolved;
+        }
+        let url = expand(url, name, source)?;
         let client = match &self.other {
             Some(other)
                 if self.settings.strict_ssl_for(registry.id) != self.settings.strict_ssl =>

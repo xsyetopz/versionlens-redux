@@ -56,6 +56,26 @@ rules = [
     { lines = '${IMAGE_LINE}' },
 ]
 
+# A Scoop bucket keeps one JSON manifest per app in `bucket/`, its `url` (top-level or per
+# `architecture`) the download; a GitHub release asset names its repository and tag. `autoupdate`
+# writes `$version` in place of the tag, so it is not read: ScoopInstaller/Main, bucket/gh.json.
+[[file]]
+id = 'scoop'
+globs = ['bucket/*.json']
+format = 'text'
+registry = 'github'
+rules = [{ lines = '${GITHUB_RELEASE}' }]
+
+# A winget installer manifest names each installer's `InstallerUrl`; a GitHub release asset
+# names its repository and tag: microsoft/winget-pkgs, manifests/b/BurntSushi/ripgrep/MSVC/16.0.0/
+# BurntSushi.ripgrep.MSVC.installer.yaml. It comes before `kubernetes`, which takes `manifests/`.
+[[file]]
+id = 'winget'
+globs = ['*.installer.yaml']
+format = 'text'
+registry = 'github'
+rules = [{ lines = '${GITHUB_RELEASE}' }]
+
 # Kubernetes manifests have no fixed name; these are the folders and suffixes that hold them,
 # with Flux's `clusters/` (fluxcd.io/flux/guides/repository-structure/) and Argo CD's own folders.
 [[file]]
@@ -70,6 +90,13 @@ rules = [
     # github.com/argoproj/argo-cd/blob/master/docs/operator-manual/declarative-setup.md
     { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
     { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
+    # A Flux HelmRelease names its `chart`, the HelmRepository `sourceRef` it comes from, and a
+    # `version` range, before or after the source: github.com/fluxcd/helm-controller, docs/spec/
+    # v2/helmreleases.md. The URL is in the HelmRepository object, so the chart is looked up on
+    # Artifact Hub under the source's name, as helmfile's repositories are; a chart path from a
+    # GitRepository is not read.
+    { lines = '''(?m)^[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+sourceRef:[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+name:[ \t]*["']?(?P<group>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'artifacthub' },
+    { lines = '''(?m)^[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+sourceRef:[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+name:[ \t]*["']?(?P<group>[\w.-]+)''', via = 'artifacthub' },
     # Flux sources pin an OCI artifact or a git repository by `ref.tag`:
     # github.com/fluxcd/source-controller/blob/main/docs/spec/v1/ocirepositories.md and
     # gitrepositories.md
@@ -259,3 +286,19 @@ rules = [
     { spec = 'executors.*.docker.*.image', pattern = '${DOCKER}' },
 ]
 
+
+# Pulumi.yaml `packages` name a Git repository at a tag, `https://github.com/o/r@v1.0.0`, or a
+# `source` plugin at a `version`, which Pulumi publishes as `pulumi/pulumi-<name>` on GitHub; a
+# `terraform-provider` or `hcl module` source pins its Terraform address in `parameters`:
+# pulumi/docs, content/docs/iac/concepts/projects/project-file.md. A local path is not read.
+[[file]]
+id = 'pulumi'
+globs = ['Pulumi.yaml', 'Pulumi.yml']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]+[\w.-]+:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?@(?P<version>v?\d[^"'\s#]*)''' },
+    { lines = '''(?m)^[ \t]+source:[ \t]*["']?(?P<name>[a-z][\w-]*)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>v?\d[^"'\s#]*)''', prefix = 'pulumi/pulumi-' },
+    { lines = '''(?m)^[ \t]+source:[ \t]*["']?terraform-provider["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+parameters:[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<name>[\w-]+/[\w-]+)["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<version>\d[^"'\s#]*)''', via = 'terraform' },
+    { lines = '''(?m)^[ \t]+parameters:[ \t]*\r?\n[ \t]+-[ \t]*["']?module["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<name>[\w-]+/[\w-]+/[\w-]+)["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<version>\d[^"'\s#]*)''', via = 'terraform' },
+]

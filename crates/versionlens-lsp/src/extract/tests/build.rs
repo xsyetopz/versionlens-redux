@@ -1,4 +1,5 @@
-//! Build systems: CPM.cmake, `FetchContent`, Hunter, `PlatformIO`, ESP-IDF components, Mill, fpm, and Boss.
+//! Build systems: CPM.cmake, `FetchContent`, Hunter, `PlatformIO`, ESP-IDF components, Mill, fpm, Boss,
+//! Buck2, Pants, west, Alire, and Arduino.
 //! Fixtures are excerpts of the real files or docs each row cites.
 
 use super::expect;
@@ -123,6 +124,75 @@ fn reads_mill_java_dependencies() {
         &[
             ("org.slf4j:slf4j-api", "1.7.25", "maven"),
             ("ch.qos.logback:logback-classic", "1.2.0", "maven"),
+        ],
+    );
+}
+
+#[test]
+fn reads_buck_archives_and_releases() {
+    // sluongng/buck2-go's toolchains/BUCK and tweag/buck2.nix's examples/BUCK, whose nixpkgs
+    // archive is a commit.
+    let text = "http_archive(\n    name = \"bazel_rules_go\",\n    urls = [\n        \"https://github.com/bazelbuild/rules_go/releases/download/v0.40.1/rules_go-v0.40.1.zip\",\n    ],\n)\nhttp_archive(\n    name = \"nixpkgs\",\n    urls = [\n      \"https://github.com/NixOS/nixpkgs/archive/5d736263df906c5da72ab0f372427814de2f52f8.tar.gz\",\n    ],\n)\n";
+    expect(
+        "toolchains/BUCK",
+        text,
+        &[("bazelbuild/rules_go", "v0.40.1", "github")],
+    );
+}
+
+#[test]
+fn reads_pants_requirements_and_jvm_artifacts() {
+    // The Pants docs' third-party dependency examples, Python and JVM.
+    let text = "python_requirement(\n    name=\"django\",\n    requirements=[\"Django==3.2.1\"],\n)\npython_requirement(\n    name=\"requests\",\n    requirements=[\"requests[security]>=1,<2.0\"],\n)\npython_requirement(\n    name=\"dataclasses\",\n    requirements=[\"dataclasses ; python_version<'3.7'\"],\n)\njvm_artifact(\n    group=\"com.google.guava\",\n    artifact=\"guava\",\n    version=\"31.0.1-jre\",\n    packages=[\"com.google.common.**\"],\n)\n";
+    expect(
+        "src/python/BUILD",
+        text,
+        &[
+            ("Django", "==3.2.1", "pypi"),
+            ("requests", ">=1,<2.0", "pypi"),
+            ("com.google.guava:guava", "31.0.1-jre", "maven"),
+        ],
+    );
+}
+
+#[test]
+fn reads_west_project_tags() {
+    // The west manifest docs' projects, with a tagged `url` project in each field order; a commit,
+    // a pull ref, and a remote's project are not read.
+    let text = "manifest:\n  remotes:\n    - name: remote1\n      url-base: https://github.com/zephyrproject-rtos\n  projects:\n    - name: zephyr\n      url: https://github.com/zephyrproject-rtos/zephyr\n      revision: v3.7.0\n      import: true\n    - name: hal\n      revision: v1.2.0\n      url: https://github.com/user/hal.git\n    - name: proj2\n      remote: remote1\n      revision: v1.3\n    - name: proj3\n      url: https://github.com/user/project-three\n      revision: 8d24867bc9c9d81c81eeac59391cda59333affd4\n    - name: proj4\n      url: https://github.com/user/project-four\n      revision: pull/69/head\n";
+    expect(
+        "west.yml",
+        text,
+        &[
+            ("zephyrproject-rtos/zephyr", "v3.7.0", "github"),
+            ("user/hal", "v1.2.0", "github"),
+        ],
+    );
+}
+
+#[test]
+fn reads_alire_dependencies() {
+    // The Alire catalog spec's static and dynamic dependencies.
+    let text = "name = \"my_crate\"\nversion = \"0.1.0\"\n\n[[depends-on]]\nlibfoo = \"^1.2\"\naunit = \"*\"\n\n[[depends-on]]\n[depends-on.'case(os)'.linux]\nlibbar = \"^2.0\"\n";
+    expect(
+        "alire.toml",
+        text,
+        &[("libfoo", "^1.2", "alire"), ("aunit", "*", "alire")],
+    );
+}
+
+#[test]
+fn reads_arduino_library_depends() {
+    // arduino-libraries/ArduinoIoTCloud's library.properties, with the spec's version constraint.
+    let text = "name=ArduinoIoTCloud\nversion=2.10.0\narchitectures=mbed,samd,esp8266\nincludes=ArduinoIoTCloud.h\ndepends=Arduino_ConnectionHandler,Adafruit SleepyDog Library, ArduinoHttpClient (>=0.6.0),ArduinoBearSSL\n";
+    expect(
+        "library.properties",
+        text,
+        &[
+            ("Arduino_ConnectionHandler", "", "arduino"),
+            ("Adafruit SleepyDog Library", "", "arduino"),
+            ("ArduinoHttpClient", ">=0.6.0", "arduino"),
+            ("ArduinoBearSSL", "", "arduino"),
         ],
     );
 }

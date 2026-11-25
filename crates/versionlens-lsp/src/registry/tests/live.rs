@@ -115,15 +115,33 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("esp", "espressif/led_strip", None, None),
     ("typst", "cetz", None, None),
     ("wally", "roblox/roact", None, None),
-    ("mooncakes", "moonbitlang/x", None, None),
-    ("purescript", "prelude", None, None),
+    ("mooncakes", "moonbitlang/x", None, Some("0.4.6")),
+    ("purescript", "prelude", None, Some("6.0.1")),
+    ("vpm", "vsl", None, Some("v0.1.47")),
+    ("alire", "aws", None, None),
+    ("artifacthub", "podinfo:podinfo", None, None),
+    ("github", "haskell:cabal", None, None),
+    ("idris-pack", "nightly", None, None),
+    ("raku", "JSON::Fast", None, None),
+    ("arduino", "ArduinoHttpClient", None, None),
+    ("arduino", "Adafruit SleepyDog Library", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
 /// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
-/// packages, or hxcpp, and OSV's Go ecosystem none for the Packer plugins `hashicorp` publishes. Their samples
-/// check only that the route answers and names a repository.
-const NO_KNOWN_ADVISORY: &[&str] = &["dub", "chef", "elm", "haxelib", "packer"];
+/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, or `vlang/vsl`, and OSV's Go ecosystem none for the
+/// Packer plugins `hashicorp` publishes. Their samples check only that the route answers and names
+/// a repository.
+const NO_KNOWN_ADVISORY: &[&str] = &[
+    "dub",
+    "chef",
+    "elm",
+    "haxelib",
+    "packer",
+    "mooncakes",
+    "purescript",
+    "vpm",
+];
 
 /// How many times a page behind a bot challenge is asked before the check fails.
 const CHALLENGE_RETRIES: u64 = 10;

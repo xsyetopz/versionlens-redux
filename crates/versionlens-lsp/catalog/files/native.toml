@@ -211,6 +211,18 @@ rules = [
     { lines = '(?m)^[ \t]*(?:lib_deps[ \t]*=[ \t]*)?(?P<name>[\w.-]+/[\w.+-]+(?:[ \t]+[\w.+-]+)*?)[ \t]*@[ \t]*(?P<version>[~^<>=!]*[ \t]*\d[^\s;,]*)' },
 ]
 
+# An Arduino library.properties lists `depends=Name, Other Name (>=1.0.0)`: comma-separated library
+# names, which may hold spaces, each with an optional version constraint in parentheses:
+# arduino/arduino-cli docs/library-specification.md and arduino-libraries/ArduinoIoTCloud.
+[[file]]
+id = 'arduino'
+globs = ['library.properties']
+format = 'ini'
+registry = 'arduino'
+rules = [
+    { spec = 'depends', pattern = '(?P<name>[^,( \t][^,(]*?)[ \t]*(?:\((?P<version>[^)]*)\)[ \t]*)?(?:,|$)' },
+]
+
 # fpm, the Fortran package manager, takes a git dependency at a `tag`, inline or as a table:
 # fpm.fortran-lang.org/spec/manifest.html (fortran-lang/fpm-docs, pages/spec/manifest.md).
 [[file]]
@@ -331,3 +343,54 @@ rules = [
     { lines = '${GITHUB_RELEASE}' },
 ]
 
+# Buck2 fetches a source with `http_archive` or `http_file` from `urls`, and a GitHub archive or
+# release asset names its repository and tag: buck2.build/docs/prelude/rules/core/http_archive and
+# sluongng/buck2-go's toolchains/BUCK. A commit archive is not a release.
+[[file]]
+id = 'buck'
+globs = ['BUCK', 'BUCK.v2', 'TARGETS', 'TARGETS.v2']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '${GITHUB_ARCHIVE}' },
+    { lines = '${GITHUB_RELEASE}' },
+]
+
+# West, Zephyr's meta-tool, lists `manifest.projects` with a `url` and a `revision`, a tag, branch,
+# or commit: zephyrproject-rtos/zephyr, doc/develop/west/manifest.rst. Only a GitHub `url` with a
+# release-like revision reads. A project named through a `remote` takes its URL from that remote's
+# `url-base` elsewhere in the file, which one regex match cannot join to each project, so it is
+# not read.
+[[file]]
+id = 'west'
+globs = ['west.yml']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+revision:[ \t]*["']?(?P<version>v?\d+\.\d[^"'\s#]*)''' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?revision:[ \t]*["']?(?P<version>v?\d+\.\d[^"'\s#]*)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?$''' },
+]
+
+# Pants declares a Python requirement with `python_requirement(requirements=[...])` and a JVM one
+# with `jvm_artifact(group=, artifact=, version=)`: pantsbuild/pants, docs/docs/python/overview/
+# third-party-dependencies.mdx and docs/docs/jvm/java-and-scala.mdx. Generators such as
+# `python_requirements()` read requirements.txt or pyproject.toml, which their own rows read.
+[[file]]
+id = 'pants'
+globs = ['BUILD', 'BUILD.pants']
+format = 'text'
+registry = 'pypi'
+rules = [
+    { lines = '''requirements\s*=\s*\[\s*["'](?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]"']*\])?\s*(?P<version>(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,"'\s]+(?:\s*,\s*(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,"'\s]+)*)''' },
+    { lines = '''jvm_artifact\(\s*group\s*=\s*["'](?P<group>[\w.-]+)["']\s*,\s*artifact\s*=\s*["'](?P<name>[\w.-]+)["']\s*,\s*version\s*=\s*["'](?P<version>[^"']+)["']''', via = 'maven' },
+]
+
+
+# Alire lists each `[[depends-on]]` table's crates as `name = "constraint"`; a dynamic dependency
+# nests under `case(...)` and is not read: alire-project/alire, doc/catalog-format-spec.md.
+[[file]]
+id = 'alire'
+globs = ['alire.toml']
+format = 'toml'
+registry = 'alire'
+rules = [{ keys = 'depends-on.*' }]

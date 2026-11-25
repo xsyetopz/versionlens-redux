@@ -367,6 +367,16 @@ fn comparator(op: Option<Op>, text: &str, bare: Bare) -> Option<Cmp> {
             v,
         });
     }
+    // A trailing `+` is open-ended: Gradle's `1.+` is any 1.x
+    // (docs.gradle.org/current/userguide/dependency_versions.html), and Raku's `1.0.1+` allows
+    // larger versions too (docs.raku.org/type/Version#method_plus).
+    if let Some(head) = text.strip_suffix('+').filter(|_| op.is_none()) {
+        let prefix = head.ends_with('.');
+        return Some(Cmp {
+            op: if prefix { Op::Prefix } else { Op::Ge },
+            v: Version::parse(head.trim_end_matches('.'))?,
+        });
+    }
     let v = Version::parse(text)?;
     let op = op.unwrap_or(match bare {
         Bare::Exact => Op::Eq,

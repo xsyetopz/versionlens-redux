@@ -44,6 +44,10 @@ fn matches_requirement_dialects() {
         ("[1.0,2.0)", Bare::Min, "2.0", false),
         ("[1.0]", Bare::Min, "1.0", true),
         ("*", Bare::Exact, "9.9.9", true),
+        ("1.0.1+", Bare::Exact, "2.3.0", true),
+        ("1.0.1+", Bare::Exact, "1.0.0", false),
+        ("1.+", Bare::Exact, "1.9", true),
+        ("1.+", Bare::Exact, "2.0", false),
     ];
     for (req, bare, version, expected) in cases {
         assert_eq!(

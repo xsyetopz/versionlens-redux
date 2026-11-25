@@ -42,9 +42,14 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | ESP Component Registry | | `idf_component.yml` (`namespace/name`, `espressif` by default) |
 | Typst Universe | | `#import "@preview/name:version"` in `*.typ` |
 | Wally | | `wally.toml` `"scope/name@version"` values |
-| mooncakes.io | | `moon.mod.json` `deps` |
-| PureScript Registry | | `spago.yaml` dependencies with a range |
-| PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml`, `poetry.lock`, `uv.lock` |
+| mooncakes.io | GIT (the GitHub repository the module's `repository` names) | `moon.mod.json` `deps` |
+| PureScript Registry | GIT (the package's GitHub location) | `spago.yaml` dependencies with a range |
+| VPM, the tags of the GitHub repository it names | GIT (that repository) | `v.mod` `dependencies` |
+| Alire index | | `alire.toml` `[[depends-on]]` |
+| Idris pack collections | | `pack.toml` `collection` |
+| raku.land | | `META6.json` `depends`, `build-depends`, and `test-depends` |
+| Arduino libraries, through the PlatformIO Registry | | `library.properties` `depends` |
+| PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, Pants `BUILD` `python_requirement`s, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml`, `poetry.lock`, `uv.lock` |
 | conda-forge | GIT (the GitHub repository its `dev_url` names) | `environment.yml`, `environment.yaml`, `pixi.toml` |
 | Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
 | Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions`, `mise.toml`, and `.prototools`, `go-version` of `actions/setup-go` |
@@ -52,21 +57,21 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | CocoaPods | GIT (the GitHub repository the podspec's `source` names) | `Podfile`, `*.podspec` |
 | pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
 | NuGet | NuGet | MSBuild SDKs and packages in `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json`, `*.nuspec` |
-| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, Mill `*.mill` and `build.sc` (`mvn"…"` and `ivy"…"`), `ivy.xml` (with `override`s), Maven 1 `project.xml`, Buildr `buildfile`, `.mvn/extensions.xml`, `*.main.kts` |
+| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, Mill `*.mill` and `build.sc` (`mvn"…"` and `ivy"…"`), `ivy.xml` (with `override`s), Maven 1 `project.xml`, Buildr `buildfile`, `.mvn/extensions.xml`, `*.main.kts`, Pants `BUILD` `jvm_artifact`s |
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
 | Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
 | Elm packages | GIT (`github.com/author/package`) | `elm.json` |
 | Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs, and `oci://` chart dependencies in `Chart.yaml` |
-| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt` and `*.cmake` (CPM.cmake `gh:` shorthands and named calls, FetchContent `GIT_REPOSITORY` and `URL`), `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix`, Terraform and Terragrunt `git::` module sources with `?ref=`, Flux `GitRepository` tags, `snapcraft.yaml` `source-tag`, Flatpak manifest git `tag`s, `aqua.yaml`, `component.json`, `fpm.toml` git `tag`s, `boss.json`, `corral.json`, `qlfile` `:tag`s, `lakefile.toml` and `lakefile.lean` git `rev`s |
+| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt` and `*.cmake` (CPM.cmake `gh:` shorthands and named calls, FetchContent `GIT_REPOSITORY` and `URL`), `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix`, Terraform and Terragrunt `git::` module sources with `?ref=`, Flux `GitRepository` tags, `snapcraft.yaml` `source-tag`, Flatpak manifest git `tag`s, `aqua.yaml`, `component.json`, `fpm.toml` git `tag`s, `boss.json`, `corral.json`, `qlfile` `:tag`s, `lakefile.toml` and `lakefile.lean` git `rev`s, `lake-manifest.json` `inputRev`s, `flake.lock` GitHub inputs, Buck2 `BUCK` and `TARGETS` archives and releases, `west.yml` projects with a GitHub `url`, Scoop `bucket/*.json` and winget `*.installer.yaml` release URLs, and `Pulumi.yaml` packages |
 | Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
 | Helm repositories | Artifact Hub image scans | `Chart.yaml`, Argo CD `Application` charts (`argocd/`, `argo-cd/`, `clusters/`, and Kubernetes manifest folders) |
-| Artifact Hub | Artifact Hub image scans | `helmfile.yaml`, `helmfile.yaml.gotmpl`, `helmfile.d/*.yaml` (`repo/chart` releases) |
+| Artifact Hub | Artifact Hub image scans | `helmfile.yaml`, `helmfile.yaml.gotmpl`, `helmfile.d/*.yaml` (`repo/chart` releases), Flux `HelmRelease` charts |
 | Ansible Galaxy | GIT (the GitHub repository the collection version's `repository` names) | `requirements.yml`, `galaxy.yml` |
 | Puppet Forge | GIT (the GitHub repository the module's `source` names) | `Puppetfile` |
 | Chef Supermarket | GIT (the GitHub repository the cookbook's `source_url` names) | `Berksfile`, `metadata.rb` |
-| Terraform Registry | GIT (the GitHub repository the provider or module's `source` names) | `*.tf`, `*.tofu`, `.terraform.lock.hcl`, `terragrunt.hcl`, `terragrunt.stack.hcl` |
+| Terraform Registry | GIT (the GitHub repository the provider or module's `source` names) | `*.tf`, `*.tofu`, `.terraform.lock.hcl`, `terragrunt.hcl`, `terragrunt.stack.hcl`, `Pulumi.yaml` `terraform-provider` and module parameters |
 | Packer plugins on GitHub | Go (`github.com/owner/packer-plugin-name`) | `required_plugins` in `*.pkr.hcl` |
 | Vagrant Cloud | | `config.vm.box` and `box_version` in `Vagrantfile` |
 | Nixhub | | `devbox.json` |

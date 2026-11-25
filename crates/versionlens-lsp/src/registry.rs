@@ -43,7 +43,8 @@ pub(crate) struct Registry {
     pub(crate) osv_name: &'static str,
     /// A regex with `owner` and `repo` groups that finds the package's GitHub repository in the
     /// document `osv_name` names, whose GIT advisories OSV then reports; empty where `osv_name`
-    /// is the OSV name itself. `{version}` in `osv_name` names the version asked about.
+    /// is the OSV name itself. `{version}` in `osv_name` names the version asked about. A `url`
+    /// with `{upstream}` lists versions under what this pattern finds, by [`upstream_of`].
     pub(crate) upstream: &'static str,
     pub(crate) accept: &'static str,
     /// The field that marks a JSON version entry yanked, such as JSR's `yanked`; empty for none.
@@ -237,13 +238,40 @@ pub(crate) fn alias(name: &str) -> Option<&'static str> {
         .map(|r| r.id)
 }
 
+/// The `owner/repo` a registry's `upstream` pattern finds in the document its `osv_name` names,
+/// with `{name}` in the pattern standing for the package name, so a search page's one exact hit
+/// is the match: VPM's `"url"` names a GitHub repository, a raku.land search a `zef:auth/name`,
+/// and a `PlatformIO` search an `owner/library/name` download.
+pub(crate) fn upstream_of(pattern: &str, name: &str, text: &str) -> Option<String> {
+    let escaped: String = name
+        .chars()
+        .map(|c| match c {
+            // A name in a URL has its spaces encoded, as a PlatformIO download link does.
+            ' ' => "(?: |%20)".to_owned(),
+            c if r"\.+*?()|[]{}^$#&-~".contains(c) => format!("\\{c}"),
+            c => c.to_string(),
+        })
+        .collect();
+    let found = regex_automata::meta::Regex::new(&pattern.replace("{name}", &escaped)).ok()?;
+    let caps = found.captures_iter(text).next()?;
+    let group = |key| caps.get_group_by_name(key).map(|s| &text[s.range()]);
+    let repo = group("repo")?;
+    Some(format!(
+        "{}/{}",
+        group("owner")?,
+        repo.strip_suffix(".git").unwrap_or(repo)
+    ))
+}
+
 /// Fills a URL template. Placeholders: `{name}`, `{lower}`, `{enc}` (npm scope escaping),
 /// `{go}` (module case escaping), `{cargo}` (sparse index path), `{path}` (Maven group path),
 /// `{group}`/`{artifact}` (the halves of `group:artifact` or `group/artifact`),
 /// `{ns}`/`{short}` (the halves of `ns.name`), `{first}`/`{First}` (first letter),
-/// `{tf}` (Terraform provider or module path), `{docker}` (Docker Hub repository),
+/// `{first2}` (first two letters), `{tf}` (Terraform provider or module path), `{docker}` (Docker
+/// Hub repository),
 /// `{host}`/`{repo}` (an image's registry host and the path after it), and
-/// `{source}` (the repository the manifest names).
+/// `{source}` (the repository the manifest names). A registry URL's `{upstream}` is filled first,
+/// by [`upstream_of`].
 ///
 /// # Errors
 /// Names a placeholder that cannot be filled for this package.
@@ -284,6 +312,7 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
                 format!("providers/{name}")
             },
         ),
+        ("{first2}", lower.chars().take(2).collect()),
         ("{first}", first.clone()),
         ("{First}", first.to_uppercase()),
     ] {

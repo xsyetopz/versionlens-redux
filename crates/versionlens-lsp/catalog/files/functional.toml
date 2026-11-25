@@ -202,6 +202,18 @@ rules = [
     { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)' },
 ]
 
+# flake.lock records each input's `original` reference, its keys sorted, beside the commit it
+# `locked`; a GitHub input's `ref` is the tag or branch flake.nix asked for: NixOS/nix,
+# src/nix/flake.md, and neohaskell/NeoHaskell's neo-starter-flake.lock. Its name is `owner:repo`.
+[[file]]
+id = 'flake-lock'
+globs = ['flake.lock']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''"original"\s*:\s*\{\s*"owner"\s*:\s*"(?P<group>[\w.-]+)"[^}]*?"ref"\s*:\s*"(?:refs/tags/)?(?:nixos-|nixpkgs-|release-)?(?P<version>v?\d[\w.-]*)"[^}]*?"repo"\s*:\s*"(?P<name>[\w.-]+)"[^}]*?"type"\s*:\s*"github"''' },
+]
+
 
 # Typst imports a Universe package at its full version, `#import "@preview/{name}:{version}"`:
 # github.com/typst/packages, README.md.
@@ -279,4 +291,68 @@ registry = 'github'
 rules = [
     { lines = '''git[ \t]*=[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*rev[ \t]*=[ \t]*"(?P<version>v?\d+\.\d[\w.-]*)"''' },
     { lines = 'from\s+git\s+"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*@\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
+]
+
+# V's v.mod lists `dependencies` as `'module@range'` strings, the same as `v install` takes, which
+# select semver Git tags; a bare module tracks its default branch and is not read:
+# github.com/vlang/v, cmd/tools/vpm/README.md "Semantic version ranges".
+[[file]]
+id = 'vmod'
+globs = ['v.mod']
+format = 'text'
+registry = 'vpm'
+rules = [{ lines = '''['"](?P<name>[A-Za-z_][\w.]*)@(?P<version>[^'"\r\n]+)['"]''' }]
+
+# Lake's lake-manifest.json records each git package's `url` and the `inputRev` its lakefile asked
+# for, beside the resolved commit `rev`: leanprover-community/mathlib4's lake-manifest.json. Only
+# a release-like `inputRev` reads, not a branch.
+[[file]]
+id = 'lake-manifest'
+globs = ['lake-manifest.json']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '"url"\s*:\s*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[^}]*?"inputRev"\s*:\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
+]
+
+# Pack's pack.toml pins the curated `collection`, `nightly-YYMMDD`, that every library builds from;
+# a custom package pins a `commit`, not a release: stefan-hoeck/idris2-pack, src/Pack/Config/
+# TOML.idr. The project's pack.toml and the user's ~/.config/pack/pack.toml share the format.
+[[file]]
+id = 'idris-pack'
+globs = ['pack.toml']
+format = 'text'
+registry = 'idris-pack'
+rules = [
+    { lines = '''(?m)^[ \t]*collection[ \t]*=[ \t]*["'](?P<name>nightly)-(?P<version>\d+)["']''' },
+]
+
+# A META6.json `depends`, `build-depends`, or `test-depends` lists `Name:ver<1.0.1+>:auth<zef:cro>`
+# strings, or the phases' `requires` lists in its object form; a `:from<native>` library is not a
+# Raku dist: design.raku.org S22-package-format and croservices/cro-http's META6.json.
+[[file]]
+id = 'raku'
+globs = ['META6.json']
+format = 'json'
+registry = 'raku'
+rules = [
+    { spec = 'depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'build-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'test-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'depends.*.requires.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+]
+
+# A META6.json `depends`, `build-depends`, or `test-depends` lists `Name:ver<1.0.1+>:auth<zef:cro>`
+# strings, or the phases' `requires` lists in its object form; a `:from<native>` library is not a
+# Raku dist: design.raku.org S22-package-format and croservices/cro-http's META6.json.
+[[file]]
+id = 'raku'
+globs = ['META6.json']
+format = 'json'
+registry = 'raku'
+rules = [
+    { spec = 'depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'build-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'test-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'depends.*.requires.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
 ]

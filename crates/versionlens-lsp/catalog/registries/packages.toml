@@ -200,15 +200,16 @@ pages = { 'ghcr.io' = 'https://ghcr.io/{repo}', 'quay.io' = 'https://quay.io/rep
 
 # OSV's GitHub Actions ecosystem has no version order, so a versioned query never matches;
 # its GIT ecosystem matches the repository's exact tag, for actions and C/C++ sources alike.
+# A name is `owner/repo`, or `owner:repo` where a lockfile keeps the two apart.
 [[registry]]
 id = 'github'
-url = 'https://api.github.com/repos/{name}/tags?per_page=100'
+url = 'https://api.github.com/repos/{group}/{artifact}/tags?per_page=100'
 json = ''
 field = 'name'
 bare = 'prefix'
 osv = 'GIT'
-osv_name = 'github.com/{name}'
-page = 'https://github.com/{name}'
+osv_name = 'github.com/{group}/{artifact}'
+page = 'https://github.com/{group}/{artifact}'
 
 # Swift packages are GitHub repositories; OSV files their advisories under SwiftURL.
 [[registry]]
@@ -353,16 +354,18 @@ upstream = '"source_url":\s*"${GITHUB_URL}'
 page = 'https://supermarket.chef.io/cookbooks/{name}'
 
 
-# Charts by Artifact Hub repository name, `repository/chart`, as helmfile releases write them;
-# its Trivy reports give the advisories of each version's images.
+# Charts by Artifact Hub repository name, `repository/chart` as helmfile releases write them or
+# `repository:chart` from a Flux HelmRelease; its Trivy reports give the advisories of each
+# version's images.
 [[registry]]
 id = 'artifacthub'
-url = 'https://artifacthub.io/api/v1/packages/helm/{name}'
+url = 'https://artifacthub.io/api/v1/packages/helm/{group}/{artifact}'
 json = 'available_versions'
 field = 'version'
 bare = 'exact'
 osv = 'Artifact Hub'
-page = 'https://artifacthub.io/packages/helm/{name}'
+osv_name = '{group}/{artifact}'
+page = 'https://artifacthub.io/packages/helm/{group}/{artifact}'
 
 # Nixhub, Devbox's index of the versions each nixpkgs package has had.
 [[registry]]
@@ -440,6 +443,22 @@ osv_name = 'https://api.registry.platformio.org/v3/packages/{group}/library/{art
 upstream = '"repository_url":\s*"${GITHUB_URL}'
 page = 'https://registry.platformio.org/libraries/{group}/{artifact}'
 
+# The Arduino Library Manager's one index, downloads.arduino.cc/libraries/library_index.json, is
+# 5.6 MB gzipped with no per-library lookup; the PlatformIO Registry mirrors its libraries, and its
+# search finds the `owner/library/name` path of a name, most popular owner first, in a download
+# link. Read from api.registry.platformio.org's v3 search and package answers. The PlatformIO
+# search does not name the repository, so no GIT advisories are looked up.
+[[registry]]
+id = 'arduino'
+url = 'https://api.registry.platformio.org/v3/packages/{upstream}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+osv_name = 'https://api.registry.platformio.org/v3/search?query=name:%22{name}%22'
+upstream = '/download/(?P<owner>[\w.-]+/library)/(?P<repo>{name})/'
+page = 'https://registry.platformio.org/search?q={name}'
+
 [[registry]]
 id = 'platformio-platform'
 url = 'https://api.registry.platformio.org/v3/packages/platformio/platform/{name}'
@@ -488,7 +507,8 @@ regex = '"version":"([^"]+)"'
 bare = 'caret'
 page = 'https://wally.run/package/{name}'
 
-# mooncakes.io, the MoonBit registry, lists every version of a module with its yank state.
+# mooncakes.io, the MoonBit registry, lists every version of a module with its yank state and
+# names its repository, which OSV GIT knows advisories by.
 [[registry]]
 id = 'mooncakes'
 url = 'https://mooncakes.io/api/v0/modules/{name}'
@@ -497,13 +517,68 @@ field = 'version'
 latest = 'latest_version'
 yanked = 'yanked'
 bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://mooncakes.io/api/v0/modules/{name}'
+upstream = '"repository":\s*"${GITHUB_URL}'
 page = 'https://mooncakes.io/docs/{name}'
 
-# The PureScript registry keeps one metadata file per package, its `published` keyed by version.
+# The PureScript registry keeps one metadata file per package, its `published` keyed by version
+# and its GitHub `location` the repository OSV GIT knows advisories by.
 [[registry]]
 id = 'purescript'
 url = 'https://raw.githubusercontent.com/purescript/registry/main/metadata/{name}.json'
 json = 'published'
 field = '@key'
 bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://raw.githubusercontent.com/purescript/registry/main/metadata/{name}.json'
+upstream = '"githubOwner":\s*"(?P<owner>[\w.-]+)",\s*"githubRepo":\s*"(?P<repo>[\w.-]+)"'
 page = 'https://pursuit.purescript.org/packages/purescript-{name}'
+
+# VPM, the V registry, names each module's Git repository and keeps no versions of its own:
+# `v install` resolves a range against that repository's semver tags (github.com/vlang/v,
+# cmd/tools/vpm/README.md), so `{upstream}` reads the repository from VPM's package API.
+[[registry]]
+id = 'vpm'
+url = 'https://api.github.com/repos/{upstream}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'caret'
+osv = 'GIT'
+osv_name = 'https://vpm.vlang.io/api/packages/{name}'
+upstream = '"url":\s*"${GITHUB_URL}'
+page = 'https://vpm.vlang.io/packages/{name}'
+
+# The Alire index keeps one `name-version.toml` per release under `index/{first two letters}/name`
+# on its default branch, so the GitHub contents listing names every version:
+# github.com/alire-project/alire-index, doc/catalog-format-spec.md in alire-project/alire. OSV
+# has no Alire ecosystem, and the index names a repository only per release.
+[[registry]]
+id = 'alire'
+url = 'https://api.github.com/repos/alire-project/alire-index/contents/index/{first2}/{lower}'
+regex = '"name":\s*"[a-z0-9_]+-(\d[^"]*)\.toml"'
+bare = 'exact'
+page = 'https://alire.ada.dev/crates/{lower}'
+
+# Pack, Idris 2's package manager, builds against one curated collection, `nightly-YYMMDD`, a file
+# in idris2-pack-db's `collections/` (stefan-hoeck/idris2-pack, README.md), so that listing names
+# every release. OSV has no Idris ecosystem.
+[[registry]]
+id = 'idris-pack'
+url = 'https://api.github.com/repos/stefan-hoeck/idris2-pack-db/contents/collections'
+regex = '"name":\s*"nightly-(\d+)\.toml"'
+bare = 'exact'
+page = 'https://github.com/stefan-hoeck/idris2-pack-db/tree/main/collections'
+
+# raku.land lists a distribution under the ecosystem and author that publish it, `zef:timo/
+# JSON::Fast`, which a META6.json `depends` string seldom names; its search links the dist page,
+# whose version menu holds each release as `<option value="0.21.0"`. Read from raku.land's search
+# and dist pages. OSV has no Raku ecosystem.
+[[registry]]
+id = 'raku'
+url = 'https://raku.land/{upstream}'
+regex = '<option value="([^"]+)"'
+bare = 'exact'
+osv_name = 'https://raku.land/?q={name}'
+upstream = 'href="/(?P<owner>(?:zef|cpan|github):[\w.-]+)/(?P<repo>{name})"'
+page = 'https://raku.land/?q={name}'

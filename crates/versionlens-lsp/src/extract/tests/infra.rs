@@ -1,5 +1,5 @@
 //! Infrastructure and environment manifests: Terraform modules, Terragrunt, Packer, helmfile,
-//! Argo CD, Flux, Vagrant, Snapcraft, Flatpak, proto, aqua, Devbox, and Spack.
+//! Argo CD, Flux, Vagrant, Snapcraft, Flatpak, proto, aqua, Devbox, Spack, Scoop, winget, and Pulumi.
 
 use super::expect;
 use crate::catalog::file_type_of;
@@ -163,6 +163,55 @@ fn reads_spack_environment_specs() {
             ("zlib", "1.2.8", "spack"),
             ("gcc", "15.2", "spack"),
             ("openmpi", "4.1:4.2", "spack"),
+        ],
+    );
+}
+
+#[test]
+fn reads_scoop_release_urls() {
+    // ScoopInstaller/Main's bucket/gh.json; `autoupdate` URLs hold `$version`, not a tag.
+    let text = "{\n    \"version\": \"2.105.0\",\n    \"architecture\": {\n        \"64bit\": {\n            \"url\": \"https://github.com/cli/cli/releases/download/v2.105.0/gh_2.105.0_windows_amd64.zip\",\n            \"hash\": \"8813a7\"\n        }\n    },\n    \"autoupdate\": {\n        \"architecture\": {\n            \"64bit\": {\n                \"url\": \"https://github.com/cli/cli/releases/download/v$version/gh_$version_windows_amd64.zip\"\n            }\n        }\n    }\n}\n";
+    expect("bucket/gh.json", text, &[("cli/cli", "v2.105.0", "github")]);
+}
+
+#[test]
+fn reads_winget_installer_urls() {
+    // microsoft/winget-pkgs, BurntSushi.ripgrep.MSVC.installer.yaml at 16.0.0.
+    let text = "PackageIdentifier: BurntSushi.ripgrep.MSVC\nPackageVersion: 16.0.0\nInstallers:\n- Architecture: x64\n  InstallerUrl: https://github.com/BurntSushi/ripgrep/releases/download/16.0.0/ripgrep-16.0.0-x86_64-pc-windows-msvc.zip\n  InstallerSha256: F418AE83\nManifestType: installer\n";
+    expect(
+        "manifests/b/BurntSushi/ripgrep/MSVC/16.0.0/BurntSushi.ripgrep.MSVC.installer.yaml",
+        text,
+        &[("BurntSushi/ripgrep", "16.0.0", "github")],
+    );
+}
+
+#[test]
+fn reads_flux_helm_release_charts() {
+    // The Flux HelmRelease spec's HelmRepository example, then the version before the source.
+    let text = "apiVersion: source.toolkit.fluxcd.io/v1\nkind: HelmRepository\nmetadata:\n  name: podinfo\nspec:\n  url: https://stefanprodan.github.io/podinfo\n---\napiVersion: helm.toolkit.fluxcd.io/v2\nkind: HelmRelease\nmetadata:\n  name: podinfo\nspec:\n  chart:\n    spec:\n      chart: podinfo\n      sourceRef:\n        kind: HelmRepository\n        name: podinfo\n      version: \"6.x\"\n---\napiVersion: helm.toolkit.fluxcd.io/v2\nkind: HelmRelease\nmetadata:\n  name: cert-manager\nspec:\n  chart:\n    spec:\n      chart: cert-manager\n      version: \"v1.16.2\"\n      sourceRef:\n        kind: HelmRepository\n        name: cert-manager\n        namespace: flux-system\n";
+    expect(
+        "clusters/production/podinfo.yaml",
+        text,
+        &[
+            ("podinfo:podinfo", "6.x", "artifacthub"),
+            ("cert-manager:cert-manager", "v1.16.2", "artifacthub"),
+        ],
+    );
+}
+
+#[test]
+fn reads_pulumi_packages() {
+    // The Pulumi project file docs' `packages` forms.
+    let text = "name: example-project\nruntime: yaml\npackages:\n  static-page: https://github.com/my-org/static-page@v1.0.0\n  networking: ./components/networking\n  random:\n    source: terraform-provider\n    version: 1.4.0\n    parameters:\n      - hashicorp/random\n      - 3.7.1\n  s3-bucket:\n    source: hcl\n    version: 0.13.0\n    parameters:\n      - module\n      - terraform-aws-modules/s3-bucket/aws\n      - 4.1.2\n";
+    expect(
+        "Pulumi.yaml",
+        text,
+        &[
+            ("my-org/static-page", "v1.0.0", "github"),
+            ("pulumi/pulumi-terraform-provider", "1.4.0", "github"),
+            ("hashicorp/random", "3.7.1", "terraform"),
+            ("pulumi/pulumi-hcl", "0.13.0", "github"),
+            ("terraform-aws-modules/s3-bucket/aws", "4.1.2", "terraform"),
         ],
     );
 }
