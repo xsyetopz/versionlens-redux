@@ -19,6 +19,14 @@ use crate::version::{Req, Version};
 const RETRY: Duration = Duration::from_secs(60);
 
 impl Server {
+    /// Drops every cached and in-flight lookup, after which `schedule_all` sends them again
+    /// through the current HTTP client; a reply to an old lookup is ignored when it arrives.
+    pub(super) fn restart_lookups(&mut self) {
+        self.cache.clear();
+        self.inflight.clear();
+        self.lookups += 1;
+    }
+
     pub(super) fn schedule_all(&mut self) {
         let uris: Vec<String> = self.docs.keys().cloned().collect();
         for uri in uris {
@@ -50,19 +58,20 @@ impl Server {
     }
 
     fn fetch(&self, registry: &'static Registry, key: Key) {
-        let (http, tx) = (self.http.clone(), self.events.0.clone());
+        let (http, tx, generation) = (self.http.clone(), self.events.0.clone(), self.lookups);
         self.runtime.spawn(async move {
             let started = Instant::now();
             let result = http
                 .versions(registry, &key.1, key.2.as_deref(), &key.3)
                 .await;
-            drop(tx.send(Event::Fetched(key, result, started.elapsed())));
+            drop(tx.send(Event::Fetched(key, result, started.elapsed(), generation)));
         });
     }
 
     pub(super) fn event(&mut self, event: Event) {
         match event {
-            Event::Fetched(key, result, took) => {
+            Event::Fetched(_, _, _, generation) if generation != self.lookups => {}
+            Event::Fetched(key, result, took, _) => {
                 self.inflight.remove(&key);
                 let result = match result {
                     Ok(found) => {

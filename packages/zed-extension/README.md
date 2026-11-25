@@ -41,13 +41,20 @@ Zed shows inlay hints only when `inlay_hints.enabled` is on, and code lenses onl
 
 ## Commands
 
-Zed extensions cannot add toolbar buttons or palette commands (`zed_extension_api` 0.7.0 exports only language server, slash command, context server, docs, and debug adapter hooks), so the server offers every VS Code command as a code action in the code actions menu (`editor: toggle code actions`, `cmd-.` or `ctrl-.`), titled `VersionLens: …`:
+Zed extensions cannot register palette commands or toolbar buttons of their own (the extension API exports language server, slash command, context server, docs, and debug adapter hooks). The server therefore offers every VS Code command as a code action titled `VersionLens: …`, and Zed opens that menu three ways:
+
+- the keyboard: `cmd-.` or `ctrl-.`;
+- the command palette: `editor: toggle code actions`;
+- the editor toolbar: the ⚡ Code Actions button, shown with `"toolbar": { "code_actions": true }` (Zed's default is `false`).
+
+The menu holds:
 
 - Update the file's dependencies to latest, major, minor, or patch, when one of them is outdated.
 - Update the workspace's dependencies at each level.
 - Sort dependencies, when the manifest has a sortable block.
 - Install dependencies, when `install` holds a command for the manifest.
 - Show or hide versions, show or hide prereleases, refresh versions, and clear the cache.
+- Add URL authentication and Remove URL authentication, described below.
 
 The remaining VS Code commands map to Zed built-ins and settings:
 
@@ -55,11 +62,24 @@ The remaining VS Code commands map to Zed built-ins and settings:
 | --- | --- |
 | Restart server | `editor: restart language server` |
 | Show output, show error | `dev: open language server logs`, server `versionlens` |
-| Add or remove authentication | `authorization` in `lsp.versionlens.settings` |
 | Change build (`≌` lens) | Zed asks which build in a prompt and applies the choice |
 | Open a local dependency (`📁` lens) | Opens the directory with the system handler |
 
 Per-dependency updates are quick fixes in the same menu, and code lenses when they are on. With `"stats": true`, a summary lens above each manifest shows its dependency, outdated, failed, and vulnerable counts, the counterpart of the VS Code title icons.
+
+## URL Authentication
+
+Add URL authentication asks how the registry of the current manifest authenticates: Basic (user and password), Bearer token, or Header value. It then writes a blank entry for the registry's URL prefix to the stored authentication file and opens the file with the cursor in the blank:
+
+```json
+{
+  "https://registry.npmjs.org/": "Token abc",
+  "https://npm.example.com/": { "token": "" },
+  "https://maven.example.com/": { "user": "", "password": "" }
+}
+```
+
+A string is sent as the Authorization header as written, `token` as `Bearer <token>`, and `user` with `password` as `Basic <base64>`; an entry with a blank part sends nothing. Saving the file applies it on the server's next request, and it takes precedence over `authorization` in the settings for the same prefix. The file is `~/.config/versionlens/authorization.json` (`$XDG_CONFIG_HOME` when set; `%APPDATA%\versionlens\authorization.json` on Windows), written with mode 0600. Remove URL authentication asks which stored prefix to forget and removes it. Zed's prompts take buttons but no typed text, so the value is typed into the file instead of a prompt.
 
 ## Development
 

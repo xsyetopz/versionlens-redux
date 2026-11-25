@@ -4,7 +4,11 @@
 #   1. the lenses and hints of package.json, Cargo.toml, and compose.yaml, with the deprecated,
 #      directory, missing directory, yanked, and build statuses;
 #   2. the build lens from the code actions menu, its prompt, and the choice written back;
-#   3. every VersionLens command from the code actions menu, each answered without an error.
+#   3. every VersionLens command from the code actions menu, each answered without an error;
+#   4. a command from the command palette, through `editor: toggle code actions`;
+#   5. a command from the editor toolbar's Code Actions button;
+#   6. Add URL authentication: its prompt, the stored file it opens, the value typed and saved,
+#      and the server rereading it; then Remove URL authentication through its prompt.
 # A wrapper records the server's traffic; screenshots, the traffic, and Zed's log go to the output
 # directory.
 # Usage: run.sh <extension.wasm> <output directory>, from the repository root.
@@ -14,8 +18,9 @@ here=$(dirname "$0")
 data=/root/.local/share/zed
 ext=$data/extensions/installed/versionlens-lsp
 settings=/root/.config/zed/settings.json
+stored=/root/.config/versionlens/authorization.json
 mkdir -p "$out" /zed "$ext" /root/.config/zed /proj/lib /cfg
-rm -f "$out"/*.png "$out"/*.log /cfg/lsp-*.log "$data"/logs/Zed.log
+rm -rf "$out"/*.png "$out"/*.log /cfg/lsp-*.log /cfg/lsp.lock "$data"/logs/Zed.log "$stored"
 
 # The volume keeps Zed between runs; ZED_REFRESH=1 downloads the latest stable release again.
 if [ ! -x /zed/zed.app/libexec/zed-editor ] || [ "${ZED_REFRESH:-}" = 1 ]; then
@@ -48,6 +53,7 @@ write_settings() {
 {
   "code_lens": "$1",
   "inlay_hints": { "enabled": true },
+  "toolbar": { "code_actions": true },
   "auto_update": false,
   "auto_install_extensions": { "toml": true },
   "telemetry": { "diagnostics": false, "metrics": false },
@@ -66,6 +72,9 @@ J
 write_settings on
 cat >/cfg/versionlens-lsp <<'S'
 #!/bin/sh
+# Only the first server, the project's, is recorded: the stored authentication file lies outside
+# the project, and Zed starts a second server for it whose traffic would interleave.
+mkdir /cfg/lsp.lock 2>/dev/null || exec /target/release/versionlens-lsp "$@"
 tee -a /cfg/lsp-in.log | /target/release/versionlens-lsp "$@" | tee -a /cfg/lsp-out.log
 S
 chmod +x /cfg/versionlens-lsp
@@ -129,12 +138,41 @@ open_menu() {
 	[ "$(lsp actions /cfg/lsp-out.log)" -gt 0 ] || fail "the code actions menu listed no VersionLens command"
 }
 
+# Runs a command palette entry by its name.
+palette() {
+	xdotool key ctrl+shift+p
+	sleep 1
+	xdotool type --delay 20 "$1"
+	sleep 1
+	xdotool key Return
+	sleep 2
+}
+
+# Zed shows prompts in the bottom right quarter above the status bar, away from the menu at the
+# cursor; before_prompt clears the notifications there and keeps the quarter, and click_prompt finds
+# the prompt as what changed in it and clicks its last button, at its bottom, since the buttons
+# answer only clicks.
+quarter=800x460+800+500
+before_prompt() {
+	palette "workspace: clear all notifications"
+	import -window root -crop $quarter +repage /cfg/before.png
+}
+click_prompt() {
+	shot "$1"
+	box=$(convert "$out/$1.png" -crop $quarter +repage /cfg/before.png -compose difference \
+		-composite -threshold 5% -trim -format '%w %h %[fx:page.x] %[fx:page.y]' info: 2>/dev/null) || true
+	set -- $box
+	[ $# -eq 4 ] && [ "$1" -gt 40 ] || return 1
+	xdotool mousemove $((800 + $3 + $1 / 2)) $((500 + $4 + $2 - 28)) click 1
+}
+# How many times the server sent $1.
+sent() { grep -o "$1" /cfg/lsp-out.log | wc -l; }
+sent_more() { [ "$(sent "$1")" -gt "$2" ]; }
+
 # 2. The build lens, chosen from the code actions menu, asks which build to use.
 write_settings menu
 sleep 2
-# Zed shows prompts in the bottom right quarter, away from the menu at the cursor.
-quarter=800x500+800+500
-import -window root -crop $quarter +repage /cfg/before.png
+before_prompt
 open_menu
 shot build-menu
 at=$(lsp lens /cfg/lsp-out.log versionlens.build) || fail "the build lens was not in the menu"
@@ -144,14 +182,7 @@ xdotool key Return
 wait_for 20 lsp ran /cfg/lsp-in.log versionlens.build || fail "choosing change build never reached the server"
 wait_for 20 shows 'window/showMessageRequest' || fail "the server never asked for a build"
 sleep 2
-shot build-prompt
-# The prompt's buttons answer only clicks: the prompt is what changed in that quarter, and its
-# last button sits at the bottom of it.
-box=$(convert "$out/build-prompt.png" -crop $quarter +repage /cfg/before.png -compose difference \
-	-composite -threshold 5% -trim -format '%w %h %[fx:page.x] %[fx:page.y]' info: 2>/dev/null) || true
-set -- $box
-[ $# -eq 4 ] && [ "$1" -gt 40 ] || fail "the build prompt never appeared"
-xdotool mousemove $((800 + $3 + $1 / 2)) $((500 + $4 + $2 - 20)) click 1
+click_prompt build-prompt || fail "the build prompt never appeared"
 wait_for 20 lsp answered /cfg/lsp-in.log || fail "the build prompt never sent a choice"
 wait_for 20 shows 'workspace/applyEdit' || fail "the chosen build was never written"
 sleep 2
@@ -163,22 +194,78 @@ shot build-chosen
 package=file:///proj/package.json
 # Succeeds once package.json has more menus than $1; wait_for calls it again on each try.
 newer_menu() { [ "$(lsp actions /cfg/lsp-out.log $package)" -gt "$1" ]; }
+# Succeeds once Zed has asked the server to run $1 more than $2 times.
+ran_more() { [ "$(lsp runs /cfg/lsp-in.log "$1")" -gt "$2" ]; }
 open_at /proj/package.json:3:5
 step=Right
-for command in clearCache refresh showPrereleases hidePrereleases hide show sort install updateAll updateWorkspace; do
+# Chooses versionlens.$1 from the menu that the command $2 opens, with $3 naming that way in a
+# failure, and waits for it to reach the server.
+choose() {
+	runs=$(lsp runs /cfg/lsp-in.log "versionlens.$1")
 	seen=$(lsp actions /cfg/lsp-out.log $package)
 	xdotool key $step
 	if [ $step = Right ]; then step=Left; else step=Right; fi
 	wait_for 20 newer_menu "$seen" || fail "Zed never asked for the actions of package.json again"
-	open_menu
-	at=$(lsp pick /cfg/lsp-out.log $package "versionlens.$command") || fail "the menu did not offer versionlens.$command"
+	$2
+	at=$(lsp pick /cfg/lsp-out.log $package "versionlens.$1") || fail "the menu did not offer versionlens.$1"
 	xdotool key Next
 	[ "$at" -eq 0 ] || xdotool key --repeat "$at" Up
 	xdotool key Return
-	wait_for 20 lsp ran /cfg/lsp-in.log "versionlens.$command" || fail "choosing versionlens.$command never reached the server"
+	wait_for 20 ran_more "versionlens.$1" "$runs" || fail "choosing versionlens.$1 from $3 never reached the server"
 	sleep 2
+}
+for command in clearCache refresh showPrereleases hidePrereleases hide show sort install updateAll updateWorkspace; do
+	choose $command open_menu "the code actions menu"
 done
 shot commands
+
+# 4. The command palette has no extension commands of its own; its `editor: toggle code actions`
+# opens the same menu.
+palette_menu() {
+	palette "editor: toggle code actions"
+	shot palette-menu
+}
+choose refresh palette_menu "the command palette"
+
+# 5. The editor toolbar's Code Actions button (the bolt, toolbar.code_actions) opens it too.
+toolbar_menu() {
+	xdotool mousemove ${ZED_GUI_BOLT:-1265 89} click 1
+	sleep 2
+	shot toolbar-menu
+}
+choose clearCache toolbar_menu "the toolbar's Code Actions button"
+
+# 6. Add URL authentication asks how the registry authenticates, writes the stored file with a
+# blank to fill in, and opens it there; the last button is Header value.
+asked=$(sent window/showMessageRequest)
+before_prompt
+choose addAuthentication open_menu "the code actions menu"
+wait_for 20 sent_more window/showMessageRequest "$asked" || fail "Add URL authentication never asked how"
+sleep 2
+click_prompt auth-prompt || fail "the authentication prompt never appeared"
+wait_for 20 lsp answered /cfg/lsp-in.log "Header value" || fail "the authentication prompt never sent Header value"
+wait_for 20 test -s "$stored" || fail "Add URL authentication never wrote $stored"
+wait_for 20 shows 'window/showDocument' || fail "the server never opened $stored"
+sleep 3
+xdotool type --delay 20 "Token zed-gui"
+xdotool key ctrl+s
+sleep 2
+shot auth-file
+grep -q '"https://registry.npmjs.org/": "Token zed-gui"' "$stored" ||
+	fail "the typed value never reached $stored: $(cat "$stored")"
+open_at /proj/package.json:3:5
+wait_for 30 shows 'url authentication: 1 URLs' || fail "the server never reread $stored"
+
+# Remove URL authentication asks which URL to forget, with one button for the one stored.
+asked=$(sent window/showMessageRequest)
+before_prompt
+choose removeAuthentication open_menu "the code actions menu"
+wait_for 20 sent_more window/showMessageRequest "$asked" || fail "Remove URL authentication never asked which"
+sleep 2
+click_prompt forget-prompt || fail "the forget prompt never appeared"
+wait_for 20 shows 'authentication removed for https://registry.npmjs.org/' || fail "the URL was never forgotten"
+[ "$(tr -d ' \n' <"$stored")" = '{}' ] || fail "$stored still holds $(cat "$stored")"
+shot auth-removed
 
 cp "$data/logs/Zed.log" /cfg/lsp-*.log "$out/" 2>/dev/null || true
 failed=$(lsp failed /cfg/lsp-in.log /cfg/lsp-out.log)
@@ -186,4 +273,5 @@ failed=$(lsp failed /cfg/lsp-in.log /cfg/lsp-out.log)
 if grep -i 'versionlens' "$out/Zed.log" | grep -q 'ERROR'; then
 	fail "Zed logged a VersionLens error; see $out/Zed.log"
 fi
-echo "zed-gui: statuses shown, build chosen from its prompt, every command ran from the code actions menu"
+echo "zed-gui: statuses shown, build chosen from its prompt, every command ran from the code actions menu," \
+	"one each from the palette and the toolbar, URL authentication added and removed"

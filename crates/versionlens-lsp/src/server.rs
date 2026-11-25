@@ -67,7 +67,8 @@ struct Doc {
 }
 
 enum Event {
-    Fetched(Key, Result<registry::Versions, String>, Duration),
+    /// A lookup finished, with the generation of [`Server::lookups`] it started in.
+    Fetched(Key, Result<registry::Versions, String>, Duration, u64),
     Osv(Vec<Query>, Result<Vec<Vec<String>>, String>),
     /// An install command finished: the manifest uri and the command's outcome.
     Installed(String, Result<String, String>),
@@ -79,6 +80,7 @@ enum Pending {
     Ignore,
     /// A build picker: the manifest uri and requirement range the chosen build replaces.
     Build(String, Value),
+    Auth(credentials::Ask),
 }
 
 #[derive(Default)]
@@ -88,12 +90,16 @@ struct Caps {
     progress: bool,
     configuration: bool,
     show_document: bool,
+    /// The editor asked for the URL authentication code actions, having no commands of its own.
+    auth_actions: bool,
 }
 
 struct Server {
     conn: Connection,
     runtime: tokio::runtime::Runtime,
     http: Http,
+    /// The URL authentication the server stores itself; see [`credentials`].
+    stored: credentials::Stored,
     settings: Settings,
     /// `enabled` and `prereleases` as last configured; the show and prerelease commands
     /// override them until the setting itself changes.
@@ -102,6 +108,8 @@ struct Server {
     docs: HashMap<String, Doc>,
     cache: HashMap<Key, Entry>,
     inflight: HashSet<Key>,
+    /// Bumped when lookups restart, so a lookup sent with the old credentials is not cached.
+    lookups: u64,
     /// Manifests whose `updateAll` waits for their lookups to finish, with its level.
     update_after: HashMap<String, &'static str>,
     /// The level of a workspace update waiting for its lookups.
@@ -162,19 +170,21 @@ fn param<T: serde::de::DeserializeOwned>(value: Value) -> Result<T, String> {
 /// Reports a protocol or transport failure.
 pub(crate) fn run() -> Result<(), String> {
     let (conn, io) = Connection::stdio();
-    serve(conn)?;
+    serve(conn, credentials::default_path())?;
     io.join().map_err(|e| e.to_string())
 }
 
-fn serve(conn: Connection) -> Result<(), String> {
+/// Serves one editor on `conn`, keeping URL authentication in the file at `stored`.
+fn serve(conn: Connection, stored: Option<std::path::PathBuf>) -> Result<(), String> {
     let (id, params) = conn.initialize_start().map_err(|e| e.to_string())?;
+    let (auth_actions, commands) = credentials::advertised(&params, COMMANDS);
     let capabilities = json!({
         "textDocumentSync": { "openClose": true, "change": 2, "save": { "includeText": false } },
         "codeLensProvider": { "resolveProvider": false },
         "inlayHintProvider": true,
         "hoverProvider": true,
         "codeActionProvider": { "codeActionKinds": [render::ACTION_KIND, status::SOURCE_KIND] },
-        "executeCommandProvider": { "commands": COMMANDS },
+        "executeCommandProvider": { "commands": commands },
         "experimental": { "fileTypes": crate::catalog::globs() },
         "workspace": { "workspaceFolders": { "supported": true, "changeNotifications": true } },
     });
@@ -196,6 +206,7 @@ fn serve(conn: Connection) -> Result<(), String> {
         progress: flag("/capabilities/window/workDoneProgress"),
         configuration: flag("/capabilities/workspace/configuration"),
         show_document: flag("/capabilities/window/showDocument/support"),
+        auth_actions,
     };
     let settings = params
         .get("initializationOptions")
@@ -205,17 +216,18 @@ fn serve(conn: Connection) -> Result<(), String> {
         .enable_all()
         .build()
         .map_err(|e| e.to_string())?;
-    let http = Http::new(settings.clone())?;
     let mut server = Server {
         conn,
         runtime,
-        http,
+        http: Http::new(settings.clone())?,
+        stored: credentials::Stored::at(stored),
         configured: (settings.enabled, settings.prereleases),
         settings,
         caps,
         docs: HashMap::new(),
         cache: HashMap::new(),
         inflight: HashSet::new(),
+        lookups: 0,
         update_after: HashMap::new(),
         workspace_update: None,
         folders: workspace::folders(&params),
@@ -239,6 +251,7 @@ fn serve(conn: Connection) -> Result<(), String> {
             crate::catalog::FILE_TYPES.len()
         ),
     );
+    server.reload_credentials();
     server.run();
     Ok(())
 }
@@ -304,6 +317,7 @@ impl Server {
     }
 
     fn message(&mut self, message: Message) -> bool {
+        self.reload_credentials();
         match message {
             Message::Request(request) => {
                 if request.method == "shutdown" {
@@ -327,6 +341,9 @@ impl Server {
                         self.configure(result.get(0).unwrap_or(&Value::Null));
                     }
                     (Some(Pending::Progress(token)), Ok(_)) => self.begin_progress(&token),
+                    (Some(Pending::Auth(ask)), Ok(choice)) => {
+                        self.answered(ask, choice.get("title").and_then(Value::as_str));
+                    }
                     (Some(Pending::Build(uri, range)), Ok(choice)) => {
                         if let Some(text) = choice.get("title").and_then(Value::as_str) {
                             self.replace(&uri, &range, text);
@@ -434,7 +451,7 @@ impl Server {
             || settings.authorization != self.settings.authorization
             || settings.github_token != self.settings.github_token
             || settings.providers != self.settings.providers;
-        match Http::new(settings.clone()) {
+        match self.http_for(&settings) {
             Ok(http) => self.http = http,
             Err(error) => self.log(
                 MessageType::ERROR,
@@ -461,7 +478,7 @@ impl Server {
             );
         }
         if refetch {
-            self.cache.clear();
+            self.restart_lookups();
         }
         if reread {
             let docs: Vec<(Uri, String, bool)> = self
@@ -576,6 +593,7 @@ fn signature(doc: &Doc) -> Vec<(String, String)> {
 }
 
 mod commands;
+mod credentials;
 mod lookups;
 mod requests;
 mod status;

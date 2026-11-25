@@ -5,8 +5,10 @@
 #   lsp.pl pick OUT URI COMMAND  the position of COMMAND from the bottom of the latest menu for URI
 #   lsp.pl lens OUT COMMAND      the position of the COMMAND lens among the lenses on its line
 #   lsp.pl ran IN COMMAND        whether Zed asked the server to execute COMMAND
+#   lsp.pl runs IN COMMAND       how many times Zed asked the server to execute COMMAND
 #   lsp.pl failed IN OUT         lists executed commands the server answered with an error
-#   lsp.pl answered IN           whether Zed answered a window/showMessageRequest with a choice
+#   lsp.pl answered IN [TITLE]   whether Zed answered a window/showMessageRequest with a choice,
+#                                or with the button TITLE
 use strict;
 use warnings;
 use JSON::PP;
@@ -72,9 +74,10 @@ if ($mode eq 'actions') {
 	my @row = grep { $_->{range}{start}{line} == $line } @all;
 	my ($at) = grep { command_of($row[$_]) eq $arg } 0 .. $#row;
 	print "$at\n";
-} elsif ($mode eq 'ran') {
-	exit !grep { ($_->{method} // '') eq 'workspace/executeCommand' && ($_->{params}{command} // '') eq $arg }
+} elsif ($mode eq 'ran' || $mode eq 'runs') {
+	my $runs = grep { ($_->{method} // '') eq 'workspace/executeCommand' && ($_->{params}{command} // '') eq $arg }
 		messages($file);
+	$mode eq 'runs' ? print("$runs\n") : exit !$runs;
 } elsif ($mode eq 'failed') {
 	my %reply = map { defined $_->{id} && !defined $_->{method} ? ($_->{id} => $_) : () } messages($arg);
 	for my $request (grep { ($_->{method} // '') eq 'workspace/executeCommand' } messages($file)) {
@@ -85,6 +88,7 @@ if ($mode eq 'actions') {
 } elsif ($mode eq 'answered') {
 	exit !grep {
 		!defined $_->{method} && ref $_->{result} eq 'HASH' && defined $_->{result}{title}
+			&& (!defined $arg || $_->{result}{title} eq $arg)
 	} messages($file);
 } else {
 	die "lsp.pl: unknown mode $mode\n";

@@ -42,7 +42,7 @@ fn options() -> Value {
 
 impl Client {
     /// The next server message that `pick` accepts, within 5 s.
-    fn next<T>(&self, mut pick: impl FnMut(&Message) -> Option<T>) -> T {
+    pub(super) fn next<T>(&self, mut pick: impl FnMut(&Message) -> Option<T>) -> T {
         let deadline = Instant::now() + Duration::from_secs(5);
         loop {
             let left = deadline.saturating_duration_since(Instant::now());
@@ -84,7 +84,7 @@ impl Client {
         edit
     }
 
-    fn run(&self, id: i32, command: &str, args: &Value) -> Response {
+    pub(super) fn run(&self, id: i32, command: &str, args: &Value) -> Response {
         self.request(
             id,
             "workspace/executeCommand",

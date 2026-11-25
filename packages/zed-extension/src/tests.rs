@@ -104,3 +104,12 @@ fn workspace_configuration_returns_configured_settings() {
     );
     assert_eq!(workspace_configuration(None), json!({"versionlens": {}}));
 }
+
+#[test]
+fn initialization_options_ask_for_the_authentication_actions() {
+    let settings = json!({"prereleases": true});
+    assert_eq!(
+        initialization_options(Some(settings)),
+        json!({"versionlens": {"prereleases": true}, "authenticationActions": true})
+    );
+}

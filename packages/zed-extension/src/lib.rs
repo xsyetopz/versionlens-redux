@@ -120,6 +120,14 @@ fn extract_binary(archive: &str, bytes: &[u8], binary_name: &str) -> Result<Vec<
     Ok(out)
 }
 
+/// Initialization options: the settings, and a request for the server's URL authentication code
+/// actions, since Zed lets an extension add neither commands nor a text prompt of its own.
+fn initialization_options(settings: Option<Value>) -> Value {
+    let mut options = workspace_configuration(settings);
+    options["authenticationActions"] = json!(true);
+    options
+}
+
 /// Workspace configuration answering the server's `versionlens` section pull.
 fn workspace_configuration(settings: Option<Value>) -> Value {
     json!({ SETTINGS_SECTION: settings.unwrap_or_else(|| json!({})) })
@@ -237,6 +245,15 @@ impl zed::Extension for VersionLensExtension {
             args: args.unwrap_or_else(|| vec!["--stdio".to_owned()]),
             env: worktree.shell_env(),
         })
+    }
+
+    fn language_server_initialization_options(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &Worktree,
+    ) -> Result<Option<Value>> {
+        let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?.settings;
+        Ok(Some(initialization_options(settings)))
     }
 
     fn language_server_workspace_configuration(

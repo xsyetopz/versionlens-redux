@@ -20,8 +20,14 @@ impl Client {
     }
 
     fn init(params: Value) -> Self {
+        Self::init_at(params, None)
+    }
+
+    /// Starts a server that keeps URL authentication in `stored`; the others keep none, so no
+    /// test reads the user's own file.
+    fn init_at(params: Value, stored: Option<std::path::PathBuf>) -> Self {
         let (server, conn) = Connection::memory();
-        let server = thread::spawn(move || serve(server));
+        let server = thread::spawn(move || serve(server, stored));
         let mut client = Self {
             conn,
             server,
@@ -235,3 +241,4 @@ fn updates_all_after_pending_lookups_and_names_failures() {
 }
 
 mod commands;
+mod credentials;

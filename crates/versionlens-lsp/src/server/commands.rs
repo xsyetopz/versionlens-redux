@@ -96,7 +96,7 @@ impl Server {
                             self.cache.remove(&key);
                         }
                     }
-                    None => self.cache.clear(),
+                    None => self.restart_lookups(),
                 }
                 self.vulns.clear();
                 self.osv_warned = false;
@@ -109,6 +109,8 @@ impl Server {
             | "versionlens.togglePrereleases"
             | "versionlens.showPrereleases"
             | "versionlens.hidePrereleases" => self.switch(command),
+            "versionlens.addAuthentication" => self.ask_kind(uri.as_ref())?,
+            "versionlens.removeAuthentication" => self.ask_forget()?,
             "versionlens.open" => {
                 let url = args.first().and_then(Value::as_str);
                 self.open_url(url.ok_or_else(|| bad("expected a URL"))?);
@@ -164,7 +166,7 @@ impl Server {
         }
     }
 
-    fn show(&self, kind: MessageType, text: impl Into<String>) {
+    pub(super) fn show(&self, kind: MessageType, text: impl Into<String>) {
         let text = text.into();
         self.notify(
             "window/showMessage",

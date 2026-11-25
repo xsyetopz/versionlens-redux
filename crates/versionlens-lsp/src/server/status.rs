@@ -106,35 +106,19 @@ impl Server {
             ));
         }
         let (shown, pre) = (self.settings.enabled, self.settings.prereleases);
+        let (versions, show) = if shown {
+            ("Hide versions", "versionlens.hide")
+        } else {
+            ("Show versions", "versionlens.show")
+        };
+        let (prereleases, toggle) = if pre {
+            ("Hide prereleases", "versionlens.hidePrereleases")
+        } else {
+            ("Show prereleases", "versionlens.showPrereleases")
+        };
         list.extend([
-            (
-                if shown {
-                    "Hide versions"
-                } else {
-                    "Show versions"
-                }
-                .into(),
-                if shown {
-                    "versionlens.hide"
-                } else {
-                    "versionlens.show"
-                },
-                vec![uri.clone()],
-            ),
-            (
-                if pre {
-                    "Hide prereleases"
-                } else {
-                    "Show prereleases"
-                }
-                .into(),
-                if pre {
-                    "versionlens.hidePrereleases"
-                } else {
-                    "versionlens.showPrereleases"
-                },
-                vec![uri.clone()],
-            ),
+            (versions.into(), show, vec![uri.clone()]),
+            (prereleases.into(), toggle, vec![uri.clone()]),
             (
                 "Refresh versions".into(),
                 "versionlens.refresh",
@@ -142,6 +126,20 @@ impl Server {
             ),
             ("Clear the cache".into(), "versionlens.clearCache", vec![]),
         ]);
+        if self.caps.auth_actions {
+            list.extend([
+                (
+                    "Add URL authentication".into(),
+                    "versionlens.addAuthentication",
+                    vec![uri.clone()],
+                ),
+                (
+                    "Remove URL authentication".into(),
+                    "versionlens.removeAuthentication",
+                    vec![],
+                ),
+            ]);
+        }
         list.into_iter()
             .map(|(title, command, args)| {
                 CodeActionOrCommand::CodeAction(CodeAction {
