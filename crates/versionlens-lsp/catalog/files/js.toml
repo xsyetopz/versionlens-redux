@@ -66,6 +66,10 @@ format = 'json'
 registry = 'jsr'
 rules = [
     { spec = 'version', pattern = '${OWN}', via = 'project' },
+    # A published package's `name` and `version` (jsr.io/docs/package-configuration), checked
+    # against JSR as the fork's master did, beside the local increments above.
+    { lines = '(?s)\A\s*\{.*?"name"\s*:\s*"(?P<name>@[\w-]+/[\w.-]+)".*?"version"\s*:\s*"(?P<version>[^"]+)"' },
+    { lines = '(?s)\A\s*\{.*?"version"\s*:\s*"(?P<version>[^"]+)".*?"name"\s*:\s*"(?P<name>@[\w-]+/[\w.-]+)"' },
     { spec = 'imports.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
     { spec = 'scopes.*.*', pattern = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)@(?P<version>.+)$' },
 ]

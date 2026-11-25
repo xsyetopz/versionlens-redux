@@ -60,6 +60,66 @@ fn reads_the_deno_and_jsr_version() {
 }
 
 #[test]
+fn checks_a_published_jsr_package_beside_its_increments() {
+    let text = "{\n  \"name\": \"@luca/greet\",\n  \"version\": \"1.0.0\",\n  \"exports\": \"./mod.ts\"\n}\n";
+    expect(
+        "jsr.json",
+        text,
+        &[
+            ("deno", "1.0.0", "project"),
+            ("@luca/greet", "1.0.0", "jsr"),
+        ],
+    );
+    // Either order, and only the top-level name: an import's scope is not the package's.
+    let text = r#"{"version": "2.0.0", "imports": {"a": "jsr:@std/path@^1"}, "name": "@a/b"}"#;
+    expect(
+        "deno.json",
+        text,
+        &[
+            ("deno", "2.0.0", "project"),
+            ("@a/b", "2.0.0", "jsr"),
+            ("@std/path", "^1", "jsr"),
+        ],
+    );
+}
+
+#[test]
+fn reads_julia_standard_libraries_apart_from_registered_and_developed_packages() {
+    // Shapes from pkgdocs.julialang.org/v1/toml-files/ and JuliaLang/julia stdlib/Manifest.toml.
+    let text = "\
+[[deps.Dates]]
+deps = [\"Printf\"]
+uuid = \"ade2ca70-3891-5945-98fb-dc099432e06a\"
+version = \"1.11.0\"
+
+[[deps.LibCURL_jll]]
+deps = [\"LibSSH2_jll\", \"Libdl\"]
+uuid = \"deac9b47-8bc7-5906-a0fe-35ac56dc84c0\"
+version = \"8.6.0+0\"
+
+[[deps.Example]]
+deps = [\"DependencyA\"]
+git-tree-sha1 = \"8eb7b4d4ca487caade9ba3e85932e28ce6d6e1f8\"
+uuid = \"7876af07-990d-54b4-ab0e-23690620f79a\"
+version = \"1.2.3\"
+
+[[deps.Local]]
+path = \"dev/Local\"
+uuid = \"00000000-0000-0000-0000-000000000002\"
+version = \"0.1.0\"
+";
+    expect(
+        "Manifest.toml",
+        text,
+        &[
+            ("Dates", "1.11.0", "julia-stdlib"),
+            ("LibCURL_jll", "8.6.0+0", "julia"),
+            ("Example", "1.2.3", "julia"),
+        ],
+    );
+}
+
+#[test]
 fn reads_project_json_runtimes() {
     let text = r#"{"dependencies": {"A": "1.0.0"}, "frameworks": {"net472": {"dependencies": {"B": "2.0.0"}}}, "runtimes": {"win": {"dependencies": {"C": "3.0.0"}}}}"#;
     expect(

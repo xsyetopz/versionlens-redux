@@ -277,13 +277,6 @@ const RENAMED: &[(&str, &str, &str)] = &[
     ("Nvmrc", "node", "1.0.0"),
 ];
 
-/// Cases still unread, each named in CHANGELOG.md. Master looked a `jsr.json`'s own name up on
-/// JSR, but upstream's local increments own that version's span, and a lookup spanning the name
-/// would offer an edit that appends a version to it (`render::replacement` of an empty
-/// requirement). Julia manifests pin registered packages by `git-tree-sha1`, which the case
-/// lacks as a standard library would.
-const UNREAD: &[&str] = &["JsrJson", "JuliaManifestToml"];
-
 #[test]
 fn reads_what_master_checked_in_each_manifest_kind() {
     let cases: Vec<serde_json::Value> =
@@ -300,7 +293,7 @@ fn reads_what_master_checked_in_each_manifest_kind() {
         let read = found
             .iter()
             .any(|d| (d.name.as_str(), d.req.as_str()) == want);
-        if read == UNREAD.contains(&kind) {
+        if !read {
             wrong.push(format!("{kind} {path}: want {want:?}, read {read}"));
         }
     }

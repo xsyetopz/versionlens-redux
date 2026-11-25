@@ -161,7 +161,21 @@ url = 'https://raw.githubusercontent.com/JuliaRegistries/General/master/{First}/
 regex = '(?m)^\["([^"]+)"\]'
 bare = 'caret'
 osv = 'Julia'
+# General keeps binary `_jll` packages under `jll/` (its Registry.toml: `path = "jll/L/LibCURL_jll"`).
+fallback = 'https://raw.githubusercontent.com/JuliaRegistries/General/master/jll/{First}/{name}/Versions.toml'
 page = 'https://juliahub.com/ui/Packages/General/{name}'
+
+# A standard library in a manifest. Some, such as Statistics and TOML, are registered in General;
+# the rest, such as Dates, ship with Julia at its `X.Y.0` (JuliaLang/julia stdlib/Manifest.toml),
+# so they fall back to Julia's own release list, whose top-level keys are the versions.
+[[registry]]
+id = 'julia-stdlib'
+url = 'https://raw.githubusercontent.com/JuliaRegistries/General/master/{First}/{name}/Versions.toml'
+regex = '(?m)^(?:\[|  )"(\d[^"]*)"(?:\]|: \{)'
+bare = 'caret'
+osv = 'Julia'
+fallback = 'https://julialang-s3.julialang.org/bin/versions.json'
+page = 'https://docs.julialang.org/en/v1/stdlib/{name}/'
 
 [[registry]]
 id = 'haxelib'

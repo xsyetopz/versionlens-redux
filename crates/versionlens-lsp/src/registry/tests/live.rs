@@ -36,6 +36,9 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("clojars", "ring/ring-core", None, None),
     ("hex", "plug", None, Some("1.3.0")),
     ("julia", "HTTP", None, Some("0.9.0")),
+    ("julia", "LibCURL_jll", None, Some("8.6.0+0")),
+    ("julia-stdlib", "Dates", None, Some("1.11.0")),
+    ("julia-stdlib", "Statistics", None, None),
     ("haxelib", "hxcpp", None, Some("4.3.2")),
     ("docker", "node", None, Some("20.0.0")),
     ("oci", "mcr.microsoft.com/dotnet/sdk", None, None),
@@ -131,9 +134,11 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
 /// Registries whose advisory route works but whose packages have no advisory on file that a
 /// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
 /// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, or `vlang/vsl`, and OSV's Go ecosystem none for the
-/// Packer plugins `hashicorp` publishes. Their samples check only that the route answers and names
-/// a repository.
+/// Packer plugins `hashicorp` publishes, and OSV's Julia ecosystem none for the standard libraries
+/// outside the `_jll` ones, such as Dates and Statistics. Their samples check only that the route
+/// answers and names a repository.
 const NO_KNOWN_ADVISORY: &[&str] = &[
+    "julia-stdlib",
     "dub",
     "chef",
     "elm",

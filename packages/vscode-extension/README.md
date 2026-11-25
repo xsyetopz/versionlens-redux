@@ -33,7 +33,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables), `Cargo.lock` |
 | npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `.bun-version`, `npm:` entries of `.prototools`, and the resolved versions in `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` |
 | Node.js releases | Bitnami (`node`) | `.nvmrc`, `.node-version`, `node` in `.tool-versions`, `mise.toml`, and `.prototools`, `node-version` of `actions/setup-node` |
-| JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
+| JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc`, and the published package's own `name` |
 | Unity | | `Packages/manifest.json` |
 | Packagist | Packagist | `composer.json`, `composer.lock` |
 | PEAR and PECL channels | | `package.xml`, `package2.xml` (PEAR 2.0 `package` and `extension` dependencies) |
@@ -62,6 +62,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
 | Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
 | Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
+| Julia General, then Julia's release list | Julia | `Manifest.toml` standard libraries |
 | Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
 | Elm packages | GIT (`github.com/author/package`) | `elm.json` |
 | Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs, and `oci://` chart dependencies in `Chart.yaml` |

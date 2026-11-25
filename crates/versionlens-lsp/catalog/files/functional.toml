@@ -82,6 +82,11 @@ rules = [
     { keys = 'compat' },
     # A manifest pins each registered package; standard libraries lack `git-tree-sha1`.
     { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+)\]\]\r?\n(?:[^\[\n][^\n]*\n)*?git-tree-sha1[^\n]*\n(?:[^\[\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+    # The rest, without a `path` or `pinned` line (pkgdocs.julialang.org/v1/toml-files/), are
+    # standard libraries, as the fork's master read them. The `_jll` binary ones, such as
+    # LibCURL_jll, are registered in General, where OSV's Julia advisories name them.
+    { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+_jll)\]\]\r?\n(?:[^\[\np\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+    { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+)\]\]\r?\n(?:[^\[\np\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"', via = 'julia-stdlib' },
 ]
 
 [[file]]

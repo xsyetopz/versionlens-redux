@@ -287,7 +287,9 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
             && ([DIRECTORY, SOURCE].contains(&d.registry) || is_registry_req(&d.req))
     });
     deps.sort_by_key(|d| (d.span.start, d.span.end));
-    deps.dedup_by_key(|d| d.span.clone());
+    // A manifest's own version keeps its local increments beside a lookup of the published
+    // package, as `jsr.json` gets both upstream's increments and the fork's master's JSR lookup.
+    deps.dedup_by(|a, b| a.span == b.span && (a.registry == PROJECT) == (b.registry == PROJECT));
     deps
 }
 
