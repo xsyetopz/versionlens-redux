@@ -96,6 +96,22 @@ fn reads_qlfile_tags() {
 }
 
 #[test]
+fn reads_the_racket_release_an_info_rkt_needs() {
+    // The quoted, `list`, and deprecated forms from docs.racket-lang.org/pkg/metadata.html, and
+    // the bracketed one threading-lib's info.rkt writes; an unversioned package or another
+    // package's bound has no catalog version to compare.
+    for text in [
+        "#lang info\n(define deps\n  '([\"base\" #:version \"8.2\"]))\n",
+        "#lang info\n(define deps '((\"base\" #:version \"8.2\") \"rackunit-lib\" (\"threading-lib\" #:version \"2.0\")))\n",
+        "#lang info\n(define deps (list (list \"base\" '#:version \"8.2\")))\n",
+        "#lang info\n(define build-deps '((\"base\" \"8.2\")))\n",
+    ] {
+        expect("info.rkt", text, &[("base", "8.2", "racket")]);
+    }
+    expect("info.rkt", "#lang info\n(define deps '(\"base\"))\n", &[]);
+}
+
+#[test]
 fn reads_lake_git_revisions() {
     let toml = "[[require]]\nname = \"batteries\"\ngit = \"https://github.com/leanprover-community/batteries\"\nrev = \"v4.15.0\"\n\n[[require]]\nname = \"aesop\"\ngit = \"https://github.com/leanprover-community/aesop\"\nrev = \"main\"\n\n[[require]]\nname = \"mathlib\"\nscope = \"leanprover-community\"\n";
     expect(

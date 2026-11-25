@@ -50,6 +50,17 @@ field = '@key'
 bare = 'caret'
 page = 'https://julialang.org/downloads/'
 
+# Racket's releases, each linked as `releases/8.14/` on its all-versions page, which an info.rkt
+# `("base" #:version "8.0")` names: the version of `base` is the Racket release
+# (docs.racket-lang.org/pkg/metadata.html). A `#:version` is a lower bound. OSV lists no Racket
+# advisories.
+[[registry]]
+id = 'racket'
+url = 'https://download.racket-lang.org/all-versions.html'
+regex = 'releases/(\d+(?:\.\d+)+)/'
+bare = 'min'
+page = 'https://download.racket-lang.org/'
+
 # R's releases from R-hub's rversions service, which `R (>= 4.3)` in a DESCRIPTION names.
 [[registry]]
 id = 'r-lang'

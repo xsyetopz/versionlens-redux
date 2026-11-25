@@ -363,6 +363,22 @@ rules = [
     { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?[ \t]+:tag[ \t]+(?P<version>\S+)' },
 ]
 
+# A Racket package's info.rkt lists `deps` and `build-deps`, each a source string or a list with
+# `#:version`, or the deprecated bare version string: docs.racket-lang.org/pkg/metadata.html,
+# which recommends a versioned dependency on "base", the Racket release. Brackets work as
+# parentheses, `'(["base" #:version "6.3"])` in github.com/lexi-lambda/threading's
+# threading-lib/info.rkt. The package catalog
+# (pkgs.racket-lang.org/pkg/<name>) records checksums and no package versions, so other packages'
+# lower bounds have nothing to compare with and are not read.
+[[file]]
+id = 'racket'
+globs = ['info.rkt']
+format = 'text'
+registry = 'racket'
+rules = [
+    { lines = '''[(\[][ \t]*(?:list[ \t]+)?"(?P<name>base)"[ \t\r\n]+(?:'?#:version[ \t\r\n]+)?"(?P<version>\d+(?:\.\d+)*)"''' },
+]
+
 # Lake requires a git package at a `rev`, in lakefile.toml as `git` then `rev` and in lakefile.lean
 # as `from git "url" @ "rev"`: leanprover/lean4, src/lake/README.md. Only a release-like rev reads,
 # not a branch or commit; a Reservoir `scope`/`version` is not read.

@@ -53,6 +53,7 @@ languages = [
   "Perl",
   "Plain Text",
   "Python",
+  "Racket",
   "Ruby",
   "Rust",
   "Scala",
@@ -111,6 +112,7 @@ name = "VersionLens Redux Language Server"
 "Perl" = "perl"
 "Plain Text" = "plaintext"
 "Python" = "python"
+"Racket" = "racket"
 "Ruby" = "ruby"
 "Rust" = "rust"
 "Scala" = "scala"

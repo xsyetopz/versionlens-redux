@@ -135,6 +135,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("stackage-nightly", "nightly", None, None),
     ("julia-lang", "julia", None, None),
     ("r-lang", "R", None, None),
+    ("racket", "base", None, None),
     ("deno-cli", "deno", None, Some("1.30.0")),
     ("dotnet-sdk", "dotnet", None, Some("8.0.100")),
     ("temurin", "java", None, Some("17")),

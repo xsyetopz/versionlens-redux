@@ -95,6 +95,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | Stackage snapshots | | `resolver:` and `snapshot:` `lts-…` and `nightly-…` in `stack.yaml`; a snapshot by URL or `github:` path is labelled as its source |
 | Julia releases | | `julia` in a `Project.toml` `[compat]` |
 | R releases (R-hub) | | `R (>= …)` in a `DESCRIPTION` |
+| Racket releases | | the `"base"` `#:version` lower bound in an `info.rkt` |
 | Deno releases | crates.io (`deno`) | the `deno-version` input of `setup-deno` |
 | .NET SDK releases, the newest of each channel | Bitnami (`dotnet-sdk`) | the `dotnet-version` input of `setup-dotnet` |
 | Temurin Java feature releases | Bitnami (`java`) | the `java-version` input of `setup-java` |
