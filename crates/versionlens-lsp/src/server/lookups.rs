@@ -177,13 +177,13 @@ impl Server {
     }
 
     pub(super) fn query(&self, dep: &Dep) -> Option<Query> {
-        let ecosystem = registry::get(dep.registry)?.osv?;
+        let registry = registry::get(dep.registry)?;
         let found = self.cache.get(&key(dep))?.result.as_ref().ok()?;
-        let req = Req::parse(&dep.req, registry::get(dep.registry)?.bare)?;
+        let req = Req::parse(&dep.req, registry.bare)?;
         let version = render::current(&req, &found.versions)?;
         Some(Query {
-            ecosystem,
-            name: dep.name.clone(),
+            ecosystem: registry.osv?,
+            name: registry::expand(registry.osv_name, &dep.name, None).ok()?,
             version: version.raw,
         })
     }

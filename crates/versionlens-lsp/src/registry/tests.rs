@@ -2,6 +2,8 @@ use super::parse::helm;
 use super::tools::terraform;
 use super::*;
 
+mod live;
+
 #[test]
 fn pages_docker_tags_by_number_and_variant() {
     let docker = get("docker").unwrap();
@@ -45,6 +47,23 @@ fn expands_placeholders() {
         "bitnami/redis"
     );
     assert!(expand("{docker}", "ghcr.io/a/b", None).is_err());
+    assert_eq!(
+        expand("{host}|{repo}", "ghcr.io/a/b", None).unwrap(),
+        "ghcr.io|a/b"
+    );
+    assert!(expand("{host}", "node", None).is_err());
+    let docker = get("docker").unwrap();
+    assert_eq!(route(docker, "ghcr.io/a/b").id, "oci");
+    assert_eq!(route(docker, "docker.io/a/b").id, "docker");
+    assert_eq!(route(docker, "bitnami/redis").id, "docker");
+    assert_eq!(
+        page("docker", "quay.io/a/b"),
+        "https://quay.io/repository/a/b"
+    );
+    assert_eq!(
+        page("docker", "registry.k8s.io/pause"),
+        "https://explore.ggcr.dev/?repo=registry.k8s.io/pause"
+    );
     assert_eq!(
         expand("{source}/index.yaml", "x", Some("https://c.io/")).unwrap(),
         "https://c.io/index.yaml"

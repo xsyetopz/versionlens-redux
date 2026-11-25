@@ -1,9 +1,11 @@
 //! Patterns that more than one row uses.
 
-use crate::extract::Rule::{self, Keys, Record, Spec};
+use crate::extract::Rule::{self, Keys, Record, Spec, Via};
 
 pub(super) const PEP508: &str = r"^\s*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*\(?(?P<version>(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+(?:\s*,\s*(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+)*)?\)?\s*(?:;.*)?$";
 pub(super) const DOCKER: &str = r"^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$";
+/// An `image:` or `container:` line naming a tagged image, as CI and dev-environment files write it.
+pub(super) const IMAGE_LINE: &str = r#"(?m)^[ \t]*(?:-[ \t]*)?(?:image|container)[ \t]*:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$"#;
 pub(super) const ACTION: &str = r"^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$";
 pub(super) const TOOL_VERSION: &str = r"\A\s*v?(?P<version>\d[\w.]*)\s*\z";
 pub(super) const MAVEN_SPEC: &str = r"^(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)$";
@@ -21,6 +23,18 @@ pub(super) const NPM_DEPS: &[Rule] = &[
     Keys("workspaces.catalogs.*"),
     Keys("volta"),
     Spec("packageManager", r"^(?P<name>[\w-]+)@(?P<version>[^+]+)"),
+    // JSPM names its registry in each value: `npm:lodash@^4.17.0`, `github:owner/repo@1.0.0`.
+    Spec(
+        "jspm.*.*",
+        r"^npm:(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>.+)$",
+    ),
+    Via(
+        "github",
+        &Spec(
+            "jspm.*.*",
+            r"^github:(?P<name>[\w.-]+/[\w.-]+)@(?P<version>.+)$",
+        ),
+    ),
 ];
 pub(super) const PYPROJECT: &[Rule] = &[
     Spec("project.dependencies.*", PEP508),

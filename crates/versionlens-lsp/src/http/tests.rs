@@ -53,10 +53,13 @@ fn docker_at(base: &str) -> &'static Registry {
         },
         bare: docker.bare,
         osv: docker.osv,
+        osv_name: docker.osv_name,
         accept: docker.accept,
         yanked: docker.yanked,
         deprecated: docker.deprecated,
         filtered: Box::leak(filtered.into_boxed_str()),
+        fallback: docker.fallback,
+        paged: docker.paged,
     }))
 }
 

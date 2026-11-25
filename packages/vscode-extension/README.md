@@ -28,42 +28,46 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 
 ## Supported Manifests
 
-| Registry | Files |
-| --- | --- |
-| crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables) |
-| npm | `package.json`, `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `.nvmrc`, `.node-version`, `.bun-version` |
-| JSR and npm | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
-| Unity | `Packages/manifest.json` |
-| Packagist | `composer.json` |
-| PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in` |
-| Go proxy | `go.mod`, `go.work` |
-| RubyGems | `Gemfile`, `*.gemspec` |
-| CocoaPods | `Podfile` |
-| pub.dev | `pubspec.yaml`, `pubspec_overrides.yaml` |
-| NuGet | `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `project.json`, `global.json` |
-| Maven Central | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `build.sbt`, `deps.edn`, `.mvn/extensions.xml`, `*.main.kts` |
-| Clojars | `project.clj` |
-| Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
-| Julia General | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
-| Haxelib | `haxelib.json`, `*.hxml` |
-| Docker registries | `Dockerfile`, `Containerfile`, `*.dockerfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, `devcontainer.json`, GitLab CI and CircleCI configs |
-| GitHub tags | workflows (including nested folders), `.github/actions/**`, `action.yml`, `Package.swift`, `Cartfile`, `Cartfile.private`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
-| Helm repositories | `Chart.yaml` |
-| Ansible Galaxy | `requirements.yml`, `galaxy.yml` |
-| Terraform Registry | `*.tf`, `*.tofu` |
-| Bazel Central Registry | `MODULE.bazel` |
-| vcpkg | `vcpkg.json` |
-| ConanCenter | `conanfile.txt`, `conanfile.py` |
-| CRAN | `DESCRIPTION`, `renv.lock` |
-| MetaCPAN | `cpanfile` |
-| DUB | `dub.json`, `dub.selections.json`, `dub.sdl` |
-| opam | `opam`, `*.opam`, `dune-project` |
-| Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
-| Runtimes | `rust-toolchain`, `rust-toolchain.toml`, `.ruby-version`, `.python-version`, `.terraform-version`, `.tool-versions`, `mise.toml`, `gradle-wrapper.properties` |
-| LuaRocks | `*.rockspec` |
-| xmake repository | `xmake.lua` |
+| Registry | OSV advisories | Files |
+| --- | --- | --- |
+| crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables) |
+| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `.nvmrc`, `.node-version`, `.bun-version` |
+| JSR and npm | npm | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc` |
+| Unity | | `Packages/manifest.json` |
+| Packagist | Packagist | `composer.json` |
+| PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml` |
+| conda-forge | | `environment.yml`, `environment.yaml`, `pixi.toml` |
+| Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
+| RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec` |
+| CocoaPods | | `Podfile`, `*.podspec` |
+| pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
+| NuGet | NuGet | `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `project.json`, `global.json` |
+| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, `ivy.xml`, `.mvn/extensions.xml`, `*.main.kts` |
+| Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
+| Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
+| Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
+| Haxelib | | `haxelib.json`, `*.hxml` |
+| Elm packages | | `elm.json` |
+| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs |
+| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Package.swift`, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt`, `*.cmake`, `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix` |
+| Helm repositories | | `Chart.yaml` |
+| Ansible Galaxy | | `requirements.yml`, `galaxy.yml` |
+| Puppet Forge | | `Puppetfile` |
+| Chef Supermarket | | `Berksfile`, `metadata.rb` |
+| Terraform Registry | | `*.tf`, `*.tofu`, `.terraform.lock.hcl` |
+| Bazel Central Registry | | `MODULE.bazel` |
+| vcpkg | | `vcpkg.json` |
+| ConanCenter | | `conanfile.txt`, `conanfile.py` |
+| CRAN | CRAN | `DESCRIPTION`, `renv.lock` |
+| MetaCPAN | | `cpanfile` |
+| DUB | | `dub.json`, `dub.selections.json`, `dub.sdl` |
+| opam | opam | `opam`, `*.opam`, `dune-project` |
+| Hackage | Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
+| LuaRocks | | `*.rockspec` |
+| xmake repository | | `xmake.lua` |
+| Runtimes and tools | Go (`stdlib`) for Go | `rust-toolchain`, `rust-toolchain.toml`, `.go-version`, `.ruby-version`, `.python-version`, `.terraform-version`, `.tool-versions`, `mise.toml`, `gradle-wrapper.properties` |
 
-The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server.
+The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for the registries with an empty advisories cell, so their versions get no vulnerability check. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
 
 ## Settings
 

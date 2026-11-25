@@ -23,6 +23,9 @@ pub(crate) enum Rule {
     /// A regex over the whole text with `name`, optional `group`, `version`, `registry`, and `source` groups.
     /// Without a `name` group the file type's id names the package, as in `.nvmrc` for `node`.
     Lines(&'static str),
+    /// A rule whose dependencies come from another registry, such as the `pip:` list inside a
+    /// conda `environment.yml`.
+    Via(&'static str, &'static Self),
 }
 
 /// A dependency found in a manifest: what it is called, what it asks for, and where that is.
@@ -147,6 +150,14 @@ pub(crate) fn extract(file: &FileType, text: &str) -> Vec<Dep> {
                     .captures_iter(text)
                     .filter_map(|c| from_caps(&c, text, 0, file)),
             ),
+            Rule::Via(registry, rule) => {
+                let inner = FileType {
+                    registry,
+                    rules: std::slice::from_ref(rule),
+                    ..*file
+                };
+                deps.extend(extract(&inner, text));
+            }
         }
     }
     for dep in &mut deps {

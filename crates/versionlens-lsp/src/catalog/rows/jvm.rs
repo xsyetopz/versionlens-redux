@@ -75,9 +75,21 @@ pub(super) static ROWS: &[FileType] = &[
         "deps-edn",
         &["deps.edn"],
         Text,
-        "maven",
+        "clojars",
         &[Lines(
             r#"(?P<name>[\w.-]+/[\w.-]+)\s+\{\s*:mvn/version\s+"(?P<version>[^"]+)""#,
+        )],
+    ),
+    row(
+        "ivy",
+        &["ivy.xml"],
+        Xml,
+        "maven",
+        &[Record(
+            "ivy-module.dependencies.dependency",
+            "@org:@name",
+            "@rev",
+            "",
         )],
     ),
     row(

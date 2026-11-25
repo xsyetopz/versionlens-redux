@@ -6,9 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Images on any OCI registry resolve, not only Docker Hub: MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, registry.gitlab.com, and private hosts, with the anonymous token a public registry's `WWW-Authenticate` challenge issues and every `Link` page of tags.
+- GitHub tag dependencies (workflows, Swift, Carthage, CMake, Zig, Nim, Meson, Bazel, pre-commit, flakes) report vulnerabilities through OSV's GIT ecosystem, and `.go-version` and mise Go pins through OSV's Go `stdlib`.
+- New manifests: conda `environment.yml` (its `pip:` list through PyPI), `setup.cfg`, `setup.py`, `tox.ini`, JSPM `npm:` and `github:` values in `package.json`, `ivy.xml`, `Gopkg.toml`, `glide.yaml`, `shard.yml`, `Mintfile`, `Puppetfile` (Puppet Forge), `Berksfile` and `metadata.rb` (Chef Supermarket), `Earthfile`, workflow `container:`, `services:`, and `docker://` images, and Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod images.
+- `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package.
+
 ### Changed
 
-- Rewrote the language server as one crate, `versionlens-lsp`, of about 3,500 lines of code, no file above 603. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
+- Rewrote the language server as one crate, `versionlens-lsp`, of about 6,200 lines of Rust outside tests (tokei), 1,500 of them file-type and registry rows, and no file above 641 lines. Each file type is one row in `FILE_TYPES` in `catalog/rows.rs`, and each registry is one row in `REGISTRIES` in `registry.rs`.
 - Every editor takes its file globs from the server, so VS Code, JetBrains, and Neovim pick up a new file type with no change of their own. JetBrains and Neovim run `versionlens-lsp --file-types`; VS Code reads `capabilities.experimental.fileTypes` from the initialize result and sends the server only those files.
 - OSV checks send one `querybatch` request per document instead of one request per dependency. Registry requests share one pooled HTTP/2 client, capped by `versionlens.concurrency` and limited by `versionlens.timeoutMs`.
 - Quick fixes come from results already in memory, so they no longer wait on the network.
@@ -21,11 +28,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `requirements.txt`, `requirements/*.txt`, `*constraints*.txt`, and `*.hxml` files are recognised.
 - VS Code commands act on the active manifest, and the VersionLens output channel logs the server path, each applied setting, and every failed request.
 - A failed lookup shows `✗` with its reason on the dependency's line instead of disappearing.
-
-### Removed
-
-- Workspace-wide scanning, dependency sorting, the install task after save, the private-registry authorization prompt, and update-available diagnostics.
-- Support for Nix flakes, Zig, Nim, LuaRocks, Xmake, Meson wraps, Stack, `.cargo/config.toml`, `rust-toolchain`, and Bazel `WORKSPACE` files.
+- `deps.edn` and `project.clj` look in Clojars, then Maven Central, where `org.clojure/clojure` lives; their OSV queries use Maven's `group:artifact` names.
+- Maven and Clojure package links open pages that exist: Maven Central's artifact page and cljdoc.
+- ConanCenter dependencies no longer send OSV queries for an ecosystem OSV does not have.
 
 ## [0.6.3] - 2026-11-09
 

@@ -28,6 +28,7 @@ languages = [
   "Go Work",
   "Groovy",
   "HCL",
+  "INI",
   "Java",
   "JavaScript",
   "JSON",

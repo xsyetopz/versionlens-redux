@@ -390,3 +390,146 @@ fn reads_local_paths_as_directories() {
         named(&[("local", DIRECTORY), ("serde", "cargo")])
     );
 }
+
+#[test]
+fn reads_conda_environment_with_pip_section() {
+    let text = "name: app\nchannels:\n  - conda-forge\ndependencies:\n  - python=3.11\n  - conda-forge::numpy>=1.26\n  - scipy 1.11\n  - pip\n  - pip:\n      - requests==2.31.0\n";
+    assert_eq!(
+        registries("envs/environment.yml", text),
+        named(&[
+            ("python", "conda"),
+            ("numpy", "conda"),
+            ("scipy", "conda"),
+            ("pip", "conda"),
+            ("requests", "pypi"),
+        ])
+    );
+    assert_eq!(
+        deps("environment.yml", text),
+        pairs(&[
+            ("python", "3.11"),
+            ("numpy", ">=1.26"),
+            ("scipy", "1.11"),
+            ("pip", ""),
+            ("requests", "==2.31.0"),
+        ])
+    );
+}
+
+#[test]
+fn reads_jspm_registries_from_package_json() {
+    let text = r#"{"jspm": {"dependencies": {"lodash": "npm:lodash@^4.17.0", "css": "github:systemjs/plugin-css@0.1.37"}, "devDependencies": {"babel": "npm:@babel/core@7.0.0"}}}"#;
+    assert_eq!(
+        registries("package.json", text),
+        named(&[
+            ("lodash", "npm"),
+            ("systemjs/plugin-css", "github"),
+            ("@babel/core", "npm"),
+        ])
+    );
+    assert_eq!(
+        deps("package.json", text),
+        pairs(&[
+            ("lodash", "^4.17.0"),
+            ("systemjs/plugin-css", "0.1.37"),
+            ("@babel/core", "7.0.0"),
+        ])
+    );
+}
+
+#[test]
+fn reads_setuptools_requirements() {
+    let cfg = "[metadata]\nclassifiers =\n    Programming Language :: Python :: 3\n[options]\npackages = find:\ninstall_requires =\n    requests>=2.31\n    click[extra] ~=8.1 ; python_version>'3'\n    six\n";
+    assert_eq!(
+        deps("setup.cfg", cfg),
+        pairs(&[("requests", ">=2.31"), ("click", "~=8.1")])
+    );
+    let py = "setup(\n    python_requires='>=3.8',\n    install_requires=['requests>=2.31', \"click==8.1.7; os_name=='nt'\", 'six'],\n)\n";
+    assert_eq!(
+        deps("setup.py", py),
+        pairs(&[("requests", ">=2.31"), ("click", "==8.1.7")])
+    );
+}
+
+#[test]
+fn reads_legacy_and_config_management_manifests() {
+    one(
+        "Gopkg.toml",
+        "[[constraint]]\n  name = \"github.com/pkg/errors\"\n  version = \"0.8.0\"\n\n[[constraint]]\n  name = \"github.com/x/y\"\n  branch = \"main\"\n",
+        "github.com/pkg/errors",
+        "0.8.0",
+    );
+    one(
+        "glide.yaml",
+        "package: app\nimport:\n- package: github.com/sirupsen/logrus\n  version: ^1.0.0\n",
+        "github.com/sirupsen/logrus",
+        "^1.0.0",
+    );
+    one(
+        "ivy.xml",
+        "<ivy-module version=\"2.0\"><dependencies><dependency org=\"commons-io\" name=\"commons-io\" rev=\"2.4\"/></dependencies></ivy-module>",
+        "commons-io:commons-io",
+        "2.4",
+    );
+    one(
+        "shard.yml",
+        "name: app\ndependencies:\n  kemal:\n    github: kemalcr/kemal\n    version: ~> 1.4.0\n",
+        "kemalcr/kemal",
+        "~> 1.4.0",
+    );
+    one(
+        "Mintfile",
+        "yonaskolb/XcodeGen@2.38.0\n",
+        "yonaskolb/XcodeGen",
+        "2.38.0",
+    );
+    one(
+        "Puppetfile",
+        "forge 'https://forge.puppet.com'\nmod 'puppetlabs/stdlib', '9.0.0'\nmod 'puppetlabs-apt', :latest\n",
+        "puppetlabs:stdlib",
+        "9.0.0",
+    );
+    one(
+        "Berksfile",
+        "source 'https://supermarket.chef.io'\ncookbook 'nginx', '~> 12.0'\n",
+        "nginx",
+        "~> 12.0",
+    );
+    one(
+        "tox.ini",
+        "[testenv]\ndeps =\n    pytest>=7.0\n    coverage\ncommands = pytest\n",
+        "pytest",
+        ">=7.0",
+    );
+}
+
+#[test]
+fn reads_images_from_ci_files() {
+    let pipelines = "image: node:20\npipelines:\n  default:\n    - step:\n        image: python:3.12-slim\n        script: [make]\ndefinitions:\n  services:\n    redis:\n      image: \"redis:7\"\n";
+    assert_eq!(
+        deps("bitbucket-pipelines.yml", pipelines),
+        pairs(&[("node", "20"), ("python", "3.12-slim"), ("redis", "7")])
+    );
+    one(
+        ".woodpecker/build.yml",
+        "steps:\n  - name: test:unit\n    image: golang:1.22\n",
+        "golang",
+        "1.22",
+    );
+    one(
+        "Earthfile",
+        "VERSION 0.8\nFROM alpine:3.19\n",
+        "alpine",
+        "3.19",
+    );
+    let workflow = "jobs:\n  test:\n    name: test:unit\n    container: node:20\n    services:\n      db:\n        image: postgres:16\n    steps:\n      - uses: actions/checkout@v4\n      - uses: docker://alpine:3.19\n";
+    assert_eq!(
+        registries(".github/workflows/ci.yml", workflow),
+        named(&[
+            ("node", "docker"),
+            ("postgres", "docker"),
+            ("actions/checkout", "github"),
+            ("alpine", "docker"),
+        ])
+    );
+}

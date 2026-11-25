@@ -14,6 +14,10 @@ safe-remotes:
 package:
     bun run package
 
+# Ask every registry, package page, and OSV ecosystem the server knows for a sample; needs the network.
+registries-live:
+    cargo test -p versionlens-lsp registry::tests::live -- --include-ignored
+
 # Drive the extension in a real VS Code against the live registries; needs Docker and the network.
 vscode-live: (vscode-container "scripts/vscode-live.mjs")
 

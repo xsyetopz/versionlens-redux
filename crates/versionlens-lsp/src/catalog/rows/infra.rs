@@ -1,8 +1,8 @@
 //! Containers, CI, orchestration, and infrastructure files.
 
-use super::shared::{ACTION, DOCKER};
+use super::shared::{ACTION, DOCKER, IMAGE_LINE};
 use crate::catalog::{FileType, row};
-use crate::extract::Rule::{Keys, Lines, Record, Spec};
+use crate::extract::Rule::{Keys, Lines, Record, Spec, Via};
 use crate::flatten::Format::{Text, Yaml};
 
 pub(super) static ROWS: &[FileType] = &[
@@ -13,6 +13,7 @@ pub(super) static ROWS: &[FileType] = &[
             "*.Dockerfile",
             "Dockerfile.*",
             "Containerfile",
+            "Earthfile",
         ],
         Text,
         "docker",
@@ -59,7 +60,53 @@ pub(super) static ROWS: &[FileType] = &[
             Spec("jobs.*.steps.*.uses", ACTION),
             Spec("jobs.*.uses", ACTION),
             Spec("runs.steps.*.uses", ACTION),
+            Via("docker", &Lines(IMAGE_LINE)),
+            Via(
+                "docker",
+                &Lines(
+                    r#"(?m)uses:[ \t]*["']?docker://(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)"#,
+                ),
+            ),
         ],
+    ),
+    // CI services and dev environments that name images under `image:` keys at any depth.
+    row(
+        "ci-images",
+        &[
+            "bitbucket-pipelines.yml",
+            ".drone.yml",
+            ".woodpecker.yml",
+            ".woodpecker.yaml",
+            ".woodpecker/*.yml",
+            ".woodpecker/*.yaml",
+            ".gitpod.yml",
+            ".cirrus.yml",
+            "azure-pipelines.yml",
+            "azure-pipelines.yaml",
+            "cloudbuild.yaml",
+            "cloudbuild.yml",
+        ],
+        Text,
+        "docker",
+        &[Lines(IMAGE_LINE)],
+    ),
+    row(
+        "puppetfile",
+        &["Puppetfile"],
+        Text,
+        "puppet",
+        &[Lines(
+            r#"(?m)^[ \t]*mod[ \t]+["'](?P<group>[A-Za-z0-9]+)[-/](?P<name>[a-z][a-z0-9_]*)["'][ \t]*,[ \t]*["'](?P<version>\d[^"']*)["']"#,
+        )],
+    ),
+    row(
+        "chef",
+        &["Berksfile", "metadata.rb"],
+        Text,
+        "chef",
+        &[Lines(
+            r#"(?m)^[ \t]*(?:cookbook|depends)[ \t]+["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']"#,
+        )],
     ),
     row(
         "helm",

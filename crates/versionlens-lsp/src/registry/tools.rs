@@ -31,13 +31,14 @@ pub(super) static ROWS: &[Registry] = &[
     ),
     Registry {
         parse: Parse::Fn(go_releases),
+        osv_name: "stdlib",
         ..json(
             "golang",
             "https://go.dev/dl/?mode=json&include=all",
             "",
             "",
             Bare::Prefix,
-            None,
+            Some("Go"),
         )
     },
     json(

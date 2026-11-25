@@ -35,6 +35,9 @@ pub(crate) struct Registry {
     pub(crate) bare: Bare,
     /// The OSV ecosystem name, where OSV tracks this registry.
     pub(crate) osv: Option<&'static str>,
+    /// The package name OSV knows, as an [`expand`] template: GIT names a repository by URL, and
+    /// Go names its toolchain `stdlib`.
+    pub(crate) osv_name: &'static str,
     pub(crate) accept: &'static str,
     /// The field that marks a JSON version entry yanked, such as JSR's `yanked`; empty for none.
     pub(crate) yanked: &'static str,
@@ -44,6 +47,10 @@ pub(crate) struct Registry {
     /// page's; empty for none. Docker Hub lists tags newest first, 100 a page, so the tags of
     /// `node:20-alpine` are only on pages filtered by `20` and by `alpine`.
     pub(crate) filtered: &'static str,
+    /// A URL template asked when `url` fails, read the same way; empty for none.
+    pub(crate) fallback: &'static str,
+    /// Whether the registry splits a version list over pages its `Link` headers name.
+    pub(crate) paged: bool,
 }
 
 /// The filters a requirement pages by, for a registry with filtered pages: its leading number
@@ -91,10 +98,13 @@ const fn json(
         },
         bare,
         osv,
+        osv_name: "{name}",
         accept: "application/json",
         yanked: "",
         deprecated: "",
         filtered: "",
+        fallback: "",
+        paged: false,
     }
 }
 
@@ -111,10 +121,13 @@ const fn text(
         parse: Parse::Regex(pattern),
         bare,
         osv,
+        osv_name: "{name}",
         accept: "*/*",
         yanked: "",
         deprecated: "",
         filtered: "",
+        fallback: "",
+        paged: false,
     }
 }
 
@@ -253,13 +266,19 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Exact,
         Some("Maven"),
     ),
-    text(
-        "clojars",
-        "https://repo.clojars.org/{path}/maven-metadata.xml",
-        MAVEN_VERSIONS,
-        Bare::Exact,
-        Some("Maven"),
-    ),
+    // Leiningen writes `group/artifact`, and a bare `name` for `name/name`; OSV wants `group:artifact`.
+    // Leiningen and the Clojure CLI search Maven Central too, where `org.clojure/clojure` lives.
+    Registry {
+        osv_name: "{group}:{artifact}",
+        fallback: "https://repo1.maven.org/maven2/{path}/maven-metadata.xml",
+        ..text(
+            "clojars",
+            "https://repo.clojars.org/{path}/maven-metadata.xml",
+            MAVEN_VERSIONS,
+            Bare::Exact,
+            Some("Maven"),
+        )
+    },
     json(
         "hex",
         "https://hex.pm/api/packages/{name}",
@@ -293,14 +312,31 @@ pub(crate) static REGISTRIES: &[Registry] = &[
             None,
         )
     },
-    json(
-        "github",
-        "https://api.github.com/repos/{name}/tags?per_page=100",
-        "",
-        "name",
-        Bare::Prefix,
-        Some("GitHub Actions"),
-    ),
+    // An image on any registry but Docker Hub, through the OCI distribution API; see [`route`].
+    Registry {
+        paged: true,
+        ..json(
+            "oci",
+            "https://{host}/v2/{repo}/tags/list?n=1000",
+            "tags",
+            "",
+            Bare::Prefix,
+            None,
+        )
+    },
+    // OSV's GitHub Actions ecosystem has no version order, so a versioned query never matches;
+    // its GIT ecosystem matches the repository's exact tag, for actions and C/C++ sources alike.
+    Registry {
+        osv_name: "github.com/{name}",
+        ..json(
+            "github",
+            "https://api.github.com/repos/{name}/tags?per_page=100",
+            "",
+            "name",
+            Bare::Prefix,
+            Some("GIT"),
+        )
+    },
     Registry {
         accept: "*/*",
         parse: Parse::Fn(parse::helm),
@@ -346,7 +382,7 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         "https://raw.githubusercontent.com/conan-io/conan-center-index/master/recipes/{name}/config.yml",
         r#"(?m)^  "?(\d[^":\s]*)"?:"#,
         Bare::Exact,
-        Some("ConanCenter"),
+        None,
     ),
     json(
         "cran",
@@ -387,6 +423,23 @@ pub(crate) static REGISTRIES: &[Registry] = &[
         Bare::Exact,
         Some("opam"),
     ),
+    // Puppetfile names a module `owner/name` or `owner-name`; extraction joins it as `owner:name`.
+    json(
+        "puppet",
+        "https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference",
+        "releases",
+        "version",
+        Bare::Exact,
+        None,
+    ),
+    // Supermarket lists each version as a URL; `latest_version` is skipped by its `:` before the quote.
+    text(
+        "chef",
+        "https://supermarket.chef.io/api/v1/cookbooks/{name}",
+        r#"[\[,]"[^"]*/versions/([^"]+)""#,
+        Bare::Exact,
+        None,
+    ),
 ];
 
 const PAGES: &[(&str, &str)] = &[
@@ -401,12 +454,28 @@ const PAGES: &[(&str, &str)] = &[
     ("cocoapods", "https://cocoapods.org/pods/{name}"),
     ("pub", "https://pub.dev/packages/{name}"),
     ("nuget", "https://www.nuget.org/packages/{name}"),
-    ("maven", "https://central.sonatype.com/artifact/{path}"),
-    ("clojars", "https://clojars.org/{name}"),
+    (
+        "maven",
+        "https://central.sonatype.com/artifact/{group}/{artifact}",
+    ),
+    // cljdoc covers Clojars and Maven Central alike, as the Clojure tools search both.
+    ("clojars", "https://cljdoc.org/d/{group}/{artifact}"),
     ("hex", "https://hex.pm/packages/{name}"),
     ("julia", "https://juliahub.com/ui/Packages/General/{name}"),
     ("haxelib", "https://lib.haxe.org/p/{name}/"),
     ("docker", "https://hub.docker.com/r/{docker}"),
+    ("oci", "https://explore.ggcr.dev/?repo={name}"),
+    ("oci ghcr.io", "https://ghcr.io/{repo}"),
+    ("oci quay.io", "https://quay.io/repository/{repo}"),
+    (
+        "oci mcr.microsoft.com",
+        "https://mcr.microsoft.com/artifact/mar/{repo}",
+    ),
+    ("oci public.ecr.aws", "https://gallery.ecr.aws/{repo}"),
+    (
+        "oci registry.gitlab.com",
+        "https://gitlab.com/{repo}/container_registry",
+    ),
     ("github", "https://github.com/{name}"),
     (
         "helm",
@@ -425,17 +494,45 @@ const PAGES: &[(&str, &str)] = &[
     ("dub", "https://code.dlang.org/packages/{name}"),
     ("hackage", "https://hackage.haskell.org/package/{name}"),
     ("opam", "https://opam.ocaml.org/packages/{name}/"),
+    (
+        "puppet",
+        "https://forge.puppet.com/modules/{group}/{artifact}",
+    ),
+    ("chef", "https://supermarket.chef.io/cookbooks/{name}"),
 ];
 
 /// The human-readable page for a package.
 pub(crate) fn page(id: &str, name: &str) -> String {
-    let template = PAGES
+    let id = get(id).map_or(id, |registry| route(registry, name).id);
+    // An image's page depends on its host, so `oci quay.io` outranks `oci`.
+    let keys = [
+        image_host(name).map(|host| format!("{id} {host}")),
+        Some(id.to_owned()),
+    ];
+    let template = keys
         .iter()
-        .chain(tools::PAGES)
-        .find(|(key, _)| *key == id)
+        .flatten()
+        .find_map(|key| PAGES.iter().chain(tools::PAGES).find(|(k, _)| k == key))
         .map_or("https://osv.dev/list?q={name}", |(_, t)| t);
     expand(template, name, None)
         .unwrap_or_else(|_| format!("https://www.google.com/search?q={name}"))
+}
+
+/// The registry that answers for this name: Docker Hub's own API lists only its images, so an image
+/// that names another host, such as `ghcr.io/owner/image`, goes to that host's OCI registry.
+pub(crate) fn route(registry: &'static Registry, name: &str) -> &'static Registry {
+    match image_host(name) {
+        Some(host) if registry.id == "docker" && host != "docker.io" => {
+            get("oci").unwrap_or(registry)
+        }
+        _ => registry,
+    }
+}
+
+/// The registry host an image names, such as `ghcr.io` of `ghcr.io/owner/image`.
+fn image_host(name: &str) -> Option<&str> {
+    let (host, _) = name.split_once('/')?;
+    (host.contains('.') || host.contains(':') || host == "localhost").then_some(host)
 }
 
 /// The registry with this id.
@@ -457,8 +554,10 @@ pub(crate) fn alias(name: &str) -> Option<&'static str> {
 
 /// Fills a URL template. Placeholders: `{name}`, `{lower}`, `{enc}` (npm scope escaping),
 /// `{go}` (module case escaping), `{cargo}` (sparse index path), `{path}` (Maven group path),
+/// `{group}`/`{artifact}` (the halves of `group:artifact` or `group/artifact`),
 /// `{ns}`/`{short}` (the halves of `ns.name`), `{first}`/`{First}` (first letter),
-/// `{tf}` (Terraform provider or module path), `{docker}` (Docker Hub repository), and
+/// `{tf}` (Terraform provider or module path), `{docker}` (Docker Hub repository),
+/// `{host}`/`{repo}` (an image's registry host and the path after it), and
 /// `{source}` (the repository the manifest names).
 ///
 /// # Errors
@@ -487,6 +586,8 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
         ),
         ("{cargo}", cargo_path(&lower)),
         ("{path}", format!("{}/{artifact}", group.replace('.', "/"))),
+        ("{group}", group.to_owned()),
+        ("{artifact}", artifact.to_owned()),
         ("{ns}", ns.to_owned()),
         ("{short}", short.to_owned()),
         (
@@ -503,21 +604,19 @@ pub(crate) fn expand(template: &str, name: &str, source: Option<&str>) -> Result
         url = url.replace(key, &value);
     }
     if url.contains("{docker}") {
-        let host = name
-            .split('/')
-            .next()
-            .filter(|h| name.contains('/') && (h.contains('.') || h.contains(':')));
-        let repo = match host {
+        let repo = match image_host(name) {
             Some("docker.io") => name.trim_start_matches("docker.io/").to_owned(),
-            Some(host) => {
-                return Err(format!(
-                    "images on {host} are not supported; only Docker Hub is"
-                ));
-            }
+            Some(host) => return Err(format!("{host} is not Docker Hub")),
             None if name.contains('/') => name.to_owned(),
             None => format!("library/{name}"),
         };
         url = url.replace("{docker}", &repo);
+    }
+    if url.contains("{host}") || url.contains("{repo}") {
+        let host = image_host(name).ok_or_else(|| format!("{name} names no registry host"))?;
+        url = url
+            .replace("{host}", host)
+            .replace("{repo}", &name[host.len() + 1..]);
     }
     if url.contains("{source}") {
         let source = source

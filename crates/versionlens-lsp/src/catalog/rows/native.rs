@@ -3,7 +3,7 @@
 use super::shared::{GITHUB_ARCHIVE, GITHUB_FRAGMENT, GITHUB_RELEASE};
 use crate::catalog::{FileType, row};
 use crate::extract::Rule::{Keys, Lines, Record};
-use crate::flatten::Format::{Json, Text, Toml};
+use crate::flatten::Format::{Json, Text, Toml, Yaml};
 
 pub(super) static ROWS: &[FileType] = &[
     row(
@@ -29,6 +29,27 @@ pub(super) static ROWS: &[FileType] = &[
         &[Lines(
             r"(?m)^(?:require[ \t]+|[ \t]+)(?P<name>[\w.~-]+\.[\w.~/-]+)[ \t]+(?P<version>v\d[^\s]*)",
         )],
+    ),
+    // dep and Glide, the Go package managers before modules.
+    row(
+        "gopkg",
+        &["Gopkg.toml"],
+        Toml,
+        "go",
+        &[
+            Record("constraint.*", "name", "version", ""),
+            Record("override.*", "name", "version", ""),
+        ],
+    ),
+    row(
+        "glide",
+        &["glide.yaml", "glide.yml"],
+        Yaml,
+        "go",
+        &[
+            Record("import.*", "package", "version", ""),
+            Record("testImport.*", "package", "version", ""),
+        ],
     ),
     row(
         "bazel",
@@ -61,6 +82,25 @@ pub(super) static ROWS: &[FileType] = &[
         "conan",
         &[Lines(
             r#"(?m)(?:^[ \t]*|requires\(\s*["']|["'])(?P<name>[a-z0-9][\w.+-]*)/(?P<version>\d[\w.+-]*)"#,
+        )],
+    ),
+    row(
+        "shards",
+        &["shard.yml"],
+        Yaml,
+        "github",
+        &[
+            Record("dependencies.*", "github", "version", ""),
+            Record("development_dependencies.*", "github", "version", ""),
+        ],
+    ),
+    row(
+        "mint",
+        &["Mintfile"],
+        Text,
+        "github",
+        &[Lines(
+            r"(?m)^[ \t]*(?:https://github\.com/)?(?P<name>[\w.-]+/[\w.-]+?)(?:\.git)?@(?P<version>v?\d[\w.-]*)",
         )],
     ),
     row(
