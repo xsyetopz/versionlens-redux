@@ -117,6 +117,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("platformio-tool", "platformio/toolchain-xtensa", None, None),
     ("esp", "espressif/led_strip", None, None),
     ("typst", "cetz", None, None),
+    ("typst-compiler", "compiler", None, Some("0.10.0")),
     ("wally", "roblox/roact", None, None),
     ("mooncakes", "moonbitlang/x", None, Some("0.4.6")),
     ("purescript", "prelude", None, Some("6.0.1")),
@@ -133,7 +134,7 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
 /// sample could show: OSV's GIT ecosystem lists none for vibe.d, the Chef cookbooks, Elm's core
-/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, or `vlang/vsl`, and OSV's Go ecosystem none for the
+/// packages, hxcpp, `moonbitlang/x`, `purescript-prelude`, `vlang/vsl`, or the Typst compiler, and OSV's Go ecosystem none for the
 /// Packer plugins `hashicorp` publishes, and OSV's Julia ecosystem none for the standard libraries
 /// outside the `_jll` ones, such as Dates and Statistics. Their samples check only that the route
 /// answers and names a repository.
@@ -147,6 +148,7 @@ const NO_KNOWN_ADVISORY: &[&str] = &[
     "mooncakes",
     "purescript",
     "vpm",
+    "typst-compiler",
 ];
 
 /// How many times a page behind a bot challenge is asked before the check fails.

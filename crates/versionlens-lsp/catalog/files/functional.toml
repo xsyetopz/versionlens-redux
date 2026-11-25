@@ -242,6 +242,19 @@ rules = [
     { lines = '"@preview/(?P<name>[a-z][\w-]*):(?P<version>\d[\w.-]*)"' },
 ]
 
+# A package's typst.toml lists no dependencies, which its files import, but holds the package's
+# own `version` and the oldest Typst `compiler` it supports: github.com/typst/packages,
+# docs/manifest.md, and packages/preview/cetz/0.3.4/typst.toml.
+[[file]]
+id = 'typst-package'
+globs = ['typst.toml']
+format = 'toml'
+registry = 'typst'
+rules = [
+    { spec = 'package.version', pattern = '${OWN}', via = 'project' },
+    { lines = '''(?m)^[ \t]*(?P<name>compiler)[ \t]*=[ \t]*["'](?P<version>\d+\.\d+\.\d+)["']''', via = 'typst-compiler' },
+]
+
 # Wally maps an alias to `"scope/name@version"` under [dependencies], [server-dependencies], and
 # [dev-dependencies]: github.com/UpliftGames/wally, README.md.
 [[file]]

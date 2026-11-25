@@ -11,6 +11,18 @@ osv = 'GIT'
 osv_name = 'https://github.com/rust-lang/rust'
 page = 'https://www.rust-lang.org/tools/install'
 
+# Typst's changelog lists each release once in its body, `<li><a href="/docs/changelog/0.13.0/">`,
+# and once more in the navigation; crates.io's typst-cli skips 0.2 through 0.10, which the
+# `compiler` minimum of a typst.toml still names.
+[[registry]]
+id = 'typst-compiler'
+url = 'https://typst.app/docs/changelog/'
+regex = '(?i)<li><a href="/docs/changelog/(\d+\.\d+\.\d+)/">'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://github.com/typst/typst'
+page = 'https://typst.app/docs/changelog/'
+
 # OSV's Bitnami ecosystem carries the runtimes' own CVEs, under each product's name.
 [[registry]]
 id = 'python'

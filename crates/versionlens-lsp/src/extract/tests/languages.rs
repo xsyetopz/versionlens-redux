@@ -14,6 +14,20 @@ fn reads_typst_preview_imports() {
 }
 
 #[test]
+fn reads_a_typst_package_version_and_its_compiler() {
+    // cetz 0.3.4's typst.toml from github.com/typst/packages, trimmed to its version lines.
+    let text = "[package]\nname = \"cetz\"\nversion = \"0.3.4\"\ncompiler = \"0.13.0\"\nentrypoint = \"src/lib.typ\"\n";
+    expect(
+        "cetz/typst.toml",
+        text,
+        &[
+            ("typst-package", "0.3.4", "project"),
+            ("compiler", "0.13.0", "typst-compiler"),
+        ],
+    );
+}
+
+#[test]
 fn reads_wally_dependencies() {
     // The Wally README's manifest; the package's own `name` has no version.
     let text = "[package]\nname = \"roblox/roact\"\nversion = \"1.4.0\"\nregistry = \"https://github.com/UpliftGames/wally-index\"\n\n[dependencies]\nPromise = \"evaera/promise@2.0.1\"\n\n[dev-dependencies]\nTestEZ = \"roblox/testez@0.4.1\"\n";

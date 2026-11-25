@@ -89,6 +89,7 @@ A failed lookup shows `✗` with its reason on the dependency's line, and the ou
 | GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project` |
 | LuaRocks | GIT (the GitHub repository the rockspec's `source.url` names) | `*.rockspec` |
 | xmake repository | GIT (the GitHub repository the package's `xmake.lua` names) | `xmake.lua` |
+| Typst releases | GIT (`typst/typst`) | `compiler` in `typst.toml` |
 | Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, their `.tool-versions` and `mise.toml` entries, and the `python-version` and `ruby-version` inputs of workflow setup actions |
 | Rust and Terraform releases | GIT (`rust-lang/rust`, `hashicorp/terraform`) | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, `rust-version` in `Cargo.toml`, and their `.tool-versions` and `mise.toml` entries |
 
