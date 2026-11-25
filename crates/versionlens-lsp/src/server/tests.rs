@@ -162,6 +162,8 @@ fn reads_package_shaped_json_and_only_files_on_disk() {
         "file:///p/web-module.json",
         "untitled:/p/package.json",
         "git:/p/package.json",
+        // The settings document master classified as VersionLensMultiRegistries, read as nothing.
+        "versionlens:/multi-registries.json",
     ] {
         client.open(uri, text);
     }
@@ -180,6 +182,7 @@ fn reads_package_shaped_json_and_only_files_on_disk() {
     assert_eq!(lenses(2, "file:///p/web-module.json"), 1);
     assert_eq!(lenses(3, "untitled:/p/package.json"), 0);
     assert_eq!(lenses(4, "git:/p/package.json"), 0);
+    assert_eq!(lenses(5, "versionlens:/multi-registries.json"), 0);
     client.stop();
 }
 
