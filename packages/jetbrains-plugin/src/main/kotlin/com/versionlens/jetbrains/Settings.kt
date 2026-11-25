@@ -49,6 +49,7 @@ internal class Settings : PersistentStateComponent<Settings> {
     var workspaceExclude: String = ""
     var indicators: String = ""
     var providers: String = ""
+    var traceServer: String = "off"
 
     override fun getState(): Settings = this
 
@@ -73,6 +74,7 @@ internal class Settings : PersistentStateComponent<Settings> {
         workspaceExclude = state.workspaceExclude
         indicators = state.indicators
         providers = state.providers
+        traceServer = state.traceServer
     }
 
     var githubToken: String
@@ -159,6 +161,11 @@ internal class SettingsPage : BoundConfigurable("VersionLens") {
         row("Request timeout (ms):") { intTextField(500..600_000).bindIntText(settings::timeoutMs) }
         row("Concurrent requests:") { intTextField(1..256).bindIntText(settings::concurrency) }
         row("Cache (minutes):") { intTextField(0..10_080).bindIntText(settings::cacheMinutes) }
+        row("Trace server:") {
+            comboBox(TRACE_LEVELS)
+                .bindItem(settings::traceServer.toNullableProperty())
+                .comment("Logs the LSP traffic to the VersionLens tool window.")
+        }
         row("GitHub token:") {
             passwordField().bindText(::token).comment("Empty uses GITHUB_TOKEN or GH_TOKEN.")
         }

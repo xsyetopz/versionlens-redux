@@ -46,6 +46,7 @@ When none runs, the plugin shows one notification and writes the reason to the l
 | Install commands | `file type or registry id=shell command` lines, run when a save changes the dependencies |
 | Extra files | `glob=file type id` lines |
 | Indicators | `state=glyph` lines for `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`, `satisfies`, `noMatch`, `directory`, `build`, `yanked`, `deprecated` |
+| Trace server | off; `messages` or `verbose` copies the LSP traffic to the VersionLens tool window, as VS Code's `versionlens.trace.server` does |
 
 Applying the page sends the new settings to every running server. Changing the server path restarts it.
 

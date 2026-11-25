@@ -143,6 +143,10 @@ restart.
 `updateAll`, `clearCache`, and `output` are accepted as aliases of `update`,
 `clear-cache`, and `log`.
 
+VS Code's `versionlens.trace.server` is Neovim's own LSP log: after
+`vim.lsp.log.set_level("trace")`, every message to and from the server goes to
+the file |vim.lsp.log.get_filename()| names.
+
 ==============================================================================
 5. STATUS                                                  *versionlens-status*
 

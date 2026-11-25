@@ -27,6 +27,14 @@ unzip -qo "$zip" -d /cfg/plugins
 # error blamed on the first plugin to read a password; the KeePass file store is a choice users have
 # under Settings | Passwords too.
 mkdir -p /cfg/config/options
+# The trace copies the LSP traffic to the VersionLens tool window, shown at the end.
+cat >/cfg/config/options/versionlens.xml <<'X'
+<application>
+  <component name="VersionLens">
+    <option name="traceServer" value="messages" />
+  </component>
+</application>
+X
 cat >/cfg/config/options/security.xml <<'X'
 <application>
   <component name="PasswordSafe">
@@ -171,6 +179,9 @@ shot remove-done
 xdotool key Return
 gone() { [ "$(pulled '"authorization":{}')" -gt "$seen" ]; }
 wait_for 30 gone || fail "the server still has the header after Remove URL Authentication"
+action "Show VersionLens Log" log
+sleep 3
+shot trace
 cp /cfg/log/idea.log /cfg/lsp-in.log "$out/"
 if grep -q 'Plugin to blame: VersionLens' "$out/idea.log"; then
 	fail "the IDE blamed VersionLens; see $out/idea.log"

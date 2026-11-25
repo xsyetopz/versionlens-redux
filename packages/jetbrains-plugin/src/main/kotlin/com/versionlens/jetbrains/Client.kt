@@ -2,6 +2,7 @@ package com.versionlens.jetbrains
 
 import com.google.gson.JsonObject
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.ide.ActivityTracker
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
@@ -62,6 +63,15 @@ internal class Client(project: Project) : ProjectWideLspClientDescriptor(project
         Log.of(project).add("starting $path")
         return GeneralCommandLine(path, "--stdio")
     }
+
+    // Started as the IDE starts it, with the traffic copied to the log when the trace is on.
+    override fun startServerProcess(): OSProcessHandler =
+        tracedProcess(
+            createCommandLine().withCharset(Charsets.UTF_8),
+            { Settings.get().traceServer },
+        ) {
+            Log.of(project).add(it)
+        }
 
     override fun getWorkspaceConfiguration(item: ConfigurationItem): Any? =
         if (item.section == "versionlens") Settings.get().json() else null

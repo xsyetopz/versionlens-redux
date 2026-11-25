@@ -62,6 +62,7 @@ The remaining VS Code commands map to Zed built-ins and settings:
 | --- | --- |
 | Restart server | `editor: restart language server` |
 | Show output, show error | `dev: open language server logs`, server `versionlens` |
+| Trace server (`versionlens.trace.server`) | `dev: open language server logs`, server `versionlens`, RPC Messages |
 | Change build (`≌` lens) | Zed asks which build in a prompt and applies the choice |
 | Open a local dependency (`📁` lens) | Opens the directory with the system handler |
 
