@@ -39,7 +39,9 @@ rules = [
 
 [[file]]
 id = 'github-actions'
-globs = ['.github/workflows/**/*.yml', '.github/workflows/**/*.yaml', '.github/actions/**/*.yml', '.github/actions/**/*.yaml', 'action.yml', 'action.yaml']
+# Gitea Actions takes the same workflows from `.gitea/workflows`, and fetches `uses:` actions from
+# github.com unless an admin sets DEFAULT_ACTIONS_URL: gitea/docs, docs/usage/actions/faq.md.
+globs = ['.github/workflows/**/*.yml', '.github/workflows/**/*.yaml', '.github/actions/**/*.yml', '.github/actions/**/*.yaml', 'action.yml', 'action.yaml', '.gitea/workflows/**/*.yml', '.gitea/workflows/**/*.yaml']
 format = 'yaml'
 registry = 'github'
 rules = [
@@ -71,6 +73,46 @@ format = 'text'
 registry = 'docker'
 rules = [
     { lines = '${IMAGE_LINE}' },
+    # A Bitbucket pipe is a Bitbucket repository at a tag, or `docker://` an image:
+    # support.atlassian.com/bitbucket-cloud/docs/what-are-pipes/ and
+    # support.atlassian.com/bitbucket-cloud/docs/write-a-pipe-for-bitbucket-pipelines/.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?pipe:[ \t]*["']?(?P<name>[\w.-]+/[\w.-]+):(?P<version>\d[\w.-]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'bitbucket' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?pipe:[ \t]*["']?docker://(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$''' },
+]
+
+# Forgejo Actions reads `.forgejo/workflows`, with GitHub's `uses:` syntax; a short `owner/repo`
+# comes from DEFAULT_ACTIONS_URL, `https://data.forgejo.org`, and a URL names its own host:
+# forgejo/docs, docs/user/actions/reference.md `jobs.<job_id>.uses` and
+# docs/admin/config-cheat-sheet.md. A github.com URL goes to GitHub.
+[[file]]
+id = 'forgejo-actions'
+globs = ['.forgejo/workflows/*.yml', '.forgejo/workflows/*.yaml']
+format = 'yaml'
+registry = 'forgejo'
+rules = [
+    { spec = 'jobs.*.steps.*.uses', pattern = '^https://github\.com/(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$', via = 'github' },
+    { spec = 'jobs.*.uses', pattern = '^https://github\.com/(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$', via = 'github' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$' },
+    { spec = 'jobs.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION}', prefix = 'data.forgejo.org/' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION}', prefix = 'data.forgejo.org/' },
+    { lines = '${IMAGE_LINE}', via = 'docker' },
+]
+
+# Buildkite reads its pipeline from these paths: buildkite/agent, clicommand/pipeline_upload.go.
+# A plugin is `name#ref` from github.com/buildkite-plugins, `owner/name#ref` from
+# `owner/name-buildkite-plugin` on GitHub, or a git URL: buildkite/docs,
+# pages/pipelines/integrations/plugins/using.md and writing.md.
+[[file]]
+id = 'buildkite'
+globs = ['buildkite.yml', 'buildkite.yaml', '.buildkite/pipeline.yml', '.buildkite/pipeline.yaml', 'buildkite/pipeline.yml', 'buildkite/pipeline.yaml', '.buildkite/*.yml', '.buildkite/*.yaml']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''', prefix = 'buildkite-plugins/', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+/[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+?)(?:\.git)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''' },
+    { lines = '${IMAGE_LINE}', via = 'docker' },
 ]
 
 # A Scoop bucket keeps one JSON manifest per app in `bucket/`, its `url` (top-level or per
@@ -305,6 +347,13 @@ rules = [
     { spec = '*.image.name', pattern = '${DOCKER}' },
     { spec = '*.services.*', pattern = '${DOCKER}' },
     { spec = '*.services.*.name', pattern = '${DOCKER}' },
+    # A CI/CD component is `<host>/<project path>/<component>@<version>`, the version a tag or a
+    # partial `1.2`; a SHA, a branch, and `~latest` stay out: docs.gitlab.com/ci/components/. Only
+    # gitlab.com answers, so `$CI_SERVER_FQDN` is read as gitlab.com.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?(?:\$CI_SERVER_FQDN|gitlab\.com)/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab' },
+    # `include:project` with a tag `ref`, short or under `refs/tags/`, as the items it lists come;
+    # a branch or a SHA stays out: docs.gitlab.com/ci/yaml/ `include:project`.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?project:[ \t]*["']?(?P<name>[\w.-]+(?:/[\w.-]+)+)["']?[ \t]*(?:#.*)?\r?\n(?:[ \t]+[^-\s][^\n]*\r?\n|[ \t]+-[ \t]+["'/][^\n]*\r?\n)*?[ \t]+ref:[ \t]*["']?(?:refs/tags/)?(?P<version>v?\d+(?:\.\d+)+(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab' },
 ]
 
 [[file]]
@@ -315,6 +364,10 @@ registry = 'docker'
 rules = [
     { spec = 'jobs.*.docker.*.image', pattern = '${DOCKER}' },
     { spec = 'executors.*.docker.*.image', pattern = '${DOCKER}' },
+    # A registry orb is `namespace/orb@1.2.3`, or `@1.2` and `@1` for the newest patch or minor;
+    # `volatile`, inline orbs, and URL orbs stay out: circleci/circleci-docs,
+    # docs/orbs/modules/use/pages/orb-intro.adoc and orb-concepts.adoc.
+    { spec = 'orbs.*', pattern = '^(?P<name>[\w-]+/[\w-]+)@(?P<version>\d+(?:\.\d+){0,2})$', via = 'circleci-orb' },
 ]
 
 

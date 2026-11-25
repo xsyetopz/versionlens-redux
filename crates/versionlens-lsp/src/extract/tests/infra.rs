@@ -1,5 +1,7 @@
 //! Infrastructure and environment manifests: Terraform modules, Terragrunt, Packer, helmfile,
-//! Argo CD, Flux, Vagrant, Snapcraft, Flatpak, proto, aqua, Devbox, Spack, Scoop, winget, Pulumi, Terraform locks, GitLab CI, and `CircleCI`.
+//! Argo CD, Flux, Vagrant, Snapcraft, Flatpak, proto, aqua, Devbox, Spack, Scoop, winget, Pulumi, Terraform locks,
+//! and CI: GitLab CI and its components, `CircleCI` and its orbs, Bitbucket pipes, Forgejo and
+//! Gitea Actions, and Buildkite plugins.
 
 use super::expect;
 use crate::catalog::file_type_of;
@@ -302,6 +304,118 @@ fn reads_brewfile_formulae_and_casks_by_name() {
             ("ruby", "", "homebrew"),
             ("postgresql@16", "", "homebrew"),
             ("firefox", "", "homebrew-cask"),
+        ],
+    );
+}
+
+#[test]
+fn reads_gitlab_components_and_included_project_tags() {
+    // docs.gitlab.com/ci/components/ "Use a component" and docs.gitlab.com/ci/yaml/
+    // `include:project`: a tag or a partial version is read, a branch, a SHA, and `~latest` not.
+    let text = "include:\n  - component: $CI_SERVER_FQDN/my-org/security-components/secret-detection@1.0.0\n  - component: gitlab.com/components/opentofu/full-pipeline@2\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@~latest\n  - component: $CI_SERVER_FQDN/my-org/ruby/test@e3262fdd0914fa823210cdb79a8c421e2cef79d8\n  - project: 'my-group/my-project'\n    ref: refs/tags/v1.0.0\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/my-subgroup/my-project-2'\n    file:\n      - '/templates/.builds.yml'\n    ref: 2.3.1\n  - project: 'my-group/my-project'\n    ref: main\n    file: '/templates/.gitlab-ci-template.yml'\n  - project: 'my-group/other'\n    ref: 787123b47f14b552955ca2786bc9542ae66fee5b\nimage: node:20.11\n";
+    expect(
+        ".gitlab-ci.yml",
+        text,
+        &[
+            ("my-org/security-components", "1.0.0", "gitlab"),
+            ("components/opentofu", "2", "gitlab"),
+            ("my-group/my-project", "v1.0.0", "gitlab"),
+            ("my-group/my-subgroup/my-project-2", "2.3.1", "gitlab"),
+            ("node", "20.11", "docker"),
+        ],
+    );
+}
+
+#[test]
+fn reads_circleci_registry_orbs() {
+    // circleci/circleci-docs, docs/orbs/modules/use/pages/orb-intro.adoc and orb-concepts.adoc:
+    // a full, minor, or major version; `volatile` and inline orbs stay out.
+    let text = "version: 2.1\norbs:\n  node: circleci/node@5.0.3\n  slack: circleci/slack@4.1\n  aws-cli: circleci/aws-cli@4\n  edge: some-ns/some-orb@volatile\n  inline:\n    jobs:\n      hello: {}\njobs:\n  build:\n    docker:\n      - image: cimg/node:20.11.0\n";
+    expect(
+        ".circleci/config.yml",
+        text,
+        &[
+            ("circleci/node", "5.0.3", "circleci-orb"),
+            ("circleci/slack", "4.1", "circleci-orb"),
+            ("circleci/aws-cli", "4", "circleci-orb"),
+            ("cimg/node", "20.11.0", "docker"),
+        ],
+    );
+}
+
+#[test]
+fn reads_bitbucket_pipes() {
+    // support.atlassian.com/bitbucket-cloud/docs/what-are-pipes/ and write-a-pipe-for-bitbucket-
+    // pipelines/: a pipe is a Bitbucket repository at a tag, or `docker://` an image.
+    let text = "image: atlassian/default-image:4\npipelines:\n  default:\n    - step:\n        script:\n          - pipe: atlassian/aws-s3-deploy:2.1.0\n            variables:\n              S3_BUCKET: my-bucket\n          - pipe: docker://acct/repo:1.2.0\n";
+    expect(
+        "bitbucket-pipelines.yml",
+        text,
+        &[
+            ("atlassian/default-image", "4", "docker"),
+            ("atlassian/aws-s3-deploy", "2.1.0", "bitbucket"),
+            ("acct/repo", "1.2.0", "docker"),
+        ],
+    );
+}
+
+#[test]
+fn reads_forgejo_and_gitea_actions() {
+    // forgejo/docs, docs/user/actions/reference.md: a short `uses:` comes from data.forgejo.org,
+    // a URL from its own host, and a github.com URL from GitHub; a local path stays out.
+    let text = "on: [push]\njobs:\n  test:\n    runs-on: docker\n    container:\n      image: node:20-bookworm\n    steps:\n      - uses: actions/checkout@v4\n      - uses: https://code.forgejo.org/actions/setup-go@v5\n      - uses: https://github.com/actions/setup-node@v4.0.2\n      - uses: ./.forgejo/actions/local\n  call:\n    uses: some-org/some-repo/.forgejo/workflows/reusable.yml@v1.2\n";
+    expect(
+        ".forgejo/workflows/test.yml",
+        text,
+        &[
+            ("node", "20-bookworm", "docker"),
+            ("data.forgejo.org/actions/checkout", "v4", "forgejo"),
+            ("code.forgejo.org/actions/setup-go", "v5", "forgejo"),
+            ("actions/setup-node", "v4.0.2", "github"),
+            ("data.forgejo.org/some-org/some-repo", "v1.2", "forgejo"),
+        ],
+    );
+    // gitea/docs, docs/usage/actions/faq.md: Gitea fetches actions from github.com.
+    expect(
+        ".gitea/workflows/ci.yaml",
+        "jobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n",
+        &[("actions/checkout", "v4", "github")],
+    );
+}
+
+#[test]
+fn reads_buildkite_plugins() {
+    // buildkite/docs, pages/pipelines/integrations/plugins/using.md and writing.md: a bare name
+    // is under buildkite-plugins, `owner/name` is `owner/name-buildkite-plugin`, and a URL is read
+    // as written.
+    let text = "steps:\n  - command: test.sh\n    plugins:\n      - shellcheck#v1.4.0:\n          files: scripts/*.sh\n      - docker-compose#v5.11.0:\n          run: app\n      - a-github-user/file-counter#v1.0.0:\n          pattern: '*.md'\n      - my-org/linter-buildkite-plugin#v2.0.0: ~\n      - https://github.com/my-org/my-plugin.git#v1.0.0: ~\n  - plugin: docker-compose#v5.13.0\n  - label: build\n    image: golang:1.22\n";
+    expect(
+        ".buildkite/pipeline.yml",
+        text,
+        &[
+            (
+                "buildkite-plugins/shellcheck-buildkite-plugin",
+                "v1.4.0",
+                "github",
+            ),
+            (
+                "buildkite-plugins/docker-compose-buildkite-plugin",
+                "v5.11.0",
+                "github",
+            ),
+            (
+                "a-github-user/file-counter-buildkite-plugin",
+                "v1.0.0",
+                "github",
+            ),
+            ("my-org/linter-buildkite-plugin", "v2.0.0", "github"),
+            ("my-org/my-plugin", "v1.0.0", "github"),
+            (
+                "buildkite-plugins/docker-compose-buildkite-plugin",
+                "v5.13.0",
+                "github",
+            ),
+            ("golang", "1.22", "docker"),
         ],
     );
 }

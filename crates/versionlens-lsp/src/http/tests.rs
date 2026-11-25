@@ -90,6 +90,62 @@ fn joins_the_filtered_pages_without_repeats() {
     assert_eq!(list(docker, &[]), ["26", "26-bookworm"]);
 }
 
+/// Answers a POST whose body names `circleci/node` with two orb versions, and anything else
+/// with 404, so only a request that sends the registry's body reads them.
+fn graphql() -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            stream
+                .set_read_timeout(Some(Duration::from_millis(500)))
+                .unwrap();
+            let mut request = Vec::new();
+            let mut buf = [0; 1024];
+            while !String::from_utf8_lossy(&request).contains("circleci/node") {
+                match stream.read(&mut buf) {
+                    Ok(0) | Err(_) => break,
+                    Ok(n) => request.extend_from_slice(&buf[..n]),
+                }
+            }
+            let request = String::from_utf8_lossy(&request);
+            let response = if request.starts_with("POST ") && request.contains("circleci/node") {
+                let body =
+                    r#"{"data":{"orb":{"versions":[{"version":"7.2.1"},{"version":"7.2.0"}]}}}"#;
+                format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                )
+            } else {
+                "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    .to_owned()
+            };
+            drop(stream.write_all(response.as_bytes()));
+        }
+    });
+    format!("http://127.0.0.1:{port}/graphql")
+}
+
+#[test]
+fn posts_the_body_a_registry_names() {
+    let orbs = registry::get("circleci-orb").unwrap();
+    let url = graphql();
+    let local = Box::leak(Box::new(Registry {
+        url: Box::leak(url.into_boxed_str()),
+        ..orbs.clone()
+    }));
+    let http = Http::new(Settings::default()).unwrap();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let versions = runtime
+        .block_on(http.versions(local, "circleci/node", None, &[], &[]))
+        .unwrap();
+    assert_eq!(versions.list, ["7.2.1", "7.2.0"]);
+}
+
 /// Answers its first `throttled` requests with 429 and `retry_after` as the `Retry-After`, then
 /// with `ok`. Returns the base URL and the count of requests it answered.
 fn throttling(throttled: usize, retry_after: Option<&'static str>) -> (String, Arc<Mutex<usize>>) {

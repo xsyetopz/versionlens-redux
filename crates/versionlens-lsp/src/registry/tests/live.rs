@@ -160,6 +160,10 @@ const SAMPLES: &[(&str, &str, Option<&str>, Option<&str>)] = &[
     ("galaxy-role", "geerlingguy.java", None, Some("1.9.6")),
     ("homebrew", "postgresql@16", None, None),
     ("homebrew-cask", "firefox", None, None),
+    ("gitlab", "components/opentofu", None, None),
+    ("forgejo", "data.forgejo.org/actions/checkout", None, None),
+    ("bitbucket", "atlassian/aws-s3-deploy", None, None),
+    ("circleci-orb", "circleci/node", None, None),
 ];
 
 /// Registries whose advisory route works but whose packages have no advisory on file that a
@@ -319,6 +323,24 @@ fn every_package_page_resolves() {
                             request = request.header("user-agent", agent).header("cookie", cookie);
                         }
                         match request.send().await {
+                            // Anubis, in front of code.forgejo.org, answers a `Mozilla` agent
+                            // with a 202 proof-of-work page and lets other agents through, so the
+                            // page is asked for again without the browser token.
+                            Ok(response) if response.status() == reqwest::StatusCode::ACCEPTED => {
+                                let plain = client
+                                    .get(&url)
+                                    .header("user-agent", "versionlens live check")
+                                    .send()
+                                    .await;
+                                last = match plain {
+                                    Ok(plain) if plain.status() == reqwest::StatusCode::OK => {
+                                        eprintln!("page {id} {url}: HTTP {}", plain.status());
+                                        return None;
+                                    }
+                                    Ok(plain) => format!("{id} {url}: HTTP {}", plain.status()),
+                                    Err(e) => format!("{id} {url}: {}", crate::http::chain(&e)),
+                                };
+                            }
                             Ok(response) if response.status().is_success() => {
                                 eprintln!("page {id} {url}: HTTP {}", response.status());
                                 return None;

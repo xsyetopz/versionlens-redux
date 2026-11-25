@@ -385,7 +385,13 @@ impl Http {
                 (url, body.map(|(body, _)| body))
             }));
         }
-        let (url, (body, mut next)) = match self.get(client, &url, registry.accept, auth).await {
+        let fetched = if registry.body.is_empty() {
+            self.get(client, &url, registry.accept, auth).await
+        } else {
+            let body = expand(registry.body, name, source)?;
+            self.post(&url, body).await.map(|text| (text, None))
+        };
+        let (url, (body, mut next)) = match fetched {
             Err(error) if !registry.fallback.is_empty() && template == registry.url => {
                 let url = expand(registry.fallback, name, source)?;
                 let fetched = self.get(client, &url, registry.accept, None).await;
