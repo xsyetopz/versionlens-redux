@@ -1,7 +1,7 @@
 {
 	"name": "versionlens-redux",
 	"displayName": "VersionLens Redux",
-	"version": "0.6.3",
+	"version": "0.7.0",
 	"private": true,
 	"description": "Shows the latest version of each dependency, update actions, and known vulnerabilities in manifest files",
 	"categories": [

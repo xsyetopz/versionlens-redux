@@ -9,7 +9,7 @@ license = "ISC"
 repository = "https://github.com/xsyetopz/versionlens-redux.git"
 keywords = ["versionlens", "lsp", "dependencies"]
 categories = ["development-tools"]
-version = "0.6.3"
+version = "0.7.0"
 
 [workspace.dependencies]
 crossbeam-channel = "0.5.17"

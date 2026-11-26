@@ -7,7 +7,7 @@ plugins {
 
 group = "com.versionlens"
 
-version = "0.6.3"
+version = "0.7.0"
 
 val repositoryRoot = rootProject.layout.projectDirectory
 

@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-26
+
 ### Added
 
 - Original `versionlens.<provider>.apiUrl` settings become `versionlens.registries` templates for pub, DUB, Composer, Maven, Go, RubyGems, and Warehouse PyPI indexes; `versionlens.dotnet.nuget.sources` replaces the sources `dotnet nuget list source` prints; and `versionlens.<provider>.dependencyProperties` limits a manifest to the listed paths and reads the keys of a listed object no rule covers.
