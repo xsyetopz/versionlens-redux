@@ -1,0 +1,440 @@
+//! Turns looked-up dependencies into what editors show: lenses, inlay hints, hovers, quick fixes,
+//! and diagnostics. Pure functions of cached state, so every handler answers immediately.
+
+use std::collections::HashMap;
+
+use lsp_types::{
+    CodeAction, CodeActionKind, CodeActionOrCommand, CodeLens, Command, Diagnostic,
+    DiagnosticSeverity, Hover, HoverContents, InlayHint, InlayHintLabel, MarkupContent, MarkupKind,
+    Position, Range, TextEdit, Uri, WorkspaceEdit,
+};
+use serde_json::json;
+
+use crate::config::Indicators;
+use crate::extract::Dep;
+use crate::git_ref::{self, Ref};
+use crate::version::{self, Plan, Req, Version};
+
+/// What is known about one dependency right now.
+#[derive(Debug)]
+pub(crate) enum State {
+    Pending,
+    Failed(String),
+    /// The registry answered, but the requirement is not a range this server reads.
+    Unreadable,
+    /// A dependency on a local directory or file: the path as written, and its `file://` URI when
+    /// the path exists.
+    Directory {
+        path: String,
+        target: Option<String>,
+    },
+    /// A dependency on a source no registry answers, such as a git repository, with its kind.
+    Source(String),
+    /// A manifest's own version, with each next release's label and replacement text.
+    Own(Vec<(String, String)>),
+    /// A branch, tag, or commit a CI file pins in place of a version.
+    Commit(Ref),
+    Planned {
+        plan: Box<Plan>,
+        /// The requirement's floor, which update levels count from.
+        current: Option<Version>,
+    },
+}
+
+/// One dependency with its editor range, state, and known vulnerabilities.
+#[derive(Debug)]
+pub(crate) struct View<'a> {
+    pub(crate) dep: &'a Dep,
+    pub(crate) range: Range,
+    pub(crate) state: State,
+    pub(crate) vulns: Vec<String>,
+    pub(crate) page: String,
+}
+
+/// Byte offsets to LSP positions, which count UTF-16 code units.
+pub(crate) struct Lines<'a> {
+    text: &'a str,
+    starts: Vec<usize>,
+}
+
+impl<'a> Lines<'a> {
+    pub(crate) fn new(text: &'a str) -> Self {
+        let starts = std::iter::once(0)
+            .chain(text.match_indices('\n').map(|(i, _)| i + 1))
+            .collect();
+        Self { text, starts }
+    }
+
+    pub(crate) fn position(&self, offset: usize) -> Position {
+        let line = self
+            .starts
+            .partition_point(|s| *s <= offset)
+            .saturating_sub(1);
+        let start = self.starts.get(line).copied().unwrap_or(0);
+        let column = self
+            .text
+            .get(start..offset)
+            .map_or(0, |s| s.encode_utf16().count());
+        Position::new(
+            u32::try_from(line).unwrap_or(u32::MAX),
+            u32::try_from(column).unwrap_or(u32::MAX),
+        )
+    }
+
+    /// The byte offset of an LSP position, clamped to its line and to the text.
+    pub(crate) fn offset(&self, at: Position) -> usize {
+        let Some(&start) = self.starts.get(at.line as usize) else {
+            return self.text.len();
+        };
+        let line = self.text[start..]
+            .split_inclusive('\n')
+            .next()
+            .unwrap_or("");
+        let mut units = 0;
+        for (i, c) in line.char_indices() {
+            if units >= at.character as usize || c == '\n' {
+                return start + i;
+            }
+            units += c.len_utf16();
+        }
+        start + line.len()
+    }
+
+    pub(crate) fn range(&self, span: &std::ops::Range<usize>) -> Range {
+        Range::new(self.position(span.start), self.position(span.end))
+    }
+}
+
+/// The requirement text that moves `req` to `pick` in the user's own style: the operator stays,
+/// ranges collapse to their leading operator, and a bare name gets the file type's prefix. A bare
+/// name in a file type with no prefix gets none: the version would run into the name, as
+/// `"a"` in `bundleDependencies` becoming `"a2.0.0"`. A `precise` file type gets the whole
+/// version where the requirement wrote fewer parts.
+pub(crate) fn replacement(
+    req: &str,
+    pick: &Version,
+    insert: &str,
+    precise: bool,
+) -> Option<String> {
+    if req.is_empty() {
+        return (!insert.is_empty()).then(|| format!("{insert}{}", pick.raw));
+    }
+    if req.starts_with(['[', '(']) {
+        return Some(format!("[{}]", pick.raw));
+    }
+    let first = req
+        .split([',', '|'])
+        .next()
+        .unwrap_or(req)
+        .split(" - ")
+        .next()
+        .unwrap_or(req)
+        .trim();
+    let at = first.find(|c: char| c.is_ascii_digit()).map_or(0, |i| {
+        if i > 0 && first[..i].ends_with(['v', 'V']) {
+            i - 1
+        } else {
+            i
+        }
+    });
+    let (operator, like) = first.split_at(at);
+    let like = like.split_whitespace().next().unwrap_or(like);
+    Some(format!("{operator}{}", pick.render(like, precise)))
+}
+
+fn edit(uri: &Uri, range: Range, text: String) -> WorkspaceEdit {
+    WorkspaceEdit {
+        changes: Some(HashMap::from([(
+            uri.clone(),
+            vec![TextEdit {
+                range,
+                new_text: text,
+            }],
+        )])),
+        ..WorkspaceEdit::default()
+    }
+}
+
+/// The updates a view offers, newest first: the 1.x label with its version, and the
+/// replacement text.
+pub(crate) fn picks(view: &View<'_>, insert: &str) -> Vec<(String, String)> {
+    let plan = match &view.state {
+        // A pinned commit behind its branch moves to the head.
+        State::Commit(found @ Ref::Pinned { branch, head, .. }) if found.lags(&view.dep.req) => {
+            let text = git_ref::replacement(&view.dep.req, head);
+            return vec![(format!("{branch} head {}", git_ref::short(head)), text)];
+        }
+        State::Planned { plan, .. } => plan,
+        _ => return Vec::new(),
+    };
+    plan.picks
+        .iter()
+        .filter_map(|(label, pick)| {
+            let text = replacement(&view.dep.req, pick, insert, view.dep.precise)?;
+            Some((format!("{label} {}", pick.raw), text))
+        })
+        .filter(|(_, text)| *text != view.dep.req)
+        .collect()
+}
+
+pub(crate) fn hints(views: &[View<'_>], glyphs: &Indicators) -> Vec<InlayHint> {
+    views
+        .iter()
+        .filter_map(|view| {
+            let label = match &view.state {
+                // A yanked or deprecated resolution outranks any update, as in the status lens.
+                State::Planned { plan, .. } if plan.yanked.is_some() => glyphs.yanked.clone(),
+                State::Planned { plan, .. } if plan.deprecated && plan.resolved.is_some() => {
+                    glyphs.deprecated.clone()
+                }
+                State::Planned { plan, .. }
+                    if plan.picks.is_empty() || plan.satisfied && view.dep.req.is_empty() =>
+                {
+                    glyphs.latest.clone()
+                }
+                State::Planned { plan, .. } => format!("{} {}", glyphs.newer, plan.latest.raw),
+                State::Commit(found @ Ref::Pinned { head, .. }) if found.lags(&view.dep.req) => {
+                    format!("{} {}", glyphs.newer, git_ref::short(head))
+                }
+                State::Commit(Ref::Pinned { .. }) => glyphs.latest.clone(),
+                State::Failed(_) | State::Directory { target: None, .. } => glyphs.failed.clone(),
+                State::Pending
+                | State::Unreadable
+                | State::Directory { .. }
+                | State::Source(_)
+                | State::Commit(_)
+                | State::Own(_) => {
+                    return None;
+                }
+            };
+            Some(InlayHint {
+                position: view.range.end,
+                label: InlayHintLabel::String(label),
+                kind: None,
+                text_edits: None,
+                tooltip: None,
+                padding_left: Some(true),
+                padding_right: None,
+                data: None,
+            })
+        })
+        .collect()
+}
+
+pub(crate) fn hover(view: &View<'_>) -> Hover {
+    let dep = view.dep;
+    let status = match &view.state {
+        State::Pending => "Checking the registry…".to_owned(),
+        State::Failed(error) => format!("Lookup failed: `{error}`"),
+        State::Unreadable => format!("`{}` is not a version range VersionLens reads.", dep.req),
+        State::Directory {
+            target: Some(target),
+            ..
+        } => format!("Local dependency at <{target}>"),
+        State::Directory { path, .. } => format!("`{path}` does not exist"),
+        State::Source(label) => format!("Pinned to a {label}: `{}`", dep.req),
+        State::Own(_) => format!("Project version `{}`", dep.req),
+        State::Commit(Ref::Branch { name, head }) => format!("Branch `{name}` · head `{head}`"),
+        State::Commit(Ref::Tag { name, commit }) => format!("Tag `{name}` · commit `{commit}`"),
+        State::Commit(found @ Ref::Pinned { branch, head, .. }) => {
+            let stands = if found.lags(&dep.req) { "behind" } else { "at" };
+            format!(
+                "Pinned to commit `{}` · {stands} `{branch}` head `{head}`",
+                dep.req
+            )
+        }
+        State::Planned { plan, current, .. } => {
+            let current = current.as_ref().map_or("none", |v| v.raw.as_str());
+            format!(
+                "Requires `{}` · from `{current}` · latest `{}`",
+                dep.req, plan.latest.raw
+            )
+        }
+    };
+    let vulns = view.vulns.iter().fold(String::new(), |text, id| {
+        text + "\n\n⚠ [" + id + "](https://osv.dev/vulnerability/" + id + ")"
+    });
+    let page = if view.page.is_empty() {
+        String::new()
+    } else {
+        format!(" · [registry page]({})", view.page)
+    };
+    let text = format!(
+        "**{}** · {}{page}\n\n{status}{vulns}",
+        dep.name, dep.registry
+    );
+    Hover {
+        contents: HoverContents::Markup(MarkupContent {
+            kind: MarkupKind::Markdown,
+            value: text,
+        }),
+        range: Some(view.range),
+    }
+}
+
+/// Version updates rewrite a requirement rather than fix a diagnostic. The LSP client of IDEA
+/// and the other `IntelliJ` IDEs hides `quickfix` actions that come without a diagnostic.
+pub(crate) const ACTION_KIND: &str = "refactor.rewrite";
+
+/// Whether a request limited to `only` kinds accepts `kind`; kinds are dot-separated prefixes,
+/// so `refactor` accepts `refactor.rewrite`.
+pub(crate) fn wants(kind: &str, only: Option<&[CodeActionKind]>) -> bool {
+    only.is_none_or(|only| {
+        only.iter().any(|k| {
+            kind.strip_prefix(k.as_str())
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+        })
+    })
+}
+
+pub(crate) fn actions(uri: &Uri, views: &[View<'_>], insert: &str) -> Vec<CodeActionOrCommand> {
+    let mut out = Vec::new();
+    for view in views {
+        for (index, (label, text)) in picks(view, insert).into_iter().enumerate() {
+            out.push(CodeActionOrCommand::CodeAction(CodeAction {
+                title: format!("Update {} to {label}", view.dep.name),
+                kind: Some(CodeActionKind::from(ACTION_KIND)),
+                edit: Some(edit(uri, view.range, text)),
+                is_preferred: Some(index == 0),
+                ..CodeAction::default()
+            }));
+        }
+    }
+    out
+}
+
+/// The bulk update levels: `latest` moves every dependency to its newest version, and `major`,
+/// `minor`, and `patch` move only the dependencies whose update of that size exists.
+pub(crate) const LEVELS: &[&str] = &["latest", "major", "minor", "patch"];
+
+/// The edits that move each dependency by `level`, one of [`LEVELS`].
+pub(crate) fn updates(views: &[View<'_>], insert: &str, level: &str) -> Vec<TextEdit> {
+    views
+        .iter()
+        .filter_map(|view| {
+            let State::Planned { plan, current } = &view.state else {
+                return None;
+            };
+            // Steps run oldest first and hold one version per level counted from the floor.
+            let pick = if level == "latest" {
+                plan.steps.last()
+            } else {
+                plan.steps
+                    .iter()
+                    .find(|v| version::level(current.as_ref(), v) == level)
+            }?;
+            let new_text = replacement(&view.dep.req, pick, insert, view.dep.precise)?;
+            (new_text != view.dep.req).then_some(TextEdit {
+                range: view.range,
+                new_text,
+            })
+        })
+        .collect()
+}
+
+/// Vulnerability warnings, and with `updates` a diagnostic of that severity for each dependency
+/// that has a newer version.
+pub(crate) fn diagnostics(
+    views: &[View<'_>],
+    insert: &str,
+    updates: Option<DiagnosticSeverity>,
+) -> Vec<Diagnostic> {
+    let diagnostic = |view: &View<'_>, severity, code: &str, message| Diagnostic {
+        range: view.range,
+        severity: Some(severity),
+        code: Some(lsp_types::NumberOrString::String(code.into())),
+        source: Some("VersionLens".into()),
+        message,
+        ..Diagnostic::default()
+    };
+    let mut out = Vec::new();
+    for view in views {
+        if !view.vulns.is_empty() {
+            let message = format!(
+                "{} {} has known vulnerabilities: {}",
+                view.dep.name,
+                view.dep.req,
+                view.vulns.join(", ")
+            );
+            out.push(diagnostic(
+                view,
+                DiagnosticSeverity::WARNING,
+                "vulnerable",
+                message,
+            ));
+        }
+        if let Some(severity) = updates
+            && let Some((label, _)) = picks(view, insert).into_iter().next()
+        {
+            let message = format!("{} can update to {label}", view.dep.name);
+            out.push(diagnostic(view, severity, "outdated", message));
+        }
+    }
+    out
+}
+
+/// The summary lens that heads a manifest: dependency, update, failure, and vulnerability
+/// counts; it refreshes the manifest's versions.
+pub(crate) fn stats(
+    uri: &Uri,
+    views: &[View<'_>],
+    insert: &str,
+    glyphs: &Indicators,
+) -> Option<CodeLens> {
+    // A manifest's own version is not a dependency.
+    let views: Vec<&View<'_>> = views
+        .iter()
+        .filter(|v| !matches!(v.state, State::Own(_)))
+        .collect();
+    if views.is_empty() {
+        return None;
+    }
+    let count = |test: &dyn Fn(&View<'_>) -> bool| views.iter().filter(|v| test(v)).count();
+    let outdated = count(&|v| !picks(v, insert).is_empty());
+    let failed = count(&|v| {
+        matches!(
+            v.state,
+            State::Failed(_) | State::Directory { target: None, .. }
+        )
+    });
+    let vulnerable = count(&|v| !v.vulns.is_empty());
+    let pending = count(&|v| matches!(v.state, State::Pending));
+    let mut parts = vec![format!("{} dependencies", views.len())];
+    for (n, glyph, text) in [
+        (outdated, &glyphs.update, "outdated"),
+        (failed, &glyphs.failed, "failed"),
+        (vulnerable, &glyphs.vulnerable, "vulnerable"),
+        (pending, &glyphs.checking, "checking"),
+    ] {
+        if n > 0 {
+            parts.push(format!("{glyph} {n} {text}"));
+        }
+    }
+    Some(CodeLens {
+        range: Range::default(),
+        command: Some(Command {
+            title: parts.join(" · "),
+            command: "versionlens.refresh".into(),
+            arguments: Some(vec![json!(uri)]),
+        }),
+        data: None,
+    })
+}
+
+/// The version a requirement currently resolves to, for OSV and update levels: the newest listed
+/// version it allows, or else its floor.
+pub(crate) fn current(req: &Req, versions: &[Version]) -> Option<Version> {
+    versions
+        .iter()
+        .filter(|v| req.matches(v))
+        .max()
+        .cloned()
+        .or_else(|| req.floor().cloned())
+}
+
+mod lenses;
+
+pub(crate) use lenses::lenses;
+
+#[cfg(test)]
+mod tests;

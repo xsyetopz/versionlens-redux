@@ -1,130 +1,87 @@
-//! Reads the settings with `workspace/configuration`. Clients that cannot
-//! answer it keep the default settings.
+//! The `versionlens` settings the client pushes or the server pulls, and what changing each one
+//! redoes: HTTP clients, lookups, and manifest reads.
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use anyhow::{Context, Result};
-use lsp_server::{Connection, Message, Request, RequestId, Response};
-use serde_json::Value;
-use versionlens_engine::Settings;
+use lsp_types::{MessageType, Uri};
+use serde_json::{Value, json};
 
-use super::checking::WorkspaceController;
-use super::show_configuration_error;
-use crate::state::{self, FolderSettings, VersionLensLspState};
+use super::{Pending, Server};
+use crate::config::Settings;
 
-const REQUEST_PREFIX: &str = "versionlens/configuration/";
-
-/// How long the server waits for the first settings before it checks with
-/// the defaults, so a slow client does not stop the server.
-const FIRST_ANSWER_TIMEOUT: Duration = Duration::from_secs(5);
-
-#[derive(Default)]
-pub(super) struct SettingsRequests {
-    next: u64,
-    /// The newest request. An older answer is out of date and is dropped.
-    latest: Option<RequestId>,
-    /// Workspace updates that wait for the pending answer, so they scan
-    /// with the settings the user just set.
-    pub(super) held: Vec<Request>,
-}
-
-impl SettingsRequests {
-    pub(super) fn pending(&self) -> bool {
-        self.latest.is_some()
-    }
-
-    /// Asks the client for the settings, if it can answer.
-    pub(super) fn request(
-        &mut self,
-        connection: &Connection,
-        state: &VersionLensLspState,
-    ) -> Result<()> {
-        if !state.client.configuration {
-            return Ok(());
+impl Server {
+    pub(super) fn pull_config(&mut self) {
+        if self.caps.configuration {
+            self.request(
+                "workspace/configuration",
+                json!({ "items": [{ "section": "versionlens" }] }),
+                Pending::Config,
+            );
         }
-        let id = RequestId::from(format!("{REQUEST_PREFIX}{}", self.next));
-        self.next += 1;
-        self.latest = Some(id.clone());
-        connection
-            .sender
-            .send(Message::Request(Request {
-                id,
-                method: "workspace/configuration".to_owned(),
-                params: state.configuration_params(),
-            }))
-            .context("failed to request settings")
     }
 
-    /// Asks for the first settings and waits for them, so checking does not
-    /// start with the wrong settings. Returns the messages that arrived
-    /// meanwhile, in order.
-    pub(super) fn first(
-        &mut self,
-        connection: &Connection,
-        state: &mut VersionLensLspState,
-    ) -> Result<Vec<Message>> {
-        self.request(connection, state)?;
-        let mut queued = Vec::new();
-        let deadline = Instant::now() + FIRST_ANSWER_TIMEOUT;
-        while self.latest.is_some() {
-            let Ok(message) = connection.receiver.recv_deadline(deadline) else {
-                break;
-            };
-            match message {
-                Message::Response(response) if is_answer(&response.id) => {
-                    self.answer(connection, state, None, response)?;
-                }
-                message => queued.push(message),
+    pub(super) fn configure(&mut self, value: &Value) {
+        let mut settings = Settings::from_json(value);
+        let configured = (settings.enabled, settings.prereleases);
+        if configured.0 == self.configured.0 {
+            settings.enabled = self.settings.enabled;
+        }
+        if configured.1 == self.configured.1 {
+            settings.prereleases = self.settings.prereleases;
+        }
+        self.configured = configured;
+        if settings == self.settings {
+            return;
+        }
+        let reread = settings.files != self.settings.files
+            || settings.file_types != self.settings.file_types
+            || settings.nuget_sources != self.settings.nuget_sources
+            || settings.properties != self.settings.properties;
+        self.env.nuget.clone_from(&settings.nuget_sources);
+        let refetch = settings.registries != self.settings.registries
+            || settings.authorization != self.settings.authorization
+            || settings.github_token != self.settings.github_token
+            || settings.providers != self.settings.providers;
+        match self.http_for(&settings) {
+            Ok(http) => self.http = http,
+            Err(error) => self.log(
+                MessageType::ERROR,
+                format!("could not apply HTTP settings: {error}"),
+            ),
+        }
+        self.settings = settings;
+        let s = &self.settings;
+        let text = format!(
+            "settings applied: enabled {}, prereleases {}, vulnerabilities {}, timeout {:?}, concurrency {}, registry overrides {:?}",
+            s.enabled,
+            s.prereleases,
+            s.vulnerabilities,
+            s.timeout,
+            s.concurrency,
+            s.registries.keys().collect::<Vec<_>>()
+        );
+        self.log(MessageType::INFO, text);
+        if !self.settings.unread.is_empty() {
+            let unread = self.settings.unread.join(", ");
+            self.log(
+                MessageType::WARNING,
+                format!("not read, no counterpart in this version: {unread}; see the README"),
+            );
+        }
+        if refetch {
+            self.restart_lookups();
+        }
+        if reread {
+            let docs: Vec<(Uri, String, bool)> = self
+                .docs
+                .values()
+                .map(|d| (d.uri.clone(), d.text.clone(), d.open))
+                .collect();
+            for (uri, text, open) in docs {
+                self.open(&uri, text, open);
             }
         }
-        Ok(queued)
+        self.schedule_all();
+        self.dirty = Some(Instant::now());
     }
-
-    /// Applies an answer if it is the newest one.
-    pub(super) fn answer(
-        &mut self,
-        connection: &Connection,
-        state: &mut VersionLensLspState,
-        checking: Option<&mut WorkspaceController>,
-        response: Response,
-    ) -> Result<()> {
-        if self.latest.as_ref() != Some(&response.id) {
-            return Ok(());
-        }
-        self.latest = None;
-        let sections = match response.response_result {
-            Ok(result) => serde_json::from_value::<Vec<Value>>(result).unwrap_or_default(),
-            Err(error) => return show_configuration_error(connection, &error.message),
-        };
-        let mut settings = Vec::new();
-        for folder in sections.chunks(state::SECTIONS.len()) {
-            let versionlens = folder.first().cloned().unwrap_or(Value::Null);
-            let mut read = match Settings::from_value(versionlens) {
-                Ok(settings) => settings,
-                Err(message) => return show_configuration_error(connection, &message),
-            };
-            let workspace = std::mem::take(&mut read.workspace);
-            settings.push(FolderSettings {
-                config: read.session_config(),
-                exclusions: state::workspace_exclusions(folder.get(1).unwrap_or(&Value::Null)),
-                workspace,
-            });
-        }
-        let changed = match state.replace_settings(settings) {
-            Ok(changed) => changed,
-            Err(error) => return show_configuration_error(connection, &error.to_string()),
-        };
-        let Some(checking) = checking else {
-            return Ok(());
-        };
-        if changed {
-            checking.restart(state, connection)?;
-        }
-        Ok(())
-    }
-}
-
-/// Whether a response answers a settings request.
-pub(super) fn is_answer(id: &RequestId) -> bool {
-    id.to_string().trim_matches('"').starts_with(REQUEST_PREFIX)
 }

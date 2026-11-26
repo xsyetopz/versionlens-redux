@@ -1,3 +1,0 @@
-  http: # blank entry with comment
-  glob: # version child property
-    version: '1.2.*'

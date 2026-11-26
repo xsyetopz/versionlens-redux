@@ -1,0 +1,272 @@
+# .NET and JVM manifests; see native.toml for the row format.
+
+[[file]]
+id = 'paket'
+globs = ['paket.dependencies']
+format = 'text'
+registry = 'nuget'
+rules = [
+    { lines = '(?m)^[ \t]*nuget[ \t]+(?P<name>[\w.-]+)[ \t]+(?P<version>(?:[~><=]+[ \t]*)?\d[\w.-]*)' },
+    # A line whose next word is neither a version nor an operator takes `>= 0` and reads the rest
+    # as options, such as `prerelease` or `copy_local: false`: Paket's `(|Package|_|)` in
+    # src/Paket.Core/Dependencies/DependenciesFileParser.fs, and "Omitting the version constraint"
+    # at fsprojects.github.io/Paket/nuget-dependencies.html.
+    { lines = '(?m)^[ \t]*nuget[ \t]+(?P<name>[\w.-]+)(?:[ \t]+[^\d~><=\s][^\n]*)?[ \t]*\r?$' },
+]
+
+# `paket.references` names a project's packages; their versions live in `paket.dependencies`.
+[[file]]
+id = 'paket-references'
+globs = ['paket.references']
+format = 'text'
+registry = 'nuget'
+rules = [
+    { lines = '(?m)^[ \t]*(?P<name>[A-Za-z_][\w.-]*)[ \t]*\r?$' },
+]
+
+[[file]]
+id = 'nuget'
+globs = ['*.csproj', '*.fsproj', '*.vbproj', '*.props', '*.targets', 'packages.config']
+# Restore and build write generated .props and .targets under obj/ and bin/.
+exclude = ['obj/**', 'bin/**']
+format = 'xml'
+registry = 'nuget'
+rules = [{ use = 'NUGET' }]
+
+[[file]]
+id = 'dotnet-tools'
+globs = ['dotnet-tools.json']
+format = 'json'
+registry = 'nuget'
+rules = [
+    { keys = 'tools' },
+]
+
+[[file]]
+id = 'maven'
+globs = ['pom.xml']
+format = 'xml'
+registry = 'maven'
+rules = [{ use = 'POM' }]
+
+[[file]]
+id = 'gradle'
+globs = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts']
+format = 'text'
+registry = 'maven'
+rules = [
+    # A classifier, `g:a:1.0:jdk8`, or an artifact type, `g:a:1.0@aar`, may follow the version:
+    # docs.gradle.org/current/userguide/dependency_management_terminology.html
+    # A version may come from a variable, `"g:a:$v"` or `"g:a:${v}"`, which buildSrc or
+    # gradle.properties often defines (docs.gradle.org/current/userguide/build_environment.html).
+    { lines = '''["'](?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+|\$\{?[\w.]+\}?)(?::[\w.-]+)?(?:@\w+)?["']''' },
+    # A plugins block names each plugin by id: `id 'org.example' version '1.0'` in Groovy,
+    # `id("org.example") version "1.0"` in Kotlin; docs.gradle.org/current/userguide/plugins.html.
+    { lines = '''(?-u:\b)id[ \t(]*["'](?P<name>[\w.-]+)["'][ \t)]*version[ \t(]*["'](?P<version>[^"'$]+)["']''', via = 'gradle-plugins' },
+    # Kotlin's DSL writes its own plugins as `kotlin("jvm")`, short for `org.jetbrains.kotlin.jvm`:
+    # kotlinlang.org/docs/gradle-configure-project.html#apply-the-plugin
+    { lines = '''(?-u:\b)kotlin\([ \t]*"(?P<name>[\w.-]+)"[ \t]*\)[ \t]*version[ \t(]*"(?P<version>[^"$]+)"''', prefix = 'org.jetbrains.kotlin.', via = 'gradle-plugins' },
+    # Map notation: `implementation group: 'g', name: 'a', version: '1.0'`, or with `=` in Kotlin:
+    # docs.gradle.org/current/userguide/declaring_dependencies.html
+    { lines = '''group[ \t]*[:=][ \t]*["'](?P<group>[\w.-]+)["'][ \t]*,[ \t]*name[ \t]*[:=][ \t]*["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*version[ \t]*[:=][ \t]*["'](?P<version>[^"'$]+)["']''' },
+    # The fork's master read map entries in any order; `name` before `group` is the other order
+    # builds write.
+    { lines = '''name[ \t]*[:=][ \t]*["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*group[ \t]*[:=][ \t]*["'](?P<group>[\w.-]+)["'][ \t]*,[ \t]*version[ \t]*[:=][ \t]*["'](?P<version>[^"'$]+)["']''' },
+    # A configuration may name another project of the build, `implementation project(':lib')`,
+    # or local files, `files('libs/a.jar')` or `fileTree('libs')`, which the fork's master read
+    # as local (crates/versionlens-parsers/src/gradle/build.rs, `parse_local_dependency_line`):
+    # docs.gradle.org/current/userguide/declaring_dependencies_basics.html
+    { lines = '''(?m)^[ \t]*\w+[ \t(]+(?:project|files|fileTree)\([ \t]*(?:(?:path|dir)[ \t]*[:=][ \t]*)?["'](?P<name>(?P<version>[^"']+))["']''', via = 'directory' },
+]
+
+[[file]]
+id = 'gradle-catalog'
+globs = ['libs.versions.toml', '*.versions.toml']
+format = 'toml'
+registry = 'maven'
+rules = [
+    { spec = 'libraries.*', pattern = '${MAVEN_SPEC}' },
+    { record = 'libraries.*', name = 'module', version = 'version' },
+    { record = 'libraries.*', name = 'group:name', version = 'version' },
+    # A `version.ref` points into `[versions]`; the lens sits on that entry and looks up the first
+    # library, else plugin, that uses it, as the fork's master did. Plugins are named by `id`:
+    # docs.gradle.org/current/userguide/version_catalogs.html#sec:version-catalog-declaration
+    { lines = '''\{[^}\n]*?[{ \t,]module[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''' },
+    { lines = '''\{[^}\n]*?[{ \t,]group[ \t]*=[ \t]*"(?P<group>[^"]+)"[^}\n]*?[{ \t,]name[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''' },
+    { lines = '''\{[^}\n]*?[{ \t,]id[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:\.ref[ \t]*=|[ \t]*=[ \t]*\{[ \t]*ref[ \t]*=)[ \t]*"(?P<ref>[^"]+)"''', via = 'gradle-plugins' },
+    # A rich version keeps it in `require`, `strictly`, or `prefer`, inline or dotted, as the
+    # fork's master read them: docs.gradle.org/current/userguide/version_catalogs.html#sec:common-changes
+    { lines = '''\{[^}\n]*?[{ \t,]module[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:[ \t]*=[ \t]*\{[ \t]*|\.)(?:require|strictly|prefer)[ \t]*=[ \t]*"(?P<version>[^"]+)"''' },
+    { lines = '''\{[^}\n]*?[{ \t,]group[ \t]*=[ \t]*"(?P<group>[^"]+)"[^}\n]*?[{ \t,]name[ \t]*=[ \t]*"(?P<name>[^"]+)"[^}\n]*?[{ \t,]version(?:[ \t]*=[ \t]*\{[ \t]*|\.)(?:require|strictly|prefer)[ \t]*=[ \t]*"(?P<version>[^"]+)"''' },
+    { record = 'plugins.*', name = 'id', version = 'version', via = 'gradle-plugins' },
+    { spec = 'plugins.*', pattern = '^(?P<name>[\w.-]+):(?P<version>[^:]+)$', via = 'gradle-plugins' },
+]
+
+[[file]]
+id = 'sbt'
+globs = ['*.sbt']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"' },
+    # `%%` appends the Scala binary version to the artifact, `cats-core_2.13`, which the build's
+    # `scalaVersion` gives: www.scala-sbt.org/1.x/docs/Library-Dependencies.html. A file that sets
+    # none takes it from the build's other `.sbt` files or its sbt version, which src/project/sbt.rs
+    # appends to the text these rules read. `%%%`
+    # adds the Scala.js or Native platform, which plugins elsewhere choose, so it stays unread.
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.10\.[^"]*".*\z', suffix = '_2.10' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.11\.[^"]*".*\z', suffix = '_2.11' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.12\.[^"]*".*\z', suffix = '_2.12' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"2\.13\.[^"]*".*\z', suffix = '_2.13' },
+    { lines = '"(?P<group>[\w.-]+)"[ \t]*%%[ \t]*"(?P<name>[\w.-]+)"[ \t]*%[ \t]*"(?P<version>[\w.+-]+)"', within = '(?s)\A.*scalaVersion[ \t]*:=[ \t]*"3\.[^"]*".*\z', suffix = '_3' },
+]
+
+# Mill writes a Java dependency `mvn"org:name:version"`, `ivy"…"` before Mill 1.0, with
+# `;attribute=value` after it: mill-build.org (fundamentals/library-deps.adoc). Mill 1.0's
+# declarative `build.mill.yaml` and `package.mill.yaml` list the same coordinates under `mvnDeps`,
+# as com-lihaoyi/mill's example/javalib/basic/1-simple/build.mill.yaml does. A Scala one's `::`
+# appends the Scala binary version to the artifact, which the file's `scalaVersion` gives,
+# `def scalaVersion = "3.8.2"` in example/scalalib/basic/5-programmable/build.mill and
+# `scalaVersion: 3.8.2` in example/scalalib/basic/1-simple/build.mill.yaml. A `:::` appends the
+# full Scala version, `mvn"org.scalamacros:::paradise:2.1.1"` (scalalib/dependencies.adoc), which
+# the `within` block's `suffix` group takes from the same `scalaVersion`. A module that inherits
+# its Scala version from another file of the build, as `foo/package.mill` extends the trait
+# `build.mill` defines in example/large/multifile/10-multi-file-builds, gets it from
+# src/project/mill.rs, which appends the setting to the text these rules read.
+[[file]]
+id = 'mill'
+globs = ['*.mill', 'build.sc', '*.mill.yaml']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '(?:mvn|ivy)"(?P<group>[\w.-]+):(?P<name>[\w.-]+):(?P<version>\d[^";]*)[";]' },
+    { lines = '''(?m)^[ \t]*-[ \t]+["']?(?P<group>[\w.-]+):(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''' },
+    { lines = '''(?:(?:mvn|ivy)"|(?m:^)[ \t]*-[ \t]+["']?)(?P<group>[\w.-]+)::(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''', within = '''(?s)\A.*scalaVersion(?:[ \t]*=[ \t]*"|:[ \t]*["']?)2\.12\..*\z''', suffix = '_2.12' },
+    { lines = '''(?:(?:mvn|ivy)"|(?m:^)[ \t]*-[ \t]+["']?)(?P<group>[\w.-]+)::(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''', within = '''(?s)\A.*scalaVersion(?:[ \t]*=[ \t]*"|:[ \t]*["']?)2\.13\..*\z''', suffix = '_2.13' },
+    { lines = '''(?:(?:mvn|ivy)"|(?m:^)[ \t]*-[ \t]+["']?)(?P<group>[\w.-]+)::(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''', within = '''(?s)\A.*scalaVersion(?:[ \t]*=[ \t]*"|:[ \t]*["']?)3\..*\z''', suffix = '_3' },
+    { lines = '''(?:(?:mvn|ivy)"|(?m:^)[ \t]*-[ \t]+["']?)(?P<group>[\w.-]+):::(?P<name>[\w.-]+):(?P<version>\d[^"';\s]*)''', within = '''(?s)\A.*scalaVersion(?:[ \t]*=[ \t]*"|:[ \t]*["']?)(?P<suffix>\d+\.\d+\.\d+)["'\s].*\z''', suffix = '_' },
+]
+
+[[file]]
+id = 'deps-edn'
+globs = ['deps.edn']
+format = 'text'
+registry = 'clojars'
+rules = [
+    # Any key may come first in a coordinate map, a name may leave out its group, and `$` adds a
+    # classifier; `:local/root` names a directory and `:git/tag` or `:git/sha` a git revision:
+    # clojure.org/reference/deps_edn#deps_coords
+    { lines = '(?P<name>[\w.-]+(?:/[\w.-]+)?)(?:\$[\w.-]+)?\s+\{[^{}]*?:mvn/version\s+"(?P<version>[^"]+)"' },
+    { lines = '(?P<name>[\w.-]+(?:/[\w.-]+)?)\s+\{[^{}]*?:local/root\s+"(?P<version>[^"]+)"', via = 'directory' },
+    { lines = '(?P<name>[\w.-]+(?:/[\w.-]+)?)\s+\{[^{}]*?:git/(?:tag|sha)\s+"(?P<version>[^"]+)"', via = 'source' },
+]
+
+[[file]]
+id = 'ivy'
+globs = ['ivy.xml']
+format = 'xml'
+registry = 'maven'
+rules = [
+    { record = 'ivy-module.dependencies.dependency', name = '@org:@name', version = '@rev' },
+    # An `override` sets the revision of a transitive module:
+    # ant.apache.org/ivy/history/latest-milestone/ivyfile/override.html
+    { record = 'ivy-module.dependencies.override', name = '@org:@module', version = '@rev' },
+]
+
+# Maven 1 names a dependency by `groupId` and `artifactId`, or by one `id` that serves as both:
+# maven.apache.org/maven-1.x/reference/maven-model/3.0.2/maven.html, and Commons Lang 2.0's
+# project.xml (github.com/apache/commons-lang/blob/LANG_2_0/project.xml).
+[[file]]
+id = 'maven1'
+globs = ['project.xml']
+format = 'xml'
+registry = 'maven'
+rules = [
+    { record = 'project.dependencies.dependency', name = 'groupId|id:artifactId|id', version = 'version' },
+]
+
+# Buildr writes an artifact as `group:id:type:version` or `group:id:type:classifier:version`:
+# buildr.apache.org/artifacts.html, and github.com/iron-io/iron_mq_java/blob/master/buildfile
+[[file]]
+id = 'buildr'
+globs = ['buildfile']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '''['"](?P<group>[\w.-]+):(?P<name>[\w.-]+):[a-z][\w-]*(?::[\w.-]+)?:(?P<version>\d[\w.+-]*)['"]''' },
+]
+
+# A NuGet package's own dependencies, flat or grouped by target framework:
+# learn.microsoft.com/nuget/reference/nuspec#dependencies-element
+[[file]]
+id = 'nuspec'
+globs = ['*.nuspec']
+format = 'xml'
+registry = 'nuget'
+rules = [
+    { record = 'package.metadata.dependencies.dependency', name = '@id', version = '@version' },
+    { record = 'package.metadata.dependencies.group.dependency', name = '@id', version = '@version' },
+]
+
+[[file]]
+id = 'leiningen'
+globs = ['project.clj']
+format = 'text'
+registry = 'clojars'
+rules = [
+    # A name may be quoted, and `defproject` gives the project's own version:
+    # codeberg.org/leiningen/leiningen/src/branch/main/sample.project.clj
+    # A coordinate vector opens a vector of them or follows another, as in `:dependencies
+    # [[a "1"] [b "2"]]`; a vector of strings, as ring-clojure/ring's `:sub ["ring-core"
+    # "ring-devel"]` and `:aliases {"test" ["sub" "test"]}`, names no dependency.
+    { lines = '[\[\]](?:\s|;[^\n]*\n)*\["?(?P<name>[\w.-]+(?:/[\w.-]+)?)"?\s+"(?P<version>[^"]+)"' },
+    { lines = '\(defproject\s+[\w.-]+(?:/[\w.-]+)?\s+"(?P<version>v?\d[\w.+-]*)"', via = 'project' },
+]
+
+[[file]]
+id = 'dotnet-project-json'
+globs = ['project.json']
+format = 'json'
+registry = 'nuget'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'frameworks.*.dependencies' },
+    { keys = 'runtimes.*.dependencies' },
+]
+
+[[file]]
+id = 'global-json'
+globs = ['global.json']
+format = 'json'
+registry = 'nuget'
+rules = [
+    { keys = 'msbuild-sdks' },
+]
+
+[[file]]
+id = 'maven-extensions'
+globs = ['.mvn/extensions.xml']
+format = 'xml'
+registry = 'maven'
+rules = [
+    { record = 'extensions.extension', name = 'groupId:artifactId', version = 'version' },
+]
+
+[[file]]
+id = 'kotlin-script'
+globs = ['*.main.kts']
+format = 'text'
+registry = 'maven'
+rules = [
+    { lines = '@file:DependsOn\("(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)"\)' },
+]
+
+[[file]]
+id = 'gradle-wrapper'
+globs = ['gradle-wrapper.properties']
+format = 'text'
+registry = 'gradle-dist'
+rules = [
+    { lines = 'distributionUrl=.*?/(?P<name>gradle)-(?P<version>\d[\w.-]*?)-(?:bin|all)\.zip' },
+]
+

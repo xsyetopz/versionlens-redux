@@ -1,7 +1,0 @@
-
-[dependencies.serde]
-version = "1.0"
-features = ["derive"]
-
-[workspace.dependencies.tokio]
-version = "1"

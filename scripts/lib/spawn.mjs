@@ -22,12 +22,12 @@ const capture = async (command, options = {}) => {
 	const child = Bun.spawn(command, {
 		...options,
 		stderr: "pipe",
-		stdout: "pipe",
+		stdout: "pipe"
 	});
 	const [stdout, stderr, exitCode] = await Promise.all([
 		new Response(child.stdout).text(),
 		new Response(child.stderr).text(),
-		child.exited,
+		child.exited
 	]);
 	return { exitCode, stderr, stdout };
 };
@@ -42,7 +42,7 @@ const inherit = (command, options = {}) =>
 	Bun.spawn(command, {
 		...options,
 		stderr: "inherit",
-		stdout: "inherit",
+		stdout: "inherit"
 	}).exited;
 
 export { capture, inherit };

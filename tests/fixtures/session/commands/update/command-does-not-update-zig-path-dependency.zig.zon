@@ -1,5 +1,0 @@
-.{
-    .dependencies = .{
-        .local_dep = .{ .path = "../local_dep" },
-    },
-}

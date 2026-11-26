@@ -1,0 +1,312 @@
+# Registries for language runtimes, build tools, and the smaller package indexes. Runtimes
+# answer for tool-version files such as `.python-version` and `.tool-versions`. See packages.toml
+# for the row format.
+
+# A dated nightly or beta toolchain is the date its channel was built; the channel's date file
+# names the newest, `2026-11-25` for nightly on 2026-11-25
+# (static.rust-lang.org/dist/channel-rust-nightly-date.txt, which rustup's channel manifests sit
+# beside). OSV's GIT advisories for rust-lang/rust name release tags and commits, not dates, so a
+# dated toolchain has no OSV package.
+[[registry]]
+id = 'rust-nightly'
+url = 'https://static.rust-lang.org/dist/channel-rust-nightly-date.txt'
+regex = '(\d{4}-\d\d-\d\d)'
+bare = 'exact'
+page = 'https://rust-lang.github.io/rustup/concepts/channels.html'
+
+[[registry]]
+id = 'rust-beta'
+url = 'https://static.rust-lang.org/dist/channel-rust-beta-date.txt'
+regex = '(\d{4}-\d\d-\d\d)'
+bare = 'exact'
+page = 'https://rust-lang.github.io/rustup/concepts/channels.html'
+
+[[registry]]
+id = 'rust'
+url = 'https://raw.githubusercontent.com/rust-lang/rust/master/RELEASES.md'
+regex = '(?m)^Version (\d+\.\d+\.\d+) \('
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://github.com/rust-lang/rust'
+page = 'https://www.rust-lang.org/tools/install'
+
+# Typst's changelog lists each release once in its body, `<li><a href="/docs/changelog/0.13.0/">`,
+# and once more in the navigation; crates.io's typst-cli skips 0.2 through 0.10, which the
+# `compiler` minimum of a typst.toml still names. From 0.11 on, typst-cli on crates.io is the
+# compiler at the same version, with typst/typst as its repository (crates.io/api/v1/crates/typst-cli,
+# read 2026-11-25), so RustSec and GitHub's crates.io advisories reach it through OSV's crates.io
+# ecosystem as well as GIT.
+[[registry]]
+id = 'typst-compiler'
+url = 'https://typst.app/docs/changelog/'
+regex = '(?i)<li><a href="/docs/changelog/(\d+\.\d+\.\d+)/">'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://github.com/typst/typst'
+also = { 'crates.io' = 'typst-cli' }
+page = 'https://typst.app/docs/changelog/'
+
+# Stackage names the newest snapshot of each LTS series, `{"lts-22":"lts-22.44",…}`, which a
+# stack.yaml `resolver: lts-22.43` moves to.
+[[registry]]
+id = 'stackage'
+url = 'https://www.stackage.org/download/snapshots.json'
+regex = '"lts-\d+":\s*"lts-(\d+\.\d+)"'
+bare = 'prefix'
+page = 'https://www.stackage.org/'
+
+# The same index names the newest Stackage Nightly, `"nightly":"nightly-2026-11-25"`, which a
+# stack.yaml `snapshot: nightly-2026-05-29` moves to, as the fork's master looked it up.
+[[registry]]
+id = 'stackage-nightly'
+url = 'https://www.stackage.org/download/snapshots.json'
+regex = '"nightly":\s*"nightly-(\d{4}-\d{2}-\d{2})"'
+bare = 'prefix'
+page = 'https://www.stackage.org/nightly'
+
+# Julia's own release list, keyed by version, which `julia` in a Project.toml `[compat]` names.
+[[registry]]
+id = 'julia-lang'
+url = 'https://julialang-s3.julialang.org/bin/versions.json'
+json = ''
+field = '@key'
+bare = 'caret'
+page = 'https://julialang.org/downloads/'
+
+# Racket's releases, each linked as `releases/8.14/` on its all-versions page, which an info.rkt
+# `("base" #:version "8.0")` names: the version of `base` is the Racket release
+# (docs.racket-lang.org/pkg/metadata.html). A `#:version` is a lower bound. OSV lists no Racket
+# advisories.
+[[registry]]
+id = 'racket'
+url = 'https://download.racket-lang.org/all-versions.html'
+regex = 'releases/(\d+(?:\.\d+)+)/'
+bare = 'min'
+page = 'https://download.racket-lang.org/'
+
+# A Racket package from the package catalog, which records each package's `source` and no
+# versions: pkgs.racket-lang.org/pkg/threading-lib.json gives
+# `"source":"git://github.com/lexi-lambda/threading?path=threading-lib"`, and the catalog's
+# pkgs-all.json, read 2026-11-25, puts 2392 of 2849 sources on github.com, 131 on gitlab.com, and
+# 32 on codeberg.org. `{upstream}` takes the source's host and repository, and the repository's
+# tags are its versions, listed by git's smart HTTP protocol, which every one of those hosts
+# serves: git-scm.com/docs/http-protocol "Smart Clients", `refs/tags/<tag>` once and again peeled
+# as `<tag>^{}`. A `#:version` is a lower bound on the package's own `version`
+# (docs.racket-lang.org/pkg/metadata.html). OSV's GIT ecosystem keys ranges by the repository URL.
+[[registry]]
+id = 'racket-pkg'
+url = 'https://{upstream}.git/info/refs?service=git-upload-pack'
+regex = 'refs/tags/([^\s^]+)\n'
+bare = 'min'
+osv = 'GIT'
+osv_name = 'https://pkgs.racket-lang.org/pkg/{name}.json'
+upstream = '"source":"(?:git|https?|github)://(?P<host>[\w.-]+)/(?P<owner>[\w.~-]+)/(?P<repo>[\w.-]+?)(?:\.git)?(?:[/?#][^"]*)?"'
+page = 'https://pkgs.racket-lang.org/package/{name}'
+
+# R's releases from R-hub's rversions service, which `R (>= 4.3)` in a DESCRIPTION names.
+[[registry]]
+id = 'r-lang'
+url = 'https://api.r-hub.io/rversions/r-versions'
+json = ''
+field = 'version'
+bare = 'prefix'
+page = 'https://cran.r-project.org/'
+
+# Deno's release notes head each release `### 2.1.4 / 2024.12.11`; its advisories are filed
+# against the `deno` crate.
+[[registry]]
+id = 'deno-cli'
+url = 'https://raw.githubusercontent.com/denoland/deno/main/Releases.md'
+regex = '(?m)^### (\d+\.\d+\.\d+) /'
+bare = 'prefix'
+osv = 'crates.io'
+osv_name = 'deno'
+page = 'https://github.com/denoland/deno/releases'
+
+# The .NET release index gives each channel's newest SDK, `"latest-sdk": "8.0.404"`, so a
+# `dotnet-version` gets the newest SDK of each channel rather than every patch.
+[[registry]]
+id = 'dotnet-sdk'
+url = 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json'
+json = 'releases-index'
+field = 'latest-sdk'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'dotnet-sdk'
+page = 'https://dotnet.microsoft.com/download/dotnet'
+
+# Adoptium lists the Java feature releases Temurin builds, `"available_releases": [8, 11, …]`,
+# the majors a setup-java `java-version` names.
+[[registry]]
+id = 'temurin'
+url = 'https://api.adoptium.net/v3/info/available_releases'
+json = 'available_releases'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'java'
+page = 'https://adoptium.net/temurin/releases/'
+
+# OSV's Bitnami ecosystem carries the runtimes' own CVEs, under each product's name.
+[[registry]]
+id = 'python'
+url = 'https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json'
+json = ''
+field = 'version'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'python'
+page = 'https://www.python.org/downloads/'
+
+# endoflife.date lists each PHP release series with its newest patch, `"latest": "8.5.13"`, as
+# php.net's release pages announce them (endoflife.date/php), so Composer's platform requirement
+# `"php": "^8.3"` (getcomposer.org/doc/01-basic-usage.md#platform-packages) gets each series'
+# newest release, as the .NET SDK row does. Packagist has no `php` package: repo.packagist.org/p2/php.json
+# answers 404.
+[[registry]]
+id = 'php'
+url = 'https://endoflife.date/api/php.json'
+json = ''
+field = 'latest'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'php'
+page = 'https://www.php.net/releases/'
+
+[[registry]]
+id = 'ruby'
+url = 'https://raw.githubusercontent.com/ruby/www.ruby-lang.org/master/_data/releases.yml'
+regex = '(?m)^- version: (\d\S*)'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'ruby'
+page = 'https://www.ruby-lang.org/en/downloads/'
+
+[[registry]]
+id = 'nodejs'
+url = 'https://nodejs.org/dist/index.json'
+json = ''
+field = 'version'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'node'
+page = 'https://nodejs.org/en/about/previous-releases'
+
+# The Node.js releases on an LTS line, whose `lts` names the line's codename where other
+# releases give `false` (nodejs.org/dist/index.json). nvm's `lts/*` picks the newest of them
+# from the same column of index.tab (nvm.sh `nvm_ls_remote_index_tab`).
+[[registry]]
+id = 'nodejs-lts'
+url = 'https://nodejs.org/dist/index.json'
+regex = '"version":"v(\d+\.\d+\.\d+)"[^{}]*"lts":"'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = 'node'
+page = 'https://nodejs.org/en/about/previous-releases'
+
+[[registry]]
+id = 'ghc'
+url = 'https://downloads.haskell.org/~ghc/'
+regex = 'href="(\d+\.\d+\.\d+)/"'
+bare = 'prefix'
+osv = 'GHC'
+osv_name = 'ghc'
+page = 'https://www.haskell.org/ghc/'
+
+[[registry]]
+id = 'golang'
+url = 'https://go.dev/dl/?mode=json&include=all'
+reader = 'go-releases'
+bare = 'prefix'
+osv = 'Go'
+osv_name = 'stdlib'
+accept = 'application/json'
+page = 'https://go.dev/dl/'
+
+[[registry]]
+id = 'terraform-cli'
+url = 'https://releases.hashicorp.com/terraform/index.json'
+json = 'versions'
+field = '@key'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://github.com/hashicorp/terraform'
+page = 'https://releases.hashicorp.com/terraform/'
+
+[[registry]]
+id = 'gradle-dist'
+url = 'https://services.gradle.org/versions/all'
+json = ''
+field = 'version'
+bare = 'exact'
+osv = 'Bitnami'
+osv_name = 'gradle'
+page = 'https://gradle.org/releases/'
+
+[[registry]]
+id = 'conda'
+url = 'https://api.anaconda.org/package/conda-forge/{name}'
+json = 'versions'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'https://api.anaconda.org/package/conda-forge/{name}'
+upstream = '"dev_url":\s*"${GITHUB_URL}'
+page = 'https://anaconda.org/conda-forge/{name}'
+
+[[registry]]
+id = 'elm'
+url = 'https://package.elm-lang.org/packages/{name}/releases.json'
+json = ''
+field = '@key'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://github.com/{name}'
+page = 'https://package.elm-lang.org/packages/{name}/latest/'
+
+[[registry]]
+id = 'luarocks'
+url = 'https://luarocks.org/manifest.json'
+json = 'repository/{name}'
+field = '@key'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://luarocks.org/{name}-{version}.rockspec'
+upstream = '''url\s*=\s*['"](?:git\+)?(?:https?|git)://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?['"]'''
+page = 'https://luarocks.org/search?q={name}'
+
+# Meson's WrapDB: one releases.json names each wrap's `versions`, newest first, as
+# `upstream-revision` (`10.46-1`). wrapdb.mesonbuild.com/v2/releases.json, which `meson wrap`
+# asks, answers 301 to this address.
+[[registry]]
+id = 'wrapdb'
+url = 'https://mesonbuild.com/wrapdb/releases.json'
+json = '{name}/versions'
+bare = 'exact'
+page = 'https://github.com/mesonbuild/wrapdb/blob/master/subprojects/{name}.wrap'
+
+[[registry]]
+id = 'xmake'
+url = 'https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua'
+regex = 'add_versions\("(?:[a-z]+:)?([^"]+)"'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://raw.githubusercontent.com/xmake-io/xmake-repo/master/packages/{first}/{lower}/xmake.lua'
+upstream = '"https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?["/]'
+page = 'https://xmake.io/#/package/remote_package'
+
+
+# Homebrew's JSON API: a formula's current `versions.stable` and a cask's `version`. Homebrew is a
+# rolling release, so this is the one version it installs: docs.brew.sh/Querying-Brew and
+# formulae.brew.sh/docs/api/. OSV has no Homebrew ecosystem.
+[[registry]]
+id = 'homebrew'
+url = 'https://formulae.brew.sh/api/formula/{name}.json'
+json = 'versions/stable'
+bare = 'exact'
+page = 'https://formulae.brew.sh/formula/{name}'
+
+[[registry]]
+id = 'homebrew-cask'
+url = 'https://formulae.brew.sh/api/cask/{name}.json'
+json = 'version'
+bare = 'exact'
+page = 'https://formulae.brew.sh/cask/{name}'

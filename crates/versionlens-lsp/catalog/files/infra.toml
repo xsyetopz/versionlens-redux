@@ -1,0 +1,441 @@
+# Containers, CI, orchestration, and infrastructure files; see native.toml for the row format.
+
+[[file]]
+id = 'dockerfile'
+globs = ['Dockerfile', 'dockerfile', '*.Dockerfile', '*.dockerfile', 'Dockerfile.*', 'Containerfile', 'Earthfile']
+format = 'text'
+registry = 'docker'
+insert = ':'
+rules = [
+    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)(?:[^\w./-]|\z)' },
+    # An untagged image means its `latest` tag, as the fork's master read it; a lens offers a tag.
+    # A name an earlier `AS` gave is a build stage, and `scratch` no image, so both stay out. An
+    # image pinned only by digest, `FROM ubuntu@sha256:…`, offers a tag the same way:
+    # docs.docker.com/reference/dockerfile/#from
+    { lines = '(?mi)^[ \t]*FROM[ \t]+(?:--\S+[ \t]+)*(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)(?:@sha256:[0-9a-f]+)?(?:[ \t]+AS[ \t]+[\w.-]+)?[ \t]*\r?$' },
+]
+
+[[file]]
+id = 'compose'
+globs = ['compose.yaml', 'compose.yml', 'compose.*.yaml', 'compose.*.yml', 'docker-compose*.yaml', 'docker-compose*.yml', '*.compose.yaml', '*.compose.yml']
+format = 'yaml'
+registry = 'docker'
+insert = ':'
+rules = [
+    { spec = 'services.*.image', pattern = '${DOCKER}' },
+    # Untagged images, and a tag pinned to a digest, as the fork's master read them, and the
+    # `x-` extension blocks that services merge in: docs.docker.com/reference/compose-file/extension/
+    { spec = 'services.*.image', pattern = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)(?:@sha256:[0-9a-f]+)?$' },
+    { spec = 'services.*.image', pattern = '^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)@sha256:[0-9a-f]+$' },
+    { spec = '*.image', pattern = '${DOCKER}' },
+    # A service built from a context, `build: ./web` or `build: { context: ./web }`, links to that
+    # directory as the fork's master did (crates/versionlens-parsers/src/docker/compose_yaml/build.rs);
+    # a context that is a URL names a repository: docs.docker.com/reference/compose-file/build/#context
+    { spec = 'services.*.build', pattern = '^(?P<name>(?P<version>[^:]+))$', via = 'directory' },
+    { spec = 'services.*.build.context', pattern = '^(?P<name>(?P<version>[^:]+))$', via = 'directory' },
+    { spec = 'services.*.build', pattern = '^(?P<name>(?P<version>(?:\w+://|git@)\S+))$' },
+    { spec = 'services.*.build.context', pattern = '^(?P<name>(?P<version>(?:\w+://|git@)\S+))$' },
+]
+
+[[file]]
+id = 'kustomize'
+globs = ['kustomization.yaml', 'kustomization.yml', 'Kustomization']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    # `newName` replaces the image `name` matches, and `newTag` is a tag of that new image:
+    # kubectl.docs.kubernetes.io/references/kustomize/kustomization/images/
+    { record = 'images.*', name = 'newName|name', version = 'newTag' },
+    # A `digest` in place of `newTag` pins the image by content, as `FROM redis@sha256:…` does in
+    # a Dockerfile, and reads with no tag; the same page writes `name` then `digest`.
+    { lines = '''(?m)^[ \t]*-[ \t]+name:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?)["']?[ \t]*\r?\n[ \t]+digest:''' },
+]
+
+[[file]]
+id = 'github-actions'
+# Gitea Actions takes the same workflows from `.gitea/workflows`, and fetches `uses:` actions from
+# github.com unless an admin sets DEFAULT_ACTIONS_URL: gitea/docs, docs/usage/actions/faq.md.
+globs = ['.github/workflows/**/*.yml', '.github/workflows/**/*.yaml', '.github/actions/**/*.yml', '.github/actions/**/*.yaml', 'action.yml', 'action.yaml', '.gitea/workflows/**/*.yml', '.gitea/workflows/**/*.yaml']
+format = 'yaml'
+registry = 'github'
+rules = [
+    # A branch or commit SHA in place of a tag reads against the repository's own refs, first so
+    # that a SHA starting with a digit is not taken for a version.
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'github.com/' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'github.com/' },
+    { spec = 'runs.steps.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'github.com/' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION}' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION}' },
+    { spec = 'runs.steps.*.uses', pattern = '${ACTION}' },
+    # A local action or reusable workflow, `./.github/workflows/shared.yml`, links to its file, as the
+    # fork's master read it: docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsuses
+    { spec = 'jobs.*.steps.*.uses', pattern = '^(?P<name>(?P<version>\./\S*))$', via = 'directory' },
+    { spec = 'jobs.*.uses', pattern = '^(?P<name>(?P<version>\./\S*))$', via = 'directory' },
+    { spec = 'runs.steps.*.uses', pattern = '^(?P<name>(?P<version>\./\S*))$', via = 'directory' },
+    { lines = '${IMAGE_LINE}', via = 'docker' },
+    { lines = '''(?m)uses:[ \t]*["']?docker://(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)''', via = 'docker' },
+    # The runtime a setup action installs, from its `<tool>-version` input, as the fork's master
+    # read it: github.com/actions/setup-node, setup-python, setup-go, ruby/setup-ruby, and
+    # oven-sh/setup-bun. Expressions such as `${{ matrix.node }}` and lists stay out.
+    { lines = '''(?m)^[ \t]+(?P<name>node|bun)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'npm' },
+    { lines = '''(?m)^[ \t]+(?P<registry>(?P<name>python|ruby))-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''' },
+    { lines = '''(?m)^[ \t]+(?P<name>go)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'golang' },
+    # github.com/denoland/setup-deno, actions/setup-java, actions/setup-dotnet, and the
+    # `toolchain` input of dtolnay/rust-toolchain and actions-rust-lang/setup-rust-toolchain,
+    # which master's github_actions/runtime.rs also read.
+    { lines = '''(?m)^[ \t]+(?P<name>deno)-version:[ \t]*["']?v?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'deno-cli' },
+    { lines = '''(?m)^[ \t]+(?P<name>java)-version:[ \t]*["']?(?P<version>\d[\w.+]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'temurin' },
+    { lines = '''(?m)^[ \t]+(?P<name>dotnet)-version:[ \t]*["']?(?P<version>\d[\w.]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'dotnet-sdk' },
+    { lines = '''(?m)(?P<name>rust)-toolchain@\S*[ \t]*\r?\n[ \t]+with:[ \t]*\r?\n(?:[ \t]+[\w-]+:[^\n]*\n)*?[ \t]+toolchain:[ \t]*["']?(?P<version>\d+\.\d+(?:\.\d+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'rust' },
+]
+
+# CI services and dev environments that name images under `image:` keys at any depth.
+[[file]]
+id = 'ci-images'
+globs = ['bitbucket-pipelines.yml', '.drone.yml', '.woodpecker.yml', '.woodpecker.yaml', '.woodpecker/*.yml', '.woodpecker/*.yaml', '.gitpod.yml', '.cirrus.yml', 'azure-pipelines.yml', 'azure-pipelines.yaml', 'cloudbuild.yaml', 'cloudbuild.yml']
+format = 'text'
+registry = 'docker'
+rules = [
+    { lines = '${IMAGE_LINE}' },
+    # A Bitbucket pipe is a Bitbucket repository at a tag, or `docker://` an image:
+    # support.atlassian.com/bitbucket-cloud/docs/what-are-pipes/ and
+    # support.atlassian.com/bitbucket-cloud/docs/write-a-pipe-for-bitbucket-pipelines/.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?pipe:[ \t]*["']?(?P<name>[\w.-]+/[\w.-]+):(?P<version>\d[\w.-]*)["']?[ \t]*(?:#.*)?\r?$''', via = 'bitbucket' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?pipe:[ \t]*["']?docker://(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$''' },
+]
+
+# Forgejo Actions reads `.forgejo/workflows`, with GitHub's `uses:` syntax; a short `owner/repo`
+# comes from DEFAULT_ACTIONS_URL, `https://data.forgejo.org`, and a URL names its own host:
+# forgejo/docs, docs/user/actions/reference.md `jobs.<job_id>.uses` and
+# docs/admin/config-cheat-sheet.md. A github.com URL goes to GitHub.
+[[file]]
+id = 'forgejo-actions'
+globs = ['.forgejo/workflows/*.yml', '.forgejo/workflows/*.yaml']
+format = 'yaml'
+registry = 'forgejo'
+rules = [
+    # A branch or commit SHA, on the host a URL names or on data.forgejo.org.
+    { spec = 'jobs.*.steps.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>${GIT_REF})$', via = 'git-ref' },
+    { spec = 'jobs.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>${GIT_REF})$', via = 'git-ref' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'data.forgejo.org/' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION_REF}', via = 'git-ref', prefix = 'data.forgejo.org/' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '^https://github\.com/(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$', via = 'github' },
+    { spec = 'jobs.*.uses', pattern = '^https://github\.com/(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$', via = 'github' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$' },
+    { spec = 'jobs.*.uses', pattern = '^https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$' },
+    { spec = 'jobs.*.steps.*.uses', pattern = '${ACTION}', prefix = 'data.forgejo.org/' },
+    { spec = 'jobs.*.uses', pattern = '${ACTION}', prefix = 'data.forgejo.org/' },
+    { lines = '${IMAGE_LINE}', via = 'docker' },
+]
+
+# Buildkite reads its pipeline from these paths: buildkite/agent, clicommand/pipeline_upload.go.
+# A plugin is `name#ref` from github.com/buildkite-plugins, `owner/name#ref` from
+# `owner/name-buildkite-plugin` on GitHub, or a git URL: buildkite/docs,
+# pages/pipelines/integrations/plugins/using.md and writing.md.
+[[file]]
+id = 'buildkite'
+globs = ['buildkite.yml', 'buildkite.yaml', '.buildkite/pipeline.yml', '.buildkite/pipeline.yaml', 'buildkite/pipeline.yml', 'buildkite/pipeline.yaml', '.buildkite/*.yml', '.buildkite/*.yaml']
+format = 'text'
+registry = 'github'
+rules = [
+    # A branch or commit SHA after `#`, read against the plugin repository's refs.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>${GIT_REF})["']?(?::|[ \t\r]|$)''', via = 'git-ref', prefix = 'github.com/buildkite-plugins/', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+/[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>${GIT_REF})["']?(?::|[ \t\r]|$)''', via = 'git-ref', prefix = 'github.com/', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?https://(?P<name>[\w-]+(?:\.[\w-]+)+/[\w.-]+/[\w-]+?)(?:\.git)?#(?P<version>${GIT_REF})["']?(?::|[ \t\r]|$)''', via = 'git-ref' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''', prefix = 'buildkite-plugins/', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?(?P<name>[\w.-]+/[\w.-]+?)(?:-buildkite-plugin)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''', suffix = '-buildkite-plugin' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?(?:plugin:[ \t]*)?["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+?)(?:\.git)?#(?P<version>v?\d[\w.-]*)["']?[ \t]*:?''' },
+    { lines = '${IMAGE_LINE}', via = 'docker' },
+]
+
+# A Scoop bucket keeps one JSON manifest per app in `bucket/`, its `url` (top-level or per
+# `architecture`) the download; a GitHub release asset names its repository and tag. An
+# `autoupdate` URL is a template, `.../download/v$version/...`, that Scoop fills in from the
+# newest release, so the pinned version is the one the download URLs above it carry:
+# ScoopInstaller/Main, bucket/gh.json; github.com/ScoopInstaller/Scoop/wiki/App-Manifest-Autoupdate.
+[[file]]
+id = 'scoop'
+globs = ['bucket/*.json']
+format = 'text'
+registry = 'github'
+rules = [{ lines = '${GITHUB_RELEASE}' }]
+
+# A winget installer manifest names each installer's `InstallerUrl`; a GitHub release asset
+# names its repository and tag: microsoft/winget-pkgs, manifests/b/BurntSushi/ripgrep/MSVC/16.0.0/
+# BurntSushi.ripgrep.MSVC.installer.yaml. It comes before `kubernetes`, which takes `manifests/`.
+[[file]]
+id = 'winget'
+globs = ['*.installer.yaml']
+format = 'text'
+registry = 'github'
+rules = [{ lines = '${GITHUB_RELEASE}' }]
+
+# Kubernetes manifests have no fixed name; these are the folders and suffixes that hold them,
+# with Flux's `clusters/` (fluxcd.io/flux/guides/repository-structure/) and Argo CD's own folders.
+[[file]]
+id = 'kubernetes'
+globs = ['k8s/**/*.yaml', 'k8s/**/*.yml', 'kubernetes/**/*.yaml', 'kubernetes/**/*.yml', 'manifests/**/*.yaml', 'manifests/**/*.yml', 'deploy/**/*.yaml', 'deploy/**/*.yml', 'clusters/**/*.yaml', 'clusters/**/*.yml', 'argocd/**/*.yaml', 'argocd/**/*.yml', 'argo-cd/**/*.yaml', 'argo-cd/**/*.yml', '*.k8s.yaml', '*.k8s.yml', 'skaffold.yaml', 'tilt.yaml']
+format = 'text'
+registry = 'docker'
+rules = [
+    { lines = '${IMAGE_LINE}' },
+    # An Argo CD Application's Helm source names `chart`, `repoURL`, and `targetRevision`, in
+    # the docs' order or with `repoURL` first; a git source has no `chart`, and its
+    # `targetRevision` is the git reference it pins, on a repository whose URL ends in `.git` or
+    # names a git host, as the guestbook example's does:
+    # github.com/argoproj/argo-cd/blob/master/docs/operator-manual/declarative-setup.md
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<source>https?://[^"'\s]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'helm' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<name>https?://[^"'\s]+?)\.git["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'source' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?repoURL:[ \t]*["']?(?P<name>https?://(?:github\.com|gitlab\.com|bitbucket\.org)/[^"'\s]+?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+targetRevision:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'source' },
+    # A Flux HelmRelease names its `chart`, the HelmRepository `sourceRef` it comes from, and a
+    # `version` range, before or after the source: github.com/fluxcd/helm-controller, docs/spec/
+    # v2/helmreleases.md. The URL is in the HelmRepository object, so the chart is looked up on
+    # Artifact Hub under the source's name, as helmfile's repositories are; a chart path from a
+    # GitRepository has no version of its own, and the GitRepository's `ref` reads below.
+    { lines = '''(?m)^[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+sourceRef:[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+name:[ \t]*["']?(?P<group>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'artifacthub' },
+    { lines = '''(?m)^[ \t]+chart:[ \t]*["']?(?P<name>[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+sourceRef:[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+name:[ \t]*["']?(?P<group>[\w.-]+)''', via = 'artifacthub' },
+    # Flux sources pin an OCI artifact or a git repository by `ref.tag`, a GitHub repository by a
+    # `ref.semver` range, and any git repository by the `ref.branch`, `tag`, `name`, or `commit`
+    # it checks out, the last of them where a commit narrows a branch: github.com/fluxcd/source-controller/blob/main/docs/spec/v1/ocirepositories.md
+    # and gitrepositories.md "Reference".
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?oci://(?P<name>[\w.-]+(?::\d+)?/[\w./-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'oci' },
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''', via = 'github' },
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+ref:[ \t]*\r?\n(?:[ \t]+(?:#|branch:|tag:|name:|commit:)[^\n]*\n)*?[ \t]+semver:[ \t]*["']?(?P<version>[^"'\r\n#]+?)["']?[ \t]*(?:#[^\n]*)?\r?$''', via = 'github' },
+    { lines = '''(?m)^[ \t]+url:[ \t]*["']?(?P<name>(?:https?|ssh)://[^"'\s]+?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+ref:[ \t]*\r?\n(?:[ \t]+(?:#|branch:|tag:|semver:|name:|commit:)[^\n]*\n)*[ \t]+(?:branch|tag|name|commit):[ \t]*["']?(?P<version>[^"'\s#]+)''', via = 'source' },
+]
+
+# Helm chart values split an image into `repository` and `tag`, at the top or under a component.
+[[file]]
+id = 'helm-values'
+globs = ['values.yaml', 'values.yml', 'values-*.yaml', 'values.*.yaml']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { lines = '${IMAGE_LINE}' },
+    { record = 'image', name = 'repository', version = 'tag' },
+    { record = '*.image', name = 'repository', version = 'tag' },
+]
+
+[[file]]
+id = 'puppetfile'
+globs = ['Puppetfile']
+format = 'text'
+registry = 'puppet'
+rules = [
+    { lines = '''(?m)^[ \t]*mod[ \t]+["'](?P<group>[A-Za-z0-9]+)[-/](?P<name>[a-z][a-z0-9_]*)["'][ \t]*,[ \t]*["'](?P<version>\d[^"']*)["']''' },
+]
+
+[[file]]
+id = 'chef'
+globs = ['Berksfile', 'metadata.rb']
+format = 'text'
+registry = 'chef'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:cookbook|depends)[ \t]+["'](?P<name>[\w.-]+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+]
+
+[[file]]
+id = 'helm'
+globs = ['Chart.yaml']
+format = 'yaml'
+registry = 'helm'
+rules = [
+    { record = 'dependencies.*', name = 'name', version = 'version', source = 'repository' },
+]
+
+[[file]]
+id = 'ansible'
+globs = ['requirements.yml', 'requirements.yaml', 'galaxy.yml']
+format = 'yaml'
+registry = 'galaxy'
+rules = [
+    # Galaxy installs the newest when `version` is omitted, as geerlingguy/mac-dev-playbook's
+    # requirements.yml writes every entry (docs.ansible.com/ansible/latest/galaxy/user_guide.html).
+    { record = 'collections.*', name = 'name', version = 'version?' },
+    # A role is named `namespace.role` by `name` or `src`, or comes from the git repository its
+    # `src` gives, as the fork's master read them:
+    # docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-multiple-roles-from-a-file
+    { record = 'roles.*', name = 'name|src', version = 'version?', source = 'src', via = 'galaxy-role' },
+    { keys = 'dependencies' },
+]
+
+[[file]]
+id = 'terraform'
+globs = ['*.tf', '*.tofu']
+format = 'text'
+registry = 'terraform'
+rules = [
+    { lines = 'source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+    { lines = 'version[ \t]*=[ \t]*"(?P<version>[^"]+)"\s*source[ \t]*=[ \t]*"(?P<name>[\w-]+/[\w-]+(?:/[\w-]+)?)"' },
+    { lines = '${GITHUB_REF}', via = 'github' },
+    # A requirement may be a bare constraint, `random = "~> 3.6"`, whose source is `hashicorp/` and
+    # the local name: developer.hashicorp.com/terraform/language/providers/requirements
+    # (v0.12-Compatible Provider Requirements). An object entry matches without a name, so its keys
+    # stay with the rules above.
+    { lines = '''(?m)^[ \t]*(?:[\w-]+[ \t]*=[ \t]*\{[^{}]*\}|(?P<name>[\w-]+)[ \t]*=[ \t]*"(?P<version>[^"]+)")''', within = '''required_providers\s*\{(?P<body>(?:[^{}]|\{[^{}]*\})*)\}''', prefix = 'hashicorp/' },
+]
+
+# A unit's `terraform { source }` names a registry module as `tfr://[host]/ns/name/provider`
+# with `?version=`, or a git module pinned by `?ref=`:
+# docs.terragrunt.com/reference/hcl/blocks/terraform/
+[[file]]
+id = 'terragrunt'
+globs = ['terragrunt.hcl', 'terragrunt.stack.hcl']
+format = 'text'
+registry = 'terraform'
+rules = [
+    { lines = 'tfr://(?:registry\.(?:terraform\.io|opentofu\.org))?/(?P<name>[\w-]+/[\w-]+/[\w-]+)(?://[^?"\s]*)?\?version=(?P<version>[^"&\s]+)' },
+    { lines = '${GITHUB_REF}', via = 'github' },
+]
+
+# Packer plugins are GitHub repositories named `packer-plugin-<name>`, which `required_plugins`
+# gives as `github.com/<owner>/<name>`:
+# developer.hashicorp.com/packer/docs/templates/hcl_templates/blocks/packer
+[[file]]
+id = 'packer'
+globs = ['*.pkr.hcl']
+format = 'text'
+registry = 'packer'
+rules = [
+    { lines = 'version[ \t]*=[ \t]*"(?P<version>[^"]+)"\s*source[ \t]*=[ \t]*"github\.com/(?P<name>[\w.-]+/[\w-]+)"' },
+    { lines = 'source[ \t]*=[ \t]*"github\.com/(?P<name>[\w.-]+/[\w-]+)"\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+]
+
+# A release names its chart `repository/chart` after a `repositories` entry, which Artifact Hub
+# names the same way for the public repositories; `version` comes before or after it. A local
+# chart, `./charts/local`, is a directory: helmfile.readthedocs.io (docs/index.md, Configuration).
+[[file]]
+id = 'helmfile'
+globs = ['helmfile.yaml', 'helmfile.yml', 'helmfile.yaml.gotmpl', 'helmfile.d/*.yaml', 'helmfile.d/*.yaml.gotmpl']
+format = 'text'
+registry = 'artifacthub'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>\w[\w.-]*/[\w.-]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+version:[ \t]*["']?(?P<version>[^"'\s#]+)''' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?version:[ \t]*["']?(?P<version>[^"'\s#]+)["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\r?\n)*?[ \t]+chart:[ \t]*["']?(?P<name>\w[\w.-]*/[\w.-]+)["']?[ \t]*\r?$''' },    { lines = '''(?m)^[ \t]*(?:-[ \t]+)?chart:[ \t]*["']?(?P<name>(?P<version>\.{1,2}/[^"'\s#]+))''', via = 'directory' },
+]
+
+# Vagrant Cloud boxes: `config.vm.box` with an optional `config.vm.box_version` constraint:
+# developer.hashicorp.com/vagrant/docs/vagrantfile/machine_settings
+[[file]]
+id = 'vagrant'
+globs = ['Vagrantfile']
+format = 'text'
+registry = 'vagrant'
+rules = [
+    { lines = '''\.vm\.box[ \t]*=[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n]*\r?\n(?:[^\n]*\n)*?[ \t]*\w+\.vm\.box_version[ \t]*=[ \t]*["'](?P<version>[^"']+)["']''' },
+]
+
+# A part builds from `source` at a `source-tag`, one of the git refs craft-parts accepts; a
+# line ending in `:` opens another part or block, which ends the search:
+# github.com/canonical/craft-parts/blob/main/craft_parts/sources/git_source.py
+[[file]]
+id = 'snapcraft'
+globs = ['snapcraft.yaml', '.snapcraft.yaml']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]+source:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\n]*[^:\s][ \t]*\r?\n){0,8}?[ \t]+source-tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''' },
+    { lines = '''(?m)^[ \t]+source-tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*[^:\s][ \t]*\r?\n){0,8}?[ \t]+source:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?$''' },
+]
+
+# Flatpak manifests are named for their reverse-DNS app id and hold `app-id` (or `id`) and
+# `runtime-version`; a git source gives `url` and `tag`, as Flathub's
+# github.com/flathub/com.github.tchx84.Flatseal/blob/master/com.github.tchx84.Flatseal.json does.
+[[file]]
+id = 'flatpak'
+globs = ['com.*.json', 'org.*.json', 'io.*.json', 'net.*.json', 'dev.*.json', 'app.*.json']
+content = ['app-id', 'runtime-version']
+format = 'json'
+registry = 'github'
+rules = [
+    { lines = '"url":[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[ \t]*,\s*(?:"[\w-]+":[ \t]*"[^"\n]*"[ \t]*,\s*)*?"tag":[ \t]*"(?P<version>v?\d[^"]*)"' },
+    { lines = '"tag":[ \t]*"(?P<version>v?\d[^"]*)"[ \t]*,\s*(?:"[\w-]+":[ \t]*"[^"\n]*"[ \t]*,\s*)*?"url":[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"' },
+]
+
+# The same manifest in YAML, which docs.flatpak.org/en/latest/manifests.html accepts beside JSON
+# and uses for its examples, such as org.gnome.Dictionary.yml; a git source gives `url` and `tag`.
+[[file]]
+id = 'flatpak'
+globs = ['com.*.yaml', 'org.*.yaml', 'io.*.yaml', 'net.*.yaml', 'dev.*.yaml', 'app.*.yaml', 'com.*.yml', 'org.*.yml', 'io.*.yml', 'net.*.yml', 'dev.*.yml', 'app.*.yml']
+content = ['app-id', 'runtime-version']
+format = 'yaml'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]+(?:-[ \t]+)?url:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n(?:[ \t]+[^\s-][^\n]*\n)*?[ \t]+tag:[ \t]*["']?(?P<version>v?\d[^"'\s]*)''' },
+]
+
+[[file]]
+id = 'terraform-lock'
+globs = ['.terraform.lock.hcl']
+format = 'text'
+registry = 'terraform'
+pinned = true
+rules = [
+    { lines = 'provider[ \t]+"registry\.terraform\.io/(?P<name>[\w-]+/[\w-]+)"[ \t]*\{\s*version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+]
+
+[[file]]
+id = 'gitlab-ci'
+globs = ['.gitlab-ci.yml', '.gitlab-ci.yaml']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { spec = 'image', pattern = '${DOCKER}' },
+    { spec = 'image.name', pattern = '${DOCKER}' },
+    { spec = 'services.*', pattern = '${DOCKER}' },
+    { spec = 'services.*.name', pattern = '${DOCKER}' },
+    { spec = '*.image', pattern = '${DOCKER}' },
+    { spec = '*.image.name', pattern = '${DOCKER}' },
+    { spec = '*.services.*', pattern = '${DOCKER}' },
+    { spec = '*.services.*.name', pattern = '${DOCKER}' },
+    # A CI/CD component is `<host>/<project path>/<component>@<version>`, the version a tag, a
+    # partial `1.2`, a commit SHA, or a branch name; `~latest` stays out:
+    # docs.gitlab.com/ci/components/ "Component versions". A written host, gitlab.com or
+    # self-hosted, is asked itself. `$CI_SERVER_FQDN` is the instance running the pipeline, which
+    # src/project/git.rs takes from the workspace's git remote, and gitlab.com where the workspace
+    # has none. A SHA or a branch reads against the project's refs, first so that a SHA starting
+    # with a digit is not taken for a version.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?(?P<name>[\w-]+(?:\.[\w-]+)+(?::\d+)?/[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>${GIT_REF})["']?[ \t]*(?:#.*)?\r?$''', via = 'git-ref' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?\$CI_SERVER_FQDN/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>${GIT_REF})["']?[ \t]*(?:#.*)?\r?$''', via = 'git-ref', prefix = '$CI_SERVER_FQDN/' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?(?P<name>[\w-]+(?:\.[\w-]+)+(?::\d+)?/[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab-host' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?component:[ \t]*["']?\$CI_SERVER_FQDN/(?P<name>[\w.-]+(?:/[\w.-]+)+)/[\w.-]+@(?P<version>\d+(?:\.\d+)*(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab-host', prefix = '$CI_SERVER_FQDN/' },
+    # `include:project` names a project "on the same GitLab instance", so on `$CI_SERVER_FQDN`,
+    # with a `ref` that is a tag, short or under `refs/tags/`, a branch, or a SHA, as the items it
+    # lists come: docs.gitlab.com/ci/yaml/ `include:project`.
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?project:[ \t]*["']?(?P<name>[\w.-]+(?:/[\w.-]+)+)["']?[ \t]*(?:#.*)?\r?\n(?:[ \t]+[^-\s][^\n]*\r?\n|[ \t]+-[ \t]+["'/][^\n]*\r?\n)*?[ \t]+ref:[ \t]*["']?(?:refs/heads/)?(?P<version>${GIT_REF})["']?[ \t]*(?:#.*)?\r?$''', via = 'git-ref', prefix = '$CI_SERVER_FQDN/' },
+    { lines = '''(?m)^[ \t]*(?:-[ \t]*)?project:[ \t]*["']?(?P<name>[\w.-]+(?:/[\w.-]+)+)["']?[ \t]*(?:#.*)?\r?\n(?:[ \t]+[^-\s][^\n]*\r?\n|[ \t]+-[ \t]+["'/][^\n]*\r?\n)*?[ \t]+ref:[ \t]*["']?(?:refs/tags/)?(?P<version>v?\d+(?:\.\d+)+(?:-[\w.]+)?)["']?[ \t]*(?:#.*)?\r?$''', via = 'gitlab-host', prefix = '$CI_SERVER_FQDN/' },
+]
+
+[[file]]
+id = 'circleci'
+globs = ['.circleci/config.yml', '.circleci/config.yaml']
+format = 'yaml'
+registry = 'docker'
+rules = [
+    { spec = 'jobs.*.docker.*.image', pattern = '${DOCKER}' },
+    { spec = 'executors.*.docker.*.image', pattern = '${DOCKER}' },
+    # A registry orb is `namespace/orb@1.2.3`, or `@1.2` and `@1` for the newest patch or minor;
+    # `volatile`, inline orbs, and URL orbs stay out: circleci/circleci-docs,
+    # docs/orbs/modules/use/pages/orb-intro.adoc and orb-concepts.adoc.
+    { spec = 'orbs.*', pattern = '^(?P<name>[\w-]+/[\w-]+)@(?P<version>\d+(?:\.\d+){0,2})$', via = 'circleci-orb' },
+]
+
+
+# Pulumi.yaml `packages` name a Git repository at a tag, `https://github.com/o/r@v1.0.0`, or a
+# `source` plugin at a `version`, which Pulumi publishes as `pulumi/pulumi-<name>` on GitHub; a
+# `terraform-provider` or `hcl module` source pins its Terraform address in `parameters`:
+# pulumi/docs, content/docs/iac/concepts/projects/project-file.md. A local component,
+# `networking: ./components/networking`, is a directory.
+[[file]]
+id = 'pulumi'
+globs = ['Pulumi.yaml', 'Pulumi.yml']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''(?m)^[ \t]+[\w.-]+:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?@(?P<version>v?\d[^"'\s#]*)''' },
+    { lines = '''(?m)^[ \t]+source:[ \t]*["']?(?P<name>[a-z][\w-]*)["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+version:[ \t]*["']?(?P<version>v?\d[^"'\s#]*)''', prefix = 'pulumi/pulumi-' },
+    { lines = '''(?m)^[ \t]+source:[ \t]*["']?terraform-provider["']?[ \t]*\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+parameters:[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<name>[\w-]+/[\w-]+)["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<version>\d[^"'\s#]*)''', via = 'terraform' },
+    { lines = '''(?m)^[ \t]+parameters:[ \t]*\r?\n[ \t]+-[ \t]*["']?module["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<name>[\w-]+/[\w-]+/[\w-]+)["']?[ \t]*\r?\n[ \t]+-[ \t]*["']?(?P<version>\d[^"'\s#]*)''', via = 'terraform' },
+    { lines = '''(?m)^[ \t]+(?P<name>[\w.-]+):[ \t]*["']?(?P<version>\.{1,2}/[^"'\s#]+)''', within = '(?m)^packages:[ \t]*\r?\n((?:[ \t]+[^\n]*\r?\n?|\r?\n)*)', via = 'directory' },
+]

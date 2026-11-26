@@ -1,0 +1,796 @@
+# Package registries.
+#
+# Each [[registry]] row is one package registry: the `url` template of its version list, read with
+# exactly one of `json` (a path, with optional `field` and `latest`, and an `html` regex for an index
+# that answers HTML instead), `regex` (first capture of each match), or `reader` (cargo, helm,
+# terraform, or go-releases), of what `url` answers, or answers to a POST of the `body` template
+# where one is given; `bare`, what a version without an
+# operator means (exact, caret, min, or prefix); the `osv` ecosystem and `osv_name` template OSV
+# knows the package by, with an `upstream` regex that finds its GitHub repository; and the `page`
+# template of a package, with host-specific `pages` for images. src/registry.rs documents each
+# field and `expand` the URL placeholders. A pattern may name a shared one as ${NAME}.
+
+[[registry]]
+id = 'cargo'
+url = 'https://index.crates.io/{cargo}'
+reader = 'cargo'
+bare = 'caret'
+osv = 'crates.io'
+page = 'https://crates.io/crates/{name}'
+
+[[registry]]
+id = 'npm'
+url = 'https://registry.npmjs.org/{enc}'
+json = 'versions'
+field = '@key'
+latest = 'dist-tags/latest'
+bare = 'exact'
+osv = 'npm'
+accept = 'application/vnd.npm.install-v1+json'
+deprecated = 'deprecated'
+page = 'https://www.npmjs.com/package/{name}'
+
+# npm's `canary` dist-tag, which a `.bun-version` of `canary` follows: the newest version is the
+# one the tag names, prereleases included.
+[[registry]]
+id = 'npm-canary'
+url = 'https://registry.npmjs.org/{enc}'
+json = 'versions'
+field = '@key'
+latest = 'dist-tags/canary'
+bare = 'exact'
+osv = 'npm'
+accept = 'application/vnd.npm.install-v1+json'
+deprecated = 'deprecated'
+page = 'https://www.npmjs.com/package/{name}?activeTab=versions'
+
+[[registry]]
+id = 'jsr'
+url = 'https://jsr.io/{name}/meta.json'
+json = 'versions'
+field = '@key'
+latest = 'latest'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://jsr.io/{name}'
+upstream = 'href="${GITHUB_URL}'
+yanked = 'yanked'
+page = 'https://jsr.io/{name}'
+
+# deno.land's standard library and /x modules: each one's releases at
+# cdn.deno.land/{name}/meta/versions.json, and the GitHub repository a release was uploaded from
+# in its meta.json's `upload_options`, whose GIT advisories OSV files, as for oakserver/oak.
+[[registry]]
+id = 'deno-land'
+url = 'https://cdn.deno.land/{name}/meta/versions.json'
+json = 'versions'
+latest = 'latest'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://cdn.deno.land/{name}/versions/{version}/meta/meta.json'
+upstream = '"repository":"(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)"'
+page = 'https://deno.land/x/{name}'
+
+[[registry]]
+id = 'unity'
+url = 'https://packages.unity.com/{name}'
+json = 'versions'
+field = '@key'
+latest = 'dist-tags/latest'
+bare = 'exact'
+deprecated = 'deprecated'
+page = 'https://packages.unity.com/{name}'
+
+[[registry]]
+id = 'pypi'
+url = 'https://pypi.org/simple/{name}/'
+json = 'versions'
+bare = 'exact'
+osv = 'PyPI'
+accept = 'application/vnd.pypi.simple.v1+json'
+# An index that answers only PEP 503 HTML, as download.pytorch.org/whl/cpu does, links each file by
+# its name: `{name}-{version}-{tags}.whl` or `{name}-{version}.tar.gz` (packaging.python.org/en/
+# latest/specifications/binary-distribution-format/, .../source-distribution-format/).
+html = '''>[^<>]+?-(\d[A-Za-z0-9_.!+]*)(?:-[^<>]*\.whl|\.tar\.gz|\.tar\.bz2|\.tgz|\.zip)</a>'''
+page = 'https://pypi.org/project/{name}/'
+
+[[registry]]
+id = 'composer'
+url = 'https://repo.packagist.org/p2/{name}.json'
+json = 'packages/{name}'
+field = 'version'
+bare = 'exact'
+osv = 'Packagist'
+page = 'https://packagist.org/packages/{name}'
+
+[[registry]]
+id = 'go'
+url = 'https://proxy.golang.org/{go}/@v/list'
+regex = '(?m)^(v\S+)$'
+bare = 'exact'
+osv = 'Go'
+page = 'https://pkg.go.dev/{name}'
+
+[[registry]]
+id = 'rubygems'
+url = 'https://rubygems.org/api/v1/versions/{name}.json'
+json = ''
+field = 'number'
+bare = 'exact'
+osv = 'RubyGems'
+page = 'https://rubygems.org/gems/{name}'
+
+[[registry]]
+id = 'cocoapods'
+url = 'https://trunk.cocoapods.org/api/v1/pods/{name}'
+json = 'versions'
+field = 'name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://trunk.cocoapods.org/api/v1/pods/{name}/specs/latest'
+upstream = '"git":\s*"${GITHUB_URL}'
+page = 'https://cocoapods.org/pods/{name}'
+
+[[registry]]
+id = 'pub'
+url = 'https://pub.dev/api/packages/{name}'
+json = 'versions'
+field = 'version'
+latest = 'latest/version'
+bare = 'exact'
+osv = 'Pub'
+yanked = 'retracted'
+page = 'https://pub.dev/packages/{name}'
+
+[[registry]]
+id = 'nuget'
+url = 'https://api.nuget.org/v3-flatcontainer/{lower}/index.json'
+json = 'versions'
+bare = 'min'
+osv = 'NuGet'
+page = 'https://www.nuget.org/packages/{name}'
+
+[[registry]]
+id = 'maven'
+url = 'https://repo1.maven.org/maven2/{path}/maven-metadata.xml'
+regex = '<version>([^<]+)</version>'
+bare = 'exact'
+osv = 'Maven'
+page = 'https://central.sonatype.com/artifact/{group}/{artifact}'
+
+# Gradle resolves a plugin id through its marker artifact `{id}:{id}.gradle.plugin` on the Plugin
+# Portal; docs.gradle.org/current/userguide/plugins.html#sec:plugin_markers.
+[[registry]]
+id = 'gradle-plugins'
+url = 'https://plugins.gradle.org/m2/{path}.gradle.plugin/maven-metadata.xml'
+regex = '<version>([^<]+)</version>'
+bare = 'exact'
+page = 'https://plugins.gradle.org/plugin/{name}'
+
+# Leiningen writes `group/artifact`, and a bare `name` for `name/name`; OSV wants `group:artifact`.
+# Leiningen and the Clojure CLI search Maven Central too, where `org.clojure/clojure` lives.
+# cljdoc covers Clojars and Maven Central alike, as the Clojure tools search both.
+[[registry]]
+id = 'clojars'
+url = 'https://repo.clojars.org/{path}/maven-metadata.xml'
+regex = '<version>([^<]+)</version>'
+bare = 'exact'
+osv = 'Maven'
+osv_name = '{group}:{artifact}'
+fallback = 'https://repo1.maven.org/maven2/{path}/maven-metadata.xml'
+page = 'https://cljdoc.org/d/{group}/{artifact}'
+
+[[registry]]
+id = 'hex'
+url = 'https://hex.pm/api/packages/{name}'
+json = 'releases'
+field = 'version'
+bare = 'exact'
+osv = 'Hex'
+page = 'https://hex.pm/packages/{name}'
+
+[[registry]]
+id = 'julia'
+url = 'https://raw.githubusercontent.com/JuliaRegistries/General/master/{First}/{name}/Versions.toml'
+regex = '(?m)^\["([^"]+)"\]'
+bare = 'caret'
+osv = 'Julia'
+# General keeps binary `_jll` packages under `jll/` (its Registry.toml: `path = "jll/L/LibCURL_jll"`).
+fallback = 'https://raw.githubusercontent.com/JuliaRegistries/General/master/jll/{First}/{name}/Versions.toml'
+page = 'https://juliahub.com/ui/Packages/General/{name}'
+
+# A standard library in a manifest. Some, such as Statistics and TOML, are registered in General;
+# the rest, such as Dates, ship with Julia at its `X.Y.0` (JuliaLang/julia stdlib/Manifest.toml),
+# so they fall back to Julia's own release list, whose top-level keys are the versions.
+[[registry]]
+id = 'julia-stdlib'
+url = 'https://raw.githubusercontent.com/JuliaRegistries/General/master/{First}/{name}/Versions.toml'
+regex = '(?m)^(?:\[|  )"(\d[^"]*)"(?:\]|: \{)'
+bare = 'caret'
+osv = 'Julia'
+fallback = 'https://julialang-s3.julialang.org/bin/versions.json'
+page = 'https://docs.julialang.org/en/v1/stdlib/{name}/'
+
+[[registry]]
+id = 'haxelib'
+url = 'https://lib.haxe.org/p/{name}/versions/'
+regex = 'haxelib install \S+ ([0-9][\w.+-]*)'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://lib.haxe.org/p/{name}/'
+upstream = 'github-user-website"[^\n]*?href="${GITHUB_URL}'
+page = 'https://lib.haxe.org/p/{name}/'
+
+# OSV has no image ecosystem; its Bitnami ecosystem files the advisories of the application
+# an image's tag versions, such as nginx in `nginx:1.20.0-alpine`.
+[[registry]]
+id = 'docker'
+url = 'https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100'
+json = 'results'
+field = 'name'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = '{app}'
+filtered = 'https://hub.docker.com/v2/repositories/{docker}/tags?page_size=100&name={filter}'
+page = 'https://hub.docker.com/r/{docker}'
+
+# An image on any registry but Docker Hub, through the OCI distribution API; see registry::route.
+[[registry]]
+id = 'oci'
+url = 'https://{host}/v2/{repo}/tags/list?n=1000'
+json = 'tags'
+bare = 'prefix'
+osv = 'Bitnami'
+osv_name = '{app}'
+paged = true
+page = 'https://explore.ggcr.dev/?repo={name}'
+pages = { 'ghcr.io' = 'https://ghcr.io/{repo}', 'quay.io' = 'https://quay.io/repository/{repo}', 'mcr.microsoft.com' = 'https://mcr.microsoft.com/artifact/mar/{repo}', 'public.ecr.aws' = 'https://gallery.ecr.aws/{repo}', 'registry.gitlab.com' = 'https://gitlab.com/{repo}/container_registry' }
+
+# OSV's GitHub Actions ecosystem has no version order, so a versioned query never matches;
+# its GIT ecosystem matches the repository's exact tag, for actions and C/C++ sources alike.
+# A name is `owner/repo`, or `owner:repo` where a lockfile keeps the two apart.
+[[registry]]
+id = 'github'
+url = 'https://api.github.com/repos/{group}/{artifact}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'github.com/{group}/{artifact}'
+page = 'https://github.com/{group}/{artifact}'
+
+# A GitLab CI/CD component or included file is a gitlab.com project, versioned by its tags, which
+# `1` and `1.2` select the newest of: docs.gitlab.com/ci/components/ "Component versions". The
+# tags API takes the project path URL-encoded: docs.gitlab.com/api/tags/. OSV's GIT
+# ecosystem keys ranges by repository URL and holds 116 gitlab.com repositories (GIT/all.zip,
+# read 2026-11-25), such as libtiff/libtiff.
+[[registry]]
+id = 'gitlab'
+url = 'https://gitlab.com/api/v4/projects/{enc}/repository/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = 'gitlab.com/{name}'
+page = 'https://gitlab.com/{name}'
+
+# A GitLab project on the host its name starts with, gitlab.com or a self-hosted instance, such
+# as a component a pipeline names by host: docs.gitlab.com/ci/components/. The tags API is the
+# same on every instance (docs.gitlab.com/api/tags/), and OSV's GIT ecosystem keys ranges by the
+# repository URL; GIT/all.zip, read 2026-11-25, holds 100 projects on gitlab.freedesktop.org,
+# gitlab.gnome.org, and salsa.debian.org alone.
+[[registry]]
+id = 'gitlab-host'
+url = 'https://{host}/api/v4/projects/{repo_enc}/repository/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'prefix'
+osv = 'GIT'
+osv_name = '{host}/{repo}'
+page = 'https://{host}/{repo}'
+
+# A Forgejo Actions `uses:` names a repository on a Forgejo host, `data.forgejo.org` unless the
+# workflow gives a URL: forgejo/docs, docs/admin/config-cheat-sheet.md `DEFAULT_ACTIONS_URL`. A
+# name is `host/owner/repo`, listed by the Forgejo tags API (`/api/v1/repos/{owner}/{repo}/tags`).
+# OSV's GIT ecosystem keys ranges by repository URL, so a project on any Forgejo host is asked
+# for; its GIT/all.zip, read 2026-11-25, holds none on codeberg.org, code.forgejo.org, or
+# gitea.com yet. data.forgejo.org serves the API but answers
+# 403 to a repository page; code.forgejo.org lists the same tags and shows the repository.
+[[registry]]
+id = 'forgejo'
+url = 'https://{host}/api/v1/repos/{repo}/tags?limit=50'
+json = ''
+field = 'name'
+bare = 'prefix'
+paged = true
+osv = 'GIT'
+osv_name = '{host}/{repo}'
+page = 'https://{host}/{repo}'
+pages = { 'data.forgejo.org' = 'https://code.forgejo.org/{repo}' }
+
+# A branch or commit a CI file pins in place of a tag, on the repository `host/owner/repo` names.
+# Git's smart HTTP lists every branch and tag with its commit, and the default branch as
+# `symref=HEAD:refs/heads/<name>` (git-scm.com/docs/http-protocol, "Smart Clients"); GitHub,
+# GitLab, code.forgejo.org, and data.forgejo.org each answered it for actions/checkout or
+# components/opentofu on 2026-11-25. Each line starts with a hex pkt-line length, so the 40-digit
+# match starts four digits in. src/git_ref.rs reads the captures.
+[[registry]]
+id = 'git-ref'
+url = 'https://{name}.git/info/refs?service=git-upload-pack'
+regex = '([0-9a-f]{40} (?:HEAD|refs/(?:heads|tags)/[^\s\x00]+)|symref=HEAD:refs/heads/[^\s\x00]+)'
+bare = 'exact'
+page = 'https://{name}'
+pages = { 'data.forgejo.org' = 'https://code.forgejo.org/{repo}' }
+
+# A Bitbucket Pipelines `pipe:` names a Bitbucket repository at a tag; its `pipe.yml` names the
+# image the tag runs: support.atlassian.com/bitbucket-cloud/docs/what-are-pipes/, and
+# bitbucket.org/atlassian/aws-s3-deploy/raw/master/pipe.yml. Newest tags first:
+# developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/. OSV's GIT ecosystem holds
+# 14 bitbucket.org repositories (GIT/all.zip, read 2026-11-25), such as b_c/jose4j, though no pipe.
+[[registry]]
+id = 'bitbucket'
+url = 'https://api.bitbucket.org/2.0/repositories/{name}/refs/tags?pagelen=100&sort=-target.date&fields=values.name'
+json = 'values'
+field = 'name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'bitbucket.org/{name}'
+# A repository's own page redirects to the landing page its owner picks, which for b_c/jose4j is
+# a wiki that answers 404; the source view always answers.
+page = 'https://bitbucket.org/{name}/src'
+
+# A CircleCI orb, `namespace/orb@1.2.3`, where `1.2` and `1` take the newest patch or minor:
+# circleci/circleci-docs, docs/orbs/modules/use/pages/orb-concepts.adoc. CircleCI lists an orb's
+# versions only through its GraphQL endpoint, which answers a GET with 404, so this one posts.
+# No advisory database files orbs: OSV's GIT/all.zip, read 2026-11-25, names no orb repository.
+[[registry]]
+id = 'circleci-orb'
+url = 'https://circleci.com/graphql-unstable'
+body = '{"query":"{orb(name:\"{name}\"){versions(count:200){version}}}"}'
+json = 'data/orb/versions'
+field = 'version'
+bare = 'prefix'
+page = 'https://circleci.com/developer/orbs/orb/{name}'
+
+# Swift packages are GitHub repositories; OSV files their advisories under SwiftURL.
+[[registry]]
+id = 'swift'
+url = 'https://api.github.com/repos/{name}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'prefix'
+osv = 'SwiftURL'
+osv_name = 'github.com/{name}'
+page = 'https://github.com/{name}'
+
+# OSV has no Helm ecosystem; Artifact Hub scans the images each chart version deploys.
+[[registry]]
+id = 'helm'
+url = '{source}/index.yaml'
+reader = 'helm'
+bare = 'exact'
+osv = 'Artifact Hub'
+osv_name = '{source} {name}'
+page = 'https://artifacthub.io/packages/search?ts_query_web={name}'
+
+[[registry]]
+id = 'galaxy'
+url = 'https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{ns}/{short}/versions/?limit=100'
+json = 'data'
+field = 'version'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{ns}/{short}/versions/{version}/'
+upstream = '"repository":\s*"${GITHUB_URL}'
+page = 'https://galaxy.ansible.com/ui/repo/published/{ns}/{short}/'
+
+# Standalone roles keep Galaxy's v1 API, whose role names its versions under
+# `summary_fields.versions` and its repository as `github_user` and `github_repo`.
+[[registry]]
+id = 'galaxy-role'
+url = 'https://galaxy.ansible.com/api/v1/roles/?owner__username={ns}&name={short}'
+json = 'results/0/summary_fields/versions'
+field = 'name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://galaxy.ansible.com/api/v1/roles/?owner__username={ns}&name={short}'
+upstream = '"github_user":\s*"(?P<owner>[\w.-]+)"[^{}]*?"github_repo":\s*"(?P<repo>[\w.-]+)"'
+page = 'https://galaxy.ansible.com/ui/standalone/roles/{ns}/{short}/'
+
+[[registry]]
+id = 'terraform'
+url = 'https://registry.terraform.io/v1/{tf}/versions'
+reader = 'terraform'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://registry.terraform.io/v1/{tf}'
+upstream = '"source":\s*"${GITHUB_URL}'
+accept = 'application/json'
+page = 'https://registry.terraform.io/{tf}'
+
+[[registry]]
+id = 'bazel'
+url = 'https://bcr.bazel.build/modules/{name}/metadata.json'
+json = 'versions'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://bcr.bazel.build/modules/{name}/metadata.json'
+upstream = '"github:(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)"'
+page = 'https://registry.bazel.build/modules/{name}'
+
+[[registry]]
+id = 'vcpkg'
+url = 'https://raw.githubusercontent.com/microsoft/vcpkg/master/versions/{first}-/{name}.json'
+json = 'versions'
+field = 'version|version-semver|version-string|version-date'
+bare = 'min'
+osv = 'GIT'
+osv_name = 'https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/{name}/portfile.cmake'
+upstream = 'REPO[ \t]+(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)\s'
+page = 'https://vcpkg.io/en/package/{name}'
+
+# OSV has no Conan ecosystem; the GitLab Advisory Database files advisories by slug.
+[[registry]]
+id = 'conan'
+url = 'https://raw.githubusercontent.com/conan-io/conan-center-index/master/recipes/{name}/config.yml'
+regex = '(?m)^  "?(\d[^":\s]*)"?:'
+bare = 'exact'
+osv = 'GitLab'
+osv_name = 'conan/{name}'
+page = 'https://conan.io/center/recipes/{name}'
+
+[[registry]]
+id = 'cran'
+url = 'https://crandb.r-pkg.org/{name}'
+json = 'Version'
+bare = 'min'
+osv = 'CRAN'
+page = 'https://cran.r-project.org/package={name}'
+
+[[registry]]
+id = 'cpan'
+url = 'https://fastapi.metacpan.org/v1/download_url/{name}'
+json = 'version'
+bare = 'min'
+osv = 'GIT'
+osv_name = 'https://fastapi.metacpan.org/v1/release/{dist}'
+upstream = '"web"\s*:\s*"${GITHUB_URL}'
+page = 'https://metacpan.org/pod/{name}'
+
+[[registry]]
+id = 'dub'
+url = 'https://code.dlang.org/api/packages/{name}/info'
+json = 'versions'
+field = 'version'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://code.dlang.org/api/packages/{name}/info'
+upstream = '"kind":"github","owner":"(?P<owner>[^"]+)","project":"(?P<repo>[^"]+)"'
+page = 'https://code.dlang.org/packages/{name}'
+
+[[registry]]
+id = 'hackage'
+url = 'https://hackage.haskell.org/package/{name}/preferred'
+json = 'normal-version'
+bare = 'exact'
+osv = 'Hackage'
+page = 'https://hackage.haskell.org/package/{name}'
+
+[[registry]]
+id = 'opam'
+url = 'https://opam.ocaml.org/packages/{name}/'
+regex = 'href="\.\./([^/]+)/[^/]+?\.(\d[^/"]*)/"'
+bare = 'exact'
+osv = 'opam'
+page = 'https://opam.ocaml.org/packages/{name}/'
+
+# Puppetfile names a module `owner/name` or `owner-name`; extraction joins it as `owner:name`.
+[[registry]]
+id = 'puppet'
+url = 'https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference'
+json = 'releases'
+field = 'version'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://forgeapi.puppet.com/v3/modules/{group}-{artifact}?exclude_fields=readme,changelog,license,reference'
+upstream = '"source":\s*"${GITHUB_URL}'
+page = 'https://forge.puppet.com/modules/{group}/{artifact}'
+
+# Supermarket lists each version as a URL; `latest_version` is skipped by its `:` before the quote.
+[[registry]]
+id = 'chef'
+url = 'https://supermarket.chef.io/api/v1/cookbooks/{name}'
+regex = '[\[,]"[^"]*/versions/([^"]+)"'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://supermarket.chef.io/api/v1/cookbooks/{name}'
+upstream = '"source_url":\s*"${GITHUB_URL}'
+page = 'https://supermarket.chef.io/cookbooks/{name}'
+
+
+# Charts by Artifact Hub repository name, `repository/chart` as helmfile releases write them or
+# `repository:chart` from a Flux HelmRelease; its Trivy reports give the advisories of each
+# version's images.
+[[registry]]
+id = 'artifacthub'
+url = 'https://artifacthub.io/api/v1/packages/helm/{group}/{artifact}'
+json = 'available_versions'
+field = 'version'
+bare = 'exact'
+osv = 'Artifact Hub'
+osv_name = '{group}/{artifact}'
+page = 'https://artifacthub.io/packages/helm/{group}/{artifact}'
+
+# Nixhub, Devbox's index of the versions each nixpkgs package has had.
+[[registry]]
+id = 'nixhub'
+url = 'https://search.devbox.sh/v2/pkg?name={name}'
+json = 'releases'
+field = 'version'
+bare = 'prefix'
+page = 'https://www.nixhub.io/packages/{name}'
+
+[[registry]]
+id = 'vagrant'
+url = 'https://app.vagrantup.com/api/v2/box/{name}'
+json = 'versions'
+field = 'version'
+bare = 'exact'
+page = 'https://portal.cloud.hashicorp.com/vagrant/discover/{name}'
+
+# A plugin `owner/name` is the repository `owner/packer-plugin-name`, a Go module. OSV's Go
+# ecosystem holds the Go vulnerability database and GitHub's reviewed Go advisories; OSV's GIT
+# ecosystem holds the "NVD CVEs for open source software" it converts to a repository's tags
+# (google.github.io/osv.dev/data/), which a plugin's `v1.2.3` releases are.
+[[registry]]
+id = 'packer'
+url = 'https://api.github.com/repos/{group}/packer-plugin-{artifact}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'prefix'
+osv = 'Go'
+osv_name = 'github.com/{group}/packer-plugin-{artifact}'
+also = { 'GIT' = 'https://github.com/{group}/packer-plugin-{artifact}' }
+page = 'https://github.com/{group}/packer-plugin-{artifact}'
+
+# Spack's package index; a spec version such as `@1.2` matches every 1.2 release.
+[[registry]]
+id = 'spack'
+url = 'https://packages.spack.io/data/packages/{name}.json'
+json = 'versions'
+field = 'name'
+bare = 'prefix'
+page = 'https://packages.spack.io/package.html?name={name}'
+
+# PEAR and PECL channels serve each package's releases over REST:
+# pear.php.net/dtd/rest.allreleases.xsd, as pear.php.net/rest/r/console_table/allreleases.xml.
+[[registry]]
+id = 'pear'
+url = 'https://pear.php.net/rest/r/{lower}/allreleases.xml'
+regex = '<v>([^<]+)</v>'
+bare = 'min'
+page = 'https://pear.php.net/package/{name}'
+
+[[registry]]
+id = 'pecl'
+url = 'https://pecl.php.net/rest/r/{lower}/allreleases.xml'
+regex = '<v>([^<]+)</v>'
+bare = 'min'
+page = 'https://pecl.php.net/package/{name}'
+
+# Hunter keeps each package's versions as `hunter_add_version(... VERSION "1.72.0-p0" ...)` in
+# cmake/projects/<name>/hunter.cmake of github.com/cpp-pm/hunter.
+[[registry]]
+id = 'hunter'
+url = 'https://raw.githubusercontent.com/cpp-pm/hunter/master/cmake/projects/{name}/hunter.cmake'
+regex = 'VERSION\s+"([^"]+)"'
+bare = 'exact'
+page = 'https://hunter.readthedocs.io/en/latest/packages/pkg/{name}.html'
+
+# The PlatformIO Registry answers /v3/packages/<owner>/<type>/<name>, as platformio-core's
+# registry client (platformio/registry/client.py) asks it; a library names its repository.
+[[registry]]
+id = 'platformio'
+url = 'https://api.registry.platformio.org/v3/packages/{group}/library/{artifact}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://api.registry.platformio.org/v3/packages/{group}/library/{artifact}'
+upstream = '"repository_url":\s*"${GITHUB_URL}'
+page = 'https://registry.platformio.org/libraries/{group}/{artifact}'
+
+# The Arduino Library Manager's one index, downloads.arduino.cc/libraries/library_index.json, is
+# 5.6 MB gzipped with no per-library lookup; the PlatformIO Registry mirrors its libraries, and its
+# search finds the `owner/library/name` path of a name, most popular owner first, in a download
+# link. Read from api.registry.platformio.org's v3 search and package answers. The PlatformIO
+# search does not name the repository, so no GIT advisories are looked up.
+[[registry]]
+id = 'arduino'
+url = 'https://api.registry.platformio.org/v3/packages/{upstream}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+osv_name = 'https://api.registry.platformio.org/v3/search?query=name:%22{name}%22'
+upstream = '/download/(?P<owner>[\w.-]+/library)/(?P<repo>{name})/'
+page = 'https://registry.platformio.org/search?q={name}'
+
+[[registry]]
+id = 'platformio-platform'
+url = 'https://api.registry.platformio.org/v3/packages/platformio/platform/{name}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+page = 'https://registry.platformio.org/platforms/platformio/{name}'
+
+[[registry]]
+id = 'platformio-tool'
+url = 'https://api.registry.platformio.org/v3/packages/{group}/tool/{artifact}'
+json = 'versions'
+field = 'name'
+latest = 'version/name'
+bare = 'exact'
+page = 'https://registry.platformio.org/tools/{group}/{artifact}'
+
+# The ESP Component Registry lists a component's versions, `~1` marking a rebuilt release, and
+# dates the ones it yanked: components.espressif.com/api/components/espressif/led_strip.
+[[registry]]
+id = 'esp'
+url = 'https://components.espressif.com/api/components/{group}/{artifact}'
+json = 'versions'
+field = 'version'
+yanked = 'yanked_at'
+bare = 'exact'
+page = 'https://components.espressif.com/components/{group}/{artifact}'
+
+# Typst Universe publishes each package version as a directory of typst/packages,
+# packages/preview/{name}/{version}; the contents API lists them.
+[[registry]]
+id = 'typst'
+url = 'https://api.github.com/repos/typst/packages/contents/packages/preview/{name}'
+json = ''
+field = 'name'
+bare = 'exact'
+page = 'https://typst.app/universe/package/{name}'
+
+# Wally's package metadata lists each published wally.toml, its version at `package.version`;
+# a nested field, so a regex reads it. Ranges follow Cargo, where a bare version is a caret.
+[[registry]]
+id = 'wally'
+url = 'https://api.wally.run/v1/package-metadata/{name}'
+regex = '"version":"([^"]+)"'
+bare = 'caret'
+page = 'https://wally.run/package/{name}'
+
+# mooncakes.io, the MoonBit registry, lists every version of a module with its yank state and
+# names its repository, which OSV GIT knows advisories by.
+[[registry]]
+id = 'mooncakes'
+url = 'https://mooncakes.io/api/v0/modules/{name}'
+json = 'versions'
+field = 'version'
+latest = 'latest_version'
+yanked = 'yanked'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://mooncakes.io/api/v0/modules/{name}'
+upstream = '"repository":\s*"${GITHUB_URL}'
+page = 'https://mooncakes.io/docs/{name}'
+
+# The PureScript registry keeps one metadata file per package, its `published` keyed by version
+# and its GitHub `location` the repository OSV GIT knows advisories by.
+[[registry]]
+id = 'purescript'
+url = 'https://raw.githubusercontent.com/purescript/registry/main/metadata/{name}.json'
+json = 'published'
+field = '@key'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://raw.githubusercontent.com/purescript/registry/main/metadata/{name}.json'
+upstream = '"githubOwner":\s*"(?P<owner>[\w.-]+)",\s*"githubRepo":\s*"(?P<repo>[\w.-]+)"'
+page = 'https://pursuit.purescript.org/packages/purescript-{name}'
+
+# VPM, the V registry, names each module's Git repository and keeps no versions of its own:
+# `v install` resolves a range against that repository's semver tags (github.com/vlang/v,
+# cmd/tools/vpm/README.md), so `{upstream}` reads the repository from VPM's package API.
+[[registry]]
+id = 'vpm'
+url = 'https://api.github.com/repos/{upstream}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'caret'
+osv = 'GIT'
+osv_name = 'https://vpm.vlang.io/api/packages/{name}'
+upstream = '"url":\s*"${GITHUB_URL}'
+page = 'https://vpm.vlang.io/packages/{name}'
+
+# Quicklisp publishes one dist of every project a month or so, named by its date, and lists each
+# in quicklisp-versions.txt as `2010-10-07 http://beta.quicklisp.org/dist/quicklisp/2010-10-07/
+# distinfo.txt`; Qlot's `ql` takes such a date: github.com/fukamachi/qlot, README.markdown "ql".
+# The list is the dist's and not the project's, so a project a later dist dropped still shows the
+# newest date. OSV has no Common Lisp ecosystem.
+[[registry]]
+id = 'quicklisp'
+url = 'https://beta.quicklisp.org/dist/quicklisp-versions.txt'
+regex = '(?m)^(\d{4}-\d{2}-\d{2})\s'
+bare = 'exact'
+page = 'https://www.quicklisp.org/beta/releases.html'
+
+# Ultralisp, a Quicklisp dist rebuilt as its projects change, publishes only its newest dist,
+# whose `version` is a timestamp such as 20261119062000 that Qlot's `ultralisp name version`
+# takes: dist.ultralisp.org, the distinfo Qlot's README.markdown "dist" points at. It keeps no
+# version list, so the newest dist is the one version a pin compares with. Its project search is
+# the page. OSV has no Common Lisp ecosystem.
+[[registry]]
+id = 'ultralisp'
+url = 'https://dist.ultralisp.org/'
+regex = '(?m)^version:[ \t]*(\d{14})\s'
+bare = 'exact'
+page = 'https://ultralisp.org/search/?query={name}'
+
+# Reservoir, Lake's default registry, names a package `scope/name`, which a manifest gives as
+# `scope:name`, and lists each indexed release with the Git `tag` a `rev` pins; its `version` is
+# mostly `0.0.0`: reservoir.lean-lang.org/api/v1/packages/leanprover-community/mathlib/versions.
+# The package document's `repoUrl` names the GitHub repository OSV keys GIT advisories by.
+[[registry]]
+id = 'reservoir'
+url = 'https://reservoir.lean-lang.org/api/v1/packages/{group}/{artifact}/versions'
+json = 'data'
+field = 'tag'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://reservoir.lean-lang.org/api/v1/packages/{group}/{artifact}'
+upstream = '"repoUrl":\s*"${GITHUB_URL}'
+page = 'https://reservoir.lean-lang.org/@{group}/{artifact}'
+
+# Nimble finds a bare package name in nim-lang/packages' packages.json, whose entry gives the
+# repository Nimble installs the tags of, as `"name": "jester", "url": "https://github.com/dom96/
+# jester/"`; a name matches case-insensitively, as Nimble's `normalize` compares, though not
+# across underscores: nim-lang/nimble's src/nimblepkg/packageinfo.nim. The list is about 1 MB.
+[[registry]]
+id = 'nimble'
+url = 'https://api.github.com/repos/{upstream}/tags?per_page=100'
+json = ''
+field = 'name'
+bare = 'exact'
+osv = 'GIT'
+osv_name = 'https://raw.githubusercontent.com/nim-lang/packages/master/packages.json'
+upstream = '(?i)"name":\s*"{name}",\s*"url":\s*"${GITHUB_URL}'
+page = 'https://nimble.directory/pkg/{lower}'
+
+# The Alire index keeps one `name-version.toml` per release under `index/{first two letters}/name`
+# on its default branch, so the GitHub contents listing names every version:
+# github.com/alire-project/alire-index, doc/catalog-format-spec.md in alire-project/alire. OSV
+# has no Alire ecosystem, and the index names a repository only per release.
+[[registry]]
+id = 'alire'
+url = 'https://api.github.com/repos/alire-project/alire-index/contents/index/{first2}/{lower}'
+regex = '"name":\s*"[a-z0-9_]+-(\d[^"]*)\.toml"'
+bare = 'exact'
+page = 'https://alire.ada.dev/crates/{lower}'
+
+# Pack, Idris 2's package manager, builds against one curated collection, `nightly-YYMMDD`, a file
+# in idris2-pack-db's `collections/` (stefan-hoeck/idris2-pack, README.md), so that listing names
+# every release. OSV has no Idris ecosystem.
+[[registry]]
+id = 'idris-pack'
+url = 'https://api.github.com/repos/stefan-hoeck/idris2-pack-db/contents/collections'
+regex = '"name":\s*"nightly-(\d+)\.toml"'
+bare = 'exact'
+page = 'https://github.com/stefan-hoeck/idris2-pack-db/tree/main/collections'
+
+# raku.land lists a distribution under the ecosystem and author that publish it, `zef:timo/
+# JSON::Fast`, which a META6.json `depends` string seldom names; its search links the dist page,
+# whose version menu holds each release as `<option value="0.21.0"`. Read from raku.land's search
+# and dist pages. OSV has no Raku ecosystem.
+[[registry]]
+id = 'raku'
+url = 'https://raku.land/{upstream}'
+regex = '<option value="([^"]+)"'
+bare = 'exact'
+osv_name = 'https://raku.land/?q={name}'
+upstream = 'href="/(?P<owner>(?:zef|cpan|github):[\w.-]+)/(?P<repo>{name})"'
+page = 'https://raku.land/?q={name}'

@@ -1,3 +1,0 @@
---index-url https://primary.example.test/simple
---extra-index-url https://extra.example.test/simple
-requests==2.32.0

@@ -1,84 +1,82 @@
 # VersionLens Redux for JetBrains IDEs
 
-The JetBrains plugin starts the shared `versionlens-lsp` server through the IntelliJ Platform LSP API.
-
-## Package
+The plugin starts the shared `versionlens-lsp` server through the IntelliJ Platform LSP API, so IntelliJ IDEA and the other IDEs that ship that API show the same code lenses, inlay hints, hovers, diagnostics, and quick fixes as VS Code.
 
 - Plugin id: `com.versionlens.jetbrains`
-- Display name: `VersionLens Redux`
-- Build file: [`build.gradle.kts`](build.gradle.kts)
-- Runtime server: `crates/versionlens-lsp`
+- Requires: an IDE build 261 (2026.1) or newer with the `com.intellij.modules.lsp` module
+- Build file: [`build.gradle.kts`](build.gradle.kts), part of the root Gradle build
 
-The plugin is written in Kotlin and targets IntelliJ IDEA through the IntelliJ Platform Gradle plugin. The checked-in wrapper pins Gradle 9.6.1; dependency locks and checksum verification make resolution reproducible, and CI disables the Gradle daemon.
+## Files
 
-## Build the Language Server
+The plugin runs `versionlens-lsp --file-types` once per server path and starts the server for every file whose path matches one of the globs it prints. A file type added to the server reaches the IDE without a plugin change.
 
-From the repository root:
+## Server
 
-```bash
-cargo build -p versionlens-lsp
-```
+The plugin uses the first server it finds:
 
-The plugin does not compile the server. It bundles the prebuilt release binaries of every target in [`scripts/package/targets.json`](../../scripts/package/targets.json) as `bin/<target>/versionlens-lsp[.exe]` (for example `bin/darwin-arm64/`), and picks the one for the running OS and architecture (`alpine-*` on musl Linux, `linux-armhf` on ARMv7). The plugin resolves the server in this order:
+1. The `VERSIONLENS_LSP` environment variable.
+2. **Server path** on the settings page.
+3. The bundled `bin/<rust-target>/versionlens-lsp[.exe]` for the running OS and architecture (`*-musl` on Alpine).
+4. `versionlens-lsp` on `PATH`.
 
-1. `versionlens.lsp.path` Java system property.
-2. `VERSIONLENS_LSP` environment variable.
-3. Packaged `bin/<target>/versionlens-lsp` beside the installed plugin libraries.
-4. A JAR-embedded `/bin/<target>/versionlens-lsp` extracted to the IDE system directory.
-5. Repository-local debug binary at `target/debug/versionlens-lsp`.
-6. `versionlens-lsp` on `PATH`.
-
-## Build the Plugin
-
-Stage the release binaries as `<dir>/<rust-target>/versionlens-lsp[.exe]` from the build-lsp archives, then build. The default directory is `build/lsp-binaries`; override it with `-PversionlensBinariesDir=<dir>`.
-
-```bash
-for rust_target in $(jq -r '.targets[].rust' scripts/package/targets.json); do
-  bun scripts/package/stage-lsp.mjs <archives-dir> "$rust_target" "packages/jetbrains-plugin/build/lsp-binaries/$rust_target"
-done
-packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin buildPlugin --no-daemon
-```
-
-`buildPlugin` fails and lists every missing binary when a target is not staged. For local experiments, `-PversionlensAllowPartialTargets` bundles only the staged targets. The plugin archive is written under `packages/jetbrains-plugin/build/distributions/`. It is one archive for all platforms; no OS or architecture dependency is declared.
+When none runs, the plugin shows one notification and writes the reason to the log.
 
 ## Settings
 
-The server asks the IDE for its settings with `workspace/configuration`. The plugin answers the `versionlens` section from a JSON object stored in `versionlens-redux.xml` in the IDE config directory (`settingsJson`, default `{}`), using the same keys as the VS Code `versionlens` settings (see `contributes.configuration` in [`../vscode-extension/package.json`](../vscode-extension/package.json)). There is no settings page yet. Example `settingsJson`:
+**Settings | Tools | VersionLens** holds the server path and the `versionlens` section the server reads, with the same keys as VS Code:
 
-```json
-{
-  "diagnostics": { "updateSeverity": "warn" }
-}
+| Setting | Default |
+| --- | --- |
+| Enabled, Code lenses, Inlay hints | on |
+| Suggest prereleases | off |
+| Check vulnerabilities with OSV | on |
+| Verify TLS certificates | on |
+| Request timeout (ms) | 10000 |
+| Concurrent requests | 32 |
+| Cache (minutes) | 60 |
+| GitHub token | empty; stored in the IDE password safe, falls back to `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token` |
+| Summary lens above each manifest | off |
+| Outdated dependency severity | info; `off`, `hint`, `info`, `warning`, or `error` |
+| Prerelease tags | empty; comma-separated tags such as `rc, beta`, empty allows all |
+| File types | empty; comma-separated file type or registry ids, empty reads all |
+| Workspace exclude | empty; comma-separated globs a workspace update skips |
+| Registries | `registry id=URL template` lines, such as `npm=https://npm.example.com/{enc}` |
+| Per registry | `registry id.setting=value` lines overriding `cacheMinutes`, `strictSsl`, or `prereleaseTags` for one registry, such as `npm.cacheMinutes=5` |
+| Authorization | `URL prefix=header value` lines; stored in the IDE password safe |
+| Install commands | `file type or registry id=shell command` lines, run when a save changes the dependencies |
+| Extra files | `glob=file type id` lines |
+| Indicators | `state=glyph` lines for `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`, `satisfies`, `noMatch`, `directory`, `build`, `yanked`, `deprecated` |
+| Trace server | off; `messages` or `verbose` copies the LSP traffic to the VersionLens tool window, as VS Code's `versionlens.trace.server` does |
+
+Applying the page sends the new settings to every running server. Changing the server path restarts it.
+
+## Toolbar and Actions
+
+Each manifest the server reads gets an editor toolbar, as in the VS Code editor title bar:
+
+- The versions toggle: blue when versions are shown, grey when hidden, orange with spinning arrows while lookups run, red when lookups failed (a click opens the log).
+- The prerelease toggle.
+- **More**: update all dependencies or the whole workspace to latest, major, minor, or patch; sort dependencies; run the install command; refresh; clear the cache; show the log.
+
+**Tools | VersionLens** holds the same actions plus **Restart Server**, **Add URL Authentication**, and **Remove URL Authentication**, and each one is also in Find Action. The two authentication actions edit the Authorization lines of the settings page, kept in the IDE password safe, and send them to the running servers.
+
+## Build
+
+Run these from the repository root. `just jvm::gradle` finds a JDK that can start Gradle, and Gradle downloads the compiler JDK itself.
+
+```bash
+just jvm::verify                                    # format check, compile, lint, tests
+cargo build -p versionlens-lsp --release
+mkdir -p build/lsp/aarch64-apple-darwin && cp target/release/versionlens-lsp build/lsp/aarch64-apple-darwin/
+just jvm::gradle :jetbrains-plugin:buildPlugin -PversionlensBinariesDir=build/lsp
 ```
 
-`diagnostics.updateSeverity` sets the severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected.
-
-## Private Registries
-
-The plugin does not implement the `versionlens/authorization` request, so the server uses its other credential sources:
-
-- For `api.github.com`: `GITHUB_TOKEN`, then `GH_TOKEN`, then the output of `gh auth token`, which is only tried after GitHub answers 401, 403, or 429.
-- Registry configuration files such as `.npmrc`, `.yarnrc.yml`, and `NuGet.config`.
-
-Start the IDE with the variables set. Tokens are never written to logs, diagnostics, or the cache.
+`-PversionlensBinariesDir` names a directory with one `<rust-target>/versionlens-lsp[.exe]` per target. Release CI stages every target in [`scripts/package/targets.json`](../../scripts/package/targets.json) there. The zip is written to `packages/jetbrains-plugin/build/distributions/versionlens-redux-jetbrains-plugin-<version>.zip`.
 
 ## Publishing
 
-The release workflow builds the archive once. `publish-marketplaces.yml` downloads it from the GitHub release and runs `publishPlugin -x buildPlugin -PversionlensReleasePlugin=<zip>`, which signs that archive and uploads it without rebuilding. Run `bun run marketplaces:configure` once to store `JB_CERTIFICATE_CHAIN`, `JB_PRIVATE_KEY`, `JB_PRIVATE_KEY_PASSWORD`, and `JETBRAINS_MARKETPLACE_TOKEN` in the approval-gated GitHub environment. JetBrains requires the first plugin version to be uploaded manually before later versions can use automated publishing.
-
-## Development Checks
-
-```bash
-packages/jetbrains-plugin/gradlew -p packages/jetbrains-plugin test --no-daemon
-cargo test -p versionlens-lsp
-```
-
-Run `bun run check` from the repository root before committing broad changes.
+`publish-marketplaces.yml` downloads the zip from the GitHub release and runs `./gradlew :jetbrains-plugin:publishPlugin -x buildPlugin -PversionlensReleasePlugin=<zip>`, which signs that zip and uploads it without rebuilding. `bun run marketplaces:configure` stores `JB_CERTIFICATE_CHAIN`, `JB_PRIVATE_KEY`, `JB_PRIVATE_KEY_PASSWORD`, and `JETBRAINS_MARKETPLACE_TOKEN` in the approval-gated GitHub environment.
 
 ## License
 
-[ISC](../../LICENSE)
-
-## Attribution
-
-VersionLens Redux is a fork of the original VersionLens extension by Peter Flannery and contributors. JetBrains support uses the fork's shared Rust LSP server and the shared assets in [`../../assets/versionlens`](../../assets/versionlens) when editor media is needed.
+[ISC](../../LICENSE). VersionLens Redux is a fork of the original VersionLens extension by Peter Flannery and contributors.

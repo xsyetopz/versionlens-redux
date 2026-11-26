@@ -1,3 +1,0 @@
-module example.test/app
-
-require Go.uber.org/Zap v1.27.0

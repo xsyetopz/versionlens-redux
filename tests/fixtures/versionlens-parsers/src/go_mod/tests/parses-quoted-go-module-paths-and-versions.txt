@@ -1,6 +1,0 @@
-
-module example.test/app
-
-require "example.test/quoted" "v1.2.3"
-exclude "example.test/bad" "v0.5.0"
-replace "example.test/old" "v1.0.0" => "example.test/new" "v1.1.0"

@@ -1,0 +1,112 @@
+# Python manifests; see native.toml for the row format.
+
+[[file]]
+id = 'pyproject'
+globs = ['pyproject.toml']
+format = 'toml'
+registry = 'pypi'
+rules = [{ use = 'PYPROJECT' }]
+
+[[file]]
+id = 'pipfile'
+globs = ['Pipfile']
+format = 'toml'
+registry = 'pypi'
+rules = [
+    { keys = 'packages' },
+    { keys = 'dev-packages' },
+]
+
+[[file]]
+id = 'requirements'
+globs = ['*requirements*.txt', '*constraints*.txt', 'requirements/*.txt', 'requirements*.in']
+format = 'text'
+registry = 'pypi'
+insert = '=='
+rules = [
+    # PEP 508 allows parentheses around the versions, `requests (>=2.0)`:
+    # peps.python.org/pep-0508/#grammar
+    { lines = '(?m)^[ \t]*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)[ \t]*(?:\[[^\]\n]*\])?[ \t]*\(?[ \t]*(?P<version>(?:===|==|~=|!=|<=|>=|<|>)[ \t]*[^;,\s#\\)]+(?:[ \t]*,[ \t]*(?:===|==|~=|!=|<=|>=|<|>)[ \t]*[^;,\s#\\)]+)*)?[ \t]*\)?[ \t]*(?:[;#\\].*)?\r?$' },
+    { lines = '(?m)${PEP508_URL}' },
+]
+
+[[file]]
+id = 'uv'
+globs = ['uv.toml']
+format = 'toml'
+registry = 'pypi'
+rules = [
+    { spec = 'dev-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'constraint-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'override-dependencies.*', pattern = '${PEP508}' },
+]
+
+[[file]]
+id = 'pixi'
+globs = ['pixi.toml']
+format = 'toml'
+registry = 'conda'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'build-dependencies' },
+    { keys = 'host-dependencies' },
+    { keys = 'feature.*.dependencies' },
+    { keys = 'target.*.dependencies' },
+]
+
+[[file]]
+id = 'setuptools'
+globs = ['setup.cfg', 'setup.py', 'tox.ini']
+format = 'text'
+registry = 'pypi'
+rules = [
+    # setup.cfg and tox.ini list requirements on indented continuation lines, setup.py in quoted
+    # strings; each needs a comparison, so `packages` values and classifiers stay out.
+    { lines = '(?m)^[ \t]+(?P<name>[A-Za-z0-9][\w.-]*)[ \t]*(?:\[[^\]\n]*\])?[ \t]*(?P<version>(?:===|==|~=|!=|<=|>=|<|>)[ \t]*[^;,\s#]+(?:[ \t]*,[ \t]*(?:===|==|~=|!=|<=|>=|<|>)[ \t]*[^;,\s#]+)*)[ \t]*(?:[;#].*)?\r?$' },
+    { lines = '''["'](?P<name>[A-Za-z0-9][\w.-]*)[ \t]*(?:\[[^\]"']*\])?[ \t]*(?P<version>(?:===|==|~=|!=|<=|>=|<|>)[ \t]*[^;,\s"']+(?:[ \t]*,[ \t]*(?:===|==|~=|!=|<=|>=|<|>)[ \t]*[^;,\s"']+)*)[ \t]*(?:;[^"']*)?["']''' },
+]
+
+[[file]]
+id = 'conda'
+globs = ['environment.yml', 'environment.yaml']
+format = 'yaml'
+registry = 'conda'
+rules = [
+    # A conda spec: an optional `channel::`, the name, then a version. A bare or `=` version
+    # such as `=3.11` matches by prefix, as conda reads it.
+    { spec = 'dependencies.*', pattern = '^\s*(?:[\w.-]+::)?(?P<name>[A-Za-z0-9][\w.-]*)(?:\s*=?(?P<version>(?:==|>=|<=|!=|~=|<|>)?\s*\d[^\s,|#]*(?:\s*,\s*(?:==|>=|<=|!=|<|>)\s*[^\s,|#]+)*))?\s*$' },
+    { spec = 'dependencies.*.pip.*', pattern = '${PEP508}', via = 'pypi' },
+]
+
+# Resolved packages: github.com/python-poetry/poetry/blob/main/poetry.lock
+[[file]]
+id = 'poetry-lock'
+globs = ['poetry.lock']
+format = 'toml'
+registry = 'pypi'
+pinned = true
+rules = [
+    { record = 'package.*', name = 'name', version = 'version' },
+]
+
+# Index packages carry `source = { registry = ... }`; the project itself and git, path, and URL
+# packages carry another source: github.com/astral-sh/uv/blob/main/uv.lock
+[[file]]
+id = 'uv-lock'
+globs = ['uv.lock']
+format = 'text'
+registry = 'pypi'
+pinned = true
+rules = [
+    { lines = '(?m)^name = "(?P<name>[^"]+)"\r?\nversion = "(?P<version>[^"]+)"\r?\nsource = \{ registry = ' },
+]
+
+[[file]]
+id = 'python'
+globs = ['.python-version']
+format = 'text'
+registry = 'python'
+rules = [
+    { lines = '${TOOL_VERSION}' },
+]
+

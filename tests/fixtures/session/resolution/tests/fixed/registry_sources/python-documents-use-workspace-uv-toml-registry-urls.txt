@@ -1,2 +1,0 @@
-[project]
-dependencies = ['requests==2.32.0']

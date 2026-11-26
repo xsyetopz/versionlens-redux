@@ -1,6 +1,0 @@
-
-x-common:
-  image: busybox:1.36
-services:
-  web:
-    image: node:20

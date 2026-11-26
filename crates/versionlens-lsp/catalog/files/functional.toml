@@ -1,0 +1,541 @@
+# Ruby, Dart, BEAM, Julia, R, Perl, OCaml, Haskell, and other language manifests; see native.toml for the row format.
+
+[[file]]
+id = 'gemfile'
+globs = ['Gemfile', 'gems.rb', '*.gemspec']
+format = 'text'
+registry = 'rubygems'
+rules = [
+    # A bare gem inside a `path` or `git` block comes from that block's directory or repository,
+    # not from the gem server (bundler.io/guides/gemfile.html), as the fork's master read it
+    # (crates/versionlens-parsers/src/gemfile.rs, `current_block_requirement`). These come first
+    # so they keep the gem's place over the bare-gem rule below.
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''', within = '''(?ms)^[ \t]*path[ \t(]+["'](?P<source>[^"']+)["'][^\n]*?[ \t]do[ \t]*\r?$(?P<body>.*?)^[ \t]*end(?-u:\b)''', via = 'directory' },
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''', within = '''(?ms)^[ \t]*git[ \t(]+["'](?P<source>[^"']+)["'][^\n]*?[ \t]do[ \t]*\r?$(?P<body>.*?)^[ \t]*end(?-u:\b)''' },
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+    # The forms the fork's master read beside a version (bundler.io/guides/gemfile.html): a bare
+    # gem, with only `require`, `group`, `platforms`, or `source` options, takes any version;
+    # `path` names a directory, `git` a repository, and `github` a repository whose `tag` GitHub
+    # answers, or whose default branch Bundler checks out where no `tag`, `branch`, or `ref`
+    # follows (bundler.io/guides/git.html).
+    { lines = '''(?m)^[ \t]*(?:gem|\w+\.add_(?:runtime_|development_)?dependency)[ \t(]+["'](?P<name>[^"']+)["'][ \t]*\)?(?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?|source)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'](?P<name>[^"']+)["'][^\n#]*?[ \t,](?:path:|:path[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'directory' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'](?P<name>[^"']+)["'][^\n#]*?[ \t,](?:git:|:git[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][^\n#]*?[ \t,](?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n#]*?[ \t,](?:tag:|:tag[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'github' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][^\n#]*?[ \t,](?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>[\w.-]+/[\w.-]+)["'][^\n#]*?[ \t,](?:branch:|:branch[ \t]*=>|ref:|:ref[ \t]*=>)[ \t]*["'](?P<version>[^"']+)["']''', via = 'source' },
+    { lines = '''(?m)^[ \t]*gem[ \t(]+["'][^"']+["'][ \t]*,[ \t]*(?:github:|:github[ \t]*=>)[ \t]*["'](?P<name>(?P<version>[\w.-]+/[\w.-]+))["'](?:[ \t]*,[ \t]*:?(?:require|group|groups|platforms?|submodules)[ \t]*(?::|=>)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*\)?[ \t]*(?:#[^\n]*)?\r?$''', via = 'source' },
+]
+
+# Each section's `specs:` lists a resolved gem at four spaces, `name (1.0.0)` or with a platform,
+# `name (1.0.0-x86_64-linux)`; its own dependencies sit deeper. Read from
+# github.com/rails/rails/blob/main/Gemfile.lock.
+[[file]]
+id = 'gemfile-lock'
+globs = ['Gemfile.lock', 'gems.locked']
+format = 'text'
+registry = 'rubygems'
+pinned = true
+rules = [
+    { lines = '(?m)^    (?P<name>[A-Za-z0-9][\w.-]*) \((?P<version>\d[\w.]*)(?:-[\w-]+)?\)\r?$' },
+]
+
+[[file]]
+id = 'podfile'
+globs = ['Podfile', '*.podspec']
+format = 'text'
+registry = 'cocoapods'
+rules = [
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+    # A pod with no requirement takes the newest, and its options pick where it comes from: a
+    # `:path` directory, a `:git` repository at a `:tag`, `:branch`, or `:commit`, or a `:podspec`
+    # URL, as the fork's master read them: guides.cocoapods.org/syntax/podfile.html#pod
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'][^"']+["'][^\n#]*?(?::path[ \t]*=>|path:)[ \t]*["'](?P<name>(?P<version>[^"']+))["']''', via = 'directory' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'][^"']+["'][^\n#]*?(?::git[ \t]*=>|git:)[ \t]*["']https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["'][^\n#]*?(?::tag[ \t]*=>|tag:)[ \t]*["'](?P<version>[^"']+)["']''', via = 'github' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'][^\n#]*?(?::git[ \t]*=>|git:)[ \t]*["'](?P<version>[^"']+)["'](?:[ \t]*,[ \t]*(?::(?:branch|commit)[ \t]*=>|(?:branch|commit):)[ \t]*["'][^"']*["'])*[ \t]*(?:#[^\n]*)?\r?$''', via = 'source' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'][^\n#]*?(?::podspec[ \t]*=>|podspec:)[ \t]*["'](?P<version>[^"']+)["']''', via = 'source' },
+    { lines = '''(?m)^[ \t]*pod[ \t]+["'](?P<name>[^"']+)["'](?:[ \t]*,[ \t]*:?(?:source|configurations?|modular_headers|inhibit_warnings|testspecs|appspecs|subspecs|project_name)[ \t]*(?:=>|:)[ \t]*(?:\[[^\]\n]*\]|["'][^"'\n]*["']|[:\w]+))*[ \t]*(?:#[^\n]*)?\r?$''' },
+    { lines = '''(?m)^[ \t]*\w+\.dependency[ \t]+["'](?P<name>[^"']+)["'][ \t]*,[ \t]*["'](?P<version>[^"']+)["']''' },
+]
+
+[[file]]
+id = 'pubspec'
+globs = ['pubspec.yaml', 'pubspec.yml', 'pubspec_overrides.yaml']
+format = 'yaml'
+registry = 'pub'
+rules = [
+    { spec = 'version', pattern = '${OWN}', via = 'project' },
+    { keys = 'dependencies' },
+    { keys = 'dev_dependencies' },
+    { keys = 'dependency_overrides' },
+    # A workspace root lists its packages' folders: dart.dev/tools/pub/workspaces
+    { spec = 'workspace.*', pattern = '^(?P<name>(?P<version>.+))$', via = 'directory' },
+]
+
+[[file]]
+id = 'mix'
+globs = ['mix.exs']
+format = 'text'
+registry = 'hex'
+rules = [
+    { lines = '\{:(?P<name>\w+),[ \t]*"(?P<version>[^"]+)"' },
+    # Git, GitHub, and path dependencies, as the fork's master read them:
+    # hexdocs.pm/mix/Mix.Tasks.Deps.html#module-dependency-definition-options
+    { lines = '\{:(?P<name>\w+),\s*git:[ \t]*"(?P<version>[^"]+)"' },
+    { lines = '\{:(?P<name>\w+),\s*github:[ \t]*"(?P<version>[^"]+)"', via = 'source' },
+    { lines = '\{:(?P<name>\w+),\s*path:[ \t]*"(?P<version>[^"]+)"', via = 'directory' },
+    # `in_umbrella: true` points at the umbrella's sibling app `../name`:
+    # hexdocs.pm/mix/Mix.Tasks.Deps.html#module-dependency-definition-options
+    { lines = '\{:(?P<name>\w+),\s*(?P<source>in_umbrella):\s*true' },
+]
+
+[[file]]
+id = 'rebar'
+globs = ['rebar.config']
+format = 'text'
+registry = 'hex'
+# Each rule reads one element of a `{deps, [...]}` list, at the top level or in a profile. An
+# element is a bare package `rebar`, `{rebar, "1.0.0"}`, a package under another Hex name
+# `{rebar, {pkg, rebar_fork}}` or `{rebar, "1.0.0", {pkg, rebar_fork}}`, or a source
+# `{rebar, {git | git_subdir | hg, "url", ...}}`: rebar3.org/docs/configuration/dependencies/.
+# Each `lines` regex consumes any other element whole with ${ERL_TUPLE}, so the `{tag, "3.0.0"}`
+# inside a source never reads as a package.
+rules = [
+    { lines = '''\{(?P<name>[a-z]\w*),\s*"(?P<version>[^"]+)"\s*\}|${ERL_TUPLE}''', within = '${ERL_DEPS}' },
+    { lines = '''\{[a-z]\w*,\s*"(?P<version>[^"]+)",\s*\{pkg,\s*(?P<name>[a-z]\w*)\s*\}\s*\}|${ERL_TUPLE}''', within = '${ERL_DEPS}' },
+    { lines = '''\{[a-z]\w*,\s*\{pkg,\s*(?P<name>[a-z]\w*)\s*\}\s*\}|${ERL_TUPLE}''', within = '${ERL_DEPS}' },
+    { lines = '''\{(?P<name>[a-z]\w*),\s*\{(?:git|git_subdir|hg),\s*"(?P<version>[^"]+)"''', within = '${ERL_DEPS}' },
+    { lines = '''${ERL_TUPLE}|(?P<name>[a-z]\w*)''', within = '${ERL_DEPS}' },
+]
+
+[[file]]
+id = 'gleam'
+globs = ['gleam.toml']
+format = 'toml'
+registry = 'hex'
+rules = [
+    { spec = 'version', pattern = '${OWN}', via = 'project' },
+    { keys = 'dependencies' },
+    { keys = 'dev-dependencies' },
+    # Gleam also reads the older `dev_dependencies` spelling, which the fork's master read:
+    # gleam.run/writing-gleam/gleam-toml/
+    { keys = 'dev_dependencies' },
+]
+
+# pkgdocs.julialang.org/v1/toml-files/: `[sources]` points a package at a path or a git `url`,
+# and `julia` in `[compat]` is the oldest Julia release the package supports.
+[[file]]
+id = 'julia'
+globs = ['Project.toml', 'JuliaProject.toml']
+format = 'toml'
+registry = 'julia'
+rules = [
+    { spec = 'version', pattern = '${OWN}', via = 'project' },
+    { keys = 'compat' },
+    # A `[deps]` entry without a `[compat]` one takes any version, as JuliaData/DataFrames.jl
+    # leaves its standard libraries, Random and Printf among them: pkgdocs.julialang.org/v1/compatibility/.
+    # The extractor drops the entry where `[compat]` names it.
+    { lines = '(?m)^[ \t]*(?P<name>[A-Za-z_]\w*)[ \t]*=', within = '(?ms)^\[deps\][ \t]*\r?\n(?P<body>.*?)(?:^[ \t]*\[|\z)', via = 'julia-stdlib' },
+    { spec = 'compat.julia', pattern = '^(?P<version>.+)$', via = 'julia-lang' },
+    { keys = 'sources' },
+]
+
+# A manifest records the version each package resolved to, not a compat range.
+[[file]]
+id = 'julia-manifest'
+globs = ['Manifest.toml', 'Manifest-v*.toml']
+format = 'toml'
+registry = 'julia'
+pinned = true
+rules = [
+    # A manifest pins each registered package; standard libraries lack `git-tree-sha1`.
+    { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+)\]\]\r?\n(?:[^\[\n][^\n]*\n)*?git-tree-sha1[^\n]*\n(?:[^\[\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+    # The rest, without a `path` or `pinned` line (pkgdocs.julialang.org/v1/toml-files/), are
+    # standard libraries, as the fork's master read them. The `_jll` binary ones, such as
+    # LibCURL_jll, are registered in General, where OSV's Julia advisories name them.
+    { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+_jll)\]\]\r?\n(?:[^\[\np\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"' },
+    { lines = '(?m)^\[\[(?:deps\.)?(?P<name>[\w.-]+)\]\]\r?\n(?:[^\[\np\n][^\n]*\n)*?version[ \t]*=[ \t]*"(?P<version>[^"]+)"', via = 'julia-stdlib' },
+    # A package under development has the `path` it was checked out to: pkgdocs.julialang.org/v1/toml-files/
+    { lines = '(?m)^\[\[(?:deps\.)?[\w.-]+\]\]\r?\n(?:[^\[\n][^\n]*\n)*?path[ \t]*=[ \t]*"(?P<name>(?P<version>[^"]+))"', via = 'directory' },
+]
+
+[[file]]
+id = 'renv'
+globs = ['renv.lock']
+format = 'json'
+registry = 'cran'
+pinned = true
+rules = [
+    { record = 'Packages.*', name = 'Package', version = 'Version' },
+]
+
+[[file]]
+id = 'r'
+globs = ['DESCRIPTION']
+format = 'text'
+registry = 'cran'
+rules = [
+    { lines = '(?m)^Version:[ \t]*(?P<version>\d[\w.-]*)', via = 'project' },
+    # The dependency fields, each a comma-separated list that continues on indented lines, of
+    # names with an optional `(>= 1.0)`: cran.r-project.org/doc/manuals/R-exts.html#Package-Dependencies
+    { lines = '(?P<name>[A-Za-z][\w.]*)[ \t]*(?:\((?P<version>[<>=]+[ \t]*[\d.-]+)\))?', within = '${R_DEPS}' },
+    # `R (>= 4.1)` in `Depends` is the oldest R release the package supports.
+    { lines = '(?:^|[\s,])(?P<name>R)[ \t]*\((?P<version>>=[ \t]*[\d.-]+)\)', within = '${R_DEPS}', via = 'r-lang' },
+]
+
+# metacpan.org/pod/cpanfile: each phase's `requires`, `recommends`, `suggests`, and `conflicts`,
+# the `*_requires` shorthands, and a version that may be a range, `'>= 2.00, < 2.80'`, or absent.
+[[file]]
+id = 'cpanfile'
+globs = ['cpanfile']
+format = 'text'
+registry = 'cpan'
+rules = [
+    { lines = '''(?m)^[ \t]*(?:requires|recommends|suggests|conflicts|(?:configure|build|test|author)_requires)[ \t(]+['"](?P<name>[\w:]+)['"](?:[ \t]*(?:,|=>)[ \t]*['"]?(?P<version>[\w.<>=!, ]+?)['"]?)?[ \t]*\)?[ \t]*;''' },
+]
+
+# A CPAN distribution's metadata maps each phase's modules to a minimum version:
+# metacpan.org/pod/CPAN::Meta::Spec#PREREQUISITES, read from Moose 2.2207's META.json.
+[[file]]
+id = 'cpan-meta'
+globs = ['META.json', 'MYMETA.json']
+format = 'json'
+registry = 'cpan'
+rules = [
+    { keys = 'prereqs.*.requires' },
+    { keys = 'prereqs.*.recommends' },
+    { keys = 'prereqs.*.suggests' },
+]
+
+# Version 1.4 of the spec keeps the maps at the top level of META.yml:
+# metacpan.org/pod/CPAN::Meta::History::Meta_1_4, read from libwww-perl 5.837's META.yml.
+[[file]]
+id = 'cpan-meta-yml'
+globs = ['META.yml', 'MYMETA.yml']
+format = 'yaml'
+registry = 'cpan'
+rules = [
+    { keys = 'requires' },
+    { keys = 'build_requires' },
+    { keys = 'configure_requires' },
+    { keys = 'recommends' },
+]
+
+# Dist::Zilla lists a module and its minimum version per line under `[Prereqs]` sections, with
+# the phase and relationship after a ` / `; `[OSPrereqs / MSWin32]` holds one OS's:
+# metacpan.org/pod/Dist::Zilla::Plugin::Prereqs, and github.com/rjbs/Dist-Zilla/blob/main/dist.ini
+[[file]]
+id = 'dist-ini'
+globs = ['dist.ini']
+format = 'ini'
+registry = 'cpan'
+rules = [
+    { keys = 'Prereqs' },
+    { keys = 'Prereqs.*' },
+    { keys = 'OSPrereqs.*' },
+]
+
+[[file]]
+id = 'opam'
+globs = ['opam', '*.opam']
+format = 'text'
+registry = 'opam'
+rules = [
+    { lines = '(?m)^version:[ \t]*"(?P<version>[^"]+)"', via = 'project' },
+    # Each package in the `depends`, `depopts`, and `conflicts` lists, with the version a
+    # `{>= "1.0" & < "2.0"}` filter starts from, or bare, as `"conf-libev"` or `{< "1.0"}`, whose
+    # bound names no version to move to: opam.ocaml.org/doc/Manual.html#opamfield-depends.
+    # The span holds the quoted version alone, so the operator stays outside it: `min` marks a
+    # `>=` or `>` bound, which a newer release satisfies, and `=` pins as the registry's bare
+    # version does. A `>` reads as `>=`. Elsewhere, as in `tags`, a quoted word is not a package.
+    { lines = '"(?P<name>[A-Za-z][\w.+-]*)"(?:[ \t]*\{[ \t]*(?:(?:(?P<min>>=?)|=)[ \t]*"(?P<version>[^"]+)")?[^}]*\})?', within = '(?m)^(?:depends|depopts|conflicts):[ \t]*\[([^\]]*)\]' },
+]
+
+# The `depends` field of a `package` stanza lists each package bare or with a constraint, which
+# may nest, `(fmt (and (>= 0.6) (< 1.0)))`: dune.readthedocs.io/en/stable/reference/dune-project/package.html
+[[file]]
+id = 'dune'
+globs = ['dune-project']
+format = 'text'
+registry = 'opam'
+rules = [
+    { lines = '\(version[ \t]+(?P<version>\d[\w.~+-]*)\)', via = 'project' },
+    # A constraint is read whole, so its `and`, `or`, and `not` name no package: ocaml/ocaml-lsp
+    # writes `(top-closure (or :with-test :with-dev-setup))`, `(ocamlformat (and :with-test
+    # (= 0.29.0)))`, and a quoted `(>= "v0.14")`, whose operator stays outside the span as `min`.
+    { lines = '''[\s(](?P<name>[a-z][\w-]*)(?:[ \t]+\((?:(?:and|or|not)[ \t]+)?(?::[\w-]+[ \t]+)*\(?(?:(?P<min>>=)[ \t]*")?(?P<version>(?:(?:<>|<=|>=|=|<|>)[ \t]*)?[\w.~+-]+)?"?\)?(?:[^()]|\([^()]*\))*\))?''', within = '\(depends(\s(?:[^()]|\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\))*)\)' },
+]
+
+[[file]]
+id = 'cabal'
+globs = ['*.cabal', 'cabal.project', 'stack.yaml', 'stack.yml']
+format = 'text'
+registry = 'hackage'
+rules = [
+    { lines = '(?m)^version:[ \t]*(?P<version>\d[\d.]*)', via = 'project' },
+    # A library's, setup script's, and build tool's dependencies, a tool as `package:executable`,
+    # read inside those fields only, so `tested-with: GHC ==9.6` stays out:
+    # cabal.readthedocs.io/en/stable/cabal-package-description-file.html#pkg-field-build-depends
+    { lines = '(?m)(?:\A|,|^)[ \t]*(?P<name>[A-Za-z][\w-]*)(?::[A-Za-z][\w-]*)?[ \t]+(?P<version>(?:\^>=|>=|==)[ \t]*\d[\d.]*)', within = '${CABAL_DEPENDS}' },
+    # An entry without a constraint takes any version, as the fork's master read it: one ending
+    # its line after the field or a comma, as leading-comma lists write each entry, and one a comma
+    # follows, as trailing-comma lists do (github.com/haskell/aeson/blob/master/aeson.cabal).
+    { lines = '(?:\A|,)\s*(?P<name>[A-Za-z][\w-]*)(?::(?:\{[^}]*\}|[\w-]+))?[ \t]*(?:--[^\n]*)?(?:\r?\n|\z)', within = '${CABAL_DEPENDS}' },
+    { lines = '(?:\A|[,\s])[ \t]*(?P<name>[A-Za-z][\w-]*)(?::(?:\{[^}]*\}|[\w-]+))?[ \t]*,', within = '${CABAL_DEPENDS}' },
+    { lines = '(?m)^[ \t]*with-compiler:[ \t]*(?P<name>ghc)-(?P<version>\d[\d.]*)', via = 'ghc' },
+    # Stack's `extra-deps` entries read `- package-1.2.3`, `- ./local/path`, or a git repository
+    # pinned to a `commit`: docs.haskellstack.org/en/stable/configure/yaml/project/#extra-deps
+    { lines = '(?m)^[ \t]*-[ \t]+(?P<name>[A-Za-z][\w-]*?)-(?P<version>\d+(?:\.\d+)*)(?:@\S+)?[ \t]*(?:#.*)?\r?$' },
+    { lines = '(?m)^[ \t]*-[ \t]+(?P<name>(?P<version>\.\.?/[^\s#]+))', via = 'directory' },
+    { lines = '''(?m)^[ \t]*-?[ \t]*(?:git|github):[ \t]*(?P<name>\S+)\r?\n[ \t]+commit:[ \t]*["']?(?P<version>\w+)''', via = 'source' },
+    # The Stackage LTS snapshot, `resolver: lts-22.43` or `snapshot:` since Stack 3:
+    # docs.haskellstack.org/en/stable/configure/yaml/project/#snapshot
+    { lines = '(?m)^(?:resolver|snapshot):[ \t]*(?P<name>lts)-(?P<version>\d+\.\d+)', via = 'stackage' },
+    # A Nightly, a compiler alone, or a snapshot file by URL or GitHub path:
+    # docs.haskellstack.org/en/stable/topics/snapshot_location/
+    { lines = '(?m)^(?:resolver|snapshot):[ \t]*(?P<name>nightly)-(?P<version>\d{4}-\d{2}-\d{2})', via = 'stackage-nightly' },
+    { lines = '(?m)^(?:resolver|snapshot):[ \t]*(?P<name>ghc)-(?P<version>\d+\.\d+\.\d+)', via = 'ghc' },
+    { lines = '''(?m)^(?P<name>resolver|snapshot):[ \t]*(?:\r?\n[ \t]+url:[ \t]*)?["']?(?P<version>(?:https?://|github:)[^\s"']+)''', via = 'source' },
+]
+
+[[file]]
+id = 'rockspec'
+globs = ['*.rockspec']
+format = 'text'
+registry = 'luarocks'
+rules = [
+    # A dependency joins constraints with commas, `"lua >= 5.1, < 5.5"`:
+    # github.com/luarocks/luarocks/wiki/Rockspec-format#dependency-information
+    # `lua` names the interpreter, which no rock holds (luarocks.org/manifest-5.4.json lists no `lua`);
+    # its releases are the tags of github.com/lua/lua, `v5.5.1` among them.
+    { lines = '''["'](?P<name>lua)[ \t]*(?P<version>(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*(?:[ \t]*,[ \t]*(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*)*)["']''', via = 'github', prefix = 'lua/' },
+    { lines = '''["'](?P<name>[A-Za-z][\w.-]*)[ \t]*(?P<version>(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*(?:[ \t]*,[ \t]*(?:>=|<=|==|~>|>|<|~=)[ \t]*\d[\w.-]*)*)["']''' },
+]
+
+[[file]]
+id = 'flake'
+globs = ['flake.nix']
+format = 'text'
+registry = 'github'
+rules = [
+    # Nixpkgs pins release branches, `github:NixOS/nixpkgs/nixos-24.05`, named for its tags.
+    { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)/(?:nixos-|nixpkgs-|release-)?(?P<version>v?\d[\w.-]*)' },
+    { lines = 'github:(?P<name>[\w.-]+/[\w.-]+)\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)' },
+    # A branch, `github:NixOS/nixpkgs/nixos-unstable`, shows its head commit, and a `path:` input is
+    # a local flake: nix.dev/manual/nix/stable/command-ref/new-cli/nix3-flake.html#flake-references
+    { lines = '''github:(?P<name>[\w.-]+/[\w.-]+)(?:/|\?ref=)(?P<version>${GIT_REF})["?&]''', via = 'git-ref', prefix = 'github.com/' },
+    { lines = '''["']path:(?P<name>(?P<version>[^"'?]+))''', via = 'directory' },
+]
+
+# flake.lock records each input's `original` reference, its keys sorted, beside the commit it
+# `locked`; a GitHub input's `ref` is the tag or branch flake.nix asked for: NixOS/nix,
+# src/nix/flake.md, and neohaskell/NeoHaskell's neo-starter-flake.lock. Its name is `owner:repo`.
+[[file]]
+id = 'flake-lock'
+globs = ['flake.lock']
+format = 'text'
+registry = 'github'
+pinned = true
+rules = [
+    { lines = '''"original"\s*:\s*\{\s*"owner"\s*:\s*"(?P<group>[\w.-]+)"[^}]*?"ref"\s*:\s*"(?:refs/tags/)?(?:nixos-|nixpkgs-|release-)?(?P<version>v?\d[\w.-]*)"[^}]*?"repo"\s*:\s*"(?P<name>[\w.-]+)"[^}]*?"type"\s*:\s*"github"''' },
+]
+
+
+# Typst imports a Universe package at its full version, `#import "@preview/{name}:{version}"`:
+# github.com/typst/packages, README.md.
+[[file]]
+id = 'typst'
+globs = ['*.typ']
+format = 'text'
+registry = 'typst'
+rules = [
+    { lines = '"@preview/(?P<name>[a-z][\w-]*):(?P<version>\d[\w.-]*)"' },
+]
+
+# A package's typst.toml lists no dependencies, which its files import, but holds the package's
+# own `version` and the oldest Typst `compiler` it supports: github.com/typst/packages,
+# docs/manifest.md, and packages/preview/cetz/0.3.4/typst.toml.
+[[file]]
+id = 'typst-package'
+globs = ['typst.toml']
+format = 'toml'
+registry = 'typst'
+rules = [
+    { spec = 'package.version', pattern = '${OWN}', via = 'project' },
+    { lines = '''(?m)^[ \t]*(?P<name>compiler)[ \t]*=[ \t]*["'](?P<version>\d+\.\d+\.\d+)["']''', via = 'typst-compiler' },
+]
+
+# Wally maps an alias to `"scope/name@version"` under [dependencies], [server-dependencies], and
+# [dev-dependencies]: github.com/UpliftGames/wally, README.md.
+[[file]]
+id = 'wally'
+globs = ['wally.toml']
+format = 'text'
+registry = 'wally'
+rules = [
+    { lines = '''(?m)^[ \t]*[\w-]+[ \t]*=[ \t]*["'](?P<name>[a-z0-9_-]+/[a-z0-9_-]+)@(?P<version>[^"']+)["']''' },
+]
+
+# MoonBit's moon.mod.json maps `deps` to a version or a local `path`: docs.moonbitlang.com,
+# toolchain/moon/module.md.
+[[file]]
+id = 'moonbit'
+globs = ['moon.mod.json']
+format = 'json'
+registry = 'mooncakes'
+rules = [{ keys = 'deps' }]
+
+# Spago lists a package-set dependency by name and a registry one with its range,
+# `- lists: ">=7.0.0 <8.0.0"`: github.com/purescript/spago, README.md.
+[[file]]
+id = 'spago'
+globs = ['spago.yaml']
+format = 'text'
+registry = 'purescript'
+rules = [
+    { lines = '''(?m)^[ \t]*-[ \t]+(?P<name>[a-z][\w-]*):[ \t]*["']?(?P<version>[<>=]*[ \t]*\d[^"'\r\n#]*?)["']?[ \t]*(?:#.*)?\r?$''' },
+]
+
+# Corral, the Pony package manager, lists `deps` as a `locator` and a `version`:
+# github.com/ponylang/http_server's corral.json. A locator on gitlab.com or bitbucket.org works
+# the same way, and `../name.git` or `../name` is a local bundle: github.com/ponylang/corral,
+# DOCS.md "GitHub or GitLab or Bitbucket", "Local git Bundle", and "Local Direct Bundle". No
+# registry lists GitLab or Bitbucket tags, so those locators link to their repository.
+[[file]]
+id = 'corral'
+globs = ['corral.json']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '"locator"\s*:\s*"github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*"version"\s*:\s*"(?P<version>[^"]+)"' },
+    { lines = '"locator"\s*:\s*"(?P<name>(?:gitlab\.com|bitbucket\.org)/[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*,\s*"version"\s*:\s*"(?P<version>[^"]+)"', via = 'source', prefix = 'https://' },
+    { lines = '"locator"\s*:\s*"(?P<name>(?P<version>\.{1,2}/[^"]+))"', via = 'directory' },
+]
+
+# Qlot's qlfile takes a GitHub library at a `:tag`, by `github owner/repo` or a `git` URL, any git
+# URL at a `:ref`, `:branch`, or `:tag` it pins, and a Quicklisp project from the dist of a date,
+# `ql clack 2014-01-13`: github.com/fukamachi/qlot, README.markdown "ql" and "git". A `github`
+# line's `:branch` or `:ref` pins its repository on github.com, which is its link. `ultralisp
+# name version` is `ql` from Ultralisp's dist, and `ql-dist quicklisp|ultralisp name version`
+# takes a project from the named dist: README.markdown "ultralisp" and "ql-dist".
+[[file]]
+id = 'qlfile'
+globs = ['qlfile']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '(?m)^[ \t]*github[ \t]+(?P<name>[\w.-]+/[\w.-]+)[ \t]+:tag[ \t]+(?P<version>\S+)' },
+    { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?[ \t]+:tag[ \t]+(?P<version>\S+)' },
+    { lines = '(?m)^[ \t]*(?:ql|ql-dist[ \t]+quicklisp)[ \t]+(?P<name>\S+)[ \t]+(?P<version>\d{4}-\d{2}-\d{2})', via = 'quicklisp' },
+    { lines = '(?m)^[ \t]*(?:ultralisp|ql-dist[ \t]+ultralisp)[ \t]+(?P<name>\S+)[ \t]+(?P<version>\d{14})', via = 'ultralisp' },
+    { lines = '(?m)^[ \t]*github[ \t]+(?P<name>[\w.-]+/[\w.-]+)[ \t]+:(?:ref|branch)[ \t]+(?P<version>\S+)', via = 'source', prefix = 'https://github.com/' },
+    { lines = '(?m)^[ \t]*git[ \t]+\S+[ \t]+(?P<name>\S+?)(?:\.git)?[ \t]+:(?:ref|branch|tag)[ \t]+(?P<version>\S+)', via = 'source' },
+]
+
+# A Racket package's info.rkt lists `deps` and `build-deps`, each a source string or a list with
+# `#:version`, or the deprecated bare version string: docs.racket-lang.org/pkg/metadata.html,
+# which recommends a versioned dependency on "base", the Racket release. Brackets work as
+# parentheses, `'(["base" #:version "6.3"])` in github.com/lexi-lambda/threading's
+# threading-lib/info.rkt. Any other package names its catalog entry, and `racket-pkg` lists the
+# tags of the repository that entry's source names, as `["threading-lib" #:version "2.0"]` in
+# lexi-lambda/threading's threading/info.rkt; `#:platform` may come before the version. A
+# dependency without a version has no span to compare.
+[[file]]
+id = 'racket'
+globs = ['info.rkt']
+format = 'text'
+registry = 'racket'
+rules = [
+    { lines = '''[(\[][ \t]*(?:list[ \t]+)?"(?P<name>base)"[ \t\r\n]+(?:'?#:version[ \t\r\n]+)?"(?P<version>\d+(?:\.\d+)*)"''' },
+    { lines = '''[(\[][ \t]*(?:list[ \t]+)?"(?P<name>[\w-]+)"(?:[ \t\r\n]+'?#:platform[ \t\r\n]+[^\s()\[\]]+)?[ \t\r\n]+(?:'?#:version[ \t\r\n]+)?"(?P<version>\d+(?:\.\d+)*)"''', via = 'racket-pkg' },
+]
+
+# Lake requires a git package at a `rev`, in lakefile.toml as `git` then `rev` and in lakefile.lean
+# as `from git "url" @ "rev"`, and a Reservoir package by `scope` and name, at a tag `rev` or a
+# `version = "git#tag"`, or in Lean as `require "scope" / name @ git "tag"`: leanprover/lean4,
+# src/lake/README.md "Lean require" and "TOML require"; openai/ten-proofs' and kkytola/
+# VirasoroProject's lakefile.toml. A release-like git rev reads as a GitHub release, and any other
+# rev or host as the git reference it pins. A Reservoir branch or commit names no repository, and
+# a bare Reservoir `version` is the registry's own, mostly `0.0.0`, so neither reads.
+[[file]]
+id = 'lake'
+globs = ['lakefile.toml', 'lakefile.lean']
+format = 'text'
+registry = 'github'
+rules = [
+    { lines = '''git[ \t]*=[ \t]*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*rev[ \t]*=[ \t]*"(?P<version>v?\d+\.\d[\w.-]*)"''' },
+    { lines = 'from\s+git\s+"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"\s*@\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
+    { lines = '''(?m)^[ \t]*name[ \t]*=[ \t]*"«?(?P<name>[\w.-]+)»?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*scope[ \t]*=[ \t]*"(?P<group>[\w.-]+)"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*(?:rev[ \t]*=[ \t]*"|version[ \t]*=[ \t]*"git#)(?P<version>v?\d+\.\d[\w.-]*)"''', via = 'reservoir' },
+    { lines = '''(?m)^[ \t]*scope[ \t]*=[ \t]*"(?P<group>[\w.-]+)"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*name[ \t]*=[ \t]*"«?(?P<name>[\w.-]+)»?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*(?:rev[ \t]*=[ \t]*"|version[ \t]*=[ \t]*"git#)(?P<version>v?\d+\.\d[\w.-]*)"''', via = 'reservoir' },
+    { lines = '''require\s+"(?P<group>[\w.-]+)"\s*/\s*"?«?(?P<name>[\w.-]+)»?"?\s*@\s*git\s+"(?P<version>v?\d+\.\d[\w.-]*)"''', via = 'reservoir' },
+    { lines = '''git[ \t]*=[ \t]*"(?P<name>[^"\s]+?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*rev[ \t]*=[ \t]*"(?P<version>[^"\s]+)"''', via = 'source' },
+    { lines = 'from\s+git\s+"(?P<name>[^"\s]+?)(?:\.git)?"\s*@\s*"(?P<version>[^"\s]+)"', via = 'source' },
+]
+
+# V's v.mod lists `dependencies` as `'module@range'` strings, the same as `v install` takes, which
+# select semver Git tags; a bare module tracks its default branch, so its lens shows the newest
+# release, the tag to pin it to: github.com/vlang/v, cmd/tools/vpm/README.md "Semantic version
+# ranges". A bare name counts only inside the `dependencies` list, beside `name` and `version`.
+[[file]]
+id = 'vmod'
+globs = ['v.mod']
+format = 'text'
+registry = 'vpm'
+rules = [{ lines = '''['"](?P<name>[A-Za-z_][\w.]*)(?:@(?P<version>[^'"\r\n]+))?['"]''', within = '''dependencies[ \t]*:[ \t]*\[([^\]]*)\]''' }]
+
+# Lake's lake-manifest.json records each git package's `url` and the `inputRev` its lakefile asked
+# for, beside the resolved commit `rev`: leanprover-community/mathlib4's lake-manifest.json. A
+# release-like `inputRev` on GitHub reads as a release, and any other as the git reference it pins.
+[[file]]
+id = 'lake-manifest'
+globs = ['lake-manifest.json']
+format = 'text'
+registry = 'github'
+pinned = true
+rules = [
+    { lines = '"url"\s*:\s*"https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?"[^}]*?"inputRev"\s*:\s*"(?P<version>v?\d+\.\d[\w.-]*)"' },
+    { lines = '"url"\s*:\s*"(?P<name>[^"\s]+?)(?:\.git)?"[^}]*?"inputRev"\s*:\s*"(?P<version>[^"\s]+)"', via = 'source' },
+]
+
+# Pack's pack.toml pins the curated `collection`, `nightly-YYMMDD`, that every library builds from;
+# a custom git package's `url` and `commit`, a hash or `latest:<branch>`, read as the git reference
+# they pin: stefan-hoeck/idris2-pack, src/Pack/Config/TOML.idr. The project's pack.toml and the
+# user's ~/.config/pack/pack.toml share the format.
+[[file]]
+id = 'idris-pack'
+globs = ['pack.toml']
+format = 'text'
+registry = 'idris-pack'
+rules = [
+    { lines = '''(?m)^[ \t]*collection[ \t]*=[ \t]*["'](?P<name>nightly)-(?P<version>\d+)["']''' },
+    { lines = '''(?m)^[ \t]*url[ \t]*=[ \t]*"(?P<name>[^"\s]+?)(?:\.git)?"[ \t]*\r?\n(?:[ \t]*\w+[ \t]*=.*\r?\n)*?[ \t]*commit[ \t]*=[ \t]*"(?:latest:)?(?P<version>[^"\s]+)"''', via = 'source' },
+]
+
+# A META6.json `depends`, `build-depends`, or `test-depends` lists `Name:ver<1.0.1+>:auth<zef:cro>`
+# strings, or the phases' `requires` lists in its object form; a `:from<native>` library is not a
+# Raku dist: design.raku.org S22-package-format and croservices/cro-http's META6.json.
+[[file]]
+id = 'raku'
+globs = ['META6.json']
+format = 'json'
+registry = 'raku'
+rules = [
+    { spec = 'depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'build-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'test-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'depends.*.requires.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+]
+
+# A META6.json `depends`, `build-depends`, or `test-depends` lists `Name:ver<1.0.1+>:auth<zef:cro>`
+# strings, or the phases' `requires` lists in its object form; a `:from<native>` library is not a
+# Raku dist: design.raku.org S22-package-format and croservices/cro-http's META6.json.
+[[file]]
+id = 'raku'
+globs = ['META6.json']
+format = 'json'
+registry = 'raku'
+rules = [
+    { spec = 'depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'build-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'test-depends.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+    { spec = 'depends.*.requires.*', pattern = '^(?P<name>\w[\w-]*(?:::\w[\w-]*)*)(?::ver<(?P<version>[^>]+)>)?(?::(?:api|auth)<[^>]*>)*$' },
+]

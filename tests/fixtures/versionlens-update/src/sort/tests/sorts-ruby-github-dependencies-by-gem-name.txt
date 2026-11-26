@@ -1,2 +1,0 @@
-gem "zeta", github: "org/zeta", tag: "v1.0.0"
-gem "alpha", github: "org/alpha", tag: "v1.0.0"

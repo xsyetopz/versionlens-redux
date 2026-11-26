@@ -1,35 +1,46 @@
-//! Language server binary: `versionlens-lsp` serves stdio, `--print-manifest-table` prints the manifest table.
+//! `versionlens-lsp`: the `VersionLens` language server. Editors start it over stdio;
+//! `--file-types` prints the manifest globs that editor packages select files with.
 
-use crossbeam_channel as _;
-use lsp_server as _;
-use lsp_types as _;
-use serde as _;
-use serde_json as _;
-use tokio as _;
-use versionlens_engine as _;
-use versionlens_model as _;
-use versionlens_parsers as _;
+mod catalog;
+mod config;
+mod data;
+mod extract;
+mod flatten;
+mod git_ref;
+mod http;
+mod osv;
+mod project;
+mod registry;
+mod render;
+mod server;
+mod sort;
+mod version;
 
-use std::io::Write as _;
+use std::io::Write;
+use std::process::ExitCode;
 
-const PRINT_MANIFEST_TABLE: &str = "--print-manifest-table";
-
-fn main() -> anyhow::Result<()> {
-    if std::env::args()
-        .skip(1)
-        .any(|arg| arg == PRINT_MANIFEST_TABLE)
-    {
-        writeln!(
-            std::io::stdout().lock(),
-            "{}",
-            versionlens_lsp::manifest_table_json()?
-        )?;
-        return Ok(());
+fn main() -> ExitCode {
+    let arg = std::env::args().nth(1);
+    let result = match arg.as_deref() {
+        Some("--version") => writeln!(
+            std::io::stdout(),
+            "versionlens-lsp {}",
+            env!("CARGO_PKG_VERSION")
+        )
+        .map_err(|e| e.to_string()),
+        Some("--file-types") => {
+            writeln!(std::io::stdout(), "{}", catalog::globs_json()).map_err(|e| e.to_string())
+        }
+        Some("--stdio") | None => server::run(),
+        Some(other) => Err(format!(
+            "unknown argument {other}; expected --stdio, --version, or --file-types"
+        )),
+    };
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            drop(writeln!(std::io::stderr(), "versionlens-lsp: {error}"));
+            ExitCode::FAILURE
+        }
     }
-    versionlens_lsp::run_stdio_server()
-}
-
-#[cfg(test)]
-mod tests {
-    use versionlens_test_support as _;
 }

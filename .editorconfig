@@ -1,7 +1,12 @@
 root = true
 
 # >>> bedrock
+# bedrock_version is the bedrock release just setup installs, or "source" to run
+# the CLI from the checkout; bedrock_languages and bedrock_<language>_<option>
+# are what bedrock adopt and update keep. Editors ignore keys they don't know.
 [*]
+bedrock_version = 0.7.3
+bedrock_languages = jvm, rust, typescript
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
@@ -35,4 +40,36 @@ max_line_length = 80
 [*.{rs,toml}]
 indent_style = space
 indent_size = 4
+
+# Clippy bounds function size but not file length, so bedrock guard counts each
+# file's code lines with lizard. A file rustc compiles only under test, one a
+# #[cfg(test)] mod declares, one #![cfg(test)] gates, or one in a crate's
+# tests/, takes the test file bound instead. A section after this block
+# overrides a bound, and unset turns one off.
+[*.rs]
+bedrock_file_code_lines_warning = 603
+bedrock_test_file_code_lines_warning = 603
 # <<< rust-bedrock
+
+# >>> jvm-bedrock
+# ktfmt's kotlinlang style, which spotless applies, indents Kotlin by four spaces; ktlint reads
+# the same setting. Java stays at two, google-java-format's width.
+[*.java]
+indent_style = space
+indent_size = 2
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+
+# No JVM linter bedrock runs bounds code size, so bedrock guard measures it with
+# lizard. A file in a Gradle test source set, such as src/test or src/commonTest,
+# takes the test file bound instead. A section after this block overrides a
+# bound, and unset turns one off.
+[*.{java,kt,kts,scala}]
+bedrock_file_code_lines_warning = 603
+bedrock_test_file_code_lines_warning = 603
+bedrock_function_code_lines_error = 56
+bedrock_function_complexity_error = 15
+bedrock_function_parameters_error = 7
+# <<< jvm-bedrock

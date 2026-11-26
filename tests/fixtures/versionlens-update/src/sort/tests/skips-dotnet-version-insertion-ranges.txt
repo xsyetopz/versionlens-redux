@@ -1,4 +1,0 @@
-<ItemGroup>
-  <PackageReference Include="Zeta.Package" />
-  <PackageReference Include="Alpha.Package" />
-</ItemGroup>

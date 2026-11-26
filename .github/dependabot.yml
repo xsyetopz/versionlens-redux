@@ -30,3 +30,13 @@ updates:
       cargo:
         patterns: ["*"]
 # <<< rust-bedrock
+
+# >>> jvm-bedrock
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      gradle:
+        patterns: ["*"]
+# <<< jvm-bedrock

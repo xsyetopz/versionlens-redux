@@ -1,5 +1,0 @@
-<Project>
-  <ItemGroup>
-    <PackageReference include = 'Newtonsoft.Json' version = "13.0.3" />
-  </ItemGroup>
-</Project>

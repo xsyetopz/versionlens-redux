@@ -1,2 +1,0 @@
-requires 'Zeta', '1.0';
-requires 'Alpha', '1.0';

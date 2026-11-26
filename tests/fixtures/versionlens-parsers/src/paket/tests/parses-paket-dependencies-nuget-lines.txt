@@ -1,6 +1,0 @@
-
-source https://api.nuget.org/v3/index.json
-nuget Newtonsoft.Json 13.0.3
-nuget FSharp.Core >= 8.0
-nuget Paket.Core prerelease
-github fsprojects/Paket

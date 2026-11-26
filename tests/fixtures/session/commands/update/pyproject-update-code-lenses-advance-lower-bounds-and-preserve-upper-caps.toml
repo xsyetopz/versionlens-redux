@@ -1,5 +1,0 @@
-[project]
-dependencies = ["httpx>=0.27,<1"]
-
-[project.optional-dependencies]
-test = ["httpcore>=0.27,<1"]

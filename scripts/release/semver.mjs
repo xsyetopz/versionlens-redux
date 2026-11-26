@@ -40,7 +40,7 @@ const parseSemver = (value) => {
 			identifier.startsWith("0")
 		) {
 			fail(
-				`invalid SemVer numeric prerelease identifier: ${JSON.stringify(identifier)}`,
+				`invalid SemVer numeric prerelease identifier: ${JSON.stringify(identifier)}`
 			);
 		}
 	}
@@ -48,7 +48,7 @@ const parseSemver = (value) => {
 		major: BigInt(major),
 		minor: BigInt(minor),
 		patch: BigInt(patch),
-		prerelease,
+		prerelease
 	};
 };
 
@@ -153,7 +153,7 @@ const replaceExactly = ({
 	pattern,
 	replacement,
 	expectedCount,
-	path,
+	path
 }) => {
 	let count = 0;
 	/**
@@ -171,7 +171,7 @@ const replaceExactly = ({
 	const output = source.replace(pattern, replacer);
 	if (count !== expectedCount) {
 		fail(
-			`${path}: expected ${expectedCount} version occurrence(s), found ${count}`,
+			`${path}: expected ${expectedCount} version occurrence(s), found ${count}`
 		);
 	}
 	return output;

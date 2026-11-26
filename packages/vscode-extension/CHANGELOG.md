@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Replaced the per-provider settings with one flat `versionlens` section; see the README's Settings table. Settings apply without a restart, and every command acts on the active manifest. The full list of changes is in the [repository changelog](../../CHANGELOG.md).
+
 ## 0.5.0
 
 - Grew these defaults for new manifest support. A setting you have set yourself does not gain the new entries, so add them by hand: `versionlens.cargo.files` (`**/.cargo/config.toml`, `**/.cargo/config`), `versionlens.dotnet.files` (`**/dotnet-tools.json`), `versionlens.swift.files` (`**/Cartfile`, `**/Cartfile.private`) and `versionlens.cargo.dependencyProperties` (`patch.*`, `patch.*.*`).

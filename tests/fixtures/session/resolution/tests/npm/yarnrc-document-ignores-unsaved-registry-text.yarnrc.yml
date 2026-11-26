@@ -1,3 +1,0 @@
-npmRegistryServer: https://registry.example.test
-catalog:
-  left-pad: ^1.0.0

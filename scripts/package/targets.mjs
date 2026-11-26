@@ -12,7 +12,7 @@ import { isRecord, parseJson } from "../lib/json.mjs";
  */
 const readTargets = async () => {
 	const file = parseJson(
-		await Bun.file(new URL("targets.json", import.meta.url)).text(),
+		await Bun.file(new URL("targets.json", import.meta.url)).text()
 	);
 	if (!(isRecord(file) && Array.isArray(file["targets"]))) {
 		throw new Error("targets.json has no targets array");

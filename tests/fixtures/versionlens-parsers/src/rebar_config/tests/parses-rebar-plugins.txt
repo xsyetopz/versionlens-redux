@@ -1,1 +1,0 @@
-{plugins,[{rebar_erl_vsn,"~> 0.1"}]}.

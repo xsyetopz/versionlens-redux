@@ -1,4 +1,0 @@
-  # zeta
-  zeta: 1
-  # alpha
-  alpha: 1

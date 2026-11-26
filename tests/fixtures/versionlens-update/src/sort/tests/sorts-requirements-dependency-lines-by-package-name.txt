@@ -1,3 +1,0 @@
-zeta==1
-# keep
-alpha==1

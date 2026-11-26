@@ -1,2 +1,0 @@
-gem "rails", git: "git@github.com:rails/rails.git", tag: "v8.0.0"
-gem "core", git: "https://github.com/rspec/rspec-core.git", branch: "main"

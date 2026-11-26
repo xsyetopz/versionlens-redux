@@ -1,4 +1,0 @@
-dependencies: [
-    .package(url: "https://github.com/apple/zlib.git", from: "1.0.0"),
-    .package(url: "https://github.com/apple/fmt.git", from: "10.1.1")
-]

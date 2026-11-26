@@ -1,0 +1,411 @@
+use super::lenses::{build_command, short, status};
+use super::*;
+use crate::git_ref::Ref;
+
+fn v(text: &str) -> Version {
+    Version::parse(text).unwrap()
+}
+
+#[test]
+fn replaces_in_users_style() {
+    assert_eq!(
+        replacement("^1.2.3", &v("1.4.0"), "", false).as_deref(),
+        Some("^1.4.0")
+    );
+    assert_eq!(
+        replacement("~> 1.2", &v("2.1.0"), "", false).as_deref(),
+        Some("~> 2.1")
+    );
+    assert_eq!(
+        replacement(">=4.2, <5", &v("5.1"), "", false).as_deref(),
+        Some(">=5.1")
+    );
+    assert_eq!(
+        replacement("v4", &v("v5.0.0"), "", false).as_deref(),
+        Some("v5")
+    );
+    assert_eq!(
+        replacement("", &v("2.0"), "==", false).as_deref(),
+        Some("==2.0")
+    );
+    assert_eq!(replacement("", &v("2.0"), "", false), None);
+    assert_eq!(
+        replacement("[1.0,2.0)", &v("3.0"), "", false).as_deref(),
+        Some("[3.0]")
+    );
+    assert_eq!(
+        replacement("20-alpine", &v("22.1-alpine"), "", false).as_deref(),
+        Some("22-alpine")
+    );
+}
+
+#[test]
+fn writes_whole_version_for_precise_file_type() {
+    assert_eq!(
+        replacement("~> 1.0", &v("2.0.0"), "", true).as_deref(),
+        Some("~> 2.0.0")
+    );
+    assert_eq!(
+        replacement("== 1.2.3", &v("1.4.0"), "", true).as_deref(),
+        Some("== 1.4.0")
+    );
+    assert_eq!(
+        replacement("1.x", &v("2.3.1"), "", true).as_deref(),
+        Some("2.x")
+    );
+}
+
+#[test]
+fn positions_count_utf16_units() {
+    let text = "a\n€b c\n";
+    let lines = Lines::new(text);
+    let at = text.find('c').unwrap();
+    assert_eq!(lines.position(at), Position::new(1, 3));
+    assert_eq!(lines.position(0), Position::new(0, 0));
+}
+
+#[test]
+fn shortens_errors_to_their_cause() {
+    assert_eq!(
+        short("https://x: error sending request: dns error"),
+        "dns error"
+    );
+}
+
+#[test]
+fn maps_positions_to_byte_offsets() {
+    let lines = Lines::new("a€b\nxy\n");
+    assert_eq!(lines.offset(Position::new(0, 2)), 4);
+    assert_eq!(lines.offset(Position::new(0, 99)), 5);
+    assert_eq!(lines.offset(Position::new(1, 1)), 7);
+    assert_eq!(lines.offset(Position::new(9, 0)), 9);
+}
+
+#[test]
+fn offers_updates_only_to_matching_kinds() {
+    let kinds = |list: &[&str]| {
+        list.iter()
+            .map(|k| CodeActionKind::from(k.to_string()))
+            .collect::<Vec<_>>()
+    };
+    assert!(wants(ACTION_KIND, None));
+    assert!(wants(ACTION_KIND, Some(&kinds(&["refactor"]))));
+    assert!(wants(
+        ACTION_KIND,
+        Some(&kinds(&["quickfix", "refactor.rewrite"]))
+    ));
+    assert!(!wants(ACTION_KIND, Some(&kinds(&["quickfix"]))));
+    assert!(!wants(ACTION_KIND, Some(&kinds(&["refactor.re"]))));
+    assert!(!wants(
+        ACTION_KIND,
+        Some(&kinds(&["source.organizeImports"]))
+    ));
+}
+
+#[test]
+fn bulk_updates_pick_named_level() {
+    let dep = Dep {
+        name: "a".into(),
+        req: "^1.2.0".into(),
+        span: 0..6,
+        registry: "npm",
+        source: None,
+        index: None,
+        targets: Vec::new(),
+        pinned: false,
+        precise: false,
+        min: false,
+    };
+    let versions: Vec<Version> = ["1.2.0", "1.2.5", "1.4.0", "2.1.0"].map(v).into();
+    let req = Req::parse("^1.2.0", version::Bare::Exact).unwrap();
+    let view = View {
+        dep: &dep,
+        range: Range::default(),
+        state: State::Planned {
+            plan: Box::new(version::plan(&req, &versions, None, false).unwrap()),
+            current: req.floor().cloned(),
+        },
+        vulns: Vec::new(),
+        page: String::new(),
+    };
+    let text = |level| {
+        updates(std::slice::from_ref(&view), "", level)
+            .into_iter()
+            .map(|e| e.new_text)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(text("latest"), ["^2.1.0"]);
+    assert_eq!(text("major"), ["^2.1.0"]);
+    assert_eq!(text("minor"), ["^1.4.0"]);
+    assert_eq!(text("patch"), ["^1.2.5"]);
+}
+
+#[test]
+fn status_follows_original_wording() {
+    let glyphs = Indicators::default();
+    let plan = |resolved: Option<&str>| Plan {
+        latest: v("2.1.0"),
+        satisfied: false,
+        resolved: resolved.map(v),
+        picks: Vec::new(),
+        steps: Vec::new(),
+        builds: Vec::new(),
+        yanked: None,
+        deprecated: false,
+    };
+    let (sat, latest, none) = (&glyphs.satisfies, &glyphs.latest, &glyphs.no_match);
+    assert_eq!(
+        status(&plan(None), false, &glyphs),
+        format!("{none} no match")
+    );
+    assert_eq!(
+        status(&plan(Some("1.4.0")), false, &glyphs),
+        format!("{sat} satisfies 1.4.0")
+    );
+    assert_eq!(
+        status(&plan(Some("2.1.0")), false, &glyphs),
+        format!("{latest} satisfies latest 2.1.0")
+    );
+    assert_eq!(
+        status(&plan(Some("2.1.0")), true, &glyphs),
+        format!("{latest} latest 2.1.0")
+    );
+}
+
+fn planned(req: &str, list: &[&str]) -> (Dep, Plan) {
+    let dep = Dep {
+        name: "a".into(),
+        req: req.into(),
+        span: 0..req.len(),
+        registry: "docker",
+        source: None,
+        index: None,
+        targets: Vec::new(),
+        pinned: false,
+        precise: false,
+        min: false,
+    };
+    let versions: Vec<Version> = list.iter().map(|t| v(t)).collect();
+    let parsed = Req::parse(req, version::Bare::Prefix).unwrap();
+    (dep, version::plan(&parsed, &versions, None, false).unwrap())
+}
+
+fn view(dep: &Dep, state: State) -> View<'_> {
+    View {
+        dep,
+        range: Range::default(),
+        state,
+        vulns: Vec::new(),
+        page: "https://registry".into(),
+    }
+}
+
+fn titles(dep: &Dep, state: State) -> Vec<String> {
+    let uri: Uri = "file:///p/package.json".parse().unwrap();
+    lenses(&uri, &[view(dep, state)], "", &Indicators::default())
+        .into_iter()
+        .filter_map(|l| l.command.map(|c| c.title))
+        .collect()
+}
+
+#[test]
+fn status_reports_yanked_and_deprecated_first() {
+    let glyphs = Indicators::default();
+    let (_, mut plan) = planned("1", &["1.0.0", "2.0.0"]);
+    plan.deprecated = true;
+    assert_eq!(
+        status(&plan, false, &glyphs),
+        format!("{} deprecated 1.0.0", glyphs.deprecated)
+    );
+    plan.yanked = Some(v("0.9.0"));
+    assert_eq!(
+        status(&plan, false, &glyphs),
+        format!("{} yanked 0.9.0", glyphs.yanked)
+    );
+}
+
+#[test]
+fn hints_warn_of_yanked_and_deprecated_resolutions() {
+    let glyphs = Indicators::default();
+    let (dep, mut plan) = planned("2", &["1.0.0", "2.0.0"]);
+    let label = |plan: &Plan| {
+        let state = State::Planned {
+            plan: Box::new(plan.clone()),
+            current: None,
+        };
+        match hints(&[view(&dep, state)], &glyphs).remove(0).label {
+            InlayHintLabel::String(text) => text,
+            InlayHintLabel::LabelParts(_) => unreachable!(),
+        }
+    };
+    assert_eq!(label(&plan), glyphs.latest);
+    plan.deprecated = true;
+    assert_eq!(label(&plan), glyphs.deprecated);
+    plan.yanked = Some(v("1.9.0"));
+    assert_eq!(label(&plan), glyphs.yanked);
+}
+
+#[test]
+fn offers_other_builds_of_resolved_version() {
+    let (dep, plan) = planned(
+        "20-alpine",
+        &["20.1.0-alpine", "20.1.0-bookworm", "22.0.0-alpine"],
+    );
+    let uri: Uri = "file:///p/Dockerfile".parse().unwrap();
+    let state = State::Planned {
+        plan: Box::new(plan),
+        current: None,
+    };
+    let command = build_command(&uri, &view(&dep, state), "", &Indicators::default()).unwrap();
+    assert_eq!(command.command, "versionlens.build");
+    assert_eq!(command.arguments.unwrap()[3], json!(["20.1.0-bookworm"]));
+}
+
+#[test]
+fn directory_lenses_open_path_or_report_it_missing() {
+    let glyphs = Indicators::default();
+    let (dep, _) = planned("1", &["1.0.0"]);
+    let found = State::Directory {
+        path: "../c".into(),
+        target: Some("file:///c".into()),
+    };
+    assert_eq!(
+        titles(&dep, found),
+        [format!("{} file://../c", glyphs.directory)]
+    );
+    let missing = State::Directory {
+        path: "../c".into(),
+        target: None,
+    };
+    assert_eq!(
+        titles(&dep, missing),
+        [format!("{} not found ../c", glyphs.failed)]
+    );
+}
+
+#[test]
+fn source_lenses_name_source_and_count_as_neither_failed_nor_outdated() {
+    let glyphs = Indicators::default();
+    let (dep, _) = planned("1", &["1.0.0"]);
+    let source = || State::Source("git repository".into());
+    assert_eq!(titles(&dep, source()), ["git repository"]);
+    let views = [view(&dep, source())];
+    assert!(hints(&views, &glyphs).is_empty());
+    let uri: Uri = "file:///p/package.json".parse().unwrap();
+    let summary = stats(&uri, &views, "", &glyphs)
+        .and_then(|l| l.command)
+        .unwrap();
+    assert_eq!(summary.title, "1 dependencies");
+}
+
+#[test]
+fn project_versions_offer_their_next_releases_and_are_not_counted() {
+    let glyphs = Indicators::default();
+    let (dep, _) = planned("1", &["1.0.0"]);
+    let own = || State::Own(vec![("patch 1.0.1".into(), "1.0.1".into())]);
+    assert_eq!(
+        titles(&dep, own()),
+        [format!("{} patch 1.0.1", glyphs.update)]
+    );
+    let views = [view(&dep, own())];
+    assert!(hints(&views, &glyphs).is_empty());
+    let uri: Uri = "file:///p/package.json".parse().unwrap();
+    assert!(stats(&uri, &views, "", &glyphs).is_none());
+}
+
+#[test]
+fn offers_no_update_where_bare_name_has_no_place_for_version() {
+    let (mut dep, plan) = planned("", &["1.0.0", "2.0.0"]);
+    dep.span = 0..0;
+    let view = view(
+        &dep,
+        State::Planned {
+            plan: Box::new(plan),
+            current: None,
+        },
+    );
+    assert_eq!(picks(&view, "").len(), 0);
+    assert_eq!(updates(std::slice::from_ref(&view), "", "latest").len(), 0);
+    assert_eq!(picks(&view, "==")[0].1, "==2.0.0");
+}
+
+fn git_ref_dep(req: &str) -> Dep {
+    Dep {
+        name: "github.com/actions/checkout".into(),
+        req: req.into(),
+        span: 0..req.len(),
+        registry: git_ref::GIT_REF,
+        source: None,
+        index: None,
+        targets: Vec::new(),
+        pinned: false,
+        precise: false,
+        min: false,
+    }
+}
+
+const HEAD: &str = "f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a";
+
+#[test]
+fn branch_lens_shows_head_commit() {
+    let dep = git_ref_dep("main");
+    let state = State::Commit(Ref::Branch {
+        name: "main".into(),
+        head: HEAD.into(),
+    });
+
+    let shown = titles(&dep, state);
+
+    assert_eq!(shown, ["branch main head f548e57"]);
+}
+
+#[test]
+fn pinned_commit_behind_head_is_flagged_and_offers_head() {
+    let glyphs = Indicators::default();
+    let pin = "8ade135a41bc03ea155e62e844d188df1ea18608";
+    let dep = git_ref_dep(pin);
+    let state = || {
+        State::Commit(Ref::Pinned {
+            branch: "main".into(),
+            head: HEAD.into(),
+            tag: Some("v4.1.0".into()),
+        })
+    };
+    let uri: Uri = "file:///p/.github/workflows/ci.yml".parse().unwrap();
+
+    let shown = titles(&dep, state());
+    let views = [view(&dep, state())];
+    let outdated = diagnostics(&views, "", Some(DiagnosticSeverity::INFORMATION));
+    let summary = stats(&uri, &views, "", &glyphs)
+        .and_then(|l| l.command)
+        .unwrap();
+
+    assert_eq!(
+        shown,
+        [
+            format!("{} tag v4.1.0 · behind main head f548e57", glyphs.satisfies),
+            format!("{} main head f548e57", glyphs.update),
+        ]
+    );
+    assert_eq!(picks(&views[0], "")[0].1, HEAD);
+    assert_eq!(
+        outdated[0].message,
+        "github.com/actions/checkout can update to main head f548e57"
+    );
+    assert!(summary.title.contains("1 outdated"));
+}
+
+#[test]
+fn pinned_commit_at_head_is_current() {
+    let glyphs = Indicators::default();
+    let dep = git_ref_dep(HEAD);
+    let state = State::Commit(Ref::Pinned {
+        branch: "main".into(),
+        head: HEAD.into(),
+        tag: None,
+    });
+
+    let shown = titles(&dep, state);
+
+    assert_eq!(shown, [format!("{} main head", glyphs.latest)]);
+}

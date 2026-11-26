@@ -1,10 +1,7 @@
 .vscode/**
 src/**
-!src/schema/
-!src/schema/multi-registries.json
-tests/**
 *.vsix
 *.tsbuildinfo
 tsconfig.json
 node_modules/**
-
+!node_modules/vscode-languageclient/**

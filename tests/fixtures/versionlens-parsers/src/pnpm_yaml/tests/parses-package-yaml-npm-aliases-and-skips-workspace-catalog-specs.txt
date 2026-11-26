@@ -1,5 +1,0 @@
-dependencies:
-  aliased: "npm:typescript@^6.0.3"
-  unversioned: "npm:types-react"
-  workspace-only: "workspace:*"
-  catalog-only: "catalog:"

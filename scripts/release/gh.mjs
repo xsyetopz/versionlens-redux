@@ -20,7 +20,7 @@ const run = async (command, options = {}) => {
 	const base = {
 		env: { ...Bun.env, GH_PAGER: "cat" },
 		stderr: inherited,
-		stdin: options.stdin ?? inherited,
+		stdin: options.stdin ?? inherited
 	};
 	let output = "";
 	let exitCode = 0;
@@ -28,12 +28,12 @@ const run = async (command, options = {}) => {
 		const child = Bun.spawn(command, { ...base, stdout: "pipe" });
 		[output, exitCode] = await Promise.all([
 			new Response(child.stdout).text(),
-			child.exited,
+			child.exited
 		]);
 	} else {
 		const child = Bun.spawn(command, {
 			...base,
-			stdout: options.quiet === true ? "ignore" : "inherit",
+			stdout: options.quiet === true ? "ignore" : "inherit"
 		});
 		exitCode = await child.exited;
 	}
@@ -47,7 +47,7 @@ const run = async (command, options = {}) => {
 const requireCommand = async (name) => {
 	const child = Bun.spawn([name, "--version"], {
 		stderr: "ignore",
-		stdout: "ignore",
+		stdout: "ignore"
 	});
 	if ((await child.exited) !== 0) {
 		throw new Error(`${name} is required`);

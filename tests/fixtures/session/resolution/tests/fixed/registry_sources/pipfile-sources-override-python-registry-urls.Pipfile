@@ -1,8 +1,0 @@
-
-[[source]]
-name = "private"
-url = "https://pypi.example.test/simple/"
-verify_ssl = true
-
-[packages]
-requests = "==2.32.0"

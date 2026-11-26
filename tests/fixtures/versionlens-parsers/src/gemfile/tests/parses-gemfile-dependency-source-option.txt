@@ -1,6 +1,0 @@
-
-source "https://block.gems.example.test/" do
-  gem "block_private", "1.0.0"
-  gem "explicit_private", "2.0.0", source: "https://explicit.gems.example.test/"
-end
-gem "standalone_private", source: "https://standalone.gems.example.test/"

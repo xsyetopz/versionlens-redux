@@ -1,0 +1,317 @@
+# JavaScript, web, and other package-manager ecosystems; see native.toml for the row format.
+
+[[file]]
+id = 'npm'
+globs = ['package.json', 'package.json5']
+format = 'json'
+registry = 'npm'
+rules = [{ spec = 'version', pattern = '${OWN}', via = 'project' }, { use = 'NPM_DEPS' }]
+
+# Any other JSON file whose top level holds a package.json section, such as a web module's
+# `web-module.json` with `dependencies` or `jspm`, reads as package.json does.
+[[file]]
+id = 'npm'
+globs = ['*.json', '*.jsonc']
+content = [
+    'dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies',
+    'bundledDependencies', 'bundleDependencies', 'overrides', 'packageManager', 'jspm', 'pnpm',
+    'workspaces',
+]
+format = 'json'
+registry = 'npm'
+rules = [{ use = 'NPM_DEPS' }]
+
+# `.nvmrc` holds one version among comments, blank lines, and `key=value` lines nvm ignores, and
+# that version may be an alias: `lts/*` for the newest LTS line, `node` or `stable` for the newest
+# release (github.com/nvm-sh/nvm#nvmrc, `nvm_process_nvmrc_content` in nvm.sh).
+[[file]]
+id = 'node'
+globs = ['.nvmrc', '.node-version']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '(?m)^[ \t]*v?(?P<version>\d[\w.]*)[ \t]*(?:#.*)?\r?$' },
+    { lines = '(?m)^[ \t]*(?P<channel>lts/\*)[ \t]*(?:#.*)?\r?$', via = 'nodejs-lts' },
+    { lines = '(?m)^[ \t]*(?P<channel>node|stable)[ \t]*(?:#.*)?\r?$' },
+]
+
+# Bower's registry only names each package's Git repository; the packages it still serves
+# publish the same versions to npm.
+[[file]]
+id = 'bower'
+globs = ['bower.json']
+format = 'json'
+registry = 'npm'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'devDependencies' },
+    { keys = 'resolutions' },
+]
+
+# oven-sh/setup-bun passes `.bun-version` through as its `bun-version`, which takes a version,
+# `latest`, or `canary` (src/utils.ts and the README's inputs table); npm's `bun` package tags the
+# canary build `canary` (dist-tags read 2026-11-25: `latest` 1.4.5, `canary`
+# 1.4.5-canary.20261125.1).
+[[file]]
+id = 'bun'
+globs = ['.bun-version']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '${TOOL_VERSION}' },
+    { lines = '\A(?:\s*#[^\n]*\n)*\s*(?P<channel>latest)[ \t]*(?:#[^\n]*)?\s*\z' },
+    { lines = '\A(?:\s*#[^\n]*\n)*\s*(?P<channel>canary)[ \t]*(?:#[^\n]*)?\s*\z', via = 'npm-canary' },
+]
+
+[[file]]
+id = 'pnpm'
+globs = ['pnpm-workspace.yaml', 'pnpm-workspace.yml', 'package.yaml', 'package.yml', '.yarnrc.yml', '.yarnrc.yaml']
+format = 'yaml'
+registry = 'npm'
+rules = [{ use = 'NPM_DEPS' }]
+
+[[file]]
+id = 'deno'
+globs = ['deno.json', 'deno.jsonc', 'import_map.json', 'jsr.json', 'jsr.jsonc']
+format = 'json'
+registry = 'jsr'
+rules = [
+    { spec = 'version', pattern = '${OWN}', via = 'project' },
+    # A published package's `name` and `version` (jsr.io/docs/package-configuration), checked
+    # against JSR as the fork's master did, beside the local increments above.
+    { lines = '(?s)\A\s*\{.*?"name"\s*:\s*"(?P<name>@[\w-]+/[\w.-]+)".*?"version"\s*:\s*"(?P<version>[^"]+)"' },
+    { lines = '(?s)\A\s*\{.*?"version"\s*:\s*"(?P<version>[^"]+)".*?"name"\s*:\s*"(?P<name>@[\w-]+/[\w.-]+)"' },
+    # A specifier without a version takes the newest: Deno 2.9.8 locks `jsr:@std/assert` as
+    # `jsr:@std/assert@*`, and rejects `jsr:@std/assert@` with "Empty version constraint".
+    { spec = 'imports.*', pattern = '${DENO_SPEC}' },
+    { spec = 'scopes.*.*', pattern = '${DENO_SPEC}' },
+    # A deno.land module URL without `@version` redirects to the newest release, as
+    # https://deno.land/std/mod.ts answers 302 to https://deno.land/std@0.224.0/mod.ts.
+    { spec = 'imports.*', pattern = '${DENO_LAND}', via = 'deno-land' },
+    { spec = 'scopes.*.*', pattern = '${DENO_LAND}', via = 'deno-land' },
+]
+
+# Component names packages by GitHub repository, in `dependencies` and `development.dependencies`:
+# github.com/componentjs/spec/blob/master/component.json/specifications.md
+[[file]]
+id = 'component'
+globs = ['component.json']
+format = 'json'
+registry = 'github'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'development.dependencies' },
+]
+
+# rescript.json, and bsconfig.json before it, list ReScript packages by name; npm installs them
+# from package.json, and the compiler finds them in node_modules. `bs-dependencies` and
+# `bs-dev-dependencies` are the deprecated spellings:
+# rescript-lang.org/docs/manual/build-configuration. Each lens shows the npm latest and offers no
+# edit, as the version belongs to package.json.
+[[file]]
+id = 'rescript'
+globs = ['rescript.json', 'bsconfig.json']
+format = 'json'
+registry = 'npm'
+rules = [
+    { spec = 'dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'dev-dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'bs-dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'bs-dev-dependencies.*', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+]
+
+# PEAR 2.0 package.xml: `package` dependencies come from the PEAR channel and `extension` ones
+# from PECL, each with a `min` or `recommended` version:
+# pear.php.net/manual/en/guide.developers.package2.dependencies.php, and the package.xml of
+# github.com/pear/Console_Table and github.com/php-memcached-dev/php-memcached.
+[[file]]
+id = 'pear'
+globs = ['package.xml', 'package2.xml']
+format = 'xml'
+registry = 'pear'
+rules = [
+    { record = 'package.dependencies.required.package', name = 'name', version = 'min|recommended' },
+    { record = 'package.dependencies.optional.package', name = 'name', version = 'min|recommended' },
+    { record = 'package.dependencies.group.package', name = 'name', version = 'min|recommended' },
+    { record = 'package.dependencies.required.extension', name = 'name', version = 'min|recommended', via = 'pecl' },
+    { record = 'package.dependencies.optional.extension', name = 'name', version = 'min|recommended', via = 'pecl' },
+    { record = 'package.dependencies.group.extension', name = 'name', version = 'min|recommended', via = 'pecl' },
+]
+
+[[file]]
+id = 'unity'
+globs = ['Packages/manifest.json']
+format = 'json'
+registry = 'unity'
+rules = [
+    { keys = 'dependencies' },
+]
+
+[[file]]
+id = 'composer'
+globs = ['composer.json']
+format = 'json'
+registry = 'composer'
+rules = [
+    { spec = 'version', pattern = '${OWN}', via = 'project' },
+    { keys = 'require' },
+    { keys = 'require-dev' },
+    # The PHP version the package runs on, a platform package Packagist does not list:
+    # getcomposer.org/doc/01-basic-usage.md#platform-packages
+    { lines = '''"(?P<name>php)"\s*:\s*"(?P<version>[^"]+)"''', within = '''"require(?:-dev)?"\s*:\s*\{(?P<body>[^{}]*(?:\{[^{}]*\}[^{}]*)*)\}''', via = 'php' },
+    # Constraints on other packages, which the fork's master read too:
+    # getcomposer.org/doc/04-schema.md#conflict
+    { keys = 'conflict' },
+    { keys = 'replace' },
+    { keys = 'provide' },
+]
+
+[[file]]
+id = 'haxelib'
+globs = ['haxelib.json']
+format = 'json'
+registry = 'haxelib'
+rules = [
+    { keys = 'dependencies' },
+]
+
+[[file]]
+id = 'hxml'
+globs = ['*.hxml']
+format = 'text'
+registry = 'haxelib'
+insert = ':'
+rules = [
+    { lines = '(?m)^[ \t]*-(?:-library|lib|L)[ \t]+(?P<name>[\w.-]+)(?::(?P<version>[\w.+-]+))?[ \t]*\r?$' },
+]
+
+[[file]]
+id = 'dub'
+globs = ['dub.json', 'dub.selections.json']
+format = 'json'
+registry = 'dub'
+rules = [
+    { keys = 'dependencies' },
+    { keys = 'versions' },
+    # A build configuration adds dependencies: dub.pm/dub-reference/configurations/
+    { keys = 'configurations.*.dependencies' },
+    # A sub-package declared inline is a recipe of its own, with a required `name`, and may list
+    # dependencies and configurations: dub.pm/dub-reference/subpackages/. A path string in its
+    # place names a folder.
+    { keys = 'subPackages.#.dependencies' },
+    { keys = 'subPackages.#.configurations.*.dependencies' },
+]
+
+[[file]]
+id = 'dub-sdl'
+globs = ['dub.sdl']
+format = 'text'
+registry = 'dub'
+rules = [
+    # Attributes come in any order; `path` names a local package, and beside `repository` the
+    # `version` is a git commit: dub.pm/dub-reference/dependencies/. The commit rules come first,
+    # so they win the span the registry rule also matches.
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]repository="[^"]+"[^\n#]*?[ \t]version="(?P<version>[^"]+)"', via = 'source' },
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]version="(?P<version>[^"]+)"[^\n#]*?[ \t]repository="', via = 'source' },
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]version="(?P<version>[^"]+)"' },
+    { lines = '(?m)^[ \t]*dependency[ \t]+"(?P<name>[^"]+)"[^\n#]*?[ \t]path="(?P<version>[^"]+)"', via = 'directory' },
+]
+
+[[file]]
+id = 'elm'
+globs = ['elm.json']
+format = 'json'
+registry = 'elm'
+rules = [
+    { keys = 'dependencies.direct' },
+    { keys = 'dependencies.indirect' },
+    { keys = 'test-dependencies.direct' },
+    { keys = 'test-dependencies.indirect' },
+]
+
+# Lockfiles hold the version each package resolved to, so the lens compares it with the latest.
+
+# `packages` keys a package by its `node_modules/` path in lockfile v2 and v3, and v1 nests
+# `dependencies` by name; either way `version` comes first. Workspace entries start with `name`.
+# A link to a workspace gives its directory as `resolved` beside `"link": true`, which reads as a
+# local directory. Read from github.com/npm/cli/blob/latest/package-lock.json. A git dependency
+# resolves to `git+ssh://…#commit` beside the version its package.json declares in v2 and v3
+# (`node_modules/@adiwajshing/baileys` in github.com/Scheyot2/luix-bot's .package-lock.json.bak),
+# and gives that URL as its `version` in v1 (`postgres` in nrwl/nx's lock-file fixture
+# auxiliary-packages/package-lock.json.fixture). The registry rule takes a version only when the
+# next key is a registry `resolved` URL, a key other than `resolved`, or the entry's end, so a
+# git package's declared version is not compared with the npm release of the same name.
+[[file]]
+id = 'package-lock'
+globs = ['package-lock.json', 'npm-shrinkwrap.json']
+format = 'text'
+registry = 'npm'
+pinned = true
+rules = [
+    { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>\d[^"]*)"(?:\s*\}|,\s*"(?:resolved":[ \t]*"https?:|[^r"]|re[^s]))' },
+    { lines = '"(?:[^"\n]*node_modules/)?(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"[^"]*",\s*"resolved":[ \t]*"(?P<version>git\+[^"]+)"', via = 'source' },
+    { lines = '"(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"version":[ \t]*"(?P<version>git\+[^"]+)"', via = 'source' },
+    { lines = '"[^"\n]*node_modules/(?P<name>(?:@[\w.-]+/)?[\w.-]+)":[ \t]*\{\s*"resolved":[ \t]*"(?P<version>[^"]+)",\s*"link":[ \t]*true', via = 'directory' },
+]
+
+# An entry heads one or more `name@range` keys, then `version "1.0.0"` in Yarn 1
+# (github.com/babel/babel/blob/v7.0.0/yarn.lock) or `version: 1.0.0` in Yarn 2 and later
+# (github.com/yarnpkg/berry/blob/master/yarn.lock). Ranges must start like a version or `npm:`
+# one, so aliased entries stay out. The same Yarn 2 lockfile resolves a workspace to
+# `name@workspace:path`, a local directory, other than the root's `.`; a git dependency to
+# `name@https://github.com/dexus/pem.git#commit=…`; and a patched package to `name@patch:…`, whose
+# `version` is the npm release the patch applies to.
+[[file]]
+id = 'yarn-lock'
+globs = ['yarn.lock']
+format = 'text'
+registry = 'npm'
+pinned = true
+rules = [
+    { lines = '(?m)^"?(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?:npm:)?[\^~<>=*\dvx][^\n]*:\r?\n[ \t]+version:?[ \t]+"?(?P<version>\d[^"\s]*)' },
+    { lines = '(?m)^"?(?P<name>(?:@[\w.-]+/)?[\w.-]+)@patch:[^\n]*:\r?\n[ \t]+version:[ \t]+"?(?P<version>\d[^"\s]*)' },
+    { lines = '(?m)^[ \t]+resolution:[ \t]+"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@workspace:(?P<version>(?:[^".]|\.[^"])[^"]*)"', via = 'directory' },
+    { lines = '(?m)^[ \t]+resolution:[ \t]+"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>(?:git\+|https?://)[^"]*\.git#[^"]*)"', via = 'source' },
+]
+
+# Each importer lists its direct dependencies as `name:`, `specifier:`, then the resolved
+# `version:`, whose peer suffix `(react@18.2.0)` stays out. pnpm 8 and later write this shape:
+# github.com/vitejs/vite/blob/main/pnpm-lock.yaml. A `link:../vite` version is relative to its
+# importer's directory, a key the entry's regex cannot reach, so links stay out.
+[[file]]
+id = 'pnpm-lock'
+globs = ['pnpm-lock.yaml']
+format = 'text'
+registry = 'npm'
+pinned = true
+rules = [
+    { lines = '''(?m)^[ \t]+'?(?P<name>(?:@[\w.-]+/)?[\w.-]+)'?:\r?\n[ \t]+specifier:[^\n]*\r?\n[ \t]+version:[ \t]+'?(?P<version>\d[\w.+-]*)''' },
+]
+
+# Bun's text lockfile maps each package path to `["name@version", ...]`; the name comes from the
+# value, which also covers nested and aliased paths: bun.sh/docs/install/lockfile, and this
+# repository's own bun.lock. A workspace entry, `["versionlens-redux@workspace:packages/
+# vscode-extension"]` there, names its directory, other than the root's `.`.
+[[file]]
+id = 'bun-lock'
+globs = ['bun.lock']
+format = 'text'
+registry = 'npm'
+pinned = true
+rules = [
+    { lines = '"[^"\n]+":[ \t]*\[[ \t]*"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>\d[^"]*)"' },
+    { lines = '"[^"\n]+":[ \t]*\[[ \t]*"(?P<name>(?:@[\w.-]+/)?[\w.-]+)@workspace:(?P<version>(?:[^".]|\.[^"])[^"]*)"', via = 'directory' },
+]
+
+# Installed packages: github.com/composer/composer/blob/main/composer.lock
+[[file]]
+id = 'composer-lock'
+globs = ['composer.lock']
+format = 'json'
+registry = 'composer'
+pinned = true
+rules = [
+    { record = 'packages.*', name = 'name', version = 'version' },
+    { record = 'packages-dev.*', name = 'name', version = 'version' },
+]
+

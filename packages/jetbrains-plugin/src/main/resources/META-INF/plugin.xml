@@ -3,15 +3,88 @@
   <name>VersionLens Redux</name>
   <vendor url="https://github.com/xsyetopz/versionlens-redux">VersionLens contributors</vendor>
   <description><![CDATA[
-    Dependency hints, diagnostics, and code lenses for supported project files through the shared VersionLens language server.
+    Shows the latest version of each dependency in package manifests (package.json, Cargo.toml,
+    requirements.txt, go.mod, pom.xml, and many more) as code lenses, inlay hints, and diagnostics,
+    with quick fixes to update, through the shared VersionLens language server.
   ]]></description>
-  <idea-version since-build="261.26222.65" />
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lsp</depends>
-  <depends>com.intellij.modules.ultimate</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <platform.lsp.integrationProvider implementation="com.versionlens.jetbrains.VersionLensLspServerSupportProvider" />
+    <platform.lsp.integrationProvider implementation="com.versionlens.jetbrains.Provider"/>
+    <applicationConfigurable parentId="tools" id="versionlens" displayName="VersionLens"
+                             instance="com.versionlens.jetbrains.SettingsPage"/>
+    <toolWindow id="VersionLens" anchor="bottom" icon="/META-INF/pluginIcon.svg"
+                factoryClass="com.versionlens.jetbrains.LogWindow"/>
+    <editorNotificationProvider implementation="com.versionlens.jetbrains.ToolbarProvider"/>
+    <notificationGroup id="VersionLens" displayType="BALLOON"/>
   </extensions>
+
+  <actions>
+    <action id="versionlens.toggle" class="com.versionlens.jetbrains.ToggleVersionsAction" text="Show or Hide Versions"/>
+    <action id="versionlens.togglePrereleases" class="com.versionlens.jetbrains.TogglePrereleasesAction" text="Toggle Prereleases"/>
+    <action id="versionlens.updateAll.latest" class="com.versionlens.jetbrains.UpdateAllLatestAction" text="Update All Dependencies: Latest"/>
+    <action id="versionlens.updateAll.major" class="com.versionlens.jetbrains.UpdateAllMajorAction" text="Update All Dependencies: Major"/>
+    <action id="versionlens.updateAll.minor" class="com.versionlens.jetbrains.UpdateAllMinorAction" text="Update All Dependencies: Minor"/>
+    <action id="versionlens.updateAll.patch" class="com.versionlens.jetbrains.UpdateAllPatchAction" text="Update All Dependencies: Patch"/>
+    <action id="versionlens.updateWorkspace.latest" class="com.versionlens.jetbrains.UpdateWorkspaceLatestAction" text="Update Workspace Dependencies: Latest"/>
+    <action id="versionlens.updateWorkspace.major" class="com.versionlens.jetbrains.UpdateWorkspaceMajorAction" text="Update Workspace Dependencies: Major"/>
+    <action id="versionlens.updateWorkspace.minor" class="com.versionlens.jetbrains.UpdateWorkspaceMinorAction" text="Update Workspace Dependencies: Minor"/>
+    <action id="versionlens.updateWorkspace.patch" class="com.versionlens.jetbrains.UpdateWorkspacePatchAction" text="Update Workspace Dependencies: Patch"/>
+    <action id="versionlens.sort" class="com.versionlens.jetbrains.SortAction" text="Sort Dependencies"/>
+    <action id="versionlens.install" class="com.versionlens.jetbrains.InstallAction" text="Install Dependencies"/>
+    <action id="versionlens.refresh" class="com.versionlens.jetbrains.RefreshAction" text="Refresh Versions"/>
+    <action id="versionlens.clearCache" class="com.versionlens.jetbrains.ClearCacheAction" text="Clear Cache"/>
+    <action id="versionlens.restart" class="com.versionlens.jetbrains.RestartAction" text="Restart Server"/>
+    <action id="versionlens.showOutput" class="com.versionlens.jetbrains.ShowLogAction" text="Show VersionLens Log"/>
+    <action id="versionlens.addAuthentication" class="com.versionlens.jetbrains.AddAuthenticationAction" text="Add URL Authentication"/>
+    <action id="versionlens.removeAuthentication" class="com.versionlens.jetbrains.RemoveAuthenticationAction" text="Remove URL Authentication"/>
+    <group id="versionlens.updateAllMenu" text="Update All Dependencies" popup="true">
+      <reference ref="versionlens.updateAll.latest"/>
+      <reference ref="versionlens.updateAll.major"/>
+      <reference ref="versionlens.updateAll.minor"/>
+      <reference ref="versionlens.updateAll.patch"/>
+    </group>
+    <group id="versionlens.updateWorkspaceMenu" text="Update Workspace Dependencies" popup="true">
+      <reference ref="versionlens.updateWorkspace.latest"/>
+      <reference ref="versionlens.updateWorkspace.major"/>
+      <reference ref="versionlens.updateWorkspace.minor"/>
+      <reference ref="versionlens.updateWorkspace.patch"/>
+    </group>
+    <group id="versionlens.more" class="com.versionlens.jetbrains.MoreGroup">
+      <reference ref="versionlens.updateAllMenu"/>
+      <reference ref="versionlens.updateWorkspaceMenu"/>
+      <separator/>
+      <reference ref="versionlens.sort"/>
+      <reference ref="versionlens.install"/>
+      <separator/>
+      <reference ref="versionlens.refresh"/>
+      <reference ref="versionlens.clearCache"/>
+      <reference ref="versionlens.showOutput"/>
+    </group>
+    <group id="versionlens.toolbar">
+      <reference ref="versionlens.toggle"/>
+      <reference ref="versionlens.togglePrereleases"/>
+      <reference ref="versionlens.more"/>
+    </group>
+    <group id="VersionLens" text="VersionLens" popup="true">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+      <reference ref="versionlens.toggle"/>
+      <reference ref="versionlens.togglePrereleases"/>
+      <separator/>
+      <reference ref="versionlens.updateAllMenu"/>
+      <reference ref="versionlens.updateWorkspaceMenu"/>
+      <reference ref="versionlens.sort"/>
+      <reference ref="versionlens.install"/>
+      <separator/>
+      <reference ref="versionlens.refresh"/>
+      <reference ref="versionlens.clearCache"/>
+      <reference ref="versionlens.restart"/>
+      <reference ref="versionlens.showOutput"/>
+      <separator/>
+      <reference ref="versionlens.addAuthentication"/>
+      <reference ref="versionlens.removeAuthentication"/>
+    </group>
+  </actions>
 </idea-plugin>

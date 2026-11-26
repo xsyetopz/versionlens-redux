@@ -1,3 +1,0 @@
-{
-  "packageManager": "pnpm@9.0.0-rc.2+sha.6d21a1f908b66fe37f42f3170d4ba8fd5e2dcde886ec85863a5e7cac"
-}

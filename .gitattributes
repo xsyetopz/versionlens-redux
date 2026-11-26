@@ -12,7 +12,6 @@ gradlew text eol=lf
 
 *.md diff=markdown
 *.sh diff=bash
-.githooks/* text eol=lf diff=bash
 
 *.png binary
 *.jpg binary
@@ -39,3 +38,13 @@ bun.lock text linguist-generated
 *.rs diff=rust
 Cargo.lock text linguist-generated
 # <<< rust-bedrock
+
+# >>> jvm-bedrock
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+# <<< jvm-bedrock
+
+# bedrock writes gradlew.bat with LF endings and its guard compares bytes, so the `*.bat eol=crlf`
+# above would make every fresh checkout fail `bedrock guard base`; keep this one file LF.
+gradlew.bat text eol=lf

@@ -1,0 +1,117 @@
+# Runtime-version files, tool managers, and repository tooling configuration; see native.toml
+# for the row format.
+#
+# Tool managers name runtimes by registry id (`python`, `ruby`, `rust`, `golang`) or through
+# registry::alias (`terraform`). The nested `registry` and `name` groups capture one word twice,
+# so the dependency is looked up where that word says and keeps it as its name.
+
+[[file]]
+id = 'tool-versions'
+globs = ['.tool-versions']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '(?m)^[ \t]*(?P<name>node|bun|pnpm)(?:js)?[ \t]+(?P<version>\d[\w.]*)' },
+    { lines = '(?m)^[ \t]*(?P<registry>(?P<name>python|ruby|rust|terraform|golang))[ \t]+(?P<version>\d[\w.]*)' },
+]
+
+[[file]]
+id = 'mise'
+globs = ['mise.toml', '.mise.toml', 'mise.*.toml', '.mise.*.toml', '.mise/config.toml', '.config/mise/config.toml']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '''(?m)^[ \t]*["']?(?P<name>node|bun|pnpm|npm)["']?[ \t]*=[ \t]*(?:\{[^}\n]*?[ {,]version[ \t]*=[ \t]*)?["'](?P<version>\d[\w.]*)["']''' },
+    { lines = '''(?m)^[ \t]*["']?(?P<registry>(?P<name>python|ruby|rust|terraform|golang))["']?[ \t]*=[ \t]*(?:\{[^}\n]*?[ {,]version[ \t]*=[ \t]*)?["'](?P<version>\d[\w.]*)["']''' },
+    { lines = '''(?m)^[ \t]*["'](?P<registry>npm|cargo|pipx|go):(?P<name>[^"'\s]+)["'][ \t]*=[ \t]*(?:\{[^}\n]*?[ {,]version[ \t]*=[ \t]*)?["'](?P<version>\d[\w.]*)["']''' },
+]
+
+# proto pins tools at the top level as mise does, with `go` for Go and `npm:` for npm packages:
+# github.com/moonrepo/moon/blob/master/website/docs/proto/config.mdx
+[[file]]
+id = 'proto'
+globs = ['.prototools']
+format = 'text'
+registry = 'npm'
+rules = [
+    { lines = '''(?m)^[ \t]*["']?(?P<name>node|bun|pnpm|npm|yarn)["']?[ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''' },
+    { lines = '''(?m)^[ \t]*["']?(?P<registry>(?P<name>python|ruby|rust))["']?[ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''' },
+    { lines = '''(?m)^[ \t]*["']?(?P<name>go)["']?[ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''', via = 'golang' },
+    { lines = '''(?m)^[ \t]*["']npm:(?P<name>[^"'\s]+)["'][ \t]*=[ \t]*["'](?P<version>[~^]?\d[\w.]*)["']''' },
+]
+
+# aqua installs GitHub releases; a standard-registry name is `owner/repo`, or `owner/repo/cmd`
+# for one command of a repository, with its version after `@` or in `version`:
+# aquaproj.github.io/docs/reference/config/
+[[file]]
+id = 'aqua'
+globs = ['aqua.yaml', 'aqua.yml', '.aqua.yaml', '.aqua.yml', 'aqua/imports/*.yaml', 'aqua/imports/*.yml']
+format = 'yaml'
+registry = 'github'
+rules = [
+    { spec = 'packages.*.name', pattern = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[\w.-]+)?@(?P<version>v?\d[\w.-]*)$' },
+    { record = 'packages.*', name = 'name', version = 'version' },
+]
+
+# Devbox lists Nixhub packages as `name@version`, or maps each name to a version or to a table
+# with `version`: jetify.com/docs/devbox/configuration/, and github.com/jetify-com/devbox/blob/main/devbox.json
+[[file]]
+id = 'devbox'
+globs = ['devbox.json']
+format = 'json'
+registry = 'nixhub'
+rules = [
+    { spec = 'packages.*', pattern = '^(?P<name>[\w.+-]+)@(?P<version>\d[^@\s]*)$' },
+    { keys = 'packages' },
+]
+
+[[file]]
+id = 'ruby'
+globs = ['.ruby-version']
+format = 'text'
+registry = 'ruby'
+rules = [
+    { lines = '\A\s*(?:ruby-)?(?P<version>\d[\w.]*)\s*\z' },
+]
+
+[[file]]
+id = 'terraform-cli'
+globs = ['.terraform-version']
+format = 'text'
+registry = 'terraform-cli'
+rules = [
+    { lines = '${TOOL_VERSION}' },
+]
+
+[[file]]
+id = 'pre-commit'
+globs = ['.pre-commit-config.yaml', '.pre-commit-config.yml']
+format = 'yaml'
+registry = 'github'
+rules = [
+    { lines = '''(?m)repo:[ \t]*["']?https://github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?["']?[ \t]*\r?\n[ \t]*rev:[ \t]*["']?(?P<version>v?\d[\w.-]*)''' },
+]
+
+[[file]]
+id = 'devcontainer'
+globs = ['devcontainer.json']
+format = 'json'
+registry = 'docker'
+rules = [
+    { spec = 'image', pattern = '${DOCKER}' },
+]
+
+
+# A Brewfile names formulae and casks with no version, since Homebrew installs only the current
+# one: `brew "ruby"`, `brew "postgresql@16", restart_service: true`, `cask "firefox"`
+# (docs.brew.sh/Brew-Bundle-and-Brewfile). Each lens shows that current version and offers no
+# edit. A tap-qualified name, `user/tap/formula`, is not in the core API and is left unread.
+[[file]]
+id = 'brewfile'
+globs = ['Brewfile', '.Brewfile', 'Brewfile.*']
+format = 'text'
+registry = 'homebrew'
+rules = [
+    { lines = '''(?m)^[ \t]*brew[ \t]+["'](?P<name>[\w.+@-]+)["']''' },
+    { lines = '''(?m)^[ \t]*cask[ \t]+["'](?P<name>[\w.+@-]+)["']''', via = 'homebrew-cask' },
+]

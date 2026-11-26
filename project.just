@@ -10,27 +10,75 @@ safe-remotes:
     git remote set-url --push upstream DISABLED
     git remote -v
 
-# Run one versionlens-fetch HTTP test by its full name, with its output.
-http-test name:
-    cargo test -p versionlens-fetch --locked {{ name }} -- --exact --nocapture
-
-# Run the large registry response test.
-http-large-response:
-    just http-test client::send::tests::reads_large_registry_response_bodies
-
-# Time cold provider lookups against a release build of the server.
-provider-cold-benchmark *args:
-    cargo build -p versionlens-lsp --release --locked
-    python3 scripts/bench/provider-cold.py {{ args }}
-
 # Package the VS Code extension.
 package:
     bun run package
 
-# Check the editor file lists, release scripts, extension build and tests, and editor packages.
+# Ask every registry, package page, OSV ecosystem, and kind of registry config for a sample; needs the network.
+registries-live:
+    cargo test -p versionlens-lsp tests::live -- --include-ignored
+
+# Drive the extension in a real VS Code against the live registries; needs Docker and the network.
+vscode-live: (vscode-container "scripts/vscode-live.mjs")
+
+# Time cold starts of the original 1.x extension against this one; needs Docker and the network.
+vscode-bench: (vscode-container "scripts/vscode-bench.mjs")
+
+# Run a VS Code script in a Linux container under Xvfb: VS Code on macOS brings its window in
+# front whatever its launcher asks, and the virtual display keeps it off the desktop. Named
+# volumes keep the Rust toolchain, the crates, and the Linux build between runs.
+[private]
+vscode-container script:
+    bun run build
+    docker build -q -t versionlens-vscode scripts/vscode-container
+    docker run --rm --init -v "{{justfile_directory()}}:/work" -w /work \
+        -v versionlens-rustup:/usr/local/rustup -v versionlens-cargo:/usr/local/cargo/registry \
+        -v versionlens-target:/target -e CARGO_TARGET_DIR=/target -e VERSIONLENS_BENCH_RUNS \
+        -e VERSIONLENS_LSP=/target/release/versionlens-lsp versionlens-vscode \
+        sh -c 'cargo build -q --release -p versionlens-lsp && xvfb-run -a bun {{script}}'
+
+# Drive the JetBrains plugin in a headless IntelliJ IDEA against the live registries; needs the network.
+jetbrains-live:
+    cargo build -p versionlens-lsp
+    just jvm::gradle :jetbrains-plugin:test --tests com.versionlens.jetbrains.LiveTest -PversionlensLiveServer={{justfile_directory()}}/target/debug/versionlens-lsp --rerun
+
+# Drive the Neovim plugin in a headless Neovim against the live registries; needs the network.
+neovim-live:
+    make -C packages/neovim-plugin live
+
+# Check the release scripts, the extension build and tests, the Neovim plugin, and the editor packages.
 project-verify:
-    bun run check:manifests
     bun run test:release
     bun run check:extension-build
     bun run test:extension
     bun run package:editors
+    make -C packages/neovim-plugin test
+
+# The IDE draws into Xvfb, so no window reaches the desktop; screenshots and the IDE log go to
+# target/jetbrains-gui, and the IDE version is the one the plugin builds against.
+# Drive the JetBrains plugin GUI in IntelliJ IDEA under Xvfb with lookups held pending: URL
+# authentication through its dialogs, the trace, and the settings page; needs Docker and the network.
+jetbrains-gui:
+    just jvm::gradle :jetbrains-plugin:buildPlugin
+    docker build -q -t versionlens-vscode scripts/vscode-container
+    docker build -q -t versionlens-jetbrains-gui scripts/jetbrains-gui
+    docker run --rm --init -v "{{justfile_directory()}}:/work" -w /work -v versionlens-idea:/idea \
+        -v versionlens-rustup:/usr/local/rustup -v versionlens-cargo:/usr/local/cargo/registry \
+        -v versionlens-target:/target -e CARGO_TARGET_DIR=/target versionlens-jetbrains-gui \
+        sh -c 'cargo build -q --release -p versionlens-lsp && sh scripts/jetbrains-gui/run.sh \
+        packages/jetbrains-plugin/build/distributions/versionlens-redux-jetbrains-plugin-*.zip target/jetbrains-gui'
+
+# Zed draws into Xvfb through Mesa's software Vulkan, so no window reaches the desktop; screenshots,
+# the server traffic, and Zed's log go to target/zed-gui.
+# Drive the Zed extension in Zed under Xvfb: statuses, the build prompt, every command from the menu,
+# the palette, and the toolbar, URL authentication, and the RPC trace; needs Docker and the network.
+zed-gui:
+    cargo build --manifest-path packages/zed-extension/Cargo.toml --target wasm32-wasip2 --release --locked
+    docker build -q -t versionlens-vscode scripts/vscode-container
+    docker build -q -t versionlens-jetbrains-gui scripts/jetbrains-gui
+    docker build -q -t versionlens-zed-gui scripts/zed-gui
+    docker run --rm --init -v "{{justfile_directory()}}:/work" -w /work -v versionlens-zed:/zed \
+        -v versionlens-rustup:/usr/local/rustup -v versionlens-cargo:/usr/local/cargo/registry \
+        -v versionlens-target:/target -e CARGO_TARGET_DIR=/target -e ZED_REFRESH versionlens-zed-gui \
+        sh -c 'cargo build -q --release -p versionlens-lsp && sh scripts/zed-gui/run.sh \
+        packages/zed-extension/target/wasm32-wasip2/release/versionlens_zed_extension.wasm target/zed-gui'

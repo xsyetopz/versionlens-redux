@@ -14,7 +14,7 @@ if (
 	target === ""
 ) {
 	throw new Error(
-		"usage: bun scripts/package/vsix.mjs <vsix> <server-binary> <vscode-target>",
+		"usage: bun scripts/package/vsix.mjs <vsix> <server-binary> <vscode-target>"
 	);
 }
 
@@ -31,11 +31,11 @@ const digest = (buffer) => createHash("sha256").update(buffer).digest("hex");
 const unzipEntry = async (entry) => {
 	const child = Bun.spawn(["unzip", "-p", vsixPath, entry], {
 		stderr: "inherit",
-		stdout: "pipe",
+		stdout: "pipe"
 	});
 	const [output, exitCode] = await Promise.all([
 		new Response(child.stdout).bytes(),
-		child.exited,
+		child.exited
 	]);
 	if (exitCode !== 0) {
 		throw new Error(`unzip -p ${vsixPath} ${entry} exited with ${exitCode}`);
@@ -49,7 +49,7 @@ if (digest(packagedServer) !== digest(await Bun.file(serverPath).bytes())) {
 	throw new Error(`${vsixPath} ${serverEntry} does not match ${serverPath}`);
 }
 const manifest = new TextDecoder().decode(
-	await unzipEntry("extension.vsixmanifest"),
+	await unzipEntry("extension.vsixmanifest")
 );
 if (!manifest.includes(`TargetPlatform="${target}"`)) {
 	throw new Error(`${vsixPath} target is not ${target}`);

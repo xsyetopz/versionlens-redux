@@ -10,170 +10,191 @@ VersionLens Redux shows dependency versions, update actions, and vulnerability d
 
 ## Extension Identity
 
-- Extension name: `versionlens-redux`
-- Publisher: `xsyetopz`
 - VS Code id: `xsyetopz.versionlens-redux`
-- Original extension id checked for conflicts: `pflannery.vscode-versionlens`
-
-When the original VersionLens extension is installed, VersionLens Redux warns and offers to disable the original extension. Running both extensions at the same time can duplicate CodeLens providers and commands.
+- Forked from `pflannery.vscode-versionlens`. Disable the original while this one runs, or both show versions.
 
 ## Features
 
-- CodeLens hints for installed, latest, constrained, fixed, and prerelease versions.
-- Update commands for latest, major, minor, and patch targets, for the active manifest or every manifest in the workspace.
-- Commands to restart the language server or the extension host, and to show the server output.
-- Manifest-aware dependency sorting where ordering is safe.
-- OSV.dev vulnerability diagnostics for ecosystems supported by OSV.
-- Update-available diagnostics with one-step `Bump to ...` quick fixes.
-- Registry, prerelease, file-pattern, and HTTP settings per provider.
-- Cache clearing and an optional install task after saving a changed manifest.
+- **Inlay hints** after each dependency show the newest version, or `✓` when it is current.
+- **Code lenses** above each dependency offer the updates that apply: the newest version the range allows, the latest release, and a prerelease when `versionlens.prereleases` is on.
+- **Hovers** show the requirement, the resolved and latest versions, a link to the registry page, and any OSV advisories.
+- **Diagnostics** warn about versions with known OSV.dev vulnerabilities, and mark each outdated dependency at `versionlens.updateSeverity`.
+- **Quick fixes** apply an update from the light bulb; **source actions** update, sort, and switch the whole file.
+- **Editor title icons** on each manifest: show or hide release versions, show or hide prerelease versions, a spinner while lookups run, and an error icon that opens the log when a lookup fails.
+- **Editor title menu (`...`)**: show or hide versions and prereleases, run the custom install task, sort dependencies alphabetically, and update dependencies to latest, major-only, minor-only, or patch-only.
+- **Commands** in the palette: everything in the menu, plus refresh versions, clear cache, update dependencies in the workspace at each level, add and remove url authentication, restart the language server, and show its output.
+
+A failed lookup shows `✗` with its reason on the dependency's line, and the output channel logs it.
 
 ## Supported Manifests
 
-VersionLens Redux reads dependency files across these ecosystems:
+| Registry | OSV advisories | Files |
+| --- | --- | --- |
+| crates.io | crates.io | `Cargo.toml`, `.cargo/config.toml`, `.cargo/config` (`[patch]` tables), `Cargo.lock` |
+| npm | npm | `package.json` (including `jspm` `npm:` values), `package.json5`, `pnpm-workspace.yaml`, `package.yaml`, `package.yml`, `.yarnrc.yml`, `.yarnrc.yaml`, `bower.json`, `rescript.json` and `bsconfig.json` (names only; the version lives in `package.json`), `.bun-version`, `npm:` entries of `.prototools`, and the resolved versions in `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` |
+| Node.js releases | Bitnami (`node`) | `.nvmrc` (with its `lts/*`, `node`, and `stable` aliases), `.node-version`, `node` in `.tool-versions`, `mise.toml`, and `.prototools`, `node-version` of `actions/setup-node`, and `engines.node` in `package.json` |
+| JSR and npm | npm; GIT for JSR packages (the GitHub repository jsr.io links) | `deno.json`, `deno.jsonc`, `import_map.json`, `jsr.json`, `jsr.jsonc`, and the published package's own `name` |
+| deno.land modules | GIT (the GitHub repository a release was uploaded from) | `https://deno.land/std/…` and `/x/…` imports in `deno.json` and `import_map.json`, with or without `@version` |
+| npm `canary` dist-tag | npm | a `.bun-version` of `canary` |
+| Unity | | `Packages/manifest.json` |
+| Packagist | Packagist | `composer.json`, `composer.lock` |
+| PHP releases, through endoflife.date | Bitnami (`php`) | `php` in `composer.json` `require` and `require-dev` |
+| PEAR and PECL channels | | `package.xml`, `package2.xml` (PEAR 2.0 `package` and `extension` dependencies) |
+| Homebrew formulae and casks | | `Brewfile`, `.Brewfile`, `Brewfile.*` `brew` and `cask` entries (names only; Homebrew pins no versions, so each lens shows the current stable release) |
+| Hunter | | `hunter_config(name VERSION v)` in `*.cmake` |
+| PlatformIO Registry | GIT (libraries, by their repository) | `platformio.ini` `platform`, `platform_packages`, and `lib_deps`, with comma-joined constraints such as `~5.6,!=5.4` |
+| ESP Component Registry | | `idf_component.yml` (`namespace/name`, `espressif` by default) |
+| Typst Universe | | `#import "@preview/name:version"` in `*.typ` |
+| Wally | | `wally.toml` `"scope/name@version"` values |
+| mooncakes.io | GIT (the GitHub repository the module's `repository` names) | `moon.mod.json` `deps` |
+| PureScript Registry | GIT (the package's GitHub location) | `spago.yaml` dependencies with a range |
+| VPM, the tags of the GitHub repository it names | GIT (that repository) | `v.mod` `dependencies` |
+| nim-lang/packages, the tags of the GitHub repository it names | GIT (that repository) | `*.nimble` `requires` package names |
+| Alire index | | `alire.toml` `[[depends-on]]`, including the crates a `case(...)` selects |
+| Idris pack collections | | `pack.toml` `collection` |
+| Reservoir | GIT (the GitHub repository the package's `repoUrl` names) | `lakefile.toml` and `lakefile.lean` requires by `scope` at a tag |
+| Quicklisp dists | | `qlfile` `ql` dist dates |
+| Ultralisp dist | | `qlfile` `ultralisp` dist versions |
+| raku.land | | `META6.json` `depends`, `build-depends`, and `test-depends` |
+| Arduino libraries, through the PlatformIO Registry | | `library.properties` `depends` |
+| PyPI | PyPI | `pyproject.toml`, `Pipfile`, `*requirements*.txt`, Pants `BUILD` `python_requirement`s, `*constraints*.txt`, `requirements/*.txt`, `requirements*.in`, `uv.toml`, `setup.cfg`, `setup.py`, `tox.ini`, the `pip:` list of `environment.yml`, `poetry.lock`, `uv.lock` |
+| conda-forge | GIT (the GitHub repository its `dev_url` names) | `environment.yml`, `environment.yaml`, `pixi.toml` |
+| Go proxy | Go | `go.mod`, `go.work`, `Gopkg.toml`, `glide.yaml` |
+| Go releases | Go (`stdlib`) | the `go` and `toolchain` lines of `go.mod` and `go.work`, `.go-version`, `go` in `.tool-versions`, `mise.toml`, and `.prototools`, `go-version` of `actions/setup-go` |
+| RubyGems | RubyGems | `Gemfile`, `gems.rb`, `*.gemspec`, `Gemfile.lock`, `gems.locked` |
+| CocoaPods | GIT (the GitHub repository the podspec's `source` names) | `Podfile`, `*.podspec` |
+| pub.dev | Pub | `pubspec.yaml`, `pubspec_overrides.yaml` |
+| NuGet | NuGet | MSBuild SDKs and packages in `*.csproj`, `*.fsproj`, `*.vbproj`, `*.props`, `*.targets`, `packages.config`, `dotnet-tools.json`, `paket.dependencies`, `paket.references`, `project.json`, `global.json`, `*.nuspec` |
+| Maven Central | Maven | `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `libs.versions.toml`, `*.sbt`, Mill `*.mill`, `build.sc`, and `*.mill.yaml` (`mvn"…"`, `ivy"…"`, YAML lists, Scala `::` dependencies with the suffix `scalaVersion` gives, and `:::` ones with its full version), `ivy.xml` (with `override`s), Maven 1 `project.xml`, Buildr `buildfile`, `.mvn/extensions.xml`, `*.main.kts`, Pants `BUILD` `jvm_artifact`s |
+| Clojars, then Maven Central | Maven | `project.clj`, `deps.edn` |
+| Hex | Hex | `mix.exs`, `rebar.config`, `gleam.toml` |
+| Julia General | Julia | `Project.toml`, `JuliaProject.toml`, `Manifest.toml`, `Manifest-v*.toml` |
+| Julia General, then Julia's release list | Julia | `Manifest.toml` standard libraries, and `Project.toml` `[deps]` without a `[compat]` bound |
+| Haxelib | GIT (the GitHub repository the library page links) | `haxelib.json`, `*.hxml` |
+| Elm packages | GIT (`github.com/author/package`) | `elm.json` |
+| Docker Hub and any OCI registry (MCR, ghcr.io, quay.io, gcr.io, registry.k8s.io, public.ecr.aws, GitLab, private hosts) | Bitnami, by the application an official, `bitnami/`, `hashicorp/`, or self-named image packages (`nginx`, `postgres`, `grafana/grafana`) | `Dockerfile`, `Containerfile`, `*.Dockerfile`, `Earthfile`, `compose.*.yaml`, `kustomization.yaml`, `Kustomization`, Kubernetes manifests under `k8s/`, `kubernetes/`, `manifests/`, and `deploy/`, `*.k8s.yaml`, `skaffold.yaml`, `tilt.yaml`, Helm `values.yaml` (`image:` and `repository`/`tag`), `devcontainer.json`, workflow `container:`, `services:`, and `docker://` images, GitLab CI, CircleCI, Bitbucket Pipelines, Drone, Woodpecker, Cirrus, Azure Pipelines, Cloud Build, and Gitpod configs, and `oci://` chart dependencies in `Chart.yaml` |
+| GitHub tags | GIT (`github.com/owner/repo` at the tag) | workflows (including nested folders), `.github/actions/**`, `action.yml`, `jspm` `github:` values, `Cartfile`, `Cartfile.private`, `Mintfile`, `shard.yml`, `CMakeLists.txt` and `*.cmake` (CPM.cmake `gh:` shorthands and named calls, FetchContent `GIT_REPOSITORY` and `URL`), `build.zig.zon`, `*.nimble`, `subprojects/*.wrap`, `WORKSPACE`, `WORKSPACE.bazel`, `.pre-commit-config.yaml`, `flake.nix`, Terraform and Terragrunt `git::` module sources with `?ref=`, Flux `GitRepository` tags, `snapcraft.yaml` `source-tag`, Flatpak manifest git `tag`s, `aqua.yaml`, `component.json`, `fpm.toml` git `tag`s, `boss.json`, `corral.json`, `qlfile` `:tag`s, `lakefile.toml` and `lakefile.lean` git `rev`s, `lake-manifest.json` `inputRev`s, Flux `GitRepository` `ref.semver` ranges, `flake.lock` GitHub inputs, Buck2 `BUCK` and `TARGETS` archives and releases, `west.yml` projects with a GitHub `url` or a GitHub remote's `url-base`, Scoop `bucket/*.json` and winget `*.installer.yaml` release URLs, and `Pulumi.yaml` packages |
+| Swift packages on GitHub | SwiftURL (`github.com/owner/repo`) | `Package.swift` |
+| Helm repositories | Artifact Hub image scans | `Chart.yaml`, Argo CD `Application` charts (`argocd/`, `argo-cd/`, `clusters/`, and Kubernetes manifest folders) |
+| Artifact Hub | Artifact Hub image scans | `helmfile.yaml`, `helmfile.yaml.gotmpl`, `helmfile.d/*.yaml` (`repo/chart` releases), Flux `HelmRelease` charts |
+| Ansible Galaxy | GIT (the GitHub repository the collection version's `repository` names) | `requirements.yml`, `galaxy.yml` |
+| Ansible Galaxy roles | GIT (the role's `github_user`/`github_repo`) | `roles:` in `requirements.yml` |
+| Puppet Forge | GIT (the GitHub repository the module's `source` names) | `Puppetfile` |
+| Chef Supermarket | GIT (the GitHub repository the cookbook's `source_url` names) | `Berksfile`, `metadata.rb` |
+| Terraform Registry | GIT (the GitHub repository the provider or module's `source` names) | `*.tf`, `*.tofu`, `.terraform.lock.hcl`, `terragrunt.hcl`, `terragrunt.stack.hcl`, `Pulumi.yaml` `terraform-provider` and module parameters |
+| Packer plugins on GitHub | Go (`github.com/owner/packer-plugin-name`) | `required_plugins` in `*.pkr.hcl` |
+| Vagrant Cloud | | `config.vm.box` and `box_version` in `Vagrantfile` |
+| Nixhub | | `devbox.json` |
+| Spack packages | | `spack.yaml` environment specs |
+| Bazel Central Registry | GIT (the GitHub repository the module's `github:` repository names) | `MODULE.bazel` |
+| vcpkg | GIT (the GitHub repository the port's `vcpkg_from_github` names) | `vcpkg.json` |
+| ConanCenter | GitLab Advisory Database | `conanfile.txt`, `conanfile.py` |
+| CRAN | CRAN | `DESCRIPTION`, `renv.lock` |
+| MetaCPAN | GIT (the GitHub repository the release's `repository` names) | `cpanfile`, `META.json`, `META.yml`, `MYMETA.json`, `MYMETA.yml`, `dist.ini` |
+| DUB | GIT (the GitHub repository the package names) | `dub.json`, `dub.selections.json`, `dub.sdl` |
+| opam | opam | `opam`, `*.opam`, `dune-project` |
+| Hackage | Hackage | `*.cabal`, `cabal.project`, `stack.yaml` |
+| GHC releases | GHC | `with-compiler: ghc-…` in `cabal.project`, and `resolver:` or `snapshot: ghc-…` in `stack.yaml` |
+| LuaRocks | GIT (the GitHub repository the rockspec's `source.url` names) | `*.rockspec` |
+| Meson WrapDB | | `subprojects/*.wrap` files that WrapDB released, by their `patch_url` |
+| xmake repository | GIT (the GitHub repository the package's `xmake.lua` names) | `xmake.lua` |
+| Typst releases | GIT (`typst/typst`) | `compiler` in `typst.toml` |
+| Stackage snapshots | | `resolver:` and `snapshot:` `lts-…` and `nightly-…` in `stack.yaml`; a snapshot by URL or `github:` path is labelled as its source |
+| Julia releases | | `julia` in a `Project.toml` `[compat]` |
+| R releases (R-hub) | | `R (>= …)` in a `DESCRIPTION` |
+| Racket releases | | the `"base"` `#:version` lower bound in an `info.rkt` |
+| Deno releases | crates.io (`deno`) | the `deno-version` input of `setup-deno` |
+| .NET SDK releases, the newest of each channel | Bitnami (`dotnet-sdk`) | the `dotnet-version` input of `setup-dotnet` |
+| Temurin Java feature releases | Bitnami (`java`) | the `java-version` input of `setup-java` |
+| Python, Ruby, and Gradle releases | Bitnami (`python`, `ruby`, `gradle`) | `.python-version`, `.ruby-version`, `gradle-wrapper.properties`, their `.tool-versions` and `mise.toml` entries, and the `python-version` and `ruby-version` inputs of workflow setup actions |
+| Rust and Terraform releases | GIT (`rust-lang/rust`, `hashicorp/terraform`) | `rust-toolchain`, `rust-toolchain.toml`, `.terraform-version`, `rust-version` in `Cargo.toml`, and their `.tool-versions` and `mise.toml` entries |
+| Rust `nightly` and `beta` channel dates | | `nightly-2026-11-01` and `beta-2026-11-01` toolchains, against the date each channel last built |
 
-| Area | Manifests and sources |
+The server lists the files it reads in its initialize result, and the extension sends it only those, so this list cannot drift from the server. OSV.dev has no ecosystem for Helm or Conan, so Helm chart versions report the CVEs that Artifact Hub's Trivy scans find in the images they deploy, and Conan versions report the GitLab Advisory Database entries whose range holds them. Registries outside OSV that name a package's GitHub repository have it looked up, and OSV's GIT ecosystem is asked about that repository at the version; a package that names no GitHub repository gets no check. Docker Hub and OCI images are asked about by the application they package in OSV's Bitnami ecosystem, so an image from any other publisher gets no check. Unity packages name only Unity's own git host, so they get no vulnerability check. Set `VERSIONLENS_NPM_USER_AGENT` and `VERSIONLENS_NPM_COOKIE` to the user agent and `cf_clearance` cookie of a browser that passed the npmjs.com challenge, and the live check sends them to npmjs.com. `just registries-live` asks every registry, package page, and OSV ecosystem for a sample package, and fails when one stops answering.
+
+A dependency on a fixed git reference, URL, or local path gets a label and no version lookup, and its hover links the repository: git branches and commits in Cargo, npm, Swift, Mix, Lake, Idris `pack.toml`, `qlfile`, `corral.json` (GitLab, Bitbucket, and local bundles), Argo CD, Flux `GitRepository`, and `west.yml` (through the remote's `url-base`), GitHub `archive/<commit>` URLs in CMake, Zig, Meson, Bazel, and Buck2 files, `Cargo.lock` and `package-lock.json` git packages, Yarn git resolutions, and workspace packages of `package-lock.json`, `yarn.lock`, and `bun.lock`, local helmfile charts, and local Pulumi packages.
+
+Racket's `info.rkt` stays unread because no version comparison has data to work with: its pkgs.racket-lang.org record keys `versions` by Racket release, so it carries no package release history. A bare name, as in a `Brewfile`, `rescript.json`, or npm `bundleDependencies`, shows its latest version and offers no edit, as the file has no place for one.
+
+## Settings
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| `versionlens.enabled` | `true` | Show versions and vulnerabilities at all. |
+| `versionlens.codeLens` | `true` | Show update actions as code lenses. |
+| `versionlens.inlayHints` | `true` | Show the newest version as an inlay hint. |
+| `versionlens.prereleases` | `false` | Offer prerelease versions as updates. |
+| `versionlens.vulnerabilities` | `true` | Check versions against OSV.dev, Artifact Hub, and the GitLab Advisory Database. |
+| `versionlens.timeoutMs` | `10000` | Time limit for one registry request, in milliseconds. |
+| `versionlens.concurrency` | `32` | Registry requests that run at once. |
+| `versionlens.cacheMinutes` | `60` | How long registry answers are reused. |
+| `versionlens.strictSsl` | `true` | Reject registries whose TLS certificate does not verify. |
+| `versionlens.githubToken` | empty | Token for GitHub tag lookups. Falls back to `GITHUB_TOKEN`, then `GH_TOKEN`, then `gh auth token`. |
+| `versionlens.registries` | `{}` | URL template per registry id, for mirrors and private registries, such as `{"npm": "https://npm.example.com/{enc}"}`. |
+| `versionlens.providers` | `{}` | Per registry id, overrides of `cacheMinutes`, `strictSsl`, and `prereleaseTags`, such as `{"npm": {"cacheMinutes": 5}}`. |
+| `versionlens.authorization` | `{}` | `Authorization` header per registry URL prefix. **Add url authentication** keeps headers in secret storage instead. |
+| `versionlens.install` | `{}` | Shell command per file type or registry id, run in the manifest's folder when a save changes the dependencies and from **Run custom install task**. |
+| `versionlens.files` | `{}` | Extra manifests: glob to file type id, such as `{"deps/*.list": "requirements"}`. |
+| `versionlens.indicators` | glyphs | Glyph per state in lenses and hints: `latest`, `update`, `checking`, `failed`, `unreadable`, `vulnerable`, `newer`, `satisfies`, `noMatch`, `directory`, `build`, `yanked`, `deprecated`. |
+| `versionlens.prereleaseTags` | `[]` | Offer only prereleases with one of these tags; empty offers all. |
+| `versionlens.updateSeverity` | `info` | Diagnostic severity for an outdated dependency: `off`, `hint`, `info`, `warning`, or `error`. |
+| `versionlens.stats` | `false` | A summary lens above each manifest. |
+| `versionlens.fileTypes` | `[]` | Read only these file type or registry ids; empty reads all. |
+| `versionlens.workspaceExclude` | `[]` | Globs the workspace update skips, such as `["examples/**"]`. |
+| `versionlens.serverPath` | empty | A `versionlens-lsp` binary to run instead of the bundled one. `VERSIONLENS_LSP` takes precedence. |
+| `versionlens.trace.server` | `off` | Log LSP traffic to the output channel. |
+
+### Project Registry Configuration
+
+The server reads the registry configuration a package manager would, from the manifest's folder up and then the user's home, and asks each dependency's registries in the order that package manager tries them, with their credentials:
+
+| Registry | Read from |
 | --- | --- |
-| JavaScript and web | npm, Bun, pnpm, JSPM, Deno, JSR, Unity Package Manager |
-| Rust, Go, Swift, Zig, Nim, D, Haxe | Cargo, Go modules, Swift Package Manager, Zig package URLs, Nimble, Dub, Haxelib |
-| .NET and JVM | NuGet, Paket, Maven, Gradle/Kotlin DSL-related dependency files where parser support exists |
-| C and C++ | Conan, CMake `FetchContent` / `ExternalProject` / CPM calls, Xmake `add_requires`, Meson wraps, Bazel workspace dependencies, vcpkg |
-| Containers and infrastructure | Dockerfiles, Compose files, OCI image references, Terraform/OpenTofu, Helm, Kustomize, Nix flakes, Ansible Galaxy, Bazel/Bzlmod |
-| CI/CD and repository automation | GitHub Actions workflows, reusable workflows, and composite actions with version tags or SHA pins carrying adjacent version annotations |
-| Scripting and application ecosystems | Composer, CPAN, PyPI, RubyGems, Pub, LuaRocks, Julia, CRAN, CocoaPods, opam, Hackage, Stack, Cabal, Hex |
+| npm | the nearest `.npmrc` and the `.env` beside it, then `NPM_CONFIG_USERCONFIG` or `~/.npmrc`, then `npm_config_registry` and `npm_config_@scope:registry`: `registry`, `@scope:registry`, and `//host/path/:_authToken`, `:_auth`, or `:username` with `:_password`, with `${VAR}` expanded |
+| NuGet | `nuget.config` in each parent folder and the user's `NuGet.Config`: `packageSources` with `<clear/>`, `disabledPackageSources`, `packageSourceCredentials`, `packageSourceMapping`, and `%VAR%`; without any, `dotnet nuget list source`. v3 feeds only. |
+| Composer | `repositories` of type `composer` with `only` and `exclude`, `"packagist.org": false`, and credentials from `COMPOSER_AUTH`, `auth.json`, and `COMPOSER_HOME/auth.json` (`http-basic`, `bearer`) |
+| PyPI | `[[tool.uv.index]]`, `[[tool.poetry.source]]`, Pipfile `[[source]]`, requirements `--index-url` and `--extra-index-url`, `UV_DEFAULT_INDEX`, `UV_INDEX`, `PIP_INDEX_URL`, and `pip.conf`; a dependency's `source`, `index`, or `tool.uv.sources` index picks one. Credentials come from the URL, `UV_INDEX_<NAME>_USERNAME` and `_PASSWORD`, or `POETRY_HTTP_BASIC_<NAME>_*`. The index must answer the PEP 691 JSON API. |
+| Cargo | `.cargo/config.toml` in each parent folder and `CARGO_HOME`: `registries.<name>.index`, `source.<name>.replace-with`, and tokens from `CARGO_REGISTRIES_<NAME>_TOKEN`, the configuration, and `credentials.toml`, sent only when `cargo:token` is the registry's `credential-provider` or one of `registry.global-credential-providers`, as Cargo requires. Sparse indexes only. |
+| Maven | `~/.m2/settings.xml` and `MAVEN_HOME/conf/settings.xml`: the mirror of `central` and the `<server>` with its id, with `${env.VAR}` expanded. Encrypted passwords are not decrypted. |
 
-TOML support requires a VS Code TOML language extension such as Even Better TOML.
+`versionlens.registries` overrides all of this for its registry id.
 
-## Manifest Coverage
+### Settings and Commands From VersionLens 1.x
 
-| Provider | Files | Main settings | Registry/source |
-| --- | --- | --- | --- |
-| Cargo | Cargo.toml, .cargo/config.toml, rust-toolchain, rust-toolchain.toml | `versionlens.cargo.files`, `versionlens.cargo.apiUrl`, `versionlens.cargo.dependencyProperties` | crates.io index/API or configured Cargo registry |
-| Composer | composer.json | `versionlens.composer.files`, `versionlens.composer.apiUrl`, `versionlens.composer.dependencyProperties` | Packagist or configured Composer repository |
-| Deno | deno.json, deno.jsonc, import_map.json, jsr.json, jsr.jsonc | `versionlens.deno.files`, `versionlens.deno.dependencyProperties` | Deno import maps, JSR API, npm registry for npm: specifiers |
-| Docker | dockerfile, Dockerfile, compose.yaml, compose.yml, docker-compose.yaml, docker-compose.yml | `versionlens.docker.files` | OCI/Docker registry tags |
-| .NET | project.json, dotnet-tools.json, Directory.Packages.props, packages.config, paket.dependencies, paket.references | `versionlens.dotnet.files`, `versionlens.dotnet.dependencyProperties` | NuGet v3 service index or configured NuGet/Paket source |
-| Dub | dub.json, dub.selections.json, dub.sdl | `versionlens.dub.files`, `versionlens.dub.apiUrl`, `versionlens.dub.dependencyProperties` | Dub registry API |
-| Go | go.mod, go.work | `versionlens.golang.files`, `versionlens.golang.apiUrl` | Go module proxy |
-| Hex | mix.exs, rebar.config, gleam.toml | `versionlens.hex.files`, `versionlens.hex.apiUrl`, `versionlens.hex.dependencyProperties` | Hex package API or configured Hex-compatible registry |
-| Maven | pom.xml, build.gradle, build.gradle.kts, settings.gradle, settings.gradle.kts, gradle/libs.versions.toml, build.sbt, deps.edn, project.clj | `versionlens.maven.files`, `versionlens.maven.apiUrl`, `versionlens.maven.dependencyProperties` | Maven Central, Gradle Plugin Portal, configured Maven repositories, and Clojars |
-| npm | package.json, package.json5, package.yaml, package.yml, .nvmrc, .node-version, .bun-version | `versionlens.npm.files`, `versionlens.npm.dependencyProperties` | npm registry or configured npm-compatible registry |
-| pnpm | pnpm-workspace.yaml, pnpm-workspace.yml, .yarnrc.yaml, .yarnrc.yml | `versionlens.pnpm.files`, `versionlens.pnpm.dependencyProperties` | npm registry through pnpm/Yarn workspace configuration |
-| Pub | pubspec.yaml, pubspec.yml, pubspec_overrides.yaml | `versionlens.pub.files`, `versionlens.pub.apiUrl`, `versionlens.pub.dependencyProperties` | pub.dev API or hosted Pub source |
-| Python | Pipfile, pyproject.toml | `versionlens.pypi.files`, `versionlens.pypi.apiUrl`, `versionlens.pypi.dependencyProperties` | PyPI JSON API or configured Python package index/source |
-| Ruby | Gemfile | `versionlens.ruby.files`, `versionlens.ruby.apiUrl` | RubyGems API or Bundler source |
-| opam | opam, dune-project | `versionlens.opam.files`, `versionlens.opam.apiUrl`, `versionlens.opam.dependencyProperties` | opam package pages from opam.ocaml.org or configured opam package site |
-| Haskell | cabal.project, stack.yaml, stack.yml | `versionlens.hackage.files`, `versionlens.hackage.apiUrl`, `versionlens.hackage.dependencyProperties` | Hackage package API, Stackage snapshots API, and Stack extra-deps package index entries |
-| Julia | Project.toml, Manifest.toml, Manifest-v{major}.{minor}.toml | `versionlens.julia.files`, `versionlens.julia.apiUrl`, `versionlens.julia.dependencyProperties` | Julia General registry Versions.toml files or configured Julia registry base URL |
-| CRAN | DESCRIPTION, renv.lock | `versionlens.cran.files`, `versionlens.cran.apiUrl`, `versionlens.cran.dependencyProperties` | CRAN PACKAGES metadata from CRAN or configured CRAN-like repositories |
-| Conan | conanfile.txt, conanfile.py | `versionlens.conan.files`, `versionlens.conan.apiUrl`, `versionlens.conan.dependencyProperties` | Conan v2 registry search API from ConanCenter or configured Conan-compatible remotes |
-| C/C++ build files | CMakeLists.txt, *.cmake, xmake.lua, subprojects/*.wrap, WORKSPACE, WORKSPACE.bazel | `versionlens.cpp.files`, `versionlens.cpp.apiUrl`, `versionlens.cpp.dependencyProperties` | GitHub tags for GitHub-backed CMake, Meson wrap, and Bazel dependencies; Xmake package recipes from xmake-repo for Xmake dependencies |
-| GitHub Actions | `.github/workflows/*.{yml,yaml}`, `.github/actions/**/action.{yml,yaml}` | `versionlens.github.files`, `versionlens.github.apiUrl`, `versionlens.github.dependencyProperties` | GitHub repository tags, including prefixed/path-qualified tags; full or abbreviated SHA pins are supported when an adjacent version comment matches the pinned tag, while bare SHA, branch, local, mismatched, and ambiguous refs are ignored |
-| vcpkg | vcpkg.json | `versionlens.vcpkg.files`, `versionlens.vcpkg.apiUrl`, `versionlens.vcpkg.dependencyProperties` | vcpkg registry version database from the configured registry repository |
-| Swift | Package.swift, Cartfile, Cartfile.private | `versionlens.swift.files`, `versionlens.swift.apiUrl`, `versionlens.swift.dependencyProperties` | Swift package registry API or GitHub tags for GitHub URL dependencies |
-| Zig | build.zig.zon | `versionlens.zig.files`, `versionlens.zig.apiUrl`, `versionlens.zig.dependencyProperties` | Zig package URLs with GitHub tag lookup for GitHub-hosted archives |
-| Nim | .nimble | `versionlens.nim.files`, `versionlens.nim.apiUrl`, `versionlens.nim.dependencyProperties` | Nimble packages index with GitHub tag lookup for GitHub URL dependencies |
-| LuaRocks | .rockspec | `versionlens.luarocks.files`, `versionlens.luarocks.apiUrl`, `versionlens.luarocks.dependencyProperties` | LuaRocks manifest repository |
-| CPAN | cpanfile | `versionlens.cpan.files`, `versionlens.cpan.apiUrl`, `versionlens.cpan.dependencyProperties` | MetaCPAN download_url API |
-| Haxelib | haxelib.json | `versionlens.haxelib.files`, `versionlens.haxelib.apiUrl`, `versionlens.haxelib.dependencyProperties` | Haxelib project versions page |
-| Terraform | *.tf,*.tofu | `versionlens.terraform.files`, `versionlens.terraform.apiUrl`, `versionlens.terraform.dependencyProperties` | Terraform Registry protocol |
-| Helm | Chart.yaml | `versionlens.helm.files`, `versionlens.helm.apiUrl`, `versionlens.helm.dependencyProperties` | Helm chart repository index.yaml and OCI tags |
-| Ansible | requirements.yml, requirements.yaml | `versionlens.ansible.files`, `versionlens.ansible.apiUrl`, `versionlens.ansible.dependencyProperties` | Ansible Galaxy API for collections and roles; git/source requirements are fixed |
-| Bazel | MODULE.bazel | `versionlens.bazel.files`, `versionlens.bazel.apiUrl`, `versionlens.bazel.dependencyProperties` | Bazel Central Registry metadata.json or configured Bazel registry |
-| Nix | flake.nix | `versionlens.nix.files`, `versionlens.nix.apiUrl`, `versionlens.nix.dependencyProperties` | GitHub repository tags for GitHub-backed Nix flake inputs; local/path/git follows are fixed |
-| Kustomize | kustomization.yaml, kustomization.yml, Kustomization | `versionlens.kustomize.files`, `versionlens.kustomize.dependencyProperties` | Docker Hub and OCI-compatible registries through image tag lookup |
-| Unity | Packages/manifest.json | `versionlens.unity.files`, `versionlens.unity.apiUrl`, `versionlens.unity.dependencyProperties` | Unity npm-compatible package registry and project scopedRegistries |
-| CocoaPods | Podfile | `versionlens.cocoapods.files`, `versionlens.cocoapods.apiUrl`, `versionlens.cocoapods.dependencyProperties` | CocoaPods specs/trunk metadata or configured specs source |
+A `settings.json` written for the original extension keeps working; a key of this version wins over the original one it replaces.
 
-## Use
-
-Open a supported manifest and select the **V** editor toolbar icon to show release versions. Use the **tag** toolbar icon to include prereleases.
-
-Useful settings:
-
-| Setting | Effect |
+| Original | Read as |
 | --- | --- |
-| `versionlens.suggestions.showOnStartup` | Shows release CodeLens entries when a supported file opens. |
-| `versionlens.suggestions.showPrereleasesOnStartup` | Includes prerelease suggestions at startup. |
-| `versionlens.suggestions.showVulnerabilities` | Enables OSV.dev vulnerability diagnostics. |
-| `versionlens.diagnostics.updateSeverity` | Severity of update-available diagnostics: `error`, `warn`, `info` (default), `hint`, or `off`. `off` hides them; vulnerability diagnostics are unaffected. |
-| `versionlens.workspace.check` | `openFiles` (default) checks only open manifests, and the server starts when the first one opens. `workspace` also checks every manifest in the folder that `.gitignore`, `.ignore`, `.git/info/exclude`, the global gitignore and `files.exclude` do not hide. |
-| `versionlens.workspace.exclude` | Glob patterns, relative to the workspace folder, of manifests never to check, even when open. Example: `["fixtures/**", "examples/*/package.json"]`. |
-| `versionlens.caching.duration` | Minutes to cache registry results (default `3`; `0` disables caching). |
-| `versionlens.<provider>.onSaveChanges` | Task label from `tasks.json` to run when a manifest with dependency changes is saved. |
+| `versionlens.caching.duration`, `versionlens.http.strictSSL` | `cacheMinutes`, `strictSsl` |
+| `versionlens.suggestions.showOnStartup`, `.showPrereleasesOnStartup`, `.showVulnerabilities`, `.showSuggestionsStats` | `enabled`, `prereleases`, `vulnerabilities`, `stats` |
+| `versionlens.suggestions.indicators` `Latest`, `Updateable`, `Error`, `UpdateableVulnerable` | `indicators` `latest`, `update`, `failed`, `vulnerable` |
+| `versionlens.enabledProviders` | `fileTypes`, with `golang` as `go`, `ruby` as `rubygems`, `dotnet` as `nuget`, `pnpm` as `npm`, `deno` as `jsr` |
+| `versionlens.<provider>.caching.duration`, `.http.strictSSL`, `.prereleaseTagFilter` | `providers.<registry id>` |
+| `versionlens.<provider>.onSaveChanges` | `install` for the provider's file type |
+| `versionlens.<provider>.files` | `files`, one entry per `{a,b}` alternative |
+| `versionlens.<provider>.apiUrl` | `registries` for the provider's registry, built the way the provider built its request URL; `pypi` maps a Warehouse `{base}/pypi/{name}/json` to `{base}/simple/{name}/` |
+| `versionlens.<provider>.dependencyProperties` | Read only those paths of the provider's manifest, and the keys of a listed object no catalog rule covers; `pypi` applies to `pyproject.toml` and `Pipfile` |
+| `versionlens.dotnet.nuget.sources` | The NuGet service indexes asked in place of `dotnet nuget list source` |
 
-![Show prereleases](images/faq/show-prereleases.gif)
+The output channel names a `versionlens.cargo.apiUrl` other than the default `https://crates.io/api/v1/crates`: the crates.io web API answers in a format the `cargo` row does not read, so set a sparse index in `versionlens.registries` instead. Every original command id, such as `versionlens.editor.onShowVersionLenses`, still runs its replacement, so old keybindings work.
 
-Settings are read by the server through `workspace/configuration`, per workspace folder, so they can be set in user, workspace, or folder `settings.json`:
-
-```json
-{
-  "versionlens.diagnostics.updateSeverity": "warn"
-}
-```
-
-## Private Registries
-
-The server finds credentials in this order:
-
-1. A credential the extension supplies. When a registry answers 401 or 403, the server sends the extension a `versionlens/authorization` request naming the host. The extension answers from VS Code SecretStorage; if nothing is stored for that host it prompts once per session. Manage entries with **VersionLens Redux: Add url authentication** and **Remove url authentication**.
-2. For `api.github.com`: `GITHUB_TOKEN`, then `GH_TOKEN`, then the output of `gh auth token`, which is only tried after GitHub answers 401, 403, or 429.
-3. Registry configuration files such as `.npmrc`, `.yarnrc.yml`, and `NuGet.config`.
-
-Tokens are never written to logs, diagnostics, or the cache. Requests honor `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `NO_PROXY`, the operating system certificate store, and `versionlens.http.strictSSL`.
-
-## Install From VSIX
-
-Download a VSIX from the [GitHub releases page](https://github.com/xsyetopz/versionlens-redux/releases), then install it in VS Code:
-
-1. Open the Extensions view.
-2. Select `...`.
-3. Select **Install from VSIX...**.
-4. Choose the downloaded `.vsix` file.
-
-Local development packaging:
-
-```bash
-bun run package
-```
+A changed setting applies without a restart, and the output channel logs it. Changing `versionlens.serverPath` or `versionlens.files` restarts the server.
 
 ## Troubleshooting
 
+**VersionLens: Show Output** opens the log: the server path, each applied setting, and every failed request with its reason.
+
 | Symptom | Check |
 | --- | --- |
-| No CodeLens entries | Ensure `editor.codeLens` is enabled and the file matches a configured `versionlens.*.files` pattern. |
-| Toolbar icons are missing | Ensure `workbench.editor.editorActionsLocation` is not set to `hidden`. |
-| Results look stale | Run **VersionLens Redux: Clear cache** from the Command Palette. |
-| Checks seem stuck | Run **VersionLens Redux: Restart language server**, or **Restart extension host**. **Show language server output** opens the log. |
-| Registry requests fail | Check the provider API URL, proxy, `versionlens.http.strictSSL`, and the credentials described under Private registries. |
-| Need logs | Set the `VersionLens` output channel to debug through **Developer: Set Log Level**. |
+| Nothing shows | The file name must match a row above, and `editor.codeLens` or `editor.inlayHints.enabled` must be on. |
+| Requests time out | Raise `versionlens.timeoutMs`, or lower `versionlens.concurrency` on a slow network. |
+| Private registry | Check the project configuration under Project Registry Configuration, or point `versionlens.registries` at the mirror. |
+| Old results | Run **VersionLens: Clear Cache**. |
 
-![Extension host log](images/faq/ext-host-log.jpg)
+## Install From VSIX
 
-![Extension log](images/faq/ext-log.jpg)
-
-If logs do not show the cause, open **Help > Toggle Developer Tools**.
-
-## Development
-
-The VS Code package is a TypeScript LSP client that launches the bundled `versionlens-lsp` binary.
-
-```bash
-bun install --frozen-lockfile
-bun run build
-bun run test:extension
-```
-
-Run `bun run verify` from the repository root before committing broad package changes.
-
-## Assets
-
-Images referenced by this README resolve through `packages/vscode-extension/images`, a package-local mirror of [`../../assets/versionlens`](../../assets/versionlens). Keep reusable editor media in the shared asset directory and keep the package mirror byte-for-byte identical.
+Download a VSIX from the [GitHub releases page](https://github.com/xsyetopz/versionlens-redux/releases), then run **Extensions: Install from VSIX...**. `just package` builds one locally.
 
 ## License
 
-[ISC](../../LICENSE)
-
-## Attribution
-
-VersionLens Redux is a fork of the original VersionLens extension by Peter Flannery and contributors. The fork keeps attribution to the original project, reuses VersionLens visual assets with attribution, and publishes as `xsyetopz.versionlens-redux`.
+[ISC](../../LICENSE). VersionLens Redux is a fork of the original VersionLens extension by Peter Flannery and contributors, and reuses its visual assets with attribution.

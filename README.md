@@ -10,20 +10,19 @@ VersionLens Redux shows dependency version information in editor manifests using
 
 ## Status
 
-This repository is a fork of VersionLens with a Rust-first implementation and a new extension identity: `xsyetopz.versionlens-redux` for VS Code. The original VS Code extension id is `pflannery.vscode-versionlens`; the VS Code adapter warns when that extension is also installed.
+This repository is a fork of VersionLens with a Rust-first implementation and a new extension identity: `xsyetopz.versionlens-redux` for VS Code. The original VS Code extension id is `pflannery.vscode-versionlens`.
 
 ## Repository Layout
 
 | Path | Purpose |
 | --- | --- |
-| `crates/` | Rust workspace crates: `versionlens-model` (editor-neutral shared data contracts), `-parsers` (manifest and document parsers), `-providers` (registry provider selection and request construction), `-fetch` (registry HTTP, proxy and TLS setup, caches), `-update` (version suggestions and text edits), `-engine` (orchestration contracts and domain model), `-lsp` (editor-neutral language server), and `-test-support` (test-only fixtures). |
-| `packages/vscode-extension/` | VS Code extension package, manifest, TypeScript LSP client, bundled server packaging, and marketplace README. |
-| `packages/zed-extension/` | Zed extension that starts the shared `versionlens-lsp` server. |
-| `packages/neovim-plugin/` | Neovim plugin that starts the shared `versionlens-lsp` server. |
-| `packages/jetbrains-plugin/` | IntelliJ Platform plugin that starts the shared `versionlens-lsp` server. |
+| `crates/versionlens-lsp/` | The language server: manifest catalog, extraction, registry lookups, OSV checks, version ranking, and LSP handling, in one binary crate. |
+| `packages/vscode-extension/` | VS Code extension: a TypeScript LSP client, settings, and the bundled server. |
+| `packages/zed-extension/` | Zed extension that downloads and starts the server. |
+| `packages/neovim-plugin/` | Neovim plugin that starts the server and exposes `:VersionLens`. |
+| `packages/jetbrains-plugin/` | IntelliJ Platform plugin with a settings page, actions, and a log window. |
 | `assets/versionlens/` | Shared icons, logo, and README media reused by editor packages. |
-| `scripts/` | Manifest generation, packaging, release, test, and benchmark scripts. |
-| `tests/` | Repo-level boundary, parser fixture, golden, and e2e tests; VS Code unit tests live beside adapter source under `packages/vscode-extension/src/extension/__tests__/`. |
+| `scripts/` | Packaging and release scripts. |
 
 ## Editor Packages
 
@@ -38,42 +37,28 @@ This repository is a fork of VersionLens with a Rust-first implementation and a 
 
 - Bun 1.4.3 for JavaScript and TypeScript scripts.
 - Rust from [`rust-toolchain.toml`](rust-toolchain.toml).
-- Cargo workspace commands run from the repository root.
-- Gradle 9.6.1 and Java 21 for the JetBrains plugin package.
-
-## Setup
-
-```bash
-bun install --frozen-lockfile
-```
+- `just`. `just setup` installs the other pinned tools.
+- A JDK 17 or newer to start Gradle for the JetBrains plugin. Gradle downloads the compiler JDK itself.
 
 ## Common Commands
 
 ```bash
-bun run build                 # build the VS Code extension bundle
-cargo build -p versionlens-lsp # build the shared LSP server
-bun run typecheck             # `bun check --cwd packages/vscode-extension`
-bun run test:e2e              # build the server and extension, run e2e tests
-cargo test --workspace        # Rust tests
-bun run package               # build a local VSIX
-bun run package:editors       # build all editor packages with bundled runtimes
-bun run marketplaces:configure # securely configure publishing secrets in GitHub
-bun run verify                # full repository validation
+just                          # list the recipes
+just setup                    # install pinned tools and dependencies
+cargo build -p versionlens-lsp # build the server
+cargo test -p versionlens-lsp  # server tests
+just typecheck                # TypeScript and JVM type checks
+just lint                     # every linter
+just package                  # build a local VSIX
+bun run package:editors       # build every editor package for this machine
+just verify                   # full validation
 ```
-
-Neovim tests run with `make test` in `packages/neovim-plugin`.
-
-`bun run verify` covers formatting, lints, Rust, TypeScript, extension tests, and editor packaging. Use targeted scripts while iterating, then run the full check before committing broad changes.
 
 The release and Marketplace publication procedure is documented in [`docs/releasing.md`](docs/releasing.md). Publication is a separate, manually dispatched, approval-gated workflow and never runs for pull requests.
 
 ## Adding a File Type
 
-Add one row to the manifest table in [`crates/versionlens-parsers/src/manifest/table.rs`](crates/versionlens-parsers/src/manifest/table.rs), with its `ManifestKind` variant in `crates/versionlens-model/src/manifest.rs` and a parser function (new or existing). Then run `bun run generate:manifests` to refresh the file lists of the VS Code manifest, Neovim, JetBrains, and Zed packages; `bun run check:manifests` verifies them.
-
-## Crates
-
-Each crate has a local `README.md` and inherits repository metadata from the workspace manifest. Crates inherit the root [`ISC`](LICENSE) license through `license.workspace = true`; do not add per-crate license files.
+Add one `[[file]]` row to the group file for its ecosystem in [`crates/versionlens-lsp/catalog/files/`](crates/versionlens-lsp/catalog/files): its globs, its format (`json`, `toml`, `yaml`, `xml`, `ini`, or `text`), its registry id, and the rules that locate dependencies. A new registry is one `[[registry]]` row in [`catalog/registries/`](crates/versionlens-lsp/catalog/registries). The server embeds these TOML files, and each one's header comment gives its row format. JetBrains and Neovim read the globs from `versionlens-lsp --file-types`, and VS Code reads them from `capabilities.experimental.fileTypes` in the initialize result, so they need no change. Zed picks files by language, so a manifest in a language that [`extension.toml`](packages/zed-extension/extension.toml) does not list needs that language added there.
 
 ## Asset Policy
 

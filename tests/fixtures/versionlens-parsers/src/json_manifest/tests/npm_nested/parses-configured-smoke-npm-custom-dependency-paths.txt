@@ -1,8 +1,0 @@
-{
-  "devDependencies": {
-    "typescript": "^6.0.3"
-  },
-  "customDependencies": {
-    "@types/hammerjs": "2.0.33"
-  }
-}

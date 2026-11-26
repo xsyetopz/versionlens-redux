@@ -1,2 +1,0 @@
-  zeta: 1 # zed
-  alpha: 1 # first

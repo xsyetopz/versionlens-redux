@@ -1,9 +1,0 @@
-<settings>
-  <mirrors>
-    <mirror>
-      <id>internal</id>
-      <mirrorOf>*</mirrorOf>
-      <url>https://maven.example.test/mirror</url>
-    </mirror>
-  </mirrors>
-</settings>

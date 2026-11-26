@@ -1,14 +1,5 @@
 [workspace]
-members = [
-  "crates/versionlens-engine",
-  "crates/versionlens-fetch",
-  "crates/versionlens-lsp",
-  "crates/versionlens-model",
-  "crates/versionlens-parsers",
-  "crates/versionlens-providers",
-  "crates/versionlens-test-support",
-  "crates/versionlens-update", "xtask",
-]
+members = ["crates/versionlens-lsp"]
 resolver = "3"
 
 [workspace.package]
@@ -16,63 +7,39 @@ edition = "2024"
 rust-version = "1.99"
 license = "ISC"
 repository = "https://github.com/xsyetopz/versionlens-redux.git"
-readme = "README.md"
-keywords = ["versionlens", "vscode", "dependencies"]
+keywords = ["versionlens", "lsp", "dependencies"]
 categories = ["development-tools"]
-version = "0.6.3"
+version = "0.7.0"
 
 [workspace.dependencies]
-ignore = "0.4.33"
-ring = "0.17.14"
+crossbeam-channel = "0.5.17"
+jsonc-parser = "0.34.0"
+lsp-server = "0.10.0"
+lsp-types = "0.97.0"
+regex-automata = { version = "0.4.18", default-features = false, features = [
+  "meta",
+  "std",
+  "syntax",
+  "unicode-perl",
+  "unicode-case",
+] }
+reqwest = { version = "0.13.5", default-features = false, features = [
+  "rustls-no-provider",
+  "gzip",
+  "http2",
+  "system-proxy",
+] }
 rustls = { version = "0.23.46", default-features = false, features = [
   "ring",
   "std",
   "tls12",
 ] }
-sha2 = "0.11.1"
-crossbeam-channel = "0.5.17"
-base64 = "0.23.1"
-anyhow = "1.0.104"
-jsonc-parser = "0.34.0"
-lsp-server = "0.10.0"
-lsp-types = "0.97.0"
-marked-yaml = "0.8.0"
-quick-xml = "0.42.0"
-regex-automata = { version = "0.4.18", default-features = false, features = [
-  "meta",
-  "std",
-  "syntax",
-  "unicode",
-] }
-regex-syntax = { version = "0.8.11", default-features = false, features = [
-  "std",
-] }
-semver = "1.0.28"
-serde = { version = "1.0.229", features = ["derive"] }
+serde = { version = "1.0.229", default-features = false, features = ["std"] }
 serde_json = "1.0.154"
-thiserror = "2.0.21"
-toml_edit = "0.25.17"
-unicode-normalization = "0.1.25"
-reqwest = { version = "0.13.5", default-features = false, features = [
-  "rustls-no-provider",
-] }
-flate2 = "1.1.10"
-tokio = { version = "1.54.1", features = [
-  "macros",
-  "rt",
-  "rt-multi-thread",
-  "sync",
-  "time",
-] }
-versionlens-engine = { path = "crates/versionlens-engine" }
-versionlens-fetch = { path = "crates/versionlens-fetch" }
-versionlens-lsp = { path = "crates/versionlens-lsp" }
-versionlens-model = { path = "crates/versionlens-model" }
-versionlens-parsers = { path = "crates/versionlens-parsers" }
-versionlens-providers = { path = "crates/versionlens-providers" }
-versionlens-test-support = { path = "crates/versionlens-test-support" }
-versionlens-update = { path = "crates/versionlens-update" }
-# Managed by rust-bedrock. Every level is deny rather than forbid, so a crate can
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "sync", "time"] }
+toml_edit = { version = "0.25.17", default-features = false, features = ["parse"] }
+
+# Managed by bedrock. Every level is deny rather than forbid, so a crate can
 # opt out of one lint with a crate-root #![expect(lint, reason = "…")].
 [workspace.lints.rust]
 rust_2018_idioms = { level = "deny", priority = -1 }
@@ -104,7 +71,7 @@ match_same_arms = "allow"
 if_not_else = "allow"
 cast_precision_loss = "allow"
 struct_excessive_bools = "allow"
-# Nursery lints with no false positives seen on 1.99.
+# Nursery lints with no false positives seen on 1.100.
 branches_sharing_code = "deny"
 collection_is_never_read = "deny"
 derive_partial_eq_without_eq = "deny"
@@ -144,6 +111,11 @@ unnecessary_safety_doc = "deny"
 negative_feature_names = "deny"
 redundant_feature_names = "deny"
 wildcard_dependencies = "deny"
+
+# Cargo's own lints. unused_dependencies covers [dependencies] and
+# [build-dependencies]; Cargo skips [dev-dependencies].
+[workspace.lints.cargo]
+unused_dependencies = "deny"
 
 # Checked by `cargo doc`: broken links, public docs that link to private items,
 # and malformed code blocks and HTML.

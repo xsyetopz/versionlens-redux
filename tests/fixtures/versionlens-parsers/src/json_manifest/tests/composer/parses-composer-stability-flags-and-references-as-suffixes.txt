@@ -1,8 +1,0 @@
-{
-    "require": {
-    "monolog/monolog": "1.0.*@beta",
-    "acme/foo": "dev-master#abc123",
-    "acme/bar": "1.0.x-dev#def456",
-    "acme/inline": "dev-bugfix as 1.0.x-dev"
-  }
-}

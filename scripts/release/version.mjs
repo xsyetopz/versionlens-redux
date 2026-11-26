@@ -4,7 +4,7 @@ import {
 	assertSynchronizedVersions,
 	readRepositoryVersion,
 	rustWorkspacePackages,
-	updateRepositoryVersions,
+	updateRepositoryVersions
 } from "./version-files.mjs";
 
 const nextVersion = Bun.argv[2];
@@ -27,14 +27,14 @@ if (checkOnly) {
 } else {
 	if (compareSemver(parsedNext, parseSemver(previousVersion)) <= 0) {
 		fail(
-			`new version ${nextVersion} must have higher SemVer precedence than ${previousVersion}`,
+			`new version ${nextVersion} must have higher SemVer precedence than ${previousVersion}`
 		);
 	}
 	const changedFiles = await updateRepositoryVersions(
 		nextVersion,
-		rustPackages,
+		rustPackages
 	);
 	console.log(
-		`Bumped ${changedFiles} repository files from ${previousVersion} to ${nextVersion}.`,
+		`Bumped ${changedFiles} repository files from ${previousVersion} to ${nextVersion}.`
 	);
 }

@@ -1,6 +1,0 @@
-source 'https://rubygems.org'
-
-gem 'rspec-rails', github: 'rspec/rspec-rails', tag: 'v8.0.4'
-gem 'rails', github: 'rails/rails', ref: '9a475c8'
-gem 'devise', github: 'heartcombo/devise', ref: '372b295'
-gem 'factory_bot', github: 'thoughtbot/factory_bot', ref: 'f923a81'

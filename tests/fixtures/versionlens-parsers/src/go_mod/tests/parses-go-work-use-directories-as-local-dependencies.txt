@@ -1,9 +1,0 @@
-
-go 1.22
-
-use ./app
-
-use (
-    ./lib
-    ../shared
-)

@@ -1,3 +1,0 @@
-<settings>
-  <localRepository>/Users/example/.m2/repository</localRepository>
-</settings>

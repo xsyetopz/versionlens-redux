@@ -1,3 +1,0 @@
-dependencies {
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.17")
-}

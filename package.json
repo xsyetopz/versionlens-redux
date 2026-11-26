@@ -1,42 +1,38 @@
 {
 	"name": "@versionlens/workspace",
-	"version": "0.6.3",
+	"version": "0.7.0",
 	"private": true,
 	"workspaces": {
 		"packages": [
 			"packages/*"
 		],
 		"catalog": {
-			"@types/bun": "1.4.4",
-			"@types/node": "26.6.6",
-			"eslint-plugin-jsdoc": "65.4.5",
-			"markdownlint-cli2": "0.24.0",
+			"@types/bun": "1.4.5",
+			"@types/node": "26.6.10",
+			"eslint-plugin-jsdoc": "65.5.5",
+			"markdownlint-cli2": "0.24.2",
 			"markdownlint-rule-title-case-style": "0.4.3",
-			"oxlint": "1.93.0",
-			"oxlint-tsgolint": "7.0.2006",
-			"typescript": "7.0.2",
-			"typescript-bedrock": "0.1.7"
+			"oxlint": "1.95.0",
+			"oxlint-tsgolint": "7.0.2008",
+			"typescript": "7.0.2"
 		}
 	},
 	"scripts": {
 		"build": "bun scripts/package/extension.mjs",
 		"check:clippy": "cargo clippy --workspace --all-targets",
 		"check:extension-build": "bun scripts/package/extension.mjs --check",
-		"check:manifests": "bun scripts/generate/manifests.mjs --check",
 		"check:rustfmt": "cargo fmt --all -- --check",
 		"format": "bun fmt",
 		"format:check": "bun fmt --check",
-		"generate:manifests": "bun scripts/generate/manifests.mjs",
-		"guard": "typescript-bedrock guard",
-		"lint": "bun run --sequential --no-exit-on-error oxlint markdownlint-cli2",
-		"lint:fix": "bun run --sequential --no-exit-on-error 'oxlint --fix' 'markdownlint-cli2 --fix'",
+		"guard": "just typescript::guard",
+		"lint": "just lint",
+		"lint:fix": "just lint-fix",
 		"marketplaces:configure": "bun scripts/release/configure-marketplaces.mjs",
 		"package": "bun scripts/package/vscode.mjs",
 		"package:editors": "bun scripts/package/editors.mjs",
 		"package:vscode-target": "bun scripts/package/vscode.mjs",
 		"test": "bun run test:extension",
-		"test:e2e": "cargo build -p versionlens-lsp && bun run build && bun scripts/test/e2e.mjs",
-		"test:extension": "bun scripts/test/extension.mjs",
+		"test:extension": "bun test packages/vscode-extension",
 		"test:release": "bun test scripts/release",
 		"typecheck": "bun check",
 		"verify": "bun run --sequential format:check typecheck lint guard test",
@@ -45,24 +41,22 @@
 	"devDependencies": {
 		"@types/bun": "catalog:",
 		"@types/node": "catalog:",
-		"@types/vscode": "1.145.0",
-		"@vscode/test-electron": "^3.1.0",
-		"@vscode/vsce": "4.1.0",
+		"@types/vscode": "1.146.0",
+		"@vscode/vsce": "4.1.1",
 		"eslint-plugin-jsdoc": "catalog:",
 		"markdownlint-cli2": "catalog:",
 		"markdownlint-rule-title-case-style": "catalog:",
 		"oxlint": "catalog:",
 		"oxlint-tsgolint": "catalog:",
-		"typescript": "catalog:",
-		"typescript-bedrock": "catalog:"
+		"typescript": "catalog:"
 	},
 	"overrides": {
-		"@types/node": "26.6.6"
+		"@types/node": "26.6.10"
 	},
 	"engines": {
-		"bun": ">=1.4.4"
+		"bun": ">=1.4.5"
 	},
-	"packageManager": "bun@1.4.4",
+	"packageManager": "bun@1.4.5",
 	"trustedDependencies": [
 		"@vscode/vsce-sign",
 		"keytar"

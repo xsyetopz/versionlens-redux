@@ -1,0 +1,175 @@
+# Patterns and rule lists that more than one file type uses. A row names a pattern as ${NAME}
+# and a rule list as { use = NAME }.
+
+[patterns]
+GITHUB_URL = '''https?://github\.com/(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+?)(?:\.git)?/?"'''
+PEP508 = '^\s*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*\(?(?P<version>(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+(?:\s*,\s*(?:===|==|~=|!=|<=|>=|<|>)\s*[^;,\s)]+)*)?\)?\s*(?:;.*)?$'
+# A direct reference, `name @ url`, which no index answers: peps.python.org/pep-0508/#specification
+PEP508_URL = '^[ \t]*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)[ \t]*(?:\[[^\]\n]*\])?[ \t]*@[ \t]*(?P<version>[^\s;#]+)'
+DOCKER ='^(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)$'
+IMAGE_LINE = '''(?m)^[ \t]*(?:-[ \t]*)?(?:image|container)[ \t]*:[ \t]*["']?(?P<name>[\w./-]+(?::\d+/[\w./-]+)?):(?P<version>[\w.-]+)["']?[ \t]*(?:#.*)?\r?$'''
+ACTION = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>v?\d[\w.-]*)$'
+# A branch or a full commit SHA in place of a version tag. A branch here starts with a letter
+# other than `v`, or with `v` and no digit, so `v4` and `1.2.0` stay tags; GitHub takes only a
+# full-length SHA as immutable: docs.github.com/en/actions/reference/security/secure-use.
+GIT_REF = '[0-9a-f]{40}|(?:[A-Za-uw-z_]|v[A-Za-z_./-])[\w./-]*'
+ACTION_REF = '^(?P<name>[\w.-]+/[\w.-]+)(?:/[^@]*)?@(?P<version>${GIT_REF})$'
+# `#` starts a comment, which nvm skips in `.nvmrc`: github.com/nvm-sh/nvm#nvmrc
+TOOL_VERSION = '\A(?:\s*#[^\n]*\n)*\s*v?(?P<version>\d[\w.]*)[ \t]*(?:#[^\n]*)?\s*\z'
+MAVEN_SPEC = '^(?P<name>[\w.-]+:[\w.-]+):(?P<version>[\w.+\[\](),-]+)$'
+# A tag archive's version is digits then a `.` or `-` part, so a commit archive such as
+# `archive/5d73…f8.tar.gz` is not read as one.
+GITHUB_ARCHIVE = 'github\.com/(?P<name>[\w.-]+/[\w.-]+)/archive/(?:refs/tags/)?(?P<version>v?\d+(?:[.-][\w.-]*?)?)\.(?:tar\.gz|tgz|zip|tar\.xz|tar\.bz2)'
+# A commit archive pins the git reference its 40-hex name gives, and names the repository by URL.
+GITHUB_COMMIT_ARCHIVE = '(?P<name>https://github\.com/[\w.-]+/[\w.-]+)/archive/(?P<version>[0-9a-f]{40})\.(?:tar\.gz|tgz|zip|tar\.xz|tar\.bz2)'
+GITHUB_RELEASE = 'github\.com/(?P<name>[\w.-]+/[\w.-]+)/releases/download/(?P<version>v?\d[\w.-]*)/'
+# A manifest's own version, which upstream's dependencyProperties list as `version`,
+# `project.version`, `package`, and `Project.PropertyGroup.Version` (upstream package.json, 1.3.0).
+OWN = '^(?P<version>v?\d[\w.+-]*)$'
+# The value of an R DESCRIPTION's dependency field, with its indented continuation lines:
+# cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file
+R_DEPS = '(?m)^(?:Depends|Imports|Suggests|LinkingTo|Enhances):([^\n]*(?:\n[ \t]+[^\n]*)*)'
+GITHUB_FRAGMENT ='github\.com/(?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?#(?P<version>v?\d[\w.-]*)'
+# A go-getter source pinned by `?ref=`, with an optional `//subdir`, as Terraform and Terragrunt
+# write modules: developer.hashicorp.com/terraform/language/modules/sources#selecting-a-revision
+GITHUB_REF = 'github\.com[:/](?P<name>[\w.-]+/[\w-]+(?:\.[\w-]+)*?)(?:\.git)?(?://[^?"\s]*)?\?ref=(?:refs/tags/)?(?P<version>v?\d[\w.-]*)'
+
+# A Deno import of a JSR or npm package, with an optional version
+# (docs.deno.com/runtime/fundamentals/modules/), and a deno.land standard library or /x module URL.
+DENO_SPEC = '^(?P<registry>jsr|npm):(?P<name>@?[^@]+)(?:@(?P<version>.+))?$'
+DENO_LAND = '^https://deno\.land/(?:x/)?(?P<name>[\w-]+)(?:@(?P<version>[^/]+))?(?:/.*)?$'
+# An npm alias value, `npm:name@range` or a bare `npm:name`.
+NPM_ALIAS = '^npm:(?P<name>(?:@[\w.-]+/)?[\w.-]+)(?:@(?P<version>.*))?$'
+
+# An Erlang term tuple nested up to three deep, and the list of a `{deps, [...]}`,
+# `{plugins, [...]}` or `{project_plugins, [...]}` term, as rebar.config writes them:
+# rebar3.org/docs/configuration/dependencies/ and rebar3.org/docs/configuration/plugins/
+# The arguments of one `single_version_override(...)` call, whose values may hold one level of
+# parentheses.
+BAZEL_OVERRIDE = '(?-u:\b)single_version_override\((?P<body>(?:[^()]|\([^()]*\))*)\)'
+# The value of a Cabal dependency field: the rest of its line, then each blank, comment, or
+# indented line that holds an entry rather than starting another field (`name:` and a space) or a
+# conditional (cabal.readthedocs.io/en/stable/cabal-package-description-file.html).
+CABAL_DEPENDS = '(?m)^[ \t]*(?:(?:build|setup|build-tool)-depends|build-tools|constraints):(?P<body>[^\n]*(?:\n[ \t]*(?:--[^\n]*)?\r?$|\n[ \t]+(?:,|[A-Za-z][\w-]*(?:[ \t]*\r?$|[ \t]*[,<>=^&|(]|:[\w{]))[^\n]*)*)'
+ERL_TUPLE = '\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}'
+ERL_DEPS = '\{(?:deps|plugins|project_plugins),\s*\[(?P<body>[^\]]*)\]'
+
+[rules]
+NPM_DEPS = [
+    { keys = 'dependencies' },
+    { keys = 'devDependencies' },
+    { keys = 'peerDependencies' },
+    { keys = 'optionalDependencies' },
+    # An alias installs a package under another key: `"react-18": "npm:react@^18.0.0"`, or
+    # `"npm:react"` for its latest (docs.npmjs.com/cli/v10/using-npm/package-spec#aliases). The
+    # `keys` rules drop such a value, and these read the package it names.
+    { spec = 'dependencies.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'devDependencies.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'peerDependencies.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'optionalDependencies.*', pattern = '${NPM_ALIAS}' },
+    { keys = 'resolutions' },
+    { keys = 'overrides' },
+    # A nested override pins a dependency only below its parent: `{"parent": {"child": "1.0.0"}}`.
+    { keys = 'overrides.*' },
+    { keys = 'pnpm.overrides' },
+    { keys = 'pnpm.overrides.*' },
+    # An override may swap in another package, as vitejs/vite's pnpm-workspace.yaml writes
+    # `debug: 'npm:obug@^1.0.2'` (pnpm.io/settings#overrides).
+    { spec = 'overrides.*', pattern = '${NPM_ALIAS}' },
+    { spec = 'pnpm.overrides.*', pattern = '${NPM_ALIAS}' },
+    { keys = 'packageExtensions.*.dependencies' },
+    { keys = 'packageExtensions.*.devDependencies' },
+    { keys = 'packageExtensions.*.peerDependencies' },
+    { keys = 'packageExtensions.*.optionalDependencies' },
+    { keys = 'pnpm.packageExtensions.*.dependencies' },
+    { keys = 'pnpm.packageExtensions.*.devDependencies' },
+    { keys = 'pnpm.packageExtensions.*.peerDependencies' },
+    { keys = 'pnpm.packageExtensions.*.optionalDependencies' },
+    { keys = 'catalog' },
+    { keys = 'catalogs.*' },
+    { keys = 'workspaces.catalog' },
+    { keys = 'workspaces.catalogs.*' },
+    { keys = 'volta' },
+    # Name lists, read as the fork's master read them: bundleDependencies and its older spelling
+    # (docs.npmjs.com/cli/v10/configuring-npm/package-json#bundledependencies), and Bun's
+    # trustedDependencies (bun.sh/docs/install/lifecycle#trusteddependencies). npm turns an
+    # object in bundleDependencies' place into its keys (npm/package-json lib/normalize.js,
+    # "translate from object"), so the `keys` rules read that form by name.
+    { spec = 'bundleDependencies.#', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'bundledDependencies.#', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { keys = 'bundleDependencies' },
+    { keys = 'bundledDependencies' },
+    { spec = 'trustedDependencies.#', pattern = '^(?P<name>(?:@[\w.-]+/)?[\w.-]+)$' },
+    { spec = 'packageManager', pattern = '^(?P<name>[\w-]+)@(?P<version>[^+]+)' },
+    # `engines` names the runtime and package managers a package runs on, as the fork's master
+    # read it (docs.npmjs.com/cli/v10/configuring-npm/package-json#engines). Other keys, such as
+    # a VS Code extension's `vscode`, name hosts no npm package versions.
+    { lines = '"(?P<name>node|npm|pnpm|yarn|bun)"\s*:\s*"(?P<version>[^"]+)"', within = '(?s)"engines"\s*:\s*\{(?P<body>[^{}]*)\}' },
+    # `devEngines` names its tools as `{"name": "pnpm", "version": "^9.0.0"}`, or a list of them.
+    { record = 'devEngines.packageManager', name = 'name', version = 'version' },
+    { record = 'devEngines.packageManager.*', name = 'name', version = 'version' },
+    { record = 'devEngines.runtime', name = 'name', version = 'version' },
+    { record = 'devEngines.runtime.*', name = 'name', version = 'version' },
+    # JSPM names its registry in each value: `npm:lodash@^4.17.0`, `github:owner/repo@1.0.0`.
+    # Upstream's dependencyProperties list its four maps, whose plain ranges are npm's.
+    { keys = 'jspm.dependencies' },
+    { keys = 'jspm.devDependencies' },
+    { keys = 'jspm.peerDependencies' },
+    { keys = 'jspm.optionalDependencies' },
+    { spec = 'jspm.*.*', pattern = '^npm:(?P<name>(?:@[\w.-]+/)?[\w.-]+)@(?P<version>.+)$' },
+    { spec = 'jspm.*.*', pattern = '^github:(?P<name>[\w.-]+/[\w.-]+)@(?P<version>.+)$', via = 'github' },
+]
+PYPROJECT = [
+    { spec = 'project.version', pattern = '${OWN}', via = 'project' },
+    { spec = 'project.dependencies.*', pattern = '${PEP508}' },
+    { spec = 'project.dependencies.*', pattern = '${PEP508_URL}' },
+    { spec = 'project.optional-dependencies.*.*', pattern = '${PEP508}' },
+    { spec = 'project.optional-dependencies.*.*', pattern = '${PEP508_URL}' },
+    { spec = 'dependency-groups.*.*', pattern = '${PEP508}' },
+    { spec = 'build-system.requires.*', pattern = '${PEP508}' },
+    { spec = 'tool.uv.dev-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'tool.uv.constraint-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'tool.uv.override-dependencies.*', pattern = '${PEP508}' },
+    { spec = 'tool.pdm.dev-dependencies.*.*', pattern = '${PEP508}' },
+    { keys = 'tool.poetry.dependencies' },
+    { keys = 'tool.poetry.dev-dependencies' },
+    { keys = 'tool.poetry.group.*.dependencies' },
+    # Poetry lists the Python versions a package runs on as a dependency named `python`, which
+    # PyPI does not answer: python-poetry.org/docs/pyproject/#dependencies-and-dependency-groups
+    { lines = '''(?m)^[ \t]*(?P<name>python)[ \t]*=[ \t]*["'](?P<version>[^"'\n]+)["']''', within = '''(?m)^\[tool\.poetry(?:\.group\.[\w-]+)?\.(?:dev-)?dependencies\][^\n]*\n(?P<body>(?:[^\[\n][^\n]*\n|\n)*)''', via = 'python' },
+    { lines = '''(?m)^\[tool\.poetry(?:\.group\.[\w-]+)?\.(?:dev-)?dependencies\.(?P<name>python)\][^\n]*\n(?:[^\[\n][^\n]*\n|\n)*?[ \t]*version[ \t]*=[ \t]*["'](?P<version>[^"'\n]+)["']''', via = 'python' },
+    # uv sources point a dependency at git, a URL, or a path: docs.astral.sh/uv/concepts/projects/dependencies/#dependency-sources
+    { keys = 'tool.uv.sources' },
+]
+NUGET = [
+    # Central package management sets a version in Directory.Packages.props, which a project may
+    # override with `VersionOverride`, and leaves `PackageReference` without one:
+    # learn.microsoft.com/en-us/nuget/consume-packages/central-package-management
+    { record = 'Project.ItemGroup.PackageReference', name = '@Include|@Update', version = '@Version|Version|@VersionOverride|VersionOverride' },
+    # A reference with no `Version` or `VersionOverride`, as attribute or child, reads with no
+    # requirement. No attribute or child of a `PackageReference` other than those two starts `Ve`:
+    # learn.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files
+    { lines = '''<PackageReference(?:\s+(?:Include|Update)\s*=\s*["'](?P<name>[\w.-]+)["']|\s+(?:[A-UW-Za-z]|V[a-df-z])[\w.:-]*\s*=\s*(?:"[^"]*"|'[^']*'))+\s*(?:/>|>(?:\s*<(?:[A-UW-Za-z]|V[a-df-z])[\w.-]*>[^<]*</[\w.-]+>|\s*<!--(?:[^-]|-[^-])*-->)*\s*</PackageReference>)''' },
+    { record = 'Project.ItemGroup.PackageVersion', name = '@Include|@Update', version = '@Version|Version' },
+    { record = 'Project.ItemGroup.GlobalPackageReference', name = '@Include|@Update', version = '@Version|Version' },
+    { record = 'Project.ItemGroup.DotNetCliToolReference', name = '@Include|@Update', version = '@Version|Version' },
+    { record = 'packages.package', name = '@id', version = '@version' },
+    # An MSBuild SDK pins its version in `<Project Sdk="Name/1.0">` or `<Sdk Name="" Version="" />`.
+    { lines = '<Project[ \t\r\n][^>]*?Sdk="(?P<name>[\w.-]+)/(?P<version>[^"/;]+)"' },
+    { record = 'Project.Sdk', name = '@Name', version = '@Version' },
+    { spec = 'Project.PropertyGroup.Version', pattern = '${OWN}', via = 'project' },
+    { spec = 'Project.PropertyGroup.AssemblyVersion', pattern = '${OWN}', via = 'project' },
+]
+POM = [
+    { spec = 'project.version', pattern = '${OWN}', via = 'project' },
+    { record = 'project.parent', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.dependencyManagement.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.build.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.build.pluginManagement.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+    # A profile holds the same sections: maven.apache.org/pom.html#Profiles
+    { record = 'project.profiles.profile.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.profiles.profile.dependencyManagement.dependencies.dependency', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.profiles.profile.build.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+    { record = 'project.profiles.profile.build.pluginManagement.plugins.plugin', name = 'groupId:artifactId', version = 'version' },
+]

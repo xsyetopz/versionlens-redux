@@ -1,7 +1,0 @@
-group :production do
-  gem "zeta", "1.0.0"
-end
-
-group :production do
-  gem "alpha", "1.0.0"
-end

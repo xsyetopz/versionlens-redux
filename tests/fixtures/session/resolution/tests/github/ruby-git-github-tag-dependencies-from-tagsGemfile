@@ -1,1 +1,0 @@
-gem "rails", git: "git@github.com:rails/rails.git", tag: "v7.0.0"

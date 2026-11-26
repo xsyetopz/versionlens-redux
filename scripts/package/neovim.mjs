@@ -3,7 +3,7 @@ import { chmod, copyFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import {
 	arch as hostArchitecture,
-	platform as hostPlatform,
+	platform as hostPlatform
 } from "node:process";
 
 import { capture } from "../lib/spawn.mjs";
@@ -12,7 +12,7 @@ import { readTargets } from "./targets.mjs";
 const targets = await readTargets();
 /** @type {Map<string, string>} */
 const nativeEditorTargets = new Map(
-	targets.map(({ vscode, rust }) => [vscode, rust]),
+	targets.map(({ vscode, rust }) => [vscode, rust])
 );
 
 /**
@@ -27,7 +27,7 @@ const assertNativeRequest = (args, packageName) => {
 	}
 	if (args.length !== 3) {
 		throw new Error(
-			`${packageName} target packaging requires platform, architecture, and Rust target arguments.`,
+			`${packageName} target packaging requires platform, architecture, and Rust target arguments.`
 		);
 	}
 	if (
@@ -35,7 +35,7 @@ const assertNativeRequest = (args, packageName) => {
 		requestedArchitecture !== hostArchitecture
 	) {
 		throw new Error(
-			`Cannot package ${requestedPlatform}-${requestedArchitecture} on ${hostPlatform}-${hostArchitecture}; use a native runner.`,
+			`Cannot package ${requestedPlatform}-${requestedArchitecture} on ${hostPlatform}-${hostArchitecture}; use a native runner.`
 		);
 	}
 };
@@ -54,7 +54,7 @@ const resolveNativeEditorTarget = (args, packageName) => {
 	const expectedRustTarget = nativeEditorTargets.get(editorTarget);
 	if (expectedRustTarget === undefined || expectedRustTarget === "") {
 		throw new Error(
-			`Unsupported ${packageName} package target: ${editorTarget}`,
+			`Unsupported ${packageName} package target: ${editorTarget}`
 		);
 	}
 	if (
@@ -63,7 +63,7 @@ const resolveNativeEditorTarget = (args, packageName) => {
 		requestedRustTarget !== expectedRustTarget
 	) {
 		throw new Error(
-			`${editorTarget} requires Rust target ${expectedRustTarget}, received ${requestedRustTarget}.`,
+			`${editorTarget} requires Rust target ${expectedRustTarget}, received ${requestedRustTarget}.`
 		);
 	}
 
@@ -81,18 +81,18 @@ const resolveNativeEditorTarget = (args, packageName) => {
 		executableName,
 		platform,
 		rustTarget: requestedRustTarget,
-		sourceParts,
+		sourceParts
 	};
 };
 
 const { editorTarget, executableName, platform, sourceParts } =
 	resolveNativeEditorTarget(Bun.argv.slice(2), "Neovim");
 const packageRoot = join("packages", "neovim-plugin");
-const binaryDirectory = join(packageRoot, "bin", editorTarget);
+const binaryDirectory = join(packageRoot, "bin");
 const bundledBinary = join(binaryDirectory, executableName);
 const output = join(
 	"dist",
-	`versionlens-redux-neovim-plugin-${editorTarget}.tar.gz`,
+	`versionlens-redux-neovim-plugin-${editorTarget}.tar.gz`
 );
 
 await mkdir(binaryDirectory, { recursive: true });
@@ -113,7 +113,7 @@ try {
 		"doc",
 		"lua",
 		"plugin",
-		"bin",
+		"bin"
 	]);
 	if (result.exitCode !== 0) {
 		throw new Error(`Could not create ${output}: ${result.stderr}`);

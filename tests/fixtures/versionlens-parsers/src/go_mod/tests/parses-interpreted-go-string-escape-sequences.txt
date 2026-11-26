@@ -1,4 +1,0 @@
-
-module example.test/app
-
-require "example.test\/escaped" "v1.2.3"

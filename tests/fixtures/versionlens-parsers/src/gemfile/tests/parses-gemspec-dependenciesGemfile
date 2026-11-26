@@ -1,7 +1,0 @@
-
-Gem::Specification.new do |spec|
-  spec.add_dependency "rack", "~> 2.2", ">= 2.2.4"
-  spec.add_runtime_dependency 'thor', '>= 1.0'
-  spec.add_development_dependency "rspec", "~> 3.13" # comment
-  add_dependency "json", "2.7.2"
-end

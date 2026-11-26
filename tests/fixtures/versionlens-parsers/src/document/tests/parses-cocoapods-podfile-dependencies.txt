@@ -1,9 +1,0 @@
-source 'https://cdn.cocoapods.org/'
-target 'App' do
-  pod 'AFNetworking', '~> 4.0'
-  pod 'SSZipArchive'
-  pod 'LocalPod', :path => '../LocalPod'
-  pod 'GitPod', :git => 'https://github.com/acme/GitPod.git', :tag => '1.2.3'
-  pod 'JSONKit', :podspec => 'https://example.com/JSONKit.podspec'
-  pod 'PonyDebugger', :source => 'https://private.example.com/specs'
-end

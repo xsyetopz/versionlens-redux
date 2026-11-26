@@ -1,8 +1,0 @@
-jobs:
-  shared:
-    uses: ./.github/workflows/release.yml
-  build:
-    steps:
-      - uses: ./actions/build
-      - uses: ${{ matrix.action }}
-      - uses: actions/cache

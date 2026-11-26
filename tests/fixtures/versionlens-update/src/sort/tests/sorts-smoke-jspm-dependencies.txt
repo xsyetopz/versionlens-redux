@@ -1,8 +1,0 @@
-{
-  "jspm": {
-    "dependencies": {
-      "webpack": "npm:webpack@*",
-      "bluebird": "npm:bluebird@^3.7.2"
-    }
-  }
-}

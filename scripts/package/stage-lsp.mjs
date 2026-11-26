@@ -31,7 +31,7 @@ const hostTarget = async () => {
 	const entry = targets.find(({ rust }) => rust === host);
 	if (!entry) {
 		throw new Error(
-			`Host Rust target ${host ?? "(unknown)"} is not listed in scripts/package/targets.json`,
+			`Host Rust target ${host ?? "(unknown)"} is not listed in scripts/package/targets.json`
 		);
 	}
 	return entry;
@@ -60,7 +60,7 @@ const extract = async (archive, destination) => {
 				"-xf",
 				archive,
 				"-C",
-				destination,
+				destination
 			];
 		}
 	}
@@ -93,7 +93,7 @@ const verifyChecksum = async (archivesDir, archiveName) => {
 		.digest("hex");
 	if (expected !== actual) {
 		throw new Error(
-			`${archiveName} checksum mismatch: expected ${expected}, got ${actual}`,
+			`${archiveName} checksum mismatch: expected ${expected}, got ${actual}`
 		);
 	}
 };
@@ -112,7 +112,7 @@ const stageLspBinary = async (archivesDir, rustTarget, destination) => {
 		(name) =>
 			name.startsWith("versionlens-lsp-") &&
 			(name.endsWith(`-${rustTarget}.tar.gz`) ||
-				name.endsWith(`-${rustTarget}.zip`)),
+				name.endsWith(`-${rustTarget}.zip`))
 	);
 	if (archiveName === undefined || archiveName === "") {
 		throw new Error(`No build-lsp archive for ${rustTarget} in ${archivesDir}`);
@@ -153,10 +153,10 @@ if (import.meta.main) {
 		destination === ""
 	) {
 		throw new Error(
-			"usage: bun scripts/package/stage-lsp.mjs <archives-dir> <rust-target> <destination-dir>",
+			"usage: bun scripts/package/stage-lsp.mjs <archives-dir> <rust-target> <destination-dir>"
 		);
 	}
 	console.log(
-		`Staged ${await stageLspBinary(archivesDir, rustTarget, destination)}`,
+		`Staged ${await stageLspBinary(archivesDir, rustTarget, destination)}`
 	);
 }

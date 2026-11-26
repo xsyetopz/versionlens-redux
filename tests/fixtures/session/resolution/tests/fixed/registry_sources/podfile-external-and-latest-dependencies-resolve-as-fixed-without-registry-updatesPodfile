@@ -1,4 +1,0 @@
-pod 'SSZipArchive'
-pod 'LocalPod', :path => '../LocalPod'
-pod 'GitPod', :git => 'https://github.com/acme/GitPod.git'
-pod 'JSONKit', :podspec => 'https://example.com/JSONKit.podspec'

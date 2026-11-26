@@ -1,6 +1,0 @@
-"zeta/package": "<2",
-"alpha/package": "<2",
-"vendor/replaced-zeta": "self.version",
-"vendor/replaced-alpha": "self.version",
-"psr/zeta-implementation": "1.0",
-"psr/alpha-implementation": "1.0"

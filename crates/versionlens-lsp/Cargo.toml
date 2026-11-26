@@ -1,12 +1,11 @@
 [package]
 name = "versionlens-lsp"
 publish = false
+description = "Editor-neutral VersionLens language server"
 edition.workspace = true
 rust-version.workspace = true
-description = "Editor-neutral VersionLens language server"
 license.workspace = true
 repository.workspace = true
-readme = "README.md"
 keywords.workspace = true
 categories.workspace = true
 version.workspace = true
@@ -16,15 +15,13 @@ workspace = true
 
 [dependencies]
 crossbeam-channel.workspace = true
-anyhow.workspace = true
+jsonc-parser.workspace = true
 lsp-server.workspace = true
 lsp-types.workspace = true
+regex-automata.workspace = true
+reqwest.workspace = true
+rustls.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
-versionlens-engine.workspace = true
-versionlens-model.workspace = true
-versionlens-parsers.workspace = true
-
-[dev-dependencies]
-versionlens-test-support.workspace = true
+toml_edit.workspace = true
