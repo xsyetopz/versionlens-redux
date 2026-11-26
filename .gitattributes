@@ -44,7 +44,3 @@ gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
 # <<< jvm-bedrock
-
-# bedrock writes gradlew.bat with LF endings and its guard compares bytes, so the `*.bat eol=crlf`
-# above would make every fresh checkout fail `bedrock guard base`; keep this one file LF.
-gradlew.bat text eol=lf
