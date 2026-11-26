@@ -22,17 +22,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Lint plugin with Selene
-        uses: NTBBloodbath/selene-action@23ef05dd5c4d687f4d3c939f76a1c342baf454aa # v1.0.0
+      # NTBBloodbath/selene-action is gone from GitHub; install-action fetches Selene's own release
+      # binary through cargo-binstall, as it does for tools outside its list.
+      - name: Install Selene
+        uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --config packages/neovim-plugin/selene.toml packages/neovim-plugin/lua packages/neovim-plugin/plugin
+          tool: selene@0.32.0
 
-      - name: Lint tests with Selene
-        uses: NTBBloodbath/selene-action@23ef05dd5c4d687f4d3c939f76a1c342baf454aa # v1.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --config packages/neovim-plugin/selene.toml packages/neovim-plugin/tests
+      - name: Lint with Selene
+        working-directory: packages/neovim-plugin
+        run: selene --config selene.toml lua plugin tests
 
       - name: Check formatting with StyLua
         uses: JohnnyMorganz/stylua-action@v5

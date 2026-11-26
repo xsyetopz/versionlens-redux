@@ -61,10 +61,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # The typescript and rust workflows run `just lint`; this job checks only Rust formatting.
       - name: Check formatting
-        run: |
-          bun run lint
-          bun run check:rustfmt
+        run: bun run check:rustfmt
 
       - name: Typecheck and test
         run: |
