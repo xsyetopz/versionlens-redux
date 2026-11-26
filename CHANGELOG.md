@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Publishing the JetBrains plugin uploads the zip `signPlugin` signs, under the configuration cache and from the build cache too. `publishPlugin` had chosen it only when `signPlugin` ran, and otherwise named the unbuilt `buildPlugin` zip.
+
 ## [0.7.0] - 2026-11-26
 
 ### Added
