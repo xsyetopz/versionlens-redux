@@ -178,16 +178,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@67621b124fd2e251c5e8a0e6e3b91318f2287669 # v6.3.0
 
-      # publishPlugin uploads signPlugin's zip only when signPlugin.didWork, and otherwise the
-      # unbuilt buildPlugin zip. The configuration cache reads didWork before signPlugin runs, and
-      # a signPlugin restored from the build cache does no work, so sign with both out of the way.
+      # The build publishes signPlugin's zip of the released plugin; see versionlensReleasePlugin
+      # in packages/jetbrains-plugin/build.gradle.kts. v0.7.0 predates that, and published with
+      # `:jetbrains-plugin:signPlugin --rerun` and --no-configuration-cache here instead.
       - name: Sign and publish the released plugin
         shell: bash
         run: |
           set -euo pipefail
           plugin=$(find "$PWD/jetbrains-release" -type f -name '*.zip')
-          ./gradlew :jetbrains-plugin:signPlugin --rerun :jetbrains-plugin:publishPlugin \
-            -x buildPlugin --no-daemon --no-configuration-cache --stacktrace \
+          ./gradlew :jetbrains-plugin:publishPlugin -x buildPlugin --no-daemon --stacktrace \
             -PversionlensReleasePlugin="$plugin"
 
   zed:

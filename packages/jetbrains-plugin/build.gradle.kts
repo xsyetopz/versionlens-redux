@@ -75,9 +75,12 @@ tasks.prepareSandbox {
 tasks.buildPlugin { archiveBaseName = "versionlens-redux-jetbrains-plugin" }
 
 // Publishing a release signs and uploads the zip the release workflow built, given as
-// -PversionlensReleasePlugin=<zip>, rather than rebuilding it.
+// -PversionlensReleasePlugin=<zip>, rather than rebuilding it. publishPlugin's default archive is
+// signPlugin's only when signPlugin.didWork, which reads false under the configuration cache and
+// for a signPlugin restored from the build cache, so it names the signed zip itself.
 providers.gradleProperty("versionlensReleasePlugin").orNull?.let { release ->
     tasks.signPlugin { archiveFile = file(release) }
+    tasks.publishPlugin { archiveFiles.setFrom(tasks.signPlugin.flatMap { it.signedArchiveFile }) }
 }
 
 // `just jetbrains-live` passes -PversionlensLiveServer=<versionlens-lsp> to run LiveTest against
