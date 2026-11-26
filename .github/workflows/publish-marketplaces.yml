@@ -178,12 +178,16 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@67621b124fd2e251c5e8a0e6e3b91318f2287669 # v6.3.0
 
+      # publishPlugin uploads signPlugin's zip only when signPlugin.didWork; the configuration
+      # cache reads that before signPlugin runs, so with it on, the unbuilt buildPlugin zip is
+      # uploaded instead.
       - name: Sign and publish the released plugin
         shell: bash
         run: |
           set -euo pipefail
           plugin=$(find "$PWD/jetbrains-release" -type f -name '*.zip')
-          ./gradlew :jetbrains-plugin:publishPlugin -x buildPlugin --no-daemon --stacktrace -PversionlensReleasePlugin="$plugin"
+          ./gradlew :jetbrains-plugin:publishPlugin -x buildPlugin --no-daemon --no-configuration-cache \
+            --stacktrace -PversionlensReleasePlugin="$plugin"
 
   zed:
     name: Zed extension registry PR
