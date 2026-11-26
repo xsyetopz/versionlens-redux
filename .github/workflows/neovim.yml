@@ -22,12 +22,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      # NTBBloodbath/selene-action is gone from GitHub; install-action fetches Selene's own release
-      # binary through cargo-binstall, as it does for tools outside its list.
+      # NTBBloodbath/selene-action is gone from GitHub; install-action fetches Selene through
+      # cargo-binstall, which resolves versions on crates.io, where 0.31.0 is the newest.
       - name: Install Selene
         uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
         with:
-          tool: selene@0.32.0
+          tool: selene@0.31.0
 
       - name: Lint with Selene
         working-directory: packages/neovim-plugin
