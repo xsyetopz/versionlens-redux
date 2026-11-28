@@ -28,13 +28,13 @@ jobs:
           persist-credentials: false
       - run: rustup toolchain install --no-self-update
       # kache caches compiled crates and keeps its store in the GitHub Actions cache.
-      - uses: kunobi-ninja/kache-action@ad7317540dcdd71c904f7a60a87b620a0c0e67ed # v1
+      - uses: kunobi-ninja/kache-action@061011817fd04b0e460f79d6bb3c115b1fc8f029 # v1
         with:
           version: v2.0.0
           # The comment needs pull-requests: write; the job summary shows the same.
           pr-comment: "false"
       # uv runs the pinned lizard that bedrock guard bounds sizes with.
-      - uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+      - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
         with:
           tool: just@1.59.0,cargo-deny@0.20.2,uv@0.13.7
       - run: just rust::verify
