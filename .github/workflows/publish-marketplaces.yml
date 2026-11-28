@@ -74,7 +74,7 @@ jobs:
 
       - &setup_node
         name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "24.20.0"
 
@@ -94,7 +94,7 @@ jobs:
           test "$(find release-assets -type f -name '*.vsix' | wc -l | tr -d ' ')" = 9
 
       - name: Sign in to Microsoft Entra
-        uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c # v3.0.2
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -170,7 +170,7 @@ jobs:
           test "$(find jetbrains-release -type f -name '*.zip' | wc -l | tr -d ' ')" = 1
 
       - name: Setup Java
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           distribution: temurin
           java-version: "25"
